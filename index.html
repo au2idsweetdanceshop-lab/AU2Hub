@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>AU2Hub - Pusat Komunitas & Joki</title>
     
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
@@ -32,6 +34,7 @@
     <style>
         body { background-color: #0F0920; color: #E2E8F0; -webkit-tap-highlight-color: transparent; }
         
+        /* 1. Animasi Transisi Halaman Lebih Mulus */
         .tab-content:not(.active) { display: none !important; }
         @keyframes slideUpFade {
             from { opacity: 0; transform: translateY(20px) scale(0.98); }
@@ -39,6 +42,7 @@
         }
         .tab-content.active { animation: slideUpFade 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
         
+        /* 2. Animasi Ikon Navigasi Bawah (Memantul) */
         @keyframes popBounce {
             0% { transform: scale(1) translateY(0); }
             40% { transform: scale(0.7) translateY(2px); }
@@ -50,6 +54,7 @@
             text-shadow: 0 0 12px rgba(255, 0, 122, 0.6); 
         }
 
+        /* Animasi Modal Mengambang */
         @keyframes modalIn {
             from { opacity: 0; transform: scale(0.95); }
             to { opacity: 1; transform: scale(1); }
@@ -64,9 +69,11 @@
         .ripper-list::-webkit-scrollbar { width: 4px; }
         .ripper-list::-webkit-scrollbar-thumb { background: #FF007A; border-radius: 10px; }
         
+        /* Scrollbar untuk Chat Widget */
         .chat-scroll::-webkit-scrollbar { width: 3px; }
         .chat-scroll::-webkit-scrollbar-thumb { background: #8A2BE2; border-radius: 10px; }
 
+        /* Class untuk menyembunyikan scrollbar di carousel gambar */
         .hide-scroll::-webkit-scrollbar { display: none; }
         .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
@@ -88,6 +95,12 @@
             </div>
         </div>
     </header>
+
+    <div id="ptr-indicator" class="fixed top-16 left-0 w-full flex justify-center items-center z-30 pointer-events-none transition-all duration-300 opacity-0 -translate-y-4">
+        <div class="bg-brand-card border border-brand-info/40 rounded-full px-4 py-2 shadow-[0_0_15px_rgba(0,240,255,0.3)] flex items-center gap-2 text-brand-info text-xs font-bold backdrop-blur-md">
+            <i class="fas fa-spinner animate-spin"></i> Memperbarui...
+        </div>
+    </div>
     
     <main class="max-w-md mx-auto px-5 pt-24">
         
@@ -200,12 +213,37 @@
                 </h3>
             </div>
 
-            <div id="feed-container" class="space-y-4 min-h-[300px]">
+            <div class="bg-brand-card rounded-2xl p-4 border border-white/5 mb-6">
+                <h4 class="text-xs font-bold text-brand-info mb-3"><i class="fas fa-pen mr-2"></i> Buat Postingan</h4>
+                <textarea id="post-text" placeholder="Bagikan momen atau hasil gacha kamu..." class="w-full bg-[#0F0920] border border-white/10 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-brand-accent resize-none mb-3" rows="3"></textarea>
                 
-                <div class="text-center py-10 text-gray-500 text-xs italic">
-                    (Letakkan Kode Embed Feed / Komentar di Sini Nanti)
+                <div class="flex items-center justify-between">
+                    <label class="cursor-pointer bg-white/5 hover:bg-white/10 border border-white/10 text-white text-[10px] px-3 py-2 rounded-lg transition-colors flex items-center">
+                        <i class="fas fa-image text-brand-accent mr-2"></i> Pilih File
+                        <input type="file" id="post-file" accept="image/*,video/*" class="hidden">
+                    </label>
+                    <button onclick="alert('Fungsi Upload siap disambungkan ke Supabase!')" class="bg-brand-accent text-white text-[10px] font-bold px-4 py-2 rounded-lg shadow-[0_0_10px_rgba(255,0,122,0.3)] active:scale-95 transition-transform">
+                        <i class="fas fa-paper-plane mr-1"></i> Posting
+                    </button>
                 </div>
-                
+            </div>
+
+            <div id="feed-container" class="space-y-4">
+                <div class="bg-brand-card rounded-2xl p-4 border border-white/5">
+                    <div class="flex items-center mb-3">
+                        <div class="w-8 h-8 rounded-full bg-brand-purple/20 flex items-center justify-center text-brand-purple font-bold text-xs mr-3">AD</div>
+                        <div>
+                            <div class="font-bold text-white text-xs">Admin ADT</div>
+                            <div class="text-[9px] text-gray-500">Baru saja</div>
+                        </div>
+                    </div>
+                    <p class="text-xs text-gray-300 mb-3 leading-relaxed">Selamat datang di fitur sosial baru AU2Hub! Sekarang kamu bisa berbagi foto dan berinteraksi di sini.</p>
+                    <img src="Screenshot_20260505-225022.jpg" alt="Feed Post" class="w-full h-40 object-cover rounded-xl border border-white/5 mb-3">
+                    <div class="flex items-center gap-4 text-[11px] text-gray-400">
+                        <button class="hover:text-brand-accent transition-colors"><i class="far fa-heart mr-1"></i> 24</button>
+                        <button class="hover:text-brand-info transition-colors"><i class="far fa-comment mr-1"></i> Balas</button>
+                    </div>
+                </div>
             </div>
         </section>
 
@@ -408,11 +446,22 @@ Maintenance server akan 06 Mei Januari (Rabu) mulai pukul 10:00-11:00. Waktu mai
         </div>
         
         <div class="flex-1 relative w-full h-full bg-[#0F0920] overflow-hidden">
-            
-            <div class="flex items-center justify-center h-full text-center text-xs text-gray-500 italic px-4">
-                (Letakkan Kode Embed Chatango / Cbox / Minnit di Sini Nanti)
+            <div id="widget-chat" class="absolute inset-0 flex flex-col">
+                <div class="flex-1 p-3 overflow-y-auto chat-scroll space-y-3" id="chat-messages">
+                    <div class="flex flex-col items-start">
+                        <span class="text-[9px] text-gray-500 ml-1 mb-0.5">Sistem</span>
+                        <div class="bg-white/10 text-white text-xs py-2 px-3 rounded-2xl rounded-tl-sm max-w-[85%] border border-white/5">
+                            Menghubungkan ke server obrolan...
+                        </div>
+                    </div>
+                </div>
+                <div class="p-3 border-t border-white/10 bg-brand-dark flex gap-2">
+                    <input type="text" id="chat-input" placeholder="Ketik pesan..." class="flex-1 bg-brand-card border border-white/10 rounded-full px-4 py-2 text-xs text-white focus:outline-none focus:border-brand-info disabled:opacity-50">
+                    <button onclick="kirimPesan()" class="bg-brand-info text-brand-dark w-9 h-9 rounded-full flex items-center justify-center active:scale-90 transition-transform disabled:opacity-50">
+                        <i class="fas fa-paper-plane text-xs"></i>
+                    </button>
+                </div>
             </div>
-
         </div>
     </div>
 
@@ -444,13 +493,14 @@ Maintenance server akan 06 Mei Januari (Rabu) mulai pukul 10:00-11:00. Waktu mai
     </nav>
 
     <script>
-        // --- 1. DATA LOKAL KAMU (TIDAK ADA YANG DIHAPUS) ---
+        // --- 1. DATA CONFIGURATION (KINI TERMASUK FAQ) ---
         const services = [
             { id: 1, name: 'Joki Ballroom', price: 7500, label: '', desc: 'Estimasi pengerjaan 2 jam.' },
             { id: 2, name: 'Paket Joki AFK (Island/Japan/Hawai)', price: 65000, label: '', desc: 'Sesuai spek dan pesanan.' },
             { id: 3, name: 'Joki War Tari', price: 7500, label: '/hari', desc: '4x-5x play score max. Sesuai req lagu.' }
         ];
 
+        // Array Data FAQ (Tanya Jawab) BARU
         const faqs = [
             { t: "Berapa lama proses joki?", j: "Joki Ballroom memakan waktu sekitar 2 jam. Untuk War Tari & AFK menyesuaikan spesifikasi dan antrean pesanan. Admin akan menginfokan detailnya di WA." },
             { t: "Apakah akun aman tidak kena Banned?", j: "100% Aman. Joki dikerjakan murni manual oleh player profesional. Kami tidak memakai bot, cheat, atau apk pihak ketiga." },
@@ -555,46 +605,61 @@ Maintenance server akan 06 Mei Januari (Rabu) mulai pukul 10:00-11:00. Waktu mai
             { nama: "Virgo12345", id: "Unknown", rekening: "WA 081367049740 / 082276554684" }
         ];
 
-        // --- 2. FUNGSI NAVIGASI UI ---
+        // --- 2. SYSTEM FUNCTIONS (Tabs & Modals) ---
         function switchTab(tabId, event = null, isPush = true) {
-            if (event) event.preventDefault(); 
+            // Mencegah browser melompat otomatis ke tag href="#..."
+            if (event) {
+                event.preventDefault(); 
+            }
             
             if (!document.getElementById(tabId)) tabId = 'home';
             const targetSection = document.getElementById(tabId);
             
+            // 1. JIKA TAB YANG DIKLIK ADALAH TAB AKTIF (SUDAH DIBUKA)
             if (event && targetSection && targetSection.classList.contains('active')) {
+                // Scroll halus ke posisi teratas halaman
                 window.scrollTo({ top: 0, behavior: 'smooth' });
+                
+                // Tambahkan sentuhan animasi klik ekstra untuk ikon jika disentuh lagi
                 if (event.currentTarget) {
                     const icon = event.currentTarget.querySelector('i');
                     if (icon) {
+                        // Reset animasi agar bisa diputar ulang
                         icon.style.animation = 'none';
-                        void icon.offsetWidth; 
+                        void icon.offsetWidth; // trigger reflow
                         icon.style.animation = 'popBounce 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards';
                     }
                 }
-                return; 
+                return; // Stop fungsi disini agar tidak render ulang yang menyebabkan kedip
             }
 
+            // 2. JIKA TAB BERBEDA YANG DIKLIK (PINDAH HALAMAN)
+            // Sembunyikan semua tab & matikan animasinya sementara
             document.querySelectorAll('.tab-content').forEach(t => {
                 t.classList.remove('active');
                 t.style.animation = 'none'; 
             });
             document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
             
+            // Aktifkan tab konten yang baru dituju
             if (targetSection) {
                 targetSection.classList.add('active');
+                // Paksa browser membaca reflow agar animasi CSS terputar ulang dari awal
                 void targetSection.offsetWidth;
                 targetSection.style.animation = null; 
             }
             
+            // Berikan warna aktif pada Navigasi di Bawah
             const navMap = { 'home': 0, 'info': 1, 'layanan': 2, 'sosial': 3, 'rekber': 4, 'ripper': 5, 'pembayaran': 2 };
             const activeIndex = navMap[tabId];
             if (activeIndex !== undefined) {
                 document.querySelectorAll('.nav-item')[activeIndex].classList.add('active');
             }
             
+            // Scroll ke atas halaman secara halus setiap ganti menu tab
             window.scrollTo({ top: 0, behavior: 'smooth' });
             
+            // Ubah link URL di browser tanpa reload
             if (isPush && window.location.hash !== `#${tabId}`) {
                 history.pushState(null, null, `#${tabId}`);
             }
@@ -640,7 +705,9 @@ Maintenance server akan 06 Mei Januari (Rabu) mulai pukul 10:00-11:00. Waktu mai
             }, 50);
         }
 
-        function closeModalEvent() { history.back(); }
+        function closeModalEvent() {
+            history.back(); 
+        }
 
         function toggleWidget() {
             const widget = document.getElementById('floating-widget');
@@ -653,13 +720,18 @@ Maintenance server akan 06 Mei Januari (Rabu) mulai pukul 10:00-11:00. Waktu mai
             }
         }
 
-        // --- 3. FUNGSI RENDER DATA ---
+
+        // --- 3. RENDER DATA (FAQ, LAYANAN, RIPPER) ---
+
+        // Fungsi Render FAQ (Tanya Jawab)
         function renderFaqs(data = faqs) {
             const container = document.getElementById('faq-container');
+            
             if (data.length === 0) {
                 container.innerHTML = `<div class="text-center text-xs text-gray-400 py-6 border border-white/5 bg-brand-card rounded-2xl"><i class="fas fa-search-minus mb-2 text-lg"></i><br>Pertanyaan tidak ditemukan.</div>`;
                 return;
             }
+            
             container.innerHTML = data.map(f => `
                 <details class="bg-brand-card rounded-2xl border border-white/5 group">
                     <summary class="flex justify-between items-center font-bold text-xs cursor-pointer text-white p-4">
@@ -673,17 +745,25 @@ Maintenance server akan 06 Mei Januari (Rabu) mulai pukul 10:00-11:00. Waktu mai
             `).join('');
         }
 
+        // Listener Pencarian FAQ
         document.getElementById('faqSearch').addEventListener('input', (e) => {
             const val = e.target.value.toLowerCase();
-            renderFaqs(faqs.filter(f => f.t.toLowerCase().includes(val) || f.j.toLowerCase().includes(val)));
+            const filtered = faqs.filter(f => 
+                f.t.toLowerCase().includes(val) || 
+                f.j.toLowerCase().includes(val)
+            );
+            renderFaqs(filtered);
         });
 
+        // Fungsi Render Layanan
         function renderServices(data = services) {
             const container = document.getElementById('service-list');
+            
             if (data.length === 0) {
                 container.innerHTML = `<div class="text-center text-xs text-gray-400 py-6 border border-white/5 bg-brand-card rounded-2xl"><i class="fas fa-search-minus mb-2 text-lg"></i><br>Layanan tidak ditemukan.</div>`;
                 return;
             }
+
             container.innerHTML = data.map(s => `
                 <div class="bg-brand-card p-4 rounded-2xl border border-white/5 flex justify-between items-center hover:border-brand-accent/30 transition-all">
                     <div class="w-[60%]">
@@ -701,11 +781,17 @@ Maintenance server akan 06 Mei Januari (Rabu) mulai pukul 10:00-11:00. Waktu mai
             `).join('');
         }
 
+        // Listener Pencarian Layanan
         document.getElementById('serviceSearch').addEventListener('input', (e) => {
             const val = e.target.value.toLowerCase();
-            renderServices(services.filter(s => s.name.toLowerCase().includes(val) || s.desc.toLowerCase().includes(val)));
+            const filtered = services.filter(s => 
+                s.name.toLowerCase().includes(val) || 
+                s.desc.toLowerCase().includes(val)
+            );
+            renderServices(filtered);
         });
 
+        // Fungsi Checkout
         function checkout(name, price) {
             const hargaRupiah = price.toLocaleString('id-ID');
             document.getElementById('pay-total').innerText = `Rp ${hargaRupiah}`;
@@ -751,6 +837,7 @@ Maintenance server akan 06 Mei Januari (Rabu) mulai pukul 10:00-11:00. Waktu mai
             }, 2000);
         }
 
+        // Fungsi Render Ripper
         function renderRippers(data = rippers) {
             const container = document.getElementById('ripper-container');
             document.getElementById('ripper-count').innerText = `${data.length} Data`;
@@ -778,17 +865,32 @@ Maintenance server akan 06 Mei Januari (Rabu) mulai pukul 10:00-11:00. Waktu mai
 
         document.getElementById('ripperSearch').addEventListener('input', (e) => {
             const val = e.target.value.toLowerCase();
-            renderRippers(rippers.filter(r => 
+            const filtered = rippers.filter(r => 
                 r.nama.toLowerCase().includes(val) || 
                 r.id.toLowerCase().includes(val) || 
                 r.rekening.toLowerCase().includes(val)
-            ));
+            );
+            renderRippers(filtered);
         });
 
+        // Initialize Render Panggilan saat Web Dimuat Pertama Kali
+        window.onload = () => {
+            const hash = window.location.hash.substring(1) || 'home';
+            switchTab(hash, null, false);
+            
+            // Render 3 Database utama
+            renderFaqs();
+            renderServices();
+            renderRippers();
+        };
+
+        // --- 6. Fungsi Update Titik Geser Carousel Modal Event ---
         function updateCarouselDots() {
             const carousel = document.getElementById('image-carousel');
             const dots = document.querySelectorAll('.dot-indicator');
+            
             if (!carousel || dots.length === 0) return;
+            
             const maxScroll = carousel.scrollWidth - carousel.clientWidth;
             if (maxScroll <= 0) return;
             
@@ -803,15 +905,149 @@ Maintenance server akan 06 Mei Januari (Rabu) mulai pukul 10:00-11:00. Waktu mai
                 }
             });
         }
+        
+        // --- 7. FUNGSI REFRESH & PULL-TO-REFRESH ---
+        
+        // Fungsi Refresh Instan (0 detik)
+        function refreshPage() {
+            window.location.reload();
+        }
 
-        // INIT LOAD LOKAL
-        window.addEventListener('load', () => {
-            const hash = window.location.hash.substring(1) || 'home';
-            switchTab(hash, null, false);
-            renderFaqs();
-            renderServices();
-            renderRippers();
+        // Logika Pull-to-Refresh (Tarik ke Bawah untuk HP)
+        let ptrStartY = 0;
+        let isPulling = false;
+        const ptrIndicator = document.getElementById('ptr-indicator');
+
+        document.addEventListener('touchstart', (e) => {
+            // Hanya aktif jika layar berada di posisi paling atas (scroll 0)
+            if (window.scrollY === 0) {
+                ptrStartY = e.touches[0].clientY;
+                isPulling = true;
+            }
+        }, { passive: true });
+
+        document.addEventListener('touchmove', (e) => {
+            if (!isPulling) return;
+            const currentY = e.touches[0].clientY;
+            const pullDistance = currentY - ptrStartY;
+
+            // Jika user menarik layar ke bawah lebih dari 70px
+            if (pullDistance > 70) {
+                ptrIndicator.classList.remove('opacity-0', '-translate-y-4');
+                ptrIndicator.classList.add('opacity-100', 'translate-y-4');
+            }
+        }, { passive: true });
+
+        document.addEventListener('touchend', (e) => {
+            if (!isPulling) return;
+            isPulling = false;
+            
+            // Jika indikator "Memperbarui..." sudah muncul, lakukan reload instan
+            if (ptrIndicator.classList.contains('opacity-100')) {
+                refreshPage();
+            } else {
+                // Jika tarikan kurang jauh, sembunyikan kembali indikatornya
+                ptrIndicator.classList.add('opacity-0', '-translate-y-4');
+                ptrIndicator.classList.remove('opacity-100', 'translate-y-4');
+            }
         });
+    </script>
+    
+    <script>
+        // --- KONEKSI SUPABASE ---
+        const supabaseUrl = 'https://zhdeonjaezsessnjkadf.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpoZGVvbmphZXpzZXNzbmprYWRmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc5NzEyODcsImV4cCI6MjA5MzU0NzI4N30.PHXBhPPJrUvJWg1h0holPdb4_ooTewnK0o6c-2PcNtE';
+        
+        let supabase;
+
+        window.addEventListener('load', () => {
+            if (window.supabase) {
+                supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+                muatPesanLama(); 
+            } else {
+                console.error("Library Supabase belum siap, periksa koneksi internet Anda.");
+            }
+        });
+
+        async function muatPesanLama() {
+            try {
+                const { data, error } = await supabase
+                    .from('global_chat')
+                    .select('*')
+                    .order('created_at', { ascending: true }) 
+                    .limit(50); 
+
+                if (error) {
+                    console.error("Gagal muat history chat:", error.message);
+                    return;
+                }
+
+                if (data && data.length > 0) {
+                    const kotakChat = document.getElementById('chat-messages');
+                    kotakChat.innerHTML = ''; 
+                    
+                    data.forEach(msg => {
+                        tampilkanPesanKeLayar(msg.pengirim || 'Anonim', msg.pesan);
+                    });
+                }
+            } catch (err) {
+                console.error("Error loading chat:", err);
+            }
+        }
+
+        async function kirimPesan() {
+            const inputElement = document.getElementById('chat-input');
+            const isiPesan = inputElement.value;
+
+            if (!isiPesan || isiPesan.trim() === "") return; 
+
+            inputElement.disabled = true;
+            inputElement.value = 'Mengirim...';
+
+            try {
+                const { data, error } = await supabase
+                    .from('global_chat') 
+                    .insert([
+                        { pengirim: 'Anonim', pesan: isiPesan }
+                    ]);
+                    
+                if (error) {
+                    alert('Gagal mengirim pesan ke server: ' + error.message);
+                    inputElement.value = isiPesan; 
+                } else {
+                    inputElement.value = ''; 
+                    tampilkanPesanKeLayar('Anonim', isiPesan);
+                }
+            } catch (err) {
+                alert('SYSTEM ERROR: Periksa jaringan Anda.');
+                inputElement.value = isiPesan;
+            } finally {
+                inputElement.disabled = false;
+                inputElement.focus();
+            }
+        }
+
+        function tampilkanPesanKeLayar(nama, teks) {
+            const kotakChat = document.getElementById('chat-messages');
+            
+            if(kotakChat.innerHTML.includes('Menghubungkan ke server obrolan...')){
+                kotakChat.innerHTML = '';
+            }
+
+            const elemenBaru = document.createElement('div');
+            elemenBaru.className = 'flex flex-col items-start mt-2';
+            
+            elemenBaru.innerHTML = `
+                <span class="text-[9px] text-gray-500 ml-1 mb-0.5">${nama}</span>
+                <div class="bg-brand-accent/20 text-white text-xs py-2 px-3 rounded-2xl rounded-tr-sm max-w-[85%] border border-brand-accent/30 shadow-sm">
+                    ${teks}
+                </div>
+            `;
+            
+            kotakChat.appendChild(elemenBaru);
+            
+            kotakChat.scrollTop = kotakChat.scrollHeight;
+        }
     </script>
 </body>
 </html>
