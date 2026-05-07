@@ -32,20 +32,19 @@
     <style>
         body { background-color: #0F0920; color: #E2E8F0; -webkit-tap-highlight-color: transparent; }
         
-        /* Sembunyikan semua secara default */
-.tab-content { display: none; }
+        /* Paksa sembunyikan semua tab yang tidak memiliki class active */
+.tab-content:not(.active) { 
+    display: none !important; 
+}
 
-/* Tampilkan hanya yang aktif */
+/* Hanya jalankan animasi saat tab aktif (layout menyesuaikan class bawaan masing-masing) */
 .tab-content.active { 
-    display: flex !important; 
-    flex-direction: column;
     animation: slideUpFade 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; 
 }
         @keyframes slideUpFade {
             from { opacity: 0; transform: translateY(20px) scale(0.98); }
             to { opacity: 1; transform: translateY(0) scale(1); }
         }
-        .tab-content.active { animation: slideUpFade 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
         
         @keyframes popBounce {
             0% { transform: scale(1) translateY(0); }
