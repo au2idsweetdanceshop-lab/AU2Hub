@@ -200,41 +200,12 @@
                 </h3>
             </div>
 
-            <div id="gate-postingan" class="bg-brand-card rounded-2xl p-6 border border-white/5 mb-5 shadow-lg text-center relative overflow-hidden">
-                <div class="absolute inset-0 bg-[#5865F2] blur-3xl opacity-10"></div>
-                <i class="fab fa-discord text-4xl text-[#5865F2] mb-3 relative z-10"></i>
-                <h4 class="text-white font-bold text-sm mb-2 relative z-10">Login untuk Memposting</h4>
-                <p class="text-[10px] text-gray-400 mb-4 relative z-10">Gunakan akun Discord Anda untuk berinteraksi di Feed dan Grup Komunitas AU2Hub.</p>
-                <button onclick="loginDiscord()" class="bg-[#5865F2] hover:bg-[#4752C4] text-white px-6 py-2.5 rounded-xl text-xs font-bold shadow-[0_0_15px_rgba(88,101,242,0.4)] active:scale-95 transition-all relative z-10">
-                    <i class="fas fa-sign-in-alt mr-2"></i> Hubungkan Discord
-                </button>
-            </div>
-
-            <div id="form-postingan" class="hidden bg-brand-card rounded-2xl p-4 border border-white/5 mb-5 shadow-lg">
-                <div class="flex items-center gap-3 mb-3">
-                    <img id="post-user-avatar" src="" alt="Avatar" class="w-8 h-8 rounded-full border border-white/10 bg-black/50">
-                    <span id="post-user-name" class="text-xs font-bold text-white">User</span>
+            <div id="feed-container" class="space-y-4 min-h-[300px]">
+                
+                <div class="text-center py-10 text-gray-500 text-xs italic">
+                    (Letakkan Kode Embed Feed / Komentar di Sini Nanti)
                 </div>
-                <textarea id="postInput" class="w-full bg-black/20 border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-[#25D366] resize-none mb-3" rows="3" placeholder="Apa yang sedang terjadi di AU2 hari ini?"></textarea>
-                <div class="flex justify-between items-center">
-                    <button class="text-gray-400 hover:text-[#25D366] active:scale-90 transition-transform"><i class="fas fa-image text-lg"></i></button>
-                    <button onclick="kirimPostingan()" class="bg-[#25D366] text-white px-5 py-2 rounded-xl text-xs font-bold shadow-[0_0_15px_rgba(37,211,102,0.3)] active:scale-95 transition-transform">
-                        <i class="fas fa-paper-plane mr-2"></i> Posting
-                    </button>
-                </div>
-            </div>
-
-            <div id="feed-container" class="space-y-4 pb-8 min-h-[300px]">
-                <div class="bg-brand-card rounded-2xl p-4 border border-white/5">
-                    <div class="flex items-center mb-3">
-                        <div class="w-10 h-10 bg-brand-accent/20 rounded-full flex items-center justify-center font-bold text-brand-accent mr-3">ADM</div>
-                        <div>
-                            <div class="text-sm font-bold text-white">Admin AU2Hub</div>
-                            <div class="text-[10px] text-gray-500">10 menit yang lalu</div>
-                        </div>
-                    </div>
-                    <p class="text-sm text-gray-300 leading-relaxed mb-4">Selamat datang di Feed Komunitas! Silakan login menggunakan Discord untuk membalas atau membuat postingan baru.</p>
-                </div>
+                
             </div>
         </section>
 
@@ -427,40 +398,21 @@ Maintenance server akan 06 Mei Januari (Rabu) mulai pukul 10:00-11:00. Waktu mai
     </button>
 
     <div id="floating-widget" class="hidden fixed bottom-[160px] right-5 z-50 w-[85vw] max-w-[340px] h-[480px] bg-brand-card border border-brand-info/40 rounded-3xl shadow-[0_10px_40px_rgba(0,0,0,0.8)] flex-col overflow-hidden modal-anim backdrop-blur-md">
-        
         <div class="bg-brand-dark px-4 py-3 border-b border-white/10 flex justify-between items-center">
             <h3 class="font-bold text-white text-sm flex items-center gap-2">
-                <i class="fab fa-discord text-brand-info"></i> Chat Area
+                <i class="fas fa-comment-dots text-brand-info"></i> Global Chat
             </h3>
             <button onclick="toggleWidget()" class="text-gray-400 hover:text-red-400 w-6 h-6 rounded-full flex items-center justify-center transition-colors active:scale-90">
                 <i class="fas fa-times text-sm"></i>
             </button>
         </div>
         
-        <div class="flex bg-black/40 border-b border-white/5">
-            <button onclick="switchChatTab('private')" id="tab-private" class="flex-1 py-3 text-[11px] font-bold text-brand-info border-b-2 border-brand-info transition-colors">Chat Pribadi</button>
-            <button onclick="switchChatTab('group')" id="tab-group" class="flex-1 py-3 text-[11px] font-bold text-gray-500 hover:text-white transition-colors">Grup Channel</button>
-        </div>
-
-        <div class="flex-1 p-4 overflow-y-auto chat-scroll flex flex-col gap-3 bg-[#0F0920]" id="chatArea">
-            <div class="text-center text-[10px] text-gray-500 my-2">-- Terhubung ke Server --</div>
-            <div class="flex justify-start">
-                <div class="bg-white/10 text-white text-xs p-2.5 rounded-xl rounded-tl-sm max-w-[80%] border border-white/5">Halo! Ada yang bisa kami bantu hari ini?</div>
+        <div class="flex-1 relative w-full h-full bg-[#0F0920] overflow-hidden">
+            
+            <div class="flex items-center justify-center h-full text-center text-xs text-gray-500 italic px-4">
+                (Letakkan Kode Embed Chatango / Cbox / Minnit di Sini Nanti)
             </div>
-        </div>
 
-        <div id="gate-chat" class="p-4 bg-brand-dark border-t border-white/5 flex flex-col items-center justify-center h-24">
-            <button onclick="loginDiscord()" class="w-full bg-[#5865F2] hover:bg-[#4752C4] text-white px-4 py-2 rounded-xl text-xs font-bold shadow-[0_0_15px_rgba(88,101,242,0.3)] active:scale-95 transition-all">
-                <i class="fab fa-discord mr-2"></i> Login untuk Membalas
-            </button>
-        </div>
-
-        <div id="form-chat" class="hidden p-3 bg-brand-dark border-t border-white/5 gap-2 items-center">
-            <button class="text-gray-400 hover:text-brand-info"><i class="fas fa-plus-circle"></i></button>
-            <input type="text" id="chatInput" placeholder="Ketik pesan..." onkeypress="if(event.key === 'Enter') kirimPesanChat()" class="flex-1 bg-black/50 border border-white/10 rounded-full px-4 py-2 text-xs text-white focus:outline-none focus:border-brand-info transition-colors">
-            <button onclick="kirimPesanChat()" class="bg-brand-info text-brand-dark w-9 h-9 rounded-full flex items-center justify-center active:scale-90 transition-transform">
-                <i class="fas fa-paper-plane text-xs"></i>
-            </button>
         </div>
     </div>
 
@@ -492,75 +444,6 @@ Maintenance server akan 06 Mei Januari (Rabu) mulai pukul 10:00-11:00. Waktu mai
     </nav>
 
     <script>
-        // =========================================================
-        // PENGATURAN DISCORD LOGIN
-        // =========================================================
-        const DISCORD_LOGIN_URL = "https://discord.com/oauth2/authorize?client_id=1501538892468326544&response_type=token&redirect_uri=https%3A%2F%2Fau2idsweetdance.com&scope=identify"; 
-        
-        // Data User Sementara
-        let currentUser = null;
-
-        // Fungsi Tombol Login
-        function loginDiscord() {
-            if(DISCORD_LOGIN_URL === "ISI_DENGAN_LINK_DARI_DISCORD_DEVELOPER") {
-                alert("Sistem Login belum disetel oleh Admin. Harap masukkan Link OAuth2 Discord di kodingan.");
-                return;
-            }
-            window.location.href = DISCORD_LOGIN_URL;
-        }
-
-        // Fungsi Mengecek Status Login (Saat website baru dimuat)
-        async function periksaLogin() {
-            const urlHash = window.location.hash;
-            
-            // Tangkap token jika baru kembali dari halaman login Discord
-            if (urlHash.includes("access_token")) {
-                const fragment = new URLSearchParams(urlHash.slice(1));
-                const accessToken = fragment.get("access_token");
-                if (accessToken) {
-                    localStorage.setItem("discord_token", accessToken);
-                    // Bersihkan URL agar rapi
-                    window.history.replaceState(null, null, window.location.pathname);
-                    // Otomatis buka tab Sosial setelah berhasil login
-                    switchTab('sosial', null, false);
-                }
-            }
-
-            // Cek apakah punya token tersimpan
-            const token = localStorage.getItem("discord_token");
-            if (token) {
-                try {
-                    // Ambil Profil dari Discord API
-                    const response = await fetch('https://discord.com/api/users/@me', {
-                        headers: { authorization: `Bearer ${token}` }
-                    });
-                    
-                    if (response.ok) {
-                        const data = await response.json();
-                        currentUser = data;
-                        
-                        // Sembunyikan Gerbang Login, Munculkan Kolom Input
-                        document.getElementById('gate-postingan').classList.add('hidden');
-                        document.getElementById('form-postingan').classList.remove('hidden');
-                        
-                        document.getElementById('gate-chat').classList.add('hidden');
-                        document.getElementById('form-chat').classList.remove('hidden');
-                        document.getElementById('form-chat').classList.add('flex');
-
-                        // Pasang Foto dan Nama Asli Discord User
-                        const avatarUrl = data.avatar ? `https://cdn.discordapp.com/avatars/${data.id}/${data.avatar}.png` : 'https://cdn.discordapp.com/embed/avatars/0.png';
-                        document.getElementById('post-user-name').innerText = data.global_name || data.username;
-                        document.getElementById('post-user-avatar').src = avatarUrl;
-                    } else {
-                        // Jika Token sudah kadaluarsa
-                        localStorage.removeItem("discord_token");
-                    }
-                } catch (e) {
-                    console.log("Gagal memuat profil Discord", e);
-                }
-            }
-        }
-
         // --- 1. DATA LOKAL KAMU (TIDAK ADA YANG DIHAPUS) ---
         const services = [
             { id: 1, name: 'Joki Ballroom', price: 7500, label: '', desc: 'Estimasi pengerjaan 2 jam.' },
@@ -921,84 +804,10 @@ Maintenance server akan 06 Mei Januari (Rabu) mulai pukul 10:00-11:00. Waktu mai
             });
         }
 
-        // --- 4. FUNGSI POSTING & CHAT DISCORD (SUDAH TERSAMBUNG) ---
-        async function kirimPostingan() {
-            const input = document.getElementById('postInput');
-            if(!input.value.trim() || !currentUser) return;
-            
-            const avatarUrl = currentUser.avatar ? `https://cdn.discordapp.com/avatars/${currentUser.id}/${currentUser.avatar}.png` : 'https://cdn.discordapp.com/embed/avatars/0.png';
-            const nama = currentUser.global_name || currentUser.username;
-            const pesanMurni = input.value;
-
-            // 1. Munculkan di layar web dulu
-            const feedContainer = document.getElementById('feed-container');
-            const postBaru = `
-                <div class="bg-brand-card rounded-2xl p-4 border border-white/5 modal-anim">
-                    <div class="flex items-center mb-3">
-                        <img src="${avatarUrl}" class="w-10 h-10 rounded-full border border-white/10 mr-3">
-                        <div>
-                            <div class="text-sm font-bold text-white">${nama}</div>
-                            <div class="text-[10px] text-brand-info">Baru saja</div>
-                        </div>
-                    </div>
-                    <p class="text-sm text-gray-300 leading-relaxed mb-4">${pesanMurni}</p>
-                </div>
-            `;
-            feedContainer.insertAdjacentHTML('afterbegin', postBaru);
-            input.value = '';
-
-            // 2. Lempar data ke Discord via Vercel
-            try {
-                await fetch('/api/chat', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ message: pesanMurni, username: `FEED: ${nama}` })
-                });
-            } catch (e) {
-                console.log("Gagal mengirim postingan ke server");
-            }
-        }
-
-        async function kirimPesanChat() {
-            const input = document.getElementById('chatInput');
-            const area = document.getElementById('chatArea');
-            if(!input.value.trim() || !currentUser) return;
-            
-            const pesanMurni = input.value;
-            const nama = currentUser.global_name || currentUser.username;
-
-            // 1. Munculkan di widget chat
-            area.innerHTML += `
-                <div class="flex justify-end mt-2 modal-anim">
-                    <div class="bg-brand-info/20 text-brand-info text-xs p-2.5 rounded-xl rounded-tr-sm max-w-[80%] border border-brand-info/20">${pesanMurni}</div>
-                </div>
-            `;
-            input.value = '';
-            area.scrollTop = area.scrollHeight;
-
-            // 2. Lempar chat ke Discord via Vercel
-            try {
-                await fetch('/api/chat', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ message: pesanMurni, username: `CHAT: ${nama}` })
-                });
-            } catch (e) {
-                console.log("Gagal mengirim chat ke server");
-            }
-        }
-
         // INIT LOAD LOKAL
         window.addEventListener('load', () => {
-            periksaLogin(); // MENCEK LOGIN SAAT WEB DIBUKA
-            
-            const hash = window.location.hash.substring(1);
-            if(hash && !hash.includes('access_token')) { 
-                switchTab(hash, null, false); 
-            } else { 
-                switchTab('home', null, false); 
-            }
-            
+            const hash = window.location.hash.substring(1) || 'home';
+            switchTab(hash, null, false);
             renderFaqs();
             renderServices();
             renderRippers();
