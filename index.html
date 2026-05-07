@@ -34,7 +34,7 @@
         
         .tab-content:not(.active) { display: none !important; }
         
-        /* Animasi dipertahankan, dipercepat dengan GPU */
+        /* Animasi Pindah Tab */
         .tab-content.active { 
             animation: slideUpFade 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; 
             will-change: transform, opacity;
@@ -64,6 +64,16 @@
         }
         .modal-anim { 
             animation: modalIn 0.3s ease-out forwards; 
+            will-change: transform, opacity;
+        }
+
+        /* 🌟 CSS BARU: Animasi Super Smooth untuk data yang disuntik 🌟 */
+        @keyframes smoothReveal {
+            0% { opacity: 0; transform: translateY(15px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+        .smooth-reveal {
+            animation: smoothReveal 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
             will-change: transform, opacity;
         }
         
@@ -722,7 +732,7 @@ Maintenance server akan 06 Mei Januari (Rabu) mulai pukul 10:00-11:00. Waktu mai
             if (!isSearch && !isRipperExpanded && data.length > 5) {
                 container.innerHTML += `
                     <div id="wadah-tombol-semua" class="p-5 text-center bg-black/20 mt-1 border-t border-white/5">
-                        <button onclick="tampilkanSemuaRipper()" class="bg-brand-accent/20 border border-brand-accent/40 text-brand-accent text-xs font-bold py-2.5 px-6 rounded-full active:scale-95 transition-transform">
+                        <button onclick="tampilkanSemuaRipper(this)" class="bg-brand-accent/20 border border-brand-accent/40 text-brand-accent text-xs font-bold py-2.5 px-6 rounded-full active:scale-95 transition-all w-full flex items-center justify-center">
                             <i class="fas fa-list-ul mr-2"></i> Tampilkan Semua Laporan
                         </button>
                     </div>
@@ -730,37 +740,45 @@ Maintenance server akan 06 Mei Januari (Rabu) mulai pukul 10:00-11:00. Waktu mai
             }
         }
 
-        // FUNGSI TAMPILKAN SEMUA (TRIK SUNTIK 0 DETIK ANTI-LAG)
-        function tampilkanSemuaRipper() {
+        // 🌟 FUNGSI TAMPILKAN SEMUA DENGAN EFEK MICRO-INTERACTION (SUPER MODERN) 🌟
+        function tampilkanSemuaRipper(tombol) {
             isRipperExpanded = true;
             
-            // 1. Hapus tombolnya dalam 0 detik
-            const wadahTombol = document.getElementById('wadah-tombol-semua');
-            if (wadahTombol) wadahTombol.remove();
+            // 1. Berikan efek loading kecil di tombol selama 0.15 detik (menipu mata agar terasa ada proses)
+            tombol.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Membuka Data...';
+            tombol.classList.add('opacity-70', 'scale-95');
 
-            // 2. Ambil sisa datanya (dari urutan ke-6 sampai habis)
-            const sisaData = dataRipperGlobal.slice(5);
+            // 2. Suntikkan datanya setelah jeda sepersekian detik
+            setTimeout(() => {
+                const wadahTombol = document.getElementById('wadah-tombol-semua');
+                if (wadahTombol) wadahTombol.remove();
 
-            // 3. Rakit kotak HTML untuk sisanya
-            let htmlSisa = sisaData.map(r => {
-                const nama = r["Nama / Keterangan"] || r.nama || r.Nama || "Tanpa Nama";
-                const idGame = r["ID"] || r.id || "-";
-                const rekening = r["Rekening / Kontak (WA/Dana)"] || r.rekening || r.Rekening || "-";
+                const sisaData = dataRipperGlobal.slice(5);
 
-                return `
-                <div class="p-4 border-b border-white/5 last:border-0 hover:bg-white/5 transition-colors">
-                    <div class="flex justify-between items-start mb-1">
-                        <div class="font-bold text-xs text-white">${nama}</div>
-                        <div class="text-[9px] text-red-500 font-bold bg-red-500/10 px-2 py-0.5 rounded border border-red-500/20 whitespace-nowrap ml-2"><i class="fas fa-ban mr-1"></i> RIPPER</div>
+                // Rakit kotak HTML untuk sisanya DENGAN CLASS 'smooth-reveal'
+                let htmlSisa = sisaData.map((r, index) => {
+                    const nama = r["Nama / Keterangan"] || r.nama || r.Nama || "Tanpa Nama";
+                    const idGame = r["ID"] || r.id || "-";
+                    const rekening = r["Rekening / Kontak (WA/Dana)"] || r.rekening || r.Rekening || "-";
+                    
+                    // Efek delay bertingkat (hanya 5 data pertama yang didelay, sisanya barengan biar HP gak ngehang)
+                    const delayAnimasi = index < 5 ? (index * 0.05) : 0; 
+
+                    return `
+                    <div class="p-4 border-b border-white/5 last:border-0 hover:bg-white/5 transition-colors smooth-reveal" style="animation-delay: ${delayAnimasi}s; opacity: 0;">
+                        <div class="flex justify-between items-start mb-1">
+                            <div class="font-bold text-xs text-white">${nama}</div>
+                            <div class="text-[9px] text-red-500 font-bold bg-red-500/10 px-2 py-0.5 rounded border border-red-500/20 whitespace-nowrap ml-2"><i class="fas fa-ban mr-1"></i> RIPPER</div>
+                        </div>
+                        <div class="text-[10px] text-brand-info font-mono mb-1">ID: ${idGame}</div>
+                        <div class="text-[10px] text-gray-400"><i class="fas fa-credit-card mr-1"></i> ${rekening}</div>
                     </div>
-                    <div class="text-[10px] text-brand-info font-mono mb-1">ID: ${idGame}</div>
-                    <div class="text-[10px] text-gray-400"><i class="fas fa-credit-card mr-1"></i> ${rekening}</div>
-                </div>
-                `;
-            }).join('');
+                    `;
+                }).join('');
 
-            // 4. SUNTIKKAN langsung ke bawah tanpa menghapus 5 data awal!
-            document.getElementById('ripper-container').insertAdjacentHTML('beforeend', htmlSisa);
+                // SUNTIKKAN langsung ke bawah tanpa menghapus 5 data awal!
+                document.getElementById('ripper-container').insertAdjacentHTML('beforeend', htmlSisa);
+            }, 150); // Jeda 150 milidetik (0.15 detik)
         }
 
         // Fungsi Pencarian
