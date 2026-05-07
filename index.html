@@ -32,15 +32,8 @@
     <style>
         body { background-color: #0F0920; color: #E2E8F0; -webkit-tap-highlight-color: transparent; }
         
-        /* Paksa sembunyikan semua tab yang tidak memiliki class active */
-        .tab-content:not(.active) { 
-            display: none !important; 
-        }
-
-        /* Hanya jalankan animasi saat tab aktif (layout menyesuaikan class bawaan masing-masing) */
-        .tab-content.active { 
-            animation: slideUpFade 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; 
-        }
+        .tab-content:not(.active) { display: none !important; }
+        .tab-content.active { animation: slideUpFade 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
 
         @keyframes slideUpFade {
             from { opacity: 0; transform: translateY(20px) scale(0.98); }
@@ -72,10 +65,8 @@
         
         .ripper-list::-webkit-scrollbar { width: 4px; }
         .ripper-list::-webkit-scrollbar-thumb { background: #FF007A; border-radius: 10px; }
-        
         .chat-scroll::-webkit-scrollbar { width: 3px; }
         .chat-scroll::-webkit-scrollbar-thumb { background: #8A2BE2; border-radius: 10px; }
-
         .hide-scroll::-webkit-scrollbar { display: none; }
         .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
@@ -208,13 +199,10 @@
                     <div class="w-1.5 h-6 bg-[#25D366] rounded-full"></div> Feed Komunitas
                 </h3>
             </div>
-
             <div id="feed-container" class="space-y-4 min-h-[300px]">
-                
                 <div class="text-center py-10 text-gray-500 text-xs italic">
                     (Letakkan Kode Embed Feed / Komentar di Sini Nanti)
                 </div>
-                
             </div>
         </section>
 
@@ -222,7 +210,6 @@
             <h2 class="text-xl font-extrabold text-white mb-5 flex items-center gap-2">
                 <span class="w-1.5 h-6 bg-brand-purple rounded-full"></span> Rekber & Kontak
             </h2>
-            
             <div class="bg-brand-card rounded-2xl p-5 border border-white/5 mb-6 relative overflow-hidden">
                 <div class="absolute -right-4 -top-4 text-6xl text-brand-info opacity-5"><i class="fas fa-shield-alt"></i></div>
                 <h3 class="font-bold text-brand-info text-sm mb-3 relative z-10"><i class="fas fa-shield-alt mr-2"></i> Prosedur Rekber NIKKY</h3>
@@ -417,11 +404,9 @@ Maintenance server akan 06 Mei Januari (Rabu) mulai pukul 10:00-11:00. Waktu mai
         </div>
         
         <div class="flex-1 relative w-full h-full bg-[#0F0920] overflow-hidden">
-            
             <div class="flex items-center justify-center h-full text-center text-xs text-gray-500 italic px-4">
                 (Letakkan Kode Embed Chatango / Cbox / Minnit di Sini Nanti)
             </div>
-
         </div>
     </div>
 
@@ -453,7 +438,7 @@ Maintenance server akan 06 Mei Januari (Rabu) mulai pukul 10:00-11:00. Waktu mai
     </nav>
 
     <script>
-        // --- 1. DATA LOKAL KAMU (TIDAK ADA YANG DIHAPUS) ---
+        // --- 1. DATA LAYANAN DAN FAQ ---
         const services = [
             { id: 1, name: 'Joki Ballroom', price: 7500, label: '', desc: 'Estimasi pengerjaan 2 jam.' },
             { id: 2, name: 'Paket Joki AFK (Island/Japan/Hawai)', price: 65000, label: '', desc: 'Sesuai spek dan pesanan.' },
@@ -466,122 +451,20 @@ Maintenance server akan 06 Mei Januari (Rabu) mulai pukul 10:00-11:00. Waktu mai
             { t: "Apakah harga Pricelist sudah termasuk biaya admin?", j: "Ya, semua harga joki yang tertera sudah Include (termasuk) biaya Rekber NIKKY. Tidak ada biaya tambahan yang disembunyikan." }
         ];
 
-        const rippers = [
-            { nama: "Ripper Utama (Hack/HB)", id: "2861191, 2626604, 1291334", rekening: "WA 083820446241 / 089678354747" },
-            { nama: "Katte12 (Hack)", id: "1319287, 1357993", rekening: "WA 085931183392 / 087840837199" },
-            { nama: "Anonim (HB/Ripper)", id: "2144265", rekening: "WA 083146588001" },
-            { nama: "Anonim (Akun Hack)", id: "1307709", rekening: "Unknown" },
-            { nama: "Anonim (Akun Curian)", id: "2000758", rekening: "Unknown" },
-            { nama: "Anonim (HB)", id: "2019536", rekening: "Unknown" },
-            { nama: "lopolpo53", id: "3114585", rekening: "Unknown" },
-            { nama: "Anonim (Ripper)", id: "1132394", rekening: "WA 088294768190" },
-            { nama: "Uniquer (HB)", id: "2546933", rekening: "Unknown" },
-            { nama: "Sobrina (Akun Curian)", id: "1278939", rekening: "Unknown" },
-            { nama: "Pokilop (Penipuan/HB)", id: "1463850", rekening: "Unknown" },
-            { nama: "viviane (HB)", id: "2048785", rekening: "Unknown" },
-            { nama: "Sereen (HB)", id: "2786015", rekening: "Unknown" },
-            { nama: "Anonim (HB)", id: "1471934", rekening: "Unknown" },
-            { nama: "Cookiez (HB)", id: "1477588", rekening: "WA 081327036639 / 082135666994" },
-            { nama: "ozy2603 (Akun Curian)", id: "1294668", rekening: "WA 083844683472 / 085853622778" },
-            { nama: "clouderyr3 (HB)", id: "1196884", rekening: "Unknown" },
-            { nama: "epione (Unbind)", id: "656776", rekening: "Unknown" },
-            { nama: "Ripper / Penipu TF", id: "Unknown", rekening: "WA 081259709392" },
-            { nama: "Sindikat Ripper WA 1", id: "Unknown", rekening: "WA 085171728129 / 081952900532" },
-            { nama: "Sindikat Ripper WA 2", id: "Unknown", rekening: "WA 0895706284100 / 082181695221" },
-            { nama: "Sindikat Ripper WA 3", id: "Unknown", rekening: "WA 081327036639 / 085810119146" },
-            { nama: "Sindikat Ripper WA 4", id: "Unknown", rekening: "WA 085882334540 / 081377113400" },
-            { nama: "Sindikat Ripper WA 5", id: "Unknown", rekening: "WA 089603930327 / 085156290157" },
-            { nama: "Sindikat Ripper WA 6", id: "Unknown", rekening: "WA 089630498701 / 085616968161" },
-            { nama: "Sindikat Ripper WA 7", id: "Unknown", rekening: "WA 085716859753 / 082285329082" },
-            { nama: "Sindikat Ripper WA 8", id: "Unknown", rekening: "WA 087804447061" },
-            { nama: "Penipu Pict", id: "Unknown", rekening: "WA 083116636295 / 083152130750" },
-            { nama: "Bocil Pengrusuh / Ripper", id: "Unknown", rekening: "WA 082181013356 / 082180232340" },
-            { nama: "dilbewild12", id: "Unknown", rekening: "Unknown" },
-            { nama: "Ripper Jual Beli", id: "Unknown", rekening: "WA 081231230746 / 083834016997" },
-            { nama: "Ripper Jual Beli", id: "Unknown", rekening: "WA 083166563649" },
-            { nama: "Wiyan123", id: "3048517", rekening: "Unknown" },
-            { nama: "Krypton 123", id: "Unknown", rekening: "Unknown" },
-            { nama: "PutuAyu1", id: "Unknown", rekening: "Unknown" },
-            { nama: "Anonim (Ripper)", id: "1816152", rekening: "Unknown" },
-            { nama: "Kyra1112", id: "Unknown", rekening: "WA 082140079953" },
-            { nama: "aven1945", id: "1725379", rekening: "WA 085710229103" },
-            { nama: "Oasis200519", id: "Unknown", rekening: "Unknown" },
-            { nama: "DewHad2309", id: "Unknown", rekening: "Unknown" },
-            { nama: "Donshuixote", id: "Unknown", rekening: "Unknown" },
-            { nama: "Anonim (Ripper)", id: "1988563", rekening: "Unknown" },
-            { nama: "IkXhjDlaw", id: "Unknown", rekening: "Unknown" },
-            { nama: "Clarasaragih", id: "Unknown", rekening: "WA 0895616186314" },
-            { nama: "celsyjuliaa", id: "Unknown", rekening: "WA 085706233359 / 0887437083578" },
-            { nama: "HiloAu2", id: "Unknown", rekening: "WA 089520907361 / 0895617044618 / 0895600892600" },
-            { nama: "Kang HB Akun", id: "Unknown", rekening: "WA 081933002701 / Dana 085141121224" },
-            { nama: "Van_ya23", id: "1735377", rekening: "Unknown" },
-            { nama: "Helloween23 / olaolo0", id: "Unknown", rekening: "Unknown" },
-            { nama: "Ripper Sindikat", id: "Unknown", rekening: "WA 082328250792 / 082283937062 / 081377113400" },
-            { nama: "Effendy(NitaAg)", id: "Unknown", rekening: "WA 085643107733 / 082252531393" },
-            { nama: "Theresia", id: "Unknown", rekening: "WA 087762475056" },
-            { nama: "Nita", id: "3309580", rekening: "WA 085651088208" },
-            { nama: "Anonim (Ripper)", id: "Unknown", rekening: "WA 082378298811 / 083141440806" },
-            { nama: "Keyyyym (Nyolong Akun)", id: "2024831", rekening: "Unknown" },
-            { nama: "Anonim (Ripper)", id: "Unknown", rekening: "WA 085954878498 / 085643107733" },
-            { nama: "Anonim (Ripper)", id: "2175716, 3063171", rekening: "Unknown" },
-            { nama: "Liyya123", id: "Unknown", rekening: "Unknown" },
-            { nama: "WhyNot", id: "Unknown", rekening: "Unknown" },
-            { nama: "Anonim (Ripper)", id: "2105931", rekening: "Unknown" },
-            { nama: "caroline29", id: "Unknown", rekening: "Unknown" },
-            { nama: "Chika258", id: "1813163", rekening: "Unknown" },
-            { nama: "Anonim (Ripper)", id: "Unknown", rekening: "WA 082376384579" },
-            { nama: "Dword234", id: "Unknown", rekening: "Unknown" },
-            { nama: "moemoekyun", id: "Unknown", rekening: "Unknown" },
-            { nama: "ukhti_NA", id: "1713556", rekening: "WA 085748199272" },
-            { nama: "LaritaTyus", id: "950495", rekening: "Unknown" },
-            { nama: "dodol130", id: "1682501", rekening: "Unknown" },
-            { nama: "Barton11", id: "Unknown", rekening: "WA 083116636295" },
-            { nama: "ferlyy123", id: "Unknown", rekening: "WA 081377113400 / 082276447630" },
-            { nama: "Klausss", id: "867859", rekening: "Unknown" },
-            { nama: "Nur2407", id: "710007", rekening: "WA 085711765870" },
-            { nama: "Yuda1997", id: "2568096", rekening: "WA 083857986955 / 085377787078 / Dana 0895616676633" },
-            { nama: "Kiasha5", id: "1060796", rekening: "WA/Dana 083870366717" },
-            { nama: "KUYANG", id: "2239096", rekening: "Unknown" },
-            { nama: "RaiNax", id: "3368608", rekening: "Unknown" },
-            { nama: "Ripper Anonim", id: "Unknown", rekening: "WA 088212307338 / 089602483202" },
-            { nama: "Ripper Anonim", id: "3302417", rekening: "Unknown" },
-            { nama: "loriyagami123", id: "Unknown", rekening: "WA 081219868320" },
-            { nama: "Ratnaika", id: "1102871, 776748", rekening: "WA 0881010835430" },
-            { nama: "HaibaraOkiya", id: "Unknown", rekening: "Unknown" },
-            { nama: "Vtantrisia", id: "128733, 1831676", rekening: "Unknown" },
-            { nama: "COFFIE", id: "Unknown", rekening: "Unknown" },
-            { nama: "Yola2104", id: "Unknown", rekening: "Unknown" },
-            { nama: "Demon345", id: "2468076", rekening: "Unknown" },
-            { nama: "Ripper Anonim", id: "Unknown", rekening: "WA 083115344743 / 082128508631" },
-            { nama: "MAnzzRF", id: "Unknown", rekening: "Unknown" },
-            { nama: "Yagami008", id: "Unknown", rekening: "WA 083138815284 / 082249994969" },
-            { nama: "ZiaoLang", id: "1925395", rekening: "Unknown" },
-            { nama: "Ripper Penipu Dana", id: "Unknown", rekening: "WA 087825978704 / Dana 085798860489, 087813095845" },
-            { nama: "MM Palsu 1", id: "Unknown", rekening: "WA 085724049814" },
-            { nama: "MM Palsu 2", id: "Unknown", rekening: "WA 083138815284" },
-            { nama: "Ripper Anonim", id: "Unknown", rekening: "WA 085880631452" },
-            { nama: "RevanFadilah", id: "1365645", rekening: "Unknown" },
-            { nama: "Virgo12345", id: "Unknown", rekening: "WA 081367049740 / 082276554684" }
-        ];
+        let dataRipperGlobal = []; // Wadah untuk menyimpan data dari Google Sheets
 
         // --- 2. FUNGSI NAVIGASI UI ---
         function switchTab(tabId, event = null, isPush = true) {
             if (event) event.preventDefault(); 
-            
             const targetSection = document.getElementById(tabId);
             if (!targetSection) tabId = 'home';
 
             const navMap = { 'home': 0, 'info': 1, 'layanan': 2, 'sosial': 3, 'rekber': 4, 'ripper': 5, 'pembayaran': 2 };
-
-            // 1. Cek tab apa yang sedang terbuka di layar sekarang
             const currentActiveSection = document.querySelector('.tab-content.active');
             const currentTabId = currentActiveSection ? currentActiveSection.id : null;
 
-            // 2. JIKA MENU BAWAH DIKLIK PADA GRUP HALAMAN YANG SAMA (Contoh: Di tab Pembayaran klik menu Layanan)
             if (event !== null && currentTabId && navMap[currentTabId] === navMap[tabId]) {
-                window.scrollTo({ top: 0, behavior: 'smooth' }); // Hanya scroll ke atas
-                
-                // Putar ulang animasi ikon
+                window.scrollTo({ top: 0, behavior: 'smooth' }); 
                 const activeIndex = navMap[currentTabId];
                 if (activeIndex !== undefined) {
                     const icon = document.querySelectorAll('.nav-item')[activeIndex].querySelector('i');
@@ -591,36 +474,31 @@ Maintenance server akan 06 Mei Januari (Rabu) mulai pukul 10:00-11:00. Waktu mai
                         icon.style.animation = 'popBounce 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards';
                     }
                 }
-                return; // Berhenti di sini, jangan reset halamannya!
+                return; 
             }
 
-            // 3. PINDAH TAB NORMAL: Sembunyikan semua tab
             document.querySelectorAll('.tab-content').forEach(t => {
                 t.classList.remove('active');
                 t.style.animation = 'none';
             });
 
-            // Tampilkan tab tujuan
             const newSection = document.getElementById(tabId);
             if(newSection) {
                 newSection.classList.add('active');
                 void newSection.offsetWidth;
-                newSection.style.animation = null; // Biarkan CSS yang animasi
+                newSection.style.animation = null; 
             }
             
-            // RESET & UPDATE MENU NAVIGASI BAWAH
             document.querySelectorAll('.nav-item').forEach(n => {
                 n.classList.remove('active');
                 const icon = n.querySelector('i');
-                if (icon) icon.style.animation = 'none'; // Matikan animasi ikon lama
+                if (icon) icon.style.animation = 'none'; 
             });
             
             const activeIndex = navMap[tabId];
             if (activeIndex !== undefined) {
                 const activeNav = document.querySelectorAll('.nav-item')[activeIndex];
                 activeNav.classList.add('active');
-                
-                // Putar animasi pada ikon yang baru terpilih
                 const activeIcon = activeNav.querySelector('i');
                 if (activeIcon) {
                     activeIcon.style.animation = 'none';
@@ -630,8 +508,6 @@ Maintenance server akan 06 Mei Januari (Rabu) mulai pukul 10:00-11:00. Waktu mai
             }
             
             window.scrollTo({ top: 0, behavior: 'smooth' });
-            
-            // Update URL browser
             if (isPush && window.location.hash !== `#${tabId}`) {
                 history.pushState(null, null, `#${tabId}`);
             }
@@ -639,7 +515,6 @@ Maintenance server akan 06 Mei Januari (Rabu) mulai pukul 10:00-11:00. Waktu mai
 
         window.addEventListener('popstate', () => {
             let isPopupClosed = false;
-
             const modalEvent = document.getElementById('modal-event');
             if (!modalEvent.classList.contains('hidden')) {
                 modalEvent.classList.add('hidden');
@@ -647,16 +522,13 @@ Maintenance server akan 06 Mei Januari (Rabu) mulai pukul 10:00-11:00. Waktu mai
                 document.body.style.overflow = 'auto';
                 isPopupClosed = true;
             }
-
             const widget = document.getElementById('floating-widget');
             if (!widget.classList.contains('hidden')) {
                 widget.classList.add('hidden');
                 widget.classList.remove('flex');
                 isPopupClosed = true;
             }
-
             if (isPopupClosed) return;
-
             const hash = window.location.hash.substring(1) || 'home';
             switchTab(hash, null, false);
         });
@@ -667,13 +539,9 @@ Maintenance server akan 06 Mei Januari (Rabu) mulai pukul 10:00-11:00. Waktu mai
             modal.classList.remove('hidden');
             modal.classList.add('flex');
             document.body.style.overflow = 'hidden'; 
-            
             setTimeout(() => {
                 const carousel = document.getElementById('image-carousel');
-                if(carousel) {
-                    carousel.scrollLeft = 0; 
-                    updateCarouselDots(); 
-                }
+                if(carousel) { carousel.scrollLeft = 0; updateCarouselDots(); }
             }, 50);
         }
 
@@ -685,12 +553,10 @@ Maintenance server akan 06 Mei Januari (Rabu) mulai pukul 10:00-11:00. Waktu mai
                 history.pushState({ popup: 'widget' }, null, null); 
                 widget.classList.remove('hidden'); 
                 widget.classList.add('flex');
-            } else {
-                history.back(); 
-            }
+            } else { history.back(); }
         }
 
-        // --- 3. FUNGSI RENDER DATA ---
+        // --- 3. FUNGSI RENDER DATA LOKAL ---
         function renderFaqs(data = faqs) {
             const container = document.getElementById('faq-container');
             if (data.length === 0) {
@@ -700,12 +566,9 @@ Maintenance server akan 06 Mei Januari (Rabu) mulai pukul 10:00-11:00. Waktu mai
             container.innerHTML = data.map(f => `
                 <details class="bg-brand-card rounded-2xl border border-white/5 group">
                     <summary class="flex justify-between items-center font-bold text-xs cursor-pointer text-white p-4">
-                        ${f.t}
-                        <i class="fas fa-chevron-down text-brand-accent transition-transform group-open:rotate-180"></i>
+                        ${f.t} <i class="fas fa-chevron-down text-brand-accent transition-transform group-open:rotate-180"></i>
                     </summary>
-                    <div class="px-4 pb-4 text-xs text-gray-400 leading-relaxed border-t border-white/5 pt-3 mt-1">
-                        ${f.j}
-                    </div>
+                    <div class="px-4 pb-4 text-xs text-gray-400 leading-relaxed border-t border-white/5 pt-3 mt-1">${f.j}</div>
                 </details>
             `).join('');
         }
@@ -730,9 +593,7 @@ Maintenance server akan 06 Mei Januari (Rabu) mulai pukul 10:00-11:00. Waktu mai
                     </div>
                     <div class="text-right flex flex-col items-end">
                         <div class="text-brand-accent font-extrabold text-[15px] mb-2">Rp ${s.price.toLocaleString('id-ID')} <span class="text-[9px] font-normal text-gray-500">${s.label}</span></div>
-                        <button onclick="checkout('${s.name}', ${s.price})" class="bg-brand-accent/10 text-brand-accent text-[10px] font-bold px-5 py-2 rounded-full border border-brand-accent/30 active:scale-90 transition-transform">
-                            BELI
-                        </button>
+                        <button onclick="checkout('${s.name}', ${s.price})" class="bg-brand-accent/10 text-brand-accent text-[10px] font-bold px-5 py-2 rounded-full border border-brand-accent/30 active:scale-90 transition-transform">BELI</button>
                     </div>
                 </div>
             `).join('');
@@ -748,11 +609,9 @@ Maintenance server akan 06 Mei Januari (Rabu) mulai pukul 10:00-11:00. Waktu mai
             document.getElementById('pay-total').innerText = `Rp ${hargaRupiah}`;
             document.getElementById('pay-product').innerText = name;
             document.getElementById('nominal-asli').value = price;
-            
             const noWA = "6283815584661";
             const teksWA = `Halo Admin Joki AU2Hub,%0A%0ASaya ingin mengkonfirmasi pembayaran pesanan saya:%0A%0APaket : *${name}*%0ATotal : *Rp ${hargaRupiah}*%0A%0A(Berikut ini saya lampirkan gambar bukti transfer QRIS / screenshot)`;
             const linkWA = `https://api.whatsapp.com/send?phone=${noWA}&text=${teksWA}`;
-            
             document.getElementById('wa-confirm').setAttribute('href', linkWA);
             switchTab('pembayaran');
         }
@@ -761,25 +620,19 @@ Maintenance server akan 06 Mei Januari (Rabu) mulai pukul 10:00-11:00. Waktu mai
             const nominalMurni = document.getElementById('nominal-asli').value;
             const btnSalin = document.getElementById('btn-salin');
             const teksAsli = btnSalin.innerHTML;
-
-            if (navigator.clipboard && window.isSecureContext) {
-                navigator.clipboard.writeText(nominalMurni);
-            } else {
+            if (navigator.clipboard && window.isSecureContext) { navigator.clipboard.writeText(nominalMurni); } 
+            else {
                 let tempInput = document.createElement("textarea");
                 tempInput.value = nominalMurni;
-                tempInput.style.position = "fixed";
-                tempInput.style.left = "-9999px";
-                document.body.appendChild(tempInput);
-                tempInput.select();
+                tempInput.style.position = "fixed"; tempInput.style.left = "-9999px";
+                document.body.appendChild(tempInput); tempInput.select();
                 try { document.execCommand("copy"); } catch (err) {}
                 document.body.removeChild(tempInput);
             }
-
             btnSalin.innerHTML = '<i class="fas fa-check mr-1.5"></i> Tersalin';
             btnSalin.classList.replace('text-brand-info', 'text-brand-success');
             btnSalin.classList.replace('bg-brand-info/10', 'bg-brand-success/10');
             btnSalin.classList.replace('border-brand-info/30', 'border-brand-success/30');
-
             setTimeout(() => {
                 btnSalin.innerHTML = teksAsli;
                 btnSalin.classList.replace('text-brand-success', 'text-brand-info');
@@ -788,7 +641,25 @@ Maintenance server akan 06 Mei Januari (Rabu) mulai pukul 10:00-11:00. Waktu mai
             }, 2000);
         }
 
-        function renderRippers(data = rippers) {
+        // --- 4. FUNGSI DATABASE OTOMATIS (SINKRON GOOGLE SHEETS) ---
+        async function muatDataRipper() {
+            const linkAPI = "https://sheetdb.io/api/v1/ry6ddufq4tnpz";
+            const container = document.getElementById('ripper-container');
+            
+            // Efek loading
+            container.innerHTML = '<div class="text-center py-10 text-xs text-brand-info animate-pulse"><i class="fas fa-sync fa-spin mb-2 text-2xl"></i><br>Sinkronisasi Database...</div>';
+
+            try {
+                const respon = await fetch(linkAPI);
+                dataRipperGlobal = await respon.json();
+                renderRippers(dataRipperGlobal);
+            } catch (error) {
+                console.error("Gagal menarik data:", error);
+                container.innerHTML = '<div class="text-center py-10 text-xs text-red-500"><i class="fas fa-exclamation-triangle mb-2 text-2xl"></i><br>Gagal terhubung ke database. Cek koneksi internet.</div>';
+            }
+        }
+
+        function renderRippers(data) {
             const container = document.getElementById('ripper-container');
             document.getElementById('ripper-count').innerText = `${data.length} Data`;
             
@@ -796,30 +667,39 @@ Maintenance server akan 06 Mei Januari (Rabu) mulai pukul 10:00-11:00. Waktu mai
                 container.innerHTML = `
                     <div class="text-center py-10 px-4">
                         <i class="fas fa-check-circle text-brand-success text-3xl mb-2"></i>
-                        <div class="text-xs text-gray-400">Pencarian aman.<br>(Namun tetap waspada & gunakan Rekber)</div>
+                        <div class="text-xs text-gray-400">Database kosong atau aman.<br>(Namun tetap waspada & gunakan Rekber)</div>
                     </div>`;
                 return;
             }
 
-            container.innerHTML = data.map(r => `
+            container.innerHTML = data.map(r => {
+                // Bisa membaca nama kolom apapun dari Google Sheets Anda
+                const nama = r["Nama / Keterangan"] || r.nama || r.Nama || "Tanpa Nama";
+                const idGame = r["ID"] || r.id || "-";
+                const rekening = r["Rekening / Kontak (WA/Dana)"] || r.rekening || r.Rekening || "-";
+
+                return `
                 <div class="p-4 border-b border-white/5 last:border-0 hover:bg-white/5 transition-colors">
                     <div class="flex justify-between items-start mb-1">
-                        <div class="font-bold text-xs text-white">${r.nama}</div>
+                        <div class="font-bold text-xs text-white">${nama}</div>
                         <div class="text-[9px] text-red-500 font-bold bg-red-500/10 px-2 py-0.5 rounded border border-red-500/20 whitespace-nowrap ml-2"><i class="fas fa-ban mr-1"></i> RIPPER</div>
                     </div>
-                    <div class="text-[10px] text-brand-info font-mono mb-1">ID: ${r.id}</div>
-                    <div class="text-[10px] text-gray-400"><i class="fas fa-credit-card mr-1"></i> ${r.rekening}</div>
+                    <div class="text-[10px] text-brand-info font-mono mb-1">ID: ${idGame}</div>
+                    <div class="text-[10px] text-gray-400"><i class="fas fa-credit-card mr-1"></i> ${rekening}</div>
                 </div>
-            `).join('');
+                `;
+            }).join('');
         }
 
         document.getElementById('ripperSearch').addEventListener('input', (e) => {
             const val = e.target.value.toLowerCase();
-            renderRippers(rippers.filter(r => 
-                r.nama.toLowerCase().includes(val) || 
-                r.id.toLowerCase().includes(val) || 
-                r.rekening.toLowerCase().includes(val)
-            ));
+            const hasilFilter = dataRipperGlobal.filter(r => {
+                const nama = (r["Nama / Keterangan"] || r.nama || r.Nama || "").toLowerCase();
+                const idGame = (r["ID"] || r.id || "").toLowerCase();
+                const rekening = (r["Rekening / Kontak (WA/Dana)"] || r.rekening || r.Rekening || "").toLowerCase();
+                return nama.includes(val) || idGame.includes(val) || rekening.includes(val);
+            });
+            renderRippers(hasilFilter);
         });
 
         function updateCarouselDots() {
@@ -828,32 +708,25 @@ Maintenance server akan 06 Mei Januari (Rabu) mulai pukul 10:00-11:00. Waktu mai
             if (!carousel || dots.length === 0) return;
             const maxScroll = carousel.scrollWidth - carousel.clientWidth;
             if (maxScroll <= 0) return;
-            
             let activeIndex = Math.round((carousel.scrollLeft / maxScroll) * (dots.length - 1));
             activeIndex = Math.max(0, Math.min(activeIndex, dots.length - 1));
-
             dots.forEach((dot, index) => {
-                if (index === activeIndex) {
-                    dot.className = "dot-indicator h-1.5 rounded-full transition-all duration-300 w-4 bg-brand-accent";
-                } else {
-                    dot.className = "dot-indicator h-1.5 rounded-full transition-all duration-300 w-1.5 bg-white/40";
-                }
+                if (index === activeIndex) { dot.className = "dot-indicator h-1.5 rounded-full transition-all duration-300 w-4 bg-brand-accent"; } 
+                else { dot.className = "dot-indicator h-1.5 rounded-full transition-all duration-300 w-1.5 bg-white/40"; }
             });
         }
 
-        // INIT LOAD LOKAL
+        // --- INIT LOAD WEBSITE ---
         document.addEventListener('DOMContentLoaded', () => {
-    // Ambil tab dari URL, jika kosong arahkan ke home
-    const initialTab = window.location.hash.substring(1) || 'home';
-    
-    // Jalankan navigasi pertama kali tanpa animasi berkedip
-    switchTab(initialTab, null, false);
-    
-    // Load data lainnya
-    renderFaqs();
-    renderServices();
-    renderRippers();
-});
+            const initialTab = window.location.hash.substring(1) || 'home';
+            switchTab(initialTab, null, false);
+            
+            renderFaqs();
+            renderServices();
+
+            // Mulai menyedot data otomatis dari Google Sheets Anda
+            muatDataRipper();
+        });
     </script>
 </body>
 </html>
