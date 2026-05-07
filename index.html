@@ -34,7 +34,7 @@
         
         .tab-content:not(.active) { display: none !important; }
         
-        /* OPTIMASI 1: Animasi tetap ada tapi didorong oleh GPU (will-change) */
+        /* Animasi dipertahankan, dipercepat dengan GPU */
         .tab-content.active { 
             animation: slideUpFade 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; 
             will-change: transform, opacity;
@@ -67,7 +67,6 @@
             will-change: transform, opacity;
         }
         
-        /* OPTIMASI BLUR: Dikurangi jadi 8px agar scroll HP tidak patah-patah */
         .glass { background: rgba(26, 17, 51, 0.85); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border-top: 1px solid rgba(255, 255, 255, 0.05); }
         
         details > summary { list-style: none; }
@@ -284,12 +283,12 @@
 
             <div class="relative mb-4">
                 <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-500"></i>
-                <input type="text" id="ripperSearch" placeholder="Ketik nama, ID, atau rekening..." 
+                <input type="text" id="ripperSearch" placeholder="Cari nama, ID, atau rekening..." 
                     class="w-full bg-brand-card border border-red-500/30 rounded-2xl py-3.5 pl-12 pr-4 text-sm text-white focus:outline-none focus:border-red-500 transition-all shadow-[0_0_10px_rgba(239,68,68,0.1)]">
             </div>
             
-            <div class="bg-brand-card rounded-2xl border border-white/5 overflow-hidden">
-                <div id="ripper-container" class="ripper-list space-y-0 max-h-[55vh] overflow-y-auto"></div>
+            <div class="bg-brand-card rounded-2xl border border-white/5 overflow-hidden flex flex-col">
+                <div id="ripper-container" class="ripper-list space-y-0 max-h-[55vh] overflow-y-auto w-full"></div>
             </div>
             <p class="text-[10px] text-gray-500 mt-3 text-center">*Lapor penipu baru ke Admin/Owner beserta SS Chat & Transfer.</p>
         </section>
@@ -448,7 +447,7 @@ Maintenance server akan 06 Mei Januari (Rabu) mulai pukul 10:00-11:00. Waktu mai
     </nav>
 
     <script>
-        // --- 1. DATA LAYANAN DAN FAQ ---
+        // --- 1. DATA LOKAL ---
         const services = [
             { id: 1, name: 'Joki Ballroom', price: 7500, label: '', desc: 'Estimasi pengerjaan 2 jam.' },
             { id: 2, name: 'Paket Joki AFK (Island/Japan/Hawai)', price: 65000, label: '', desc: 'Sesuai spek dan pesanan.' },
@@ -461,8 +460,9 @@ Maintenance server akan 06 Mei Januari (Rabu) mulai pukul 10:00-11:00. Waktu mai
             { t: "Apakah harga Pricelist sudah termasuk biaya admin?", j: "Ya, semua harga joki yang tertera sudah Include (termasuk) biaya Rekber NIKKY. Tidak ada biaya tambahan yang disembunyikan." }
         ];
 
-        // Variabel untuk menampung data dari Google Sheets (SheetDB)
+        // Variabel Database Global & State "Lihat Semua"
         let dataRipperGlobal = []; 
+        let isRipperExpanded = false;
 
         // --- 2. FUNGSI NAVIGASI UI ---
         function switchTab(tabId, event = null, isPush = true) {
@@ -652,47 +652,38 @@ Maintenance server akan 06 Mei Januari (Rabu) mulai pukul 10:00-11:00. Waktu mai
             }, 2000);
         }
 
-        // --- 4. FUNGSI DATABASE OTOMATIS DENGAN TRIK 0 DETIK (CACHE) ---
+        // --- 4. FUNGSI DATABASE OTOMATIS (SINKRON GOOGLE SHEETS) ---
         async function muatDataRipper() {
             const linkAPI = "https://sheetdb.io/api/v1/ry6ddufq4tnpz";
             const container = document.getElementById('ripper-container');
             
-            // 1. Cek apakah ada data sisa di memori HP pengunjung
             const dataTersimpan = localStorage.getItem('ripperCache');
-            
             if (dataTersimpan) {
-                // TAMPILKAN 0 DETIK: Langsung pasang data lama tanpa loading
                 dataRipperGlobal = JSON.parse(dataTersimpan);
-                renderRippers(dataRipperGlobal);
+                renderRippers(dataRipperGlobal, false);
             } else {
-                // Jika belum pernah buka sama sekali, baru muncul loading
                 container.innerHTML = '<div class="text-center py-10 text-xs text-brand-info animate-pulse"><i class="fas fa-sync fa-spin mb-2 text-2xl"></i><br>Menyiapkan Database Pertama Kali...</div>';
             }
 
             try {
-                // 2. Cek data terbaru ke Google Sheets secara diam-diam
                 const respon = await fetch(linkAPI);
                 const dataBaru = await respon.json();
                 
-                // 3. Simpan data terbaru ke memori HP untuk kunjungan berikutnya
                 localStorage.setItem('ripperCache', JSON.stringify(dataBaru));
                 dataRipperGlobal = dataBaru;
                 
-                // 4. Update tampilan dengan data terbaru (jika ada perubahan)
-                renderRippers(dataRipperGlobal);
+                renderRippers(dataRipperGlobal, false);
             } catch (error) {
                 console.error("Gagal menarik data baru:", error);
-                // Jika internet mati dan memori kosong, baru tampilkan error
                 if (!dataTersimpan) {
                     container.innerHTML = '<div class="text-center py-10 text-xs text-red-500"><i class="fas fa-exclamation-triangle mb-2 text-2xl"></i><br>Gagal terhubung ke database. Cek koneksi internet.</div>';
                 }
             }
         }
 
-        function renderRippers(data) {
+        // FUNGSI RENDER RIPPER MODERN (HANYA MENGAMBIL 5 DATA DI AWAL)
+        function renderRippers(data, isSearch = false) {
             const container = document.getElementById('ripper-container');
-            
-            // Menggunakan dataRipperGlobal.length untuk menampilkan Total semua data yang ada di Sheet
             document.getElementById('ripper-count').innerText = `${dataRipperGlobal.length} Total Data`;
             
             if(data.length === 0) {
@@ -704,11 +695,11 @@ Maintenance server akan 06 Mei Januari (Rabu) mulai pukul 10:00-11:00. Waktu mai
                 return;
             }
 
-            // OPTIMASI ANTI-LAG: Animasi hanya perlu mengangkat 15 kotak pertama
-            const dataYangDitampilkan = data.slice(0, 15);
+            // Jika bukan mencari dan belum di-expand, tampilkan 5 saja agar super ringan
+            const limitBatas = (!isSearch && !isRipperExpanded) ? 5 : data.length;
+            const dataYangDitampilkan = data.slice(0, limitBatas);
 
-            container.innerHTML = dataYangDitampilkan.map(r => {
-                // Kode Cerdas: Bisa membaca dari nama kolom pendek (nama) atau panjang (Nama / Keterangan)
+            let htmlString = dataYangDitampilkan.map(r => {
                 const nama = r["Nama / Keterangan"] || r.nama || r.Nama || "Tanpa Nama";
                 const idGame = r["ID"] || r.id || "-";
                 const rekening = r["Rekening / Kontak (WA/Dana)"] || r.rekening || r.Rekening || "-";
@@ -725,21 +716,44 @@ Maintenance server akan 06 Mei Januari (Rabu) mulai pukul 10:00-11:00. Waktu mai
                 `;
             }).join('');
 
-            // Info tambahan jika data aslinya lebih dari 15
-            if (data.length > 15) {
-                container.innerHTML += `<div class="text-center py-4 text-[10px] text-gray-500 italic">Menampilkan 15 data terbaru. Gunakan kotak pencarian untuk mencari nama lainnya.</div>`;
+            container.innerHTML = htmlString;
+
+            // Tambahkan tombol LIHAT SEMUA jika data aslinya lebih dari 5 dan tidak sedang di-expand/dicari
+            if (!isSearch && !isRipperExpanded && data.length > 5) {
+                container.innerHTML += `
+                    <div class="p-5 text-center bg-black/20 mt-1 border-t border-white/5">
+                        <button onclick="tampilkanSemuaRipper()" class="bg-brand-accent/20 border border-brand-accent/40 text-brand-accent text-xs font-bold py-2.5 px-6 rounded-full active:scale-95 transition-transform">
+                            <i class="fas fa-list-ul mr-2"></i> Tampilkan Semua Laporan
+                        </button>
+                    </div>
+                `;
             }
         }
 
+        // Fungsi khusus ketika tombol Lihat Semua diklik
+        function tampilkanSemuaRipper() {
+            isRipperExpanded = true;
+            renderRippers(dataRipperGlobal, false);
+        }
+
+        // Fungsi Pencarian
         document.getElementById('ripperSearch').addEventListener('input', (e) => {
             const val = e.target.value.toLowerCase();
+            
+            // Jika pencarian kosong, kembalikan ke tampilan default
+            if(val === '') {
+                renderRippers(dataRipperGlobal, false);
+                return;
+            }
+
             const hasilFilter = dataRipperGlobal.filter(r => {
                 const nama = (r["Nama / Keterangan"] || r.nama || r.Nama || "").toLowerCase();
                 const idGame = (r["ID"] || r.id || "").toLowerCase();
                 const rekening = (r["Rekening / Kontak (WA/Dana)"] || r.rekening || r.Rekening || "").toLowerCase();
                 return nama.includes(val) || idGame.includes(val) || rekening.includes(val);
             });
-            renderRippers(hasilFilter);
+            
+            renderRippers(hasilFilter, true); // true = ini adalah mode pencarian
         });
 
         function updateCarouselDots() {
@@ -764,7 +778,7 @@ Maintenance server akan 06 Mei Januari (Rabu) mulai pukul 10:00-11:00. Waktu mai
             renderFaqs();
             renderServices();
 
-            // MULAI MENYEDOT DATA OTOMATIS DARI GOOGLE SHEETS ANDA
+            // SINKRONISASI DATABASE
             muatDataRipper();
         });
     </script>
