@@ -424,7 +424,7 @@ Maintenance server akan 06 Mei Januari (Rabu) mulai pukul 10:00-11:00. Waktu mai
     </div>
 
     <nav class="fixed bottom-0 left-0 w-full glass z-40 flex justify-around items-center h-[70px] px-1 shadow-[0_-10px_30px_rgba(0,0,0,0.5)]">
-        <a href="#home" onclick="switchTab('home', event)" class="nav-item active flex flex-col items-center justify-center flex-1 text-gray-500 transition-colors">
+        <a href="#home" onclick="switchTab('home', event)" class="nav-item flex flex-col items-center justify-center flex-1 text-gray-500 transition-colors">
             <i class="fas fa-home text-xl mb-1"></i>
             <span class="text-[9px] font-bold mt-0.5">Home</span>
         </a>
@@ -566,30 +566,61 @@ Maintenance server akan 06 Mei Januari (Rabu) mulai pukul 10:00-11:00. Waktu mai
         function switchTab(tabId, event = null, isPush = true) {
             if (event) event.preventDefault(); 
             
-            // Pastikan ID ada, jika tidak default ke home
             const targetSection = document.getElementById(tabId);
             if (!targetSection) tabId = 'home';
 
-            // Sembunyikan semua tab tanpa kecuali
+            // JIKA TAB YANG SAMA DIKLIK LAGI (Hanya putar animasi ikon & scroll ke atas)
+            if (targetSection && targetSection.classList.contains('active')) {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                const navMap = { 'home': 0, 'info': 1, 'layanan': 2, 'sosial': 3, 'rekber': 4, 'ripper': 5, 'pembayaran': 2 };
+                const activeIndex = navMap[tabId];
+                if (activeIndex !== undefined) {
+                    const icon = document.querySelectorAll('.nav-item')[activeIndex].querySelector('i');
+                    if (icon) {
+                        icon.style.animation = 'none';
+                        void icon.offsetWidth; // Trigger reflow animasi
+                        icon.style.animation = 'popBounce 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards';
+                    }
+                }
+                return; // Berhenti di sini
+            }
+
+            // PINDAH TAB NORMAL: Sembunyikan semua tab
             document.querySelectorAll('.tab-content').forEach(t => {
                 t.classList.remove('active');
+                t.style.animation = 'none';
             });
 
-            // Tampilkan tab yang dituju
-            document.getElementById(tabId).classList.add('active');
+            // Tampilkan tab tujuan
+            const newSection = document.getElementById(tabId);
+            newSection.classList.add('active');
+            void newSection.offsetWidth;
+            newSection.style.animation = null; // Biarkan CSS yang animasi
             
-            // Update menu navigasi bawah
-            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            // RESET & UPDATE MENU NAVIGASI BAWAH
+            document.querySelectorAll('.nav-item').forEach(n => {
+                n.classList.remove('active');
+                const icon = n.querySelector('i');
+                if (icon) icon.style.animation = 'none'; // Matikan animasi ikon lama
+            });
+            
             const navMap = { 'home': 0, 'info': 1, 'layanan': 2, 'sosial': 3, 'rekber': 4, 'ripper': 5, 'pembayaran': 2 };
             const activeIndex = navMap[tabId];
             if (activeIndex !== undefined) {
-                document.querySelectorAll('.nav-item')[activeIndex].classList.add('active');
+                const activeNav = document.querySelectorAll('.nav-item')[activeIndex];
+                activeNav.classList.add('active');
+                
+                // Putar animasi pada ikon yang baru terpilih
+                const activeIcon = activeNav.querySelector('i');
+                if (activeIcon) {
+                    activeIcon.style.animation = 'none';
+                    void activeIcon.offsetWidth;
+                    activeIcon.style.animation = 'popBounce 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards';
+                }
             }
             
-            // Scroll ke atas dengan mulus saat pindah tab
             window.scrollTo({ top: 0, behavior: 'smooth' });
             
-            // Update URL browser
             if (isPush && window.location.hash !== `#${tabId}`) {
                 history.pushState(null, null, `#${tabId}`);
             }
