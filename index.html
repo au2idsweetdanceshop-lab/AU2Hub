@@ -33,7 +33,12 @@
         body { background-color: #0F0920; color: #E2E8F0; -webkit-tap-highlight-color: transparent; }
         
         .tab-content:not(.active) { display: none !important; }
-        .tab-content.active { animation: slideUpFade 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        
+        /* OPTIMASI 1: Animasi tetap ada tapi didorong oleh GPU (will-change) */
+        .tab-content.active { 
+            animation: slideUpFade 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; 
+            will-change: transform, opacity;
+        }
 
         @keyframes slideUpFade {
             from { opacity: 0; transform: translateY(20px) scale(0.98); }
@@ -50,13 +55,17 @@
         .nav-item.active i { 
             animation: popBounce 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; 
             text-shadow: 0 0 12px rgba(255, 0, 122, 0.6); 
+            will-change: transform;
         }
 
         @keyframes modalIn {
             from { opacity: 0; transform: scale(0.95); }
             to { opacity: 1; transform: scale(1); }
         }
-        .modal-anim { animation: modalIn 0.3s ease-out forwards; }
+        .modal-anim { 
+            animation: modalIn 0.3s ease-out forwards; 
+            will-change: transform, opacity;
+        }
         
         /* OPTIMASI BLUR: Dikurangi jadi 8px agar scroll HP tidak patah-patah */
         .glass { background: rgba(26, 17, 51, 0.85); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border-top: 1px solid rgba(255, 255, 255, 0.05); }
@@ -644,56 +653,61 @@ Maintenance server akan 06 Mei Januari (Rabu) mulai pukul 10:00-11:00. Waktu mai
         }
 
         // --- 4. FUNGSI DATABASE OTOMATIS DENGAN TRIK 0 DETIK (CACHE) ---
-async function muatDataRipper() {
-    const linkAPI = "https://sheetdb.io/api/v1/ry6ddufq4tnpz";
-    const container = document.getElementById('ripper-container');
-    
-    // 1. Cek apakah ada data sisa di memori HP pengunjung
-    const dataTersimpan = localStorage.getItem('ripperCache');
-    
-    if (dataTersimpan) {
-        // TAMPILKAN 0 DETIK: Langsung pasang data lama tanpa loading
-        dataRipperGlobal = JSON.parse(dataTersimpan);
-        renderRippers(dataRipperGlobal);
-    } else {
-        // Jika belum pernah buka sama sekali, baru muncul loading
-        container.innerHTML = '<div class="text-center py-10 text-xs text-brand-info animate-pulse"><i class="fas fa-sync fa-spin mb-2 text-2xl"></i><br>Menyiapkan Database Pertama Kali...</div>';
-    }
+        async function muatDataRipper() {
+            const linkAPI = "https://sheetdb.io/api/v1/ry6ddufq4tnpz";
+            const container = document.getElementById('ripper-container');
+            
+            // 1. Cek apakah ada data sisa di memori HP pengunjung
+            const dataTersimpan = localStorage.getItem('ripperCache');
+            
+            if (dataTersimpan) {
+                // TAMPILKAN 0 DETIK: Langsung pasang data lama tanpa loading
+                dataRipperGlobal = JSON.parse(dataTersimpan);
+                renderRippers(dataRipperGlobal);
+            } else {
+                // Jika belum pernah buka sama sekali, baru muncul loading
+                container.innerHTML = '<div class="text-center py-10 text-xs text-brand-info animate-pulse"><i class="fas fa-sync fa-spin mb-2 text-2xl"></i><br>Menyiapkan Database Pertama Kali...</div>';
+            }
 
-    try {
-        // 2. Cek data terbaru ke Google Sheets secara diam-diam
-        const respon = await fetch(linkAPI);
-        const dataBaru = await respon.json();
-        
-        // 3. Simpan data terbaru ke memori HP untuk kunjungan berikutnya
-        localStorage.setItem('ripperCache', JSON.stringify(dataBaru));
-        dataRipperGlobal = dataBaru;
-        
-        // 4. Update tampilan dengan data terbaru (jika ada perubahan)
-        renderRippers(dataRipperGlobal);
-    } catch (error) {
-        console.error("Gagal menarik data baru:", error);
-        // Jika internet mati dan memori kosong, baru tampilkan error
-        if (!dataTersimpan) {
-            container.innerHTML = '<div class="text-center py-10 text-xs text-red-500"><i class="fas fa-exclamation-triangle mb-2 text-2xl"></i><br>Gagal terhubung ke database. Cek koneksi internet.</div>';
+            try {
+                // 2. Cek data terbaru ke Google Sheets secara diam-diam
+                const respon = await fetch(linkAPI);
+                const dataBaru = await respon.json();
+                
+                // 3. Simpan data terbaru ke memori HP untuk kunjungan berikutnya
+                localStorage.setItem('ripperCache', JSON.stringify(dataBaru));
+                dataRipperGlobal = dataBaru;
+                
+                // 4. Update tampilan dengan data terbaru (jika ada perubahan)
+                renderRippers(dataRipperGlobal);
+            } catch (error) {
+                console.error("Gagal menarik data baru:", error);
+                // Jika internet mati dan memori kosong, baru tampilkan error
+                if (!dataTersimpan) {
+                    container.innerHTML = '<div class="text-center py-10 text-xs text-red-500"><i class="fas fa-exclamation-triangle mb-2 text-2xl"></i><br>Gagal terhubung ke database. Cek koneksi internet.</div>';
+                }
+            }
         }
-    }
-}
 
         function renderRippers(data) {
             const container = document.getElementById('ripper-container');
-            document.getElementById('ripper-count').innerText = `${data.length} Data`;
+            
+            // Menggunakan dataRipperGlobal.length untuk menampilkan Total semua data yang ada di Sheet
+            document.getElementById('ripper-count').innerText = `${dataRipperGlobal.length} Total Data`;
             
             if(data.length === 0) {
                 container.innerHTML = `
                     <div class="text-center py-10 px-4">
                         <i class="fas fa-check-circle text-brand-success text-3xl mb-2"></i>
-                        <div class="text-xs text-gray-400">Database kosong atau aman.<br>(Namun tetap waspada & gunakan Rekber)</div>
+                        <div class="text-xs text-gray-400">Pencarian aman.<br>(Namun tetap waspada & gunakan Rekber)</div>
                     </div>`;
                 return;
             }
 
-            container.innerHTML = data.map(r => {
+            // OPTIMASI ANTI-LAG: Animasi hanya perlu mengangkat 15 kotak pertama
+            const dataYangDitampilkan = data.slice(0, 15);
+
+            container.innerHTML = dataYangDitampilkan.map(r => {
                 // Kode Cerdas: Bisa membaca dari nama kolom pendek (nama) atau panjang (Nama / Keterangan)
                 const nama = r["Nama / Keterangan"] || r.nama || r.Nama || "Tanpa Nama";
                 const idGame = r["ID"] || r.id || "-";
@@ -710,6 +724,11 @@ async function muatDataRipper() {
                 </div>
                 `;
             }).join('');
+
+            // Info tambahan jika data aslinya lebih dari 15
+            if (data.length > 15) {
+                container.innerHTML += `<div class="text-center py-4 text-[10px] text-gray-500 italic">Menampilkan 15 data terbaru. Gunakan kotak pencarian untuk mencari nama lainnya.</div>`;
+            }
         }
 
         document.getElementById('ripperSearch').addEventListener('input', (e) => {
