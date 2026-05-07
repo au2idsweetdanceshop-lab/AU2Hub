@@ -58,7 +58,8 @@
         }
         .modal-anim { animation: modalIn 0.3s ease-out forwards; }
         
-        .glass { background: rgba(26, 17, 51, 0.85); backdrop-filter: blur(12px); border-top: 1px solid rgba(255, 255, 255, 0.05); }
+        /* OPTIMASI BLUR: Dikurangi jadi 8px agar scroll HP tidak patah-patah */
+        .glass { background: rgba(26, 17, 51, 0.85); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border-top: 1px solid rgba(255, 255, 255, 0.05); }
         
         details > summary { list-style: none; }
         details > summary::-webkit-details-marker { display: none; }
@@ -351,11 +352,11 @@
                 
                 <div class="relative mb-5 w-full overflow-hidden rounded-xl bg-black/20 pb-8 pt-2 border border-white/5">
                     <div id="image-carousel" onscroll="updateCarouselDots()" class="flex overflow-x-auto hide-scroll snap-x snap-mandatory gap-3 px-3 relative">
-                        <img src="FB_IMG_1777992277452.jpg" alt="Event 1" class="w-[90%] flex-shrink-0 snap-center h-48 object-cover rounded-xl border border-white/10 shadow-lg">
-                        <img src="FB_IMG_1777992277452.jpg" alt="Event 2" class="w-[90%] flex-shrink-0 snap-center h-48 object-cover rounded-xl border border-white/10 shadow-lg">
-                        <img src="FB_IMG_1777992277452.jpg" alt="Event 3" class="w-[90%] flex-shrink-0 snap-center h-48 object-cover rounded-xl border border-white/10 shadow-lg">
-                        <img src="FB_IMG_1777992277452.jpg" alt="Event 4" class="w-[90%] flex-shrink-0 snap-center h-48 object-cover rounded-xl border border-white/10 shadow-lg">
-                        <img src="FB_IMG_1777992277452.jpg" alt="Event 5" class="w-[90%] flex-shrink-0 snap-center h-48 object-cover rounded-xl border border-white/10 shadow-lg">
+                        <img src="FB_IMG_1777992277452.jpg" loading="lazy" alt="Event 1" class="w-[90%] flex-shrink-0 snap-center h-48 object-cover rounded-xl border border-white/10 shadow-lg">
+                        <img src="FB_IMG_1777992277452.jpg" loading="lazy" alt="Event 2" class="w-[90%] flex-shrink-0 snap-center h-48 object-cover rounded-xl border border-white/10 shadow-lg">
+                        <img src="FB_IMG_1777992277452.jpg" loading="lazy" alt="Event 3" class="w-[90%] flex-shrink-0 snap-center h-48 object-cover rounded-xl border border-white/10 shadow-lg">
+                        <img src="FB_IMG_1777992277452.jpg" loading="lazy" alt="Event 4" class="w-[90%] flex-shrink-0 snap-center h-48 object-cover rounded-xl border border-white/10 shadow-lg">
+                        <img src="FB_IMG_1777992277452.jpg" loading="lazy" alt="Event 5" class="w-[90%] flex-shrink-0 snap-center h-48 object-cover rounded-xl border border-white/10 shadow-lg">
                     </div>
                     
                     <div id="carousel-dots" class="absolute bottom-3 left-1/2 -translate-x-1/2 flex space-x-1.5 z-10 pointer-events-none">
@@ -451,7 +452,8 @@ Maintenance server akan 06 Mei Januari (Rabu) mulai pukul 10:00-11:00. Waktu mai
             { t: "Apakah harga Pricelist sudah termasuk biaya admin?", j: "Ya, semua harga joki yang tertera sudah Include (termasuk) biaya Rekber NIKKY. Tidak ada biaya tambahan yang disembunyikan." }
         ];
 
-        let dataRipperGlobal = []; // Wadah untuk menyimpan data dari Google Sheets
+        // Variabel untuk menampung data dari Google Sheets (SheetDB)
+        let dataRipperGlobal = []; 
 
         // --- 2. FUNGSI NAVIGASI UI ---
         function switchTab(tabId, event = null, isPush = true) {
@@ -556,7 +558,7 @@ Maintenance server akan 06 Mei Januari (Rabu) mulai pukul 10:00-11:00. Waktu mai
             } else { history.back(); }
         }
 
-        // --- 3. FUNGSI RENDER DATA LOKAL ---
+        // --- 3. FUNGSI RENDER DATA ---
         function renderFaqs(data = faqs) {
             const container = document.getElementById('faq-container');
             if (data.length === 0) {
@@ -641,12 +643,12 @@ Maintenance server akan 06 Mei Januari (Rabu) mulai pukul 10:00-11:00. Waktu mai
             }, 2000);
         }
 
-        // --- 4. FUNGSI DATABASE OTOMATIS (SINKRON GOOGLE SHEETS) ---
+        // --- 4. FUNGSI DATABASE OTOMATIS (SINKRON GOOGLE SHEETS VIA SHEETDB) ---
         async function muatDataRipper() {
             const linkAPI = "https://sheetdb.io/api/v1/ry6ddufq4tnpz";
             const container = document.getElementById('ripper-container');
             
-            // Efek loading
+            // Efek loading database
             container.innerHTML = '<div class="text-center py-10 text-xs text-brand-info animate-pulse"><i class="fas fa-sync fa-spin mb-2 text-2xl"></i><br>Sinkronisasi Database...</div>';
 
             try {
@@ -673,7 +675,7 @@ Maintenance server akan 06 Mei Januari (Rabu) mulai pukul 10:00-11:00. Waktu mai
             }
 
             container.innerHTML = data.map(r => {
-                // Bisa membaca nama kolom apapun dari Google Sheets Anda
+                // Kode Cerdas: Bisa membaca dari nama kolom pendek (nama) atau panjang (Nama / Keterangan)
                 const nama = r["Nama / Keterangan"] || r.nama || r.Nama || "Tanpa Nama";
                 const idGame = r["ID"] || r.id || "-";
                 const rekening = r["Rekening / Kontak (WA/Dana)"] || r.rekening || r.Rekening || "-";
@@ -724,7 +726,7 @@ Maintenance server akan 06 Mei Januari (Rabu) mulai pukul 10:00-11:00. Waktu mai
             renderFaqs();
             renderServices();
 
-            // Mulai menyedot data otomatis dari Google Sheets Anda
+            // MULAI MENYEDOT DATA OTOMATIS DARI GOOGLE SHEETS ANDA
             muatDataRipper();
         });
     </script>
