@@ -470,9 +470,9 @@ Maintenance server akan 06 Mei Januari (Rabu) mulai pukul 10:00-11:00. Waktu mai
             { t: "Apakah harga Pricelist sudah termasuk biaya admin?", j: "Ya, semua harga joki yang tertera sudah Include (termasuk) biaya Rekber NIKKY. Tidak ada biaya tambahan yang disembunyikan." }
         ];
 
-        // Variabel Database Global & State "Lihat Semua"
+        // 🌟 KUNCI KOMBINASI SEMPURNA: Baca memori HP saat web baru dibuka 🌟
         let dataRipperGlobal = []; 
-        let isRipperExpanded = false;
+        let isRipperExpanded = localStorage.getItem('statusLihatSemua') === 'true';
 
         // --- 2. FUNGSI NAVIGASI UI ---
         function switchTab(tabId, event = null, isPush = true) {
@@ -691,7 +691,7 @@ Maintenance server akan 06 Mei Januari (Rabu) mulai pukul 10:00-11:00. Waktu mai
             }
         }
 
-        // FUNGSI RENDER RIPPER MODERN (HANYA MENGAMBIL 5 DATA DI AWAL)
+        // FUNGSI RENDER RIPPER MODERN (HANYA MENGAMBIL 5 DATA DI AWAL JIKA BELUM KLIK LIHAT SEMUA)
         function renderRippers(data, isSearch = false) {
             const container = document.getElementById('ripper-container');
             document.getElementById('ripper-count').innerText = `${dataRipperGlobal.length} Total Data`;
@@ -728,7 +728,7 @@ Maintenance server akan 06 Mei Januari (Rabu) mulai pukul 10:00-11:00. Waktu mai
 
             container.innerHTML = htmlString;
 
-            // Tambahkan tombol LIHAT SEMUA dengan ID khusus agar mudah disuntik
+            // Tambahkan tombol LIHAT SEMUA jika data aslinya lebih dari 5 dan tidak sedang di-expand/dicari
             if (!isSearch && !isRipperExpanded && data.length > 5) {
                 container.innerHTML += `
                     <div id="wadah-tombol-semua" class="p-5 text-center bg-black/20 mt-1 border-t border-white/5">
@@ -740,11 +740,13 @@ Maintenance server akan 06 Mei Januari (Rabu) mulai pukul 10:00-11:00. Waktu mai
             }
         }
 
-        // 🌟 FUNGSI TAMPILKAN SEMUA DENGAN EFEK MICRO-INTERACTION (SUPER MODERN) 🌟
+        // 🌟 FUNGSI TAMPILKAN SEMUA DENGAN EFEK MICRO-INTERACTION & SIMPAN INGATAN 🌟
         function tampilkanSemuaRipper(tombol) {
             isRipperExpanded = true;
+            // KUNCI: Simpan pilihan pengguna di memori HP agar tidak perlu klik lagi besok-besok
+            localStorage.setItem('statusLihatSemua', 'true'); 
             
-            // 1. Berikan efek loading kecil di tombol selama 0.15 detik (menipu mata agar terasa ada proses)
+            // 1. Berikan efek loading kecil di tombol selama 0.15 detik
             tombol.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Membuka Data...';
             tombol.classList.add('opacity-70', 'scale-95');
 
@@ -761,7 +763,6 @@ Maintenance server akan 06 Mei Januari (Rabu) mulai pukul 10:00-11:00. Waktu mai
                     const idGame = r["ID"] || r.id || "-";
                     const rekening = r["Rekening / Kontak (WA/Dana)"] || r.rekening || r.Rekening || "-";
                     
-                    // Efek delay bertingkat (hanya 5 data pertama yang didelay, sisanya barengan biar HP gak ngehang)
                     const delayAnimasi = index < 5 ? (index * 0.05) : 0; 
 
                     return `
@@ -778,7 +779,7 @@ Maintenance server akan 06 Mei Januari (Rabu) mulai pukul 10:00-11:00. Waktu mai
 
                 // SUNTIKKAN langsung ke bawah tanpa menghapus 5 data awal!
                 document.getElementById('ripper-container').insertAdjacentHTML('beforeend', htmlSisa);
-            }, 150); // Jeda 150 milidetik (0.15 detik)
+            }, 150); 
         }
 
         // Fungsi Pencarian
