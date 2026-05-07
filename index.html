@@ -32,7 +32,15 @@
     <style>
         body { background-color: #0F0920; color: #E2E8F0; -webkit-tap-highlight-color: transparent; }
         
-        .tab-content:not(.active) { display: none !important; }
+        /* Sembunyikan semua secara default */
+.tab-content { display: none; }
+
+/* Tampilkan hanya yang aktif */
+.tab-content.active { 
+    display: flex !important; 
+    flex-direction: column;
+    animation: slideUpFade 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; 
+}
         @keyframes slideUpFade {
             from { opacity: 0; transform: translateY(20px) scale(0.98); }
             to { opacity: 1; transform: translateY(0) scale(1); }
@@ -91,7 +99,7 @@
     
     <main class="max-w-md mx-auto px-5 pt-24">
         
-        <section id="home" class="tab-content active text-center min-h-[60vh] flex flex-col justify-center">
+        <section id="home" class="tab-content text-center min-h-[60vh] flex flex-col justify-center">
             <div class="relative inline-block mb-6 mx-auto">
                 <div class="absolute inset-0 bg-brand-accent blur-3xl opacity-20"></div>
                 <div class="relative bg-brand-card p-6 rounded-full border border-brand-accent/30 shadow-[0_0_20px_rgba(255,0,122,0.2)]">
@@ -557,35 +565,32 @@ Maintenance server akan 06 Mei Januari (Rabu) mulai pukul 10:00-11:00. Waktu mai
 
         // --- 2. FUNGSI NAVIGASI UI ---
         function switchTab(tabId, event = null, isPush = true) {
-            if (event) event.preventDefault(); 
-            
-            if (!document.getElementById(tabId)) tabId = 'home';
-            const targetSection = document.getElementById(tabId);
-            
-            if (event && targetSection && targetSection.classList.contains('active')) {
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-                if (event.currentTarget) {
-                    const icon = event.currentTarget.querySelector('i');
-                    if (icon) {
-                        icon.style.animation = 'none';
-                        void icon.offsetWidth; 
-                        icon.style.animation = 'popBounce 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards';
-                    }
-                }
-                return; 
-            }
+    if (event) event.preventDefault(); 
+    
+    // Pastikan ID ada, jika tidak default ke home
+    const targetSection = document.getElementById(tabId);
+    if (!targetSection) tabId = 'home';
 
-            document.querySelectorAll('.tab-content').forEach(t => {
-                t.classList.remove('active');
-                t.style.animation = 'none'; 
-            });
-            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-            
-            if (targetSection) {
-                targetSection.classList.add('active');
-                void targetSection.offsetWidth;
-                targetSection.style.animation = null; 
-            }
+    // Sembunyikan semua tab tanpa kecuali
+    document.querySelectorAll('.tab-content').forEach(t => {
+        t.classList.remove('active');
+    });
+
+    // Tampilkan tab yang dituju
+    document.getElementById(tabId).classList.add('active');
+    
+    // Update menu navigasi bawah
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    const navMap = { 'home': 0, 'info': 1, 'layanan': 2, 'sosial': 3, 'rekber': 4, 'ripper': 5, 'pembayaran': 2 };
+    const activeIndex = navMap[tabId];
+    if (activeIndex !== undefined) {
+        document.querySelectorAll('.nav-item')[activeIndex].classList.add('active');
+    }
+    
+    if (isPush && window.location.hash !== `#${tabId}`) {
+        history.pushState(null, null, `#${tabId}`);
+    }
+}
             
             const navMap = { 'home': 0, 'info': 1, 'layanan': 2, 'sosial': 3, 'rekber': 4, 'ripper': 5, 'pembayaran': 2 };
             const activeIndex = navMap[tabId];
@@ -805,13 +810,18 @@ Maintenance server akan 06 Mei Januari (Rabu) mulai pukul 10:00-11:00. Waktu mai
         }
 
         // INIT LOAD LOKAL
-        window.addEventListener('load', () => {
-            const hash = window.location.hash.substring(1) || 'home';
-            switchTab(hash, null, false);
-            renderFaqs();
-            renderServices();
-            renderRippers();
-        });
+        document.addEventListener('DOMContentLoaded', () => {
+    // Ambil tab dari URL, jika kosong arahkan ke home
+    const initialTab = window.location.hash.substring(1) || 'home';
+    
+    // Jalankan navigasi pertama kali tanpa animasi berkedip
+    switchTab(initialTab, null, false);
+    
+    // Load data lainnya
+    renderFaqs();
+    renderServices();
+    renderRippers();
+});
     </script>
 </body>
 </html>
