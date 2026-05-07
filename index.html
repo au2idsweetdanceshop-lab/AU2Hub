@@ -565,46 +565,36 @@ Maintenance server akan 06 Mei Januari (Rabu) mulai pukul 10:00-11:00. Waktu mai
 
         // --- 2. FUNGSI NAVIGASI UI ---
         function switchTab(tabId, event = null, isPush = true) {
-    if (event) event.preventDefault(); 
-    
-    // Pastikan ID ada, jika tidak default ke home
-    const targetSection = document.getElementById(tabId);
-    if (!targetSection) tabId = 'home';
-
-    // Sembunyikan semua tab tanpa kecuali
-    document.querySelectorAll('.tab-content').forEach(t => {
-        t.classList.remove('active');
-    });
-
-    // Tampilkan tab yang dituju
-    document.getElementById(tabId).classList.add('active');
-    
-    // Update menu navigasi bawah
-    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-    const navMap = { 'home': 0, 'info': 1, 'layanan': 2, 'sosial': 3, 'rekber': 4, 'ripper': 5, 'pembayaran': 2 };
-    const activeIndex = navMap[tabId];
-    if (activeIndex !== undefined) {
-        document.querySelectorAll('.nav-item')[activeIndex].classList.add('active');
-    }
-    
-    if (isPush && window.location.hash !== `#${tabId}`) {
-        history.pushState(null, null, `#${tabId}`);
-    }
-}
+            if (event) event.preventDefault(); 
             
+            // Pastikan ID ada, jika tidak default ke home
+            const targetSection = document.getElementById(tabId);
+            if (!targetSection) tabId = 'home';
+
+            // Sembunyikan semua tab tanpa kecuali
+            document.querySelectorAll('.tab-content').forEach(t => {
+                t.classList.remove('active');
+            });
+
+            // Tampilkan tab yang dituju
+            document.getElementById(tabId).classList.add('active');
+            
+            // Update menu navigasi bawah
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
             const navMap = { 'home': 0, 'info': 1, 'layanan': 2, 'sosial': 3, 'rekber': 4, 'ripper': 5, 'pembayaran': 2 };
             const activeIndex = navMap[tabId];
             if (activeIndex !== undefined) {
                 document.querySelectorAll('.nav-item')[activeIndex].classList.add('active');
             }
             
+            // Scroll ke atas dengan mulus saat pindah tab
             window.scrollTo({ top: 0, behavior: 'smooth' });
             
+            // Update URL browser
             if (isPush && window.location.hash !== `#${tabId}`) {
                 history.pushState(null, null, `#${tabId}`);
             }
         }
-
         window.addEventListener('popstate', () => {
             let isPopupClosed = false;
 
