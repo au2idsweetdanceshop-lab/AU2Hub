@@ -1,41 +1,29 @@
 const { createClient } = require('@supabase/supabase-js');
 
-// Pastikan Environment Variables di Vercel sudah benar: SUPABASE_URL & SUPABASE_ANON_KEY
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_ANON_KEY;
-const supabase = createClient(supabaseUrl, supabaseKey);
+const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
 
 module.exports = async (req, res) => {
-    // Memberi tahu Vercel bahwa ini adalah request masuk
-    if (req.method !== 'POST') {
-        return res.status(200).send('Webhook aktif! Kirimkan POST request dari Telegram.');
+    // Paksa Vercel untuk tidak melakukan redirect
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    
+    if (req.method === 'GET') {
+        return res.status(200).send('Webhook Aktif & Siap Menerima Video!');
     }
 
-    try {
-        // Menangkap data dari Telegram (Channel atau Pesan Langsung)
-        const update = req.body;
-        const message = update.channel_post || update.message;
+    const update = req.body;
+    const message = update.channel_post || update.message;
 
-        if (message && message.video) {
-            const file_id = message.video.file_id;
-            const caption = message.caption || "Video Baru AU2ID";
+    if (message && message.video) {
+        const { error } = await supabase
+            .from('videos')
+            .insert([{ 
+                file_id: message.video.file_id, 
+                caption: message.caption || "Video Baru AU2ID" 
+            }]);
 
-            // Simpan ke Supabase
-            const { error } = await supabase
-                .from('videos')
-                .insert([{ file_id: file_id, caption: caption }]);
-
-            if (error) {
-                console.error('Supabase Error:', error.message);
-                return res.status(500).json({ error: error.message });
-            }
-
-            return res.status(200).send('Video tersimpan otomatis!');
-        }
-
-        return res.status(200).send('OK, tapi bukan video.');
-    } catch (err) {
-        console.error('System Error:', err.message);
-        return res.status(500).send('Terjadi kesalahan internal.');
+        if (error) return res.status(200).send('Gagal simpan tapi tetap OK agar tidak redirect');
+        return res.status(200).send('Sukses!');
     }
+
+    return res.status(200).send('OK');
 };
