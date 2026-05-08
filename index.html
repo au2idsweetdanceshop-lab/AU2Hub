@@ -89,11 +89,11 @@
         .hide-scroll::-webkit-scrollbar { display: none; }
         .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
         /* Drawer Komentar */
-.comment-drawer { 
-    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1); 
-    transform: translateY(100%); 
-}
-.comment-drawer.open { transform: translateY(0); }
+        .comment-drawer { 
+            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1); 
+            transform: translateY(100%); 
+        }
+        .comment-drawer.open { transform: translateY(0); }
     </style>
 </head>
 <body class="pb-24">
@@ -104,9 +104,9 @@
                 <span class="text-brand-info">AU2</span><span class="text-brand-accent">Hub</span>
             </h1>
             <div id="user-profile" class="hidden items-center gap-2 bg-white/5 px-3 py-1 rounded-full border border-white/10">
-    <img id="user-photo" src="" class="w-6 h-6 rounded-full border border-brand-accent">
-    <span id="user-name" class="text-[10px] font-bold text-white">User</span>
-</div>
+                <img id="user-photo" src="" class="w-6 h-6 rounded-full border border-brand-accent">
+                <span id="user-name" class="text-[10px] font-bold text-white">User</span>
+            </div>
             
             <div onclick="switchTab('rekber')" class="cursor-pointer flex items-center gap-2 bg-brand-success/10 px-3 py-1.5 rounded-full border border-brand-success/20 active:scale-95 transition-transform">
                 <span class="relative flex h-2 w-2">
@@ -120,7 +120,7 @@
     
     <main class="max-w-md mx-auto px-5 pt-24">
         
-        <section id="home" class="tab-content text-center min-h-[60vh] flex flex-col justify-center">
+        <section id="home" class="tab-content active text-center min-h-[60vh] flex flex-col justify-center">
             <div class="relative inline-block mb-6 mx-auto">
                 <div class="absolute inset-0 bg-brand-accent blur-3xl opacity-20"></div>
                 <div class="relative bg-brand-card p-6 rounded-full border border-brand-accent/30 shadow-[0_0_20px_rgba(255,0,122,0.2)]">
@@ -227,10 +227,10 @@
                 <h3 class="text-xl font-extrabold flex items-center gap-2">
                     <div class="w-1.5 h-6 bg-[#25D366] rounded-full"></div> Feed Komunitas
                     <div id="telegram-login-container" class="mb-4">
-    <script async src="https://telegram.org/js/telegram-widget.js?22" 
-            data-telegram-login="AU2HubBot" data-size="small" 
-            data-onauth="onTelegramAuth(user)" data-request-access="write"></script>
-</div>
+                        <script async src="https://telegram.org/js/telegram-widget.js?22" 
+                                data-telegram-login="AU2HubBot" data-size="small" 
+                                data-onauth="onTelegramAuth(user)" data-request-access="write"></script>
+                    </div>
                 </h3>
             </div>
             
@@ -502,6 +502,7 @@ Maintenance server akan 06 Mei Januari (Rabu) mulai pukul 10:00-11:00. Waktu mai
         let dataRipperGlobal = []; 
         let isRipperExpanded = localStorage.getItem('statusLihatSemua') === 'true';
         let currentUser = JSON.parse(localStorage.getItem('user_au2hub')) || null;
+        let isGlobalMuted = true; // Status awal suara mati
 
 // Fungsi saat user berhasil login via Telegram
 function onTelegramAuth(user) {
@@ -509,6 +510,13 @@ function onTelegramAuth(user) {
     currentUser = user;
     updateUIProfile();
     location.reload(); // Segarkan agar sistem interaksi aktif
+}
+function toggleGlobalAudio(currentVideo) {
+    isGlobalMuted = !isGlobalMuted; // Balikkan status global
+    const allVideos = document.querySelectorAll('.video-player');
+    allVideos.forEach(v => {
+        v.muted = isGlobalMuted;
+    });
 }
 
 // Menampilkan nama & foto di header jika sudah login
@@ -528,10 +536,8 @@ function switchTab(tabId, event = null, isPush = true) {
     const targetSection = document.getElementById(tabId) || document.getElementById('home');
     if (!targetSection) return;
 
-    // 1. Simpan pilihan user agar tidak hilang saat refresh
     localStorage.setItem('lastTab', tabId);
 
-    // 2. Sembunyikan semua tab & matikan animasi icon
     document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
     document.querySelectorAll('.nav-item').forEach(n => {
         n.classList.remove('active');
@@ -539,10 +545,8 @@ function switchTab(tabId, event = null, isPush = true) {
         if (icon) icon.style.animation = 'none';
     });
 
-    // 3. Tampilkan tab baru
     targetSection.classList.add('active');
 
-    // 4. Update Navigasi Bawah & Jalankan Animasi Icon
     const navMap = { 'home': 0, 'info': 1, 'layanan': 2, 'sosial': 3, 'rekber': 4, 'ripper': 5, 'pembayaran': 2 };
     const activeIndex = navMap[tabId];
     if (activeIndex !== undefined) {
@@ -864,7 +868,7 @@ async function likeVideo(videoId, btn) {
         }
     } catch (e) { console.error(e); }
 }
-        // --- 5. FUNGSI SOSIAL ---
+// --- 5. FUNGSI SOSIAL ---
 async function loadVideos() {
     const container = document.getElementById('feed-container');
     try {
@@ -874,11 +878,12 @@ async function loadVideos() {
             container.innerHTML = '<p class="text-center py-20 text-gray-500">Belum ada video.</p>';
             return;
         }
+        
         container.innerHTML = videos.map(vid => `
             <div class="snap-start w-full h-full relative group">
                 <video class="w-full h-full object-cover video-player" 
                        loop muted playsinline 
-                       onclick="this.muted = !this.muted">
+                       onclick="toggleGlobalAudio(this)">
                     <source src="/api/stream-video?file_id=${vid.file_id}" type="video/mp4">
                 </video>
                 <div class="absolute bottom-10 left-0 w-full p-6 flex justify-between items-end">
@@ -896,11 +901,24 @@ async function loadVideos() {
                     </div>
                 </div>
             </div>`).join('');
+
         const obs = new IntersectionObserver(es => {
-            es.forEach(e => { e.isIntersecting ? e.target.play() : e.target.pause(); });
+            es.forEach(e => { 
+                if (e.isIntersecting) {
+                    e.target.play();
+                    e.target.muted = isGlobalMuted; // Mengikuti status suara terakhir
+                } else {
+                    e.target.pause();
+                }
+            });
         }, { threshold: 0.7 });
+
+        // Mengaktifkan deteksi geser (scroll) untuk semua video
         document.querySelectorAll('.video-player').forEach(v => obs.observe(v));
-    } catch (e) { container.innerHTML = "Gagal memuat."; }
+
+    } catch (e) { 
+        container.innerHTML = "Gagal memuat."; 
+    }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
