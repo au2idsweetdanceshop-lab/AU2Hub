@@ -9,6 +9,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
     
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    
     <script>
         tailwind.config = {
             theme: {
@@ -67,7 +69,6 @@
             will-change: transform, opacity;
         }
 
-        /* CSS BARU: Animasi Super Smooth */
         @keyframes smoothReveal {
             0% { opacity: 0; transform: translateY(15px); }
             100% { opacity: 1; transform: translateY(0); }
@@ -89,7 +90,6 @@
         .hide-scroll::-webkit-scrollbar { display: none; }
         .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
         
-        /* Drawer Komentar */
         .comment-drawer { 
             transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1); 
             transform: translateY(100%); 
@@ -190,37 +190,23 @@
             </div>
 
             <h2 class="text-lg font-extrabold text-white mb-4 text-center">Tanya Jawab (FAQ)</h2>
-            
             <div class="relative mb-4">
                 <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-500"></i>
-                <input type="text" id="faqSearch" placeholder="Cari info atau pertanyaan..." 
-                    class="w-full bg-brand-card border border-white/10 rounded-2xl py-3.5 pl-12 pr-4 text-sm text-white focus:outline-none focus:border-brand-info transition-all shadow-[0_0_10px_rgba(0,240,255,0.05)]">
+                <input type="text" id="faqSearch" placeholder="Cari info atau pertanyaan..." class="w-full bg-brand-card border border-white/10 rounded-2xl py-3.5 pl-12 pr-4 text-sm text-white focus:outline-none focus:border-brand-info transition-all shadow-[0_0_10px_rgba(0,240,255,0.05)]">
             </div>
-
-            <div id="faq-container" class="space-y-3 pb-4">
-            </div>
+            <div id="faq-container" class="space-y-3 pb-4"></div>
         </section>
 
         <section id="layanan" class="tab-content py-2">
             <div class="relative mb-5">
                 <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-brand-accent/70"></i>
-                <input type="text" id="serviceSearch" placeholder="Cari layanan..." 
-                    class="w-full bg-brand-card border border-brand-accent/30 rounded-2xl py-3.5 pl-12 pr-4 text-sm text-white focus:outline-none focus:border-brand-accent transition-all shadow-[0_0_10px_rgba(255,0,122,0.1)]">
+                <input type="text" id="serviceSearch" placeholder="Cari layanan..." class="w-full bg-brand-card border border-brand-accent/30 rounded-2xl py-3.5 pl-12 pr-4 text-sm text-white focus:outline-none focus:border-brand-accent transition-all shadow-[0_0_10px_rgba(255,0,122,0.1)]">
             </div>
-
             <div class="flex justify-between items-center mb-5">
-                <h3 class="text-xl font-extrabold flex items-center gap-2">
-                    <div class="w-1.5 h-6 bg-brand-accent rounded-full"></div> Layanan Joki
-                </h3>
+                <h3 class="text-xl font-extrabold flex items-center gap-2"><div class="w-1.5 h-6 bg-brand-accent rounded-full"></div> Layanan Joki</h3>
                 <span class="text-[10px] bg-brand-accent/20 text-brand-accent px-2 py-1.5 rounded-lg font-bold border border-brand-accent/30 tracking-wider">100% AMAN</span>
             </div>
-
             <div id="service-list" class="space-y-3 mb-6"></div>
-
-            <div class="bg-brand-info/5 rounded-2xl p-4 border border-brand-info/20 mb-8">
-                <h3 class="font-bold text-sm text-brand-info mb-2 flex items-center"><i class="fas fa-info-circle mr-2"></i> Cara Memesan:</h3>
-                <p class="text-xs text-gray-400 leading-relaxed">Pilih dan klik tombol <strong>"Beli"</strong> pada paket di atas. Anda akan diarahkan ke halaman pembayaran otomatis untuk melihat detail transfer dan konfirmasi langsung ke WhatsApp Admin.</p>
-            </div>
         </section>
 
         <section id="sosial" class="tab-content py-2">
@@ -228,17 +214,14 @@
                 <h3 class="text-xl font-extrabold flex items-center gap-2">
                     <div class="w-1.5 h-6 bg-[#25D366] rounded-full"></div> Feed Komunitas
                     <div id="telegram-login-container" class="mb-4">
-                        <script async src="https://telegram.org/js/telegram-widget.js?22" 
-                                data-telegram-login="AU2HubBot" data-size="small" 
-                                data-onauth="onTelegramAuth(user)" data-request-access="write"></script>
+                        <script async src="https://telegram.org/js/telegram-widget.js?22" data-telegram-login="AU2HubBot" data-size="small" data-onauth="onTelegramAuth(user)" data-request-access="write"></script>
                     </div>
                 </h3>
             </div>
             
             <div id="feed-container" class="h-[65vh] overflow-y-scroll snap-y snap-mandatory hide-scroll bg-black rounded-3xl border border-white/10 shadow-lg relative">
                 <div class="flex items-center justify-center h-full text-center py-10 text-gray-500 text-xs italic">
-                    <i class="fas fa-spinner fa-spin text-2xl mb-2 text-brand-accent"></i><br>
-                    Mencari video terbaik...
+                    <i class="fas fa-spinner fa-spin text-2xl mb-2 text-brand-accent"></i><br>Mencari video terbaik...
                 </div>
             </div>
         </section>
@@ -248,7 +231,6 @@
                 <span class="w-1.5 h-6 bg-brand-purple rounded-full"></span> Rekber & Kontak
             </h2>
             <div class="bg-brand-card rounded-2xl p-5 border border-white/5 mb-6 relative overflow-hidden">
-                <div class="absolute -right-4 -top-4 text-6xl text-brand-info opacity-5"><i class="fas fa-shield-alt"></i></div>
                 <h3 class="font-bold text-brand-info text-sm mb-3 relative z-10"><i class="fas fa-shield-alt mr-2"></i> Prosedur Rekber NIKKY</h3>
                 <ol class="list-decimal list-inside text-xs text-gray-300 space-y-2 mb-4 relative z-10 leading-relaxed">
                     <li>Buat grup WA (Penjual, Pembeli, Admin).</li>
@@ -256,49 +238,6 @@
                     <li>Penjual kasih data, Pembeli cek akun.</li>
                     <li>Akun aman? Dana diteruskan ke Penjual. Selesai.</li>
                 </ol>
-                <div class="bg-black/30 rounded-xl p-3 text-xs text-gray-400 border border-white/5 relative z-10">
-                    <i class="fas fa-clock text-brand-accent mr-2"></i> <strong>Jam Operasional:</strong> Harap chat admin terlebih dahulu.
-                </div>
-            </div>
-
-            <div>
-                <h3 class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">Kontak Resmi (Anti Clone)</h3>
-                <div class="space-y-3 mb-6">
-                    <a href="https://wa.me/9647808097471" target="_blank" class="flex items-center p-4 bg-brand-card rounded-2xl border border-brand-accent/20 active:scale-95 transition-transform">
-                        <div class="bg-brand-accent/10 w-10 h-10 rounded-full flex items-center justify-center mr-4">
-                            <i class="fas fa-user-tie text-brand-accent text-lg"></i>
-                        </div>
-                        <div>
-                            <div class="font-bold text-white text-sm">Contact Owner (ADT)</div>
-                            <div class="text-[11px] text-gray-400 mt-0.5">Pusat Informasi & Keluhan</div>
-                        </div>
-                    </a>
-                    <a href="https://wa.me/6283815584661" target="_blank" class="flex items-center p-4 bg-brand-card rounded-2xl border border-brand-info/20 active:scale-95 transition-transform">
-                        <div class="bg-brand-info/10 w-10 h-10 rounded-full flex items-center justify-center mr-4">
-                            <i class="fas fa-headset text-brand-info text-lg"></i>
-                        </div>
-                        <div>
-                            <div class="font-bold text-white text-sm">Admin Joki & Rekber NIKKY</div>
-                            <div class="text-[11px] text-gray-400 mt-0.5">Pemesanan & Transaksi</div>
-                        </div>
-                    </a>
-                </div>
-
-                <h3 class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">Grup Komunitas</h3>
-                <div class="grid grid-cols-2 gap-3 pb-4">
-                    <a href="https://chat.whatsapp.com/ITAOkcEjaU2DOzZrpKUUUS" target="_blank" class="bg-[#25D366]/10 border border-[#25D366]/20 py-3 px-2 rounded-2xl text-center active:scale-95 transition-transform flex flex-col items-center justify-center">
-                        <i class="fab fa-whatsapp text-[#25D366] text-2xl mb-1.5"></i>
-                        <div class="text-[11px] font-bold text-white">Grup WA 1</div>
-                    </a>
-                    <a href="https://chat.whatsapp.com/L5eyd3wZdbN6XlUhEDvQqf" target="_blank" class="bg-[#25D366]/10 border border-[#25D366]/20 py-3 px-2 rounded-2xl text-center active:scale-95 transition-transform flex flex-col items-center justify-center">
-                        <i class="fab fa-whatsapp text-[#25D366] text-2xl mb-1.5"></i>
-                        <div class="text-[11px] font-bold text-white">Grup WA 2</div>
-                    </a>
-                    <a href="https://m.facebook.com/groups/704614341865158/?ref=share&mibextid=KtfwRi" target="_blank" class="col-span-2 bg-[#1877F2]/10 border border-[#1877F2]/20 p-3 rounded-2xl flex items-center justify-center active:scale-95 transition-transform">
-                        <i class="fab fa-facebook text-[#1877F2] text-xl mr-3"></i>
-                        <div class="text-xs font-bold text-white">Grup Facebook Resmi</div>
-                    </a>
-                </div>
             </div>
         </section>
 
@@ -307,638 +246,157 @@
                 <h3 class="text-xl font-extrabold text-red-500 flex items-center"><i class="fas fa-user-ninja mr-2"></i> Database Ripper</h3>
                 <span id="ripper-count" class="text-[10px] bg-red-500/10 text-red-500 px-2 py-1 rounded-md border border-red-500/20 font-bold">0 Data</span>
             </div>
-            <p class="text-xs text-gray-400 mb-5 leading-relaxed">Cek daftar blacklist. Fitur pencarian instan tanpa loading. Tetap waspada dan selalu gunakan Rekber.</p>
-
             <div class="relative mb-4">
                 <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-500"></i>
-                <input type="text" id="ripperSearch" placeholder="Cari nama, ID, atau rekening..." 
-                    class="w-full bg-brand-card border border-red-500/30 rounded-2xl py-3.5 pl-12 pr-4 text-sm text-white focus:outline-none focus:border-red-500 transition-all shadow-[0_0_10px_rgba(239,68,68,0.1)]">
+                <input type="text" id="ripperSearch" placeholder="Cari nama, ID, atau rekening..." class="w-full bg-brand-card border border-red-500/30 rounded-2xl py-3.5 pl-12 pr-4 text-sm text-white focus:outline-none focus:border-red-500 transition-all shadow-[0_0_10px_rgba(239,68,68,0.1)]">
             </div>
-            
             <div class="bg-brand-card rounded-2xl border border-white/5 overflow-hidden flex flex-col">
                 <div id="ripper-container" class="ripper-list space-y-0 max-h-[55vh] overflow-y-auto w-full"></div>
             </div>
-            <p class="text-[10px] text-gray-500 mt-3 text-center">*Lapor penipu baru ke Admin/Owner beserta SS Chat & Transfer.</p>
         </section>
 
         <section id="pembayaran" class="tab-content py-2">
             <div class="flex items-center mb-6">
-                <button onclick="history.back()" class="text-gray-400 hover:text-white bg-brand-card p-2 rounded-full w-10 h-10 flex items-center justify-center border border-white/5 active:scale-95 transition-all">
-                    <i class="fas fa-arrow-left"></i>
-                </button>
+                <button onclick="history.back()" class="text-gray-400 hover:text-white bg-brand-card p-2 rounded-full w-10 h-10 flex items-center justify-center border border-white/5 active:scale-95 transition-all"><i class="fas fa-arrow-left"></i></button>
                 <h2 class="text-lg font-extrabold text-white ml-4">Detail Pembayaran</h2>
             </div>
-
             <div class="bg-brand-card rounded-3xl p-6 border border-white/10 shadow-lg relative overflow-hidden mb-6">
-                <div class="absolute -right-10 -top-10 w-32 h-32 bg-brand-accent/10 rounded-full blur-2xl"></div>
-                
-                <div class="text-xs text-gray-500 uppercase tracking-widest mb-1">Total Tagihan</div>
                 <div class="flex justify-between items-end mb-6 relative z-10">
                     <div id="pay-total" class="text-3xl font-extrabold text-brand-accent tracking-tight">Rp 0</div>
-                    
-                    <button onclick="salinNominal()" id="btn-salin" class="bg-brand-info/10 text-brand-info border border-brand-info/30 text-[10px] font-bold px-3 py-1.5 rounded-lg active:scale-95 transition-all flex items-center h-max">
-                        <i class="fas fa-copy mr-1.5"></i> Salin
-                    </button>
+                    <button onclick="salinNominal()" id="btn-salin" class="bg-brand-info/10 text-brand-info border border-brand-info/30 text-[10px] font-bold px-3 py-1.5 rounded-lg active:scale-95 transition-all flex items-center h-max"><i class="fas fa-copy mr-1.5"></i> Salin</button>
                     <input type="hidden" id="nominal-asli" value="0">
                 </div>
-                
-                <div class="bg-white p-3 rounded-2xl mb-6 mx-auto w-max shadow-[0_0_20px_rgba(0,240,255,0.15)] relative group z-10">
-                    <img src="https://lh3.googleusercontent.com/u/0/d/1TbGGJpXDTarVbZspPd3YCANMZ_XQNNIE" alt="QRIS ADT" class="w-44 h-44 object-cover rounded-xl" onerror="this.src='https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=Contoh-QRIS'">
-                    <div class="absolute inset-0 bg-black/60 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl backdrop-blur-sm">
-                        <i class="fas fa-camera text-white text-2xl mb-2"></i>
-                        <span class="text-white text-[10px] font-bold">Screenshot & Simpan</span>
-                    </div>
-                </div>
-                <div class="text-[11px] font-bold text-center text-white uppercase tracking-widest mb-6 relative z-10">ADT STORE</div>
-
                 <div class="space-y-3 mb-8 bg-black/30 p-4 rounded-2xl border border-white/5 relative z-10">
                     <div class="flex justify-between text-xs border-b border-white/5 pb-2">
                         <span class="text-gray-400">Paket Pesanan</span>
                         <span id="pay-product" class="text-white font-bold text-right pl-4 leading-tight">-</span>
                     </div>
-                    <div class="flex justify-between text-xs pt-1">
-                        <span class="text-gray-400">Admin Rekber NIKKY</span>
-                        <span class="text-brand-info font-bold">Include (Gratis)</span>
-                    </div>
                 </div>
-
                 <a id="wa-confirm" href="#" target="_blank" class="flex justify-center items-center w-full bg-[#25D366] hover:bg-[#20bd5a] active:scale-[0.98] transition-all text-white font-bold py-4 rounded-2xl shadow-[0_8px_20px_rgba(37,211,102,0.25)] text-sm relative z-10">
                     <i class="fab fa-whatsapp text-lg mr-2"></i> Konfirmasi ke Admin
                 </a>
-                <p class="text-center text-[10px] text-gray-500 mt-4 leading-relaxed relative z-10">*Sistem otomatis menyiapkan chat pesanan. Jangan lupa lampirkan screenshot bukti transfer.</p>
             </div>
         </section>
 
     </main>
     
-    <div id="comment-drawer" class="fixed inset-x-0 bottom-0 z-[60] h-[65vh] glass border-t border-white/10 rounded-t-3xl comment-drawer p-6 max-w-md mx-auto">
-        <div class="flex justify-between items-center mb-4">
-            <h4 class="font-bold text-white">Komentar</h4>
-            <button onclick="closeComments()" class="text-gray-400 text-xl p-2"><i class="fas fa-times"></i></button>
-        </div>
-        <div id="comment-list" class="h-[70%] overflow-y-auto space-y-4 hide-scroll pb-10">
-            <p class="text-center text-xs text-gray-500 italic">Belum ada komentar.</p>
-        </div>
-        <div class="absolute bottom-6 inset-x-6 flex gap-2">
-            <input type="text" id="comment-input" placeholder="Tulis komentar..." class="flex-1 bg-white/5 border border-white/10 rounded-full px-4 py-3 text-sm text-white focus:outline-none">
-            <button onclick="sendComment()" class="bg-brand-accent text-white px-5 py-2 rounded-full"><i class="fas fa-paper-plane"></i></button>
-        </div>
-    </div>
-
     <div id="modal-event" class="fixed inset-0 z-[60] hidden items-center justify-center bg-black/80 backdrop-blur-sm px-4">
         <div class="absolute inset-0" onclick="closeModalEvent()"></div>
-        
-        <div class="bg-brand-card w-full max-w-md rounded-3xl border border-white/10 overflow-hidden relative shadow-[0_0_40px_rgba(255,0,122,0.15)] flex flex-col max-h-[85vh] modal-anim z-10">
-            <div class="flex justify-between items-center p-4 border-b border-white/5 glass bg-white/5">
-                <h3 class="font-bold text-white text-sm flex items-center gap-2">
-                    <i class="fas fa-bullhorn text-brand-info text-lg"></i> Maintenance Weekly
-                </h3>
-                <button onclick="closeModalEvent()" class="text-gray-400 hover:text-white bg-black/30 border border-white/10 w-8 h-8 rounded-full flex items-center justify-center transition-colors active:scale-90">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            
-            <div class="relative flex-1 overflow-y-auto p-5">
-                
-                <div class="relative mb-5 w-full overflow-hidden rounded-xl bg-black/20 pb-8 pt-2 border border-white/5">
-                    <div id="image-carousel" onscroll="updateCarouselDots()" class="flex overflow-x-auto hide-scroll snap-x snap-mandatory gap-3 px-3 relative">
-                        <img src="FB_IMG_1777992277452.jpg" loading="lazy" alt="Event 1" class="w-[90%] flex-shrink-0 snap-center h-48 object-cover rounded-xl border border-white/10 shadow-lg">
-                        <img src="FB_IMG_1777992277452.jpg" loading="lazy" alt="Event 2" class="w-[90%] flex-shrink-0 snap-center h-48 object-cover rounded-xl border border-white/10 shadow-lg">
-                        <img src="FB_IMG_1777992277452.jpg" loading="lazy" alt="Event 3" class="w-[90%] flex-shrink-0 snap-center h-48 object-cover rounded-xl border border-white/10 shadow-lg">
-                        <img src="FB_IMG_1777992277452.jpg" loading="lazy" alt="Event 4" class="w-[90%] flex-shrink-0 snap-center h-48 object-cover rounded-xl border border-white/10 shadow-lg">
-                        <img src="FB_IMG_1777992277452.jpg" loading="lazy" alt="Event 5" class="w-[90%] flex-shrink-0 snap-center h-48 object-cover rounded-xl border border-white/10 shadow-lg">
-                    </div>
-                    
-                    <div id="carousel-dots" class="absolute bottom-3 left-1/2 -translate-x-1/2 flex space-x-1.5 z-10 pointer-events-none">
-                        <div class="dot-indicator h-1.5 rounded-full transition-all duration-300 w-4 bg-brand-accent"></div>
-                        <div class="dot-indicator h-1.5 rounded-full transition-all duration-300 w-1.5 bg-white/40"></div>
-                        <div class="dot-indicator h-1.5 rounded-full transition-all duration-300 w-1.5 bg-white/40"></div>
-                        <div class="dot-indicator h-1.5 rounded-full transition-all duration-300 w-1.5 bg-white/40"></div>
-                        <div class="dot-indicator h-1.5 rounded-full transition-all duration-300 w-1.5 bg-white/40"></div>
-                    </div>
-                </div>
-                
-                <h4 class="font-extrabold text-white text-base mb-2">Update Event Terbaru AU2</h4>
-                <p class="text-xs text-gray-400 mb-4 leading-relaxed">
-                    Pemain tercinta,
-                    Maintenance server akan 06 Mei Januari (Rabu) mulai pukul 10:00-11:00. Waktu maintenance mungkin dapat dipercepat atau ditunda berdasarkan progress maintenance.
-                </p>
-                
-                <ul class="text-xs text-gray-300 space-y-2.5 mb-6 bg-black/20 p-3 rounded-xl border border-white/5">
-                    <li class="flex items-start"><i class="fas fa-star text-brand-accent mt-0.5 mr-2"></i> <span>Gacha Kostum Limited Edition rilis.</span></li>
-                    <li class="flex items-start"><i class="fas fa-star text-brand-accent mt-0.5 mr-2"></i> <span>Misi Top-up berhadiah Mount eksklusif.</span></li>
-                    <li class="flex items-start"><i class="fas fa-star text-brand-accent mt-0.5 mr-2"></i> <span>Perbaikan (Bug Fixes) fitur Ballroom.</span></li>
-                </ul>
-
-                <a href="https://www.facebook.com/story.php?story_fbid=1373226878158377&id=100064132326306&rdid=7emuowRLGF3B8ay6#/" target="_blank" class="flex justify-center items-center w-full bg-[#1877F2]/10 hover:bg-[#1877F2]/20 border border-[#1877F2]/30 text-[#1877F2] font-bold py-3.5 rounded-xl active:scale-95 transition-all text-xs">
-                    <i class="fab fa-facebook text-base mr-2"></i> Buka Postingan Asli (Opsional)
-                </a>
-                <p class="text-[9px] text-gray-500 mt-3 text-center leading-relaxed">
-                    *Karena setelan privasi Grup Facebook Tertutup, rincian lengkap tidak bisa di-embed langsung. Silakan klik tombol di atas jika ingin ke Grup.
-                </p>
-            </div>
-        </div>
-    </div>
-
-    <button onclick="toggleWidget()" class="fixed bottom-[90px] right-5 z-50 bg-gradient-to-r from-brand-info to-brand-purple text-white w-14 h-14 rounded-full shadow-[0_0_20px_rgba(0,240,255,0.4)] flex items-center justify-center active:scale-90 transition-transform">
-        <i class="fas fa-comment-dots text-2xl"></i>
-    </button>
-
-    <div id="floating-widget" class="hidden fixed bottom-[160px] right-5 z-50 w-[85vw] max-w-[340px] h-[480px] bg-brand-card border border-brand-info/40 rounded-3xl shadow-[0_10px_40px_rgba(0,0,0,0.8)] flex-col overflow-hidden modal-anim backdrop-blur-md">
-        <div class="bg-brand-dark px-4 py-3 border-b border-white/10 flex justify-between items-center">
-            <h3 class="font-bold text-white text-sm flex items-center gap-2">
-                <i class="fas fa-comment-dots text-brand-info"></i> Global Chat
-            </h3>
-            <button onclick="toggleWidget()" class="text-gray-400 hover:text-red-400 w-6 h-6 rounded-full flex items-center justify-center transition-colors active:scale-90">
-                <i class="fas fa-times text-sm"></i>
-            </button>
-        </div>
-        
-        <div class="flex-1 relative w-full h-full bg-[#0F0920] overflow-hidden">
-            <div class="flex items-center justify-center h-full text-center text-xs text-gray-500 italic px-4">
-                (Letakkan Kode Embed Chatango / Cbox / Minnit di Sini Nanti)
-            </div>
+        <div class="bg-brand-card w-full max-w-md rounded-3xl border border-white/10 overflow-hidden relative z-10 p-5 text-center">
+            <h4 class="font-extrabold text-white text-base mb-2">Update Event Terbaru</h4>
+            <button onclick="closeModalEvent()" class="mt-4 bg-brand-accent text-white px-4 py-2 rounded-xl">Tutup</button>
         </div>
     </div>
 
     <nav class="fixed bottom-0 left-0 w-full glass z-40 flex justify-around items-center h-[70px] px-1 shadow-[0_-10px_30px_rgba(0,0,0,0.5)]">
         <a href="#home" onclick="switchTab('home', event)" class="nav-item flex flex-col items-center justify-center flex-1 text-gray-500 transition-colors">
-            <i class="fas fa-home text-xl mb-1"></i>
-            <span class="text-[9px] font-bold mt-0.5">Home</span>
+            <i class="fas fa-home text-xl mb-1"></i><span class="text-[9px] font-bold mt-0.5">Home</span>
         </a>
         <a href="#info" onclick="switchTab('info', event)" class="nav-item flex flex-col items-center justify-center flex-1 text-gray-500 transition-colors">
-            <i class="fas fa-bullhorn text-xl mb-1"></i>
-            <span class="text-[9px] font-bold mt-0.5">Info</span>
+            <i class="fas fa-bullhorn text-xl mb-1"></i><span class="text-[9px] font-bold mt-0.5">Info</span>
         </a>
         <a href="#layanan" onclick="switchTab('layanan', event)" class="nav-item flex flex-col items-center justify-center flex-1 text-gray-500 transition-colors">
-            <i class="fas fa-bolt text-xl mb-1"></i>
-            <span class="text-[9px] font-bold mt-0.5">Layanan</span>
+            <i class="fas fa-bolt text-xl mb-1"></i><span class="text-[9px] font-bold mt-0.5">Layanan</span>
         </a>
         <a href="#sosial" onclick="switchTab('sosial', event)" class="nav-item flex flex-col items-center justify-center flex-1 text-gray-500 transition-colors">
-            <i class="fas fa-camera-retro text-xl mb-1"></i>
-            <span class="text-[9px] font-bold mt-0.5">Sosial</span>
+            <i class="fas fa-camera-retro text-xl mb-1"></i><span class="text-[9px] font-bold mt-0.5">Sosial</span>
         </a>
         <a href="#rekber" onclick="switchTab('rekber', event)" class="nav-item flex flex-col items-center justify-center flex-1 text-gray-500 transition-colors">
-            <i class="fas fa-shield-alt text-xl mb-1"></i>
-            <span class="text-[9px] font-bold mt-0.5">Rekber</span>
+            <i class="fas fa-shield-alt text-xl mb-1"></i><span class="text-[9px] font-bold mt-0.5">Rekber</span>
         </a>
         <a href="#ripper" onclick="switchTab('ripper', event)" class="nav-item flex flex-col items-center justify-center flex-1 text-gray-500 transition-colors">
-            <i class="fas fa-user-ninja text-xl mb-1"></i>
-            <span class="text-[9px] font-bold mt-0.5">Ripper</span>
+            <i class="fas fa-user-ninja text-xl mb-1"></i><span class="text-[9px] font-bold mt-0.5">Ripper</span>
         </a>
     </nav>
 
     <script>
-        // --- 1. DATA LOKAL ---
-        const services = [
-            { id: 1, name: 'Joki Ballroom', price: 7500, label: '', desc: 'Estimasi pengerjaan 2 jam.' },
-            { id: 2, name: 'Paket Joki AFK (Island/Japan/Hawai)', price: 65000, label: '', desc: 'Sesuai spek dan pesanan.' },
-            { id: 3, name: 'Joki War Tari', price: 7500, label: '/hari', desc: '4x-5x play score max. Sesuai req lagu.' }
-        ];
-
-        const faqs = [
-            { t: "Berapa lama proses joki?", j: "Joki Ballroom memakan waktu sekitar 2 jam. Untuk War Tari & AFK menyesuaikan spesifikasi dan antrean pesanan. Admin akan menginfokan detailnya di WA." },
-            { t: "Apakah akun aman tidak kena Banned?", j: "100% Aman. Joki dikerjakan murni manual oleh player profesional. Kami tidak memakai bot, cheat, atau apk pihak ketiga." },
-            { t: "Apakah harga Pricelist sudah termasuk biaya admin?", j: "Ya, semua harga joki yang tertera sudah Include (termasuk) biaya Rekber NIKKY. Tidak ada biaya tambahan yang disembunyikan." }
-        ];
-
-        let dataRipperGlobal = []; 
-        let isRipperExpanded = localStorage.getItem('statusLihatSemua') === 'true';
-        let currentUser = JSON.parse(localStorage.getItem('user_au2hub')) || null;
-        let isGlobalMuted = true; // Status awal suara mati
-
-        // Fungsi saat user berhasil login via Telegram
-        function onTelegramAuth(user) {
-            localStorage.setItem('user_au2hub', JSON.stringify(user));
-            currentUser = user;
-            updateUIProfile();
-            location.reload(); 
-        }
+        // --- DATA & UI LOKAL ---
+        const services = [{ id: 1, name: 'Joki Ballroom', price: 7500, label: '', desc: 'Estimasi pengerjaan 2 jam.' }];
+        const faqs = [{ t: "Berapa lama proses joki?", j: "Memakan waktu sekitar 2 jam." }];
+        
+        let currentUser = null;
+        let isGlobalMuted = true; 
 
         function toggleGlobalAudio(currentVideo) {
-            isGlobalMuted = !isGlobalMuted; // Balikkan status global
+            isGlobalMuted = !isGlobalMuted; 
             const allVideos = document.querySelectorAll('.video-player');
-            allVideos.forEach(v => {
-                v.muted = isGlobalMuted;
-            });
+            allVideos.forEach(v => { v.muted = isGlobalMuted; });
         }
 
-        // Menampilkan nama & foto di header jika sudah login
-        function updateUIProfile() {
-            if (currentUser) {
-                document.getElementById('telegram-login-container').classList.add('hidden');
-                document.getElementById('user-profile').classList.remove('hidden');
-                document.getElementById('user-profile').classList.add('flex');
-                document.getElementById('user-name').innerText = currentUser.first_name;
-                document.getElementById('user-photo').src = currentUser.photo_url || "https://ui-avatars.com/api/?name=" + currentUser.first_name;
-            }
-        }
-
-        // --- 2. FUNGSI NAVIGASI UI ---
         function switchTab(tabId, event = null, isPush = true) {
             if (event) event.preventDefault();
             const targetSection = document.getElementById(tabId) || document.getElementById('home');
             if (!targetSection) return;
 
-            localStorage.setItem('lastTab', tabId);
-
             document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-            document.querySelectorAll('.nav-item').forEach(n => {
-                n.classList.remove('active');
-                const icon = n.querySelector('i');
-                if (icon) icon.style.animation = 'none';
-            });
-
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
             targetSection.classList.add('active');
 
-            // LOGIKA UPDATE OTOMATIS:
-            // Jika user klik menu sosial, jalankan ulang pemanggilan video terbaru
+            // Logic render ulang video jika masuk tab sosial
             if (tabId === 'sosial') {
                 const container = document.getElementById('feed-container');
-                container.innerHTML = `
-                    <div class="flex flex-col items-center justify-center h-full text-center py-10 text-gray-500 text-xs italic">
-                        <i class="fas fa-sync fa-spin text-2xl mb-2 text-brand-accent"></i><br>
-                        Mengambil Video Terbaru...
-                    </div>`;
+                container.innerHTML = `<div class="flex flex-col items-center justify-center h-full text-center py-10 text-gray-500 text-xs italic"><i class="fas fa-sync fa-spin text-2xl mb-2 text-brand-accent"></i><br>Mengambil Video...</div>`;
                 loadVideos();
             }
 
-            const navMap = { 'home': 0, 'info': 1, 'layanan': 2, 'sosial': 3, 'rekber': 4, 'ripper': 5, 'pembayaran': 2 };
-            const activeIndex = navMap[tabId];
-            if (activeIndex !== undefined) {
-                const activeNav = document.querySelectorAll('.nav-item')[activeIndex];
-                if (activeNav) {
-                    activeNav.classList.add('active');
-                    const icon = activeNav.querySelector('i');
-                    if (icon) {
-                        void icon.offsetWidth; 
-                        icon.style.animation = 'popBounce 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards';
-                    }
-                }
-            }
-
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-            if (isPush && window.location.hash !== `#${tabId}`) {
-                history.pushState(null, null, `#${tabId}`);
+            const navMap = { 'home': 0, 'info': 1, 'layanan': 2, 'sosial': 3, 'rekber': 4, 'ripper': 5 };
+            if (navMap[tabId] !== undefined) {
+                document.querySelectorAll('.nav-item')[navMap[tabId]].classList.add('active');
             }
         }
 
-        window.addEventListener('popstate', () => {
-            let isPopupClosed = false;
-            const modalEvent = document.getElementById('modal-event');
-            if (!modalEvent.classList.contains('hidden')) {
-                modalEvent.classList.add('hidden');
-                modalEvent.classList.remove('flex');
-                document.body.style.overflow = 'auto';
-                isPopupClosed = true;
-            }
-            const widget = document.getElementById('floating-widget');
-            if (!widget.classList.contains('hidden')) {
-                widget.classList.add('hidden');
-                widget.classList.remove('flex');
-                isPopupClosed = true;
-            }
-            if (isPopupClosed) return;
-            const hash = window.location.hash.substring(1) || 'home';
-            switchTab(hash, null, false);
-        });
+        // --- 5. FUNGSI SOSIAL (HLS TIKTOK MODE) ---
+        let allVideosData = []; 
+        let obs; 
 
-        function openModalEvent() {
-            history.pushState({ popup: 'modal' }, null, null); 
-            const modal = document.getElementById('modal-event');
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
-            document.body.style.overflow = 'hidden'; 
-            setTimeout(() => {
-                const carousel = document.getElementById('image-carousel');
-                if(carousel) { carousel.scrollLeft = 0; updateCarouselDots(); }
-            }, 50);
-        }
-
-        function closeModalEvent() { history.back(); }
-
-        function toggleWidget() {
-            const widget = document.getElementById('floating-widget');
-            if (widget.classList.contains('hidden')) {
-                history.pushState({ popup: 'widget' }, null, null); 
-                widget.classList.remove('hidden'); 
-                widget.classList.add('flex');
-            } else { history.back(); }
-        }
-
-        // --- 3. FUNGSI RENDER DATA ---
-        function renderFaqs(data = faqs) {
-            const container = document.getElementById('faq-container');
-            if (data.length === 0) {
-                container.innerHTML = `<div class="text-center text-xs text-gray-400 py-6 border border-white/5 bg-brand-card rounded-2xl"><i class="fas fa-search-minus mb-2 text-lg"></i><br>Pertanyaan tidak ditemukan.</div>`;
-                return;
-            }
-            container.innerHTML = data.map(f => `
-                <details class="bg-brand-card rounded-2xl border border-white/5 group">
-                    <summary class="flex justify-between items-center font-bold text-xs cursor-pointer text-white p-4">
-                        ${f.t} <i class="fas fa-chevron-down text-brand-accent transition-transform group-open:rotate-180"></i>
-                    </summary>
-                    <div class="px-4 pb-4 text-xs text-gray-400 leading-relaxed border-t border-white/5 pt-3 mt-1">${f.j}</div>
-                </details>
-            `).join('');
-        }
-
-        document.getElementById('faqSearch').addEventListener('input', (e) => {
-            const val = e.target.value.toLowerCase();
-            renderFaqs(faqs.filter(f => f.t.toLowerCase().includes(val) || f.j.toLowerCase().includes(val)));
-        });
-
-        function renderServices(data = services) {
-            const container = document.getElementById('service-list');
-            if (data.length === 0) {
-                container.innerHTML = `<div class="text-center text-xs text-gray-400 py-6 border border-white/5 bg-brand-card rounded-2xl"><i class="fas fa-search-minus mb-2 text-lg"></i><br>Layanan tidak ditemukan.</div>`;
-                return;
-            }
-            container.innerHTML = data.map(s => `
-                <div class="bg-brand-card p-4 rounded-2xl border border-white/5 flex justify-between items-center hover:border-brand-accent/30 transition-all">
-                    <div class="w-[60%]">
-                        <div class="font-bold text-sm text-white mb-1">${s.name}</div>
-                        <div class="text-[10px] text-gray-400 leading-tight">${s.desc}</div>
-                        <div class="text-[9px] text-brand-info mt-1"><i class="fas fa-check-circle mr-1"></i> Include Rekber NIKKY</div>
-                    </div>
-                    <div class="text-right flex flex-col items-end">
-                        <div class="text-brand-accent font-extrabold text-[15px] mb-2">Rp ${s.price.toLocaleString('id-ID')} <span class="text-[9px] font-normal text-gray-500">${s.label}</span></div>
-                        <button onclick="checkout('${s.name}', ${s.price})" class="bg-brand-accent/10 text-brand-accent text-[10px] font-bold px-5 py-2 rounded-full border border-brand-accent/30 active:scale-90 transition-transform">BELI</button>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        document.getElementById('serviceSearch').addEventListener('input', (e) => {
-            const val = e.target.value.toLowerCase();
-            renderServices(services.filter(s => s.name.toLowerCase().includes(val) || s.desc.toLowerCase().includes(val)));
-        });
-
-        function checkout(name, price) {
-            const hargaRupiah = price.toLocaleString('id-ID');
-            document.getElementById('pay-total').innerText = `Rp ${hargaRupiah}`;
-            document.getElementById('pay-product').innerText = name;
-            document.getElementById('nominal-asli').value = price;
-            const noWA = "6283815584661";
-            const teksWA = `Halo Admin Joki AU2Hub,%0A%0ASaya ingin mengkonfirmasi pembayaran pesanan saya:%0A%0APaket : *${name}*%0ATotal : *Rp ${hargaRupiah}*%0A%0A(Berikut ini saya lampirkan gambar bukti transfer QRIS / screenshot)`;
-            const linkWA = `https://api.whatsapp.com/send?phone=${noWA}&text=${teksWA}`;
-            document.getElementById('wa-confirm').setAttribute('href', linkWA);
-            switchTab('pembayaran');
-        }
-
-        function salinNominal() {
-            const nominalMurni = document.getElementById('nominal-asli').value;
-            const btnSalin = document.getElementById('btn-salin');
-            const teksAsli = btnSalin.innerHTML;
-            if (navigator.clipboard && window.isSecureContext) { navigator.clipboard.writeText(nominalMurni); } 
-            else {
-                let tempInput = document.createElement("textarea");
-                tempInput.value = nominalMurni;
-                tempInput.style.position = "fixed"; tempInput.style.left = "-9999px";
-                document.body.appendChild(tempInput); tempInput.select();
-                try { document.execCommand("copy"); } catch (err) {}
-                document.body.removeChild(tempInput);
-            }
-            btnSalin.innerHTML = '<i class="fas fa-check mr-1.5"></i> Tersalin';
-            btnSalin.classList.replace('text-brand-info', 'text-brand-success');
-            btnSalin.classList.replace('bg-brand-info/10', 'bg-brand-success/10');
-            btnSalin.classList.replace('border-brand-info/30', 'border-brand-success/30');
-            setTimeout(() => {
-                btnSalin.innerHTML = teksAsli;
-                btnSalin.classList.replace('text-brand-success', 'text-brand-info');
-                btnSalin.classList.replace('bg-brand-success/10', 'bg-brand-info/10');
-                btnSalin.classList.replace('border-brand-success/30', 'border-brand-info/30');
-            }, 2000);
-        }
-
-        // --- 4. FUNGSI DATABASE OTOMATIS (SINKRON GOOGLE SHEETS) ---
-        async function muatDataRipper() {
-            const linkAPI = "https://sheetdb.io/api/v1/ry6ddufq4tnpz";
-            const container = document.getElementById('ripper-container');
-            
-            const dataTersimpan = localStorage.getItem('ripperCache');
-            if (dataTersimpan) {
-                dataRipperGlobal = JSON.parse(dataTersimpan);
-                renderRippers(dataRipperGlobal, false);
-            } else {
-                container.innerHTML = '<div class="text-center py-10 text-xs text-brand-info animate-pulse"><i class="fas fa-sync fa-spin mb-2 text-2xl"></i><br>Menyiapkan Database Pertama Kali...</div>';
-            }
-
-            try {
-                const respon = await fetch(linkAPI);
-                const dataBaru = await respon.json();
-                
-                localStorage.setItem('ripperCache', JSON.stringify(dataBaru));
-                dataRipperGlobal = dataBaru;
-                
-                renderRippers(dataRipperGlobal, false);
-            } catch (error) {
-                console.error("Gagal menarik data baru:", error);
-                if (!dataTersimpan) {
-                    container.innerHTML = '<div class="text-center py-10 text-xs text-red-500"><i class="fas fa-exclamation-triangle mb-2 text-2xl"></i><br>Gagal terhubung ke database. Cek koneksi internet.</div>';
-                }
-            }
-        }
-
-        function renderRippers(data, isSearch = false) {
-            const container = document.getElementById('ripper-container');
-            document.getElementById('ripper-count').innerText = `${dataRipperGlobal.length} Total Data`;
-            
-            if(data.length === 0) {
-                container.innerHTML = `
-                    <div class="text-center py-10 px-4">
-                        <i class="fas fa-check-circle text-brand-success text-3xl mb-2"></i>
-                        <div class="text-xs text-gray-400">Pencarian aman.<br>(Namun tetap waspada & gunakan Rekber)</div>
-                    </div>`;
-                return;
-            }
-
-            const limitBatas = (!isSearch && !isRipperExpanded) ? 5 : data.length;
-            const dataYangDitampilkan = data.slice(0, limitBatas);
-
-            let htmlString = dataYangDitampilkan.map(r => {
-                const nama = r["Nama / Keterangan"] || r.nama || r.Nama || "Tanpa Nama";
-                const idGame = r["ID"] || r.id || "-";
-                const rekening = r["Rekening / Kontak (WA/Dana)"] || r.rekening || r.Rekening || "-";
-
-                return `
-                <div class="p-4 border-b border-white/5 last:border-0 hover:bg-white/5 transition-colors">
-                    <div class="flex justify-between items-start mb-1">
-                        <div class="font-bold text-xs text-white">${nama}</div>
-                        <div class="text-[9px] text-red-500 font-bold bg-red-500/10 px-2 py-0.5 rounded border border-red-500/20 whitespace-nowrap ml-2"><i class="fas fa-ban mr-1"></i> RIPPER</div>
-                    </div>
-                    <div class="text-[10px] text-brand-info font-mono mb-1">ID: ${idGame}</div>
-                    <div class="text-[10px] text-gray-400"><i class="fas fa-credit-card mr-1"></i> ${rekening}</div>
-                </div>
-                `;
-            }).join('');
-
-            container.innerHTML = htmlString;
-
-            if (!isSearch && !isRipperExpanded && data.length > 5) {
-                container.innerHTML += `
-                    <div id="wadah-tombol-semua" class="p-5 text-center bg-black/20 mt-1 border-t border-white/5">
-                        <button onclick="tampilkanSemuaRipper(this)" class="bg-brand-accent/20 border border-brand-accent/40 text-brand-accent text-xs font-bold py-2.5 px-6 rounded-full active:scale-95 transition-all w-full flex items-center justify-center">
-                            <i class="fas fa-list-ul mr-2"></i> Tampilkan Semua Laporan
-                        </button>
-                    </div>
-                `;
-            }
-        }
-
-        function tampilkanSemuaRipper(tombol) {
-            isRipperExpanded = true;
-            localStorage.setItem('statusLihatSemua', 'true'); 
-            
-            tombol.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Membuka Data...';
-            tombol.classList.add('opacity-70', 'scale-95');
-
-            setTimeout(() => {
-                const wadahTombol = document.getElementById('wadah-tombol-semua');
-                if (wadahTombol) wadahTombol.remove();
-
-                const sisaData = dataRipperGlobal.slice(5);
-
-                let htmlSisa = sisaData.map((r, index) => {
-                    const nama = r["Nama / Keterangan"] || r.nama || r.Nama || "Tanpa Nama";
-                    const idGame = r["ID"] || r.id || "-";
-                    const rekening = r["Rekening / Kontak (WA/Dana)"] || r.rekening || r.Rekening || "-";
-                    
-                    const delayAnimasi = index < 5 ? (index * 0.05) : 0; 
-
-                    return `
-                    <div class="p-4 border-b border-white/5 last:border-0 hover:bg-white/5 transition-colors smooth-reveal" style="animation-delay: ${delayAnimasi}s; opacity: 0;">
-                        <div class="flex justify-between items-start mb-1">
-                            <div class="font-bold text-xs text-white">${nama}</div>
-                            <div class="text-[9px] text-red-500 font-bold bg-red-500/10 px-2 py-0.5 rounded border border-red-500/20 whitespace-nowrap ml-2"><i class="fas fa-ban mr-1"></i> RIPPER</div>
-                        </div>
-                        <div class="text-[10px] text-brand-info font-mono mb-1">ID: ${idGame}</div>
-                        <div class="text-[10px] text-gray-400"><i class="fas fa-credit-card mr-1"></i> ${rekening}</div>
-                    </div>
-                    `;
-                }).join('');
-
-                document.getElementById('ripper-container').insertAdjacentHTML('beforeend', htmlSisa);
-            }, 150); 
-        }
-
-        document.getElementById('ripperSearch').addEventListener('input', (e) => {
-            const val = e.target.value.toLowerCase();
-            
-            if(val === '') {
-                renderRippers(dataRipperGlobal, false);
-                return;
-            }
-
-            const hasilFilter = dataRipperGlobal.filter(r => {
-                const nama = (r["Nama / Keterangan"] || r.nama || r.Nama || "").toLowerCase();
-                const idGame = (r["ID"] || r.id || "").toLowerCase();
-                const rekening = (r["Rekening / Kontak (WA/Dana)"] || r.rekening || r.Rekening || "").toLowerCase();
-                return nama.includes(val) || idGame.includes(val) || rekening.includes(val);
-            });
-            
-            renderRippers(hasilFilter, true); 
-        });
-
-        function updateCarouselDots() {
-            const carousel = document.getElementById('image-carousel');
-            const dots = document.querySelectorAll('.dot-indicator');
-            if (!carousel || dots.length === 0) return;
-            const maxScroll = carousel.scrollWidth - carousel.clientWidth;
-            if (maxScroll <= 0) return;
-            let activeIndex = Math.round((carousel.scrollLeft / maxScroll) * (dots.length - 1));
-            activeIndex = Math.max(0, Math.min(activeIndex, dots.length - 1));
-            dots.forEach((dot, index) => {
-                if (index === activeIndex) { dot.className = "dot-indicator h-1.5 rounded-full transition-all duration-300 w-4 bg-brand-accent"; } 
-                else { dot.className = "dot-indicator h-1.5 rounded-full transition-all duration-300 w-1.5 bg-white/40"; }
-            });
-        }
-        
-        let activeVideoId = null;
-
-        function openComments(id) {
-            activeVideoId = id;
-            document.getElementById('comment-drawer').classList.add('open');
-        }
-
-        function closeComments() {
-            document.getElementById('comment-drawer').classList.remove('open');
-        }
-        
-        async function likeVideo(videoId, btn) {
-            if (!currentUser) return alert("Login Telegram dulu!");
-            const icon = btn.querySelector('i');
-            try {
-                const res = await fetch('/api/interact', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        type: 'like', 
-                        video_id: videoId, 
-                        user_id: currentUser.id, 
-                        user_name: currentUser.first_name 
-                    })
-                });
-                if (res.ok) {
-                    icon.classList.replace('text-white', 'text-brand-accent');
-                    icon.classList.add('animate-ping');
-                    setTimeout(() => icon.classList.remove('animate-ping'), 500);
-                }
-            } catch (e) { console.error(e); }
-        }
-
-        // --- 5. FUNGSI SOSIAL (TIKTOK MODE + INFINITE SCROLL) ---
-        let allVideosData = []; // Menyimpan data video dari database
-        let obs; // Global observer
-
-        function handleVideoError(videoElement) {
-            const container = videoElement.closest('.snap-start');
-            if (container) {
-                container.remove();
-            }
-        }
-
-        // Fungsi memanggil API
         async function loadVideos() {
             const container = document.getElementById('feed-container');
-            
-            // Matikan observer lama jika ada agar tidak bentrok
             if (obs) obs.disconnect(); 
             
             try {
-                // Jangan lupa, backend /api/get-videos Anda harus di-update agar mengacak (shuffle) array video dari Supabase.
-                const res = await fetch('/api/get-videos');
-                allVideosData = await res.json();
+                // MENGGUNAKAN DUMMY DATA HLS UNTUK TESTING (Gantikan dengan fetch API aslimu nanti)
+                // Pastikan backend API kamu mengirim properti URL berformat .m3u8 
+                allVideosData = [
+                    { id: '1', caption: 'Test Video Cepat 1 (HLS)', video_url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8' },
+                    { id: '2', caption: 'Test Video Cepat 2 (HLS)', video_url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8' },
+                    { id: '3', caption: 'Test Video Cepat 3 (HLS)', video_url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8' }
+                ];
                 
-                container.innerHTML = ''; // Bersihkan container sepenuhnya untuk video baru
+                container.innerHTML = ''; 
                 
-                if (!allVideosData.length) {
-                    container.innerHTML = '<p class="text-center py-20 text-gray-500">Belum ada video.</p>';
-                    return;
-                }
-                
-                // Siapkan detektor (Observer) untuk Auto-Play
+                // OBSERVER UNTUK AUTOPLAY & HLS INITIALIZATION
                 obs = new IntersectionObserver(es => {
                     es.forEach(e => { 
+                        const video = e.target;
+                        
                         if (e.isIntersecting) {
-                            e.target.play().catch(() => {});
-                            e.target.muted = isGlobalMuted; 
-                            
-                            // Preload video tetangganya
-                            const nextContainer = e.target.closest('.snap-start').nextElementSibling;
-                            if (nextContainer) {
-                                const nextVideo = nextContainer.querySelector('video');
-                                if (nextVideo && nextVideo.getAttribute('preload') === 'none') {
-                                    nextVideo.setAttribute('preload', 'auto');
+                            // --- LOGIKA HLS.JS ---
+                            // Jika video belum diproses HLS, muat jaringannya sekarang
+                            if (!video.hlsInitialized) {
+                                const videoSrc = video.getAttribute('data-src');
+                                
+                                if (Hls.isSupported()) {
+                                    const hls = new Hls({
+                                        capLevelToPlayerSize: true, // Optimasi kualitas layar HP
+                                        maxBufferLength: 10 // Jangan buffer terlalu jauh ke depan agar ringan
+                                    });
+                                    hls.loadSource(videoSrc);
+                                    hls.attachMedia(video);
+                                } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                                    // Fallback khusus untuk iPhone/Safari karena Apple support HLS bawaan
+                                    video.src = videoSrc;
                                 }
+                                video.hlsInitialized = true; // Tandai agar tidak diload berulang kali
                             }
+                            
+                            video.play().catch(() => {});
+                            video.muted = isGlobalMuted; 
                         } else {
-                            e.target.pause();
+                            video.pause();
                         }
                     });
                 }, { threshold: 0.6 });
 
-                // Render kloter pertama
                 renderVideoBatch();
 
             } catch (e) { 
@@ -946,77 +404,54 @@
             }
         }
 
-        // Fungsi memasang video ke layar (Bisa dipanggil berkali-kali tanpa ujung)
         function renderVideoBatch() {
             const container = document.getElementById('feed-container');
             
-            const htmlString = allVideosData.map((vid, index) => `
+            // Perhatikan <video> sekarang tidak menggunakan <source>.
+            // Kita menyimpan link di data-src untuk dibaca oleh HLS.js
+            const htmlString = allVideosData.map((vid) => `
                 <div class="snap-start w-full h-full relative group bg-[#0F0920] video-wrapper">
+                    
                     <video class="w-full h-full object-cover video-player transition-opacity duration-300" 
                            loop muted playsinline 
-                           preload="none"
-                           onclick="toggleGlobalAudio(this)"
-                           onerror="handleVideoError(this)">
-                        <source src="/api/stream-video?file_id=${vid.file_id}" type="video/mp4">
-                    </video>
+                           data-src="${vid.video_url}"
+                           onclick="toggleGlobalAudio(this)"></video>
                     
                     <div class="absolute inset-0 flex items-center justify-center -z-10">
                         <i class="fas fa-spinner fa-spin text-brand-accent text-3xl opacity-50"></i>
                     </div>
 
-                    <div class="absolute bottom-10 left-0 w-full p-6 flex justify-between items-end z-10">
+                    <div class="absolute bottom-10 left-0 w-full p-6 flex justify-between items-end z-10 pointer-events-none">
                         <div class="text-white drop-shadow-lg w-2/3">
                             <p class="font-bold text-sm shadow-black drop-shadow-md">@au2hub</p>
                             <p class="text-xs opacity-90 shadow-black drop-shadow-md">${vid.caption}</p>
                         </div>
-                        <div class="flex flex-col gap-6 items-center pointer-events-auto">
-                            <button onclick="likeVideo('${vid.id}', this)" class="flex flex-col items-center hover:scale-110 transition-transform">
-                                <i class="fas fa-heart text-2xl text-white drop-shadow-md"></i>
-                            </button>
-                            <button onclick="openComments('${vid.id}')" class="flex flex-col items-center hover:scale-110 transition-transform">
-                                <i class="fas fa-comment text-2xl text-white drop-shadow-md"></i>
-                            </button>
-                        </div>
                     </div>
                 </div>`).join('');
 
-            // Tempelkan video ke bagian paling bawah (tanpa menghapus video di atasnya)
             container.insertAdjacentHTML('beforeend', htmlString);
 
-            // Pasang detektor (Observer) ke video-video yang BARU saja ditempel
+            // Observasi video yang baru saja di-render
             const unobservedVideos = container.querySelectorAll('.video-player:not(.observed)');
             unobservedVideos.forEach((v, i) => {
                 v.classList.add('observed');
                 obs.observe(v);
 
-                // JIKA INI ADALAH VIDEO PALING TERAKHIR DI LIST:
+                // Fitur Infinite Scroll (Loop Data)
                 if (i === unobservedVideos.length - 1) {
                     const lastVideoObserver = new IntersectionObserver(entries => {
                         if(entries[0].isIntersecting) {
-                            lastVideoObserver.disconnect(); // Matikan detektor ini
-                            renderVideoBatch(); // PANGGIL LAGI VIDEO DARI AWAL! (LOOP)
+                            lastVideoObserver.disconnect(); 
+                            renderVideoBatch(); 
                         }
                     }, { threshold: 0.1 });
                     lastVideoObserver.observe(v.closest('.snap-start'));
                 }
             });
-
-            // Paksa preload video urutan ke-1 dan ke-2 yang baru ditambahkan
-            if (unobservedVideos[0]) unobservedVideos[0].setAttribute('preload', 'auto');
-            if (unobservedVideos[1]) unobservedVideos[1].setAttribute('preload', 'auto');
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            if(typeof updateUIProfile === 'function') updateUIProfile();
-            
-            // BACA TAB TERAKHIR DARI MEMORI, JIKA TIDAK ADA BUKA HOME
-            const savedTab = localStorage.getItem('lastTab') || 'home';
-            switchTab(savedTab, null, false); // Parameter ketiga 'false' agar history pushState tidak error di awal
-            
-            if(typeof renderFaqs === 'function') renderFaqs();
-            if(typeof renderServices === 'function') renderServices();
-            if(typeof muatDataRipper === 'function') muatDataRipper();
-            loadVideos(); 
+            switchTab('home', null, false); 
         });
     </script>
 </body>
