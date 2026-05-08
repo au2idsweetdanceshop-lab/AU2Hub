@@ -35,7 +35,22 @@ export default function handler(req, res) {
         id: 'vid-07',
         caption: '💕💕💕',
         // JANGAN LUPA: Isi ID untuk video yang terakhir ini ya!
-        file_id: 'ISI_KODE_VIDEO_TERAKHIR_DISINI' 
+        file_id: 'BAACAgUAAxkBAAEpC1Zp_kQ3wwEzC85NpzIV2khCmBrRKgACdhwAAo788FeCG0WLpowlhzsE' 
+      }
+      {
+        id: 'vid-08',
+        caption: 'ada aku disini😇🤩🤩🤩',
+        file_id: 'BAACAgUAAxkBAAEpC1pp_kUExCI9990dhfwniRUnoUwrmwACdxwAAo788FcYVmB7GvjzpDsE'
+      }
+      {
+        id: 'vid-09',
+        caption: '🙂🙂🙂',
+        file_id: 'BAACAgUAAxkBAAEpC2pp_ka39s32vqeZBnnwxuxe_94IQQACeRwAAo788FeeL8OFhvv47TsE'
+      }
+      {
+        id: 'vid-10',
+        caption: 'baca yang betol😭😭😭',
+        file_id: 'BAACAgUAAxkBAAEpC15p_kXyA7TeWlIl0GkwyHQIH2Z6_wACeBwAAo788FfBt5HYAuLJaTsE'
       }
     ];
 
