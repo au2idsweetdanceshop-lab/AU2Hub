@@ -1,33 +1,24 @@
-export default async function handler(req, res) {
-  if (req.method === 'POST') {
-    const update = req.body;
-    const supabaseUrl = process.env.SUPABASE_URL;
-    const supabaseKey = process.env.SUPABASE_KEY;
-    
-    // Tangkap dari Channel ATAUPUN dari Chat/Grup Biasa
-    const msg = update.channel_post || update.message;
+const { createClient } = require('@supabase/supabase-js');
 
-    // Cek apakah ada pesan dan apakah itu adalah Video
-    if (msg && msg.video) {
-      const video = msg.video;
-      const caption = msg.caption || "Video Komunitas AU2Hub";
+const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
 
-      // Simpan paksa ke Supabase
-      await fetch(`${supabaseUrl}/rest/v1/videos`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'apikey': supabaseKey,
-          'Authorization': `Bearer ${supabaseKey}`,
-          'Prefer': 'return=minimal'
-        },
-        body: JSON.stringify({
-          file_id: video.file_id,
-          caption: caption
-        })
-      });
+module.exports = async (req, res) => {
+    // Cek apakah ada pesan masuk dari Telegram
+    const message = req.body.message || req.body.channel_post;
+
+    if (message && message.video) {
+        const file_id = message.video.file_id;
+        const caption = message.caption || "Video terbaru dari AU2Hub";
+
+        // Simpan ke Supabase secara otomatis
+        const { error } = await supabase
+            .from('videos')
+            .insert([{ file_id, caption }]);
+
+        if (!error) {
+            return res.status(200).send('Video tersimpan ke database!');
+        }
     }
-  }
-  
-  res.status(200).send('OK');
-}
+    
+    res.status(200).send('OK');
+};
