@@ -874,14 +874,12 @@
             } catch (e) { console.error(e); }
         }
 
-        // --- 5. FUNGSI SOSIAL ---
+        // --- 5. FUNGSI SOSIAL (TIKTOK MODE - 0 SEC LOADING) ---
         
         function handleVideoError(videoElement) {
             const container = videoElement.closest('.snap-start');
             if (container) {
-                console.warn("Video rusak/terhapus dideteksi, menghapus dari tampilan...");
                 container.remove();
-                
                 const feed = document.getElementById('feed-container');
                 if (feed.children.length === 0) {
                     feed.innerHTML = '<p class="text-center py-20 text-gray-500">Belum ada video tersedia.</p>';
@@ -899,25 +897,33 @@
                     return;
                 }
                 
-                container.innerHTML = videos.map(vid => `
-                    <div class="snap-start w-full h-full relative group">
-                        <video class="w-full h-full object-cover video-player" 
+                // TRIK 1: Hanya video 1 dan 2 yang di-load otomatis di awal (auto). 
+                // Sisanya (none) agar kuota internet/server tidak jebol di detik pertama.
+                container.innerHTML = videos.map((vid, index) => `
+                    <div class="snap-start w-full h-full relative group bg-[#0F0920]">
+                        <video class="w-full h-full object-cover video-player transition-opacity duration-300" 
                                loop muted playsinline 
+                               preload="${index < 2 ? 'auto' : 'none'}"
                                onclick="toggleGlobalAudio(this)"
                                onerror="handleVideoError(this)">
                             <source src="/api/stream-video?file_id=${vid.file_id}" type="video/mp4">
                         </video>
-                        <div class="absolute bottom-10 left-0 w-full p-6 flex justify-between items-end">
+                        
+                        <div class="absolute inset-0 flex items-center justify-center -z-10">
+                            <i class="fas fa-spinner fa-spin text-brand-accent text-3xl opacity-50"></i>
+                        </div>
+
+                        <div class="absolute bottom-10 left-0 w-full p-6 flex justify-between items-end z-10">
                             <div class="text-white drop-shadow-lg w-2/3">
-                                <p class="font-bold text-sm">@au2hub</p>
-                                <p class="text-xs opacity-80">${vid.caption}</p>
+                                <p class="font-bold text-sm shadow-black drop-shadow-md">@au2hub</p>
+                                <p class="text-xs opacity-90 shadow-black drop-shadow-md">${vid.caption}</p>
                             </div>
                             <div class="flex flex-col gap-6 items-center pointer-events-auto">
-                                <button onclick="likeVideo('${vid.id}', this)" class="flex flex-col items-center">
-                                    <i class="fas fa-heart text-2xl text-white"></i>
+                                <button onclick="likeVideo('${vid.id}', this)" class="flex flex-col items-center hover:scale-110 transition-transform">
+                                    <i class="fas fa-heart text-2xl text-white drop-shadow-md"></i>
                                 </button>
-                                <button onclick="openComments('${vid.id}')" class="flex flex-col items-center">
-                                    <i class="fas fa-comment text-2xl text-white"></i>
+                                <button onclick="openComments('${vid.id}')" class="flex flex-col items-center hover:scale-110 transition-transform">
+                                    <i class="fas fa-comment text-2xl text-white drop-shadow-md"></i>
                                 </button>
                             </div>
                         </div>
@@ -926,19 +932,30 @@
                 const obs = new IntersectionObserver(es => {
                     es.forEach(e => { 
                         if (e.isIntersecting) {
-                            e.target.play();
-                            e.target.muted = isGlobalMuted; // Mengikuti status suara terakhir
+                            // Mainkan video saat ini
+                            e.target.play().catch(err => console.log("Menunggu interaksi user"));
+                            e.target.muted = isGlobalMuted; 
+                            
+                            // TRIK 2: PRELOAD TETANGGA (Rahasia TikTok)
+                            // Cari video yang ada di bawahnya, lalu paksa browser download duluan!
+                            const nextContainer = e.target.closest('.snap-start').nextElementSibling;
+                            if (nextContainer) {
+                                const nextVideo = nextContainer.querySelector('video');
+                                if (nextVideo && nextVideo.getAttribute('preload') === 'none') {
+                                    nextVideo.setAttribute('preload', 'auto');
+                                }
+                            }
                         } else {
+                            // Jeda video yang terlewat agar memori HP/Browser tidak berat
                             e.target.pause();
                         }
                     });
-                }, { threshold: 0.7 });
+                }, { threshold: 0.6 }); // 0.6 berarti saat video masuk 60% ke layar, langsung eksekusi
 
-                // Mengaktifkan deteksi geser (scroll) untuk semua video
                 document.querySelectorAll('.video-player').forEach(v => obs.observe(v));
 
             } catch (e) { 
-                container.innerHTML = "Gagal memuat."; 
+                container.innerHTML = '<p class="text-center py-20 text-gray-500">Gagal memuat video.</p>'; 
             }
         }
 
