@@ -873,10 +873,11 @@ async function loadVideos() {
             return;
         }
         container.innerHTML = videos.map(vid => `
-            <div class="snap-start w-full h-full relative group">
-                <video class="w-full h-full object-cover video-player" loop muted playsinline>
-                    <source src="/api/stream-video?file_id=${vid.file_id}" type="video/mp4">
-                </video>
+            <video class="w-full h-full object-cover video-player" 
+       loop muted playsinline 
+       onclick="this.muted = !this.muted">
+    <source src="/api/stream-video?file_id=${vid.file_id}" type="video/mp4">
+</video>
                 <div class="absolute bottom-10 left-0 w-full p-6 flex justify-between items-end">
                     <div class="text-white"><b>@au2hub</b><p class="text-xs">${vid.caption}</p></div>
                     <div class="flex flex-col gap-6">
@@ -893,11 +894,17 @@ async function loadVideos() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+    // 1. Pastikan profil update
     if(typeof updateUIProfile === 'function') updateUIProfile();
-    loadVideos();
+    
+    // 2. PAKSA BUKA TAB HOME AGAR TIDAK BLANK
+    switchTab('home'); 
+    
+    // 3. Muat data lainnya
     if(typeof renderFaqs === 'function') renderFaqs();
     if(typeof renderServices === 'function') renderServices();
     if(typeof muatDataRipper === 'function') muatDataRipper();
+    loadVideos(); 
 });
     </script>
 </body>
