@@ -420,7 +420,7 @@
                 <h4 class="font-extrabold text-white text-base mb-2">Update Event Terbaru AU2</h4>
                 <p class="text-xs text-gray-400 mb-4 leading-relaxed">
                     Pemain tercinta,
-Maintenance server akan 06 Mei Januari (Rabu) mulai pukul 10:00-11:00. Waktu maintenance mungkin dapat dipercepat atau ditunda berdasarkan progress maintenance.
+                    Maintenance server akan 06 Mei Januari (Rabu) mulai pukul 10:00-11:00. Waktu maintenance mungkin dapat dipercepat atau ditunda berdasarkan progress maintenance.
                 </p>
                 
                 <ul class="text-xs text-gray-300 space-y-2.5 mb-6 bg-black/20 p-3 rounded-xl border border-white/5">
@@ -875,6 +875,20 @@ Maintenance server akan 06 Mei Januari (Rabu) mulai pukul 10:00-11:00. Waktu mai
         }
 
         // --- 5. FUNGSI SOSIAL ---
+        
+        function handleVideoError(videoElement) {
+            const container = videoElement.closest('.snap-start');
+            if (container) {
+                console.warn("Video rusak/terhapus dideteksi, menghapus dari tampilan...");
+                container.remove();
+                
+                const feed = document.getElementById('feed-container');
+                if (feed.children.length === 0) {
+                    feed.innerHTML = '<p class="text-center py-20 text-gray-500">Belum ada video tersedia.</p>';
+                }
+            }
+        }
+
         async function loadVideos() {
             const container = document.getElementById('feed-container');
             try {
@@ -889,7 +903,8 @@ Maintenance server akan 06 Mei Januari (Rabu) mulai pukul 10:00-11:00. Waktu mai
                     <div class="snap-start w-full h-full relative group">
                         <video class="w-full h-full object-cover video-player" 
                                loop muted playsinline 
-                               onclick="toggleGlobalAudio(this)">
+                               onclick="toggleGlobalAudio(this)"
+                               onerror="handleVideoError(this)">
                             <source src="/api/stream-video?file_id=${vid.file_id}" type="video/mp4">
                         </video>
                         <div class="absolute bottom-10 left-0 w-full p-6 flex justify-between items-end">
