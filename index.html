@@ -237,7 +237,8 @@
             
             <div id="feed-container" class="h-[65vh] overflow-y-scroll snap-y snap-mandatory hide-scroll bg-black rounded-3xl border border-white/10 shadow-lg relative">
                 <div class="flex items-center justify-center h-full text-center py-10 text-gray-500 text-xs italic">
-                    Memuat video...
+                    <i class="fas fa-spinner fa-spin text-2xl mb-2 text-brand-accent"></i><br>
+                    Mencari video terbaik...
                 </div>
             </div>
         </section>
@@ -874,70 +875,40 @@
             } catch (e) { console.error(e); }
         }
 
-        // --- 5. FUNGSI SOSIAL (TIKTOK MODE - 0 SEC LOADING) ---
-        
+        // --- 5. FUNGSI SOSIAL (TIKTOK MODE + INFINITE SCROLL) ---
+        let allVideosData = []; // Menyimpan data video dari database
+        let obs; // Global observer
+
         function handleVideoError(videoElement) {
             const container = videoElement.closest('.snap-start');
             if (container) {
                 container.remove();
-                const feed = document.getElementById('feed-container');
-                if (feed.children.length === 0) {
-                    feed.innerHTML = '<p class="text-center py-20 text-gray-500">Belum ada video tersedia.</p>';
-                }
             }
         }
 
+        // Fungsi memanggil API
         async function loadVideos() {
             const container = document.getElementById('feed-container');
             try {
+                // Jangan lupa, backend /api/get-videos Anda harus di-update agar mengacak (shuffle) array video dari Supabase.
                 const res = await fetch('/api/get-videos');
-                const videos = await res.json();
-                if (!videos.length) {
+                allVideosData = await res.json();
+                
+                if (!allVideosData.length) {
                     container.innerHTML = '<p class="text-center py-20 text-gray-500">Belum ada video.</p>';
                     return;
                 }
+
+                container.innerHTML = ''; // Bersihkan container
                 
-                // TRIK 1: Hanya video 1 dan 2 yang di-load otomatis di awal (auto). 
-                // Sisanya (none) agar kuota internet/server tidak jebol di detik pertama.
-                container.innerHTML = videos.map((vid, index) => `
-                    <div class="snap-start w-full h-full relative group bg-[#0F0920]">
-                        <video class="w-full h-full object-cover video-player transition-opacity duration-300" 
-                               loop muted playsinline 
-                               preload="${index < 2 ? 'auto' : 'none'}"
-                               onclick="toggleGlobalAudio(this)"
-                               onerror="handleVideoError(this)">
-                            <source src="/api/stream-video?file_id=${vid.file_id}" type="video/mp4">
-                        </video>
-                        
-                        <div class="absolute inset-0 flex items-center justify-center -z-10">
-                            <i class="fas fa-spinner fa-spin text-brand-accent text-3xl opacity-50"></i>
-                        </div>
-
-                        <div class="absolute bottom-10 left-0 w-full p-6 flex justify-between items-end z-10">
-                            <div class="text-white drop-shadow-lg w-2/3">
-                                <p class="font-bold text-sm shadow-black drop-shadow-md">@au2hub</p>
-                                <p class="text-xs opacity-90 shadow-black drop-shadow-md">${vid.caption}</p>
-                            </div>
-                            <div class="flex flex-col gap-6 items-center pointer-events-auto">
-                                <button onclick="likeVideo('${vid.id}', this)" class="flex flex-col items-center hover:scale-110 transition-transform">
-                                    <i class="fas fa-heart text-2xl text-white drop-shadow-md"></i>
-                                </button>
-                                <button onclick="openComments('${vid.id}')" class="flex flex-col items-center hover:scale-110 transition-transform">
-                                    <i class="fas fa-comment text-2xl text-white drop-shadow-md"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>`).join('');
-
-                const obs = new IntersectionObserver(es => {
+                // Siapkan detektor (Observer) untuk Auto-Play
+                obs = new IntersectionObserver(es => {
                     es.forEach(e => { 
                         if (e.isIntersecting) {
-                            // Mainkan video saat ini
-                            e.target.play().catch(err => console.log("Menunggu interaksi user"));
+                            e.target.play().catch(() => {});
                             e.target.muted = isGlobalMuted; 
                             
-                            // TRIK 2: PRELOAD TETANGGA (Rahasia TikTok)
-                            // Cari video yang ada di bawahnya, lalu paksa browser download duluan!
+                            // Preload video tetangganya
                             const nextContainer = e.target.closest('.snap-start').nextElementSibling;
                             if (nextContainer) {
                                 const nextVideo = nextContainer.querySelector('video');
@@ -946,17 +917,77 @@
                                 }
                             }
                         } else {
-                            // Jeda video yang terlewat agar memori HP/Browser tidak berat
                             e.target.pause();
                         }
                     });
-                }, { threshold: 0.6 }); // 0.6 berarti saat video masuk 60% ke layar, langsung eksekusi
+                }, { threshold: 0.6 });
 
-                document.querySelectorAll('.video-player').forEach(v => obs.observe(v));
+                // Render kloter pertama
+                renderVideoBatch();
 
             } catch (e) { 
                 container.innerHTML = '<p class="text-center py-20 text-gray-500">Gagal memuat video.</p>'; 
             }
+        }
+
+        // Fungsi memasang video ke layar (Bisa dipanggil berkali-kali tanpa ujung)
+        function renderVideoBatch() {
+            const container = document.getElementById('feed-container');
+            
+            const htmlString = allVideosData.map((vid, index) => `
+                <div class="snap-start w-full h-full relative group bg-[#0F0920] video-wrapper">
+                    <video class="w-full h-full object-cover video-player transition-opacity duration-300" 
+                           loop muted playsinline 
+                           preload="none"
+                           onclick="toggleGlobalAudio(this)"
+                           onerror="handleVideoError(this)">
+                        <source src="/api/stream-video?file_id=${vid.file_id}" type="video/mp4">
+                    </video>
+                    
+                    <div class="absolute inset-0 flex items-center justify-center -z-10">
+                        <i class="fas fa-spinner fa-spin text-brand-accent text-3xl opacity-50"></i>
+                    </div>
+
+                    <div class="absolute bottom-10 left-0 w-full p-6 flex justify-between items-end z-10">
+                        <div class="text-white drop-shadow-lg w-2/3">
+                            <p class="font-bold text-sm shadow-black drop-shadow-md">@au2hub</p>
+                            <p class="text-xs opacity-90 shadow-black drop-shadow-md">${vid.caption}</p>
+                        </div>
+                        <div class="flex flex-col gap-6 items-center pointer-events-auto">
+                            <button onclick="likeVideo('${vid.id}', this)" class="flex flex-col items-center hover:scale-110 transition-transform">
+                                <i class="fas fa-heart text-2xl text-white drop-shadow-md"></i>
+                            </button>
+                            <button onclick="openComments('${vid.id}')" class="flex flex-col items-center hover:scale-110 transition-transform">
+                                <i class="fas fa-comment text-2xl text-white drop-shadow-md"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>`).join('');
+
+            // Tempelkan video ke bagian paling bawah (tanpa menghapus video di atasnya)
+            container.insertAdjacentHTML('beforeend', htmlString);
+
+            // Pasang detektor (Observer) ke video-video yang BARU saja ditempel
+            const unobservedVideos = container.querySelectorAll('.video-player:not(.observed)');
+            unobservedVideos.forEach((v, i) => {
+                v.classList.add('observed');
+                obs.observe(v);
+
+                // JIKA INI ADALAH VIDEO PALING TERAKHIR DI LIST:
+                if (i === unobservedVideos.length - 1) {
+                    const lastVideoObserver = new IntersectionObserver(entries => {
+                        if(entries[0].isIntersecting) {
+                            lastVideoObserver.disconnect(); // Matikan detektor ini
+                            renderVideoBatch(); // PANGGIL LAGI VIDEO DARI AWAL! (LOOP)
+                        }
+                    }, { threshold: 0.1 });
+                    lastVideoObserver.observe(v.closest('.snap-start'));
+                }
+            });
+
+            // Paksa preload video urutan ke-1 dan ke-2 yang baru ditambahkan
+            if (unobservedVideos[0]) unobservedVideos[0].setAttribute('preload', 'auto');
+            if (unobservedVideos[1]) unobservedVideos[1].setAttribute('preload', 'auto');
         }
 
         document.addEventListener('DOMContentLoaded', () => {
