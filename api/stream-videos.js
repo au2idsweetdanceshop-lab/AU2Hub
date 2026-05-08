@@ -6,7 +6,7 @@ export default function handler(req, res) {
         { 
             id: 'vid-01', 
             caption: 'Tes video pertama lancar!', 
-            file_id: 'MASUKKAN_FILE_ID_TELEGRAM_DI_SINI_1' // Ganti dengan file_id aslimu
+            file_id: 'AAMCBQADGQEDFhK7af4kTVxdieF6AT4yJltZlkyQURYAAh4cAAKO_PBXiVxpfJ40tJoBAAdtAAM7BA' // Ganti dengan file_id aslimu
         },
         { 
             id: 'vid-02', 
