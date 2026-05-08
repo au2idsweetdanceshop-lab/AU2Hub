@@ -8,11 +8,6 @@ export default function handler(req, res) {
             caption: 'Review Joki Ballroom AU2ID - 100% Aman', 
             file_id: 'AAMCBQADGQEDFhK7af4kTVxdieF6AT4yJltZlkyQURYAAh4cAAKO_PBXiVxpfJ40tJoBAAdtAAM7BA' // <-- Masukkan File ID dari @ShowJsonBot
         },
-        { 
-            id: 'vid-02', 
-            caption: 'Tutorial Rekber NIKKY AU2Hub', 
-            file_id: 'ISI_DENGAN_FILE_ID_TELEGRAM_KAMU' // <-- Masukkan File ID video kedua
-        }
     ];
 
     // Mengirim daftar ini dalam format JSON agar bisa dibaca index.html
