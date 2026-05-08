@@ -52,7 +52,6 @@ const videoList = [
     file_id: 'BAACAgUAAxkBAAEpC2pp_ka39s32vqeZBnnwxuxe_94IQQACeRwAAo788FeeL8OFhvv47TsE'
   }
 ];
-    // Tambah video baru di sini terus ke bawah...
   ];
   const videoAcak = daftarVideo.sort(() => Math.random() - 0.5);
   res.status(200).json(videoAcak);
