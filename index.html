@@ -906,7 +906,7 @@
             if (obs) obs.disconnect(); 
             
             try {
-                // Jangan lupa, backend /api/get-videos Anda harus di-update agar mengacak (shuffle) array video dari Supabase.
+                // Mengambil data video dari backend Vercel Edge
                 const res = await fetch('/api/get-videos');
                 allVideosData = await res.json();
                 
@@ -917,19 +917,23 @@
                     return;
                 }
                 
-                // Siapkan detektor (Observer) untuk Auto-Play
+                // Siapkan detektor (Observer) untuk Auto-Play yang sudah dioptimasi
                 obs = new IntersectionObserver(es => {
                     es.forEach(e => { 
                         if (e.isIntersecting) {
                             e.target.play().catch(() => {});
                             e.target.muted = isGlobalMuted; 
                             
-                            // Preload video tetangganya
-                            const nextContainer = e.target.closest('.snap-start').nextElementSibling;
-                            if (nextContainer) {
-                                const nextVideo = nextContainer.querySelector('video');
-                                if (nextVideo && nextVideo.getAttribute('preload') === 'none') {
-                                    nextVideo.setAttribute('preload', 'auto');
+                            // JURUS BARU: Preload 2 video tetangganya sekaligus
+                            let currentContainer = e.target.closest('.snap-start');
+                            for(let j = 0; j < 2; j++) { // Looping 2 langkah ke depan
+                                currentContainer = currentContainer?.nextElementSibling;
+                                if(currentContainer) {
+                                    const nextVid = currentContainer.querySelector('video');
+                                    // Hanya paksa preload jika belum auto
+                                    if(nextVid && nextVid.getAttribute('preload') !== 'auto') {
+                                        nextVid.setAttribute('preload', 'auto');
+                                    }
                                 }
                             }
                         } else {
@@ -952,9 +956,10 @@
             
             const htmlString = allVideosData.map((vid, index) => `
                 <div class="snap-start w-full h-full relative group bg-[#0F0920] video-wrapper">
-                    <video class="w-full h-full object-cover video-player transition-opacity duration-300" 
+                    <video class="w-full h-full object-cover video-player transition-opacity duration-300 bg-black" 
+                           poster="https://media.tenor.com/On7kvXhzml4AAAAj/loading-gif.gif"
                            loop muted playsinline 
-                           preload="none"
+                           preload="metadata"
                            onclick="toggleGlobalAudio(this)"
                            onerror="handleVideoError(this)">
                         <source src="/api/stream-video?file_id=${vid.file_id}" type="video/mp4">
@@ -1001,9 +1006,10 @@
                 }
             });
 
-            // Paksa preload video urutan ke-1 dan ke-2 yang baru ditambahkan
+            // JURUS BARU: Paksa preload "brutal" untuk 3 video paling atas agar instant saat pertama dibuka
             if (unobservedVideos[0]) unobservedVideos[0].setAttribute('preload', 'auto');
             if (unobservedVideos[1]) unobservedVideos[1].setAttribute('preload', 'auto');
+            if (unobservedVideos[2]) unobservedVideos[2].setAttribute('preload', 'auto');
         }
 
         document.addEventListener('DOMContentLoaded', () => {
