@@ -502,114 +502,403 @@ Maintenance server akan 06 Mei Januari (Rabu) mulai pukul 10:00-11:00. Waktu mai
         let dataRipperGlobal = []; 
         let isRipperExpanded = localStorage.getItem('statusLihatSemua') === 'true';
         let currentUser = JSON.parse(localStorage.getItem('user_au2hub')) || null;
-        let activeVideoId = null;
 
-        // --- 1. LOGIKA LOGIN & PROFIL ---
-        function onTelegramAuth(user) {
-            localStorage.setItem('user_au2hub', JSON.stringify(user));
-            location.reload(); 
+// Fungsi saat user berhasil login via Telegram
+function onTelegramAuth(user) {
+    localStorage.setItem('user_au2hub', JSON.stringify(user));
+    currentUser = user;
+    updateUIProfile();
+    location.reload(); // Segarkan agar sistem interaksi aktif
+}
+
+// Menampilkan nama & foto di header jika sudah login
+function updateUIProfile() {
+    if (currentUser) {
+        document.getElementById('telegram-login-container').classList.add('hidden');
+        document.getElementById('user-profile').classList.remove('hidden');
+        document.getElementById('user-profile').classList.add('flex');
+        document.getElementById('user-name').innerText = currentUser.first_name;
+        document.getElementById('user-photo').src = currentUser.photo_url || "https://ui-avatars.com/api/?name=" + currentUser.first_name;
+    }
+}
+
+        // --- 2. FUNGSI NAVIGASI UI ---
+        function switchTab(tabId, event = null, isPush = true) {
+            if (event) event.preventDefault(); 
+            const targetSection = document.getElementById(tabId);
+            if (!targetSection) tabId = 'home';
+
+            const navMap = { 'home': 0, 'info': 1, 'layanan': 2, 'sosial': 3, 'rekber': 4, 'ripper': 5, 'pembayaran': 2 };
+            const currentActiveSection = document.querySelector('.tab-content.active');
+            const currentTabId = currentActiveSection ? currentActiveSection.id : null;
+
+            if (event !== null && currentTabId && navMap[currentTabId] === navMap[tabId]) {
+                window.scrollTo({ top: 0, behavior: 'smooth' }); 
+                const activeIndex = navMap[currentTabId];
+                if (activeIndex !== undefined) {
+                    const icon = document.querySelectorAll('.nav-item')[activeIndex].querySelector('i');
+                    if (icon) {
+                        icon.style.animation = 'none';
+                        void icon.offsetWidth; 
+                        icon.style.animation = 'popBounce 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards';
+                    }
+                }
+                return; 
+            }
+
+            document.querySelectorAll('.tab-content').forEach(t => {
+                t.classList.remove('active');
+                t.style.animation = 'none';
+            });
+
+            const newSection = document.getElementById(tabId);
+            if(newSection) {
+                newSection.classList.add('active');
+                void newSection.offsetWidth;
+                newSection.style.animation = null; 
+            }
+            
+            document.querySelectorAll('.nav-item').forEach(n => {
+                n.classList.remove('active');
+                const icon = n.querySelector('i');
+                if (icon) icon.style.animation = 'none'; 
+            });
+            
+            const activeIndex = navMap[tabId];
+            if (activeIndex !== undefined) {
+                const activeNav = document.querySelectorAll('.nav-item')[activeIndex];
+                activeNav.classList.add('active');
+                const activeIcon = activeNav.querySelector('i');
+                if (activeIcon) {
+                    activeIcon.style.animation = 'none';
+                    void activeIcon.offsetWidth;
+                    activeIcon.style.animation = 'popBounce 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards';
+                }
+            }
+            
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            if (isPush && window.location.hash !== `#${tabId}`) {
+                history.pushState(null, null, `#${tabId}`);
+            }
         }
 
-        function updateUIProfile() {
-            if (currentUser) {
-                const loginBtn = document.getElementById('telegram-login-container');
-                const userProf = document.getElementById('user-profile');
-                if(loginBtn) loginBtn.classList.add('hidden');
-                if(userProf) {
-                    userProf.classList.replace('hidden', 'flex');
-                    document.getElementById('user-name').innerText = currentUser.first_name;
-                    document.getElementById('user-photo').src = currentUser.photo_url || "https://ui-avatars.com/api/?name=" + currentUser.first_name;
+        window.addEventListener('popstate', () => {
+            let isPopupClosed = false;
+            const modalEvent = document.getElementById('modal-event');
+            if (!modalEvent.classList.contains('hidden')) {
+                modalEvent.classList.add('hidden');
+                modalEvent.classList.remove('flex');
+                document.body.style.overflow = 'auto';
+                isPopupClosed = true;
+            }
+            const widget = document.getElementById('floating-widget');
+            if (!widget.classList.contains('hidden')) {
+                widget.classList.add('hidden');
+                widget.classList.remove('flex');
+                isPopupClosed = true;
+            }
+            if (isPopupClosed) return;
+            const hash = window.location.hash.substring(1) || 'home';
+            switchTab(hash, null, false);
+        });
+
+        function openModalEvent() {
+            history.pushState({ popup: 'modal' }, null, null); 
+            const modal = document.getElementById('modal-event');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            document.body.style.overflow = 'hidden'; 
+            setTimeout(() => {
+                const carousel = document.getElementById('image-carousel');
+                if(carousel) { carousel.scrollLeft = 0; updateCarouselDots(); }
+            }, 50);
+        }
+
+        function closeModalEvent() { history.back(); }
+
+        function toggleWidget() {
+            const widget = document.getElementById('floating-widget');
+            if (widget.classList.contains('hidden')) {
+                history.pushState({ popup: 'widget' }, null, null); 
+                widget.classList.remove('hidden'); 
+                widget.classList.add('flex');
+            } else { history.back(); }
+        }
+
+        // --- 3. FUNGSI RENDER DATA ---
+        function renderFaqs(data = faqs) {
+            const container = document.getElementById('faq-container');
+            if (data.length === 0) {
+                container.innerHTML = `<div class="text-center text-xs text-gray-400 py-6 border border-white/5 bg-brand-card rounded-2xl"><i class="fas fa-search-minus mb-2 text-lg"></i><br>Pertanyaan tidak ditemukan.</div>`;
+                return;
+            }
+            container.innerHTML = data.map(f => `
+                <details class="bg-brand-card rounded-2xl border border-white/5 group">
+                    <summary class="flex justify-between items-center font-bold text-xs cursor-pointer text-white p-4">
+                        ${f.t} <i class="fas fa-chevron-down text-brand-accent transition-transform group-open:rotate-180"></i>
+                    </summary>
+                    <div class="px-4 pb-4 text-xs text-gray-400 leading-relaxed border-t border-white/5 pt-3 mt-1">${f.j}</div>
+                </details>
+            `).join('');
+        }
+
+        document.getElementById('faqSearch').addEventListener('input', (e) => {
+            const val = e.target.value.toLowerCase();
+            renderFaqs(faqs.filter(f => f.t.toLowerCase().includes(val) || f.j.toLowerCase().includes(val)));
+        });
+
+        function renderServices(data = services) {
+            const container = document.getElementById('service-list');
+            if (data.length === 0) {
+                container.innerHTML = `<div class="text-center text-xs text-gray-400 py-6 border border-white/5 bg-brand-card rounded-2xl"><i class="fas fa-search-minus mb-2 text-lg"></i><br>Layanan tidak ditemukan.</div>`;
+                return;
+            }
+            container.innerHTML = data.map(s => `
+                <div class="bg-brand-card p-4 rounded-2xl border border-white/5 flex justify-between items-center hover:border-brand-accent/30 transition-all">
+                    <div class="w-[60%]">
+                        <div class="font-bold text-sm text-white mb-1">${s.name}</div>
+                        <div class="text-[10px] text-gray-400 leading-tight">${s.desc}</div>
+                        <div class="text-[9px] text-brand-info mt-1"><i class="fas fa-check-circle mr-1"></i> Include Rekber NIKKY</div>
+                    </div>
+                    <div class="text-right flex flex-col items-end">
+                        <div class="text-brand-accent font-extrabold text-[15px] mb-2">Rp ${s.price.toLocaleString('id-ID')} <span class="text-[9px] font-normal text-gray-500">${s.label}</span></div>
+                        <button onclick="checkout('${s.name}', ${s.price})" class="bg-brand-accent/10 text-brand-accent text-[10px] font-bold px-5 py-2 rounded-full border border-brand-accent/30 active:scale-90 transition-transform">BELI</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        document.getElementById('serviceSearch').addEventListener('input', (e) => {
+            const val = e.target.value.toLowerCase();
+            renderServices(services.filter(s => s.name.toLowerCase().includes(val) || s.desc.toLowerCase().includes(val)));
+        });
+
+        function checkout(name, price) {
+            const hargaRupiah = price.toLocaleString('id-ID');
+            document.getElementById('pay-total').innerText = `Rp ${hargaRupiah}`;
+            document.getElementById('pay-product').innerText = name;
+            document.getElementById('nominal-asli').value = price;
+            const noWA = "6283815584661";
+            const teksWA = `Halo Admin Joki AU2Hub,%0A%0ASaya ingin mengkonfirmasi pembayaran pesanan saya:%0A%0APaket : *${name}*%0ATotal : *Rp ${hargaRupiah}*%0A%0A(Berikut ini saya lampirkan gambar bukti transfer QRIS / screenshot)`;
+            const linkWA = `https://api.whatsapp.com/send?phone=${noWA}&text=${teksWA}`;
+            document.getElementById('wa-confirm').setAttribute('href', linkWA);
+            switchTab('pembayaran');
+        }
+
+        function salinNominal() {
+            const nominalMurni = document.getElementById('nominal-asli').value;
+            const btnSalin = document.getElementById('btn-salin');
+            const teksAsli = btnSalin.innerHTML;
+            if (navigator.clipboard && window.isSecureContext) { navigator.clipboard.writeText(nominalMurni); } 
+            else {
+                let tempInput = document.createElement("textarea");
+                tempInput.value = nominalMurni;
+                tempInput.style.position = "fixed"; tempInput.style.left = "-9999px";
+                document.body.appendChild(tempInput); tempInput.select();
+                try { document.execCommand("copy"); } catch (err) {}
+                document.body.removeChild(tempInput);
+            }
+            btnSalin.innerHTML = '<i class="fas fa-check mr-1.5"></i> Tersalin';
+            btnSalin.classList.replace('text-brand-info', 'text-brand-success');
+            btnSalin.classList.replace('bg-brand-info/10', 'bg-brand-success/10');
+            btnSalin.classList.replace('border-brand-info/30', 'border-brand-success/30');
+            setTimeout(() => {
+                btnSalin.innerHTML = teksAsli;
+                btnSalin.classList.replace('text-brand-success', 'text-brand-info');
+                btnSalin.classList.replace('bg-brand-success/10', 'bg-brand-info/10');
+                btnSalin.classList.replace('border-brand-success/30', 'border-brand-info/30');
+            }, 2000);
+        }
+
+        // --- 4. FUNGSI DATABASE OTOMATIS (SINKRON GOOGLE SHEETS) ---
+        async function muatDataRipper() {
+            const linkAPI = "https://sheetdb.io/api/v1/ry6ddufq4tnpz";
+            const container = document.getElementById('ripper-container');
+            
+            const dataTersimpan = localStorage.getItem('ripperCache');
+            if (dataTersimpan) {
+                dataRipperGlobal = JSON.parse(dataTersimpan);
+                renderRippers(dataRipperGlobal, false);
+            } else {
+                container.innerHTML = '<div class="text-center py-10 text-xs text-brand-info animate-pulse"><i class="fas fa-sync fa-spin mb-2 text-2xl"></i><br>Menyiapkan Database Pertama Kali...</div>';
+            }
+
+            try {
+                const respon = await fetch(linkAPI);
+                const dataBaru = await respon.json();
+                
+                localStorage.setItem('ripperCache', JSON.stringify(dataBaru));
+                dataRipperGlobal = dataBaru;
+                
+                renderRippers(dataRipperGlobal, false);
+            } catch (error) {
+                console.error("Gagal menarik data baru:", error);
+                if (!dataTersimpan) {
+                    container.innerHTML = '<div class="text-center py-10 text-xs text-red-500"><i class="fas fa-exclamation-triangle mb-2 text-2xl"></i><br>Gagal terhubung ke database. Cek koneksi internet.</div>';
                 }
             }
         }
 
-        // --- 2. LOGIKA VIDEO & INTERAKSI ---
-        async function loadVideos() {
-            const container = document.getElementById('feed-container');
-            try {
-                const res = await fetch('/api/get-videos');
-                const videos = await res.json();
-                
-                container.innerHTML = videos.map(vid => `
-                    <div class="snap-start w-full h-full relative group">
-                        <video class="w-full h-full object-cover video-player" loop muted playsinline>
-                            <source src="/api/stream-video?file_id=${vid.file_id}" type="video/mp4">
-                        </video>
-                        <div class="absolute bottom-0 left-0 w-full p-6 bg-gradient-to-t from-black/90 to-transparent flex justify-between items-end pb-10">
-                            <div class="text-white drop-shadow-lg w-2/3">
-                                <p class="font-bold text-sm">@au2hub_community</p>
-                                <p class="text-xs font-normal line-clamp-2 mt-1 opacity-80">${vid.caption}</p>
-                            </div>
-                            <div class="flex flex-col gap-6 items-center pointer-events-auto">
-                                <button onclick="likeVideo('${vid.id}', this)" class="flex flex-col items-center">
-                                    <div class="w-12 h-12 bg-black/30 backdrop-blur-md rounded-full flex items-center justify-center border border-white/10 active:scale-75 transition-all">
-                                        <i class="fas fa-heart text-xl text-white"></i>
-                                    </div>
-                                    <span class="text-[10px] mt-1 font-bold text-white">Suka</span>
-                                </button>
-                                <button onclick="openComments('${vid.id}')" class="flex flex-col items-center">
-                                    <div class="w-12 h-12 bg-black/30 backdrop-blur-md rounded-full flex items-center justify-center border border-white/10">
-                                        <i class="fas fa-comment text-xl text-white"></i>
-                                    </div>
-                                    <span class="text-[10px] mt-1 font-bold text-white">Komen</span>
-                                </button>
-                            </div>
+        function renderRippers(data, isSearch = false) {
+            const container = document.getElementById('ripper-container');
+            document.getElementById('ripper-count').innerText = `${dataRipperGlobal.length} Total Data`;
+            
+            if(data.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-10 px-4">
+                        <i class="fas fa-check-circle text-brand-success text-3xl mb-2"></i>
+                        <div class="text-xs text-gray-400">Pencarian aman.<br>(Namun tetap waspada & gunakan Rekber)</div>
+                    </div>`;
+                return;
+            }
+
+            const limitBatas = (!isSearch && !isRipperExpanded) ? 5 : data.length;
+            const dataYangDitampilkan = data.slice(0, limitBatas);
+
+            let htmlString = dataYangDitampilkan.map(r => {
+                const nama = r["Nama / Keterangan"] || r.nama || r.Nama || "Tanpa Nama";
+                const idGame = r["ID"] || r.id || "-";
+                const rekening = r["Rekening / Kontak (WA/Dana)"] || r.rekening || r.Rekening || "-";
+
+                return `
+                <div class="p-4 border-b border-white/5 last:border-0 hover:bg-white/5 transition-colors">
+                    <div class="flex justify-between items-start mb-1">
+                        <div class="font-bold text-xs text-white">${nama}</div>
+                        <div class="text-[9px] text-red-500 font-bold bg-red-500/10 px-2 py-0.5 rounded border border-red-500/20 whitespace-nowrap ml-2"><i class="fas fa-ban mr-1"></i> RIPPER</div>
+                    </div>
+                    <div class="text-[10px] text-brand-info font-mono mb-1">ID: ${idGame}</div>
+                    <div class="text-[10px] text-gray-400"><i class="fas fa-credit-card mr-1"></i> ${rekening}</div>
+                </div>
+                `;
+            }).join('');
+
+            container.innerHTML = htmlString;
+
+            if (!isSearch && !isRipperExpanded && data.length > 5) {
+                container.innerHTML += `
+                    <div id="wadah-tombol-semua" class="p-5 text-center bg-black/20 mt-1 border-t border-white/5">
+                        <button onclick="tampilkanSemuaRipper(this)" class="bg-brand-accent/20 border border-brand-accent/40 text-brand-accent text-xs font-bold py-2.5 px-6 rounded-full active:scale-95 transition-all w-full flex items-center justify-center">
+                            <i class="fas fa-list-ul mr-2"></i> Tampilkan Semua Laporan
+                        </button>
+                    </div>
+                `;
+            }
+        }
+
+        function tampilkanSemuaRipper(tombol) {
+            isRipperExpanded = true;
+            localStorage.setItem('statusLihatSemua', 'true'); 
+            
+            tombol.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Membuka Data...';
+            tombol.classList.add('opacity-70', 'scale-95');
+
+            setTimeout(() => {
+                const wadahTombol = document.getElementById('wadah-tombol-semua');
+                if (wadahTombol) wadahTombol.remove();
+
+                const sisaData = dataRipperGlobal.slice(5);
+
+                let htmlSisa = sisaData.map((r, index) => {
+                    const nama = r["Nama / Keterangan"] || r.nama || r.Nama || "Tanpa Nama";
+                    const idGame = r["ID"] || r.id || "-";
+                    const rekening = r["Rekening / Kontak (WA/Dana)"] || r.rekening || r.Rekening || "-";
+                    
+                    const delayAnimasi = index < 5 ? (index * 0.05) : 0; 
+
+                    return `
+                    <div class="p-4 border-b border-white/5 last:border-0 hover:bg-white/5 transition-colors smooth-reveal" style="animation-delay: ${delayAnimasi}s; opacity: 0;">
+                        <div class="flex justify-between items-start mb-1">
+                            <div class="font-bold text-xs text-white">${nama}</div>
+                            <div class="text-[9px] text-red-500 font-bold bg-red-500/10 px-2 py-0.5 rounded border border-red-500/20 whitespace-nowrap ml-2"><i class="fas fa-ban mr-1"></i> RIPPER</div>
                         </div>
-                    </div>`).join('');
-                initAutoPlay();
-            } catch (err) { console.error(err); }
+                        <div class="text-[10px] text-brand-info font-mono mb-1">ID: ${idGame}</div>
+                        <div class="text-[10px] text-gray-400"><i class="fas fa-credit-card mr-1"></i> ${rekening}</div>
+                    </div>
+                    `;
+                }).join('');
+
+                document.getElementById('ripper-container').insertAdjacentHTML('beforeend', htmlSisa);
+            }, 150); 
         }
 
-        function initAutoPlay() {
-            const observer = new IntersectionObserver((entries) => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) { 
-                        entry.target.play().catch(() => {}); 
-                    } else { 
-                        entry.target.pause(); 
-                        entry.target.currentTime = 0; 
-                    }
-                });
-            }, { threshold: 0.8 });
-            document.querySelectorAll('.video-player').forEach(v => observer.observe(v));
-        }
+        document.getElementById('ripperSearch').addEventListener('input', (e) => {
+            const val = e.target.value.toLowerCase();
+            
+            if(val === '') {
+                renderRippers(dataRipperGlobal, false);
+                return;
+            }
 
-        async function likeVideo(videoId, btn) {
-            if (!currentUser) return alert("Silakan Login Telegram dahulu!");
-            const icon = btn.querySelector('i');
-            try {
-                const res = await fetch('/api/interact', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ type: 'like', video_id: videoId, user_id: currentUser.id, user_name: currentUser.first_name })
-                });
-                if (res.ok) {
-                    icon.classList.replace('text-white', 'text-brand-accent');
-                    icon.classList.add('animate-ping');
-                    setTimeout(() => icon.classList.remove('animate-ping'), 400);
-                }
-            } catch (e) { console.error(e); }
-        }
-
-        // --- 3. KOMENTAR ---
-        function openComments(id) {
-            activeVideoId = id;
-            document.getElementById('comment-drawer').classList.add('open');
-        }
-        function closeComments() {
-            document.getElementById('comment-drawer').classList.remove('open');
-        }
-
-        // --- 4. INISIALISASI AKHIR ---
-        document.addEventListener('DOMContentLoaded', () => {
-            const initialTab = window.location.hash.substring(1) || 'home';
-            switchTab(initialTab, null, false);
-            updateUIProfile();
-            renderFaqs();
-            renderServices();
-            muatDataRipper();
-            loadVideos(); 
+            const hasilFilter = dataRipperGlobal.filter(r => {
+                const nama = (r["Nama / Keterangan"] || r.nama || r.Nama || "").toLowerCase();
+                const idGame = (r["ID"] || r.id || "").toLowerCase();
+                const rekening = (r["Rekening / Kontak (WA/Dana)"] || r.rekening || r.Rekening || "").toLowerCase();
+                return nama.includes(val) || idGame.includes(val) || rekening.includes(val);
+            });
+            
+            renderRippers(hasilFilter, true); 
         });
+
+        function updateCarouselDots() {
+            const carousel = document.getElementById('image-carousel');
+            const dots = document.querySelectorAll('.dot-indicator');
+            if (!carousel || dots.length === 0) return;
+            const maxScroll = carousel.scrollWidth - carousel.clientWidth;
+            if (maxScroll <= 0) return;
+            let activeIndex = Math.round((carousel.scrollLeft / maxScroll) * (dots.length - 1));
+            activeIndex = Math.max(0, Math.min(activeIndex, dots.length - 1));
+            dots.forEach((dot, index) => {
+                if (index === activeIndex) { dot.className = "dot-indicator h-1.5 rounded-full transition-all duration-300 w-4 bg-brand-accent"; } 
+                else { dot.className = "dot-indicator h-1.5 rounded-full transition-all duration-300 w-1.5 bg-white/40"; }
+            });
+        }
+let activeVideoId = null;
+
+function openComments(id) {
+    activeVideoId = id;
+    document.getElementById('comment-drawer').classList.add('open');
+}
+
+function closeComments() {
+    document.getElementById('comment-drawer').classList.remove('open');
+}
+        // --- 5. FUNGSI SOSIAL ---
+async function loadVideos() {
+    const container = document.getElementById('feed-container');
+    try {
+        const res = await fetch('/api/get-videos');
+        const videos = await res.json();
+        if (!videos.length) {
+            container.innerHTML = '<p class="text-center py-20 text-gray-500">Belum ada video.</p>';
+            return;
+        }
+        container.innerHTML = videos.map(vid => `
+            <div class="snap-start w-full h-full relative group">
+                <video class="w-full h-full object-cover video-player" loop muted playsinline>
+                    <source src="/api/stream-video?file_id=${vid.file_id}" type="video/mp4">
+                </video>
+                <div class="absolute bottom-10 left-0 w-full p-6 flex justify-between items-end">
+                    <div class="text-white"><b>@au2hub</b><p class="text-xs">${vid.caption}</p></div>
+                    <div class="flex flex-col gap-6">
+                        <button onclick="likeVideo('${vid.id}', this)"><i class="fas fa-heart text-2xl"></i></button>
+                        <button onclick="openComments('${vid.id}')"><i class="fas fa-comment text-2xl"></i></button>
+                    </div>
+                </div>
+            </div>`).join('');
+        const obs = new IntersectionObserver(es => {
+            es.forEach(e => { e.isIntersecting ? e.target.play() : e.target.pause(); });
+        }, { threshold: 0.7 });
+        document.querySelectorAll('.video-player').forEach(v => obs.observe(v));
+    } catch (e) { container.innerHTML = "Gagal memuat."; }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    if(typeof updateUIProfile === 'function') updateUIProfile();
+    loadVideos();
+    if(typeof renderFaqs === 'function') renderFaqs();
+    if(typeof renderServices === 'function') renderServices();
+    if(typeof muatDataRipper === 'function') muatDataRipper();
+});
     </script>
 </body>
 </html>
