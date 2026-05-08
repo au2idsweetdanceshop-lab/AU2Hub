@@ -979,22 +979,23 @@
             const container = document.getElementById('feed-container');
             
             const htmlString = allVideosData.map((vid, index) => `
-                <div class="snap-start w-full h-full relative group bg-[#0F0920] video-wrapper">
-                    <video class="w-full h-full object-cover video-player transition-opacity duration-300 bg-black" 
-                           poster="https://media.tenor.com/On7kvXhzml4AAAAj/loading-gif.gif"
+                <div class="snap-start w-full h-full relative group bg-[#0F0920] video-wrapper overflow-hidden">
+                    
+                    <div class="absolute inset-0 flex items-center justify-center z-0">
+                        <div class="w-12 h-12 border-4 border-brand-accent/20 border-t-brand-accent rounded-full animate-spin"></div>
+                    </div>
+
+                    <video class="w-full h-full object-cover video-player transition-opacity duration-500 opacity-0 relative z-10" 
+                           onloadeddata="this.classList.remove('opacity-0')"
                            loop muted playsinline 
                            preload="metadata"
                            onclick="toggleGlobalAudio(this)"
                            onerror="handleVideoError(this)">
                         <source src="/api/stream-video?file_id=${vid.file_id}" type="video/mp4">
                     </video>
-                    
-                    <div class="absolute inset-0 flex items-center justify-center -z-10">
-                        <i class="fas fa-spinner fa-spin text-brand-accent text-3xl opacity-50"></i>
-                    </div>
 
-                    <div class="absolute bottom-10 left-0 w-full p-6 flex justify-between items-end z-10">
-                        <div class="text-white drop-shadow-lg w-2/3">
+                    <div class="absolute bottom-10 left-0 w-full p-6 flex justify-between items-end z-20 pointer-events-none">
+                        <div class="text-white drop-shadow-lg w-2/3 pointer-events-auto">
                             <p class="font-bold text-sm shadow-black drop-shadow-md">@au2hub</p>
                             <p class="text-xs opacity-90 shadow-black drop-shadow-md">${vid.caption}</p>
                         </div>
@@ -1030,7 +1031,7 @@
                 }
             });
 
-            // JURUS BARU: Paksa preload "brutal" untuk 3 video paling atas agar instant saat pertama dibuka
+            // Paksa preload "brutal" untuk 3 video paling atas agar instant saat pertama dibuka
             if (unobservedVideos[0]) unobservedVideos[0].setAttribute('preload', 'auto');
             if (unobservedVideos[1]) unobservedVideos[1].setAttribute('preload', 'auto');
             if (unobservedVideos[2]) unobservedVideos[2].setAttribute('preload', 'auto');
