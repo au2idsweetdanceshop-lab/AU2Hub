@@ -1,20 +1,20 @@
 // File: api/get-videos.js
 
 export default function handler(req, res) {
-    // Ini adalah daftar video yang akan dikirim ke website
-    const videos = [
+    // Di sini adalah daftar video yang akan muncul di feed
+    const daftarVideo = [
         { 
             id: 'vid-01', 
-            caption: 'Tes video pertama lancar!', 
-            file_id: 'AAMCBQADGQEDFhK7af4kTVxdieF6AT4yJltZlkyQURYAAh4cAAKO_PBXiVxpfJ40tJoBAAdtAAM7BA' // Ganti dengan file_id aslimu
+            caption: 'Review Joki Ballroom AU2ID - 100% Aman', 
+            file_id: 'AAMCBQADGQEDFhK7af4kTVxdieF6AT4yJltZlkyQURYAAh4cAAKO_PBXiVxpfJ40tJoBAAdtAAM7BA' // <-- Masukkan File ID dari @ShowJsonBot
         },
         { 
             id: 'vid-02', 
-            caption: 'Lanjut video kedua', 
-            file_id: 'MASUKKAN_FILE_ID_TELEGRAM_DI_SINI_2' // Ganti dengan file_id aslimu
+            caption: 'Tutorial Rekber NIKKY AU2Hub', 
+            file_id: 'ISI_DENGAN_FILE_ID_TELEGRAM_KAMU' // <-- Masukkan File ID video kedua
         }
     ];
 
-    // Kirim data ke website dengan status 200 (Sukses)
-    res.status(200).json(videos);
-        }
+    // Mengirim daftar ini dalam format JSON agar bisa dibaca index.html
+    res.status(200).json(daftarVideo);
+}
