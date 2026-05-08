@@ -54,10 +54,6 @@ const videoList = [
 ];
     // Tambah video baru di sini terus ke bawah...
   ];
-
-  // LOGIKA PENGACAK (Shuffle)
-  // Ini yang membuat urutan video selalu baru setiap halaman dibuka
   const videoAcak = daftarVideo.sort(() => Math.random() - 0.5);
-
   res.status(200).json(videoAcak);
 }
