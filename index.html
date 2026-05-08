@@ -67,7 +67,7 @@
             will-change: transform, opacity;
         }
 
-        /* 🌟 CSS BARU: Animasi Super Smooth untuk data yang disuntik 🌟 */
+        /* CSS BARU: Animasi Super Smooth untuk data yang disuntik */
         @keyframes smoothReveal {
             0% { opacity: 0; transform: translateY(15px); }
             100% { opacity: 1; transform: translateY(0); }
@@ -218,9 +218,10 @@
                     <div class="w-1.5 h-6 bg-[#25D366] rounded-full"></div> Feed Komunitas
                 </h3>
             </div>
-            <div id="feed-container" class="space-y-4 min-h-[300px]">
-                <div class="text-center py-10 text-gray-500 text-xs italic">
-                    (Letakkan Kode Embed Feed / Komentar di Sini Nanti)
+            
+            <div id="feed-container" class="h-[65vh] overflow-y-scroll snap-y snap-mandatory hide-scroll bg-black rounded-3xl border border-white/10 shadow-lg relative">
+                <div class="flex items-center justify-center h-full text-center py-10 text-gray-500 text-xs italic">
+                    Memuat video...
                 </div>
             </div>
         </section>
@@ -470,7 +471,6 @@ Maintenance server akan 06 Mei Januari (Rabu) mulai pukul 10:00-11:00. Waktu mai
             { t: "Apakah harga Pricelist sudah termasuk biaya admin?", j: "Ya, semua harga joki yang tertera sudah Include (termasuk) biaya Rekber NIKKY. Tidak ada biaya tambahan yang disembunyikan." }
         ];
 
-        // 🌟 KUNCI KOMBINASI SEMPURNA: Baca memori HP saat web baru dibuka 🌟
         let dataRipperGlobal = []; 
         let isRipperExpanded = localStorage.getItem('statusLihatSemua') === 'true';
 
@@ -691,7 +691,6 @@ Maintenance server akan 06 Mei Januari (Rabu) mulai pukul 10:00-11:00. Waktu mai
             }
         }
 
-        // FUNGSI RENDER RIPPER MODERN (HANYA MENGAMBIL 5 DATA DI AWAL JIKA BELUM KLIK LIHAT SEMUA)
         function renderRippers(data, isSearch = false) {
             const container = document.getElementById('ripper-container');
             document.getElementById('ripper-count').innerText = `${dataRipperGlobal.length} Total Data`;
@@ -705,7 +704,6 @@ Maintenance server akan 06 Mei Januari (Rabu) mulai pukul 10:00-11:00. Waktu mai
                 return;
             }
 
-            // Jika bukan mencari dan belum di-expand, tampilkan 5 saja agar super ringan
             const limitBatas = (!isSearch && !isRipperExpanded) ? 5 : data.length;
             const dataYangDitampilkan = data.slice(0, limitBatas);
 
@@ -728,7 +726,6 @@ Maintenance server akan 06 Mei Januari (Rabu) mulai pukul 10:00-11:00. Waktu mai
 
             container.innerHTML = htmlString;
 
-            // Tambahkan tombol LIHAT SEMUA jika data aslinya lebih dari 5 dan tidak sedang di-expand/dicari
             if (!isSearch && !isRipperExpanded && data.length > 5) {
                 container.innerHTML += `
                     <div id="wadah-tombol-semua" class="p-5 text-center bg-black/20 mt-1 border-t border-white/5">
@@ -740,24 +737,19 @@ Maintenance server akan 06 Mei Januari (Rabu) mulai pukul 10:00-11:00. Waktu mai
             }
         }
 
-        // 🌟 FUNGSI TAMPILKAN SEMUA DENGAN EFEK MICRO-INTERACTION & SIMPAN INGATAN 🌟
         function tampilkanSemuaRipper(tombol) {
             isRipperExpanded = true;
-            // KUNCI: Simpan pilihan pengguna di memori HP agar tidak perlu klik lagi besok-besok
             localStorage.setItem('statusLihatSemua', 'true'); 
             
-            // 1. Berikan efek loading kecil di tombol selama 0.15 detik
             tombol.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Membuka Data...';
             tombol.classList.add('opacity-70', 'scale-95');
 
-            // 2. Suntikkan datanya setelah jeda sepersekian detik
             setTimeout(() => {
                 const wadahTombol = document.getElementById('wadah-tombol-semua');
                 if (wadahTombol) wadahTombol.remove();
 
                 const sisaData = dataRipperGlobal.slice(5);
 
-                // Rakit kotak HTML untuk sisanya DENGAN CLASS 'smooth-reveal'
                 let htmlSisa = sisaData.map((r, index) => {
                     const nama = r["Nama / Keterangan"] || r.nama || r.Nama || "Tanpa Nama";
                     const idGame = r["ID"] || r.id || "-";
@@ -777,16 +769,13 @@ Maintenance server akan 06 Mei Januari (Rabu) mulai pukul 10:00-11:00. Waktu mai
                     `;
                 }).join('');
 
-                // SUNTIKKAN langsung ke bawah tanpa menghapus 5 data awal!
                 document.getElementById('ripper-container').insertAdjacentHTML('beforeend', htmlSisa);
             }, 150); 
         }
 
-        // Fungsi Pencarian
         document.getElementById('ripperSearch').addEventListener('input', (e) => {
             const val = e.target.value.toLowerCase();
             
-            // Jika pencarian kosong, kembalikan ke tampilan default
             if(val === '') {
                 renderRippers(dataRipperGlobal, false);
                 return;
@@ -799,7 +788,7 @@ Maintenance server akan 06 Mei Januari (Rabu) mulai pukul 10:00-11:00. Waktu mai
                 return nama.includes(val) || idGame.includes(val) || rekening.includes(val);
             });
             
-            renderRippers(hasilFilter, true); // true = ini adalah mode pencarian
+            renderRippers(hasilFilter, true); 
         });
 
         function updateCarouselDots() {
@@ -816,6 +805,84 @@ Maintenance server akan 06 Mei Januari (Rabu) mulai pukul 10:00-11:00. Waktu mai
             });
         }
 
+        // --- 5. FUNGSI SOSIAL (TELEGRAM & SUPABASE - GAYA TIKTOK) ---
+        async function loadVideos() {
+            const container = document.getElementById('feed-container');
+            container.innerHTML = '<div class="flex items-center justify-center h-full text-center text-brand-info animate-pulse py-10"><div><i class="fas fa-spinner fa-spin text-3xl mb-2"></i><br>Memuat Video dari Telegram...</div></div>';
+
+            try {
+                const res = await fetch('/api/get-videos');
+                const videos = await res.json();
+
+                if (videos.length === 0 || videos.error) {
+                    container.innerHTML = '<div class="flex items-center justify-center h-full text-center text-gray-500 text-xs py-10"><div><i class="fas fa-video-slash text-2xl mb-2"></i><br>Belum ada video di Channel.</div></div>';
+                    return;
+                }
+
+                container.innerHTML = videos.map(vid => `
+                    <div class="snap-start w-full h-full relative">
+                        <video class="w-full h-full object-cover" controls preload="metadata">
+                            <source src="/api/stream-video?file_id=${vid.file_id}" type="video/mp4">
+                        </video>
+                        
+                        <div class="absolute bottom-0 left-0 w-full p-4 bg-gradient-to-t from-black/90 via-black/40 to-transparent flex justify-between items-end pb-6 pointer-events-none">
+                            
+                            <div class="text-sm text-white font-bold w-3/4 drop-shadow-md">
+                                @au2hub_community
+                                <div class="text-xs font-normal mt-1 text-gray-200 line-clamp-2">${vid.caption}</div>
+                            </div>
+                            
+                            <button onclick="likeVideo('${vid.id}', this)" class="pointer-events-auto flex flex-col items-center gap-1.5 active:scale-90 transition-all z-10">
+                                <div class="w-12 h-12 bg-black/40 backdrop-blur-sm rounded-full flex items-center justify-center border border-white/10">
+                                    <i class="fas fa-heart text-white text-xl transition-colors duration-300"></i>
+                                </div>
+                                <span class="text-[10px] font-bold text-white drop-shadow-md text-like-label">Suka</span>
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (err) {
+                container.innerHTML = '<div class="flex items-center justify-center h-full text-center text-red-500 text-xs py-10"><div><i class="fas fa-exclamation-circle text-2xl mb-2"></i><br>Gagal memuat server video.</div></div>';
+            }
+        }
+
+        async function likeVideo(videoId, btnElement) {
+            const randomUserId = Math.floor(Math.random() * 1000000); 
+
+            const icon = btnElement.querySelector('i');
+            const label = btnElement.querySelector('.text-like-label');
+            const tulisanAsli = label.innerText;
+            
+            // Efek Loading
+            icon.className = 'fas fa-spinner fa-spin text-white text-xl transition-colors duration-300';
+            label.innerText = 'Loading...';
+            
+            try {
+                const respon = await fetch('/api/interact', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        type: 'like',
+                        video_id: videoId,
+                        user_id: randomUserId
+                    })
+                });
+
+                if (respon.ok) {
+                    // Jika berhasil masuk ke database
+                    icon.className = 'fas fa-heart text-brand-accent text-xl animate-ping transition-colors duration-300';
+                    label.innerText = 'Disukai';
+                    setTimeout(() => icon.classList.remove('animate-ping'), 300);
+                } else {
+                    throw new Error("Gagal");
+                }
+            } catch (err) {
+                alert('Gagal menyukai video. Cek koneksi.');
+                icon.className = 'fas fa-heart text-white text-xl transition-colors duration-300';
+                label.innerText = tulisanAsli;
+            }
+        }
+
         // --- INIT LOAD WEBSITE ---
         document.addEventListener('DOMContentLoaded', () => {
             const initialTab = window.location.hash.substring(1) || 'home';
@@ -824,8 +891,11 @@ Maintenance server akan 06 Mei Januari (Rabu) mulai pukul 10:00-11:00. Waktu mai
             renderFaqs();
             renderServices();
 
-            // SINKRONISASI DATABASE
+            // SINKRONISASI DATABASE SHEETDB
             muatDataRipper();
+
+            // MUAT VIDEO TIKTOK DARI TELEGRAM
+            loadVideos(); 
         });
     </script>
 </body>
