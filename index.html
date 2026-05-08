@@ -523,64 +523,52 @@ function updateUIProfile() {
 }
 
         // --- 2. FUNGSI NAVIGASI UI ---
-        function switchTab(tabId, event = null, isPush = true) {
-            if (event) event.preventDefault(); 
-            const targetSection = document.getElementById(tabId);
-            if (!targetSection) tabId = 'home';
+function switchTab(tabId, event = null, isPush = true) {
+    if (event) event.preventDefault();
+    const targetSection = document.getElementById(tabId) || document.getElementById('home');
+    if (!targetSection) return;
 
-            const navMap = { 'home': 0, 'info': 1, 'layanan': 2, 'sosial': 3, 'rekber': 4, 'ripper': 5, 'pembayaran': 2 };
-            const currentActiveSection = document.querySelector('.tab-content.active');
-            const currentTabId = currentActiveSection ? currentActiveSection.id : null;
+    // 1. Simpan pilihan user agar tidak hilang saat refresh
+    localStorage.setItem('lastTab', tabId);
 
-            if (event !== null && currentTabId && navMap[currentTabId] === navMap[tabId]) {
-                window.scrollTo({ top: 0, behavior: 'smooth' }); 
-                const activeIndex = navMap[currentTabId];
-                if (activeIndex !== undefined) {
-                    const icon = document.querySelectorAll('.nav-item')[activeIndex].querySelector('i');
-                    if (icon) {
-                        icon.style.animation = 'none';
-                        void icon.offsetWidth; 
-                        icon.style.animation = 'popBounce 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards';
-                    }
-                }
-                return; 
-            }
+    // 2. Sembunyikan semua tab & matikan animasi icon
+    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n => {
+        n.classList.remove('active');
+        const icon = n.querySelector('i');
+        if (icon) icon.style.animation = 'none';
+    });
 
-            document.querySelectorAll('.tab-content').forEach(t => {
-                t.classList.remove('active');
-                t.style.animation = 'none';
-            });
+    // 3. Tampilkan tab baru
+    targetSection.classList.add('active');
 
-            const newSection = document.getElementById(tabId);
-            if(newSection) {
-                newSection.classList.add('active');
-                void newSection.offsetWidth;
-                newSection.style.animation = null; 
-            }
-            
-            document.querySelectorAll('.nav-item').forEach(n => {
-                n.classList.remove('active');
-                const icon = n.querySelector('i');
-                if (icon) icon.style.animation = 'none'; 
-            });
-            
-            const activeIndex = navMap[tabId];
-            if (activeIndex !== undefined) {
-                const activeNav = document.querySelectorAll('.nav-item')[activeIndex];
-                activeNav.classList.add('active');
-                const activeIcon = activeNav.querySelector('i');
-                if (activeIcon) {
-                    activeIcon.style.animation = 'none';
-                    void activeIcon.offsetWidth;
-                    activeIcon.style.animation = 'popBounce 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards';
-                }
-            }
-            
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-            if (isPush && window.location.hash !== `#${tabId}`) {
-                history.pushState(null, null, `#${tabId}`);
+    // 4. Update Navigasi Bawah & Jalankan Animasi Icon
+    const navMap = { 'home': 0, 'info': 1, 'layanan': 2, 'sosial': 3, 'rekber': 4, 'ripper': 5, 'pembayaran': 2 };
+    const activeIndex = navMap[tabId];
+    if (activeIndex !== undefined) {
+        const activeNav = document.querySelectorAll('.nav-item')[activeIndex];
+        if (activeNav) {
+            activeNav.classList.add('active');
+            const icon = activeNav.querySelector('i');
+            if (icon) {
+                void icon.offsetWidth; 
+                icon.style.animation = 'popBounce 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards';
             }
         }
+    }
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (isPush && window.location.hash !== `#${tabId}`) {
+        history.pushState(null, null, `#${tabId}`);
+    }
+}
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (isPush && window.location.hash !== `#${tabId}`) {
+        history.pushState(null, null, `#${tabId}`);
+    }
+}
+            
 
         window.addEventListener('popstate', () => {
             let isPopupClosed = false;
@@ -862,6 +850,27 @@ function openComments(id) {
 function closeComments() {
     document.getElementById('comment-drawer').classList.remove('open');
 }
+async function likeVideo(videoId, btn) {
+    if (!currentUser) return alert("Login Telegram dulu!");
+    const icon = btn.querySelector('i');
+    try {
+        const res = await fetch('/api/interact', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                type: 'like', 
+                video_id: videoId, 
+                user_id: currentUser.id, 
+                user_name: currentUser.first_name 
+            })
+        });
+        if (res.ok) {
+            icon.classList.replace('text-white', 'text-brand-accent');
+            icon.classList.add('animate-ping');
+            setTimeout(() => icon.classList.remove('animate-ping'), 500);
+        }
+    } catch (e) { console.error(e); }
+}
         // --- 5. FUNGSI SOSIAL ---
 async function loadVideos() {
     const container = document.getElementById('feed-container');
@@ -873,16 +882,24 @@ async function loadVideos() {
             return;
         }
         container.innerHTML = videos.map(vid => `
-            <video class="w-full h-full object-cover video-player" 
-       loop muted playsinline 
-       onclick="this.muted = !this.muted">
-    <source src="/api/stream-video?file_id=${vid.file_id}" type="video/mp4">
-</video>
+            <div class="snap-start w-full h-full relative group">
+                <video class="w-full h-full object-cover video-player" 
+                       loop muted playsinline 
+                       onclick="this.muted = !this.muted">
+                    <source src="/api/stream-video?file_id=${vid.file_id}" type="video/mp4">
+                </video>
                 <div class="absolute bottom-10 left-0 w-full p-6 flex justify-between items-end">
-                    <div class="text-white"><b>@au2hub</b><p class="text-xs">${vid.caption}</p></div>
-                    <div class="flex flex-col gap-6">
-                        <button onclick="likeVideo('${vid.id}', this)"><i class="fas fa-heart text-2xl"></i></button>
-                        <button onclick="openComments('${vid.id}')"><i class="fas fa-comment text-2xl"></i></button>
+                    <div class="text-white drop-shadow-lg w-2/3">
+                        <p class="font-bold text-sm">@au2hub</p>
+                        <p class="text-xs opacity-80">${vid.caption}</p>
+                    </div>
+                    <div class="flex flex-col gap-6 items-center pointer-events-auto">
+                        <button onclick="likeVideo('${vid.id}', this)" class="flex flex-col items-center">
+                            <i class="fas fa-heart text-2xl text-white"></i>
+                        </button>
+                        <button onclick="openComments('${vid.id}')" class="flex flex-col items-center">
+                            <i class="fas fa-comment text-2xl text-white"></i>
+                        </button>
                     </div>
                 </div>
             </div>`).join('');
@@ -894,13 +911,12 @@ async function loadVideos() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    // 1. Pastikan profil update
     if(typeof updateUIProfile === 'function') updateUIProfile();
     
-    // 2. PAKSA BUKA TAB HOME AGAR TIDAK BLANK
-    switchTab('home'); 
+    // BACA TAB TERAKHIR DARI MEMORI, JIKA TIDAK ADA BUKA HOME
+    const savedTab = localStorage.getItem('lastTab') || 'home';
+    switchTab(savedTab); 
     
-    // 3. Muat data lainnya
     if(typeof renderFaqs === 'function') renderFaqs();
     if(typeof renderServices === 'function') renderServices();
     if(typeof muatDataRipper === 'function') muatDataRipper();
