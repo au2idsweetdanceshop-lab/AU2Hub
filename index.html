@@ -551,6 +551,18 @@
 
             targetSection.classList.add('active');
 
+            // LOGIKA UPDATE OTOMATIS:
+            // Jika user klik menu sosial, jalankan ulang pemanggilan video terbaru
+            if (tabId === 'sosial') {
+                const container = document.getElementById('feed-container');
+                container.innerHTML = `
+                    <div class="flex flex-col items-center justify-center h-full text-center py-10 text-gray-500 text-xs italic">
+                        <i class="fas fa-sync fa-spin text-2xl mb-2 text-brand-accent"></i><br>
+                        Mengambil Video Terbaru...
+                    </div>`;
+                loadVideos();
+            }
+
             const navMap = { 'home': 0, 'info': 1, 'layanan': 2, 'sosial': 3, 'rekber': 4, 'ripper': 5, 'pembayaran': 2 };
             const activeIndex = navMap[tabId];
             if (activeIndex !== undefined) {
@@ -889,17 +901,21 @@
         // Fungsi memanggil API
         async function loadVideos() {
             const container = document.getElementById('feed-container');
+            
+            // Matikan observer lama jika ada agar tidak bentrok
+            if (obs) obs.disconnect(); 
+            
             try {
                 // Jangan lupa, backend /api/get-videos Anda harus di-update agar mengacak (shuffle) array video dari Supabase.
                 const res = await fetch('/api/get-videos');
                 allVideosData = await res.json();
                 
+                container.innerHTML = ''; // Bersihkan container sepenuhnya untuk video baru
+                
                 if (!allVideosData.length) {
                     container.innerHTML = '<p class="text-center py-20 text-gray-500">Belum ada video.</p>';
                     return;
                 }
-
-                container.innerHTML = ''; // Bersihkan container
                 
                 // Siapkan detektor (Observer) untuk Auto-Play
                 obs = new IntersectionObserver(es => {
