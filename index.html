@@ -563,13 +563,6 @@ function switchTab(tabId, event = null, isPush = true) {
     }
 }
 
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-    if (isPush && window.location.hash !== `#${tabId}`) {
-        history.pushState(null, null, `#${tabId}`);
-    }
-}
-            
-
         window.addEventListener('popstate', () => {
             let isPopupClosed = false;
             const modalEvent = document.getElementById('modal-event');
