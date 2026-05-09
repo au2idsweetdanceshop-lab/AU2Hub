@@ -578,6 +578,14 @@
         // --- 2. FUNGSI NAVIGASI UI ---
         function switchTab(tabId, event = null, isPush = true) {
             if (event) event.preventDefault();
+            
+            // LOGIKA BARU: Jika sedang di halaman Detail Pembayaran dan memencet ikon Layanan
+            // maka tetap di halaman Pembayaran dan lakukan scroll halus ke atas.
+            if (tabId === 'layanan' && isPush && document.getElementById('pembayaran').classList.contains('active')) {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                return; 
+            }
+
             const targetSection = document.getElementById(tabId) || document.getElementById('home');
             if (!targetSection) return;
 
@@ -610,8 +618,12 @@
                     }
                 }
             }
+            
+            // PERBAIKAN SCROLL: Menggunakan sedikit jeda agar scroll ke atas tidak terganggu animasi transisi tab
+            setTimeout(() => {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }, 10);
 
-            window.scrollTo({ top: 0, behavior: 'smooth' });
             if (isPush && window.location.hash !== `#${tabId}`) {
                 history.pushState(null, null, `#${tabId}`);
             }
@@ -676,7 +688,7 @@
                     <summary class="flex justify-between items-center font-bold text-xs cursor-pointer text-white p-4">
                         ${f.t} <i class="fas fa-chevron-down text-brand-accent transition-transform group-open:rotate-180"></i>
                     </summary>
-                    <div class="px-4 pb-4 text-xs text-gray-400 leading-relaxed border-t border-white/5 pt-3 mt-1">${f.j}</div>
+                    <div class="px-4 pb-4 text-xs text-gray-400 leadingrelaxed border-t border-white/5 pt-3 mt-1">${f.j}</div>
                 </details>
             `).join('');
         }
