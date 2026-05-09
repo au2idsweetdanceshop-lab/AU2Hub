@@ -235,11 +235,9 @@
                 </h3>
             </div>
             
-            <!-- WADAH UTAMA SOSIAL -->
-            <div class="relative w-full h-[65vh] rounded-3xl overflow-hidden border border-white/10 shadow-lg bg-black">
+            <div class="relative w-full h-[65vh] rounded-3xl overflow-hidden border border-white/10 shadow-lg bg-brand-dark">
                 
-                <!-- ANIMASI TIPUAN DETEKSI VIDEO (HANYA MUNCUL SEKALI) -->
-                <div id="fake-loader" class="absolute inset-0 z-50 bg-black flex flex-col items-center justify-center hidden transition-opacity duration-1000">
+                <div id="fake-loader" class="absolute inset-0 z-50 bg-brand-dark flex flex-col items-center justify-center hidden transition-opacity duration-1000">
                     <div class="relative w-20 h-20 mb-6">
                         <div class="absolute inset-0 border-4 border-brand-card rounded-full"></div>
                         <div class="absolute inset-0 border-4 border-brand-accent rounded-full border-t-transparent animate-spin"></div>
@@ -255,9 +253,7 @@
                     </div>
                 </div>
 
-                <!-- CONTAINER VIDEO ASLI -->
                 <div id="feed-container" class="h-full overflow-y-scroll snap-y snap-mandatory hide-scroll relative">
-                    <!-- SKELETON BAWAAN -->
                     <div class="w-full h-full relative bg-[#1A1133] animate-pulse flex flex-col justify-end p-6">
                         <div class="absolute inset-0 flex items-center justify-center">
                             <i class="fas fa-circle-notch fa-spin text-brand-accent text-4xl opacity-40"></i>
@@ -1096,8 +1092,9 @@
         function renderVideoBatch() {
             const container = document.getElementById('feed-container');
             
+            // PERBAIKAN: bg-black dihilangkan dan diganti bg-transparent untuk penyesuaian otomatis
             const htmlString = allVideosData.map((vid, index) => `
-                <div class="snap-start w-full h-full relative group bg-black video-wrapper overflow-hidden">
+                <div class="snap-start w-full h-full relative group bg-transparent video-wrapper overflow-hidden">
                     
                     <div class="absolute inset-0 flex items-center justify-center z-0">
                         <div class="w-12 h-12 border-4 border-brand-accent/20 border-t-brand-accent rounded-full animate-spin"></div>
