@@ -1136,73 +1136,96 @@
             }
         }
 
-        function renderVideoBatch() {
-            const container = document.getElementById('feed-container');
+        // 1. Fungsi untuk ambil jumlah komentar dari database
+async function updateCommentCountUI(videoId, containerDiv) {
+    try {
+        const response = await fetch(`/api/comment?video_id=${videoId}`);
+        const data = await response.json();
+        
+        const countSpan = containerDiv.querySelector('.comment-count-display');
+        if (countSpan && Array.isArray(data)) {
+            // Tampilkan jumlah item di dalam array komentar
+            countSpan.innerText = data.length;
+        }
+    } catch(e) {
+        console.error("Gagal memuat jumlah komentar");
+    }
+}
+
+// 2. Update tampilan Feed Video
+function renderVideoBatch() {
+    const container = document.getElementById('feed-container');
+    
+    const htmlString = allVideosData.map((vid) => `
+        <div class="snap-start w-full h-full flex-shrink-0 relative group flex items-center justify-center overflow-hidden bg-brand-dark">
             
-            const htmlString = allVideosData.map((vid) => `
-                <div class="snap-start w-full h-full flex-shrink-0 relative group flex items-center justify-center overflow-hidden bg-brand-dark">
+            <div class="absolute inset-0 flex items-center justify-center z-0">
+                <div class="w-12 h-12 border-4 border-brand-accent/20 border-t-brand-accent rounded-full animate-spin"></div>
+            </div>
+
+            <video class="absolute inset-0 m-auto w-full h-full object-cover video-player transition-opacity duration-500 opacity-0 z-10" 
+                   onloadeddata="this.classList.remove('opacity-0')"
+                   loop muted playsinline 
+                   preload="metadata"
+                   onclick="toggleGlobalAudio(this)"
+                   onerror="handleVideoError(this)">
+                <source src="${vid.video_url}" type="video/mp4">
+            </video>
+
+            <div class="absolute bottom-10 left-0 w-full p-6 flex justify-between items-end z-20 pointer-events-none">
+                <div class="text-white drop-shadow-lg w-2/3 pointer-events-auto">
+                    <p class="font-bold text-sm shadow-black drop-shadow-md">@au2hub</p>
+                    <p class="text-xs opacity-90 shadow-black drop-shadow-md">${vid.caption}</p>
+                </div>
+                <div class="flex flex-col gap-6 items-center pointer-events-auto">
                     
-                    <div class="absolute inset-0 flex items-center justify-center z-0">
-                        <div class="w-12 h-12 border-4 border-brand-accent/20 border-t-brand-accent rounded-full animate-spin"></div>
+                    <div class="like-container flex flex-col items-center gap-1" data-vid="${vid.id}">
+                        <button onclick="likeVideo('${vid.id}', this)" class="hover:scale-110 transition-transform">
+                            <i class="fas fa-heart text-3xl text-white drop-shadow-md"></i>
+                        </button>
+                        <span class="like-count-display text-white text-[12px] font-bold drop-shadow-md">0</span>
                     </div>
 
-                    <video class="absolute inset-0 m-auto w-full h-full object-cover video-player transition-opacity duration-500 opacity-0 z-10" 
-                           onloadeddata="this.classList.remove('opacity-0')"
-                           loop muted playsinline 
-                           preload="metadata"
-                           onclick="toggleGlobalAudio(this)"
-                           onerror="handleVideoError(this)">
-                        <source src="${vid.video_url}" type="video/mp4">
-                    </video>
-
-                    <div class="absolute bottom-10 left-0 w-full p-6 flex justify-between items-end z-20 pointer-events-none">
-                        <div class="text-white drop-shadow-lg w-2/3 pointer-events-auto">
-                            <p class="font-bold text-sm shadow-black drop-shadow-md">@au2hub</p>
-                            <p class="text-xs opacity-90 shadow-black drop-shadow-md">${vid.caption}</p>
-                        </div>
-                        <div class="flex flex-col gap-6 items-center pointer-events-auto">
-                            
-                            <div class="like-container flex flex-col items-center gap-1" data-vid="${vid.id}">
-                                <button onclick="likeVideo('${vid.id}', this)" class="hover:scale-110 transition-transform">
-                                    <i class="fas fa-heart text-3xl text-white drop-shadow-md"></i>
-                                </button>
-                                <span class="like-count-display text-white text-[12px] font-bold drop-shadow-md">0</span>
-                            </div>
-
-                            <button onclick="openComments('${vid.id}')" class="flex flex-col items-center hover:scale-110 transition-transform">
-                                <i class="fas fa-comment-dots text-3xl text-white drop-shadow-md"></i>
-                            </button>
-
-                        </div>
+                    <div class="comment-count-container flex flex-col items-center gap-1" data-vid="${vid.id}">
+                        <button onclick="openComments('${vid.id}')" class="hover:scale-110 transition-transform">
+                            <i class="fas fa-comment-dots text-3xl text-white drop-shadow-md"></i>
+                        </button>
+                        <span class="comment-count-display text-white text-[12px] font-bold drop-shadow-md">0</span>
                     </div>
-                </div>`).join('');
 
-            container.insertAdjacentHTML('beforeend', htmlString);
+                </div>
+            </div>
+        </div>`).join('');
 
-            const containers = container.querySelectorAll('.like-container:not(.fetched)');
-            containers.forEach((div) => {
-                div.classList.add('fetched');
-                updateLikeCountUI(div.dataset.vid, div); 
-            });
+    container.insertAdjacentHTML('beforeend', htmlString);
 
-            const unobservedVideos = container.querySelectorAll('.video-player:not(.observed)');
-            unobservedVideos.forEach((v, i) => {
-                v.classList.add('observed');
-                if (obs) obs.observe(v);
+    // Ambil data angka Like & Komentar untuk video yang baru muncul
+    const videoActions = container.querySelectorAll('.snap-start:not(.data-loaded)');
+    videoActions.forEach((card) => {
+        card.classList.add('data-loaded');
+        const vidId = card.querySelector('.like-container').dataset.vid;
+        
+        // Panggil fungsi update angka
+        updateLikeCountUI(vidId, card.querySelector('.like-container'));
+        updateCommentCountUI(vidId, card.querySelector('.comment-count-container'));
+    });
 
-                if (i === unobservedVideos.length - 1) {
-                    const lastVideoObserver = new IntersectionObserver(entries => {
-                        if(entries[0].isIntersecting) {
-                            lastVideoObserver.disconnect(); 
-                            renderVideoBatch(); 
-                        }
-                    }, { threshold: 0.1 });
-                    lastVideoObserver.observe(v.closest('.snap-start'));
+    // Observer untuk Infinite Scroll tetap sama...
+    const unobservedVideos = container.querySelectorAll('.video-player:not(.observed)');
+    unobservedVideos.forEach((v, i) => {
+        v.classList.add('observed');
+        if (obs) obs.observe(v);
+        if (i === unobservedVideos.length - 1) {
+            const lastVideoObserver = new IntersectionObserver(entries => {
+                if(entries[0].isIntersecting) {
+                    lastVideoObserver.disconnect(); 
+                    renderVideoBatch(); 
                 }
-            });
-
-            if (unobservedVideos[0]) unobservedVideos[0].setAttribute('preload', 'auto');
-            if (unobservedVideos[1]) unobservedVideos[1].setAttribute('preload', 'auto');
+            }, { threshold: 0.1 });
+            lastVideoObserver.observe(v.closest('.snap-start'));
+        }
+    });
+}
         }
 
         document.addEventListener('DOMContentLoaded', () => {
