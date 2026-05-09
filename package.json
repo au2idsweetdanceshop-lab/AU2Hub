@@ -2,6 +2,7 @@
   "name": "au2hub",
   "version": "1.0.0",
   "dependencies": {
-    "papaparse": "^5.4.1"
+    "papaparse": "^5.4.1",
+    "@supabase/supabase-js": "^2.43.0"
   }
 }
