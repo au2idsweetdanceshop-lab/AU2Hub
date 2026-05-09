@@ -1,8 +1,11 @@
 const Papa = require('papaparse');
 
 module.exports = async function handler(req, res) {
-    // Memberikan izin akses (CORS)
+    // 1. Memberikan izin akses (CORS)
     res.setHeader('Access-Control-Allow-Origin', '*');
+    
+    // 2. TAMBAHKAN BARIS INI (Benteng Pertahanan untuk 2000 user)
+    res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate=30');
     
     try {
         const CSV_URL = process.env.GOOGLE_SHEET_CSV_URL;
@@ -24,6 +27,7 @@ module.exports = async function handler(req, res) {
             skipEmptyLines: true,
         });
 
+        // 3. Mengirimkan hasil JSON
         res.status(200).json(parsedData.data);
     } catch (error) {
         console.error("Error API:", error);
