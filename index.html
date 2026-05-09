@@ -887,7 +887,7 @@
         function openComments(id) {
             activeVideoId = id;
             document.getElementById('comment-drawer').classList.add('open');
-            loadComments(id); // Langsung tarik data saat laci dibuka
+            loadComments(id); 
         }
 
         function closeComments() {
@@ -933,7 +933,6 @@
             if (!name) return alert("Silakan isi nama / nickname kamu dulu!");
             if (!msg) return alert("Komentarnya tidak boleh kosong!");
 
-            // Simpan nama di localStorage agar tidak perlu ketik ulang terus
             localStorage.setItem('guest_name', name);
 
             const btn = event.currentTarget;
@@ -964,22 +963,22 @@
                 const response = await fetch(`/api/like?video_id=${videoId}`);
                 const data = await response.json();
                 
-                // Cari elemen span di dalam container tombol untuk mengubah angkanya
                 const countSpan = containerDiv.querySelector('.like-count-display');
                 if (countSpan && data.count !== undefined) {
-                    countSpan.innerText = data.count > 0 ? data.count : '';
+                    countSpan.innerText = data.count;
                 }
 
-                // Warnai tombol jika user sudah like di HP ini
                 const icon = containerDiv.querySelector('i');
                 if(localStorage.getItem(`liked_${videoId}`)) {
                     icon.classList.replace('text-white', 'text-brand-accent');
                 }
-            } catch(e) {}
+            } catch(e) {
+                console.error("Gagal memuat jumlah like");
+            }
         }
 
         async function likeVideo(videoId, btn) {
-            if(localStorage.getItem(`liked_${videoId}`)) return; // Cek jika sudah like
+            if(localStorage.getItem(`liked_${videoId}`)) return; 
 
             const icon = btn.querySelector('i');
             icon.classList.replace('text-white', 'text-brand-accent');
@@ -995,12 +994,11 @@
                 
                 if (response.ok) {
                     localStorage.setItem(`liked_${videoId}`, 'true'); 
-                    // Update angka
-                    const container = btn.closest('.flex-col');
+                    const container = btn.closest('.like-container');
                     updateLikeCountUI(videoId, container);
                 }
             } catch (e) { 
-                icon.classList.replace('text-brand-accent', 'text-white'); // Kembalikan jika error
+                icon.classList.replace('text-brand-accent', 'text-white'); 
             }
         }
 
@@ -1163,33 +1161,28 @@
                             <p class="text-xs opacity-90 shadow-black drop-shadow-md">${vid.caption}</p>
                         </div>
                         <div class="flex flex-col gap-6 items-center pointer-events-auto">
-                            <div class="flex flex-col items-center gap-1">
+                            
+                            <div class="like-container flex flex-col items-center gap-1" data-vid="${vid.id}">
                                 <button onclick="likeVideo('${vid.id}', this)" class="hover:scale-110 transition-transform">
                                     <i class="fas fa-heart text-3xl text-white drop-shadow-md"></i>
                                 </button>
-                                <span class="like-count-display text-white text-[10px] font-bold drop-shadow-md"></span>
+                                <span class="like-count-display text-white text-[12px] font-bold drop-shadow-md">0</span>
                             </div>
+
                             <button onclick="openComments('${vid.id}')" class="flex flex-col items-center hover:scale-110 transition-transform">
                                 <i class="fas fa-comment-dots text-3xl text-white drop-shadow-md"></i>
                             </button>
+
                         </div>
                     </div>
                 </div>`).join('');
 
             container.insertAdjacentHTML('beforeend', htmlString);
 
-            // Setelah elemen terpasang, muat angka likes untuk setiap video
-            allVideosData.forEach(vid => {
-                // Cari div container tombol like berdasarkan ID (bisa diperbaiki strukturnya jika perlu lebih spesifik, tapi karena render ini langsung, kita andalkan fetch terpisah)
-                // Karena kita belum assign ID khusus ke wadah like, kita modifikasi sedikit saat memanggil fetch.
-            });
-            // Cara lebih rapi: Select semua tombol yang baru dirender, lalu jalankan updateLikeCountUI
-            const containers = container.querySelectorAll('.flex-col.items-center.gap-1');
-            containers.forEach((div, idx) => {
-                if(!div.classList.contains('fetched')) {
-                     div.classList.add('fetched');
-                     updateLikeCountUI(allVideosData[idx].id, div);
-                }
+            const containers = container.querySelectorAll('.like-container:not(.fetched)');
+            containers.forEach((div) => {
+                div.classList.add('fetched');
+                updateLikeCountUI(div.dataset.vid, div); 
             });
 
             const unobservedVideos = container.querySelectorAll('.video-player:not(.observed)');
@@ -1213,7 +1206,6 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            // Isi otomatis nama guest jika sebelumnya sudah pernah komen
             const savedName = localStorage.getItem('guest_name');
             if(savedName) document.getElementById('comment-name').value = savedName;
 
