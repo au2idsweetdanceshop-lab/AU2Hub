@@ -1,66 +1,22 @@
-export default function handler(req, res) {
-  try {
-    const videoList = [
-      {
-        id: 'vid-01',
-        caption: 'bernadya😍',
-        file_id: 'BAACAgUAAxkBAAEpC1Np_kHktRRWhLSDk4myyaCwIOQdsAACdRwAAo788FcPiEXe7DUvoTsE'
-      },
-      {
-        id: 'vid-02',
-        caption: 'kediriku❤',
-        file_id: 'BAACAgUAAxkBAAEpC1Np_kHktRRWhLSDk4myyaCwIOQdsAACdRwAAo788FcPiEXe7DUvoTsE'
-      },
-      {
-        id: 'vid-03',
-        caption: 'sleman kota kecil kebanggan😍',
-        file_id: 'BAACAgUAAxkBAAEpC1Np_kHktRRWhLSDk4myyaCwIOQdsAACdRwAAo788FcPiEXe7DUvoTsE'
-      },
-      {
-        id: 'vid-04',
-        caption: 'say you want the moon🤩',
-        file_id: 'BAACAgUAAxkBAAEpC1Np_kHktRRWhLSDk4myyaCwIOQdsAACdRwAAo788FcPiEXe7DUvoTsE'
-      },
-      {
-        id: 'vid-05',
-        caption: 'frekuensi 17.1',
-        file_id: 'BAACAgUAAxkBAAEpC1Np_kHktRRWhLSDk4myyaCwIOQdsAACdRwAAo788FcPiEXe7DUvoTsE'
-      },
-      {
-        id: 'vid-06',
-        caption: 'sampai dimasa ini🥺🥺🥺',
-        file_id: 'BAACAgUAAxkBAAEpC1Np_kHktRRWhLSDk4myyaCwIOQdsAACdRwAAo788FcPiEXe7DUvoTsE'
-      },
-      {
-        id: 'vid-07',
-        caption: '💕💕💕',
-        // JANGAN LUPA: Isi ID untuk video yang terakhir ini ya!
-        file_id: 'BAACAgUAAxkBAAEpC1Np_kHktRRWhLSDk4myyaCwIOQdsAACdRwAAo788FcPiEXe7DUvoTsE' 
-      },
-      {
-        id: 'vid-08',
-        caption: 'ada aku disini😇🤩🤩🤩',
-        file_id: 'BAACAgUAAxkBAAEpC1Np_kHktRRWhLSDk4myyaCwIOQdsAACdRwAAo788FcPiEXe7DUvoTsE'
-      },
-      {
-        id: 'vid-09',
-        caption: '🙂🙂🙂',
-        file_id: 'BAACAgUAAxkBAAEpC1Np_kHktRRWhLSDk4myyaCwIOQdsAACdRwAAo788FcPiEXe7DUvoTsE'
-      },
-      {
-        id: 'vid-10',
-        caption: 'baca yang betol😭😭😭',
-        file_id: 'BAACAgUAAxkBAAEpC1Np_kHktRRWhLSDk4myyaCwIOQdsAACdRwAAo788FcPiEXe7DUvoTsE'
-      }
-    ];
+export default async function handler(req, res) {
+    if (req.method !== 'GET') {
+        return res.status(405).json({ error: 'Method not allowed' });
+    }
 
-    // Logika pengacak (Shuffle)
-    const shuffledVideos = [...videoList].sort(() => Math.random() - 0.5);
+    try {
+        // Mengambil URL rahasia dari Environment Variables Vercel
+        const SHEETDB_VIDEO_URL = process.env.SECRET_SHEETDB_VIDEO_URL;
 
-    // Mengirim daftar video yang sudah diacak
-    res.status(200).json(shuffledVideos);
+        const response = await fetch(SHEETDB_VIDEO_URL);
+        
+        if (!response.ok) {
+            throw new Error('Gagal mengambil data video dari SheetDB');
+        }
 
-  } catch (error) {
-    res.status(500).json({ error: "Terjadi kesalahan pada server." });
-  }
+        const data = await response.json();
+        res.status(200).json(data);
+    } catch (error) {
+        console.error("Error API Video:", error);
+        res.status(500).json({ error: 'Terjadi kesalahan pada server' });
+    }
 }
