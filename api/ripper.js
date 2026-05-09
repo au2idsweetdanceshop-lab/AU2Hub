@@ -1,26 +1,35 @@
-export default async function handler(req, res) {
-    // Hanya izinkan metode GET
-    if (req.method !== 'GET') {
-        return res.status(405).json({ error: 'Method not allowed' });
-    }
+const Papa = require('papaparse');
 
+module.exports = async function handler(req, res) {
+    // Memberikan izin akses (CORS)
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    
     try {
-        // Mengambil URL rahasia dari Environment Variables Vercel
-        const SHEETDB_URL = process.env.SECRET_SHEETDB_URL;
+        // Mengambil link CSV dari Environment Variables Vercel
+        const RIPPER_CSV_URL = process.env.RIPPER_CSV_URL;
 
-        // Vercel yang melakukan request ke SheetDB (tidak terlihat oleh user)
-        const response = await fetch(SHEETDB_URL);
-        
-        if (!response.ok) {
-            throw new Error('Gagal mengambil data dari SheetDB');
+        if (!RIPPER_CSV_URL) {
+            return res.status(500).json({ error: 'Link CSV Ripper belum diatur di Vercel' });
         }
 
-        const data = await response.json();
+        const response = await fetch(RIPPER_CSV_URL);
+        
+        if (!response.ok) {
+            throw new Error('Gagal mengambil data Ripper dari Google Sheets');
+        }
+        
+        const csvText = await response.text();
 
-        // Mengirimkan hasil data tersebut ke frontend website kamu
-        res.status(200).json(data);
+        // Mengubah teks CSV menjadi format JSON
+        const parsedData = Papa.parse(csvText, {
+            header: true, // Akan otomatis membaca baris pertama sebagai nama kolom
+            skipEmptyLines: true,
+        });
+
+        // Mengirimkan data ke website
+        res.status(200).json(parsedData.data);
     } catch (error) {
-        console.error("Error API:", error);
-        res.status(500).json({ error: 'Terjadi kesalahan pada server' });
+        console.error("Error API Ripper:", error);
+        res.status(500).json({ error: 'Gagal memuat database ripper' });
     }
 }
