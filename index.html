@@ -235,8 +235,8 @@
                 </h3>
             </div>
             
-            <!-- PERBAIKAN: Menggunakan calc(100vh - 240px) agar otomatis presisi sesuai tinggi layar perangkat apapun -->
-            <div class="relative w-full h-[calc(100vh-240px)] min-h-[400px] rounded-3xl overflow-hidden border border-white/10 shadow-lg bg-brand-dark">
+            <!-- Menggunakan 100dvh untuk responsif maksimal di mobile browser -->
+            <div class="relative w-full h-[calc(100dvh-240px)] min-h-[400px] rounded-3xl overflow-hidden border border-white/10 shadow-lg bg-brand-dark flex flex-col">
                 
                 <!-- ANIMASI TIPUAN DETEKSI VIDEO (HANYA MUNCUL SEKALI) -->
                 <div id="fake-loader" class="absolute inset-0 z-50 bg-brand-dark flex flex-col items-center justify-center hidden transition-opacity duration-1000">
@@ -256,9 +256,9 @@
                 </div>
 
                 <!-- CONTAINER VIDEO ASLI -->
-                <div id="feed-container" class="h-full overflow-y-scroll snap-y snap-mandatory hide-scroll relative">
+                <div id="feed-container" class="flex-1 overflow-y-scroll snap-y snap-mandatory hide-scroll relative w-full">
                     <!-- SKELETON BAWAAN -->
-                    <div class="w-full h-full relative bg-[#1A1133] animate-pulse flex flex-col justify-end p-6">
+                    <div class="w-full h-full relative bg-[#1A1133] animate-pulse flex flex-col justify-end p-6 flex-shrink-0 snap-start">
                         <div class="absolute inset-0 flex items-center justify-center">
                             <i class="fas fa-circle-notch fa-spin text-brand-accent text-4xl opacity-40"></i>
                         </div>
@@ -967,10 +967,9 @@
             
             try {
                 // Jangan merender skeleton ulang jika allVideosData sudah ada 
-                // (Ini mencegah 깜빡 (kedipan) saat pindah-pindah tab)
                 if (allVideosData.length === 0) {
                     container.innerHTML = `
-                        <div class="w-full h-full relative bg-[#1A1133] animate-pulse flex flex-col justify-end p-6">
+                        <div class="w-full h-full relative bg-[#1A1133] animate-pulse flex flex-col justify-end p-6 flex-shrink-0 snap-start">
                             <div class="absolute inset-0 flex items-center justify-center">
                                 <i class="fas fa-circle-notch fa-spin text-brand-accent text-4xl opacity-40"></i>
                             </div>
@@ -1096,14 +1095,15 @@
         function renderVideoBatch() {
             const container = document.getElementById('feed-container');
             
+            // PERBAIKAN: flex-shrink-0 pada wadah luar, dan penguncian absolute inset-0 pada tag video agar presisi ke tengah wadah
             const htmlString = allVideosData.map((vid, index) => `
-                <div class="snap-start w-full h-full relative group bg-transparent video-wrapper overflow-hidden">
+                <div class="snap-start w-full h-full flex-shrink-0 relative group flex items-center justify-center overflow-hidden bg-brand-dark">
                     
                     <div class="absolute inset-0 flex items-center justify-center z-0">
                         <div class="w-12 h-12 border-4 border-brand-accent/20 border-t-brand-accent rounded-full animate-spin"></div>
                     </div>
 
-                    <video class="w-full h-full object-contain video-player transition-opacity duration-500 opacity-0 relative z-10" 
+                    <video class="absolute inset-0 m-auto max-w-full max-h-full w-full h-full object-contain video-player transition-opacity duration-500 opacity-0 z-10" 
                            onloadeddata="this.classList.remove('opacity-0')"
                            loop muted playsinline 
                            preload="metadata"
