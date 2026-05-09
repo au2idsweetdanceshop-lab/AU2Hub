@@ -104,10 +104,6 @@
             <h1 class="font-extrabold text-xl tracking-tight cursor-pointer" onclick="switchTab('home')">
                 <span class="text-brand-info">AU2</span><span class="text-brand-accent">Hub</span>
             </h1>
-            <div id="user-profile" class="hidden items-center gap-2 bg-white/5 px-3 py-1 rounded-full border border-white/10">
-                <img id="user-photo" src="" class="w-6 h-6 rounded-full border border-brand-accent">
-                <span id="user-name" class="text-[10px] font-bold text-white">User</span>
-            </div>
             
             <div onclick="switchTab('rekber')" class="cursor-pointer flex items-center gap-2 bg-brand-success/10 px-3 py-1.5 rounded-full border border-brand-success/20 active:scale-95 transition-transform">
                 <span class="relative flex h-2 w-2">
@@ -227,11 +223,6 @@
             <div class="flex justify-between items-center mb-5">
                 <h3 class="text-xl font-extrabold flex items-center gap-2">
                     <div class="w-1.5 h-6 bg-[#25D366] rounded-full"></div> Feed Komunitas
-                    <div id="telegram-login-container" class="mb-4">
-                        <script async src="https://telegram.org/js/telegram-widget.js?22" 
-                                data-telegram-login="AU2HubBot" data-size="small" 
-                                data-onauth="onTelegramAuth(user)" data-request-access="write"></script>
-                    </div>
                 </h3>
             </div>
             
@@ -407,12 +398,16 @@
             <h4 class="font-bold text-white">Komentar</h4>
             <button onclick="closeComments()" class="text-gray-400 text-xl p-2"><i class="fas fa-times"></i></button>
         </div>
-        <div id="comment-list" class="h-[70%] overflow-y-auto space-y-4 hide-scroll pb-10">
+        <div id="comment-list" class="h-[60%] overflow-y-auto space-y-4 hide-scroll pb-4">
             <p class="text-center text-xs text-gray-500 italic">Belum ada komentar.</p>
         </div>
-        <div class="absolute bottom-6 inset-x-6 flex gap-2">
-            <input type="text" id="comment-input" placeholder="Tulis komentar..." class="flex-1 bg-white/5 border border-white/10 rounded-full px-4 py-3 text-sm text-white focus:outline-none">
-            <button onclick="sendComment()" class="bg-brand-accent text-white px-5 py-2 rounded-full"><i class="fas fa-paper-plane"></i></button>
+        
+        <div class="absolute bottom-6 inset-x-6 flex flex-col gap-2 bg-brand-card p-3 rounded-xl border border-white/10">
+            <input type="text" id="comment-name" placeholder="Ketik nama / nickname..." class="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-accent" maxlength="20">
+            <div class="flex gap-2">
+                <input type="text" id="comment-input" placeholder="Tulis komentar..." class="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-accent">
+                <button onclick="sendComment()" class="bg-brand-accent text-white px-4 py-2 rounded-lg active:scale-95 transition-transform"><i class="fas fa-paper-plane"></i></button>
+            </div>
         </div>
     </div>
 
@@ -545,16 +540,7 @@
 
         let dataRipperGlobal = []; 
         let isRipperExpanded = localStorage.getItem('statusLihatSemua') === 'true';
-        let currentUser = JSON.parse(localStorage.getItem('user_au2hub')) || null;
         let isGlobalMuted = true; // Status awal suara mati
-
-        // Fungsi saat user berhasil login via Telegram
-        function onTelegramAuth(user) {
-            localStorage.setItem('user_au2hub', JSON.stringify(user));
-            currentUser = user;
-            updateUIProfile();
-            location.reload(); 
-        }
 
         function toggleGlobalAudio(currentVideo) {
             isGlobalMuted = !isGlobalMuted; // Balikkan status global
@@ -562,17 +548,6 @@
             allVideos.forEach(v => {
                 v.muted = isGlobalMuted;
             });
-        }
-
-        // Menampilkan nama & foto di header jika sudah login
-        function updateUIProfile() {
-            if (currentUser) {
-                document.getElementById('telegram-login-container').classList.add('hidden');
-                document.getElementById('user-profile').classList.remove('hidden');
-                document.getElementById('user-profile').classList.add('flex');
-                document.getElementById('user-name').innerText = currentUser.first_name;
-                document.getElementById('user-photo').src = currentUser.photo_url || "https://ui-avatars.com/api/?name=" + currentUser.first_name;
-            }
         }
 
         // --- 2. FUNGSI NAVIGASI UI ---
@@ -908,49 +883,136 @@
         
         let activeVideoId = null;
 
+        // --- FUNGSI KOMENTAR & LIKE (SUPABASE VIA VERCEL API) ---
         function openComments(id) {
             activeVideoId = id;
             document.getElementById('comment-drawer').classList.add('open');
+            loadComments(id); // Langsung tarik data saat laci dibuka
         }
 
         function closeComments() {
             document.getElementById('comment-drawer').classList.remove('open');
         }
-        
-        async function likeVideo(videoId, btn) {
-            if (!currentUser) return alert("Login Telegram dulu!");
-            const icon = btn.querySelector('i');
+
+        async function loadComments(videoId) {
+            const list = document.getElementById('comment-list');
+            list.innerHTML = '<p class="text-center text-xs text-brand-info animate-pulse">Memuat komentar...</p>'; 
+
             try {
-                const res = await fetch('/api/interact', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        type: 'like', 
-                        video_id: videoId, 
-                        user_id: currentUser.id, 
-                        user_name: currentUser.first_name 
-                    })
-                });
-                if (res.ok) {
-                    icon.classList.replace('text-white', 'text-brand-accent');
-                    icon.classList.add('animate-ping');
-                    setTimeout(() => icon.classList.remove('animate-ping'), 500);
+                const response = await fetch(`/api/comment?video_id=${videoId}`);
+                const data = await response.json();
+
+                list.innerHTML = ''; 
+                if (data && data.length > 0) {
+                    data.forEach(c => {
+                        list.innerHTML += `
+                        <div class="border-b border-white/5 pb-3">
+                            <div class="flex items-center gap-2 mb-1">
+                                <div class="w-6 h-6 rounded-full bg-brand-accent/20 text-brand-accent flex items-center justify-center text-[10px] font-bold">
+                                    ${c.nickname.charAt(0).toUpperCase()}
+                                </div>
+                                <b class="text-brand-info text-xs">${c.nickname}</b>
+                            </div>
+                            <span class="text-gray-300 text-xs pl-8">${c.message}</span>
+                        </div>`;
+                    });
+                } else {
+                    list.innerHTML = '<p class="text-center text-xs text-gray-500 italic">Belum ada komentar. Jadilah yang pertama!</p>';
                 }
-            } catch (e) { console.error(e); }
-        }
-
-        // --- 5. FUNGSI SOSIAL (TIKTOK MODE + INFINITE SCROLL) ---
-        let allVideosData = []; // Menyimpan data video dari database
-        let obs; // Global observer
-
-        function handleVideoError(videoElement) {
-            const container = videoElement.closest('.snap-start');
-            if (container) {
-                container.remove();
+            } catch(e) {
+                list.innerHTML = '<p class="text-center text-xs text-red-500">Gagal memuat komentar.</p>';
             }
         }
 
-        // Fungsi Observer (Detektor Video Viewport)
+        async function sendComment() {
+            const nameInput = document.getElementById('comment-name');
+            const msgInput = document.getElementById('comment-input');
+            const name = nameInput.value.trim();
+            const msg = msgInput.value.trim();
+
+            if (!name) return alert("Silakan isi nama / nickname kamu dulu!");
+            if (!msg) return alert("Komentarnya tidak boleh kosong!");
+
+            // Simpan nama di localStorage agar tidak perlu ketik ulang terus
+            localStorage.setItem('guest_name', name);
+
+            const btn = event.currentTarget;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            btn.disabled = true;
+
+            try {
+                const response = await fetch('/api/comment', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ video_id: activeVideoId, nickname: name, message: msg })
+                });
+
+                if (response.ok) {
+                    msgInput.value = '';
+                    loadComments(activeVideoId);
+                }
+            } catch(e) {
+                alert("Gagal mengirim komentar.");
+            } finally {
+                btn.innerHTML = '<i class="fas fa-paper-plane"></i>';
+                btn.disabled = false;
+            }
+        }
+
+        async function updateLikeCountUI(videoId, containerDiv) {
+            try {
+                const response = await fetch(`/api/like?video_id=${videoId}`);
+                const data = await response.json();
+                
+                // Cari elemen span di dalam container tombol untuk mengubah angkanya
+                const countSpan = containerDiv.querySelector('.like-count-display');
+                if (countSpan && data.count !== undefined) {
+                    countSpan.innerText = data.count > 0 ? data.count : '';
+                }
+
+                // Warnai tombol jika user sudah like di HP ini
+                const icon = containerDiv.querySelector('i');
+                if(localStorage.getItem(`liked_${videoId}`)) {
+                    icon.classList.replace('text-white', 'text-brand-accent');
+                }
+            } catch(e) {}
+        }
+
+        async function likeVideo(videoId, btn) {
+            if(localStorage.getItem(`liked_${videoId}`)) return; // Cek jika sudah like
+
+            const icon = btn.querySelector('i');
+            icon.classList.replace('text-white', 'text-brand-accent');
+            icon.classList.add('animate-ping');
+            setTimeout(() => icon.classList.remove('animate-ping'), 500);
+
+            try {
+                const response = await fetch('/api/like', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ video_id: videoId })
+                });
+                
+                if (response.ok) {
+                    localStorage.setItem(`liked_${videoId}`, 'true'); 
+                    // Update angka
+                    const container = btn.closest('.flex-col');
+                    updateLikeCountUI(videoId, container);
+                }
+            } catch (e) { 
+                icon.classList.replace('text-brand-accent', 'text-white'); // Kembalikan jika error
+            }
+        }
+
+        // --- 5. FUNGSI SOSIAL (TIKTOK MODE + INFINITE SCROLL) ---
+        let allVideosData = []; 
+        let obs; 
+
+        function handleVideoError(videoElement) {
+            const container = videoElement.closest('.snap-start');
+            if (container) container.remove();
+        }
+
         function setupVideoObserver() {
             obs = new IntersectionObserver(es => {
                 es.forEach(e => { 
@@ -958,7 +1020,6 @@
                         e.target.play().catch(() => {});
                         e.target.muted = isGlobalMuted; 
                         
-                        // Preload 2 video tetangganya sekaligus
                         let currentContainer = e.target.closest('.snap-start');
                         for(let j = 0; j < 2; j++) { 
                             currentContainer = currentContainer?.nextElementSibling;
@@ -976,51 +1037,33 @@
             }, { threshold: 0.6 });
         }
 
-        // Fungsi memanggil API & Logika Cerdas Loader
         async function loadVideos() {
             const container = document.getElementById('feed-container');
             const fakeLoader = document.getElementById('fake-loader');
             const fakeProgress = document.getElementById('fake-progress');
             
-            // Cek apakah user sudah pernah buka menu sosial sebelumnya
             const isFirstTime = !localStorage.getItem('hasVisitedSosial');
-
             if (obs) obs.disconnect(); 
             
             try {
-                // Jangan merender skeleton ulang jika allVideosData sudah ada 
                 if (allVideosData.length === 0) {
                     container.innerHTML = `
                         <div class="w-full h-full relative bg-[#1A1133] animate-pulse flex flex-col justify-end p-6 flex-shrink-0 snap-start">
                             <div class="absolute inset-0 flex items-center justify-center">
                                 <i class="fas fa-circle-notch fa-spin text-brand-accent text-4xl opacity-40"></i>
                             </div>
-                            <div class="flex justify-between items-end w-full z-10">
-                                <div class="w-2/3 space-y-3">
-                                    <div class="h-4 w-1/3 bg-white/10 rounded-full"></div>
-                                    <div class="h-3 w-3/4 bg-white/10 rounded-full"></div>
-                                    <div class="h-3 w-5/6 bg-white/10 rounded-full"></div>
-                                </div>
-                                <div class="flex flex-col gap-6 items-center">
-                                    <div class="h-10 w-10 bg-white/10 rounded-full"></div>
-                                    <div class="h-10 w-10 bg-white/10 rounded-full"></div>
-                                </div>
-                            </div>
                         </div>`;
                 }
 
-                // Mengambil data video dari backend
                 const res = await fetch('/api/get-videos');
                 let dataDariSheet = await res.json();
                 
-                // --- PENAMBAHAN FITUR: Fungsi untuk mengacak urutan video (Algoritma Fisher-Yates) ---
                 for (let i = dataDariSheet.length - 1; i > 0; i--) {
                     const j = Math.floor(Math.random() * (i + 1));
                     [dataDariSheet[i], dataDariSheet[j]] = [dataDariSheet[j], dataDariSheet[i]];
                 }
                 
-                allVideosData = dataDariSheet; // Simpan data yang sudah diacak
-                
+                allVideosData = dataDariSheet; 
                 container.innerHTML = ''; 
                 
                 if (!allVideosData.length) {
@@ -1029,89 +1072,63 @@
                 }
 
                 if (isFirstTime) {
-                    // 1. TAMPILKAN LOADER TIPUAN
                     fakeLoader.classList.remove('hidden'); 
                     fakeLoader.classList.add('flex');
-                    
-                    // Animasi progress bar jalan pelan-pelan ke 80% (visual saja)
                     fakeProgress.style.transition = 'width 15s cubic-bezier(0.1, 0.7, 1.0, 0.1)';
                     setTimeout(() => { fakeProgress.style.width = '80%'; }, 100);
 
-                    // 2. RENDER VIDEO KE DOM SECARA TERSEMBUNYI
                     setupVideoObserver();
-                    renderVideoBatch(); // Render batch pertama
+                    renderVideoBatch(); 
 
-                    // 3. LOGIKA DETEKSI KESIAPAN VIDEO
                     const videosInDOM = document.querySelectorAll('.video-player');
-                    // Targetkan 10 video, atau kurang jika data dari API ternyata tidak sampai 10
                     const targetCount = Math.min(10, videosInDOM.length); 
                     let readyCount = 0;
                     let isResolved = false;
 
-                    // Fungsi untuk mengakhiri loading
                     const finishLoading = () => {
-                        if (isResolved) return; // Mencegah fungsi jalan dua kali
+                        if (isResolved) return; 
                         isResolved = true;
-                        
-                        // Penuhkan progress bar secara instan
                         fakeProgress.style.transition = 'width 0.4s ease-out';
                         fakeProgress.style.width = '100%';
-                        
                         setTimeout(() => {
                             fakeLoader.classList.add('opacity-0');
                             setTimeout(() => {
                                 fakeLoader.classList.add('hidden');
                                 fakeLoader.classList.remove('flex');
-                            }, 1000); // Tunggu animasi fade-out selesai
-                            
-                            // Catat ke localStorage agar besok tidak loading lagi
+                            }, 1000); 
                             localStorage.setItem('hasVisitedSosial', 'true');
                         }, 500);
                     };
 
-                    // SAFETY NET (FALLBACK): 15 DETIK
-                    const safetyTimeout = setTimeout(() => {
-                        finishLoading();
-                    }, 15000);
+                    const safetyTimeout = setTimeout(() => { finishLoading(); }, 15000);
 
                     if (targetCount === 0) {
                         clearTimeout(safetyTimeout);
                         finishLoading();
                     } else {
-                        // Pasang listener ke target video pertama
                         videosInDOM.forEach((vid, index) => {
                             if (index < targetCount) {
-                                // Paksa browser memuat
                                 vid.setAttribute('preload', 'auto');
                                 vid.load(); 
-
                                 const onVideoReady = () => {
                                     if (isResolved) return; 
                                     readyCount++;
-                                    
-                                    // Update progress bar
                                     const progressPercent = 80 + ((readyCount / targetCount) * 20);
                                     fakeProgress.style.width = `${progressPercent}%`;
-
-                                    // Hilangkan loader jika target tercapai
                                     if (readyCount >= targetCount) {
                                         clearTimeout(safetyTimeout); 
                                         finishLoading();
                                     }
                                 };
-
-                                if (vid.readyState >= 3) {
-                                    onVideoReady();
-                                } else {
+                                if (vid.readyState >= 3) onVideoReady();
+                                else {
                                     vid.addEventListener('canplay', onVideoReady, { once: true });
                                     vid.addEventListener('loadeddata', onVideoReady, { once: true });
                                 }
                             }
                         });
                     }
-
                 } else {
-                    // JIKA BUKAN PERTAMA KALI: Langsung putar seperti biasa
                     setupVideoObserver();
                     renderVideoBatch();
                 }
@@ -1121,12 +1138,10 @@
             }
         }
 
-        // Fungsi memasang video ke layar (Infinite Scroll)
         function renderVideoBatch() {
             const container = document.getElementById('feed-container');
             
-            // PERBAIKAN: flex-shrink-0 pada wadah luar, dan penguncian absolute inset-0 pada tag video agar presisi ke tengah wadah
-            const htmlString = allVideosData.map((vid, index) => `
+            const htmlString = allVideosData.map((vid) => `
                 <div class="snap-start w-full h-full flex-shrink-0 relative group flex items-center justify-center overflow-hidden bg-brand-dark">
                     
                     <div class="absolute inset-0 flex items-center justify-center z-0">
@@ -1148,17 +1163,34 @@
                             <p class="text-xs opacity-90 shadow-black drop-shadow-md">${vid.caption}</p>
                         </div>
                         <div class="flex flex-col gap-6 items-center pointer-events-auto">
-                            <button onclick="likeVideo('${vid.id}', this)" class="flex flex-col items-center hover:scale-110 transition-transform">
-                                <i class="fas fa-heart text-2xl text-white drop-shadow-md"></i>
-                            </button>
+                            <div class="flex flex-col items-center gap-1">
+                                <button onclick="likeVideo('${vid.id}', this)" class="hover:scale-110 transition-transform">
+                                    <i class="fas fa-heart text-3xl text-white drop-shadow-md"></i>
+                                </button>
+                                <span class="like-count-display text-white text-[10px] font-bold drop-shadow-md"></span>
+                            </div>
                             <button onclick="openComments('${vid.id}')" class="flex flex-col items-center hover:scale-110 transition-transform">
-                                <i class="fas fa-comment text-2xl text-white drop-shadow-md"></i>
+                                <i class="fas fa-comment-dots text-3xl text-white drop-shadow-md"></i>
                             </button>
                         </div>
                     </div>
                 </div>`).join('');
 
             container.insertAdjacentHTML('beforeend', htmlString);
+
+            // Setelah elemen terpasang, muat angka likes untuk setiap video
+            allVideosData.forEach(vid => {
+                // Cari div container tombol like berdasarkan ID (bisa diperbaiki strukturnya jika perlu lebih spesifik, tapi karena render ini langsung, kita andalkan fetch terpisah)
+                // Karena kita belum assign ID khusus ke wadah like, kita modifikasi sedikit saat memanggil fetch.
+            });
+            // Cara lebih rapi: Select semua tombol yang baru dirender, lalu jalankan updateLikeCountUI
+            const containers = container.querySelectorAll('.flex-col.items-center.gap-1');
+            containers.forEach((div, idx) => {
+                if(!div.classList.contains('fetched')) {
+                     div.classList.add('fetched');
+                     updateLikeCountUI(allVideosData[idx].id, div);
+                }
+            });
 
             const unobservedVideos = container.querySelectorAll('.video-player:not(.observed)');
             unobservedVideos.forEach((v, i) => {
@@ -1178,13 +1210,13 @@
 
             if (unobservedVideos[0]) unobservedVideos[0].setAttribute('preload', 'auto');
             if (unobservedVideos[1]) unobservedVideos[1].setAttribute('preload', 'auto');
-            if (unobservedVideos[2]) unobservedVideos[2].setAttribute('preload', 'auto');
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            if(typeof updateUIProfile === 'function') updateUIProfile();
-            
-            // BACA TAB TERAKHIR DARI MEMORI, JIKA TIDAK ADA BUKA HOME
+            // Isi otomatis nama guest jika sebelumnya sudah pernah komen
+            const savedName = localStorage.getItem('guest_name');
+            if(savedName) document.getElementById('comment-name').value = savedName;
+
             const savedTab = localStorage.getItem('lastTab') || 'home';
             switchTab(savedTab, null, false); 
             
@@ -1192,7 +1224,6 @@
             if(typeof renderServices === 'function') renderServices();
             if(typeof muatDataRipper === 'function') muatDataRipper();
             
-            // Video hanya akan di-load jika tab sosial belum terbuka (dicegah duplicate load di switchTab)
             if (savedTab !== 'sosial') {
                 loadVideos(); 
             }
