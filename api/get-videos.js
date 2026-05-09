@@ -1,22 +1,30 @@
+import Papa from 'papaparse';
+
 export default async function handler(req, res) {
-    if (req.method !== 'GET') {
-        return res.status(405).json({ error: 'Method not allowed' });
-    }
-
+    // Memberikan izin akses (CORS)
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    
     try {
-        // Mengambil URL rahasia dari Environment Variables Vercel
-        const SHEETDB_VIDEO_URL = process.env.SECRET_SHEETDB_VIDEO_URL;
+        // Mengambil link CSV dari Environment Variables Vercel
+        const CSV_URL = process.env.GOOGLE_SHEET_CSV_URL;
 
-        const response = await fetch(SHEETDB_VIDEO_URL);
-        
-        if (!response.ok) {
-            throw new Error('Gagal mengambil data video dari SheetDB');
+        if (!CSV_URL) {
+            return res.status(500).json({ error: 'Link CSV belum diatur di Vercel' });
         }
 
-        const data = await response.json();
-        res.status(200).json(data);
+        const response = await fetch(CSV_URL);
+        const csvText = await response.text();
+
+        // Mengubah teks CSV menjadi JSON secara otomatis
+        const parsedData = Papa.parse(csvText, {
+            header: true, // Baris pertama dianggap sebagai nama kolom (id, video_url, dll)
+            skipEmptyLines: true,
+        });
+
+        // Mengirimkan data video ke website kamu
+        res.status(200).json(parsedData.data);
     } catch (error) {
-        console.error("Error API Video:", error);
-        res.status(500).json({ error: 'Terjadi kesalahan pada server' });
+        console.error("Error mengambil CSV:", error);
+        res.status(500).json({ error: 'Gagal memuat daftar video' });
     }
 }
