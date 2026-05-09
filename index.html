@@ -475,7 +475,7 @@
         <i class="fas fa-comment-dots text-2xl"></i>
     </button>
 
-    <div id="floating-widget" class="hidden fixed bottom-[100px] left-1/2 -translate-x-1/2 z-50 w-[92vw] max-w-[380px] h-[500px] bg-[#1A1133]/90 border border-[#FF007A]/30 rounded-3xl shadow-[0_0_30px_rgba(255,0,122,0.3)] flex flex-col overflow-hidden backdrop-blur-xl transition-all duration-300">
+    <div id="floating-widget" class="fixed bottom-[100px] left-1/2 -translate-x-1/2 z-50 w-[92vw] max-w-[380px] h-[500px] bg-[#1A1133]/90 border border-[#FF007A]/30 rounded-3xl shadow-[0_0_30px_rgba(255,0,122,0.3)] flex flex-col overflow-hidden backdrop-blur-xl transition-all duration-300 ease-out opacity-0 pointer-events-none translate-y-8 scale-95">
         
         <div class="bg-gradient-to-r from-[#1A1133] to-[#0F0920] px-5 py-4 border-b border-white/10 flex justify-between items-center shrink-0">
             <div class="flex items-center gap-3">
@@ -626,12 +626,14 @@
                 document.body.style.overflow = 'auto';
                 isPopupClosed = true;
             }
+            
+            // LOGIKA BARU UNTUK MENUTUP WIDGET CHAT SAAT TOMBOL BACK DITEKAN
             const widget = document.getElementById('floating-widget');
-            if (!widget.classList.contains('hidden')) {
-                widget.classList.add('hidden');
-                widget.classList.remove('flex');
+            if (!widget.classList.contains('opacity-0')) {
+                widget.classList.add('opacity-0', 'pointer-events-none', 'translate-y-8', 'scale-95');
                 isPopupClosed = true;
             }
+            
             if (isPopupClosed) return;
             const hash = window.location.hash.substring(1) || 'home';
             switchTab(hash, null, false);
@@ -651,13 +653,15 @@
 
         function closeModalEvent() { history.back(); }
 
+        // LOGIKA BARU UNTUK MEMBUKA WIDGET DENGAN ANIMASI FADE-IN
         function toggleWidget() {
             const widget = document.getElementById('floating-widget');
-            if (widget.classList.contains('hidden')) {
+            if (widget.classList.contains('opacity-0')) {
                 history.pushState({ popup: 'widget' }, null, null); 
-                widget.classList.remove('hidden'); 
-                widget.classList.add('flex');
-            } else { history.back(); }
+                widget.classList.remove('opacity-0', 'pointer-events-none', 'translate-y-8', 'scale-95'); 
+            } else { 
+                history.back(); 
+            }
         }
 
         // --- 3. FUNGSI RENDER DATA ---
