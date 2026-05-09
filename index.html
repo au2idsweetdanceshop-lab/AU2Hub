@@ -235,20 +235,43 @@
                 </h3>
             </div>
             
-            <div id="feed-container" class="h-[65vh] overflow-y-scroll snap-y snap-mandatory hide-scroll bg-black rounded-3xl border border-white/10 shadow-lg relative">
-                <div class="w-full h-full relative bg-[#1A1133] animate-pulse flex flex-col justify-end p-6">
-                    <div class="absolute inset-0 flex items-center justify-center">
-                        <i class="fas fa-circle-notch fa-spin text-brand-accent text-4xl opacity-40"></i>
-                    </div>
-                    <div class="flex justify-between items-end w-full z-10">
-                        <div class="w-2/3 space-y-3">
-                            <div class="h-4 w-1/3 bg-white/10 rounded-full"></div>
-                            <div class="h-3 w-3/4 bg-white/10 rounded-full"></div>
-                            <div class="h-3 w-5/6 bg-white/10 rounded-full"></div>
+            <!-- WADAH UTAMA SOSIAL -->
+            <div class="relative w-full h-[65vh] rounded-3xl overflow-hidden border border-white/10 shadow-lg bg-black">
+                
+                <!-- ANIMASI TIPUAN DETEKSI VIDEO (HANYA MUNCUL SEKALI) -->
+                <div id="fake-loader" class="absolute inset-0 z-50 bg-black flex flex-col items-center justify-center hidden transition-opacity duration-1000">
+                    <div class="relative w-20 h-20 mb-6">
+                        <div class="absolute inset-0 border-4 border-brand-card rounded-full"></div>
+                        <div class="absolute inset-0 border-4 border-brand-accent rounded-full border-t-transparent animate-spin"></div>
+                        <div class="absolute inset-0 flex items-center justify-center text-brand-info">
+                            <i class="fas fa-bolt animate-pulse text-2xl"></i>
                         </div>
-                        <div class="flex flex-col gap-6 items-center">
-                            <div class="h-10 w-10 bg-white/10 rounded-full"></div>
-                            <div class="h-10 w-10 bg-white/10 rounded-full"></div>
+                    </div>
+                    <h3 class="text-white font-extrabold tracking-widest text-sm mb-1 animate-pulse">MENYIAPKAN FEED</h3>
+                    <p class="text-[10px] text-gray-500 text-center px-8">Sedang mengoptimalkan kualitas video untuk perangkat Anda. Mohon tunggu sebentar...</p>
+                    
+                    <div class="w-48 h-1.5 bg-white/10 rounded-full mt-6 overflow-hidden">
+                        <div id="fake-progress" class="h-full bg-gradient-to-r from-brand-info to-brand-accent w-0 rounded-full"></div>
+                    </div>
+                </div>
+
+                <!-- CONTAINER VIDEO ASLI -->
+                <div id="feed-container" class="h-full overflow-y-scroll snap-y snap-mandatory hide-scroll relative">
+                    <!-- SKELETON BAWAAN -->
+                    <div class="w-full h-full relative bg-[#1A1133] animate-pulse flex flex-col justify-end p-6">
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <i class="fas fa-circle-notch fa-spin text-brand-accent text-4xl opacity-40"></i>
+                        </div>
+                        <div class="flex justify-between items-end w-full z-10">
+                            <div class="w-2/3 space-y-3">
+                                <div class="h-4 w-1/3 bg-white/10 rounded-full"></div>
+                                <div class="h-3 w-3/4 bg-white/10 rounded-full"></div>
+                                <div class="h-3 w-5/6 bg-white/10 rounded-full"></div>
+                            </div>
+                            <div class="flex flex-col gap-6 items-center">
+                                <div class="h-10 w-10 bg-white/10 rounded-full"></div>
+                                <div class="h-10 w-10 bg-white/10 rounded-full"></div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -563,27 +586,8 @@
 
             targetSection.classList.add('active');
 
-            // LOGIKA UPDATE OTOMATIS:
-            // Jika user klik menu sosial, jalankan ulang pemanggilan video terbaru dengan skeleton loader
             if (tabId === 'sosial') {
-                const container = document.getElementById('feed-container');
-                container.innerHTML = `
-                    <div class="w-full h-full relative bg-[#1A1133] animate-pulse flex flex-col justify-end p-6">
-                        <div class="absolute inset-0 flex items-center justify-center">
-                            <i class="fas fa-circle-notch fa-spin text-brand-accent text-4xl opacity-40"></i>
-                        </div>
-                        <div class="flex justify-between items-end w-full z-10">
-                            <div class="w-2/3 space-y-3">
-                                <div class="h-4 w-1/3 bg-white/10 rounded-full"></div>
-                                <div class="h-3 w-3/4 bg-white/10 rounded-full"></div>
-                                <div class="h-3 w-5/6 bg-white/10 rounded-full"></div>
-                            </div>
-                            <div class="flex flex-col gap-6 items-center">
-                                <div class="h-10 w-10 bg-white/10 rounded-full"></div>
-                                <div class="h-10 w-10 bg-white/10 rounded-full"></div>
-                            </div>
-                        </div>
-                    </div>`;
+                // Panggil ulang loader video jika tab sosial dibuka
                 loadVideos();
             }
 
@@ -704,8 +708,10 @@
             document.getElementById('pay-product').innerText = name;
             document.getElementById('nominal-asli').value = price;
             const noWA = "6283815584661";
-            const teksWA = `Halo Admin Joki AU2Hub,%0A%0ASaya ingin mengkonfirmasi pembayaran pesanan saya:%0A%0APaket : *${name}*%0ATotal : *Rp ${hargaRupiah}*%0A%0A(Berikut ini saya lampirkan gambar bukti transfer QRIS / screenshot)`;
-            const linkWA = `https://api.whatsapp.com/send?phone=${noWA}&text=${teksWA}`;
+            
+            const teksWA = encodeURIComponent(`Halo Admin Joki AU2Hub,\n\nSaya ingin mengkonfirmasi pembayaran pesanan saya:\n\nPaket : *${name}*\nTotal : *Rp ${hargaRupiah}*\n\n(Berikut ini saya lampirkan gambar bukti transfer QRIS / screenshot)`);
+            const linkWA = `https://wa.me/${noWA}?text=${teksWA}`;
+            
             document.getElementById('wa-confirm').setAttribute('href', linkWA);
             switchTab('pembayaran');
         }
@@ -922,70 +928,182 @@
             }
         }
 
-        // Fungsi memanggil API
+        // Fungsi Observer (Detektor Video Viewport)
+        function setupVideoObserver() {
+            obs = new IntersectionObserver(es => {
+                es.forEach(e => { 
+                    if (e.isIntersecting) {
+                        e.target.play().catch(() => {});
+                        e.target.muted = isGlobalMuted; 
+                        
+                        // Preload 2 video tetangganya sekaligus
+                        let currentContainer = e.target.closest('.snap-start');
+                        for(let j = 0; j < 2; j++) { 
+                            currentContainer = currentContainer?.nextElementSibling;
+                            if(currentContainer) {
+                                const nextVid = currentContainer.querySelector('video');
+                                if(nextVid && nextVid.getAttribute('preload') !== 'auto') {
+                                    nextVid.setAttribute('preload', 'auto');
+                                }
+                            }
+                        }
+                    } else {
+                        e.target.pause();
+                    }
+                });
+            }, { threshold: 0.6 });
+        }
+
+        // Fungsi memanggil API & Logika Cerdas Loader
         async function loadVideos() {
             const container = document.getElementById('feed-container');
+            const fakeLoader = document.getElementById('fake-loader');
+            const fakeProgress = document.getElementById('fake-progress');
             
-            // Matikan observer lama jika ada agar tidak bentrok
+            // Cek apakah user sudah pernah buka menu sosial sebelumnya
+            const isFirstTime = !localStorage.getItem('hasVisitedSosial');
+
             if (obs) obs.disconnect(); 
             
             try {
-                // Mengambil data video dari backend Vercel Edge
+                // Jangan merender skeleton ulang jika allVideosData sudah ada 
+                // (Ini mencegah 깜빡 (kedipan) saat pindah-pindah tab)
+                if (allVideosData.length === 0) {
+                    container.innerHTML = `
+                        <div class="w-full h-full relative bg-[#1A1133] animate-pulse flex flex-col justify-end p-6">
+                            <div class="absolute inset-0 flex items-center justify-center">
+                                <i class="fas fa-circle-notch fa-spin text-brand-accent text-4xl opacity-40"></i>
+                            </div>
+                            <div class="flex justify-between items-end w-full z-10">
+                                <div class="w-2/3 space-y-3">
+                                    <div class="h-4 w-1/3 bg-white/10 rounded-full"></div>
+                                    <div class="h-3 w-3/4 bg-white/10 rounded-full"></div>
+                                    <div class="h-3 w-5/6 bg-white/10 rounded-full"></div>
+                                </div>
+                                <div class="flex flex-col gap-6 items-center">
+                                    <div class="h-10 w-10 bg-white/10 rounded-full"></div>
+                                    <div class="h-10 w-10 bg-white/10 rounded-full"></div>
+                                </div>
+                            </div>
+                        </div>`;
+                }
+
+                // Mengambil data video dari backend
                 const res = await fetch('/api/get-videos');
                 allVideosData = await res.json();
                 
-                container.innerHTML = ''; // Bersihkan container sepenuhnya untuk video baru
+                container.innerHTML = ''; 
                 
                 if (!allVideosData.length) {
                     container.innerHTML = '<p class="text-center py-20 text-gray-500">Belum ada video.</p>';
                     return;
                 }
-                
-                // Siapkan detektor (Observer) untuk Auto-Play yang sudah dioptimasi
-                obs = new IntersectionObserver(es => {
-                    es.forEach(e => { 
-                        if (e.isIntersecting) {
-                            e.target.play().catch(() => {});
-                            e.target.muted = isGlobalMuted; 
+
+                if (isFirstTime) {
+                    // 1. TAMPILKAN LOADER TIPUAN
+                    fakeLoader.classList.remove('hidden'); 
+                    fakeLoader.classList.add('flex');
+                    
+                    // Animasi progress bar jalan pelan-pelan ke 80% (visual saja)
+                    fakeProgress.style.transition = 'width 15s cubic-bezier(0.1, 0.7, 1.0, 0.1)';
+                    setTimeout(() => { fakeProgress.style.width = '80%'; }, 100);
+
+                    // 2. RENDER VIDEO KE DOM SECARA TERSEMBUNYI
+                    setupVideoObserver();
+                    renderVideoBatch(); // Render batch pertama
+
+                    // 3. LOGIKA DETEKSI KESIAPAN VIDEO
+                    const videosInDOM = document.querySelectorAll('.video-player');
+                    // Targetkan 10 video, atau kurang jika data dari API ternyata tidak sampai 10
+                    const targetCount = Math.min(10, videosInDOM.length); 
+                    let readyCount = 0;
+                    let isResolved = false;
+
+                    // Fungsi untuk mengakhiri loading
+                    const finishLoading = () => {
+                        if (isResolved) return; // Mencegah fungsi jalan dua kali
+                        isResolved = true;
+                        
+                        // Penuhkan progress bar secara instan
+                        fakeProgress.style.transition = 'width 0.4s ease-out';
+                        fakeProgress.style.width = '100%';
+                        
+                        setTimeout(() => {
+                            fakeLoader.classList.add('opacity-0');
+                            setTimeout(() => {
+                                fakeLoader.classList.add('hidden');
+                                fakeLoader.classList.remove('flex');
+                            }, 1000); // Tunggu animasi fade-out selesai
                             
-                            // JURUS BARU: Preload 2 video tetangganya sekaligus
-                            let currentContainer = e.target.closest('.snap-start');
-                            for(let j = 0; j < 2; j++) { // Looping 2 langkah ke depan
-                                currentContainer = currentContainer?.nextElementSibling;
-                                if(currentContainer) {
-                                    const nextVid = currentContainer.querySelector('video');
-                                    // Hanya paksa preload jika belum auto
-                                    if(nextVid && nextVid.getAttribute('preload') !== 'auto') {
-                                        nextVid.setAttribute('preload', 'auto');
+                            // Catat ke localStorage agar besok tidak loading lagi
+                            localStorage.setItem('hasVisitedSosial', 'true');
+                        }, 500);
+                    };
+
+                    // SAFETY NET (FALLBACK): 15 DETIK
+                    const safetyTimeout = setTimeout(() => {
+                        finishLoading();
+                    }, 15000);
+
+                    if (targetCount === 0) {
+                        clearTimeout(safetyTimeout);
+                        finishLoading();
+                    } else {
+                        // Pasang listener ke target video pertama
+                        videosInDOM.forEach((vid, index) => {
+                            if (index < targetCount) {
+                                // Paksa browser memuat
+                                vid.setAttribute('preload', 'auto');
+                                vid.load(); 
+
+                                const onVideoReady = () => {
+                                    if (isResolved) return; 
+                                    readyCount++;
+                                    
+                                    // Update progress bar
+                                    const progressPercent = 80 + ((readyCount / targetCount) * 20);
+                                    fakeProgress.style.width = `${progressPercent}%`;
+
+                                    // Hilangkan loader jika target tercapai
+                                    if (readyCount >= targetCount) {
+                                        clearTimeout(safetyTimeout); 
+                                        finishLoading();
                                     }
+                                };
+
+                                if (vid.readyState >= 3) {
+                                    onVideoReady();
+                                } else {
+                                    vid.addEventListener('canplay', onVideoReady, { once: true });
+                                    vid.addEventListener('loadeddata', onVideoReady, { once: true });
                                 }
                             }
-                        } else {
-                            e.target.pause();
-                        }
-                    });
-                }, { threshold: 0.6 });
+                        });
+                    }
 
-                // Render kloter pertama
-                renderVideoBatch();
+                } else {
+                    // JIKA BUKAN PERTAMA KALI: Langsung putar seperti biasa
+                    setupVideoObserver();
+                    renderVideoBatch();
+                }
 
             } catch (e) { 
                 container.innerHTML = '<p class="text-center py-20 text-gray-500">Gagal memuat video.</p>'; 
             }
         }
 
-        // Fungsi memasang video ke layar (Bisa dipanggil berkali-kali tanpa ujung)
+        // Fungsi memasang video ke layar (Infinite Scroll)
         function renderVideoBatch() {
             const container = document.getElementById('feed-container');
             
             const htmlString = allVideosData.map((vid, index) => `
-                <div class="snap-start w-full h-full relative group bg-[#0F0920] video-wrapper overflow-hidden">
+                <div class="snap-start w-full h-full relative group bg-black video-wrapper overflow-hidden">
                     
                     <div class="absolute inset-0 flex items-center justify-center z-0">
                         <div class="w-12 h-12 border-4 border-brand-accent/20 border-t-brand-accent rounded-full animate-spin"></div>
                     </div>
 
-                    <video class="w-full h-full object-cover video-player transition-opacity duration-500 opacity-0 relative z-10" 
+                    <video class="w-full h-full object-contain video-player transition-opacity duration-500 opacity-0 relative z-10" 
                            onloadeddata="this.classList.remove('opacity-0')"
                            loop muted playsinline 
                            preload="metadata"
@@ -1010,28 +1128,24 @@
                     </div>
                 </div>`).join('');
 
-            // Tempelkan video ke bagian paling bawah (tanpa menghapus video di atasnya)
             container.insertAdjacentHTML('beforeend', htmlString);
 
-            // Pasang detektor (Observer) ke video-video yang BARU saja ditempel
             const unobservedVideos = container.querySelectorAll('.video-player:not(.observed)');
             unobservedVideos.forEach((v, i) => {
                 v.classList.add('observed');
-                obs.observe(v);
+                if (obs) obs.observe(v);
 
-                // JIKA INI ADALAH VIDEO PALING TERAKHIR DI LIST:
                 if (i === unobservedVideos.length - 1) {
                     const lastVideoObserver = new IntersectionObserver(entries => {
                         if(entries[0].isIntersecting) {
-                            lastVideoObserver.disconnect(); // Matikan detektor ini
-                            renderVideoBatch(); // PANGGIL LAGI VIDEO DARI AWAL! (LOOP)
+                            lastVideoObserver.disconnect(); 
+                            renderVideoBatch(); 
                         }
                     }, { threshold: 0.1 });
                     lastVideoObserver.observe(v.closest('.snap-start'));
                 }
             });
 
-            // Paksa preload "brutal" untuk 3 video paling atas agar instant saat pertama dibuka
             if (unobservedVideos[0]) unobservedVideos[0].setAttribute('preload', 'auto');
             if (unobservedVideos[1]) unobservedVideos[1].setAttribute('preload', 'auto');
             if (unobservedVideos[2]) unobservedVideos[2].setAttribute('preload', 'auto');
@@ -1042,12 +1156,16 @@
             
             // BACA TAB TERAKHIR DARI MEMORI, JIKA TIDAK ADA BUKA HOME
             const savedTab = localStorage.getItem('lastTab') || 'home';
-            switchTab(savedTab, null, false); // Parameter ketiga 'false' agar history pushState tidak error di awal
+            switchTab(savedTab, null, false); 
             
             if(typeof renderFaqs === 'function') renderFaqs();
             if(typeof renderServices === 'function') renderServices();
             if(typeof muatDataRipper === 'function') muatDataRipper();
-            loadVideos(); 
+            
+            // Video hanya akan di-load jika tab sosial belum terbuka (dicegah duplicate load di switchTab)
+            if (savedTab !== 'sosial') {
+                loadVideos(); 
+            }
         });
     </script>
 </body>
