@@ -1,3 +1,7 @@
-"dependencies": {
-  "papaparse": "^5.4.1"
+{
+  "name": "au2hub",
+  "version": "1.0.0",
+  "dependencies": {
+    "papaparse": "^5.4.1"
+  }
 }
