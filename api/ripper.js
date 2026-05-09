@@ -1,8 +1,11 @@
 const Papa = require('papaparse');
 
 module.exports = async function handler(req, res) {
-    // Memberikan izin akses (CORS)
+    // 1. Memberikan izin akses (CORS)
     res.setHeader('Access-Control-Allow-Origin', '*');
+
+    // 2. TAMBAHKAN BARIS INI (Pelindung agar tidak kena blokir Google)
+    res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate=30');
     
     try {
         // Mengambil link CSV dari Environment Variables Vercel
