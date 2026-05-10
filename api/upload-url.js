@@ -5,11 +5,19 @@ export default async function handler(req, res) {
     if (req.method !== 'GET') return res.status(405).send('Method Not Allowed');
 
     const { filename, filetype } = req.query;
+
+    // Pastikan variabel lingkungan ada (Cek satu-satu)
+    if (!process.env.BIZNET_ACCESS_KEY || !process.env.BIZNET_SECRET_KEY || !process.env.BIZNET_BUCKET_NAME) {
+        return res.status(500).json({ error: "Variabel BIZNET di Vercel belum lengkap!" });
+    }
+
+    if (!filename) return res.status(400).json({ error: "Filename tidak ditemukan" });
+
     const uniqueFileName = `${Date.now()}-${filename.replace(/\s+/g, '-')}`;
 
-    // Konfigurasi Client S3 Biznet Gio
+    // Konfigurasi Client S3 Biznet Gio (Lebih kompatibel)
     const client = new S3Client({
-        region: "id-jkt-1", // Sesuaikan region Biznet kamu
+        region: "us-east-1", // Coba us-east-1 jika id-jkt-1 error
         endpoint: "https://neo.s3.biznetgio.com",
         credentials: {
             accessKeyId: process.env.BIZNET_ACCESS_KEY,
@@ -23,10 +31,9 @@ export default async function handler(req, res) {
             Bucket: process.env.BIZNET_BUCKET_NAME,
             Key: `videos/${uniqueFileName}`,
             ContentType: filetype,
-            ACL: 'public-read'
+            // ACL: 'public-read' // Matikan baris ini sementara jika masih error 500
         });
 
-        // Membuat URL Izin Upload (Berlaku 60 detik)
         const uploadUrl = await getSignedUrl(client, command, { expiresIn: 60 });
 
         res.status(200).json({
@@ -34,6 +41,7 @@ export default async function handler(req, res) {
             finalVideoUrl: `https://neo.s3.biznetgio.com/${process.env.BIZNET_BUCKET_NAME}/videos/${uniqueFileName}`
         });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        // Ini akan mengirim pesan error aslinya ke browser supaya kamu bisa baca
+        res.status(500).json({ error: err.message, stack: err.stack });
     }
 }
