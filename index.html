@@ -6,6 +6,7 @@
     <title>AU2Hub - Pusat Komunitas & Joki</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
     
@@ -113,6 +114,7 @@
             transform: translateY(100%); 
         }
         .comment-drawer.open { transform: translateY(0); }
+        .avatar-ring { padding: 3px; background: linear-gradient(to bottom right, #00F0FF, #FF007A); border-radius: 50%; }
     </style>
 </head>
 <body class="pb-24">
@@ -123,12 +125,8 @@
                 <span class="text-brand-info">AU2</span><span class="text-brand-accent">Hub</span>
             </h1>
             
-            <div onclick="switchTab('rekber')" class="cursor-pointer flex items-center gap-2 bg-brand-success/10 px-3 py-1.5 rounded-full border border-brand-success/20 active:scale-95 transition-transform">
-                <span class="relative flex h-2 w-2">
-                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-success opacity-75"></span>
-                    <span class="relative inline-flex rounded-full h-2 w-2 bg-brand-success"></span>
-                </span>
-                <span class="text-[10px] font-bold text-brand-success uppercase tracking-wide">Admin Online</span>
+            <div id="header-user">
+                <button onclick="openAuthModal()" class="text-[10px] font-bold bg-white/10 px-4 py-2 rounded-full border border-white/10 uppercase active:scale-95 transition-transform">Login / Daftar</button>
             </div>
         </div>
     </header>
@@ -392,7 +390,27 @@
                 <p class="text-center text-[10px] text-gray-500 mt-4 leading-relaxed relative z-10">*Sistem otomatis menyiapkan chat pesanan. Jangan lupa lampirkan screenshot bukti transfer.</p>
             </div>
         </section>
-
+<section id="profile" class="tab-content py-5 min-h-[60vh] flex flex-col justify-center">
+            <div id="profile-logged-in" class="hidden bg-brand-card rounded-3xl p-8 border border-white/10 text-center relative overflow-hidden shadow-2xl">
+                <div class="relative inline-block mb-4">
+                    <div class="avatar-ring"><img id="profile-img" src="https://ui-avatars.com/api/?name=User" class="w-24 h-24 rounded-full object-cover border-2 border-brand-dark"></div>
+                    <label for="avatar-input" class="absolute bottom-0 right-0 bg-brand-info text-brand-dark w-8 h-8 rounded-full flex items-center justify-center cursor-pointer border-4 border-brand-dark active:scale-90 transition-transform"><i class="fas fa-camera text-xs"></i></label>
+                    <input type="file" id="avatar-input" class="hidden" accept="image/*" onchange="handleAvatarUpload(event)">
+                </div>
+                <h3 id="profile-nickname" class="text-xl font-extrabold mb-1 text-white">Nickname</h3>
+                <p id="profile-email" class="text-xs text-gray-500 mb-8">email@domain.com</p>
+                <div class="space-y-3">
+                    <button onclick="editNickname()" class="w-full bg-white/5 border border-white/10 py-3.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2"><i class="fas fa-edit text-brand-info"></i> Ganti Nickname</button>
+                    <button onclick="handleLogout()" class="w-full bg-red-500/10 border border-red-500/20 py-3.5 rounded-xl text-sm font-bold text-red-500"><i class="fas fa-sign-out-alt"></i> Keluar Akun</button>
+                </div>
+            </div>
+            <div id="profile-logged-out" class="text-center py-10">
+                <i class="fas fa-user-circle text-6xl text-gray-700 mb-4"></i>
+                <h3 class="text-xl font-extrabold text-white mb-2">Belum Login</h3>
+                <p class="text-xs text-gray-400 mb-6">Silakan login untuk membalas komentar & upload foto.</p>
+                <button onclick="openAuthModal()" class="bg-brand-accent text-white px-8 py-3.5 rounded-xl font-bold active:scale-95 transition-transform">Login Sekarang</button>
+            </div>
+        </section>
     </main>
     
     <div id="comment-drawer" class="fixed inset-x-0 bottom-0 z-[60] h-[75vh] glass border-t border-white/10 rounded-t-3xl comment-drawer flex flex-col max-w-md mx-auto">
@@ -417,7 +435,22 @@
             </div>
         </div>
     </div>
-
+<div id="modal-auth" class="fixed inset-0 z-[100] hidden items-center justify-center bg-black/90 backdrop-blur-md px-6">
+        <div class="bg-brand-card w-full max-w-sm rounded-3xl border border-white/10 p-8 shadow-2xl relative modal-anim">
+            <button onclick="closeAuthModal()" class="absolute top-4 right-4 text-gray-500 w-8 h-8 flex justify-center items-center rounded-full bg-white/5"><i class="fas fa-times"></i></button>
+            <div id="auth-form">
+                <h3 id="auth-title" class="text-2xl font-extrabold mb-2 text-white">Selamat Datang</h3>
+                <p id="auth-desc" class="text-xs text-gray-400 mb-6">Silakan login untuk berinteraksi.</p>
+                <div class="space-y-4">
+                    <input type="email" id="auth-email" placeholder="Email" class="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3.5 text-sm text-white outline-none focus:border-brand-info">
+                    <input type="password" id="auth-pass" placeholder="Password" class="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3.5 text-sm text-white outline-none focus:border-brand-info">
+                    <div id="nickname-field" class="hidden"><input type="text" id="auth-nick" placeholder="Nickname Game" class="w-full bg-black/30 border border-brand-accent/30 rounded-xl px-4 py-3.5 text-sm text-white outline-none focus:border-brand-accent"></div>
+                    <button onclick="handleAuth()" id="auth-btn" class="w-full bg-brand-accent text-white py-3.5 rounded-xl font-bold active:scale-95 transition-transform">Login</button>
+                    <p class="text-center text-[11px] text-gray-500 mt-4"><span id="toggle-text">Belum punya akun?</span> <button onclick="toggleAuthMode()" id="toggle-btn" class="text-brand-info font-bold underline ml-1">Daftar</button></p>
+                </div>
+            </div>
+        </div>
+    </div>
     <div id="modal-event" class="fixed inset-0 z-[60] hidden items-center justify-center bg-black/80 backdrop-blur-sm px-4">
         <div class="absolute inset-0" onclick="closeModalEvent()"></div>
         
@@ -529,9 +562,56 @@
             <i class="fas fa-user-ninja text-xl mb-1"></i>
             <span class="text-[9px] font-bold mt-0.5">Ripper</span>
         </a>
+        <a href="#profile" onclick="switchTab('profile', event)" class="nav-item flex flex-col items-center justify-center flex-1 text-gray-500 transition-colors">
+            <i class="fas fa-user-circle text-xl mb-1"></i>
+            <span class="text-[9px] font-bold mt-0.5">Profil</span>
+        </a>
     </nav>
 
     <script>
+    const SUPABASE_URL = "https://divckiqkodtqudcoxkjz.supabase.co";
+        const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRpdmNraXFrb2R0cXVkY294a2p6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgzNDY0MzIsImV4cCI6MjA5MzkyMjQzMn0.z_FIS_rpDQPQ7nNWpuvabH7qDYgu7uq6TlYj9LSOcJQ";
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        
+        let currentUser = null; let userProfile = null; let isAuthLogin = true;
+
+        async function checkSession() {
+            const { data: { user } } = await supabaseClient.auth.getUser();
+            if (user) { currentUser = user; await fetchProfile(); document.getElementById('profile-logged-in').classList.remove('hidden'); document.getElementById('profile-logged-out').classList.add('hidden'); updateUIForLoggedIn(); } 
+            else { updateUIForLoggedOut(); }
+        }
+        async function fetchProfile() {
+            const { data } = await supabaseClient.from('profiles').select('*').eq('id', currentUser.id).single();
+            if (data) { userProfile = data; document.getElementById('profile-nickname').innerText = data.nickname || "User"; document.getElementById('profile-email').innerText = currentUser.email; if (data.avatar_url) document.getElementById('profile-img').src = data.avatar_url; }
+        }
+        function openAuthModal() { document.getElementById('modal-auth').classList.remove('hidden'); document.getElementById('modal-auth').classList.add('flex'); }
+        function closeAuthModal() { document.getElementById('modal-auth').classList.add('hidden'); }
+        function toggleAuthMode() {
+            isAuthLogin = !isAuthLogin; document.getElementById('auth-title').innerText = isAuthLogin ? "Selamat Datang" : "Buat Akun Baru"; document.getElementById('nickname-field').classList.toggle('hidden', isAuthLogin); document.getElementById('auth-btn').innerText = isAuthLogin ? "Login" : "Daftar"; document.getElementById('toggle-text').innerText = isAuthLogin ? "Belum punya akun?" : "Sudah punya akun?"; document.getElementById('toggle-btn').innerText = isAuthLogin ? "Daftar" : "Login";
+        }
+        async function handleAuth() {
+            const email = document.getElementById('auth-email').value, password = document.getElementById('auth-pass').value, nick = document.getElementById('auth-nick').value, btn = document.getElementById('auth-btn');
+            btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            try {
+                if (isAuthLogin) { const { error } = await supabaseClient.auth.signInWithPassword({ email, password }); if (error) throw error; } 
+                else { const { data: { user }, error } = await supabaseClient.auth.signUp({ email, password }); if (error) throw error; await supabaseClient.from('profiles').insert([{ id: user.id, nickname: nick || "Player" }]); }
+                location.reload();
+            } catch (e) { alert(e.message); btn.disabled = false; btn.innerText = isAuthLogin ? "Login" : "Daftar"; }
+        }
+        async function handleLogout() { await supabaseClient.auth.signOut(); location.reload(); }
+        function updateUIForLoggedIn() { const ava = userProfile?.avatar_url || 'https://ui-avatars.com/api/?name=' + userProfile?.nickname; document.getElementById('header-user').innerHTML = `<div onclick="switchTab('profile')" class="flex items-center gap-2 cursor-pointer bg-white/5 pr-4 pl-1 py-1 rounded-full border border-white/10"><img src="${ava}" class="w-7 h-7 rounded-full object-cover border border-brand-info"><span class="text-[10px] font-bold text-white">${userProfile?.nickname}</span></div>`; }
+        function updateUIForLoggedOut() { document.getElementById('header-user').innerHTML = `<button onclick="openAuthModal()" class="text-[10px] font-bold bg-white/10 px-4 py-2 rounded-full border border-white/10 uppercase">Login / Daftar</button>`; }
+        async function handleAvatarUpload(event) {
+            const file = event.target.files[0]; if (!file) return; const icon = document.querySelector('label[for="avatar-input"] i'); icon.className = 'fas fa-spinner fa-spin';
+            try {
+                const compressedBlob = await compressImage(file); const fileName = `${currentUser.id}_${Date.now()}.jpg`;
+                const { error } = await supabaseClient.storage.from('avatars').upload(fileName, compressedBlob); if (error) throw error;
+                const { data: { publicUrl } } = supabaseClient.storage.from('avatars').getPublicUrl(fileName);
+                await supabaseClient.from('profiles').update({ avatar_url: publicUrl }).eq('id', currentUser.id); document.getElementById('profile-img').src = publicUrl; alert("Foto profil berhasil diubah!"); location.reload();
+            } catch (e) { alert("Gagal upload!"); } finally { icon.className = 'fas fa-camera text-xs'; }
+        }
+        function compressImage(file) { return new Promise((resolve) => { const reader = new FileReader(); reader.readAsDataURL(file); reader.onload = (e) => { const img = new Image(); img.src = e.target.result; img.onload = () => { const canvas = document.createElement('canvas'); const scale = 400 / img.width; canvas.width = 400; canvas.height = img.height * scale; const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, canvas.width, canvas.height); canvas.toBlob((blob) => resolve(blob), 'image/jpeg', 0.7); }; }; }); }
+        async function editNickname() { const n = prompt("Nickname baru:", userProfile?.nickname); if (n && n.trim() !== "") { await supabaseClient.from('profiles').update({ nickname: n.trim() }).eq('id', currentUser.id); location.reload(); } }
         // --- 1. DATA LOKAL ---
         const services = [
             { id: 1, name: 'Joki Ballroom', price: 7500, label: '', desc: 'Estimasi pengerjaan 2 jam.' },
@@ -832,18 +912,16 @@
         }
 
         async function sendComment(event) {
+            if (!currentUser) return openAuthModal(); 
+            const msgInput = document.getElementById('comment-input');
+            const msg = msgInput.value.trim();
+            if (!msg) return alert("Komentar kosong!");
+
             const btn = event.currentTarget;
-            const nameInput = document.getElementById('comment-name'); const msgInput = document.getElementById('comment-input');
-            const name = nameInput.value.trim(); const msg = msgInput.value.trim();
-
-            if (!name) return alert("Silakan isi Nickname kamu dulu!");
-            if (!msg) return alert("Komentarnya tidak boleh kosong!");
-
-            localStorage.setItem('guest_name', name);
             const iconAsli = btn.innerHTML; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>'; btn.disabled = true;
 
             try {
-                const payload = { video_id: activeVideoId, nickname: name, message: msg };
+                const payload = { video_id: activeVideoId, nickname: userProfile.nickname, message: msg, avatar_url: userProfile.avatar_url };
                 if (replyingToId) payload.parent_id = replyingToId;
 
                 const response = await fetch('/api/comment', {
@@ -854,8 +932,9 @@
                     msgInput.value = ''; loadComments(activeVideoId);
                     const container = document.querySelector(`.comment-count-container[data-vid="${activeVideoId}"]`);
                     if(container) updateCommentCountUI(activeVideoId, container);
+                    cancelReply();
                 }
-            } catch(e) { alert("Gagal mengirim komentar."); } 
+            } catch(e) { alert("Gagal kirim komentar."); } 
             finally { btn.innerHTML = iconAsli; btn.disabled = false; }
         }
 
@@ -1031,8 +1110,8 @@
 
         // TUGAS AWAL SAAT WEB DIBUKA
         document.addEventListener('DOMContentLoaded', () => {
-            const savedName = localStorage.getItem('guest_name');
-            if(savedName) document.getElementById('comment-name').value = savedName;
+            // Mengaktifkan sistem login saat web pertama kali dibuka
+            checkSession();
 
             const savedTab = localStorage.getItem('lastTab') || 'home';
             switchTab(savedTab, null, false); 
