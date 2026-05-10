@@ -32,33 +32,75 @@
 
     <style>
         body { background-color: #0F0920; color: #E2E8F0; -webkit-tap-highlight-color: transparent; overflow-x: hidden; }
+        
         .tab-content:not(.active) { display: none !important; }
         
         /* Animasi Pindah Tab */
-        .tab-content.active { animation: slideUpFade 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; will-change: transform, opacity; }
-        @keyframes slideUpFade { from { opacity: 0; transform: translateY(20px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+        .tab-content.active { 
+            animation: slideUpFade 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; 
+            will-change: transform, opacity;
+        }
+
+        @keyframes slideUpFade {
+            from { opacity: 0; transform: translateY(20px) scale(0.98); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
         
-        /* Animasi Ikon Navigasi */
-        @keyframes popBounce { 0% { transform: scale(1) translateY(0); } 40% { transform: scale(0.7) translateY(2px); } 100% { transform: scale(1.1) translateY(-4px); } }
+        @keyframes popBounce {
+            0% { transform: scale(1) translateY(0); }
+            40% { transform: scale(0.7) translateY(2px); }
+            100% { transform: scale(1.1) translateY(-4px); }
+        }
+        
         .nav-item.active { color: #FF007A; }
-        .nav-item.active i { animation: popBounce 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; text-shadow: 0 0 12px rgba(255, 0, 122, 0.6); will-change: transform; }
+        .nav-item.active i { 
+            animation: popBounce 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; 
+            text-shadow: 0 0 12px rgba(255, 0, 122, 0.6); 
+            will-change: transform;
+        }
 
-        /* Animasi Modal & Reveal */
-        @keyframes modalIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
-        .modal-anim { animation: modalIn 0.3s ease-out forwards; will-change: transform, opacity; }
-        @keyframes smoothReveal { 0% { opacity: 0; transform: translateY(15px); } 100% { opacity: 1; transform: translateY(0); } }
-        .smooth-reveal { animation: smoothReveal 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; will-change: transform, opacity; }
+        @keyframes modalIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        .modal-anim { 
+            animation: modalIn 0.3s ease-out forwards; 
+            will-change: transform, opacity;
+        }
 
-        /* Animasi Hati Pop-up (TikTok Style) */
-        .heart-pop { position: fixed; color: #FF007A; font-size: 100px; pointer-events: none; z-index: 100; animation: heartAnim 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; text-shadow: 0 0 30px rgba(255, 0, 122, 0.8); transform: translate(-50%, -50%); }
-        @keyframes heartAnim { 0% { transform: translate(-50%, -50%) scale(0) rotate(-15deg); opacity: 0; } 20% { transform: translate(-50%, -50%) scale(1.2) rotate(0deg); opacity: 0.9; } 40% { transform: translate(-50%, -50%) scale(1) rotate(5deg); opacity: 0.9; } 100% { transform: translate(-50%, -150%) scale(1.5) rotate(0deg); opacity: 0; } }
+        /* Animasi Super Smooth */
+        @keyframes smoothReveal {
+            0% { opacity: 0; transform: translateY(15px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+        .smooth-reveal {
+            animation: smoothReveal 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            will-change: transform, opacity;
+        }
+
+        /* ANIMASI HATI POP-UP (TIKTOK STYLE) */
+        .heart-pop {
+            position: fixed;
+            color: #FF007A;
+            font-size: 100px;
+            pointer-events: none;
+            z-index: 100;
+            animation: heartAnim 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+            text-shadow: 0 0 30px rgba(255, 0, 122, 0.8);
+            transform: translate(-50%, -50%);
+        }
+        @keyframes heartAnim {
+            0% { transform: translate(-50%, -50%) scale(0) rotate(-15deg); opacity: 0; }
+            20% { transform: translate(-50%, -50%) scale(1.2) rotate(0deg); opacity: 0.9; }
+            40% { transform: translate(-50%, -50%) scale(1) rotate(5deg); opacity: 0.9; }
+            100% { transform: translate(-50%, -150%) scale(1.5) rotate(0deg); opacity: 0; }
+        }
         
-        /* Elemen UI */
         .glass { background: rgba(26, 17, 51, 0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-top: 1px solid rgba(255, 255, 255, 0.05); }
+        
         details > summary { list-style: none; }
         details > summary::-webkit-details-marker { display: none; }
         
-        /* Scrollbar Styling */
         .ripper-list::-webkit-scrollbar { width: 4px; }
         .ripper-list::-webkit-scrollbar-thumb { background: #FF007A; border-radius: 10px; }
         .chat-scroll::-webkit-scrollbar { width: 3px; }
@@ -66,8 +108,11 @@
         .hide-scroll::-webkit-scrollbar { display: none; }
         .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
         
-        /* Drawer Komentar & Avatar */
-        .comment-drawer { transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1); transform: translateY(100%); }
+        /* Drawer Komentar */
+        .comment-drawer { 
+            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1); 
+            transform: translateY(100%); 
+        }
         .comment-drawer.open { transform: translateY(0); }
         .avatar-ring { padding: 3px; background: linear-gradient(to bottom right, #00F0FF, #FF007A); border-radius: 50%; }
     </style>
@@ -79,6 +124,7 @@
             <h1 class="font-extrabold text-xl tracking-tight cursor-pointer" onclick="switchTab('home')">
                 <span class="text-brand-info">AU2</span><span class="text-brand-accent">Hub</span>
             </h1>
+            
             <div id="header-user">
                 <button onclick="openAuthModal()" class="text-[10px] font-bold bg-white/10 px-4 py-2 rounded-full border border-white/10 uppercase active:scale-95 transition-transform">Login / Daftar</button>
             </div>
@@ -125,6 +171,7 @@
             <h2 class="text-xl font-extrabold text-white mb-5 flex items-center gap-2">
                 <span class="w-1.5 h-6 bg-brand-info rounded-full"></span> Info Game & Bantuan
             </h2>
+            
             <div class="space-y-4 mb-8">
                 <div class="bg-brand-card rounded-2xl p-4 border border-white/5">
                     <div class="flex items-start">
@@ -155,25 +202,33 @@
             </div>
 
             <h2 class="text-lg font-extrabold text-white mb-4 text-center">Tanya Jawab (FAQ)</h2>
+            
             <div class="relative mb-4">
                 <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-500"></i>
-                <input type="text" id="faqSearch" placeholder="Cari info atau pertanyaan..." class="w-full bg-brand-card border border-white/10 rounded-2xl py-3.5 pl-12 pr-4 text-sm text-white focus:outline-none focus:border-brand-info transition-all shadow-[0_0_10px_rgba(0,240,255,0.05)]">
+                <input type="text" id="faqSearch" placeholder="Cari info atau pertanyaan..." 
+                    class="w-full bg-brand-card border border-white/10 rounded-2xl py-3.5 pl-12 pr-4 text-sm text-white focus:outline-none focus:border-brand-info transition-all shadow-[0_0_10px_rgba(0,240,255,0.05)]">
             </div>
-            <div id="faq-container" class="space-y-3 pb-4"></div>
+
+            <div id="faq-container" class="space-y-3 pb-4">
+            </div>
         </section>
 
         <section id="layanan" class="tab-content py-2">
             <div class="relative mb-5">
                 <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-brand-accent/70"></i>
-                <input type="text" id="serviceSearch" placeholder="Cari layanan..." class="w-full bg-brand-card border border-brand-accent/30 rounded-2xl py-3.5 pl-12 pr-4 text-sm text-white focus:outline-none focus:border-brand-accent transition-all shadow-[0_0_10px_rgba(255,0,122,0.1)]">
+                <input type="text" id="serviceSearch" placeholder="Cari layanan..." 
+                    class="w-full bg-brand-card border border-brand-accent/30 rounded-2xl py-3.5 pl-12 pr-4 text-sm text-white focus:outline-none focus:border-brand-accent transition-all shadow-[0_0_10px_rgba(255,0,122,0.1)]">
             </div>
+
             <div class="flex justify-between items-center mb-5">
                 <h3 class="text-xl font-extrabold flex items-center gap-2">
                     <div class="w-1.5 h-6 bg-brand-accent rounded-full"></div> Layanan Joki
                 </h3>
                 <span class="text-[10px] bg-brand-accent/20 text-brand-accent px-2 py-1.5 rounded-lg font-bold border border-brand-accent/30 tracking-wider">100% AMAN</span>
             </div>
+
             <div id="service-list" class="space-y-3 mb-6"></div>
+
             <div class="bg-brand-info/5 rounded-2xl p-4 border border-brand-info/20 mb-8">
                 <h3 class="font-bold text-sm text-brand-info mb-2 flex items-center"><i class="fas fa-info-circle mr-2"></i> Cara Memesan:</h3>
                 <p class="text-xs text-gray-400 leading-relaxed">Pilih dan klik tombol <strong>"Beli"</strong> pada paket di atas. Anda akan diarahkan ke halaman pembayaran otomatis untuk melihat detail transfer dan konfirmasi langsung ke WhatsApp Admin.</p>
@@ -186,7 +241,9 @@
                     <div class="w-1.5 h-6 bg-[#25D366] rounded-full"></div> Feed Komunitas
                 </h3>
             </div>
+            
             <div class="relative w-full h-[calc(100dvh-240px)] min-h-[400px] rounded-3xl overflow-hidden border border-white/10 shadow-lg bg-brand-dark flex flex-col">
+                
                 <div id="fake-loader" class="absolute inset-0 z-50 bg-brand-dark flex flex-col items-center justify-center hidden transition-opacity duration-1000">
                     <div class="relative w-20 h-20 mb-6">
                         <div class="absolute inset-0 border-4 border-brand-card rounded-full"></div>
@@ -197,11 +254,14 @@
                     </div>
                     <h3 class="text-white font-extrabold tracking-widest text-sm mb-1 animate-pulse">MENYIAPKAN FEED</h3>
                     <p class="text-[10px] text-gray-500 text-center px-8">Sedang mengoptimalkan kualitas video untuk perangkat Anda. Mohon tunggu sebentar...</p>
+                    
                     <div class="w-48 h-1.5 bg-white/10 rounded-full mt-6 overflow-hidden">
                         <div id="fake-progress" class="h-full bg-gradient-to-r from-brand-info to-brand-accent w-0 rounded-full"></div>
                     </div>
                 </div>
-                <div id="feed-container" class="flex-1 overflow-y-scroll snap-y snap-mandatory hide-scroll relative w-full"></div>
+
+                <div id="feed-container" class="flex-1 overflow-y-scroll snap-y snap-mandatory hide-scroll relative w-full">
+                    </div>
             </div>
         </section>
 
@@ -273,7 +333,8 @@
 
             <div class="relative mb-4">
                 <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-500"></i>
-                <input type="text" id="ripperSearch" placeholder="Cari nama, ID, atau rekening..." class="w-full bg-brand-card border border-red-500/30 rounded-2xl py-3.5 pl-12 pr-4 text-sm text-white focus:outline-none focus:border-red-500 transition-all shadow-[0_0_10px_rgba(239,68,68,0.1)]">
+                <input type="text" id="ripperSearch" placeholder="Cari nama, ID, atau rekening..." 
+                    class="w-full bg-brand-card border border-red-500/30 rounded-2xl py-3.5 pl-12 pr-4 text-sm text-white focus:outline-none focus:border-red-500 transition-all shadow-[0_0_10px_rgba(239,68,68,0.1)]">
             </div>
             
             <div class="bg-brand-card rounded-2xl border border-white/5 overflow-hidden flex flex-col">
@@ -292,14 +353,17 @@
 
             <div class="bg-brand-card rounded-3xl p-6 border border-white/10 shadow-lg relative overflow-hidden mb-6">
                 <div class="absolute -right-10 -top-10 w-32 h-32 bg-brand-accent/10 rounded-full blur-2xl"></div>
+                
                 <div class="text-xs text-gray-500 uppercase tracking-widest mb-1">Total Tagihan</div>
                 <div class="flex justify-between items-end mb-6 relative z-10">
                     <div id="pay-total" class="text-3xl font-extrabold text-brand-accent tracking-tight">Rp 0</div>
+                    
                     <button onclick="salinNominal()" id="btn-salin" class="bg-brand-info/10 text-brand-info border border-brand-info/30 text-[10px] font-bold px-3 py-1.5 rounded-lg active:scale-95 transition-all flex items-center h-max">
                         <i class="fas fa-copy mr-1.5"></i> Salin
                     </button>
                     <input type="hidden" id="nominal-asli" value="0">
                 </div>
+                
                 <div class="bg-white p-3 rounded-2xl mb-6 mx-auto w-max shadow-[0_0_20px_rgba(0,240,255,0.15)] relative group z-10">
                     <img src="https://lh3.googleusercontent.com/u/0/d/1TbGGJpXDTarVbZspPd3YCANMZ_XQNNIE" alt="QRIS ADT" class="w-44 h-44 object-cover rounded-xl" onerror="this.src='https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=Contoh-QRIS'">
                     <div class="absolute inset-0 bg-black/60 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl backdrop-blur-sm">
@@ -589,13 +653,21 @@
             const icon = document.querySelector('label[for="avatar-input"] i'); icon.className = 'fas fa-spinner fa-spin';
             try {
                 const compressedBlob = await compressImage(file); 
-                const fileName = `${currentUser.id}_${Date.now()}.jpg`;
-                const { error } = await supabaseClient.storage.from('avatars').upload(fileName, compressedBlob, { contentType: 'image/jpeg', upsert: true }); 
-                if (error) throw error;
-                const { data: { publicUrl } } = supabaseClient.storage.from('avatars').getPublicUrl(fileName);
-                await supabaseClient.from('profiles').update({ avatar_url: publicUrl }).eq('id', currentUser.id); 
-                document.getElementById('profile-img').src = publicUrl; 
-                alert("Foto profil berhasil diubah!"); 
+                const base64data = await new Promise((resolve) => {
+                    const reader = new FileReader();
+                    reader.readAsDataURL(compressedBlob);
+                    reader.onloadend = () => resolve(reader.result);
+                });
+                const response = await fetch('/api/upload-foto', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ fileBase64: base64data, userId: currentUser.id })
+                });
+                const data = await response.json();
+                if (!data.success) throw new Error(data.error);
+                await supabaseClient.from('profiles').update({ avatar_url: data.url }).eq('id', currentUser.id); 
+                document.getElementById('profile-img').src = data.url; 
+                alert("Foto profil berhasil disimpan di Biznet Gio!"); 
                 location.reload();
             } catch (e) { alert("Gagal upload: " + e.message); } 
             finally { icon.className = 'fas fa-camera text-xs'; }
@@ -650,7 +722,6 @@
             targetSection.classList.add('active');
             if (tabId === 'sosial') loadVideos();
 
-            // FIX: Tambahkan profile: 6 ke dalam navMap
             const navMap = { 'home': 0, 'info': 1, 'layanan': 2, 'sosial': 3, 'rekber': 4, 'ripper': 5, 'profile': 6, 'pembayaran': 2 };
             const activeIndex = navMap[tabId];
             if (activeIndex !== undefined) {
