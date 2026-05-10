@@ -844,9 +844,10 @@
         }
 
         function buildCommentHTML(comment, replies = []) {
+            const ava = comment.avatar_url || `https://ui-avatars.com/api/?name=${comment.nickname}&background=1A1133&color=fff`;
             let html = `
             <div class="flex items-start gap-3 mb-5">
-                <div class="w-8 h-8 rounded-full bg-brand-accent/20 text-brand-accent flex-shrink-0 flex items-center justify-center text-xs font-bold mt-1">${comment.nickname.charAt(0).toUpperCase()}</div>
+                <img src="${ava}" class="w-8 h-8 rounded-full object-cover border border-white/10 shrink-0 mt-1">
                 <div class="flex-1">
                     <div class="flex justify-between items-start">
                         <div class="pr-2">
@@ -867,9 +868,10 @@
                         <div id="replies-${comment.id}" class="hidden mt-3 space-y-4 pl-3 border-l border-white/10 relative">`;
                 
                 replies.forEach(r => {
+                    const rAva = r.avatar_url || `https://ui-avatars.com/api/?name=${r.nickname}&background=1A1133&color=fff`;
                     html += `
                             <div class="flex items-start gap-2 relative">
-                                <div class="w-6 h-6 rounded-full bg-brand-purple/20 text-brand-purple flex-shrink-0 flex items-center justify-center text-[9px] font-bold mt-0.5">${r.nickname.charAt(0).toUpperCase()}</div>
+                                <img src="${rAva}" class="w-6 h-6 rounded-full object-cover border border-white/10 shrink-0 mt-0.5">
                                 <div class="flex-1">
                                     <div class="flex justify-between items-start">
                                         <div class="pr-2">
