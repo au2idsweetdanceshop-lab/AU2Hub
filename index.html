@@ -306,6 +306,14 @@
         </section>
 
         <section id="profile" class="tab-content py-5 min-h-[60vh] flex flex-col justify-center">
+            <div id="profile-loading" class="flex flex-col items-center justify-center py-10">
+                <div class="relative w-16 h-16 mb-4">
+                    <div class="absolute inset-0 border-4 border-brand-card rounded-full"></div>
+                    <div class="absolute inset-0 border-4 border-brand-info rounded-full border-t-transparent animate-spin"></div>
+                </div>
+                <p class="text-xs text-gray-400 font-bold tracking-widest animate-pulse">MEMUAT PROFIL...</p>
+            </div>
+
             <div id="profile-logged-in" class="hidden bg-brand-card rounded-3xl p-8 border border-white/10 text-center relative overflow-hidden shadow-2xl">
                 <div class="relative inline-block mb-4">
                     <div class="avatar-ring">
@@ -334,7 +342,7 @@
                 </div>
             </div>
             
-            <div id="profile-logged-out" class="text-center py-10">
+            <div id="profile-logged-out" class="hidden text-center py-10">
                 <i class="fas fa-user-circle text-6xl text-gray-700 mb-4"></i>
                 <h3 class="text-xl font-extrabold text-white mb-2">Belum Login</h3>
                 <p class="text-xs text-gray-400 mb-6">Silakan login untuk membalas komentar & upload foto.</p>
@@ -535,7 +543,19 @@
 
         // === 3. SISTEM AUTENTIKASI & PROFIL ===
         async function checkSession() {
+            // Tampilkan animasi loading, sembunyikan UI lainnya saat mulai mengecek
+            document.getElementById('profile-loading').classList.remove('hidden');
+            document.getElementById('profile-loading').classList.add('flex');
+            document.getElementById('profile-logged-in').classList.add('hidden');
+            document.getElementById('profile-logged-out').classList.add('hidden');
+
+            // Tunggu respons dari Supabase
             const { data: { user } } = await supabaseClient.auth.getUser();
+            
+            // Sembunyikan animasi loading setelah mendapatkan respons
+            document.getElementById('profile-loading').classList.add('hidden');
+            document.getElementById('profile-loading').classList.remove('flex');
+
             if (user) { 
                 currentUser = user; 
                 await fetchProfile(); 
