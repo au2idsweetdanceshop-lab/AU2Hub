@@ -30,7 +30,7 @@
     </script>
 
     <style>
-        body { background-color: #0F0920; color: #E2E8F0; -webkit-tap-highlight-color: transparent; }
+        body { background-color: #0F0920; color: #E2E8F0; -webkit-tap-highlight-color: transparent; overflow-x: hidden; }
         
         .tab-content:not(.active) { display: none !important; }
         
@@ -67,7 +67,7 @@
             will-change: transform, opacity;
         }
 
-        /* CSS BARU: Animasi Super Smooth */
+        /* Animasi Super Smooth */
         @keyframes smoothReveal {
             0% { opacity: 0; transform: translateY(15px); }
             100% { opacity: 1; transform: translateY(0); }
@@ -75,6 +75,24 @@
         .smooth-reveal {
             animation: smoothReveal 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
             will-change: transform, opacity;
+        }
+
+        /* ANIMASI HATI POP-UP (TIKTOK STYLE) */
+        .heart-pop {
+            position: fixed;
+            color: #FF007A;
+            font-size: 90px;
+            pointer-events: none;
+            z-index: 100;
+            animation: heartAnim 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+            text-shadow: 0 0 20px rgba(255, 0, 122, 0.6);
+            transform: translate(-50%, -50%);
+        }
+        @keyframes heartAnim {
+            0% { transform: translate(-50%, -50%) scale(0) rotate(-15deg); opacity: 0; }
+            20% { transform: translate(-50%, -50%) scale(1.2) rotate(0deg); opacity: 0.9; }
+            40% { transform: translate(-50%, -50%) scale(1) rotate(5deg); opacity: 0.9; }
+            100% { transform: translate(-50%, -150%) scale(1.5) rotate(0deg); opacity: 0; }
         }
         
         .glass { background: rgba(26, 17, 51, 0.85); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border-top: 1px solid rgba(255, 255, 255, 0.05); }
@@ -540,10 +558,10 @@
 
         let dataRipperGlobal = []; 
         let isRipperExpanded = localStorage.getItem('statusLihatSemua') === 'true';
-        let isGlobalMuted = true; // Status awal suara mati
+        let isGlobalMuted = true;
 
         function toggleGlobalAudio(currentVideo) {
-            isGlobalMuted = !isGlobalMuted; // Balikkan status global
+            isGlobalMuted = !isGlobalMuted;
             const allVideos = document.querySelectorAll('.video-player');
             allVideos.forEach(v => {
                 v.muted = isGlobalMuted;
@@ -554,8 +572,6 @@
         function switchTab(tabId, event = null, isPush = true) {
             if (event) event.preventDefault();
             
-            // LOGIKA BARU: Jika sedang di halaman Detail Pembayaran dan memencet ikon Layanan
-            // maka tetap di halaman Pembayaran dan lakukan scroll halus ke atas.
             if (tabId === 'layanan' && isPush && document.getElementById('pembayaran').classList.contains('active')) {
                 window.scrollTo({ top: 0, behavior: 'smooth' });
                 return; 
@@ -576,7 +592,6 @@
             targetSection.classList.add('active');
 
             if (tabId === 'sosial') {
-                // Panggil ulang loader video jika tab sosial dibuka
                 loadVideos();
             }
 
@@ -594,10 +609,7 @@
                 }
             }
             
-            // PERBAIKAN SCROLL: Menggunakan sedikit jeda agar scroll ke atas tidak terganggu animasi transisi tab
-            setTimeout(() => {
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-            }, 10);
+            setTimeout(() => { window.scrollTo({ top: 0, behavior: 'smooth' }); }, 10);
 
             if (isPush && window.location.hash !== `#${tabId}`) {
                 history.pushState(null, null, `#${tabId}`);
@@ -614,7 +626,6 @@
                 isPopupClosed = true;
             }
             
-            // LOGIKA BARU UNTUK MENUTUP WIDGET CHAT SAAT TOMBOL BACK DITEKAN
             const widget = document.getElementById('floating-widget');
             if (!widget.classList.contains('opacity-0')) {
                 widget.classList.add('opacity-0', 'pointer-events-none', 'translate-y-8', 'scale-95');
@@ -640,7 +651,6 @@
 
         function closeModalEvent() { history.back(); }
 
-        // LOGIKA BARU UNTUK MEMBUKA WIDGET DENGAN ANIMASI FADE-IN
         function toggleWidget() {
             const widget = document.getElementById('floating-widget');
             if (widget.classList.contains('opacity-0')) {
@@ -738,7 +748,7 @@
             }, 2000);
         }
 
-        // --- 4. FUNGSI DATABASE OTOMATIS (SINKRON GOOGLE SHEETS) ---
+        // --- 4. FUNGSI DATABASE OTOMATIS ---
         async function muatDataRipper() {
             const linkAPI = "/api/ripper";
             const container = document.getElementById('ripper-container');
@@ -760,7 +770,6 @@
                 
                 renderRippers(dataRipperGlobal, false);
             } catch (error) {
-                console.error("Gagal menarik data baru:", error);
                 if (!dataTersimpan) {
                     container.innerHTML = '<div class="text-center py-10 text-xs text-red-500"><i class="fas fa-exclamation-triangle mb-2 text-2xl"></i><br>Gagal terhubung ke database. Cek koneksi internet.</div>';
                 }
@@ -830,7 +839,6 @@
                     const nama = r["Nama / Keterangan"] || r.nama || r.Nama || "Tanpa Nama";
                     const idGame = r["ID"] || r.id || "-";
                     const rekening = r["Rekening / Kontak (WA/Dana)"] || r.rekening || r.Rekening || "-";
-                    
                     const delayAnimasi = index < 5 ? (index * 0.05) : 0; 
 
                     return `
@@ -883,7 +891,7 @@
         
         let activeVideoId = null;
 
-        // --- FUNGSI KOMENTAR & LIKE (SUPABASE VIA VERCEL API) ---
+        // --- FUNGSI KOMENTAR & LIKE (SUPABASE) ---
         function openComments(id) {
             activeVideoId = id;
             document.getElementById('comment-drawer').classList.add('open');
@@ -972,9 +980,19 @@
                 if(localStorage.getItem(`liked_${videoId}`)) {
                     icon.classList.replace('text-white', 'text-brand-accent');
                 }
-            } catch(e) {
-                console.error("Gagal memuat jumlah like");
-            }
+            } catch(e) {}
+        }
+
+        async function updateCommentCountUI(videoId, containerDiv) {
+            try {
+                const response = await fetch(`/api/comment?video_id=${videoId}`);
+                const data = await response.json();
+                
+                const countSpan = containerDiv.querySelector('.comment-count-display');
+                if (countSpan && Array.isArray(data)) {
+                    countSpan.innerText = data.length;
+                }
+            } catch(e) {}
         }
 
         async function likeVideo(videoId, btn) {
@@ -1002,13 +1020,52 @@
             }
         }
 
-        // --- 5. FUNGSI SOSIAL (TIKTOK MODE + INFINITE SCROLL) ---
+        // --- 5. FUNGSI SOSIAL (TIKTOK MODE + DOUBLE TAP) ---
         let allVideosData = []; 
         let obs; 
+        let lastTap = 0; // Menyimpan waktu ketukan terakhir
 
         function handleVideoError(videoElement) {
             const container = videoElement.closest('.snap-start');
             if (container) container.remove();
+        }
+
+        // FITUR DOUBLE TAP DETECTOR
+        function handleVideoClick(event, video, vidId) {
+            const now = Date.now();
+            const TIMESLOT = 300; // Maksimal jeda 0.3 detik untuk double tap
+            
+            if (now - lastTap < TIMESLOT) {
+                // --- KETUK 2X (LIKE) ---
+                const container = video.closest('.snap-start');
+                const likeBtn = container.querySelector('.like-container button');
+                likeVideo(vidId, likeBtn);
+                createHeartAt(event);
+            } else {
+                // --- KETUK 1X (MUTE/UNMUTE) ---
+                setTimeout(() => {
+                    if (Date.now() - lastTap >= TIMESLOT) {
+                        toggleGlobalAudio(video);
+                    }
+                }, TIMESLOT);
+            }
+            lastTap = now;
+        }
+
+        // FITUR ANIMASI HATI POP-UP
+        function createHeartAt(event) {
+            const heart = document.createElement('i');
+            heart.className = 'fas fa-heart heart-pop';
+            
+            // Mengambil titik koordinat sentuhan di HP atau klik di PC
+            const x = event.clientX || (event.touches && event.touches[0].clientX);
+            const y = event.clientY || (event.touches && event.touches[0].clientY);
+            
+            heart.style.left = `${x}px`;
+            heart.style.top = `${y}px`;
+            
+            document.body.appendChild(heart);
+            setTimeout(() => heart.remove(), 800); // Bersihkan sisa animasi
         }
 
         function setupVideoObserver() {
@@ -1136,97 +1193,80 @@
             }
         }
 
-        // 1. Fungsi untuk ambil jumlah komentar dari database
-async function updateCommentCountUI(videoId, containerDiv) {
-    try {
-        const response = await fetch(`/api/comment?video_id=${videoId}`);
-        const data = await response.json();
-        
-        const countSpan = containerDiv.querySelector('.comment-count-display');
-        if (countSpan && Array.isArray(data)) {
-            // Tampilkan jumlah item di dalam array komentar
-            countSpan.innerText = data.length;
-        }
-    } catch(e) {
-        console.error("Gagal memuat jumlah komentar");
-    }
-}
-
-// 2. Update tampilan Feed Video
-function renderVideoBatch() {
-    const container = document.getElementById('feed-container');
-    
-    const htmlString = allVideosData.map((vid) => `
-        <div class="snap-start w-full h-full flex-shrink-0 relative group flex items-center justify-center overflow-hidden bg-brand-dark">
+        function renderVideoBatch() {
+            const container = document.getElementById('feed-container');
             
-            <div class="absolute inset-0 flex items-center justify-center z-0">
-                <div class="w-12 h-12 border-4 border-brand-accent/20 border-t-brand-accent rounded-full animate-spin"></div>
-            </div>
-
-            <video class="absolute inset-0 m-auto w-full h-full object-cover video-player transition-opacity duration-500 opacity-0 z-10" 
-                   onloadeddata="this.classList.remove('opacity-0')"
-                   loop muted playsinline 
-                   preload="metadata"
-                   onclick="toggleGlobalAudio(this)"
-                   onerror="handleVideoError(this)">
-                <source src="${vid.video_url}" type="video/mp4">
-            </video>
-
-            <div class="absolute bottom-10 left-0 w-full p-6 flex justify-between items-end z-20 pointer-events-none">
-                <div class="text-white drop-shadow-lg w-2/3 pointer-events-auto">
-                    <p class="font-bold text-sm shadow-black drop-shadow-md">@au2hub</p>
-                    <p class="text-xs opacity-90 shadow-black drop-shadow-md">${vid.caption}</p>
-                </div>
-                <div class="flex flex-col gap-6 items-center pointer-events-auto">
+            const htmlString = allVideosData.map((vid) => `
+                <div class="snap-start w-full h-full flex-shrink-0 relative group flex items-center justify-center overflow-hidden bg-brand-dark">
                     
-                    <div class="like-container flex flex-col items-center gap-1" data-vid="${vid.id}">
-                        <button onclick="likeVideo('${vid.id}', this)" class="hover:scale-110 transition-transform">
-                            <i class="fas fa-heart text-3xl text-white drop-shadow-md"></i>
-                        </button>
-                        <span class="like-count-display text-white text-[12px] font-bold drop-shadow-md">0</span>
+                    <div class="absolute inset-0 flex items-center justify-center z-0">
+                        <div class="w-12 h-12 border-4 border-brand-accent/20 border-t-brand-accent rounded-full animate-spin"></div>
                     </div>
 
-                    <div class="comment-count-container flex flex-col items-center gap-1" data-vid="${vid.id}">
-                        <button onclick="openComments('${vid.id}')" class="hover:scale-110 transition-transform">
-                            <i class="fas fa-comment-dots text-3xl text-white drop-shadow-md"></i>
-                        </button>
-                        <span class="comment-count-display text-white text-[12px] font-bold drop-shadow-md">0</span>
+                    <video class="absolute inset-0 m-auto w-full h-full object-cover video-player transition-opacity duration-500 opacity-0 z-10" 
+                           onloadeddata="this.classList.remove('opacity-0')"
+                           loop muted playsinline 
+                           preload="metadata"
+                           onclick="handleVideoClick(event, this, '${vid.id}')"
+                           onerror="handleVideoError(this)">
+                        <source src="${vid.video_url}" type="video/mp4">
+                    </video>
+
+                    <div class="absolute bottom-10 left-0 w-full p-6 flex justify-between items-end z-20 pointer-events-none">
+                        <div class="text-white drop-shadow-lg w-2/3 pointer-events-auto">
+                            <p class="font-bold text-sm shadow-black drop-shadow-md">@au2hub</p>
+                            <p class="text-xs opacity-90 shadow-black drop-shadow-md">${vid.caption}</p>
+                        </div>
+                        <div class="flex flex-col gap-6 items-center pointer-events-auto">
+                            
+                            <div class="like-container flex flex-col items-center gap-1" data-vid="${vid.id}">
+                                <button onclick="likeVideo('${vid.id}', this)" class="hover:scale-110 transition-transform">
+                                    <i class="fas fa-heart text-3xl text-white drop-shadow-md"></i>
+                                </button>
+                                <span class="like-count-display text-white text-[12px] font-bold drop-shadow-md">0</span>
+                            </div>
+
+                            <div class="comment-count-container flex flex-col items-center gap-1" data-vid="${vid.id}">
+                                <button onclick="openComments('${vid.id}')" class="hover:scale-110 transition-transform">
+                                    <i class="fas fa-comment-dots text-3xl text-white drop-shadow-md"></i>
+                                </button>
+                                <span class="comment-count-display text-white text-[12px] font-bold drop-shadow-md">0</span>
+                            </div>
+
+                        </div>
                     </div>
+                </div>`).join('');
 
-                </div>
-            </div>
-        </div>`).join('');
+            container.insertAdjacentHTML('beforeend', htmlString);
 
-    container.insertAdjacentHTML('beforeend', htmlString);
+            // Ambil data angka Like & Komentar
+            const videoActions = container.querySelectorAll('.snap-start:not(.data-loaded)');
+            videoActions.forEach((card) => {
+                card.classList.add('data-loaded');
+                const vidId = card.querySelector('.like-container').dataset.vid;
+                
+                updateLikeCountUI(vidId, card.querySelector('.like-container'));
+                updateCommentCountUI(vidId, card.querySelector('.comment-count-container'));
+            });
 
-    // Ambil data angka Like & Komentar untuk video yang baru muncul
-    const videoActions = container.querySelectorAll('.snap-start:not(.data-loaded)');
-    videoActions.forEach((card) => {
-        card.classList.add('data-loaded');
-        const vidId = card.querySelector('.like-container').dataset.vid;
-        
-        // Panggil fungsi update angka
-        updateLikeCountUI(vidId, card.querySelector('.like-container'));
-        updateCommentCountUI(vidId, card.querySelector('.comment-count-container'));
-    });
-
-    // Observer untuk Infinite Scroll tetap sama...
-    const unobservedVideos = container.querySelectorAll('.video-player:not(.observed)');
-    unobservedVideos.forEach((v, i) => {
-        v.classList.add('observed');
-        if (obs) obs.observe(v);
-        if (i === unobservedVideos.length - 1) {
-            const lastVideoObserver = new IntersectionObserver(entries => {
-                if(entries[0].isIntersecting) {
-                    lastVideoObserver.disconnect(); 
-                    renderVideoBatch(); 
+            // Observer Infinite Scroll
+            const unobservedVideos = container.querySelectorAll('.video-player:not(.observed)');
+            unobservedVideos.forEach((v, i) => {
+                v.classList.add('observed');
+                if (obs) obs.observe(v);
+                if (i === unobservedVideos.length - 1) {
+                    const lastVideoObserver = new IntersectionObserver(entries => {
+                        if(entries[0].isIntersecting) {
+                            lastVideoObserver.disconnect(); 
+                            renderVideoBatch(); 
+                        }
+                    }, { threshold: 0.1 });
+                    lastVideoObserver.observe(v.closest('.snap-start'));
                 }
-            }, { threshold: 0.1 });
-            lastVideoObserver.observe(v.closest('.snap-start'));
+            });
         }
-    });
-}
 
+        // TUGAS AWAL SAAT WEB DIBUKA
         document.addEventListener('DOMContentLoaded', () => {
             const savedName = localStorage.getItem('guest_name');
             if(savedName) document.getElementById('comment-name').value = savedName;
