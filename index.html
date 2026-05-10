@@ -801,7 +801,7 @@
                         <div class="pr-2">
                             <b class="text-brand-info text-[11px]">${comment.nickname}</b>
                             <p class="text-gray-200 text-xs mt-0.5 leading-relaxed break-words">${comment.message}</p>
-                            <div class="flex items-center gap-4 mt-1.5"><span class="text-[9px] text-gray-600">Baru saja</span><button onclick="setReply('${comment.id}', '${comment.nickname}')" class="text-[10px] text-gray-400 font-bold hover:text-white">Balas</button></div>
+                            <div class="flex items-center gap-4 mt-1.5"><span class="text-[9px] text-gray-600">${timeAgo(comment.created_at)}</span><button onclick="setReply('${comment.id}', '${comment.nickname}')" class="text-[10px] text-gray-400 font-bold hover:text-white">Balas</button></div>
                         </div>
                         <div class="flex flex-col items-center gap-1 ml-1 shrink-0">
                             <button onclick="likeComment('${comment.id}', this)" class="text-gray-500 hover:text-brand-accent transition-colors active:scale-75"><i class="fas fa-heart text-sm ${localStorage.getItem('comment_liked_'+comment.id) ? 'text-brand-accent' : ''}"></i></button>
@@ -1057,7 +1057,25 @@
                 }
             });
         }
+// Fungsi untuk mengubah format waktu menjadi "X waktu yang lalu"
+function timeAgo(dateString) {
+    const now = new Date();
+    const past = new Date(dateString);
+    const seconds = Math.floor((now - past) / 1000);
 
+    let interval = Math.floor(seconds / 31536000);
+    if (interval >= 1) return interval + " tahun lalu";
+    interval = Math.floor(seconds / 2592000);
+    if (interval >= 1) return interval + " bulan lalu";
+    interval = Math.floor(seconds / 86400);
+    if (interval >= 1) return interval + " hari lalu";
+    interval = Math.floor(seconds / 3600);
+    if (interval >= 1) return interval + " jam lalu";
+    interval = Math.floor(seconds / 60);
+    if (interval >= 1) return interval + " menit lalu";
+    
+    return "Baru saja";
+}
         // TUGAS AWAL SAAT WEB DIBUKA
         document.addEventListener('DOMContentLoaded', () => {
             // Mengaktifkan sistem login saat web pertama kali dibuka
