@@ -6,8 +6,8 @@ export default async function handler(req, res) {
     if (!bucketName) return res.status(200).send("❌ ERROR: Nama Bucket kosong!");
 
     const client = new S3Client({
-      region: "us-east-1", // GUNAKAN us-east-1 (ini standar internasional untuk S3-compat)
-      endpoint: "https://is3.cloud.glo.id", // GANTI ALAMAT KE SINI (Lebih Stabil)
+      region: "idn", // Sesuai foto kamu
+      endpoint: "https://nos.wjv-1.neo.id", // Sesuai foto kamu (Primary)
       credentials: {
         accessKeyId: process.env.BIZNET_ACCESS_KEY,
         secretAccessKey: process.env.BIZNET_SECRET_KEY,
@@ -30,9 +30,9 @@ export default async function handler(req, res) {
     });
 
     await client.send(command);
-    res.status(200).send("✅ BERHASIL TOTAL! Alamat baru berhasil terhubung. Silakan tes upload di web sekarang!");
+    res.status(200).send("✅ BERHASIL TOTAL! Alamat asli sudah terhubung. Sekarang pintu Biznet sudah terbuka!");
 
   } catch (err) {
-    res.status(200).send("❌ GAGAL LAGI: " + err.message);
+    res.status(200).send("❌ GAGAL: " + err.message);
   }
 }
