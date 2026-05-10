@@ -473,8 +473,19 @@
             }
         }
 
-        function openAuthModal() { document.getElementById('modal-auth').classList.remove('hidden'); document.getElementById('modal-auth').classList.add('flex'); }
-        function closeAuthModal() { document.getElementById('modal-auth').classList.add('hidden'); }
+        function openAuthModal() { 
+            history.pushState({ popup: 'auth' }, null, '#auth');
+            document.getElementById('modal-auth').classList.remove('hidden'); 
+            document.getElementById('modal-auth').classList.add('flex'); 
+        }
+        function closeAuthModal() { 
+            if (window.location.hash === '#auth') {
+                history.back();
+            } else {
+                document.getElementById('modal-auth').classList.add('hidden'); 
+                document.getElementById('modal-auth').classList.remove('flex'); 
+            }
+        }
         
         function toggleAuthMode() {
             isAuthLogin = !isAuthLogin; 
@@ -498,11 +509,30 @@
                     const { error: dbErr } = await supabaseClient.from('profiles').upsert({ id: user.id, nickname: nick || "Player", avatar_url: "" }); 
                     if (dbErr) throw new Error("Database Profil Error: " + dbErr.message);
                 }
-                location.reload();
-            } catch (e) { alert(e.message); btn.disabled = false; btn.innerText = isAuthLogin ? "Login" : "Daftar"; }
+                
+                // Form di-reset
+                document.getElementById('auth-email').value = '';
+                document.getElementById('auth-pass').value = '';
+                document.getElementById('auth-nick').value = '';
+
+                // Memperbarui UI tanpa reload
+                await checkSession();
+                closeAuthModal();
+
+            } catch (e) { 
+                alert(e.message); 
+            } finally {
+                btn.disabled = false; 
+                btn.innerText = isAuthLogin ? "Login" : "Daftar";
+            }
         }
 
-        async function handleLogout() { await supabaseClient.auth.signOut(); location.reload(); }
+        async function handleLogout() { 
+            await supabaseClient.auth.signOut(); 
+            currentUser = null;
+            userProfile = null;
+            checkSession();
+        }
 
         function updateUIForLoggedIn() { 
             const ava = (userProfile?.avatar_url && userProfile.avatar_url !== "") ? userProfile.avatar_url : `https://ui-avatars.com/api/?name=${userProfile?.nickname || 'User'}&background=1A1133&color=fff`; 
@@ -547,8 +577,11 @@
                 if (dbErr) throw new Error("Gagal menyimpan link di Database: " + dbErr.message);
 
                 document.getElementById('profile-img').src = data.url; 
-                alert("Foto profil berhasil disimpan di Biznet Gio!"); 
-                location.reload();
+                
+                // Refresh data profil yang terlihat tanpa reload halaman
+                await fetchProfile();
+                updateUIForLoggedIn();
+
             } catch (e) { alert("Gagal upload: " + e.message); } 
             finally { icon.className = 'fas fa-camera text-xs'; }
         }
@@ -576,7 +609,9 @@
                 if (error) {
                     alert("Gagal merubah Nickname: " + error.message);
                 } else {
-                    location.reload(); 
+                    // Update UI tanpa merefresh total
+                    await fetchProfile();
+                    updateUIForLoggedIn();
                 }
             } 
         }
@@ -605,7 +640,11 @@
             });
 
             targetSection.classList.add('active');
-            if (tabId === 'sosial') loadVideos();
+            
+            // JANGAN reload ulang feed video jika tab sosial ditekan dan isinya sudah ada
+            if (tabId === 'sosial' && allVideosData.length === 0) {
+                loadVideos();
+            }
 
             const navMap = { 'home': 0, 'info': 1, 'layanan': 2, 'sosial': 3, 'rekber': 4, 'ripper': 5, 'profile': 6, 'pembayaran': 2 };
             const activeIndex = navMap[tabId];
@@ -625,18 +664,21 @@
         window.addEventListener('popstate', () => {
             let isPopupClosed = false;
             
+            // Tutup Modal Event
             const modalEvent = document.getElementById('modal-event');
             if (!modalEvent.classList.contains('hidden')) {
                 modalEvent.classList.add('hidden'); modalEvent.classList.remove('flex');
                 document.body.style.overflow = 'auto'; isPopupClosed = true;
             }
             
+            // Tutup Floating Widget Chat
             const widget = document.getElementById('floating-widget');
             if (!widget.classList.contains('opacity-0')) {
                 widget.classList.add('opacity-0', 'pointer-events-none', 'translate-y-8', 'scale-95');
                 isPopupClosed = true;
             }
 
+            // Tutup Laci Komentar TANPA REFRESH
             const commentDrawer = document.getElementById('comment-drawer');
             if (commentDrawer.classList.contains('open')) {
                 commentDrawer.classList.remove('open');
@@ -644,26 +686,51 @@
                 isPopupClosed = true;
             }
 
+            // Tutup Modal Auth
+            const authModal = document.getElementById('modal-auth');
+            if (!authModal.classList.contains('hidden')) {
+                authModal.classList.add('hidden'); 
+                authModal.classList.remove('flex');
+                isPopupClosed = true;
+            }
+
+            // PENTING: Jika tombol HP back ditekan dan dia cuma nutup laci/modal, Stop proses di sini. (Video gak akan kereload)
             if (isPopupClosed) return;
+            
+            // Jika gak ada yang ditutup, pindah tab biasa
             switchTab(window.location.hash.substring(1) || 'home', null, false);
         });
 
         function openModalEvent() {
-            history.pushState({ popup: 'modal' }, null, null); 
+            history.pushState({ popup: 'modal' }, null, '#event'); 
             const modal = document.getElementById('modal-event');
             modal.classList.remove('hidden'); modal.classList.add('flex');
             document.body.style.overflow = 'hidden'; 
             setTimeout(() => { const carousel = document.getElementById('image-carousel'); if(carousel) { carousel.scrollLeft = 0; updateCarouselDots(); } }, 50);
         }
         
-        function closeModalEvent() { history.back(); }
+        function closeModalEvent() { 
+            if (window.location.hash === '#event') {
+                history.back();
+            } else {
+                const modal = document.getElementById('modal-event');
+                modal.classList.add('hidden'); modal.classList.remove('flex');
+                document.body.style.overflow = 'auto'; 
+            }
+        }
         
         function toggleWidget() {
             const widget = document.getElementById('floating-widget');
             if (widget.classList.contains('opacity-0')) {
-                history.pushState({ popup: 'widget' }, null, null); 
+                history.pushState({ popup: 'widget' }, null, '#chat'); 
                 widget.classList.remove('opacity-0', 'pointer-events-none', 'translate-y-8', 'scale-95'); 
-            } else { history.back(); }
+            } else { 
+                if (window.location.hash === '#chat') {
+                    history.back();
+                } else {
+                    widget.classList.add('opacity-0', 'pointer-events-none', 'translate-y-8', 'scale-95'); 
+                }
+            }
         }
 
         // === 5. RENDER INFO, JOKI, RIPPER ===
@@ -759,14 +826,19 @@
 
         // --- 6. SISTEM KOMENTAR ---
         function openComments(id) {
-            history.pushState({ popup: 'comments' }, null, null); 
+            history.pushState({ popup: 'comments' }, null, '#comments'); 
             activeVideoId = id; 
             document.getElementById('comment-drawer').classList.add('open'); 
             loadComments(id); 
         }
 
         function closeComments() {
-            history.back(); 
+            if (window.location.hash === '#comments') {
+                history.back(); // Jika ada hash komentar, biar HP yang narik lacinya turun
+            } else {
+                document.getElementById('comment-drawer').classList.remove('open'); 
+                cancelReply();
+            }
         }
 
         async function loadComments(videoId, silent = false) {
@@ -896,6 +968,7 @@
 
                 if (response.ok) {
                     msgInput.value = ''; 
+                    // Silent Refresh True: tidak memunculkan icon loading muter-muter
                     await loadComments(activeVideoId, true);
                     const container = document.querySelector(`.comment-count-container[data-vid="${activeVideoId}"]`);
                     if(container) updateCommentCountUI(activeVideoId, container);
@@ -1074,25 +1147,27 @@
                 }
             });
         }
-// Fungsi untuk mengubah format waktu menjadi "X waktu yang lalu"
-function timeAgo(dateString) {
-    const now = new Date();
-    const past = new Date(dateString);
-    const seconds = Math.floor((now - past) / 1000);
 
-    let interval = Math.floor(seconds / 31536000);
-    if (interval >= 1) return interval + " tahun lalu";
-    interval = Math.floor(seconds / 2592000);
-    if (interval >= 1) return interval + " bulan lalu";
-    interval = Math.floor(seconds / 86400);
-    if (interval >= 1) return interval + " hari lalu";
-    interval = Math.floor(seconds / 3600);
-    if (interval >= 1) return interval + " jam lalu";
-    interval = Math.floor(seconds / 60);
-    if (interval >= 1) return interval + " menit lalu";
-    
-    return "Baru saja";
-}
+        // Fungsi untuk mengubah format waktu menjadi "X waktu yang lalu"
+        function timeAgo(dateString) {
+            const now = new Date();
+            const past = new Date(dateString);
+            const seconds = Math.floor((now - past) / 1000);
+
+            let interval = Math.floor(seconds / 31536000);
+            if (interval >= 1) return interval + " tahun lalu";
+            interval = Math.floor(seconds / 2592000);
+            if (interval >= 1) return interval + " bulan lalu";
+            interval = Math.floor(seconds / 86400);
+            if (interval >= 1) return interval + " hari lalu";
+            interval = Math.floor(seconds / 3600);
+            if (interval >= 1) return interval + " jam lalu";
+            interval = Math.floor(seconds / 60);
+            if (interval >= 1) return interval + " menit lalu";
+            
+            return "Baru saja";
+        }
+
         // TUGAS AWAL SAAT WEB DIBUKA
         document.addEventListener('DOMContentLoaded', () => {
             // Mengaktifkan sistem login saat web pertama kali dibuka
@@ -1104,7 +1179,6 @@ function timeAgo(dateString) {
             if(typeof renderFaqs === 'function') renderFaqs();
             if(typeof renderServices === 'function') renderServices();
             if(typeof muatDataRipper === 'function') muatDataRipper();
-            if (savedTab !== 'sosial') loadVideos(); 
         });
     </script>
 </body>
