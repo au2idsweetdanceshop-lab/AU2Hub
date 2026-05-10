@@ -1442,19 +1442,6 @@ function closeFloatingVideo() {
                 </div>
             `).join('');
         }
-}
-
-            grid.innerHTML = reversedMyVideos.map(vid => `
-                <div class="aspect-[9/16] bg-black relative rounded-md overflow-hidden border border-white/10 group cursor-pointer" onclick="switchTab('sosial')">
-                    <video class="w-full h-full object-cover" preload="metadata">
-                        <source src="${vid.video_url}" type="video/mp4">
-                    </video>
-                    <div class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                        <i class="fas fa-play text-white text-xl"></i>
-                    </div>
-                </div>
-            `).join('');
-        }
 
         // Fungsi untuk mengubah format waktu menjadi "X waktu yang lalu"
         function timeAgo(dateString) {
@@ -1488,7 +1475,7 @@ function closeFloatingVideo() {
             showToast("Meminta izin server...", "info");
 
             try {
-                const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent(fileInput.name)}&filetype=${encodeURIComponent(fileInput.type)}`);
+                const resUrl = await fetch(\`/api/upload-url?filename=\${encodeURIComponent(fileInput.name)}&filetype=\${encodeURIComponent(fileInput.type)}\`);
                 const dataUrl = await resUrl.json();
                 
                 showToast("Sedang mengupload video...", "info");
@@ -1545,8 +1532,7 @@ function closeFloatingVideo() {
             } catch (error) {
                 showToast("Error: " + error.message, "error");
             }
-            
-}
+        }
         // TUGAS AWAL SAAT WEB DIBUKA
         document.addEventListener('DOMContentLoaded', () => {
             checkSession();
