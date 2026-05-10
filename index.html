@@ -32,75 +32,33 @@
 
     <style>
         body { background-color: #0F0920; color: #E2E8F0; -webkit-tap-highlight-color: transparent; overflow-x: hidden; }
-        
         .tab-content:not(.active) { display: none !important; }
         
         /* Animasi Pindah Tab */
-        .tab-content.active { 
-            animation: slideUpFade 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; 
-            will-change: transform, opacity;
-        }
-
-        @keyframes slideUpFade {
-            from { opacity: 0; transform: translateY(20px) scale(0.98); }
-            to { opacity: 1; transform: translateY(0) scale(1); }
-        }
+        .tab-content.active { animation: slideUpFade 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; will-change: transform, opacity; }
+        @keyframes slideUpFade { from { opacity: 0; transform: translateY(20px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
         
-        @keyframes popBounce {
-            0% { transform: scale(1) translateY(0); }
-            40% { transform: scale(0.7) translateY(2px); }
-            100% { transform: scale(1.1) translateY(-4px); }
-        }
-        
+        /* Animasi Ikon Navigasi */
+        @keyframes popBounce { 0% { transform: scale(1) translateY(0); } 40% { transform: scale(0.7) translateY(2px); } 100% { transform: scale(1.1) translateY(-4px); } }
         .nav-item.active { color: #FF007A; }
-        .nav-item.active i { 
-            animation: popBounce 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; 
-            text-shadow: 0 0 12px rgba(255, 0, 122, 0.6); 
-            will-change: transform;
-        }
+        .nav-item.active i { animation: popBounce 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; text-shadow: 0 0 12px rgba(255, 0, 122, 0.6); will-change: transform; }
 
-        @keyframes modalIn {
-            from { opacity: 0; transform: scale(0.95); }
-            to { opacity: 1; transform: scale(1); }
-        }
-        .modal-anim { 
-            animation: modalIn 0.3s ease-out forwards; 
-            will-change: transform, opacity;
-        }
+        /* Animasi Modal & Reveal */
+        @keyframes modalIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+        .modal-anim { animation: modalIn 0.3s ease-out forwards; will-change: transform, opacity; }
+        @keyframes smoothReveal { 0% { opacity: 0; transform: translateY(15px); } 100% { opacity: 1; transform: translateY(0); } }
+        .smooth-reveal { animation: smoothReveal 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; will-change: transform, opacity; }
 
-        /* Animasi Super Smooth */
-        @keyframes smoothReveal {
-            0% { opacity: 0; transform: translateY(15px); }
-            100% { opacity: 1; transform: translateY(0); }
-        }
-        .smooth-reveal {
-            animation: smoothReveal 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-            will-change: transform, opacity;
-        }
-
-        /* ANIMASI HATI POP-UP (TIKTOK STYLE) */
-        .heart-pop {
-            position: fixed;
-            color: #FF007A;
-            font-size: 100px;
-            pointer-events: none;
-            z-index: 100;
-            animation: heartAnim 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-            text-shadow: 0 0 30px rgba(255, 0, 122, 0.8);
-            transform: translate(-50%, -50%);
-        }
-        @keyframes heartAnim {
-            0% { transform: translate(-50%, -50%) scale(0) rotate(-15deg); opacity: 0; }
-            20% { transform: translate(-50%, -50%) scale(1.2) rotate(0deg); opacity: 0.9; }
-            40% { transform: translate(-50%, -50%) scale(1) rotate(5deg); opacity: 0.9; }
-            100% { transform: translate(-50%, -150%) scale(1.5) rotate(0deg); opacity: 0; }
-        }
+        /* Animasi Hati Pop-up (TikTok Style) */
+        .heart-pop { position: fixed; color: #FF007A; font-size: 100px; pointer-events: none; z-index: 100; animation: heartAnim 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; text-shadow: 0 0 30px rgba(255, 0, 122, 0.8); transform: translate(-50%, -50%); }
+        @keyframes heartAnim { 0% { transform: translate(-50%, -50%) scale(0) rotate(-15deg); opacity: 0; } 20% { transform: translate(-50%, -50%) scale(1.2) rotate(0deg); opacity: 0.9; } 40% { transform: translate(-50%, -50%) scale(1) rotate(5deg); opacity: 0.9; } 100% { transform: translate(-50%, -150%) scale(1.5) rotate(0deg); opacity: 0; } }
         
+        /* Elemen UI */
         .glass { background: rgba(26, 17, 51, 0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-top: 1px solid rgba(255, 255, 255, 0.05); }
-        
         details > summary { list-style: none; }
         details > summary::-webkit-details-marker { display: none; }
         
+        /* Scrollbar Styling */
         .ripper-list::-webkit-scrollbar { width: 4px; }
         .ripper-list::-webkit-scrollbar-thumb { background: #FF007A; border-radius: 10px; }
         .chat-scroll::-webkit-scrollbar { width: 3px; }
@@ -108,11 +66,8 @@
         .hide-scroll::-webkit-scrollbar { display: none; }
         .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
         
-        /* Drawer Komentar */
-        .comment-drawer { 
-            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1); 
-            transform: translateY(100%); 
-        }
+        /* Drawer Komentar & Avatar */
+        .comment-drawer { transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1); transform: translateY(100%); }
         .comment-drawer.open { transform: translateY(0); }
         .avatar-ring { padding: 3px; background: linear-gradient(to bottom right, #00F0FF, #FF007A); border-radius: 50%; }
     </style>
@@ -124,7 +79,6 @@
             <h1 class="font-extrabold text-xl tracking-tight cursor-pointer" onclick="switchTab('home')">
                 <span class="text-brand-info">AU2</span><span class="text-brand-accent">Hub</span>
             </h1>
-            
             <div id="header-user">
                 <button onclick="openAuthModal()" class="text-[10px] font-bold bg-white/10 px-4 py-2 rounded-full border border-white/10 uppercase active:scale-95 transition-transform">Login / Daftar</button>
             </div>
@@ -171,7 +125,6 @@
             <h2 class="text-xl font-extrabold text-white mb-5 flex items-center gap-2">
                 <span class="w-1.5 h-6 bg-brand-info rounded-full"></span> Info Game & Bantuan
             </h2>
-            
             <div class="space-y-4 mb-8">
                 <div class="bg-brand-card rounded-2xl p-4 border border-white/5">
                     <div class="flex items-start">
@@ -202,33 +155,25 @@
             </div>
 
             <h2 class="text-lg font-extrabold text-white mb-4 text-center">Tanya Jawab (FAQ)</h2>
-            
             <div class="relative mb-4">
                 <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-500"></i>
-                <input type="text" id="faqSearch" placeholder="Cari info atau pertanyaan..." 
-                    class="w-full bg-brand-card border border-white/10 rounded-2xl py-3.5 pl-12 pr-4 text-sm text-white focus:outline-none focus:border-brand-info transition-all shadow-[0_0_10px_rgba(0,240,255,0.05)]">
+                <input type="text" id="faqSearch" placeholder="Cari info atau pertanyaan..." class="w-full bg-brand-card border border-white/10 rounded-2xl py-3.5 pl-12 pr-4 text-sm text-white focus:outline-none focus:border-brand-info transition-all shadow-[0_0_10px_rgba(0,240,255,0.05)]">
             </div>
-
-            <div id="faq-container" class="space-y-3 pb-4">
-            </div>
+            <div id="faq-container" class="space-y-3 pb-4"></div>
         </section>
 
         <section id="layanan" class="tab-content py-2">
             <div class="relative mb-5">
                 <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-brand-accent/70"></i>
-                <input type="text" id="serviceSearch" placeholder="Cari layanan..." 
-                    class="w-full bg-brand-card border border-brand-accent/30 rounded-2xl py-3.5 pl-12 pr-4 text-sm text-white focus:outline-none focus:border-brand-accent transition-all shadow-[0_0_10px_rgba(255,0,122,0.1)]">
+                <input type="text" id="serviceSearch" placeholder="Cari layanan..." class="w-full bg-brand-card border border-brand-accent/30 rounded-2xl py-3.5 pl-12 pr-4 text-sm text-white focus:outline-none focus:border-brand-accent transition-all shadow-[0_0_10px_rgba(255,0,122,0.1)]">
             </div>
-
             <div class="flex justify-between items-center mb-5">
                 <h3 class="text-xl font-extrabold flex items-center gap-2">
                     <div class="w-1.5 h-6 bg-brand-accent rounded-full"></div> Layanan Joki
                 </h3>
                 <span class="text-[10px] bg-brand-accent/20 text-brand-accent px-2 py-1.5 rounded-lg font-bold border border-brand-accent/30 tracking-wider">100% AMAN</span>
             </div>
-
             <div id="service-list" class="space-y-3 mb-6"></div>
-
             <div class="bg-brand-info/5 rounded-2xl p-4 border border-brand-info/20 mb-8">
                 <h3 class="font-bold text-sm text-brand-info mb-2 flex items-center"><i class="fas fa-info-circle mr-2"></i> Cara Memesan:</h3>
                 <p class="text-xs text-gray-400 leading-relaxed">Pilih dan klik tombol <strong>"Beli"</strong> pada paket di atas. Anda akan diarahkan ke halaman pembayaran otomatis untuk melihat detail transfer dan konfirmasi langsung ke WhatsApp Admin.</p>
@@ -241,9 +186,7 @@
                     <div class="w-1.5 h-6 bg-[#25D366] rounded-full"></div> Feed Komunitas
                 </h3>
             </div>
-            
             <div class="relative w-full h-[calc(100dvh-240px)] min-h-[400px] rounded-3xl overflow-hidden border border-white/10 shadow-lg bg-brand-dark flex flex-col">
-                
                 <div id="fake-loader" class="absolute inset-0 z-50 bg-brand-dark flex flex-col items-center justify-center hidden transition-opacity duration-1000">
                     <div class="relative w-20 h-20 mb-6">
                         <div class="absolute inset-0 border-4 border-brand-card rounded-full"></div>
@@ -254,14 +197,11 @@
                     </div>
                     <h3 class="text-white font-extrabold tracking-widest text-sm mb-1 animate-pulse">MENYIAPKAN FEED</h3>
                     <p class="text-[10px] text-gray-500 text-center px-8">Sedang mengoptimalkan kualitas video untuk perangkat Anda. Mohon tunggu sebentar...</p>
-                    
                     <div class="w-48 h-1.5 bg-white/10 rounded-full mt-6 overflow-hidden">
                         <div id="fake-progress" class="h-full bg-gradient-to-r from-brand-info to-brand-accent w-0 rounded-full"></div>
                     </div>
                 </div>
-
-                <div id="feed-container" class="flex-1 overflow-y-scroll snap-y snap-mandatory hide-scroll relative w-full">
-                    </div>
+                <div id="feed-container" class="flex-1 overflow-y-scroll snap-y snap-mandatory hide-scroll relative w-full"></div>
             </div>
         </section>
 
@@ -333,8 +273,7 @@
 
             <div class="relative mb-4">
                 <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-500"></i>
-                <input type="text" id="ripperSearch" placeholder="Cari nama, ID, atau rekening..." 
-                    class="w-full bg-brand-card border border-red-500/30 rounded-2xl py-3.5 pl-12 pr-4 text-sm text-white focus:outline-none focus:border-red-500 transition-all shadow-[0_0_10px_rgba(239,68,68,0.1)]">
+                <input type="text" id="ripperSearch" placeholder="Cari nama, ID, atau rekening..." class="w-full bg-brand-card border border-red-500/30 rounded-2xl py-3.5 pl-12 pr-4 text-sm text-white focus:outline-none focus:border-red-500 transition-all shadow-[0_0_10px_rgba(239,68,68,0.1)]">
             </div>
             
             <div class="bg-brand-card rounded-2xl border border-white/5 overflow-hidden flex flex-col">
@@ -353,17 +292,14 @@
 
             <div class="bg-brand-card rounded-3xl p-6 border border-white/10 shadow-lg relative overflow-hidden mb-6">
                 <div class="absolute -right-10 -top-10 w-32 h-32 bg-brand-accent/10 rounded-full blur-2xl"></div>
-                
                 <div class="text-xs text-gray-500 uppercase tracking-widest mb-1">Total Tagihan</div>
                 <div class="flex justify-between items-end mb-6 relative z-10">
                     <div id="pay-total" class="text-3xl font-extrabold text-brand-accent tracking-tight">Rp 0</div>
-                    
                     <button onclick="salinNominal()" id="btn-salin" class="bg-brand-info/10 text-brand-info border border-brand-info/30 text-[10px] font-bold px-3 py-1.5 rounded-lg active:scale-95 transition-all flex items-center h-max">
                         <i class="fas fa-copy mr-1.5"></i> Salin
                     </button>
                     <input type="hidden" id="nominal-asli" value="0">
                 </div>
-                
                 <div class="bg-white p-3 rounded-2xl mb-6 mx-auto w-max shadow-[0_0_20px_rgba(0,240,255,0.15)] relative group z-10">
                     <img src="https://lh3.googleusercontent.com/u/0/d/1TbGGJpXDTarVbZspPd3YCANMZ_XQNNIE" alt="QRIS ADT" class="w-44 h-44 object-cover rounded-xl" onerror="this.src='https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=Contoh-QRIS'">
                     <div class="absolute inset-0 bg-black/60 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl backdrop-blur-sm">
@@ -390,18 +326,27 @@
                 <p class="text-center text-[10px] text-gray-500 mt-4 leading-relaxed relative z-10">*Sistem otomatis menyiapkan chat pesanan. Jangan lupa lampirkan screenshot bukti transfer.</p>
             </div>
         </section>
-<section id="profile" class="tab-content py-5 min-h-[60vh] flex flex-col justify-center">
+
+        <section id="profile" class="tab-content py-5 min-h-[60vh] flex flex-col justify-center">
             <div id="profile-logged-in" class="hidden bg-brand-card rounded-3xl p-8 border border-white/10 text-center relative overflow-hidden shadow-2xl">
                 <div class="relative inline-block mb-4">
-                    <div class="avatar-ring"><img id="profile-img" src="https://ui-avatars.com/api/?name=User" class="w-24 h-24 rounded-full object-cover border-2 border-brand-dark"></div>
-                    <label for="avatar-input" class="absolute bottom-0 right-0 bg-brand-info text-brand-dark w-8 h-8 rounded-full flex items-center justify-center cursor-pointer border-4 border-brand-dark active:scale-90 transition-transform"><i class="fas fa-camera text-xs"></i></label>
+                    <div class="avatar-ring">
+                        <img id="profile-img" src="https://ui-avatars.com/api/?name=User" class="w-24 h-24 rounded-full object-cover border-2 border-brand-dark" alt="Profile Picture">
+                    </div>
+                    <label for="avatar-input" class="absolute bottom-0 right-0 bg-brand-info text-brand-dark w-8 h-8 rounded-full flex items-center justify-center cursor-pointer border-4 border-brand-dark active:scale-90 transition-transform">
+                        <i class="fas fa-camera text-xs"></i>
+                    </label>
                     <input type="file" id="avatar-input" class="hidden" accept="image/*" onchange="handleAvatarUpload(event)">
                 </div>
                 <h3 id="profile-nickname" class="text-xl font-extrabold mb-1 text-white">Nickname</h3>
                 <p id="profile-email" class="text-xs text-gray-500 mb-8">email@domain.com</p>
                 <div class="space-y-3">
-                    <button onclick="editNickname()" class="w-full bg-white/5 border border-white/10 py-3.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2"><i class="fas fa-edit text-brand-info"></i> Ganti Nickname</button>
-                    <button onclick="handleLogout()" class="w-full bg-red-500/10 border border-red-500/20 py-3.5 rounded-xl text-sm font-bold text-red-500"><i class="fas fa-sign-out-alt"></i> Keluar Akun</button>
+                    <button onclick="editNickname()" class="w-full bg-white/5 border border-white/10 py-3.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2">
+                        <i class="fas fa-edit text-brand-info"></i> Ganti Nickname
+                    </button>
+                    <button onclick="handleLogout()" class="w-full bg-red-500/10 border border-red-500/20 py-3.5 rounded-xl text-sm font-bold text-red-500">
+                        <i class="fas fa-sign-out-alt"></i> Keluar Akun
+                    </button>
                 </div>
             </div>
             <div id="profile-logged-out" class="text-center py-10">
@@ -419,23 +364,21 @@
             <button onclick="closeComments()" class="text-gray-400 text-lg w-8 h-8 rounded-full bg-white/5 flex items-center justify-center active:scale-95 transition-colors"><i class="fas fa-times"></i></button>
         </div>
         
-        <div id="comment-list" class="flex-1 overflow-y-auto p-5 space-y-2 hide-scroll pb-32">
-            </div>
+        <div id="comment-list" class="flex-1 overflow-y-auto p-5 space-y-2 hide-scroll pb-32"></div>
         
         <div class="absolute bottom-0 w-full glass border-t border-white/5 p-4 shrink-0 pb-6 rounded-t-xl z-10">
             <div id="reply-indicator" class="hidden flex justify-between items-center mb-2 px-1 text-[10px] text-gray-400">
                 <span>Membalas <b id="replying-to-name" class="text-brand-info"></b></span>
                 <button onclick="cancelReply()" class="hover:text-white bg-white/10 w-4 h-4 rounded-full flex items-center justify-center"><i class="fas fa-times"></i></button>
             </div>
-            
-            <input type="text" id="comment-name" placeholder="Nickname kamu..." class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2 text-xs text-white focus:outline-none focus:border-brand-accent mb-2" maxlength="20">
             <div class="flex gap-2">
                 <input type="text" id="comment-input" placeholder="Tambahkan komentar..." class="flex-1 bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-brand-accent">
                 <button onclick="sendComment(event)" class="bg-brand-accent text-white w-12 h-[42px] rounded-xl active:scale-95 transition-transform flex items-center justify-center"><i class="fas fa-paper-plane"></i></button>
             </div>
         </div>
     </div>
-<div id="modal-auth" class="fixed inset-0 z-[100] hidden items-center justify-center bg-black/90 backdrop-blur-md px-6">
+
+    <div id="modal-auth" class="fixed inset-0 z-[100] hidden items-center justify-center bg-black/90 backdrop-blur-md px-6">
         <div class="bg-brand-card w-full max-w-sm rounded-3xl border border-white/10 p-8 shadow-2xl relative modal-anim">
             <button onclick="closeAuthModal()" class="absolute top-4 right-4 text-gray-500 w-8 h-8 flex justify-center items-center rounded-full bg-white/5"><i class="fas fa-times"></i></button>
             <div id="auth-form">
@@ -444,13 +387,16 @@
                 <div class="space-y-4">
                     <input type="email" id="auth-email" placeholder="Email" class="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3.5 text-sm text-white outline-none focus:border-brand-info">
                     <input type="password" id="auth-pass" placeholder="Password" class="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3.5 text-sm text-white outline-none focus:border-brand-info">
-                    <div id="nickname-field" class="hidden"><input type="text" id="auth-nick" placeholder="Nickname Game" class="w-full bg-black/30 border border-brand-accent/30 rounded-xl px-4 py-3.5 text-sm text-white outline-none focus:border-brand-accent"></div>
+                    <div id="nickname-field" class="hidden">
+                        <input type="text" id="auth-nick" placeholder="Nickname Game" class="w-full bg-black/30 border border-brand-accent/30 rounded-xl px-4 py-3.5 text-sm text-white outline-none focus:border-brand-accent">
+                    </div>
                     <button onclick="handleAuth()" id="auth-btn" class="w-full bg-brand-accent text-white py-3.5 rounded-xl font-bold active:scale-95 transition-transform">Login</button>
                     <p class="text-center text-[11px] text-gray-500 mt-4"><span id="toggle-text">Belum punya akun?</span> <button onclick="toggleAuthMode()" id="toggle-btn" class="text-brand-info font-bold underline ml-1">Daftar</button></p>
                 </div>
             </div>
         </div>
     </div>
+
     <div id="modal-event" class="fixed inset-0 z-[60] hidden items-center justify-center bg-black/80 backdrop-blur-sm px-4">
         <div class="absolute inset-0" onclick="closeModalEvent()"></div>
         
@@ -463,9 +409,7 @@
                     <i class="fas fa-times"></i>
                 </button>
             </div>
-            
             <div class="relative flex-1 overflow-y-auto p-5">
-                
                 <div class="relative mb-5 w-full overflow-hidden rounded-xl bg-black/20 pb-8 pt-2 border border-white/5">
                     <div id="image-carousel" onscroll="updateCarouselDots()" class="flex overflow-x-auto hide-scroll snap-x snap-mandatory gap-3 px-3 relative">
                         <img src="FB_IMG_1777992277452.jpg" loading="lazy" alt="Event 1" class="w-[90%] flex-shrink-0 snap-center h-48 object-cover rounded-xl border border-white/10 shadow-lg">
@@ -474,7 +418,6 @@
                         <img src="FB_IMG_1777992277452.jpg" loading="lazy" alt="Event 4" class="w-[90%] flex-shrink-0 snap-center h-48 object-cover rounded-xl border border-white/10 shadow-lg">
                         <img src="FB_IMG_1777992277452.jpg" loading="lazy" alt="Event 5" class="w-[90%] flex-shrink-0 snap-center h-48 object-cover rounded-xl border border-white/10 shadow-lg">
                     </div>
-                    
                     <div id="carousel-dots" class="absolute bottom-3 left-1/2 -translate-x-1/2 flex space-x-1.5 z-10 pointer-events-none">
                         <div class="dot-indicator h-1.5 rounded-full transition-all duration-300 w-4 bg-brand-accent"></div>
                         <div class="dot-indicator h-1.5 rounded-full transition-all duration-300 w-1.5 bg-white/40"></div>
@@ -483,25 +426,16 @@
                         <div class="dot-indicator h-1.5 rounded-full transition-all duration-300 w-1.5 bg-white/40"></div>
                     </div>
                 </div>
-                
                 <h4 class="font-extrabold text-white text-base mb-2">Update Event Terbaru AU2</h4>
-                <p class="text-xs text-gray-400 mb-4 leading-relaxed">
-                    Pemain tercinta,
-                    Maintenance server akan 06 Mei Januari (Rabu) mulai pukul 10:00-11:00. Waktu maintenance mungkin dapat dipercepat atau ditunda berdasarkan progress maintenance.
-                </p>
-                
+                <p class="text-xs text-gray-400 mb-4 leading-relaxed">Pemain tercinta, Maintenance server akan 06 Mei Januari (Rabu) mulai pukul 10:00-11:00. Waktu maintenance mungkin dapat dipercepat atau ditunda.</p>
                 <ul class="text-xs text-gray-300 space-y-2.5 mb-6 bg-black/20 p-3 rounded-xl border border-white/5">
                     <li class="flex items-start"><i class="fas fa-star text-brand-accent mt-0.5 mr-2"></i> <span>Gacha Kostum Limited Edition rilis.</span></li>
                     <li class="flex items-start"><i class="fas fa-star text-brand-accent mt-0.5 mr-2"></i> <span>Misi Top-up berhadiah Mount eksklusif.</span></li>
                     <li class="flex items-start"><i class="fas fa-star text-brand-accent mt-0.5 mr-2"></i> <span>Perbaikan (Bug Fixes) fitur Ballroom.</span></li>
                 </ul>
-
                 <a href="https://www.facebook.com/story.php?story_fbid=1373226878158377&id=100064132326306&rdid=7emuowRLGF3B8ay6#/" target="_blank" class="flex justify-center items-center w-full bg-[#1877F2]/10 hover:bg-[#1877F2]/20 border border-[#1877F2]/30 text-[#1877F2] font-bold py-3.5 rounded-xl active:scale-95 transition-all text-xs">
                     <i class="fab fa-facebook text-base mr-2"></i> Buka Postingan Asli (Opsional)
                 </a>
-                <p class="text-[9px] text-gray-500 mt-3 text-center leading-relaxed">
-                    *Karena setelan privasi Grup Facebook Tertutup, rincian lengkap tidak bisa di-embed langsung. Silakan klik tombol di atas jika ingin ke Grup.
-                </p>
             </div>
         </div>
     </div>
@@ -511,7 +445,6 @@
     </button>
 
     <div id="floating-widget" class="fixed bottom-[100px] left-1/2 -translate-x-1/2 z-50 w-[92vw] max-w-[380px] h-[500px] bg-[#1A1133]/90 border border-[#FF007A]/30 rounded-3xl shadow-[0_0_30px_rgba(255,0,122,0.3)] flex flex-col overflow-hidden backdrop-blur-xl transition-all duration-300 ease-out opacity-0 pointer-events-none translate-y-8 scale-95">
-        
         <div class="bg-gradient-to-r from-[#1A1133] to-[#0F0920] px-5 py-4 border-b border-white/10 flex justify-between items-center shrink-0">
             <div class="flex items-center gap-3">
                 <div class="relative">
@@ -526,12 +459,8 @@
                     <p class="text-[9px] text-[#FF007A] font-bold uppercase tracking-widest opacity-80">Online Now</p>
                 </div>
             </div>
-            
-            <button onclick="toggleWidget()" class="text-gray-400 hover:text-[#FF007A] transition-colors w-8 h-8 rounded-full bg-white/5 flex items-center justify-center">
-                <i class="fas fa-times text-sm"></i>
-            </button>
+            <button onclick="toggleWidget()" class="text-gray-400 hover:text-[#FF007A] transition-colors w-8 h-8 rounded-full bg-white/5 flex items-center justify-center"><i class="fas fa-times text-sm"></i></button>
         </div>
-        
         <div class="flex-1 w-full h-full bg-[#0F0920] overflow-hidden relative">
             <script id="cid0020000439342784348" data-cfasync="false" async src="//st.chatango.com/js/gz/emb.js" style="width: 100%;height: 100%;">{"handle":"au2hub","arch":"js","styles":{"a":"1a1133","c":"ff007a","d":"8a2be2","e":"0f0920","f":56,"g":"ffffff","h":"1a1133","j":"ffffff","k":"e2e8f0","l":"000000","m":"000000","n":"FFFFFF","p":"10","q":"1a1133","sbc":"0f0920","surl":0}}</script>
         </div>
@@ -539,80 +468,40 @@
 
     <nav class="fixed bottom-0 left-0 w-full glass z-40 flex justify-around items-center h-[70px] px-1 shadow-[0_-10px_30px_rgba(0,0,0,0.5)]">
         <a href="#home" onclick="switchTab('home', event)" class="nav-item flex flex-col items-center justify-center flex-1 text-gray-500 transition-colors">
-            <i class="fas fa-home text-xl mb-1"></i>
-            <span class="text-[9px] font-bold mt-0.5">Home</span>
+            <i class="fas fa-home text-xl mb-1"></i><span class="text-[9px] font-bold mt-0.5">Home</span>
         </a>
         <a href="#info" onclick="switchTab('info', event)" class="nav-item flex flex-col items-center justify-center flex-1 text-gray-500 transition-colors">
-            <i class="fas fa-bullhorn text-xl mb-1"></i>
-            <span class="text-[9px] font-bold mt-0.5">Info</span>
+            <i class="fas fa-bullhorn text-xl mb-1"></i><span class="text-[9px] font-bold mt-0.5">Info</span>
         </a>
         <a href="#layanan" onclick="switchTab('layanan', event)" class="nav-item flex flex-col items-center justify-center flex-1 text-gray-500 transition-colors">
-            <i class="fas fa-bolt text-xl mb-1"></i>
-            <span class="text-[9px] font-bold mt-0.5">Layanan</span>
+            <i class="fas fa-bolt text-xl mb-1"></i><span class="text-[9px] font-bold mt-0.5">Layanan</span>
         </a>
         <a href="#sosial" onclick="switchTab('sosial', event)" class="nav-item flex flex-col items-center justify-center flex-1 text-gray-500 transition-colors">
-            <i class="fas fa-camera-retro text-xl mb-1"></i>
-            <span class="text-[9px] font-bold mt-0.5">Sosial</span>
+            <i class="fas fa-camera-retro text-xl mb-1"></i><span class="text-[9px] font-bold mt-0.5">Sosial</span>
         </a>
         <a href="#rekber" onclick="switchTab('rekber', event)" class="nav-item flex flex-col items-center justify-center flex-1 text-gray-500 transition-colors">
-            <i class="fas fa-shield-alt text-xl mb-1"></i>
-            <span class="text-[9px] font-bold mt-0.5">Rekber</span>
+            <i class="fas fa-shield-alt text-xl mb-1"></i><span class="text-[9px] font-bold mt-0.5">Rekber</span>
         </a>
         <a href="#ripper" onclick="switchTab('ripper', event)" class="nav-item flex flex-col items-center justify-center flex-1 text-gray-500 transition-colors">
-            <i class="fas fa-user-ninja text-xl mb-1"></i>
-            <span class="text-[9px] font-bold mt-0.5">Ripper</span>
+            <i class="fas fa-user-ninja text-xl mb-1"></i><span class="text-[9px] font-bold mt-0.5">Ripper</span>
         </a>
         <a href="#profile" onclick="switchTab('profile', event)" class="nav-item flex flex-col items-center justify-center flex-1 text-gray-500 transition-colors">
-            <i class="fas fa-user-circle text-xl mb-1"></i>
-            <span class="text-[9px] font-bold mt-0.5">Profil</span>
+            <i class="fas fa-user-circle text-xl mb-1"></i><span class="text-[9px] font-bold mt-0.5">Profil</span>
         </a>
     </nav>
 
     <script>
-    const SUPABASE_URL = "https://divckiqkodtqudcoxkjz.supabase.co";
+        // === 1. KONFIGURASI SUPABASE ===
+        const SUPABASE_URL = "https://divckiqkodtqudcoxkjz.supabase.co";
         const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRpdmNraXFrb2R0cXVkY294a2p6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgzNDY0MzIsImV4cCI6MjA5MzkyMjQzMn0.z_FIS_rpDQPQ7nNWpuvabH7qDYgu7uq6TlYj9LSOcJQ";
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
         
-        let currentUser = null; let userProfile = null; let isAuthLogin = true;
+        // === 2. STATE GLOBAL ===
+        let currentUser = null, userProfile = null, isAuthLogin = true;
+        let dataRipperGlobal = [], isRipperExpanded = localStorage.getItem('statusLihatSemua') === 'true';
+        let allVideosData = [], obs = null, activeVideoId = null, lastTap = 0, isGlobalMuted = true;
+        let replyingToId = null, replyingToName = null;
 
-        async function checkSession() {
-            const { data: { user } } = await supabaseClient.auth.getUser();
-            if (user) { currentUser = user; await fetchProfile(); document.getElementById('profile-logged-in').classList.remove('hidden'); document.getElementById('profile-logged-out').classList.add('hidden'); updateUIForLoggedIn(); } 
-            else { updateUIForLoggedOut(); }
-        }
-        async function fetchProfile() {
-            const { data } = await supabaseClient.from('profiles').select('*').eq('id', currentUser.id).single();
-            if (data) { userProfile = data; document.getElementById('profile-nickname').innerText = data.nickname || "User"; document.getElementById('profile-email').innerText = currentUser.email; if (data.avatar_url) document.getElementById('profile-img').src = data.avatar_url; }
-        }
-        function openAuthModal() { document.getElementById('modal-auth').classList.remove('hidden'); document.getElementById('modal-auth').classList.add('flex'); }
-        function closeAuthModal() { document.getElementById('modal-auth').classList.add('hidden'); }
-        function toggleAuthMode() {
-            isAuthLogin = !isAuthLogin; document.getElementById('auth-title').innerText = isAuthLogin ? "Selamat Datang" : "Buat Akun Baru"; document.getElementById('nickname-field').classList.toggle('hidden', isAuthLogin); document.getElementById('auth-btn').innerText = isAuthLogin ? "Login" : "Daftar"; document.getElementById('toggle-text').innerText = isAuthLogin ? "Belum punya akun?" : "Sudah punya akun?"; document.getElementById('toggle-btn').innerText = isAuthLogin ? "Daftar" : "Login";
-        }
-        async function handleAuth() {
-            const email = document.getElementById('auth-email').value, password = document.getElementById('auth-pass').value, nick = document.getElementById('auth-nick').value, btn = document.getElementById('auth-btn');
-            btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-            try {
-                if (isAuthLogin) { const { error } = await supabaseClient.auth.signInWithPassword({ email, password }); if (error) throw error; } 
-                else { const { data: { user }, error } = await supabaseClient.auth.signUp({ email, password }); if (error) throw error; await supabaseClient.from('profiles').insert([{ id: user.id, nickname: nick || "Player" }]); }
-                location.reload();
-            } catch (e) { alert(e.message); btn.disabled = false; btn.innerText = isAuthLogin ? "Login" : "Daftar"; }
-        }
-        async function handleLogout() { await supabaseClient.auth.signOut(); location.reload(); }
-        function updateUIForLoggedIn() { const ava = userProfile?.avatar_url || 'https://ui-avatars.com/api/?name=' + userProfile?.nickname; document.getElementById('header-user').innerHTML = `<div onclick="switchTab('profile')" class="flex items-center gap-2 cursor-pointer bg-white/5 pr-4 pl-1 py-1 rounded-full border border-white/10"><img src="${ava}" class="w-7 h-7 rounded-full object-cover border border-brand-info"><span class="text-[10px] font-bold text-white">${userProfile?.nickname}</span></div>`; }
-        function updateUIForLoggedOut() { document.getElementById('header-user').innerHTML = `<button onclick="openAuthModal()" class="text-[10px] font-bold bg-white/10 px-4 py-2 rounded-full border border-white/10 uppercase">Login / Daftar</button>`; }
-        async function handleAvatarUpload(event) {
-            const file = event.target.files[0]; if (!file) return; const icon = document.querySelector('label[for="avatar-input"] i'); icon.className = 'fas fa-spinner fa-spin';
-            try {
-                const compressedBlob = await compressImage(file); const fileName = `${currentUser.id}_${Date.now()}.jpg`;
-                const { error } = await supabaseClient.storage.from('avatars').upload(fileName, compressedBlob); if (error) throw error;
-                const { data: { publicUrl } } = supabaseClient.storage.from('avatars').getPublicUrl(fileName);
-                await supabaseClient.from('profiles').update({ avatar_url: publicUrl }).eq('id', currentUser.id); document.getElementById('profile-img').src = publicUrl; alert("Foto profil berhasil diubah!"); location.reload();
-            } catch (e) { alert("Gagal upload!"); } finally { icon.className = 'fas fa-camera text-xs'; }
-        }
-        function compressImage(file) { return new Promise((resolve) => { const reader = new FileReader(); reader.readAsDataURL(file); reader.onload = (e) => { const img = new Image(); img.src = e.target.result; img.onload = () => { const canvas = document.createElement('canvas'); const scale = 400 / img.width; canvas.width = 400; canvas.height = img.height * scale; const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, canvas.width, canvas.height); canvas.toBlob((blob) => resolve(blob), 'image/jpeg', 0.7); }; }; }); }
-        async function editNickname() { const n = prompt("Nickname baru:", userProfile?.nickname); if (n && n.trim() !== "") { await supabaseClient.from('profiles').update({ nickname: n.trim() }).eq('id', currentUser.id); location.reload(); } }
-        // --- 1. DATA LOKAL ---
         const services = [
             { id: 1, name: 'Joki Ballroom', price: 7500, label: '', desc: 'Estimasi pengerjaan 2 jam.' },
             { id: 2, name: 'Paket Joki AFK (Island/Japan/Hawai)', price: 65000, label: '', desc: 'Sesuai spek dan pesanan.' },
@@ -625,19 +514,117 @@
             { t: "Apakah harga Pricelist sudah termasuk biaya admin?", j: "Ya, semua harga joki yang tertera sudah Include (termasuk) biaya Rekber NIKKY. Tidak ada biaya tambahan yang disembunyikan." }
         ];
 
-        let dataRipperGlobal = []; 
-        let isRipperExpanded = localStorage.getItem('statusLihatSemua') === 'true';
-        let isGlobalMuted = true;
-        let allVideosData = []; 
-        let obs; 
-        let activeVideoId = null;
-        let lastTap = 0; // State untuk Double Tap Like
+        // === 3. SISTEM AUTENTIKASI & PROFIL ===
+        async function checkSession() {
+            const { data: { user } } = await supabaseClient.auth.getUser();
+            if (user) { 
+                currentUser = user; 
+                await fetchProfile(); 
+                document.getElementById('profile-logged-in').classList.remove('hidden'); 
+                document.getElementById('profile-logged-out').classList.add('hidden'); 
+                updateUIForLoggedIn(); 
+            } else { 
+                document.getElementById('profile-logged-in').classList.add('hidden'); 
+                document.getElementById('profile-logged-out').classList.remove('hidden'); 
+                updateUIForLoggedOut(); 
+            }
+        }
 
-        // State untuk Sistem Reply Komentar
-        let replyingToId = null;
-        let replyingToName = null;
+        async function fetchProfile() {
+            const { data } = await supabaseClient.from('profiles').select('*').eq('id', currentUser.id).single();
+            if (data) { 
+                userProfile = data; 
+                document.getElementById('profile-nickname').innerText = data.nickname || "User"; 
+                document.getElementById('profile-email').innerText = currentUser.email; 
+                if (data.avatar_url) document.getElementById('profile-img').src = data.avatar_url; 
+            }
+        }
 
-        // --- 2. FUNGSI NAVIGASI UI ---
+        function openAuthModal() { document.getElementById('modal-auth').classList.remove('hidden'); document.getElementById('modal-auth').classList.add('flex'); }
+        function closeAuthModal() { document.getElementById('modal-auth').classList.add('hidden'); }
+        
+        function toggleAuthMode() {
+            isAuthLogin = !isAuthLogin; 
+            document.getElementById('auth-title').innerText = isAuthLogin ? "Selamat Datang" : "Buat Akun Baru"; 
+            document.getElementById('nickname-field').classList.toggle('hidden', isAuthLogin); 
+            document.getElementById('auth-btn').innerText = isAuthLogin ? "Login" : "Daftar"; 
+            document.getElementById('toggle-text').innerText = isAuthLogin ? "Belum punya akun?" : "Sudah punya akun?"; 
+            document.getElementById('toggle-btn').innerText = isAuthLogin ? "Daftar" : "Login";
+        }
+
+        async function handleAuth() {
+            const email = document.getElementById('auth-email').value, password = document.getElementById('auth-pass').value, nick = document.getElementById('auth-nick').value, btn = document.getElementById('auth-btn');
+            btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            try {
+                if (isAuthLogin) { 
+                    const { error } = await supabaseClient.auth.signInWithPassword({ email, password }); 
+                    if (error) throw error; 
+                } else { 
+                    const { data: { user }, error } = await supabaseClient.auth.signUp({ email, password }); 
+                    if (error) throw error; 
+                    await supabaseClient.from('profiles').insert([{ id: user.id, nickname: nick || "Player" }]); 
+                }
+                location.reload();
+            } catch (e) { alert(e.message); btn.disabled = false; btn.innerText = isAuthLogin ? "Login" : "Daftar"; }
+        }
+
+        async function handleLogout() { await supabaseClient.auth.signOut(); location.reload(); }
+
+        function updateUIForLoggedIn() { 
+            const ava = userProfile?.avatar_url || `https://ui-avatars.com/api/?name=${userProfile?.nickname}&background=1A1133&color=fff`; 
+            document.getElementById('header-user').innerHTML = `
+                <div onclick="switchTab('profile')" class="flex items-center gap-2 cursor-pointer bg-white/5 pr-4 pl-1 py-1 rounded-full border border-white/10 active:scale-95 transition-transform">
+                    <img src="${ava}" class="w-7 h-7 rounded-full object-cover border border-brand-info">
+                    <span class="text-[10px] font-bold text-white">${userProfile?.nickname}</span>
+                </div>`; 
+        }
+
+        function updateUIForLoggedOut() { 
+            document.getElementById('header-user').innerHTML = `
+                <button onclick="openAuthModal()" class="text-[10px] font-bold bg-white/10 px-4 py-2 rounded-full border border-white/10 uppercase active:scale-95 transition-transform">Login / Daftar</button>`; 
+        }
+
+        async function handleAvatarUpload(event) {
+            const file = event.target.files[0]; if (!file) return; 
+            const icon = document.querySelector('label[for="avatar-input"] i'); icon.className = 'fas fa-spinner fa-spin';
+            try {
+                const compressedBlob = await compressImage(file); 
+                const fileName = `${currentUser.id}_${Date.now()}.jpg`;
+                const { error } = await supabaseClient.storage.from('avatars').upload(fileName, compressedBlob, { contentType: 'image/jpeg', upsert: true }); 
+                if (error) throw error;
+                const { data: { publicUrl } } = supabaseClient.storage.from('avatars').getPublicUrl(fileName);
+                await supabaseClient.from('profiles').update({ avatar_url: publicUrl }).eq('id', currentUser.id); 
+                document.getElementById('profile-img').src = publicUrl; 
+                alert("Foto profil berhasil diubah!"); 
+                location.reload();
+            } catch (e) { alert("Gagal upload: " + e.message); } 
+            finally { icon.className = 'fas fa-camera text-xs'; }
+        }
+
+        function compressImage(file) { 
+            return new Promise((resolve) => { 
+                const reader = new FileReader(); reader.readAsDataURL(file); 
+                reader.onload = (e) => { 
+                    const img = new Image(); img.src = e.target.result; 
+                    img.onload = () => { 
+                        const canvas = document.createElement('canvas'); const scale = 400 / img.width; 
+                        canvas.width = 400; canvas.height = img.height * scale; 
+                        const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, canvas.width, canvas.height); 
+                        canvas.toBlob((blob) => resolve(blob), 'image/jpeg', 0.7); 
+                    }; 
+                }; 
+            }); 
+        }
+
+        async function editNickname() { 
+            const n = prompt("Nickname baru:", userProfile?.nickname); 
+            if (n && n.trim() !== "") { 
+                await supabaseClient.from('profiles').update({ nickname: n.trim() }).eq('id', currentUser.id); 
+                location.reload(); 
+            } 
+        }
+
+        // === 4. FUNGSI NAVIGASI ===
         function toggleGlobalAudio(currentVideo) {
             isGlobalMuted = !isGlobalMuted;
             document.querySelectorAll('.video-player').forEach(v => v.muted = isGlobalMuted);
@@ -663,7 +650,8 @@
             targetSection.classList.add('active');
             if (tabId === 'sosial') loadVideos();
 
-            const navMap = { 'home': 0, 'info': 1, 'layanan': 2, 'sosial': 3, 'rekber': 4, 'ripper': 5, 'pembayaran': 2 };
+            // FIX: Tambahkan profile: 6 ke dalam navMap
+            const navMap = { 'home': 0, 'info': 1, 'layanan': 2, 'sosial': 3, 'rekber': 4, 'ripper': 5, 'profile': 6, 'pembayaran': 2 };
             const activeIndex = navMap[tabId];
             if (activeIndex !== undefined) {
                 const activeNav = document.querySelectorAll('.nav-item')[activeIndex];
@@ -701,7 +689,9 @@
             document.body.style.overflow = 'hidden'; 
             setTimeout(() => { const carousel = document.getElementById('image-carousel'); if(carousel) { carousel.scrollLeft = 0; updateCarouselDots(); } }, 50);
         }
+        
         function closeModalEvent() { history.back(); }
+        
         function toggleWidget() {
             const widget = document.getElementById('floating-widget');
             if (widget.classList.contains('opacity-0')) {
@@ -710,12 +700,13 @@
             } else { history.back(); }
         }
 
-        // --- 3. RENDER INFO, JOKI, RIPPER ---
+        // === 5. RENDER INFO, JOKI, RIPPER ===
         function renderFaqs(data = faqs) {
             const container = document.getElementById('faq-container');
             if (data.length === 0) { container.innerHTML = `<div class="text-center text-xs text-gray-400 py-6 border border-white/5 bg-brand-card rounded-2xl"><i class="fas fa-search-minus mb-2 text-lg"></i><br>Pertanyaan tidak ditemukan.</div>`; return; }
-            container.innerHTML = data.map(f => `<details class="bg-brand-card rounded-2xl border border-white/5 group"><summary class="flex justify-between items-center font-bold text-xs cursor-pointer text-white p-4">${f.t} <i class="fas fa-chevron-down text-brand-accent transition-transform group-open:rotate-180"></i></summary><div class="px-4 pb-4 text-xs text-gray-400 leadingrelaxed border-t border-white/5 pt-3 mt-1">${f.j}</div></details>`).join('');
+            container.innerHTML = data.map(f => `<details class="bg-brand-card rounded-2xl border border-white/5 group"><summary class="flex justify-between items-center font-bold text-xs cursor-pointer text-white p-4">${f.t} <i class="fas fa-chevron-down text-brand-accent transition-transform group-open:rotate-180"></i></summary><div class="px-4 pb-4 text-xs text-gray-400 leading-relaxed border-t border-white/5 pt-3 mt-1">${f.j}</div></details>`).join('');
         }
+        
         document.getElementById('faqSearch').addEventListener('input', (e) => {
             const val = e.target.value.toLowerCase();
             renderFaqs(faqs.filter(f => f.t.toLowerCase().includes(val) || f.j.toLowerCase().includes(val)));
@@ -726,6 +717,7 @@
             if (data.length === 0) { container.innerHTML = `<div class="text-center text-xs text-gray-400 py-6 border border-white/5 bg-brand-card rounded-2xl"><i class="fas fa-search-minus mb-2 text-lg"></i><br>Layanan tidak ditemukan.</div>`; return; }
             container.innerHTML = data.map(s => `<div class="bg-brand-card p-4 rounded-2xl border border-white/5 flex justify-between items-center hover:border-brand-accent/30 transition-all"><div class="w-[60%]"><div class="font-bold text-sm text-white mb-1">${s.name}</div><div class="text-[10px] text-gray-400 leading-tight">${s.desc}</div><div class="text-[9px] text-brand-info mt-1"><i class="fas fa-check-circle mr-1"></i> Include Rekber NIKKY</div></div><div class="text-right flex flex-col items-end"><div class="text-brand-accent font-extrabold text-[15px] mb-2">Rp ${s.price.toLocaleString('id-ID')} <span class="text-[9px] font-normal text-gray-500">${s.label}</span></div><button onclick="checkout('${s.name}', ${s.price})" class="bg-brand-accent/10 text-brand-accent text-[10px] font-bold px-5 py-2 rounded-full border border-brand-accent/30 active:scale-90 transition-transform">BELI</button></div></div>`).join('');
         }
+        
         document.getElementById('serviceSearch').addEventListener('input', (e) => {
             const val = e.target.value.toLowerCase();
             renderServices(services.filter(s => s.name.toLowerCase().includes(val) || s.desc.toLowerCase().includes(val)));
@@ -799,7 +791,7 @@
             dots.forEach((dot, index) => { if (index === activeIndex) { dot.className = "dot-indicator h-1.5 rounded-full transition-all duration-300 w-4 bg-brand-accent"; } else { dot.className = "dot-indicator h-1.5 rounded-full transition-all duration-300 w-1.5 bg-white/40"; } });
         }
 
-        // --- 4. SISTEM KOMENTAR (BALAS, LIKE, SEMBUNYIKAN) ---
+        // --- 6. SISTEM KOMENTAR ---
         function openComments(id) {
             activeVideoId = id; document.getElementById('comment-drawer').classList.add('open'); loadComments(id); 
         }
@@ -953,7 +945,7 @@
             } catch(e) { icon.classList.add('text-gray-500'); icon.classList.remove('text-brand-accent'); }
         }
 
-        // --- 5. FUNGSI SOSIAL (VIDEO FEED & DOUBLE TAP LIKES) ---
+        // --- 7. FUNGSI SOSIAL (VIDEO FEED & DOUBLE TAP LIKES) ---
         async function updateLikeCountUI(videoId, containerDiv) {
             try {
                 const response = await fetch(`/api/like?video_id=${videoId}`); const data = await response.json();
