@@ -17,17 +17,21 @@ export default async function handler(req, res) {
 
     try {
         const uniqueFileName = `${Date.now()}-${filename.replace(/\s+/g, '-')}`;
+        
+        // 1. TAMBAHKAN ACL PUBLIC-READ DI SINI
         const command = new PutObjectCommand({
             Bucket: bucketName,
             Key: `videos/${uniqueFileName}`,
-            ContentType: filetype
+            ContentType: filetype,
+            ACL: "public-read" 
         });
 
         const uploadUrl = await getSignedUrl(client, command, { expiresIn: 3600 });
 
+        // 2. SESUAIKAN FORMAT URL AGAR SAMA DENGAN SCREENSHOT SPREADSHEET ANDA
         res.status(200).json({
             uploadUrl: uploadUrl,
-            finalVideoUrl: `https://nos.wjv-1.neo.id/${bucketName}/videos/${uniqueFileName}`
+            finalVideoUrl: `https://${bucketName}.nos.wjv-1.neo.id/videos/${uniqueFileName}`
         });
     } catch (err) {
         res.status(500).json({ error: err.message });
