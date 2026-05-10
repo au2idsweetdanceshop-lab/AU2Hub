@@ -531,10 +531,11 @@
         
         let currentUser = null, userProfile = null, isAuthLogin = true;
         let dataRipperGlobal = [], isRipperExpanded = localStorage.getItem('statusLihatSemua') === 'true';
+        let viewedUserId = null; 
         
         // Variable untuk Feed & Video
         let allVideosData = []; 
-        let newUploads = []; // Menyimpan video baru untuk disuntik sebelum cache clear
+        let newUploads = []; 
         let obs = null, activeVideoId = null, lastTap = 0, isGlobalMuted = true;
         let replyingToId = null, replyingToName = null;
 
@@ -552,16 +553,13 @@
 
         // === 3. SISTEM AUTENTIKASI & PROFIL ===
         async function checkSession() {
-            // Tampilkan animasi loading, sembunyikan UI lainnya saat mulai mengecek
             document.getElementById('profile-loading').classList.remove('hidden');
             document.getElementById('profile-loading').classList.add('flex');
             document.getElementById('profile-logged-in').classList.add('hidden');
             document.getElementById('profile-logged-out').classList.add('hidden');
 
-            // Tunggu respons dari Supabase
             const { data: { user } } = await supabaseClient.auth.getUser();
             
-            // Sembunyikan animasi loading setelah mendapatkan respons
             document.getElementById('profile-loading').classList.add('hidden');
             document.getElementById('profile-loading').classList.remove('flex');
 
@@ -742,7 +740,7 @@
             } 
         }
 
-        // === 4. FUNGSI NAVIGASI ===
+        // === 4. FUNGSI NAVIGASI & POPUP ===
         function toggleGlobalAudio(currentVideo) {
             isGlobalMuted = !isGlobalMuted;
             document.querySelectorAll('.video-player').forEach(v => v.muted = isGlobalMuted);
@@ -767,7 +765,6 @@
 
             targetSection.classList.add('active');
             
-            // KHUSUS TAB SOSIAL: Selalu Refresh Feed Saat Diklik
             if (tabId === 'sosial') {
                 loadVideos();
             }
@@ -788,50 +785,50 @@
         }
 
         window.addEventListener('popstate', () => {
-    const floatingPlayer = document.getElementById('floating-video-player');
-    if (!floatingPlayer.classList.contains('hidden')) { 
-        closeFloatingVideo(); 
-        return; 
-    }
+            const floatingPlayer = document.getElementById('floating-video-player');
+            if (!floatingPlayer.classList.contains('hidden')) { 
+                closeFloatingVideo(); 
+                return; 
+            }
 
-    // PERBAIKAN: Menggunakan .startsWith() agar support URL dengan parameter id
-    if (window.location.hash.startsWith('#profile') && viewedUserId !== currentUser?.id) {
-        viewedUserId = currentUser?.id;
-        checkSession(); // Panggil session asli untuk balik ke profil sendiri
-        return;
-    }
+            // PERBAIKAN: Menggunakan .startsWith() agar support URL dengan parameter id
+            if (window.location.hash.startsWith('#profile') && viewedUserId !== currentUser?.id) {
+                viewedUserId = currentUser?.id;
+                checkSession(); // Panggil session asli untuk balik ke profil sendiri
+                return;
+            }
 
-    let isPopupClosed = false;
-    
-    const modalEvent = document.getElementById('modal-event');
-    if (!modalEvent.classList.contains('hidden')) {
-        modalEvent.classList.add('hidden'); modalEvent.classList.remove('flex');
-        document.body.style.overflow = 'auto'; isPopupClosed = true;
-    }
-    
-    const widget = document.getElementById('floating-widget');
-    if (!widget.classList.contains('opacity-0')) {
-        widget.classList.add('opacity-0', 'pointer-events-none', 'translate-y-8', 'scale-95');
-        isPopupClosed = true;
-    }
+            let isPopupClosed = false;
+            
+            const modalEvent = document.getElementById('modal-event');
+            if (!modalEvent.classList.contains('hidden')) {
+                modalEvent.classList.add('hidden'); modalEvent.classList.remove('flex');
+                document.body.style.overflow = 'auto'; isPopupClosed = true;
+            }
+            
+            const widget = document.getElementById('floating-widget');
+            if (!widget.classList.contains('opacity-0')) {
+                widget.classList.add('opacity-0', 'pointer-events-none', 'translate-y-8', 'scale-95');
+                isPopupClosed = true;
+            }
 
-    const commentDrawer = document.getElementById('comment-drawer');
-    if (commentDrawer.classList.contains('open')) {
-        commentDrawer.classList.remove('open');
-        cancelReply();
-        isPopupClosed = true;
-    }
+            const commentDrawer = document.getElementById('comment-drawer');
+            if (commentDrawer.classList.contains('open')) {
+                commentDrawer.classList.remove('open');
+                cancelReply();
+                isPopupClosed = true;
+            }
 
-    const authModal = document.getElementById('modal-auth');
-    if (!authModal.classList.contains('hidden')) {
-        authModal.classList.add('hidden'); 
-        authModal.classList.remove('flex');
-        isPopupClosed = true;
-    }
+            const authModal = document.getElementById('modal-auth');
+            if (!authModal.classList.contains('hidden')) {
+                authModal.classList.add('hidden'); 
+                authModal.classList.remove('flex');
+                isPopupClosed = true;
+            }
 
-    if (isPopupClosed) return;
-    switchTab(window.location.hash.substring(1) || 'home', null, false);
-});
+            if (isPopupClosed) return;
+            switchTab(window.location.hash.substring(1) || 'home', null, false);
+        });
 
         function openModalEvent() {
             history.pushState({ popup: 'modal' }, null, '#event'); 
@@ -864,56 +861,52 @@
                 }
             }
         }
-let viewedUserId = null; // Letakkan ini untuk melacak profil siapa yang sedang dibuka
 
-// Fungsi untuk membuka profil orang lain
-async function openUserProfile(userId) {
-    viewedUserId = userId;
-    switchTab('profile', null, false);
-    document.getElementById('profile-loading').classList.remove('hidden');
-    document.getElementById('profile-logged-in').classList.add('hidden');
-    
-    const { data } = await supabaseClient.from('profiles').select('*').eq('id', userId).single();
-    if (data) { 
-        document.getElementById('profile-nickname').innerText = data.nickname || "Player";
-        document.getElementById('profile-img').src = data.avatar_url || `https://ui-avatars.com/api/?name=${data.nickname}`;
-        
-        const isOwn = (userId === currentUser?.id);
-        document.getElementById('profile-email').innerText = isOwn ? currentUser.email : "Community Member";
-        
-        // Sembunyikan tombol edit & input foto jika bukan profil sendiri
-        const actions = document.querySelector('#profile-logged-in .space-y-3');
-        const inputAva = document.querySelector('label[for="avatar-input"]');
-        if(actions) actions.classList.toggle('hidden', !isOwn);
-        if(inputAva) inputAva.classList.toggle('hidden', !isOwn);
-        
-        renderProfileVideos(userId);
-    }
-    
-    document.getElementById('profile-loading').classList.add('hidden');
-    document.getElementById('profile-logged-in').classList.remove('hidden');
-    history.pushState({ popup: 'user_profile' }, null, `#profile?id=${userId}`);
-}
+        async function openUserProfile(userId) {
+            viewedUserId = userId;
+            switchTab('profile', null, false);
+            document.getElementById('profile-loading').classList.remove('hidden');
+            document.getElementById('profile-logged-in').classList.add('hidden');
+            
+            const { data } = await supabaseClient.from('profiles').select('*').eq('id', userId).single();
+            if (data) { 
+                document.getElementById('profile-nickname').innerText = data.nickname || "Player";
+                document.getElementById('profile-img').src = data.avatar_url || `https://ui-avatars.com/api/?name=${data.nickname}`;
+                
+                const isOwn = (userId === currentUser?.id);
+                document.getElementById('profile-email').innerText = isOwn ? currentUser.email : "Community Member";
+                
+                const actions = document.querySelector('#profile-logged-in .space-y-3');
+                const inputAva = document.querySelector('label[for="avatar-input"]');
+                if(actions) actions.classList.toggle('hidden', !isOwn);
+                if(inputAva) inputAva.classList.toggle('hidden', !isOwn);
+                
+                renderProfileVideos(userId);
+            }
+            
+            document.getElementById('profile-loading').classList.add('hidden');
+            document.getElementById('profile-logged-in').classList.remove('hidden');
+            history.pushState({ popup: 'user_profile' }, null, `#profile?id=${userId}`);
+        }
 
-// Fungsi memutar video mengambang
-function playFloatingVideo(url, nick, cap) {
-    const p = document.getElementById('floating-video-player');
-    const v = document.getElementById('v-floating');
-    document.getElementById('f-nickname').innerText = `@${nick}`;
-    document.getElementById('f-caption').innerText = cap;
-    v.src = url;
-    p.classList.remove('hidden'); p.classList.add('flex');
-    v.play();
-    history.pushState({ popup: 'floating_video' }, null);
-}
+        function playFloatingVideo(url, nick, cap) {
+            const p = document.getElementById('floating-video-player');
+            const v = document.getElementById('v-floating');
+            document.getElementById('f-nickname').innerText = `@${nick}`;
+            document.getElementById('f-caption').innerText = cap;
+            v.src = url;
+            p.classList.remove('hidden'); p.classList.add('flex');
+            v.play();
+            history.pushState({ popup: 'floating_video' }, null);
+        }
 
-// Fungsi menutup video mengambang
-function closeFloatingVideo() {
-    const p = document.getElementById('floating-video-player');
-    const v = document.getElementById('v-floating');
-    if(v) { v.pause(); v.src = ""; }
-    if(p) { p.classList.add('hidden'); p.classList.remove('flex'); }
-}
+        function closeFloatingVideo() {
+            const p = document.getElementById('floating-video-player');
+            const v = document.getElementById('v-floating');
+            if(v) { v.pause(); v.src = ""; }
+            if(p) { p.classList.add('hidden'); p.classList.remove('flex'); }
+        }
+
         // === 5. RENDER INFO, JOKI, RIPPER ===
         function renderFaqs(data = faqs) {
             const container = document.getElementById('faq-container');
@@ -1296,7 +1289,6 @@ function closeFloatingVideo() {
                 let dataDariSheet = await res.json();
                 
                 // INJEKSI OPTIMISTIC UI: Masukkan video yang baru saja diupload (jika ada) ke dalam data yang ditarik dari server
-                // Supaya video baru tidak tertutup oleh cache lama Vercel
                 newUploads.forEach(newVid => {
                     if (!dataDariSheet.find(v => v.video_id === newVid.video_id)) {
                         dataDariSheet.push(newVid);
@@ -1312,7 +1304,6 @@ function closeFloatingVideo() {
                 allVideosData = dataDariSheet; 
                 container.innerHTML = ''; 
                 
-                // Segarkan grid profil setiap kali load video utama
                 renderProfileVideos();
 
                 if (!allVideosData.length) { container.innerHTML = '<p class="text-center py-20 text-gray-500">Belum ada video.</p>'; return; }
@@ -1475,7 +1466,7 @@ function closeFloatingVideo() {
             showToast("Meminta izin server...", "info");
 
             try {
-                const resUrl = await fetch(\`/api/upload-url?filename=\${encodeURIComponent(fileInput.name)}&filetype=\${encodeURIComponent(fileInput.type)}\`);
+                const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent(fileInput.name)}&filetype=${encodeURIComponent(fileInput.type)}`);
                 const dataUrl = await resUrl.json();
                 
                 showToast("Sedang mengupload video...", "info");
@@ -1486,7 +1477,7 @@ function closeFloatingVideo() {
                     body: fileInput,
                     headers: { 
                         'Content-Type': fileInput.type,
-                        'x-amz-acl': 'public-read' // <-- Kunci agar video tidak Access Denied
+                        'x-amz-acl': 'public-read' 
                     }
                 });
 
@@ -1506,7 +1497,6 @@ function closeFloatingVideo() {
                     user_id: currentUser.id
                 };
 
-                // --- PERBAIKAN 2: Menggunakan await untuk sinkronisasi Google Sheets ---
                 const gasResponse = await fetch(FINAL_GAS_URL, {
                     method: 'POST',
                     body: JSON.stringify(payloadData),
@@ -1519,20 +1509,19 @@ function closeFloatingVideo() {
 
                 showToast("Video berhasil diupload!", "success");
                 
-                // Simpan ke array lokal untuk melindungi dari Cache
                 newUploads.push(payloadData);
                 
                 document.getElementById('input-video-file').value = '';
                 document.getElementById('input-video-caption').value = '';
                 document.getElementById('nama-file-info').innerText = '';
                 
-                // Langsung muat ulang tanpa refresh halaman
                 loadVideos(); 
 
             } catch (error) {
                 showToast("Error: " + error.message, "error");
             }
         }
+
         // TUGAS AWAL SAAT WEB DIBUKA
         document.addEventListener('DOMContentLoaded', () => {
             checkSession();
