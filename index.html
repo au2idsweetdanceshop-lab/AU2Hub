@@ -44,13 +44,18 @@
         .smooth-reveal { animation: smoothReveal 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; will-change: transform, opacity; }
         .heart-pop { position: fixed; color: #FF007A; font-size: 100px; pointer-events: none; z-index: 100; animation: heartAnim 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; text-shadow: 0 0 30px rgba(255, 0, 122, 0.8); transform: translate(-50%, -50%); }
         @keyframes heartAnim { 0% { transform: translate(-50%, -50%) scale(0) rotate(-15deg); opacity: 0; } 20% { transform: translate(-50%, -50%) scale(1.2) rotate(0deg); opacity: 0.9; } 40% { transform: translate(-50%, -50%) scale(1) rotate(5deg); opacity: 0.9; } 100% { transform: translate(-50%, -150%) scale(1.5) rotate(0deg); opacity: 0; } }
+        
+        /* Toast Animation */
         @keyframes toastIn { from { opacity: 0; transform: translateY(-20px) scale(0.9); } to { opacity: 1; transform: translateY(0) scale(1); } }
         .toast-anim { animation: toastIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
         .glass { background: rgba(26, 17, 51, 0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-top: 1px solid rgba(255, 255, 255, 0.05); }
         details > summary { list-style: none; }
         details > summary::-webkit-details-marker { display: none; }
         .ripper-list::-webkit-scrollbar { width: 4px; }
         .ripper-list::-webkit-scrollbar-thumb { background: #FF007A; border-radius: 10px; }
+        .chat-scroll::-webkit-scrollbar { width: 3px; }
+        .chat-scroll::-webkit-scrollbar-thumb { background: #8A2BE2; border-radius: 10px; }
         .hide-scroll::-webkit-scrollbar { display: none; }
         .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
         .comment-drawer { transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1); transform: translateY(100%); }
@@ -345,18 +350,16 @@
             </div>
         </section>
     </main>
-
     <div id="floating-video-player" class="fixed inset-0 z-[150] hidden items-center justify-center bg-black/95 backdrop-blur-lg px-4">
-        <button onclick="closeFloatingVideo()" class="absolute top-6 right-6 text-white bg-white/10 w-12 h-12 rounded-full flex items-center justify-center active:scale-90 z-[160]"><i class="fas fa-times text-xl"></i></button>
-        <div class="w-full max-w-sm aspect-[9/16] bg-black rounded-3xl overflow-hidden shadow-2xl relative">
-            <video id="v-floating" class="w-full h-full object-cover" loop controls playsinline></video>
-            <div class="absolute bottom-0 left-0 w-full p-6 bg-gradient-to-t from-black/80 to-transparent">
-                <p id="f-nickname" class="text-brand-info font-bold text-sm">@Nickname</p>
-                <p id="f-caption" class="text-white text-[11px] mt-1">Caption video...</p>
-            </div>
+    <button onclick="closeFloatingVideo()" class="absolute top-6 right-6 text-white bg-white/10 w-12 h-12 rounded-full flex items-center justify-center active:scale-90 z-[160]"><i class="fas fa-times text-xl"></i></button>
+    <div class="w-full max-w-sm aspect-[9/16] bg-black rounded-3xl overflow-hidden shadow-2xl relative">
+        <video id="v-floating" class="w-full h-full object-cover" loop controls playsinline></video>
+        <div class="absolute bottom-0 left-0 w-full p-6 bg-gradient-to-t from-black/80 to-transparent">
+            <p id="f-nickname" class="text-brand-info font-bold text-sm">@Nickname</p>
+            <p id="f-caption" class="text-white text-[11px] mt-1">Caption video...</p>
         </div>
     </div>
-
+</div>
     <div id="comment-drawer" class="fixed inset-x-0 bottom-0 z-[60] h-[75vh] glass border-t border-white/10 rounded-t-3xl comment-drawer flex flex-col max-w-md mx-auto">
         <div class="flex justify-between items-center p-5 border-b border-white/5 shrink-0 bg-brand-dark/50 rounded-t-3xl">
             <h4 class="font-bold text-white text-sm">Komentar (<span id="drawer-comment-count">0</span>)</h4>
@@ -526,9 +529,12 @@
         const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRpdmNraXFrb2R0cXVkY294a2p6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgzNDY0MzIsImV4cCI6MjA5MzkyMjQzMn0.z_FIS_rpDQPQ7nNWpuvabH7qDYgu7uq6TlYj9LSOcJQ";
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
         
-        let currentUser = null, userProfile = null, isAuthLogin = true, viewedUserId = null;
+        let currentUser = null, userProfile = null, isAuthLogin = true;
         let dataRipperGlobal = [], isRipperExpanded = localStorage.getItem('statusLihatSemua') === 'true';
-        let allVideosData = [], newUploads = []; 
+        
+        // Variable untuk Feed & Video
+        let allVideosData = []; 
+        let newUploads = []; // Menyimpan video baru untuk disuntik sebelum cache clear
         let obs = null, activeVideoId = null, lastTap = 0, isGlobalMuted = true;
         let replyingToId = null, replyingToName = null;
 
@@ -546,13 +552,16 @@
 
         // === 3. SISTEM AUTENTIKASI & PROFIL ===
         async function checkSession() {
+            // Tampilkan animasi loading, sembunyikan UI lainnya saat mulai mengecek
             document.getElementById('profile-loading').classList.remove('hidden');
             document.getElementById('profile-loading').classList.add('flex');
             document.getElementById('profile-logged-in').classList.add('hidden');
             document.getElementById('profile-logged-out').classList.add('hidden');
 
+            // Tunggu respons dari Supabase
             const { data: { user } } = await supabaseClient.auth.getUser();
             
+            // Sembunyikan animasi loading setelah mendapatkan respons
             document.getElementById('profile-loading').classList.add('hidden');
             document.getElementById('profile-loading').classList.remove('flex');
 
@@ -584,60 +593,11 @@
             }
         }
 
-        // --- FITUR MELIHAT PROFIL USER LAIN ---
-        async function openUserProfile(userId) {
-            viewedUserId = userId;
-            switchTab('profile', null, false);
-            document.getElementById('profile-loading').classList.remove('hidden');
-            document.getElementById('profile-logged-in').classList.add('hidden');
-            
-            try {
-                const { data } = await supabaseClient.from('profiles').select('*').eq('id', userId).single();
-                if (data) { 
-                    document.getElementById('profile-nickname').innerText = data.nickname || "Player";
-                    document.getElementById('profile-img').src = data.avatar_url || `https://ui-avatars.com/api/?name=${data.nickname}`;
-                    
-                    const isOwn = (userId === currentUser?.id);
-                    document.getElementById('profile-email').innerText = isOwn ? currentUser.email : "Community Member";
-                    
-                    const actions = document.querySelector('#profile-logged-in .space-y-3');
-                    const inputAva = document.querySelector('label[for="avatar-input"]')?.parentElement;
-                    if(actions) actions.classList.toggle('hidden', !isOwn);
-                    if(inputAva) inputAva.classList.toggle('hidden', !isOwn);
-                    
-                    renderProfileVideos(userId);
-                }
-            } catch(e) { console.log(e); }
-            
-            document.getElementById('profile-loading').classList.add('hidden');
-            document.getElementById('profile-logged-in').classList.remove('hidden');
-            history.pushState({ popup: 'user_profile' }, null, `#profile?id=${userId}`);
-        }
-
-        function playFloatingVideo(url, nick, cap) {
-            const p = document.getElementById('floating-video-player');
-            const v = document.getElementById('v-floating');
-            document.getElementById('f-nickname').innerText = `@${nick}`;
-            document.getElementById('f-caption').innerText = cap;
-            v.src = url;
-            p.classList.remove('hidden'); p.classList.add('flex');
-            v.play();
-            history.pushState({ popup: 'floating_video' }, null);
-        }
-
-        function closeFloatingVideo() {
-            const p = document.getElementById('floating-video-player');
-            const v = document.getElementById('v-floating');
-            if(v) { v.pause(); v.src = ""; }
-            if(p) { p.classList.add('hidden'); p.classList.remove('flex'); }
-        }
-
         function openAuthModal() { 
             history.pushState({ popup: 'auth' }, null, '#auth');
             document.getElementById('modal-auth').classList.remove('hidden'); 
             document.getElementById('modal-auth').classList.add('flex'); 
         }
-
         function closeAuthModal() { 
             if (window.location.hash === '#auth') {
                 history.back();
@@ -812,19 +772,6 @@
                 loadVideos();
             }
 
-            // Saat klik tab profil, pastikan merender profil sendiri (bukan profil orang lain yang terakhir dilihat)
-            if (tabId === 'profile' && viewedUserId !== currentUser?.id) {
-                viewedUserId = currentUser?.id;
-                if (currentUser) {
-                    document.getElementById('profile-nickname').innerText = userProfile?.nickname || "Player";
-                    document.getElementById('profile-email').innerText = currentUser.email;
-                    document.getElementById('profile-img').src = userProfile?.avatar_url || `https://ui-avatars.com/api/?name=${userProfile?.nickname}`;
-                    document.querySelector('#profile-logged-in .space-y-3')?.classList.remove('hidden');
-                    document.querySelector('label[for="avatar-input"]')?.parentElement.classList.remove('hidden');
-                    renderProfileVideos();
-                }
-            }
-
             const navMap = { 'home': 0, 'info': 1, 'layanan': 2, 'sosial': 3, 'rekber': 4, 'ripper': 5, 'profile': 6, 'pembayaran': 2 };
             const activeIndex = navMap[tabId];
             if (activeIndex !== undefined) {
@@ -841,44 +788,41 @@
         }
 
         window.addEventListener('popstate', () => {
-            // 1. Cek Floating Video
-            const floatingPlayer = document.getElementById('floating-video-player');
-            if (floatingPlayer && !floatingPlayer.classList.contains('hidden')) { 
-                closeFloatingVideo(); 
-                return; 
-            }
+        const floatingPlayer = document.getElementById('floating-video-player');
+if (!floatingPlayer.classList.contains('hidden')) { 
+    closeFloatingVideo(); 
+    return; 
+}
 
-            // 2. Cek apakah kembali ke profil sendiri dari profil orang lain
-            if (window.location.hash === '#profile' && viewedUserId !== currentUser?.id) {
-                viewedUserId = currentUser?.id;
-                checkSession(); 
-                return;
-            }
-
-            // 3. Logika popup modal lainnya
+// Jika kembali dari profil orang lain
+if (window.location.hash === '#profile' && viewedUserId !== currentUser?.id) {
+    viewedUserId = currentUser?.id;
+    checkSession(); // Panggil session asli untuk balik ke profil sendiri
+    return;
+}
             let isPopupClosed = false;
             
             const modalEvent = document.getElementById('modal-event');
-            if (modalEvent && !modalEvent.classList.contains('hidden')) {
+            if (!modalEvent.classList.contains('hidden')) {
                 modalEvent.classList.add('hidden'); modalEvent.classList.remove('flex');
                 document.body.style.overflow = 'auto'; isPopupClosed = true;
             }
             
             const widget = document.getElementById('floating-widget');
-            if (widget && !widget.classList.contains('opacity-0')) {
+            if (!widget.classList.contains('opacity-0')) {
                 widget.classList.add('opacity-0', 'pointer-events-none', 'translate-y-8', 'scale-95');
                 isPopupClosed = true;
             }
 
             const commentDrawer = document.getElementById('comment-drawer');
-            if (commentDrawer && commentDrawer.classList.contains('open')) {
+            if (commentDrawer.classList.contains('open')) {
                 commentDrawer.classList.remove('open');
                 cancelReply();
                 isPopupClosed = true;
             }
 
             const authModal = document.getElementById('modal-auth');
-            if (authModal && !authModal.classList.contains('hidden')) {
+            if (!authModal.classList.contains('hidden')) {
                 authModal.classList.add('hidden'); 
                 authModal.classList.remove('flex');
                 isPopupClosed = true;
@@ -919,7 +863,56 @@
                 }
             }
         }
+let viewedUserId = null; // Letakkan ini untuk melacak profil siapa yang sedang dibuka
 
+// Fungsi untuk membuka profil orang lain
+async function openUserProfile(userId) {
+    viewedUserId = userId;
+    switchTab('profile', null, false);
+    document.getElementById('profile-loading').classList.remove('hidden');
+    document.getElementById('profile-logged-in').classList.add('hidden');
+    
+    const { data } = await supabaseClient.from('profiles').select('*').eq('id', userId).single();
+    if (data) { 
+        document.getElementById('profile-nickname').innerText = data.nickname || "Player";
+        document.getElementById('profile-img').src = data.avatar_url || `https://ui-avatars.com/api/?name=${data.nickname}`;
+        
+        const isOwn = (userId === currentUser?.id);
+        document.getElementById('profile-email').innerText = isOwn ? currentUser.email : "Community Member";
+        
+        // Sembunyikan tombol edit & input foto jika bukan profil sendiri
+        const actions = document.querySelector('#profile-logged-in .space-y-3');
+        const inputAva = document.querySelector('label[for="avatar-input"]');
+        if(actions) actions.classList.toggle('hidden', !isOwn);
+        if(inputAva) inputAva.classList.toggle('hidden', !isOwn);
+        
+        renderProfileVideos(userId);
+    }
+    
+    document.getElementById('profile-loading').classList.add('hidden');
+    document.getElementById('profile-logged-in').classList.remove('hidden');
+    history.pushState({ popup: 'user_profile' }, null, `#profile?id=${userId}`);
+}
+
+// Fungsi memutar video mengambang
+function playFloatingVideo(url, nick, cap) {
+    const p = document.getElementById('floating-video-player');
+    const v = document.getElementById('v-floating');
+    document.getElementById('f-nickname').innerText = `@${nick}`;
+    document.getElementById('f-caption').innerText = cap;
+    v.src = url;
+    p.classList.remove('hidden'); p.classList.add('flex');
+    v.play();
+    history.pushState({ popup: 'floating_video' }, null);
+}
+
+// Fungsi menutup video mengambang
+function closeFloatingVideo() {
+    const p = document.getElementById('floating-video-player');
+    const v = document.getElementById('v-floating');
+    if(v) { v.pause(); v.src = ""; }
+    if(p) { p.classList.add('hidden'); p.classList.remove('flex'); }
+}
         // === 5. RENDER INFO, JOKI, RIPPER ===
         function renderFaqs(data = faqs) {
             const container = document.getElementById('faq-container');
@@ -1319,7 +1312,7 @@
                 container.innerHTML = ''; 
                 
                 // Segarkan grid profil setiap kali load video utama
-                renderProfileVideos(currentUser?.id);
+                renderProfileVideos();
 
                 if (!allVideosData.length) { container.innerHTML = '<p class="text-center py-20 text-gray-500">Belum ada video.</p>'; return; }
                 if (isFirstTime) {
@@ -1357,30 +1350,27 @@
                     <div class="absolute inset-0 flex items-center justify-center z-0"><div class="w-12 h-12 border-4 border-brand-accent/20 border-t-brand-accent rounded-full animate-spin"></div></div>
                     <video class="absolute inset-0 m-auto w-full h-full object-cover video-player transition-opacity duration-500 opacity-0 z-10" 
                            onloadeddata="this.classList.remove('opacity-0')" loop muted playsinline preload="metadata"
-                           onclick="handleVideoClick(event, this, '${vid.id || vid.video_id}')" onerror="handleVideoError(this)">
+                           onclick="handleVideoClick(event, this, '${vid.id}')" onerror="handleVideoError(this)">
                         <source src="${vid.video_url}" type="video/mp4">
                     </video>
                     <div class="absolute bottom-10 left-0 w-full p-6 flex justify-between items-end z-20 pointer-events-none">
-                        <div class="text-white drop-shadow-lg w-2/3 pointer-events-auto">
-                            <p onclick="openUserProfile('${vid.user_id}')" class="font-bold text-sm shadow-black drop-shadow-md cursor-pointer hover:text-brand-info transition-colors inline-block">
-                                @${vid.nickname || "Player"}
-                            </p>
-                            <p class="text-xs opacity-90 shadow-black drop-shadow-md mt-1">${vid.caption}</p>
-                        </div>
+                        <div class="text-white drop-shadow-lg w-2/3 pointer-events-auto"><p class="font-bold text-sm shadow-black drop-shadow-md"><p onclick="openUserProfile('${vid.user_id}')" class="font-bold text-sm cursor-pointer hover:text-brand-info">@${vid.nickname || "Player"}
+                        </p>
+                        <p class="text-xs opacity-90 shadow-black drop-shadow-md">${vid.caption}</p></div>
                         <div class="flex flex-col gap-6 items-center pointer-events-auto">
-                            <div class="like-container flex flex-col items-center gap-1" data-vid="${vid.id || vid.video_id}">
-                                <button onclick="likeVideo('${vid.id || vid.video_id}', this)" class="hover:scale-110 transition-transform"><i class="fas fa-heart text-3xl text-white drop-shadow-md"></i></button>
+                            <div class="like-container flex flex-col items-center gap-1" data-vid="${vid.id}">
+                                <button onclick="likeVideo('${vid.id}', this)" class="hover:scale-110 transition-transform"><i class="fas fa-heart text-3xl text-white drop-shadow-md"></i></button>
                                 <span class="like-count-display text-white text-[12px] font-bold drop-shadow-md">0</span>
                             </div>
-                            <div class="comment-count-container flex flex-col items-center gap-1" data-vid="${vid.id || vid.video_id}">
-                                <button onclick="openComments('${vid.id || vid.video_id}')" class="hover:scale-110 transition-transform"><i class="fas fa-comment-dots text-3xl text-white drop-shadow-md"></i></button>
+                            <div class="comment-count-container flex flex-col items-center gap-1" data-vid="${vid.id}">
+                                <button onclick="openComments('${vid.id}')" class="hover:scale-110 transition-transform"><i class="fas fa-comment-dots text-3xl text-white drop-shadow-md"></i></button>
                                 <span class="comment-count-display text-white text-[12px] font-bold drop-shadow-md">0</span>
                             </div>
                         </div>
                     </div>
                 </div>`).join('');
 
-            container.innerHTML = htmlString;
+            container.insertAdjacentHTML('beforeend', htmlString);
 
             const videoActions = container.querySelectorAll('.snap-start:not(.data-loaded)');
             videoActions.forEach((card) => {
@@ -1392,14 +1382,10 @@
 
             const unobservedVideos = container.querySelectorAll('.video-player:not(.observed)');
             unobservedVideos.forEach((v, i) => {
-                v.classList.add('observed'); 
-                if (obs) obs.observe(v); 
-                
+                v.classList.add('observed'); if (obs) obs.observe(v);
                 if (i === unobservedVideos.length - 1) {
                     const lastVideoObserver = new IntersectionObserver(entries => {
-                        if(entries[0].isIntersecting) { 
-                            lastVideoObserver.disconnect(); 
-                        }
+                        if(entries[0].isIntersecting) { lastVideoObserver.disconnect(); renderVideoBatch(); }
                     }, { threshold: 0.1 });
                     lastVideoObserver.observe(v.closest('.snap-start'));
                 }
@@ -1407,22 +1393,46 @@
         }
 
         // --- FUNGSI UNTUK RENDER GRID VIDEO PROFIL ---
-        async function renderProfileVideos(id = currentUser?.id) {
+        async function renderProfileVideos() {
             const grid = document.getElementById('profile-video-grid');
-            if (!grid || !id) return;
+            if (!grid) return;
+            
+            if (!currentUser) {
+                grid.innerHTML = '';
+                return;
+            }
 
-            const myVideos = allVideosData.filter(v => v.user_id === id);
+            if (allVideosData.length === 0) {
+                try {
+                    grid.innerHTML = '<div class="col-span-3 text-center text-xs text-brand-info py-4"><i class="fas fa-spinner fa-spin text-xl mb-2"></i><br>Memuat...</div>';
+                    const res = await fetch('/api/get-videos');
+                    let dataDariSheet = await res.json();
+                    
+                    // Injeksi video baru yang belum masuk cache
+                    newUploads.forEach(newVid => {
+                        if (!dataDariSheet.find(v => v.video_id === newVid.video_id)) dataDariSheet.push(newVid);
+                    });
+
+                    allVideosData = dataDariSheet;
+                } catch(e) {
+                    grid.innerHTML = '<p class="col-span-3 text-center text-xs text-red-500 py-4">Gagal memuat video profil.</p>';
+                    return;
+                }
+            }
+
+            const myVideos = allVideosData.filter(v => v.user_id === currentUser.id);
+
+            // Supaya di profil urutannya yang terbaru di atas, kita balik (reverse) khusus untuk array profil
             const reversedMyVideos = [...myVideos].reverse();
 
             if (reversedMyVideos.length === 0) {
-                grid.innerHTML = '<div class="col-span-3 text-center text-xs text-gray-500 py-8 bg-black/20 rounded-xl border border-white/5"><i class="fas fa-film text-2xl mb-2 opacity-50"></i><br>Belum ada video.</div>';
+                grid.innerHTML = '<div class="col-span-3 text-center text-xs text-gray-500 py-8 bg-black/20 rounded-xl border border-white/5"><i class="fas fa-film text-2xl mb-2 opacity-50"></i><br>Belum ada video yang diupload.</div>';
                 return;
             }
 
             grid.innerHTML = reversedMyVideos.map(vid => `
-                <div class="aspect-[9/16] bg-black relative rounded-md overflow-hidden border border-white/10 group cursor-pointer" 
-                     onclick="playFloatingVideo('${vid.video_url}', '${vid.nickname}', '${vid.caption.replace(/'/g, "\\'")}')">
-                    <video class="w-full h-full object-cover pointer-events-none" preload="metadata">
+                <div class="aspect-[9/16] bg-black relative rounded-md overflow-hidden border border-white/10 group cursor-pointer" onclick="switchTab('sosial')">
+                    <video class="w-full h-full object-cover" preload="metadata">
                         <source src="${vid.video_url}" type="video/mp4">
                     </video>
                     <div class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
@@ -1430,6 +1440,26 @@
                     </div>
                 </div>
             `).join('');
+        }
+
+        // Fungsi untuk mengubah format waktu menjadi "X waktu yang lalu"
+        function timeAgo(dateString) {
+            const now = new Date();
+            const past = new Date(dateString);
+            const seconds = Math.floor((now - past) / 1000);
+
+            let interval = Math.floor(seconds / 31536000);
+            if (interval >= 1) return interval + " tahun lalu";
+            interval = Math.floor(seconds / 2592000);
+            if (interval >= 1) return interval + " bulan lalu";
+            interval = Math.floor(seconds / 86400);
+            if (interval >= 1) return interval + " hari lalu";
+            interval = Math.floor(seconds / 3600);
+            if (interval >= 1) return interval + " jam lalu";
+            interval = Math.floor(seconds / 60);
+            if (interval >= 1) return interval + " menit lalu";
+            
+            return "Baru saja";
         }
 
         // --- FUNGSI UPLOAD VIDEO (Optimistic UI) ---
@@ -1501,6 +1531,56 @@
             } catch (error) {
                 showToast("Error: " + error.message, "error");
             }
+            // Global variable untuk melacak user mana yang dilihat
+let viewedUserId = null;
+
+async function openUserProfile(userId) {
+    viewedUserId = userId;
+    switchTab('profile', null, false); // Pindah ke tab profil tanpa refresh
+    document.getElementById('profile-loading').classList.remove('hidden');
+    document.getElementById('profile-logged-in').classList.add('hidden');
+    
+    // Gunakan fungsi fetchProfile yang sudah ada, tapi arahkan ke ID orang lain
+    await fetchProfileOther(userId);
+    
+    document.getElementById('profile-loading').classList.add('hidden');
+    document.getElementById('profile-logged-in').classList.remove('hidden');
+    history.pushState({ popup: 'user_profile' }, null, `#profile?id=${userId}`);
+}
+
+async function fetchProfileOther(id) {
+    const { data } = await supabaseClient.from('profiles').select('*').eq('id', id).single();
+    if (data) { 
+        document.getElementById('profile-nickname').innerText = data.nickname || "Player";
+        document.getElementById('profile-img').src = data.avatar_url || `https://ui-avatars.com/api/?name=${data.nickname}`;
+        
+        // Cek apakah ini profil sendiri atau orang lain
+        const isOwn = (id === currentUser?.id);
+        document.getElementById('profile-email').innerText = isOwn ? currentUser.email : "Community Member";
+        document.getElementById('profile-actions').classList.toggle('hidden', !isOwn);
+        document.getElementById('btn-change-avatar').classList.toggle('hidden', !isOwn);
+        
+        renderProfileVideos(id);
+    }
+}
+
+function playFloatingVideo(url, nick, cap) {
+    const p = document.getElementById('floating-video-player');
+    const v = document.getElementById('v-floating');
+    document.getElementById('f-nickname').innerText = `@${nick}`;
+    document.getElementById('f-caption').innerText = cap;
+    v.src = url;
+    p.classList.replace('hidden', 'flex');
+    v.play();
+    history.pushState({ popup: 'floating_video' }, null);
+}
+
+function closeFloatingVideo() {
+    const p = document.getElementById('floating-video-player');
+    const v = document.getElementById('v-floating');
+    v.pause(); v.src = "";
+    p.classList.replace('flex', 'hidden');
+}
         }
 
         // TUGAS AWAL SAAT WEB DIBUKA
