@@ -1054,11 +1054,28 @@
 
         async function likeComment(cid, btn) {
             if(localStorage.getItem('comment_liked_'+cid)) return; 
-            const icon = btn.querySelector('i'); icon.classList.remove('text-gray-500'); icon.classList.add('text-brand-accent', 'animate-ping'); setTimeout(() => icon.classList.remove('animate-ping'), 500);
+            
+            // KUNCI LANGSUNG! (Pencegah Spam)
+            localStorage.setItem('comment_liked_'+cid, 'pending');
+
+            const icon = btn.querySelector('i'); 
+            icon.classList.remove('text-gray-500'); 
+            icon.classList.add('text-brand-accent', 'animate-ping'); 
+            setTimeout(() => icon.classList.remove('animate-ping'), 500);
+
             try {
                 const res = await fetch('/api/comment_like', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({comment_id: cid}) });
-                if(res.ok) { localStorage.setItem('comment_liked_'+cid, 'true'); fetchCommentLikes(cid); }
-            } catch(e) { icon.classList.add('text-gray-500'); icon.classList.remove('text-brand-accent'); }
+                if(res.ok) { 
+                    localStorage.setItem('comment_liked_'+cid, 'true'); 
+                    fetchCommentLikes(cid); 
+                } else {
+                    localStorage.removeItem('comment_liked_'+cid);
+                    icon.classList.add('text-gray-500'); icon.classList.remove('text-brand-accent');
+                }
+            } catch(e) { 
+                localStorage.removeItem('comment_liked_'+cid);
+                icon.classList.add('text-gray-500'); icon.classList.remove('text-brand-accent'); 
+            }
         }
 
         // --- 7. FUNGSI SOSIAL (VIDEO FEED & DOUBLE TAP LIKES) ---
@@ -1081,11 +1098,28 @@
 
         async function likeVideo(videoId, btn) {
             if(localStorage.getItem(`liked_${videoId}`)) return; 
-            const icon = btn.querySelector('i'); icon.classList.replace('text-white', 'text-brand-accent'); icon.classList.add('animate-ping'); setTimeout(() => icon.classList.remove('animate-ping'), 500);
+            
+            // KUNCI LANGSUNG! (Pencegah Spam)
+            localStorage.setItem(`liked_${videoId}`, 'pending'); 
+
+            const icon = btn.querySelector('i'); 
+            icon.classList.replace('text-white', 'text-brand-accent'); 
+            icon.classList.add('animate-ping'); 
+            setTimeout(() => icon.classList.remove('animate-ping'), 500);
+
             try {
                 const response = await fetch('/api/like', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ video_id: videoId }) });
-                if (response.ok) { localStorage.setItem(`liked_${videoId}`, 'true'); updateLikeCountUI(videoId, btn.closest('.like-container')); }
-            } catch (e) { icon.classList.replace('text-brand-accent', 'text-white'); }
+                if (response.ok) { 
+                    localStorage.setItem(`liked_${videoId}`, 'true'); 
+                    updateLikeCountUI(videoId, btn.closest('.like-container')); 
+                } else {
+                    localStorage.removeItem(`liked_${videoId}`);
+                    icon.classList.replace('text-brand-accent', 'text-white');
+                }
+            } catch (e) { 
+                localStorage.removeItem(`liked_${videoId}`);
+                icon.classList.replace('text-brand-accent', 'text-white'); 
+            }
         }
 
         function handleVideoError(videoElement) { const container = videoElement.closest('.snap-start'); if (container) container.remove(); }
