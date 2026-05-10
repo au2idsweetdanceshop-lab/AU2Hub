@@ -33,40 +33,26 @@
     <style>
         body { background-color: #0F0920; color: #E2E8F0; -webkit-tap-highlight-color: transparent; overflow-x: hidden; }
         .tab-content:not(.active) { display: none !important; }
-        
-        /* Animasi Pindah Tab */
         .tab-content.active { animation: slideUpFade 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; will-change: transform, opacity; }
         @keyframes slideUpFade { from { opacity: 0; transform: translateY(20px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
-        
-        /* Animasi Ikon Navigasi */
         @keyframes popBounce { 0% { transform: scale(1) translateY(0); } 40% { transform: scale(0.7) translateY(2px); } 100% { transform: scale(1.1) translateY(-4px); } }
         .nav-item.active { color: #FF007A; }
         .nav-item.active i { animation: popBounce 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; text-shadow: 0 0 12px rgba(255, 0, 122, 0.6); will-change: transform; }
-
-        /* Animasi Modal & Reveal */
         @keyframes modalIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
         .modal-anim { animation: modalIn 0.3s ease-out forwards; will-change: transform, opacity; }
         @keyframes smoothReveal { 0% { opacity: 0; transform: translateY(15px); } 100% { opacity: 1; transform: translateY(0); } }
         .smooth-reveal { animation: smoothReveal 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; will-change: transform, opacity; }
-
-        /* Animasi Hati Pop-up (TikTok Style) */
         .heart-pop { position: fixed; color: #FF007A; font-size: 100px; pointer-events: none; z-index: 100; animation: heartAnim 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; text-shadow: 0 0 30px rgba(255, 0, 122, 0.8); transform: translate(-50%, -50%); }
         @keyframes heartAnim { 0% { transform: translate(-50%, -50%) scale(0) rotate(-15deg); opacity: 0; } 20% { transform: translate(-50%, -50%) scale(1.2) rotate(0deg); opacity: 0.9; } 40% { transform: translate(-50%, -50%) scale(1) rotate(5deg); opacity: 0.9; } 100% { transform: translate(-50%, -150%) scale(1.5) rotate(0deg); opacity: 0; } }
-        
-        /* Elemen UI */
         .glass { background: rgba(26, 17, 51, 0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-top: 1px solid rgba(255, 255, 255, 0.05); }
         details > summary { list-style: none; }
         details > summary::-webkit-details-marker { display: none; }
-        
-        /* Scrollbar Styling */
         .ripper-list::-webkit-scrollbar { width: 4px; }
         .ripper-list::-webkit-scrollbar-thumb { background: #FF007A; border-radius: 10px; }
         .chat-scroll::-webkit-scrollbar { width: 3px; }
         .chat-scroll::-webkit-scrollbar-thumb { background: #8A2BE2; border-radius: 10px; }
         .hide-scroll::-webkit-scrollbar { display: none; }
         .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
-        
-        /* Drawer Komentar & Avatar */
         .comment-drawer { transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1); transform: translateY(100%); }
         .comment-drawer.open { transform: translateY(0); }
         .avatar-ring { padding: 3px; background: linear-gradient(to bottom right, #00F0FF, #FF007A); border-radius: 50%; }
@@ -101,7 +87,6 @@
             <p class="text-gray-400 text-xs sm:text-sm mb-8 px-2 leading-relaxed">
                 Satu pintu untuk info update terbaru, panduan pemula, jasa joki profesional, dan rekber aman. Dikelola langsung oleh <strong>ADT</strong>.
             </p>
-            
             <div class="flex flex-col gap-3">
                 <button onclick="switchTab('info', event)" class="flex justify-center items-center w-full bg-brand-card hover:bg-white/5 border border-white/10 font-bold py-3.5 px-6 rounded-2xl active:scale-95 transition-all text-sm">
                     <i class="fas fa-bullhorn text-brand-info mr-3"></i> Info & FAQ Terbaru
@@ -138,7 +123,6 @@
                         </div>
                     </div>
                 </div>
-
                 <div class="bg-brand-card rounded-2xl p-4 border border-white/5">
                     <div class="flex items-start">
                         <i class="fas fa-book-open text-brand-purple text-xl mt-1 mr-3"></i>
@@ -153,7 +137,6 @@
                     </div>
                 </div>
             </div>
-
             <h2 class="text-lg font-extrabold text-white mb-4 text-center">Tanya Jawab (FAQ)</h2>
             <div class="relative mb-4">
                 <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-500"></i>
@@ -191,15 +174,11 @@
                     <div class="relative w-20 h-20 mb-6">
                         <div class="absolute inset-0 border-4 border-brand-card rounded-full"></div>
                         <div class="absolute inset-0 border-4 border-brand-accent rounded-full border-t-transparent animate-spin"></div>
-                        <div class="absolute inset-0 flex items-center justify-center text-brand-info">
-                            <i class="fas fa-bolt animate-pulse text-2xl"></i>
-                        </div>
+                        <div class="absolute inset-0 flex items-center justify-center text-brand-info"><i class="fas fa-bolt animate-pulse text-2xl"></i></div>
                     </div>
                     <h3 class="text-white font-extrabold tracking-widest text-sm mb-1 animate-pulse">MENYIAPKAN FEED</h3>
                     <p class="text-[10px] text-gray-500 text-center px-8">Sedang mengoptimalkan kualitas video untuk perangkat Anda. Mohon tunggu sebentar...</p>
-                    <div class="w-48 h-1.5 bg-white/10 rounded-full mt-6 overflow-hidden">
-                        <div id="fake-progress" class="h-full bg-gradient-to-r from-brand-info to-brand-accent w-0 rounded-full"></div>
-                    </div>
+                    <div class="w-48 h-1.5 bg-white/10 rounded-full mt-6 overflow-hidden"><div id="fake-progress" class="h-full bg-gradient-to-r from-brand-info to-brand-accent w-0 rounded-full"></div></div>
                 </div>
                 <div id="feed-container" class="flex-1 overflow-y-scroll snap-y snap-mandatory hide-scroll relative w-full"></div>
             </div>
@@ -213,10 +192,8 @@
                 <div class="absolute -right-4 -top-4 text-6xl text-brand-info opacity-5"><i class="fas fa-shield-alt"></i></div>
                 <h3 class="font-bold text-brand-info text-sm mb-3 relative z-10"><i class="fas fa-shield-alt mr-2"></i> Prosedur Rekber NIKKY</h3>
                 <ol class="list-decimal list-inside text-xs text-gray-300 space-y-2 mb-4 relative z-10 leading-relaxed">
-                    <li>Buat grup WA (Penjual, Pembeli, Admin).</li>
-                    <li>Pembeli bayar ke Rekening Admin <em>(Harga include fee)</em>.</li>
-                    <li>Penjual kasih data, Pembeli cek akun.</li>
-                    <li>Akun aman? Dana diteruskan ke Penjual. Selesai.</li>
+                    <li>Buat grup WA (Penjual, Pembeli, Admin).</li><li>Pembeli bayar ke Rekening Admin <em>(Harga include fee)</em>.</li>
+                    <li>Penjual kasih data, Pembeli cek akun.</li><li>Akun aman? Dana diteruskan ke Penjual. Selesai.</li>
                 </ol>
                 <div class="bg-black/30 rounded-xl p-3 text-xs text-gray-400 border border-white/5 relative z-10">
                     <i class="fas fa-clock text-brand-accent mr-2"></i> <strong>Jam Operasional:</strong> Harap chat admin terlebih dahulu.
@@ -227,38 +204,25 @@
                 <h3 class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">Kontak Resmi (Anti Clone)</h3>
                 <div class="space-y-3 mb-6">
                     <a href="https://wa.me/9647808097471" target="_blank" class="flex items-center p-4 bg-brand-card rounded-2xl border border-brand-accent/20 active:scale-95 transition-transform">
-                        <div class="bg-brand-accent/10 w-10 h-10 rounded-full flex items-center justify-center mr-4">
-                            <i class="fas fa-user-tie text-brand-accent text-lg"></i>
-                        </div>
-                        <div>
-                            <div class="font-bold text-white text-sm">Contact Owner (ADT)</div>
-                            <div class="text-[11px] text-gray-400 mt-0.5">Pusat Informasi & Keluhan</div>
-                        </div>
+                        <div class="bg-brand-accent/10 w-10 h-10 rounded-full flex items-center justify-center mr-4"><i class="fas fa-user-tie text-brand-accent text-lg"></i></div>
+                        <div><div class="font-bold text-white text-sm">Contact Owner (ADT)</div><div class="text-[11px] text-gray-400 mt-0.5">Pusat Informasi & Keluhan</div></div>
                     </a>
                     <a href="https://wa.me/6283815584661" target="_blank" class="flex items-center p-4 bg-brand-card rounded-2xl border border-brand-info/20 active:scale-95 transition-transform">
-                        <div class="bg-brand-info/10 w-10 h-10 rounded-full flex items-center justify-center mr-4">
-                            <i class="fas fa-headset text-brand-info text-lg"></i>
-                        </div>
-                        <div>
-                            <div class="font-bold text-white text-sm">Admin Joki & Rekber NIKKY</div>
-                            <div class="text-[11px] text-gray-400 mt-0.5">Pemesanan & Transaksi</div>
-                        </div>
+                        <div class="bg-brand-info/10 w-10 h-10 rounded-full flex items-center justify-center mr-4"><i class="fas fa-headset text-brand-info text-lg"></i></div>
+                        <div><div class="font-bold text-white text-sm">Admin Joki & Rekber NIKKY</div><div class="text-[11px] text-gray-400 mt-0.5">Pemesanan & Transaksi</div></div>
                     </a>
                 </div>
 
                 <h3 class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">Grup Komunitas</h3>
                 <div class="grid grid-cols-2 gap-3 pb-4">
                     <a href="https://chat.whatsapp.com/ITAOkcEjaU2DOzZrpKUUUS" target="_blank" class="bg-[#25D366]/10 border border-[#25D366]/20 py-3 px-2 rounded-2xl text-center active:scale-95 transition-transform flex flex-col items-center justify-center">
-                        <i class="fab fa-whatsapp text-[#25D366] text-2xl mb-1.5"></i>
-                        <div class="text-[11px] font-bold text-white">Grup WA 1</div>
+                        <i class="fab fa-whatsapp text-[#25D366] text-2xl mb-1.5"></i><div class="text-[11px] font-bold text-white">Grup WA 1</div>
                     </a>
                     <a href="https://chat.whatsapp.com/L5eyd3wZdbN6XlUhEDvQqf" target="_blank" class="bg-[#25D366]/10 border border-[#25D366]/20 py-3 px-2 rounded-2xl text-center active:scale-95 transition-transform flex flex-col items-center justify-center">
-                        <i class="fab fa-whatsapp text-[#25D366] text-2xl mb-1.5"></i>
-                        <div class="text-[11px] font-bold text-white">Grup WA 2</div>
+                        <i class="fab fa-whatsapp text-[#25D366] text-2xl mb-1.5"></i><div class="text-[11px] font-bold text-white">Grup WA 2</div>
                     </a>
                     <a href="https://m.facebook.com/groups/704614341865158/?ref=share&mibextid=KtfwRi" target="_blank" class="col-span-2 bg-[#1877F2]/10 border border-[#1877F2]/20 p-3 rounded-2xl flex items-center justify-center active:scale-95 transition-transform">
-                        <i class="fab fa-facebook text-[#1877F2] text-xl mr-3"></i>
-                        <div class="text-xs font-bold text-white">Grup Facebook Resmi</div>
+                        <i class="fab fa-facebook text-[#1877F2] text-xl mr-3"></i><div class="text-xs font-bold text-white">Grup Facebook Resmi</div>
                     </a>
                 </div>
             </div>
@@ -310,14 +274,8 @@
                 <div class="text-[11px] font-bold text-center text-white uppercase tracking-widest mb-6 relative z-10">ADT STORE</div>
 
                 <div class="space-y-3 mb-8 bg-black/30 p-4 rounded-2xl border border-white/5 relative z-10">
-                    <div class="flex justify-between text-xs border-b border-white/5 pb-2">
-                        <span class="text-gray-400">Paket Pesanan</span>
-                        <span id="pay-product" class="text-white font-bold text-right pl-4 leading-tight">-</span>
-                    </div>
-                    <div class="flex justify-between text-xs pt-1">
-                        <span class="text-gray-400">Admin Rekber NIKKY</span>
-                        <span class="text-brand-info font-bold">Include (Gratis)</span>
-                    </div>
+                    <div class="flex justify-between text-xs border-b border-white/5 pb-2"><span class="text-gray-400">Paket Pesanan</span><span id="pay-product" class="text-white font-bold text-right pl-4 leading-tight">-</span></div>
+                    <div class="flex justify-between text-xs pt-1"><span class="text-gray-400">Admin Rekber NIKKY</span><span class="text-brand-info font-bold">Include (Gratis)</span></div>
                 </div>
 
                 <a id="wa-confirm" href="#" target="_blank" class="flex justify-center items-center w-full bg-[#25D366] hover:bg-[#20bd5a] active:scale-[0.98] transition-all text-white font-bold py-4 rounded-2xl shadow-[0_8px_20px_rgba(37,211,102,0.25)] text-sm relative z-10">
@@ -405,33 +363,21 @@
                 <h3 class="font-bold text-white text-sm flex items-center gap-2">
                     <i class="fas fa-bullhorn text-brand-info text-lg"></i> Maintenance Weekly
                 </h3>
-                <button onclick="closeModalEvent()" class="text-gray-400 hover:text-white bg-black/30 border border-white/10 w-8 h-8 rounded-full flex items-center justify-center transition-colors active:scale-90">
-                    <i class="fas fa-times"></i>
-                </button>
+                <button onclick="closeModalEvent()" class="text-gray-400 hover:text-white bg-black/30 border border-white/10 w-8 h-8 rounded-full flex items-center justify-center transition-colors active:scale-90"><i class="fas fa-times"></i></button>
             </div>
             <div class="relative flex-1 overflow-y-auto p-5">
                 <div class="relative mb-5 w-full overflow-hidden rounded-xl bg-black/20 pb-8 pt-2 border border-white/5">
                     <div id="image-carousel" onscroll="updateCarouselDots()" class="flex overflow-x-auto hide-scroll snap-x snap-mandatory gap-3 px-3 relative">
                         <img src="FB_IMG_1777992277452.jpg" loading="lazy" alt="Event 1" class="w-[90%] flex-shrink-0 snap-center h-48 object-cover rounded-xl border border-white/10 shadow-lg">
-                        <img src="FB_IMG_1777992277452.jpg" loading="lazy" alt="Event 2" class="w-[90%] flex-shrink-0 snap-center h-48 object-cover rounded-xl border border-white/10 shadow-lg">
-                        <img src="FB_IMG_1777992277452.jpg" loading="lazy" alt="Event 3" class="w-[90%] flex-shrink-0 snap-center h-48 object-cover rounded-xl border border-white/10 shadow-lg">
-                        <img src="FB_IMG_1777992277452.jpg" loading="lazy" alt="Event 4" class="w-[90%] flex-shrink-0 snap-center h-48 object-cover rounded-xl border border-white/10 shadow-lg">
-                        <img src="FB_IMG_1777992277452.jpg" loading="lazy" alt="Event 5" class="w-[90%] flex-shrink-0 snap-center h-48 object-cover rounded-xl border border-white/10 shadow-lg">
                     </div>
                     <div id="carousel-dots" class="absolute bottom-3 left-1/2 -translate-x-1/2 flex space-x-1.5 z-10 pointer-events-none">
                         <div class="dot-indicator h-1.5 rounded-full transition-all duration-300 w-4 bg-brand-accent"></div>
-                        <div class="dot-indicator h-1.5 rounded-full transition-all duration-300 w-1.5 bg-white/40"></div>
-                        <div class="dot-indicator h-1.5 rounded-full transition-all duration-300 w-1.5 bg-white/40"></div>
-                        <div class="dot-indicator h-1.5 rounded-full transition-all duration-300 w-1.5 bg-white/40"></div>
-                        <div class="dot-indicator h-1.5 rounded-full transition-all duration-300 w-1.5 bg-white/40"></div>
                     </div>
                 </div>
                 <h4 class="font-extrabold text-white text-base mb-2">Update Event Terbaru AU2</h4>
                 <p class="text-xs text-gray-400 mb-4 leading-relaxed">Pemain tercinta, Maintenance server akan 06 Mei Januari (Rabu) mulai pukul 10:00-11:00. Waktu maintenance mungkin dapat dipercepat atau ditunda.</p>
                 <ul class="text-xs text-gray-300 space-y-2.5 mb-6 bg-black/20 p-3 rounded-xl border border-white/5">
                     <li class="flex items-start"><i class="fas fa-star text-brand-accent mt-0.5 mr-2"></i> <span>Gacha Kostum Limited Edition rilis.</span></li>
-                    <li class="flex items-start"><i class="fas fa-star text-brand-accent mt-0.5 mr-2"></i> <span>Misi Top-up berhadiah Mount eksklusif.</span></li>
-                    <li class="flex items-start"><i class="fas fa-star text-brand-accent mt-0.5 mr-2"></i> <span>Perbaikan (Bug Fixes) fitur Ballroom.</span></li>
                 </ul>
                 <a href="https://www.facebook.com/story.php?story_fbid=1373226878158377&id=100064132326306&rdid=7emuowRLGF3B8ay6#/" target="_blank" class="flex justify-center items-center w-full bg-[#1877F2]/10 hover:bg-[#1877F2]/20 border border-[#1877F2]/30 text-[#1877F2] font-bold py-3.5 rounded-xl active:scale-95 transition-all text-xs">
                     <i class="fab fa-facebook text-base mr-2"></i> Buka Postingan Asli (Opsional)
@@ -454,10 +400,7 @@
                         <span class="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
                     </span>
                 </div>
-                <div>
-                    <h3 class="font-bold text-white text-xs tracking-wide uppercase">Global Community</h3>
-                    <p class="text-[9px] text-[#FF007A] font-bold uppercase tracking-widest opacity-80">Online Now</p>
-                </div>
+                <div><h3 class="font-bold text-white text-xs tracking-wide uppercase">Global Community</h3><p class="text-[9px] text-[#FF007A] font-bold uppercase tracking-widest opacity-80">Online Now</p></div>
             </div>
             <button onclick="toggleWidget()" class="text-gray-400 hover:text-[#FF007A] transition-colors w-8 h-8 rounded-full bg-white/5 flex items-center justify-center"><i class="fas fa-times text-sm"></i></button>
         </div>
@@ -467,27 +410,13 @@
     </div>
 
     <nav class="fixed bottom-0 left-0 w-full glass z-40 flex justify-around items-center h-[70px] px-1 shadow-[0_-10px_30px_rgba(0,0,0,0.5)]">
-        <a href="#home" onclick="switchTab('home', event)" class="nav-item flex flex-col items-center justify-center flex-1 text-gray-500 transition-colors">
-            <i class="fas fa-home text-xl mb-1"></i><span class="text-[9px] font-bold mt-0.5">Home</span>
-        </a>
-        <a href="#info" onclick="switchTab('info', event)" class="nav-item flex flex-col items-center justify-center flex-1 text-gray-500 transition-colors">
-            <i class="fas fa-bullhorn text-xl mb-1"></i><span class="text-[9px] font-bold mt-0.5">Info</span>
-        </a>
-        <a href="#layanan" onclick="switchTab('layanan', event)" class="nav-item flex flex-col items-center justify-center flex-1 text-gray-500 transition-colors">
-            <i class="fas fa-bolt text-xl mb-1"></i><span class="text-[9px] font-bold mt-0.5">Layanan</span>
-        </a>
-        <a href="#sosial" onclick="switchTab('sosial', event)" class="nav-item flex flex-col items-center justify-center flex-1 text-gray-500 transition-colors">
-            <i class="fas fa-camera-retro text-xl mb-1"></i><span class="text-[9px] font-bold mt-0.5">Sosial</span>
-        </a>
-        <a href="#rekber" onclick="switchTab('rekber', event)" class="nav-item flex flex-col items-center justify-center flex-1 text-gray-500 transition-colors">
-            <i class="fas fa-shield-alt text-xl mb-1"></i><span class="text-[9px] font-bold mt-0.5">Rekber</span>
-        </a>
-        <a href="#ripper" onclick="switchTab('ripper', event)" class="nav-item flex flex-col items-center justify-center flex-1 text-gray-500 transition-colors">
-            <i class="fas fa-user-ninja text-xl mb-1"></i><span class="text-[9px] font-bold mt-0.5">Ripper</span>
-        </a>
-        <a href="#profile" onclick="switchTab('profile', event)" class="nav-item flex flex-col items-center justify-center flex-1 text-gray-500 transition-colors">
-            <i class="fas fa-user-circle text-xl mb-1"></i><span class="text-[9px] font-bold mt-0.5">Profil</span>
-        </a>
+        <a href="#home" onclick="switchTab('home', event)" class="nav-item flex flex-col items-center justify-center flex-1 text-gray-500 transition-colors"><i class="fas fa-home text-xl mb-1"></i><span class="text-[9px] font-bold mt-0.5">Home</span></a>
+        <a href="#info" onclick="switchTab('info', event)" class="nav-item flex flex-col items-center justify-center flex-1 text-gray-500 transition-colors"><i class="fas fa-bullhorn text-xl mb-1"></i><span class="text-[9px] font-bold mt-0.5">Info</span></a>
+        <a href="#layanan" onclick="switchTab('layanan', event)" class="nav-item flex flex-col items-center justify-center flex-1 text-gray-500 transition-colors"><i class="fas fa-bolt text-xl mb-1"></i><span class="text-[9px] font-bold mt-0.5">Layanan</span></a>
+        <a href="#sosial" onclick="switchTab('sosial', event)" class="nav-item flex flex-col items-center justify-center flex-1 text-gray-500 transition-colors"><i class="fas fa-camera-retro text-xl mb-1"></i><span class="text-[9px] font-bold mt-0.5">Sosial</span></a>
+        <a href="#rekber" onclick="switchTab('rekber', event)" class="nav-item flex flex-col items-center justify-center flex-1 text-gray-500 transition-colors"><i class="fas fa-shield-alt text-xl mb-1"></i><span class="text-[9px] font-bold mt-0.5">Rekber</span></a>
+        <a href="#ripper" onclick="switchTab('ripper', event)" class="nav-item flex flex-col items-center justify-center flex-1 text-gray-500 transition-colors"><i class="fas fa-user-ninja text-xl mb-1"></i><span class="text-[9px] font-bold mt-0.5">Ripper</span></a>
+        <a href="#profile" onclick="switchTab('profile', event)" class="nav-item flex flex-col items-center justify-center flex-1 text-gray-500 transition-colors"><i class="fas fa-user-circle text-xl mb-1"></i><span class="text-[9px] font-bold mt-0.5">Profil</span></a>
     </nav>
 
     <script>
@@ -496,7 +425,6 @@
         const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRpdmNraXFrb2R0cXVkY294a2p6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgzNDY0MzIsImV4cCI6MjA5MzkyMjQzMn0.z_FIS_rpDQPQ7nNWpuvabH7qDYgu7uq6TlYj9LSOcJQ";
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
         
-        // === 2. STATE GLOBAL ===
         let currentUser = null, userProfile = null, isAuthLogin = true;
         let dataRipperGlobal = [], isRipperExpanded = localStorage.getItem('statusLihatSemua') === 'true';
         let allVideosData = [], obs = null, activeVideoId = null, lastTap = 0, isGlobalMuted = true;
@@ -509,9 +437,9 @@
         ];
 
         const faqs = [
-            { t: "Berapa lama proses joki?", j: "Joki Ballroom memakan waktu sekitar 2 jam. Untuk War Tari & AFK menyesuaikan spesifikasi dan antrean pesanan. Admin akan menginfokan detailnya di WA." },
-            { t: "Apakah akun aman tidak kena Banned?", j: "100% Aman. Joki dikerjakan murni manual oleh player profesional. Kami tidak memakai bot, cheat, atau apk pihak ketiga." },
-            { t: "Apakah harga Pricelist sudah termasuk biaya admin?", j: "Ya, semua harga joki yang tertera sudah Include (termasuk) biaya Rekber NIKKY. Tidak ada biaya tambahan yang disembunyikan." }
+            { t: "Berapa lama proses joki?", j: "Joki Ballroom memakan waktu sekitar 2 jam. Admin akan menginfokan detailnya di WA." },
+            { t: "Apakah akun aman tidak kena Banned?", j: "100% Aman. Joki dikerjakan murni manual oleh player profesional." },
+            { t: "Apakah harga Pricelist sudah termasuk biaya admin?", j: "Ya, sudah Include biaya Rekber NIKKY." }
         ];
 
         // === 3. SISTEM AUTENTIKASI & PROFIL ===
@@ -532,15 +460,13 @@
 
         async function fetchProfile() {
             const { data, error } = await supabaseClient.from('profiles').select('*').eq('id', currentUser.id).single();
-            
             if (data) { 
                 userProfile = data; 
             } else {
-                userProfile = { username: 'Player', avatar_url: '' };
-                await supabaseClient.from('profiles').upsert({ id: currentUser.id, username: 'Player', avatar_url: '' });
+                userProfile = { nickname: 'Player', avatar_url: '' };
+                await supabaseClient.from('profiles').upsert({ id: currentUser.id, nickname: 'Player', avatar_url: '' });
             }
-
-            document.getElementById('profile-nickname').innerText = userProfile.username || "Player"; 
+            document.getElementById('profile-nickname').innerText = userProfile.nickname || "Player"; 
             document.getElementById('profile-email').innerText = currentUser.email; 
             if (userProfile.avatar_url && userProfile.avatar_url !== "") {
                 document.getElementById('profile-img').src = userProfile.avatar_url; 
@@ -569,9 +495,8 @@
                 } else { 
                     const { data: { user }, error } = await supabaseClient.auth.signUp({ email, password }); 
                     if (error) throw error; 
-                    
-                    const { error: dbErr } = await supabaseClient.from('profiles').upsert({ id: user.id, username: nick || "Player", avatar_url: "" }); 
-                    if (dbErr) throw new Error("Gagal membuat profil di database: " + dbErr.message);
+                    const { error: dbErr } = await supabaseClient.from('profiles').upsert({ id: user.id, nickname: nick || "Player", avatar_url: "" }); 
+                    if (dbErr) throw new Error("Database Profil Error: " + dbErr.message);
                 }
                 location.reload();
             } catch (e) { alert(e.message); btn.disabled = false; btn.innerText = isAuthLogin ? "Login" : "Daftar"; }
@@ -580,17 +505,16 @@
         async function handleLogout() { await supabaseClient.auth.signOut(); location.reload(); }
 
         function updateUIForLoggedIn() { 
-            const ava = (userProfile?.avatar_url && userProfile.avatar_url !== "") ? userProfile.avatar_url : `https://ui-avatars.com/api/?name=${userProfile?.username || 'User'}&background=1A1133&color=fff`; 
+            const ava = (userProfile?.avatar_url && userProfile.avatar_url !== "") ? userProfile.avatar_url : `https://ui-avatars.com/api/?name=${userProfile?.nickname || 'User'}&background=1A1133&color=fff`; 
             document.getElementById('header-user').innerHTML = `
                 <div onclick="switchTab('profile')" class="flex items-center gap-2 cursor-pointer bg-white/5 pr-4 pl-1 py-1 rounded-full border border-white/10 active:scale-95 transition-transform">
                     <img src="${ava}" class="w-7 h-7 rounded-full object-cover border border-brand-info">
-                    <span class="text-[10px] font-bold text-white">${userProfile?.username || 'User'}</span>
+                    <span class="text-[10px] font-bold text-white">${userProfile?.nickname || 'User'}</span>
                 </div>`; 
         }
 
         function updateUIForLoggedOut() { 
-            document.getElementById('header-user').innerHTML = `
-                <button onclick="openAuthModal()" class="text-[10px] font-bold bg-white/10 px-4 py-2 rounded-full border border-white/10 uppercase active:scale-95 transition-transform">Login / Daftar</button>`; 
+            document.getElementById('header-user').innerHTML = `<button onclick="openAuthModal()" class="text-[10px] font-bold bg-white/10 px-4 py-2 rounded-full border border-white/10 uppercase active:scale-95 transition-transform">Login / Daftar</button>`; 
         }
 
         async function handleAvatarUpload(event) {
@@ -618,8 +542,8 @@
                 const data = await response.json();
                 if (!data.success) throw new Error("Gagal menyimpan ke Biznet: " + data.error);
                 
-                const currentNick = userProfile?.username || "Player";
-                const { error: dbErr } = await supabaseClient.from('profiles').upsert({ id: currentUser.id, username: currentNick, avatar_url: data.url }); 
+                const currentNick = userProfile?.nickname || "Player";
+                const { error: dbErr } = await supabaseClient.from('profiles').upsert({ id: currentUser.id, nickname: currentNick, avatar_url: data.url }); 
                 if (dbErr) throw new Error("Gagal menyimpan link di Database: " + dbErr.message);
 
                 document.getElementById('profile-img').src = data.url; 
@@ -645,10 +569,10 @@
         }
 
         async function editNickname() { 
-            const n = prompt("Nickname baru:", userProfile?.username || ""); 
+            const n = prompt("Nickname baru:", userProfile?.nickname || ""); 
             if (n && n.trim() !== "") { 
                 const currentAvatar = userProfile?.avatar_url || "";
-                const { error } = await supabaseClient.from('profiles').upsert({ id: currentUser.id, username: n.trim(), avatar_url: currentAvatar }); 
+                const { error } = await supabaseClient.from('profiles').upsert({ id: currentUser.id, nickname: n.trim(), avatar_url: currentAvatar }); 
                 if (error) {
                     alert("Gagal merubah Nickname: " + error.message);
                 } else {
@@ -868,7 +792,7 @@
         }
 
         function buildCommentHTML(comment, replies = []) {
-            const ava = (comment.avatar_url && comment.avatar_url !== "") ? comment.avatar_url : `https://ui-avatars.com/api/?name=${comment.nickname || 'User'}&background=1A1133&color=fff`;
+            const ava = comment.avatar_url || `https://ui-avatars.com/api/?name=${comment.nickname || 'User'}&background=1A1133&color=fff`;
             let html = `
             <div class="flex items-start gap-3 mb-5">
                 <img src="${ava}" class="w-8 h-8 rounded-full object-cover border border-white/10 shrink-0 mt-1">
@@ -892,7 +816,7 @@
                         <div id="replies-${comment.id}" class="hidden mt-3 space-y-4 pl-3 border-l border-white/10 relative">`;
                 
                 replies.forEach(r => {
-                    const rAva = (r.avatar_url && r.avatar_url !== "") ? r.avatar_url : `https://ui-avatars.com/api/?name=${r.nickname || 'User'}&background=1A1133&color=fff`;
+                    const rAva = r.avatar_url || `https://ui-avatars.com/api/?name=${r.nickname || 'User'}&background=1A1133&color=fff`;
                     html += `
                             <div class="flex items-start gap-2 relative">
                                 <img src="${rAva}" class="w-6 h-6 rounded-full object-cover border border-white/10 shrink-0 mt-0.5">
@@ -947,7 +871,7 @@
             const iconAsli = btn.innerHTML; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>'; btn.disabled = true;
 
             try {
-                const payload = { video_id: activeVideoId, nickname: userProfile?.username || "Player", message: msg, avatar_url: userProfile?.avatar_url || "" };
+                const payload = { video_id: activeVideoId, nickname: userProfile?.nickname || "Player", message: msg, avatar_url: userProfile?.avatar_url || "" };
                 if (replyingToId) payload.parent_id = replyingToId;
 
                 const response = await fetch('/api/comment', {
