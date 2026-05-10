@@ -624,16 +624,26 @@
 
         window.addEventListener('popstate', () => {
             let isPopupClosed = false;
+            
             const modalEvent = document.getElementById('modal-event');
             if (!modalEvent.classList.contains('hidden')) {
                 modalEvent.classList.add('hidden'); modalEvent.classList.remove('flex');
                 document.body.style.overflow = 'auto'; isPopupClosed = true;
             }
+            
             const widget = document.getElementById('floating-widget');
             if (!widget.classList.contains('opacity-0')) {
                 widget.classList.add('opacity-0', 'pointer-events-none', 'translate-y-8', 'scale-95');
                 isPopupClosed = true;
             }
+
+            const commentDrawer = document.getElementById('comment-drawer');
+            if (commentDrawer.classList.contains('open')) {
+                commentDrawer.classList.remove('open');
+                cancelReply();
+                isPopupClosed = true;
+            }
+
             if (isPopupClosed) return;
             switchTab(window.location.hash.substring(1) || 'home', null, false);
         });
@@ -749,16 +759,21 @@
 
         // --- 6. SISTEM KOMENTAR ---
         function openComments(id) {
-            activeVideoId = id; document.getElementById('comment-drawer').classList.add('open'); loadComments(id); 
+            history.pushState({ popup: 'comments' }, null, null); 
+            activeVideoId = id; 
+            document.getElementById('comment-drawer').classList.add('open'); 
+            loadComments(id); 
         }
 
         function closeComments() {
-            document.getElementById('comment-drawer').classList.remove('open'); cancelReply();
+            history.back(); 
         }
 
-        async function loadComments(videoId) {
+        async function loadComments(videoId, silent = false) {
             const list = document.getElementById('comment-list');
-            list.innerHTML = '<div class="flex justify-center mt-10"><i class="fas fa-spinner fa-spin text-brand-accent text-3xl"></i></div>'; 
+            if (!silent) {
+                list.innerHTML = '<div class="flex justify-center mt-10"><i class="fas fa-spinner fa-spin text-brand-accent text-3xl"></i></div>'; 
+            }
             cancelReply();
 
             try {
@@ -766,7 +781,6 @@
                 const data = await response.json();
                 
                 document.getElementById('drawer-comment-count').innerText = data.length || 0;
-                list.innerHTML = ''; 
 
                 if (data && data.length > 0) {
                     const mainComments = data.filter(c => !c.parent_id);
@@ -782,13 +796,15 @@
                         const childReplies = replies.filter(r => r.parent_id == c.id);
                         htmlOutput += buildCommentHTML(c, childReplies);
                     });
-                    list.innerHTML = htmlOutput;
+                    list.innerHTML = htmlOutput; 
 
                     setTimeout(() => { data.forEach(c => fetchCommentLikes(c.id)); }, 50);
                 } else {
                     list.innerHTML = '<p class="text-center text-xs text-gray-500 italic mt-10">Jadilah yang pertama berkomentar!</p>';
                 }
-            } catch(e) { list.innerHTML = '<p class="text-center text-xs text-red-500 mt-10">Gagal memuat komentar.</p>'; }
+            } catch(e) { 
+                if(!silent) list.innerHTML = '<p class="text-center text-xs text-red-500 mt-10">Gagal memuat komentar.</p>'; 
+            }
         }
 
         function buildCommentHTML(comment, replies = []) {
@@ -879,7 +895,8 @@
                 });
 
                 if (response.ok) {
-                    msgInput.value = ''; loadComments(activeVideoId);
+                    msgInput.value = ''; 
+                    await loadComments(activeVideoId, true);
                     const container = document.querySelector(`.comment-count-container[data-vid="${activeVideoId}"]`);
                     if(container) updateCommentCountUI(activeVideoId, container);
                     cancelReply();
