@@ -531,21 +531,20 @@
         }
 
         async function fetchProfile() {
-            // Coba ambil data dari tabel profil
             const { data, error } = await supabaseClient.from('profiles').select('*').eq('id', currentUser.id).single();
             
             if (data) { 
                 userProfile = data; 
             } else {
-                // Jika profil belum ada (baris hilang), kita paksakan buat profil default
-                userProfile = { nickname: 'Player', avatar_url: '' };
-                await supabaseClient.from('profiles').upsert({ id: currentUser.id, nickname: 'Player' });
+                userProfile = { username: 'Player', avatar_url: '' };
+                await supabaseClient.from('profiles').upsert({ id: currentUser.id, username: 'Player', avatar_url: '' });
             }
 
-            // Tampilkan ke layar
-            document.getElementById('profile-nickname').innerText = userProfile.nickname || "Player"; 
+            document.getElementById('profile-nickname').innerText = userProfile.username || "Player"; 
             document.getElementById('profile-email').innerText = currentUser.email; 
-            if (userProfile.avatar_url) document.getElementById('profile-img').src = userProfile.avatar_url; 
+            if (userProfile.avatar_url && userProfile.avatar_url !== "") {
+                document.getElementById('profile-img').src = userProfile.avatar_url; 
+            }
         }
 
         function openAuthModal() { document.getElementById('modal-auth').classList.remove('hidden'); document.getElementById('modal-auth').classList.add('flex'); }
@@ -571,8 +570,7 @@
                     const { data: { user }, error } = await supabaseClient.auth.signUp({ email, password }); 
                     if (error) throw error; 
                     
-                    // Gunakan UPSERT agar memaksa membuat baris profil
-                    const { error: dbErr } = await supabaseClient.from('profiles').upsert({ id: user.id, nickname: nick || "Player" }); 
+                    const { error: dbErr } = await supabaseClient.from('profiles').upsert({ id: user.id, username: nick || "Player", avatar_url: "" }); 
                     if (dbErr) throw new Error("Gagal membuat profil di database: " + dbErr.message);
                 }
                 location.reload();
@@ -582,11 +580,11 @@
         async function handleLogout() { await supabaseClient.auth.signOut(); location.reload(); }
 
         function updateUIForLoggedIn() { 
-            const ava = userProfile?.avatar_url || `https://ui-avatars.com/api/?name=${userProfile?.nickname || 'User'}&background=1A1133&color=fff`; 
+            const ava = (userProfile?.avatar_url && userProfile.avatar_url !== "") ? userProfile.avatar_url : `https://ui-avatars.com/api/?name=${userProfile?.username || 'User'}&background=1A1133&color=fff`; 
             document.getElementById('header-user').innerHTML = `
                 <div onclick="switchTab('profile')" class="flex items-center gap-2 cursor-pointer bg-white/5 pr-4 pl-1 py-1 rounded-full border border-white/10 active:scale-95 transition-transform">
                     <img src="${ava}" class="w-7 h-7 rounded-full object-cover border border-brand-info">
-                    <span class="text-[10px] font-bold text-white">${userProfile?.nickname || 'User'}</span>
+                    <span class="text-[10px] font-bold text-white">${userProfile?.username || 'User'}</span>
                 </div>`; 
         }
 
@@ -620,8 +618,8 @@
                 const data = await response.json();
                 if (!data.success) throw new Error("Gagal menyimpan ke Biznet: " + data.error);
                 
-                // Simpan URL foto ke profil menggunakan UPSERT
-                const { error: dbErr } = await supabaseClient.from('profiles').upsert({ id: currentUser.id, avatar_url: data.url }); 
+                const currentNick = userProfile?.username || "Player";
+                const { error: dbErr } = await supabaseClient.from('profiles').upsert({ id: currentUser.id, username: currentNick, avatar_url: data.url }); 
                 if (dbErr) throw new Error("Gagal menyimpan link di Database: " + dbErr.message);
 
                 document.getElementById('profile-img').src = data.url; 
@@ -647,9 +645,10 @@
         }
 
         async function editNickname() { 
-            const n = prompt("Nickname baru:", userProfile?.nickname || ""); 
+            const n = prompt("Nickname baru:", userProfile?.username || ""); 
             if (n && n.trim() !== "") { 
-                const { error } = await supabaseClient.from('profiles').upsert({ id: currentUser.id, nickname: n.trim() }); 
+                const currentAvatar = userProfile?.avatar_url || "";
+                const { error } = await supabaseClient.from('profiles').upsert({ id: currentUser.id, username: n.trim(), avatar_url: currentAvatar }); 
                 if (error) {
                     alert("Gagal merubah Nickname: " + error.message);
                 } else {
@@ -869,7 +868,7 @@
         }
 
         function buildCommentHTML(comment, replies = []) {
-            const ava = comment.avatar_url || `https://ui-avatars.com/api/?name=${comment.nickname || 'User'}&background=1A1133&color=fff`;
+            const ava = (comment.avatar_url && comment.avatar_url !== "") ? comment.avatar_url : `https://ui-avatars.com/api/?name=${comment.nickname || 'User'}&background=1A1133&color=fff`;
             let html = `
             <div class="flex items-start gap-3 mb-5">
                 <img src="${ava}" class="w-8 h-8 rounded-full object-cover border border-white/10 shrink-0 mt-1">
@@ -893,7 +892,7 @@
                         <div id="replies-${comment.id}" class="hidden mt-3 space-y-4 pl-3 border-l border-white/10 relative">`;
                 
                 replies.forEach(r => {
-                    const rAva = r.avatar_url || `https://ui-avatars.com/api/?name=${r.nickname || 'User'}&background=1A1133&color=fff`;
+                    const rAva = (r.avatar_url && r.avatar_url !== "") ? r.avatar_url : `https://ui-avatars.com/api/?name=${r.nickname || 'User'}&background=1A1133&color=fff`;
                     html += `
                             <div class="flex items-start gap-2 relative">
                                 <img src="${rAva}" class="w-6 h-6 rounded-full object-cover border border-white/10 shrink-0 mt-0.5">
@@ -948,7 +947,7 @@
             const iconAsli = btn.innerHTML; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>'; btn.disabled = true;
 
             try {
-                const payload = { video_id: activeVideoId, nickname: userProfile?.nickname || "Player", message: msg, avatar_url: userProfile?.avatar_url || "" };
+                const payload = { video_id: activeVideoId, nickname: userProfile?.username || "Player", message: msg, avatar_url: userProfile?.avatar_url || "" };
                 if (replyingToId) payload.parent_id = replyingToId;
 
                 const response = await fetch('/api/comment', {
