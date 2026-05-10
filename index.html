@@ -176,6 +176,21 @@
                     <div class="w-1.5 h-6 bg-[#25D366] rounded-full"></div> Feed Komunitas
                 </h3>
             </div>
+            <div class="mb-4 bg-brand-card p-4 rounded-3xl border border-white/5 shadow-lg">
+    <input type="file" id="input-video-file" accept="video/*" class="hidden" onchange="document.getElementById('nama-file-info').innerText = this.files[0].name">
+    <input type="text" id="input-video-caption" placeholder="Tulis caption videomu..." class="w-full bg-black/40 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white focus:outline-none focus:border-brand-accent mb-4">
+    <div class="flex gap-2">
+        <label for="input-video-file" class="bg-white/5 text-white px-4 py-3 rounded-2xl font-bold cursor-pointer text-[11px] flex items-center justify-center active:scale-95 transition-transform w-1/3 border border-white/10 uppercase">
+            <i class="fas fa-file-video mr-2 text-brand-info"></i> Pilih
+        </label>
+        <button onclick="prosesUploadVideo()" class="bg-brand-accent text-white px-4 py-3 rounded-2xl font-extrabold text-[11px] flex-1 active:scale-95 transition-transform uppercase shadow-lg shadow-brand-accent/20">
+            <i class="fas fa-cloud-upload-alt mr-2"></i> Upload Video
+        </button>
+    </div>
+    <p id="nama-file-info" class="text-[9px] text-gray-500 mt-2 px-1 italic text-center truncate"></p>
+</div>
+    <i class="fas fa-video"></i> Upload Video Kamu
+</button>
             <div class="relative w-full h-[calc(100dvh-240px)] min-h-[400px] rounded-3xl overflow-hidden border border-white/10 shadow-lg bg-brand-dark flex flex-col">
                 <div id="fake-loader" class="absolute inset-0 z-50 bg-brand-dark flex flex-col items-center justify-center hidden transition-opacity duration-1000">
                     <div class="relative w-20 h-20 mb-6">
@@ -1271,7 +1286,67 @@
             
             return "Baru saja";
         }
+// --- FUNGSI UPLOAD VIDEO (Gunakan versi Final ini) ---
+async function prosesUploadVideo() {
+    if (!currentUser) return openAuthModal();
 
+    const fileInput = document.getElementById('input-video-file').files[0];
+    const caption = document.getElementById('input-video-caption').value;
+
+    if (!fileInput) return showToast("Pilih video dulu!", "error");
+    
+    showToast("Meminta izin server...", "info");
+
+    try {
+        // 1. Ambil tiket upload dari API Vercel kamu
+        const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent(fileInput.name)}&filetype=${encodeURIComponent(fileInput.type)}`);
+        const dataUrl = await resUrl.json();
+        
+        // 2. Upload langsung ke Biznet Gio
+        showToast("Sedang mengupload video...", "info");
+        const uploadRes = await fetch(dataUrl.uploadUrl, {
+            method: 'PUT',
+            body: fileInput,
+            headers: { 'Content-Type': fileInput.type }
+        });
+
+        if (!uploadRes.ok) throw new Error("Gagal upload ke server penyimpan");
+
+        // 3. Ambil URL Google Sheets dari Config Vercel (Sistem Env)
+        const configRes = await fetch('/api/get-config');
+        const configData = await configRes.json();
+        const FINAL_GAS_URL = configData.gasUrl;
+
+        // 4. Simpan data ke Google Sheets
+        showToast("Menyimpan ke database...", "info");
+        const payloadData = {
+            video_id: 'vid_' + Date.now(),
+            video_url: dataUrl.finalVideoUrl,
+            caption: caption,
+            nickname: userProfile?.nickname || "Player",
+            avatar_url: userProfile?.avatar_url || "",
+            user_id: currentUser.id
+        };
+
+        await fetch(FINAL_GAS_URL, {
+            method: 'POST',
+            body: JSON.stringify(payloadData),
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+        });
+
+        showToast("Video berhasil diupload!", "success");
+        
+        // Reset input setelah berhasil
+        document.getElementById('input-video-file').value = '';
+        document.getElementById('input-video-caption').value = '';
+        document.getElementById('nama-file-info').innerText = '';
+        
+        loadVideos(); // Refresh feed video
+
+    } catch (error) {
+        showToast("Error: " + error.message, "error");
+    }
+}
         // TUGAS AWAL SAAT WEB DIBUKA
         document.addEventListener('DOMContentLoaded', () => {
             // Mengaktifkan sistem login saat web pertama kali dibuka
