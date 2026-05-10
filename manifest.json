@@ -1,11 +1,10 @@
 {
-  "name": "AU2Hub - Pusat Komunitas & Joki",
+  "name": "AU2Hub Community",
   "short_name": "AU2Hub",
-  "description": "Pusat Info, Joki, dan Komunitas AU2ID Sweet Dance",
-  "start_url": "/index.html",
+  "start_url": ".",
   "display": "standalone",
   "background_color": "#0F0920",
-  "theme_color": "#FF007A",
+  "theme_color": "#0F0920",
   "icons": [
     {
       "src": "icon-192.png",
