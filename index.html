@@ -1406,10 +1406,15 @@
                 const dataUrl = await resUrl.json();
                 
                 showToast("Sedang mengupload video...", "info");
+                
+                // --- PERBAIKAN 1: Tambahan x-amz-acl untuk BiznetGio ---
                 const uploadRes = await fetch(dataUrl.uploadUrl, {
                     method: 'PUT',
                     body: fileInput,
-                    headers: { 'Content-Type': fileInput.type }
+                    headers: { 
+                        'Content-Type': fileInput.type,
+                        'x-amz-acl': 'public-read' // <-- Kunci agar video tidak Access Denied
+                    }
                 });
 
                 if (!uploadRes.ok) throw new Error("Gagal upload ke server penyimpan");
@@ -1428,12 +1433,16 @@
                     user_id: currentUser.id
                 };
 
-                // Lempar ke GAS, biarkan berjalan di latar belakang tanpa mengunci UI
-                fetch(FINAL_GAS_URL, {
+                // --- PERBAIKAN 2: Menggunakan await untuk sinkronisasi Google Sheets ---
+                const gasResponse = await fetch(FINAL_GAS_URL, {
                     method: 'POST',
                     body: JSON.stringify(payloadData),
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' }
-                }).catch(err => console.log(err));
+                });
+
+                if (!gasResponse.ok) {
+                    throw new Error("Gagal mencatat video ke Database!");
+                }
 
                 showToast("Video berhasil diupload!", "success");
                 
