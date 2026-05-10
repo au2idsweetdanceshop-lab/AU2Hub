@@ -350,7 +350,16 @@
             </div>
         </section>
     </main>
-    
+    <div id="floating-video-player" class="fixed inset-0 z-[150] hidden items-center justify-center bg-black/95 backdrop-blur-lg px-4">
+    <button onclick="closeFloatingVideo()" class="absolute top-6 right-6 text-white bg-white/10 w-12 h-12 rounded-full flex items-center justify-center active:scale-90 z-[160]"><i class="fas fa-times text-xl"></i></button>
+    <div class="w-full max-w-sm aspect-[9/16] bg-black rounded-3xl overflow-hidden shadow-2xl relative">
+        <video id="v-floating" class="w-full h-full object-cover" loop controls playsinline></video>
+        <div class="absolute bottom-0 left-0 w-full p-6 bg-gradient-to-t from-black/80 to-transparent">
+            <p id="f-nickname" class="text-brand-info font-bold text-sm">@Nickname</p>
+            <p id="f-caption" class="text-white text-[11px] mt-1">Caption video...</p>
+        </div>
+    </div>
+</div>
     <div id="comment-drawer" class="fixed inset-x-0 bottom-0 z-[60] h-[75vh] glass border-t border-white/10 rounded-t-3xl comment-drawer flex flex-col max-w-md mx-auto">
         <div class="flex justify-between items-center p-5 border-b border-white/5 shrink-0 bg-brand-dark/50 rounded-t-3xl">
             <h4 class="font-bold text-white text-sm">Komentar (<span id="drawer-comment-count">0</span>)</h4>
@@ -779,6 +788,18 @@
         }
 
         window.addEventListener('popstate', () => {
+        const floatingPlayer = document.getElementById('floating-video-player');
+if (!floatingPlayer.classList.contains('hidden')) { 
+    closeFloatingVideo(); 
+    return; 
+}
+
+// Jika kembali dari profil orang lain
+if (window.location.hash === '#profile' && viewedUserId !== currentUser?.id) {
+    viewedUserId = currentUser?.id;
+    checkSession(); // Panggil session asli untuk balik ke profil sendiri
+    return;
+}
             let isPopupClosed = false;
             
             const modalEvent = document.getElementById('modal-event');
@@ -842,7 +863,56 @@
                 }
             }
         }
+let viewedUserId = null; // Letakkan ini untuk melacak profil siapa yang sedang dibuka
 
+// Fungsi untuk membuka profil orang lain
+async function openUserProfile(userId) {
+    viewedUserId = userId;
+    switchTab('profile', null, false);
+    document.getElementById('profile-loading').classList.remove('hidden');
+    document.getElementById('profile-logged-in').classList.add('hidden');
+    
+    const { data } = await supabaseClient.from('profiles').select('*').eq('id', userId).single();
+    if (data) { 
+        document.getElementById('profile-nickname').innerText = data.nickname || "Player";
+        document.getElementById('profile-img').src = data.avatar_url || `https://ui-avatars.com/api/?name=${data.nickname}`;
+        
+        const isOwn = (userId === currentUser?.id);
+        document.getElementById('profile-email').innerText = isOwn ? currentUser.email : "Community Member";
+        
+        // Sembunyikan tombol edit & input foto jika bukan profil sendiri
+        const actions = document.querySelector('#profile-logged-in .space-y-3');
+        const inputAva = document.querySelector('label[for="avatar-input"]');
+        if(actions) actions.classList.toggle('hidden', !isOwn);
+        if(inputAva) inputAva.classList.toggle('hidden', !isOwn);
+        
+        renderProfileVideos(userId);
+    }
+    
+    document.getElementById('profile-loading').classList.add('hidden');
+    document.getElementById('profile-logged-in').classList.remove('hidden');
+    history.pushState({ popup: 'user_profile' }, null, `#profile?id=${userId}`);
+}
+
+// Fungsi memutar video mengambang
+function playFloatingVideo(url, nick, cap) {
+    const p = document.getElementById('floating-video-player');
+    const v = document.getElementById('v-floating');
+    document.getElementById('f-nickname').innerText = `@${nick}`;
+    document.getElementById('f-caption').innerText = cap;
+    v.src = url;
+    p.classList.remove('hidden'); p.classList.add('flex');
+    v.play();
+    history.pushState({ popup: 'floating_video' }, null);
+}
+
+// Fungsi menutup video mengambang
+function closeFloatingVideo() {
+    const p = document.getElementById('floating-video-player');
+    const v = document.getElementById('v-floating');
+    if(v) { v.pause(); v.src = ""; }
+    if(p) { p.classList.add('hidden'); p.classList.remove('flex'); }
+}
         // === 5. RENDER INFO, JOKI, RIPPER ===
         function renderFaqs(data = faqs) {
             const container = document.getElementById('faq-container');
@@ -1284,7 +1354,9 @@
                         <source src="${vid.video_url}" type="video/mp4">
                     </video>
                     <div class="absolute bottom-10 left-0 w-full p-6 flex justify-between items-end z-20 pointer-events-none">
-                        <div class="text-white drop-shadow-lg w-2/3 pointer-events-auto"><p class="font-bold text-sm shadow-black drop-shadow-md">@${vid.nickname || "Player"}</p><p class="text-xs opacity-90 shadow-black drop-shadow-md">${vid.caption}</p></div>
+                        <div class="text-white drop-shadow-lg w-2/3 pointer-events-auto"><p class="font-bold text-sm shadow-black drop-shadow-md"><p onclick="openUserProfile('${vid.user_id}')" class="font-bold text-sm cursor-pointer hover:text-brand-info">@${vid.nickname || "Player"}
+                        </p>
+                        <p class="text-xs opacity-90 shadow-black drop-shadow-md">${vid.caption}</p></div>
                         <div class="flex flex-col gap-6 items-center pointer-events-auto">
                             <div class="like-container flex flex-col items-center gap-1" data-vid="${vid.id}">
                                 <button onclick="likeVideo('${vid.id}', this)" class="hover:scale-110 transition-transform"><i class="fas fa-heart text-3xl text-white drop-shadow-md"></i></button>
@@ -1459,6 +1531,56 @@
             } catch (error) {
                 showToast("Error: " + error.message, "error");
             }
+            // Global variable untuk melacak user mana yang dilihat
+let viewedUserId = null;
+
+async function openUserProfile(userId) {
+    viewedUserId = userId;
+    switchTab('profile', null, false); // Pindah ke tab profil tanpa refresh
+    document.getElementById('profile-loading').classList.remove('hidden');
+    document.getElementById('profile-logged-in').classList.add('hidden');
+    
+    // Gunakan fungsi fetchProfile yang sudah ada, tapi arahkan ke ID orang lain
+    await fetchProfileOther(userId);
+    
+    document.getElementById('profile-loading').classList.add('hidden');
+    document.getElementById('profile-logged-in').classList.remove('hidden');
+    history.pushState({ popup: 'user_profile' }, null, `#profile?id=${userId}`);
+}
+
+async function fetchProfileOther(id) {
+    const { data } = await supabaseClient.from('profiles').select('*').eq('id', id).single();
+    if (data) { 
+        document.getElementById('profile-nickname').innerText = data.nickname || "Player";
+        document.getElementById('profile-img').src = data.avatar_url || `https://ui-avatars.com/api/?name=${data.nickname}`;
+        
+        // Cek apakah ini profil sendiri atau orang lain
+        const isOwn = (id === currentUser?.id);
+        document.getElementById('profile-email').innerText = isOwn ? currentUser.email : "Community Member";
+        document.getElementById('profile-actions').classList.toggle('hidden', !isOwn);
+        document.getElementById('btn-change-avatar').classList.toggle('hidden', !isOwn);
+        
+        renderProfileVideos(id);
+    }
+}
+
+function playFloatingVideo(url, nick, cap) {
+    const p = document.getElementById('floating-video-player');
+    const v = document.getElementById('v-floating');
+    document.getElementById('f-nickname').innerText = `@${nick}`;
+    document.getElementById('f-caption').innerText = cap;
+    v.src = url;
+    p.classList.replace('hidden', 'flex');
+    v.play();
+    history.pushState({ popup: 'floating_video' }, null);
+}
+
+function closeFloatingVideo() {
+    const p = document.getElementById('floating-video-player');
+    const v = document.getElementById('v-floating');
+    v.pause(); v.src = "";
+    p.classList.replace('flex', 'hidden');
+}
         }
 
         // TUGAS AWAL SAAT WEB DIBUKA
