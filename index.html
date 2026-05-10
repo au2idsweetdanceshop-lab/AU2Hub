@@ -81,11 +81,11 @@
         .heart-pop {
             position: fixed;
             color: #FF007A;
-            font-size: 90px;
+            font-size: 100px;
             pointer-events: none;
             z-index: 100;
             animation: heartAnim 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-            text-shadow: 0 0 20px rgba(255, 0, 122, 0.6);
+            text-shadow: 0 0 30px rgba(255, 0, 122, 0.8);
             transform: translate(-50%, -50%);
         }
         @keyframes heartAnim {
@@ -95,7 +95,7 @@
             100% { transform: translate(-50%, -150%) scale(1.5) rotate(0deg); opacity: 0; }
         }
         
-        .glass { background: rgba(26, 17, 51, 0.85); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border-top: 1px solid rgba(255, 255, 255, 0.05); }
+        .glass { background: rgba(26, 17, 51, 0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-top: 1px solid rgba(255, 255, 255, 0.05); }
         
         details > summary { list-style: none; }
         details > summary::-webkit-details-marker { display: none; }
@@ -263,23 +263,7 @@
                 </div>
 
                 <div id="feed-container" class="flex-1 overflow-y-scroll snap-y snap-mandatory hide-scroll relative w-full">
-                    <div class="w-full h-full relative bg-[#1A1133] animate-pulse flex flex-col justify-end p-6 flex-shrink-0 snap-start">
-                        <div class="absolute inset-0 flex items-center justify-center">
-                            <i class="fas fa-circle-notch fa-spin text-brand-accent text-4xl opacity-40"></i>
-                        </div>
-                        <div class="flex justify-between items-end w-full z-10">
-                            <div class="w-2/3 space-y-3">
-                                <div class="h-4 w-1/3 bg-white/10 rounded-full"></div>
-                                <div class="h-3 w-3/4 bg-white/10 rounded-full"></div>
-                                <div class="h-3 w-5/6 bg-white/10 rounded-full"></div>
-                            </div>
-                            <div class="flex flex-col gap-6 items-center">
-                                <div class="h-10 w-10 bg-white/10 rounded-full"></div>
-                                <div class="h-10 w-10 bg-white/10 rounded-full"></div>
-                            </div>
-                        </div>
                     </div>
-                </div>
             </div>
         </section>
 
@@ -411,20 +395,25 @@
 
     </main>
     
-    <div id="comment-drawer" class="fixed inset-x-0 bottom-0 z-[60] h-[65vh] glass border-t border-white/10 rounded-t-3xl comment-drawer p-6 max-w-md mx-auto">
-        <div class="flex justify-between items-center mb-4">
-            <h4 class="font-bold text-white">Komentar</h4>
-            <button onclick="closeComments()" class="text-gray-400 text-xl p-2"><i class="fas fa-times"></i></button>
-        </div>
-        <div id="comment-list" class="h-[60%] overflow-y-auto space-y-4 hide-scroll pb-4">
-            <p class="text-center text-xs text-gray-500 italic">Belum ada komentar.</p>
+    <div id="comment-drawer" class="fixed inset-x-0 bottom-0 z-[60] h-[75vh] glass border-t border-white/10 rounded-t-3xl comment-drawer flex flex-col max-w-md mx-auto">
+        <div class="flex justify-between items-center p-5 border-b border-white/5 shrink-0 bg-brand-dark/50 rounded-t-3xl">
+            <h4 class="font-bold text-white text-sm">Komentar (<span id="drawer-comment-count">0</span>)</h4>
+            <button onclick="closeComments()" class="text-gray-400 text-lg w-8 h-8 rounded-full bg-white/5 flex items-center justify-center active:scale-95 transition-colors"><i class="fas fa-times"></i></button>
         </div>
         
-        <div class="absolute bottom-6 inset-x-6 flex flex-col gap-2 bg-brand-card p-3 rounded-xl border border-white/10">
-            <input type="text" id="comment-name" placeholder="Ketik nama / nickname..." class="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-accent" maxlength="20">
+        <div id="comment-list" class="flex-1 overflow-y-auto p-5 space-y-2 hide-scroll pb-32">
+            </div>
+        
+        <div class="absolute bottom-0 w-full glass border-t border-white/5 p-4 shrink-0 pb-6 rounded-t-xl z-10">
+            <div id="reply-indicator" class="hidden flex justify-between items-center mb-2 px-1 text-[10px] text-gray-400">
+                <span>Membalas <b id="replying-to-name" class="text-brand-info"></b></span>
+                <button onclick="cancelReply()" class="hover:text-white bg-white/10 w-4 h-4 rounded-full flex items-center justify-center"><i class="fas fa-times"></i></button>
+            </div>
+            
+            <input type="text" id="comment-name" placeholder="Nickname kamu..." class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2 text-xs text-white focus:outline-none focus:border-brand-accent mb-2" maxlength="20">
             <div class="flex gap-2">
-                <input type="text" id="comment-input" placeholder="Tulis komentar..." class="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-accent">
-                <button onclick="sendComment()" class="bg-brand-accent text-white px-4 py-2 rounded-lg active:scale-95 transition-transform"><i class="fas fa-paper-plane"></i></button>
+                <input type="text" id="comment-input" placeholder="Tambahkan komentar..." class="flex-1 bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-brand-accent">
+                <button onclick="sendComment(event)" class="bg-brand-accent text-white w-12 h-[42px] rounded-xl active:scale-95 transition-transform flex items-center justify-center"><i class="fas fa-paper-plane"></i></button>
             </div>
         </div>
     </div>
@@ -559,29 +548,31 @@
         let dataRipperGlobal = []; 
         let isRipperExpanded = localStorage.getItem('statusLihatSemua') === 'true';
         let isGlobalMuted = true;
+        let allVideosData = []; 
+        let obs; 
+        let activeVideoId = null;
+        let lastTap = 0; // State untuk Double Tap Like
 
-        function toggleGlobalAudio(currentVideo) {
-            isGlobalMuted = !isGlobalMuted;
-            const allVideos = document.querySelectorAll('.video-player');
-            allVideos.forEach(v => {
-                v.muted = isGlobalMuted;
-            });
-        }
+        // State untuk Sistem Reply Komentar
+        let replyingToId = null;
+        let replyingToName = null;
 
         // --- 2. FUNGSI NAVIGASI UI ---
+        function toggleGlobalAudio(currentVideo) {
+            isGlobalMuted = !isGlobalMuted;
+            document.querySelectorAll('.video-player').forEach(v => v.muted = isGlobalMuted);
+        }
+
         function switchTab(tabId, event = null, isPush = true) {
             if (event) event.preventDefault();
-            
             if (tabId === 'layanan' && isPush && document.getElementById('pembayaran').classList.contains('active')) {
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-                return; 
+                window.scrollTo({ top: 0, behavior: 'smooth' }); return; 
             }
 
             const targetSection = document.getElementById(tabId) || document.getElementById('home');
             if (!targetSection) return;
 
             localStorage.setItem('lastTab', tabId);
-
             document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.nav-item').forEach(n => {
                 n.classList.remove('active');
@@ -590,10 +581,7 @@
             });
 
             targetSection.classList.add('active');
-
-            if (tabId === 'sosial') {
-                loadVideos();
-            }
+            if (tabId === 'sosial') loadVideos();
 
             const navMap = { 'home': 0, 'info': 1, 'layanan': 2, 'sosial': 3, 'rekber': 4, 'ripper': 5, 'pembayaran': 2 };
             const activeIndex = navMap[tabId];
@@ -602,82 +590,52 @@
                 if (activeNav) {
                     activeNav.classList.add('active');
                     const icon = activeNav.querySelector('i');
-                    if (icon) {
-                        void icon.offsetWidth; 
-                        icon.style.animation = 'popBounce 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards';
-                    }
+                    if (icon) { void icon.offsetWidth; icon.style.animation = 'popBounce 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards'; }
                 }
             }
             
             setTimeout(() => { window.scrollTo({ top: 0, behavior: 'smooth' }); }, 10);
-
-            if (isPush && window.location.hash !== `#${tabId}`) {
-                history.pushState(null, null, `#${tabId}`);
-            }
+            if (isPush && window.location.hash !== `#${tabId}`) history.pushState(null, null, `#${tabId}`);
         }
 
         window.addEventListener('popstate', () => {
             let isPopupClosed = false;
             const modalEvent = document.getElementById('modal-event');
             if (!modalEvent.classList.contains('hidden')) {
-                modalEvent.classList.add('hidden');
-                modalEvent.classList.remove('flex');
-                document.body.style.overflow = 'auto';
-                isPopupClosed = true;
+                modalEvent.classList.add('hidden'); modalEvent.classList.remove('flex');
+                document.body.style.overflow = 'auto'; isPopupClosed = true;
             }
-            
             const widget = document.getElementById('floating-widget');
             if (!widget.classList.contains('opacity-0')) {
                 widget.classList.add('opacity-0', 'pointer-events-none', 'translate-y-8', 'scale-95');
                 isPopupClosed = true;
             }
-            
             if (isPopupClosed) return;
-            const hash = window.location.hash.substring(1) || 'home';
-            switchTab(hash, null, false);
+            switchTab(window.location.hash.substring(1) || 'home', null, false);
         });
 
         function openModalEvent() {
             history.pushState({ popup: 'modal' }, null, null); 
             const modal = document.getElementById('modal-event');
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
+            modal.classList.remove('hidden'); modal.classList.add('flex');
             document.body.style.overflow = 'hidden'; 
-            setTimeout(() => {
-                const carousel = document.getElementById('image-carousel');
-                if(carousel) { carousel.scrollLeft = 0; updateCarouselDots(); }
-            }, 50);
+            setTimeout(() => { const carousel = document.getElementById('image-carousel'); if(carousel) { carousel.scrollLeft = 0; updateCarouselDots(); } }, 50);
         }
-
         function closeModalEvent() { history.back(); }
-
         function toggleWidget() {
             const widget = document.getElementById('floating-widget');
             if (widget.classList.contains('opacity-0')) {
                 history.pushState({ popup: 'widget' }, null, null); 
                 widget.classList.remove('opacity-0', 'pointer-events-none', 'translate-y-8', 'scale-95'); 
-            } else { 
-                history.back(); 
-            }
+            } else { history.back(); }
         }
 
-        // --- 3. FUNGSI RENDER DATA ---
+        // --- 3. RENDER INFO, JOKI, RIPPER ---
         function renderFaqs(data = faqs) {
             const container = document.getElementById('faq-container');
-            if (data.length === 0) {
-                container.innerHTML = `<div class="text-center text-xs text-gray-400 py-6 border border-white/5 bg-brand-card rounded-2xl"><i class="fas fa-search-minus mb-2 text-lg"></i><br>Pertanyaan tidak ditemukan.</div>`;
-                return;
-            }
-            container.innerHTML = data.map(f => `
-                <details class="bg-brand-card rounded-2xl border border-white/5 group">
-                    <summary class="flex justify-between items-center font-bold text-xs cursor-pointer text-white p-4">
-                        ${f.t} <i class="fas fa-chevron-down text-brand-accent transition-transform group-open:rotate-180"></i>
-                    </summary>
-                    <div class="px-4 pb-4 text-xs text-gray-400 leadingrelaxed border-t border-white/5 pt-3 mt-1">${f.j}</div>
-                </details>
-            `).join('');
+            if (data.length === 0) { container.innerHTML = `<div class="text-center text-xs text-gray-400 py-6 border border-white/5 bg-brand-card rounded-2xl"><i class="fas fa-search-minus mb-2 text-lg"></i><br>Pertanyaan tidak ditemukan.</div>`; return; }
+            container.innerHTML = data.map(f => `<details class="bg-brand-card rounded-2xl border border-white/5 group"><summary class="flex justify-between items-center font-bold text-xs cursor-pointer text-white p-4">${f.t} <i class="fas fa-chevron-down text-brand-accent transition-transform group-open:rotate-180"></i></summary><div class="px-4 pb-4 text-xs text-gray-400 leadingrelaxed border-t border-white/5 pt-3 mt-1">${f.j}</div></details>`).join('');
         }
-
         document.getElementById('faqSearch').addEventListener('input', (e) => {
             const val = e.target.value.toLowerCase();
             renderFaqs(faqs.filter(f => f.t.toLowerCase().includes(val) || f.j.toLowerCase().includes(val)));
@@ -685,25 +643,9 @@
 
         function renderServices(data = services) {
             const container = document.getElementById('service-list');
-            if (data.length === 0) {
-                container.innerHTML = `<div class="text-center text-xs text-gray-400 py-6 border border-white/5 bg-brand-card rounded-2xl"><i class="fas fa-search-minus mb-2 text-lg"></i><br>Layanan tidak ditemukan.</div>`;
-                return;
-            }
-            container.innerHTML = data.map(s => `
-                <div class="bg-brand-card p-4 rounded-2xl border border-white/5 flex justify-between items-center hover:border-brand-accent/30 transition-all">
-                    <div class="w-[60%]">
-                        <div class="font-bold text-sm text-white mb-1">${s.name}</div>
-                        <div class="text-[10px] text-gray-400 leading-tight">${s.desc}</div>
-                        <div class="text-[9px] text-brand-info mt-1"><i class="fas fa-check-circle mr-1"></i> Include Rekber NIKKY</div>
-                    </div>
-                    <div class="text-right flex flex-col items-end">
-                        <div class="text-brand-accent font-extrabold text-[15px] mb-2">Rp ${s.price.toLocaleString('id-ID')} <span class="text-[9px] font-normal text-gray-500">${s.label}</span></div>
-                        <button onclick="checkout('${s.name}', ${s.price})" class="bg-brand-accent/10 text-brand-accent text-[10px] font-bold px-5 py-2 rounded-full border border-brand-accent/30 active:scale-90 transition-transform">BELI</button>
-                    </div>
-                </div>
-            `).join('');
+            if (data.length === 0) { container.innerHTML = `<div class="text-center text-xs text-gray-400 py-6 border border-white/5 bg-brand-card rounded-2xl"><i class="fas fa-search-minus mb-2 text-lg"></i><br>Layanan tidak ditemukan.</div>`; return; }
+            container.innerHTML = data.map(s => `<div class="bg-brand-card p-4 rounded-2xl border border-white/5 flex justify-between items-center hover:border-brand-accent/30 transition-all"><div class="w-[60%]"><div class="font-bold text-sm text-white mb-1">${s.name}</div><div class="text-[10px] text-gray-400 leading-tight">${s.desc}</div><div class="text-[9px] text-brand-info mt-1"><i class="fas fa-check-circle mr-1"></i> Include Rekber NIKKY</div></div><div class="text-right flex flex-col items-end"><div class="text-brand-accent font-extrabold text-[15px] mb-2">Rp ${s.price.toLocaleString('id-ID')} <span class="text-[9px] font-normal text-gray-500">${s.label}</span></div><button onclick="checkout('${s.name}', ${s.price})" class="bg-brand-accent/10 text-brand-accent text-[10px] font-bold px-5 py-2 rounded-full border border-brand-accent/30 active:scale-90 transition-transform">BELI</button></div></div>`).join('');
         }
-
         document.getElementById('serviceSearch').addEventListener('input', (e) => {
             const val = e.target.value.toLowerCase();
             renderServices(services.filter(s => s.name.toLowerCase().includes(val) || s.desc.toLowerCase().includes(val)));
@@ -715,11 +657,8 @@
             document.getElementById('pay-product').innerText = name;
             document.getElementById('nominal-asli').value = price;
             const noWA = "6283815584661";
-            
             const teksWA = encodeURIComponent(`Halo Admin Joki AU2Hub,\n\nSaya ingin mengkonfirmasi pembayaran pesanan saya:\n\nPaket : *${name}*\nTotal : *Rp ${hargaRupiah}*\n\n(Berikut ini saya lampirkan gambar bukti transfer QRIS / screenshot)`);
-            const linkWA = `https://wa.me/${noWA}?text=${teksWA}`;
-            
-            document.getElementById('wa-confirm').setAttribute('href', linkWA);
+            document.getElementById('wa-confirm').setAttribute('href', `https://wa.me/${noWA}?text=${teksWA}`);
             switchTab('pembayaran');
         }
 
@@ -728,538 +667,362 @@
             const btnSalin = document.getElementById('btn-salin');
             const teksAsli = btnSalin.innerHTML;
             if (navigator.clipboard && window.isSecureContext) { navigator.clipboard.writeText(nominalMurni); } 
-            else {
-                let tempInput = document.createElement("textarea");
-                tempInput.value = nominalMurni;
-                tempInput.style.position = "fixed"; tempInput.style.left = "-9999px";
-                document.body.appendChild(tempInput); tempInput.select();
-                try { document.execCommand("copy"); } catch (err) {}
-                document.body.removeChild(tempInput);
-            }
+            else { let tempInput = document.createElement("textarea"); tempInput.value = nominalMurni; tempInput.style.position = "fixed"; tempInput.style.left = "-9999px"; document.body.appendChild(tempInput); tempInput.select(); try { document.execCommand("copy"); } catch (err) {} document.body.removeChild(tempInput); }
             btnSalin.innerHTML = '<i class="fas fa-check mr-1.5"></i> Tersalin';
-            btnSalin.classList.replace('text-brand-info', 'text-brand-success');
-            btnSalin.classList.replace('bg-brand-info/10', 'bg-brand-success/10');
-            btnSalin.classList.replace('border-brand-info/30', 'border-brand-success/30');
-            setTimeout(() => {
-                btnSalin.innerHTML = teksAsli;
-                btnSalin.classList.replace('text-brand-success', 'text-brand-info');
-                btnSalin.classList.replace('bg-brand-success/10', 'bg-brand-info/10');
-                btnSalin.classList.replace('border-brand-success/30', 'border-brand-info/30');
-            }, 2000);
+            btnSalin.classList.replace('text-brand-info', 'text-brand-success'); btnSalin.classList.replace('bg-brand-info/10', 'bg-brand-success/10'); btnSalin.classList.replace('border-brand-info/30', 'border-brand-success/30');
+            setTimeout(() => { btnSalin.innerHTML = teksAsli; btnSalin.classList.replace('text-brand-success', 'text-brand-info'); btnSalin.classList.replace('bg-brand-success/10', 'bg-brand-info/10'); btnSalin.classList.replace('border-brand-success/30', 'border-brand-info/30'); }, 2000);
         }
 
-        // --- 4. FUNGSI DATABASE OTOMATIS ---
         async function muatDataRipper() {
             const linkAPI = "/api/ripper";
             const container = document.getElementById('ripper-container');
-            
             const dataTersimpan = localStorage.getItem('ripperCache');
-            if (dataTersimpan) {
-                dataRipperGlobal = JSON.parse(dataTersimpan);
-                renderRippers(dataRipperGlobal, false);
-            } else {
-                container.innerHTML = '<div class="text-center py-10 text-xs text-brand-info animate-pulse"><i class="fas fa-sync fa-spin mb-2 text-2xl"></i><br>Menyiapkan Database Pertama Kali...</div>';
-            }
-
-            try {
-                const respon = await fetch(linkAPI);
-                const dataBaru = await respon.json();
-                
-                localStorage.setItem('ripperCache', JSON.stringify(dataBaru));
-                dataRipperGlobal = dataBaru;
-                
-                renderRippers(dataRipperGlobal, false);
-            } catch (error) {
-                if (!dataTersimpan) {
-                    container.innerHTML = '<div class="text-center py-10 text-xs text-red-500"><i class="fas fa-exclamation-triangle mb-2 text-2xl"></i><br>Gagal terhubung ke database. Cek koneksi internet.</div>';
-                }
-            }
+            if (dataTersimpan) { dataRipperGlobal = JSON.parse(dataTersimpan); renderRippers(dataRipperGlobal, false); } 
+            else { container.innerHTML = '<div class="text-center py-10 text-xs text-brand-info animate-pulse"><i class="fas fa-sync fa-spin mb-2 text-2xl"></i><br>Menyiapkan Database Pertama Kali...</div>'; }
+            try { const respon = await fetch(linkAPI); const dataBaru = await respon.json(); localStorage.setItem('ripperCache', JSON.stringify(dataBaru)); dataRipperGlobal = dataBaru; renderRippers(dataRipperGlobal, false); } 
+            catch (error) { if (!dataTersimpan) { container.innerHTML = '<div class="text-center py-10 text-xs text-red-500"><i class="fas fa-exclamation-triangle mb-2 text-2xl"></i><br>Gagal terhubung ke database.</div>'; } }
         }
 
         function renderRippers(data, isSearch = false) {
             const container = document.getElementById('ripper-container');
             document.getElementById('ripper-count').innerText = `${dataRipperGlobal.length} Total Data`;
-            
-            if(data.length === 0) {
-                container.innerHTML = `
-                    <div class="text-center py-10 px-4">
-                        <i class="fas fa-check-circle text-brand-success text-3xl mb-2"></i>
-                        <div class="text-xs text-gray-400">Pencarian aman.<br>(Namun tetap waspada & gunakan Rekber)</div>
-                    </div>`;
-                return;
-            }
-
+            if(data.length === 0) { container.innerHTML = `<div class="text-center py-10 px-4"><i class="fas fa-check-circle text-brand-success text-3xl mb-2"></i><div class="text-xs text-gray-400">Pencarian aman.<br>(Tetap waspada & gunakan Rekber)</div></div>`; return; }
             const limitBatas = (!isSearch && !isRipperExpanded) ? 5 : data.length;
             const dataYangDitampilkan = data.slice(0, limitBatas);
-
-            let htmlString = dataYangDitampilkan.map(r => {
-                const nama = r["Nama / Keterangan"] || r.nama || r.Nama || "Tanpa Nama";
-                const idGame = r["ID"] || r.id || "-";
-                const rekening = r["Rekening / Kontak (WA/Dana)"] || r.rekening || r.Rekening || "-";
-
-                return `
-                <div class="p-4 border-b border-white/5 last:border-0 hover:bg-white/5 transition-colors">
-                    <div class="flex justify-between items-start mb-1">
-                        <div class="font-bold text-xs text-white">${nama}</div>
-                        <div class="text-[9px] text-red-500 font-bold bg-red-500/10 px-2 py-0.5 rounded border border-red-500/20 whitespace-nowrap ml-2"><i class="fas fa-ban mr-1"></i> RIPPER</div>
-                    </div>
-                    <div class="text-[10px] text-brand-info font-mono mb-1">ID: ${idGame}</div>
-                    <div class="text-[10px] text-gray-400"><i class="fas fa-credit-card mr-1"></i> ${rekening}</div>
-                </div>
-                `;
-            }).join('');
-
+            let htmlString = dataYangDitampilkan.map(r => `<div class="p-4 border-b border-white/5 last:border-0 hover:bg-white/5 transition-colors"><div class="flex justify-between items-start mb-1"><div class="font-bold text-xs text-white">${r["Nama / Keterangan"] || r.nama || r.Nama || "Tanpa Nama"}</div><div class="text-[9px] text-red-500 font-bold bg-red-500/10 px-2 py-0.5 rounded border border-red-500/20 whitespace-nowrap ml-2"><i class="fas fa-ban mr-1"></i> RIPPER</div></div><div class="text-[10px] text-brand-info font-mono mb-1">ID: ${r["ID"] || r.id || "-"}</div><div class="text-[10px] text-gray-400"><i class="fas fa-credit-card mr-1"></i> ${r["Rekening / Kontak (WA/Dana)"] || r.rekening || r.Rekening || "-"}</div></div>`).join('');
             container.innerHTML = htmlString;
-
-            if (!isSearch && !isRipperExpanded && data.length > 5) {
-                container.innerHTML += `
-                    <div id="wadah-tombol-semua" class="p-5 text-center bg-black/20 mt-1 border-t border-white/5">
-                        <button onclick="tampilkanSemuaRipper(this)" class="bg-brand-accent/20 border border-brand-accent/40 text-brand-accent text-xs font-bold py-2.5 px-6 rounded-full active:scale-95 transition-all w-full flex items-center justify-center">
-                            <i class="fas fa-list-ul mr-2"></i> Tampilkan Semua Laporan
-                        </button>
-                    </div>
-                `;
-            }
+            if (!isSearch && !isRipperExpanded && data.length > 5) { container.innerHTML += `<div id="wadah-tombol-semua" class="p-5 text-center bg-black/20 mt-1 border-t border-white/5"><button onclick="tampilkanSemuaRipper(this)" class="bg-brand-accent/20 border border-brand-accent/40 text-brand-accent text-xs font-bold py-2.5 px-6 rounded-full active:scale-95 transition-all w-full flex items-center justify-center"><i class="fas fa-list-ul mr-2"></i> Tampilkan Semua Laporan</button></div>`; }
         }
 
         function tampilkanSemuaRipper(tombol) {
-            isRipperExpanded = true;
-            localStorage.setItem('statusLihatSemua', 'true'); 
-            
-            tombol.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Membuka Data...';
-            tombol.classList.add('opacity-70', 'scale-95');
-
+            isRipperExpanded = true; localStorage.setItem('statusLihatSemua', 'true'); 
+            tombol.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Membuka Data...'; tombol.classList.add('opacity-70', 'scale-95');
             setTimeout(() => {
-                const wadahTombol = document.getElementById('wadah-tombol-semua');
-                if (wadahTombol) wadahTombol.remove();
-
+                const wadahTombol = document.getElementById('wadah-tombol-semua'); if (wadahTombol) wadahTombol.remove();
                 const sisaData = dataRipperGlobal.slice(5);
-
-                let htmlSisa = sisaData.map((r, index) => {
-                    const nama = r["Nama / Keterangan"] || r.nama || r.Nama || "Tanpa Nama";
-                    const idGame = r["ID"] || r.id || "-";
-                    const rekening = r["Rekening / Kontak (WA/Dana)"] || r.rekening || r.Rekening || "-";
-                    const delayAnimasi = index < 5 ? (index * 0.05) : 0; 
-
-                    return `
-                    <div class="p-4 border-b border-white/5 last:border-0 hover:bg-white/5 transition-colors smooth-reveal" style="animation-delay: ${delayAnimasi}s; opacity: 0;">
-                        <div class="flex justify-between items-start mb-1">
-                            <div class="font-bold text-xs text-white">${nama}</div>
-                            <div class="text-[9px] text-red-500 font-bold bg-red-500/10 px-2 py-0.5 rounded border border-red-500/20 whitespace-nowrap ml-2"><i class="fas fa-ban mr-1"></i> RIPPER</div>
-                        </div>
-                        <div class="text-[10px] text-brand-info font-mono mb-1">ID: ${idGame}</div>
-                        <div class="text-[10px] text-gray-400"><i class="fas fa-credit-card mr-1"></i> ${rekening}</div>
-                    </div>
-                    `;
-                }).join('');
-
+                let htmlSisa = sisaData.map((r, index) => `<div class="p-4 border-b border-white/5 last:border-0 hover:bg-white/5 transition-colors smooth-reveal" style="animation-delay: ${index < 5 ? (index * 0.05) : 0}s; opacity: 0;"><div class="flex justify-between items-start mb-1"><div class="font-bold text-xs text-white">${r["Nama / Keterangan"] || r.nama || r.Nama || "Tanpa Nama"}</div><div class="text-[9px] text-red-500 font-bold bg-red-500/10 px-2 py-0.5 rounded border border-red-500/20 whitespace-nowrap ml-2"><i class="fas fa-ban mr-1"></i> RIPPER</div></div><div class="text-[10px] text-brand-info font-mono mb-1">ID: ${r["ID"] || r.id || "-"}</div><div class="text-[10px] text-gray-400"><i class="fas fa-credit-card mr-1"></i> ${r["Rekening / Kontak (WA/Dana)"] || r.rekening || r.Rekening || "-"}</div></div>`).join('');
                 document.getElementById('ripper-container').insertAdjacentHTML('beforeend', htmlSisa);
             }, 150); 
         }
 
         document.getElementById('ripperSearch').addEventListener('input', (e) => {
             const val = e.target.value.toLowerCase();
-            
-            if(val === '') {
-                renderRippers(dataRipperGlobal, false);
-                return;
-            }
-
-            const hasilFilter = dataRipperGlobal.filter(r => {
-                const nama = (r["Nama / Keterangan"] || r.nama || r.Nama || "").toLowerCase();
-                const idGame = (r["ID"] || r.id || "").toLowerCase();
-                const rekening = (r["Rekening / Kontak (WA/Dana)"] || r.rekening || r.Rekening || "").toLowerCase();
-                return nama.includes(val) || idGame.includes(val) || rekening.includes(val);
-            });
-            
+            if(val === '') { renderRippers(dataRipperGlobal, false); return; }
+            const hasilFilter = dataRipperGlobal.filter(r => { const nama = (r["Nama / Keterangan"] || r.nama || r.Nama || "").toLowerCase(); const idGame = (r["ID"] || r.id || "").toLowerCase(); const rekening = (r["Rekening / Kontak (WA/Dana)"] || r.rekening || r.Rekening || "").toLowerCase(); return nama.includes(val) || idGame.includes(val) || rekening.includes(val); });
             renderRippers(hasilFilter, true); 
         });
 
         function updateCarouselDots() {
-            const carousel = document.getElementById('image-carousel');
-            const dots = document.querySelectorAll('.dot-indicator');
-            if (!carousel || dots.length === 0) return;
-            const maxScroll = carousel.scrollWidth - carousel.clientWidth;
-            if (maxScroll <= 0) return;
-            let activeIndex = Math.round((carousel.scrollLeft / maxScroll) * (dots.length - 1));
-            activeIndex = Math.max(0, Math.min(activeIndex, dots.length - 1));
-            dots.forEach((dot, index) => {
-                if (index === activeIndex) { dot.className = "dot-indicator h-1.5 rounded-full transition-all duration-300 w-4 bg-brand-accent"; } 
-                else { dot.className = "dot-indicator h-1.5 rounded-full transition-all duration-300 w-1.5 bg-white/40"; }
-            });
+            const carousel = document.getElementById('image-carousel'); const dots = document.querySelectorAll('.dot-indicator');
+            if (!carousel || dots.length === 0) return; const maxScroll = carousel.scrollWidth - carousel.clientWidth; if (maxScroll <= 0) return;
+            let activeIndex = Math.round((carousel.scrollLeft / maxScroll) * (dots.length - 1)); activeIndex = Math.max(0, Math.min(activeIndex, dots.length - 1));
+            dots.forEach((dot, index) => { if (index === activeIndex) { dot.className = "dot-indicator h-1.5 rounded-full transition-all duration-300 w-4 bg-brand-accent"; } else { dot.className = "dot-indicator h-1.5 rounded-full transition-all duration-300 w-1.5 bg-white/40"; } });
         }
-        
-        let activeVideoId = null;
 
-        // --- FUNGSI KOMENTAR & LIKE (SUPABASE) ---
+        // --- 4. SISTEM KOMENTAR (BALAS, LIKE, SEMBUNYIKAN) ---
         function openComments(id) {
-            activeVideoId = id;
-            document.getElementById('comment-drawer').classList.add('open');
-            loadComments(id); 
+            activeVideoId = id; document.getElementById('comment-drawer').classList.add('open'); loadComments(id); 
         }
 
         function closeComments() {
-            document.getElementById('comment-drawer').classList.remove('open');
+            document.getElementById('comment-drawer').classList.remove('open'); cancelReply();
         }
 
         async function loadComments(videoId) {
             const list = document.getElementById('comment-list');
-            list.innerHTML = '<p class="text-center text-xs text-brand-info animate-pulse">Memuat komentar...</p>'; 
+            list.innerHTML = '<div class="flex justify-center mt-10"><i class="fas fa-spinner fa-spin text-brand-accent text-3xl"></i></div>'; 
+            cancelReply();
 
             try {
                 const response = await fetch(`/api/comment?video_id=${videoId}`);
                 const data = await response.json();
-
+                
+                document.getElementById('drawer-comment-count').innerText = data.length || 0;
                 list.innerHTML = ''; 
+
                 if (data && data.length > 0) {
-                    data.forEach(c => {
-                        list.innerHTML += `
-                        <div class="border-b border-white/5 pb-3">
-                            <div class="flex items-center gap-2 mb-1">
-                                <div class="w-6 h-6 rounded-full bg-brand-accent/20 text-brand-accent flex items-center justify-center text-[10px] font-bold">
-                                    ${c.nickname.charAt(0).toUpperCase()}
-                                </div>
-                                <b class="text-brand-info text-xs">${c.nickname}</b>
-                            </div>
-                            <span class="text-gray-300 text-xs pl-8">${c.message}</span>
-                        </div>`;
+                    const mainComments = data.filter(c => !c.parent_id);
+                    const replies = data.filter(c => c.parent_id);
+
+                    if(mainComments.length === 0) {
+                        list.innerHTML = '<p class="text-center text-xs text-gray-500 italic mt-10">Belum ada komentar.</p>';
+                        return;
+                    }
+
+                    let htmlOutput = '';
+                    mainComments.forEach(c => {
+                        const childReplies = replies.filter(r => r.parent_id == c.id);
+                        htmlOutput += buildCommentHTML(c, childReplies);
                     });
+                    list.innerHTML = htmlOutput;
+
+                    setTimeout(() => { data.forEach(c => fetchCommentLikes(c.id)); }, 50);
                 } else {
-                    list.innerHTML = '<p class="text-center text-xs text-gray-500 italic">Belum ada komentar. Jadilah yang pertama!</p>';
+                    list.innerHTML = '<p class="text-center text-xs text-gray-500 italic mt-10">Jadilah yang pertama berkomentar!</p>';
                 }
-            } catch(e) {
-                list.innerHTML = '<p class="text-center text-xs text-red-500">Gagal memuat komentar.</p>';
-            }
+            } catch(e) { list.innerHTML = '<p class="text-center text-xs text-red-500 mt-10">Gagal memuat komentar.</p>'; }
         }
 
-        async function sendComment() {
-            const nameInput = document.getElementById('comment-name');
-            const msgInput = document.getElementById('comment-input');
-            const name = nameInput.value.trim();
-            const msg = msgInput.value.trim();
+        function buildCommentHTML(comment, replies = []) {
+            let html = `
+            <div class="flex items-start gap-3 mb-5">
+                <div class="w-8 h-8 rounded-full bg-brand-accent/20 text-brand-accent flex-shrink-0 flex items-center justify-center text-xs font-bold mt-1">${comment.nickname.charAt(0).toUpperCase()}</div>
+                <div class="flex-1">
+                    <div class="flex justify-between items-start">
+                        <div class="pr-2">
+                            <b class="text-brand-info text-[11px]">${comment.nickname}</b>
+                            <p class="text-gray-200 text-xs mt-0.5 leading-relaxed break-words">${comment.message}</p>
+                            <div class="flex items-center gap-4 mt-1.5"><span class="text-[9px] text-gray-600">Baru saja</span><button onclick="setReply('${comment.id}', '${comment.nickname}')" class="text-[10px] text-gray-400 font-bold hover:text-white">Balas</button></div>
+                        </div>
+                        <div class="flex flex-col items-center gap-1 ml-1 shrink-0">
+                            <button onclick="likeComment('${comment.id}', this)" class="text-gray-500 hover:text-brand-accent transition-colors active:scale-75"><i class="fas fa-heart text-sm ${localStorage.getItem('comment_liked_'+comment.id) ? 'text-brand-accent' : ''}"></i></button>
+                            <span class="text-[9px] text-gray-500 font-medium comment-like-count" data-cid="${comment.id}">0</span>
+                        </div>
+                    </div>`;
 
-            if (!name) return alert("Silakan isi nama / nickname kamu dulu!");
+            if (replies.length > 0) {
+                html += `
+                    <div class="mt-2">
+                        <button onclick="toggleReplies('${comment.id}')" class="text-[10px] text-brand-info font-bold flex items-center gap-1.5 active:scale-95 transition-transform"><span class="w-5 h-[1px] bg-brand-info/50 inline-block"></span> Lihat ${replies.length} balasan <i class="fas fa-chevron-down text-[8px] transition-transform duration-300" id="icon-reply-${comment.id}"></i></button>
+                        <div id="replies-${comment.id}" class="hidden mt-3 space-y-4 pl-3 border-l border-white/10 relative">`;
+                
+                replies.forEach(r => {
+                    html += `
+                            <div class="flex items-start gap-2 relative">
+                                <div class="w-6 h-6 rounded-full bg-brand-purple/20 text-brand-purple flex-shrink-0 flex items-center justify-center text-[9px] font-bold mt-0.5">${r.nickname.charAt(0).toUpperCase()}</div>
+                                <div class="flex-1">
+                                    <div class="flex justify-between items-start">
+                                        <div class="pr-2">
+                                            <b class="text-brand-purple text-[10px]">${r.nickname}</b>
+                                            <p class="text-gray-300 text-[11px] mt-0.5 leading-relaxed break-words">${r.message}</p>
+                                            <div class="flex items-center gap-3 mt-1"><button onclick="setReply('${comment.id}', '${r.nickname}')" class="text-[9px] text-gray-500 font-bold hover:text-white">Balas</button></div>
+                                        </div>
+                                        <div class="flex flex-col items-center gap-1 ml-1 shrink-0">
+                                            <button onclick="likeComment('${r.id}', this)" class="text-gray-500 hover:text-brand-accent transition-colors active:scale-75"><i class="fas fa-heart text-[11px] ${localStorage.getItem('comment_liked_'+r.id) ? 'text-brand-accent' : ''}"></i></button>
+                                            <span class="text-[8px] text-gray-500 comment-like-count" data-cid="${r.id}">0</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>`;
+                });
+                html += `</div></div>`;
+            }
+            html += `</div></div>`; return html;
+        }
+
+        function toggleReplies(id) {
+            const div = document.getElementById('replies-'+id); const icon = document.getElementById('icon-reply-'+id);
+            if(div.classList.contains('hidden')) { div.classList.remove('hidden'); icon.style.transform = 'rotate(180deg)'; } 
+            else { div.classList.add('hidden'); icon.style.transform = 'rotate(0deg)'; }
+        }
+
+        function setReply(parentId, nickname) {
+            replyingToId = parentId; replyingToName = nickname;
+            document.getElementById('reply-indicator').classList.remove('hidden');
+            document.getElementById('replying-to-name').innerText = '@' + nickname;
+            const input = document.getElementById('comment-input'); input.focus();
+            if(nickname) input.value = `@${nickname} `;
+        }
+
+        function cancelReply() {
+            replyingToId = null; replyingToName = null;
+            document.getElementById('reply-indicator').classList.add('hidden');
+            const input = document.getElementById('comment-input');
+            if (input.value.startsWith('@')) input.value = '';
+        }
+
+        async function sendComment(event) {
+            const btn = event.currentTarget;
+            const nameInput = document.getElementById('comment-name'); const msgInput = document.getElementById('comment-input');
+            const name = nameInput.value.trim(); const msg = msgInput.value.trim();
+
+            if (!name) return alert("Silakan isi Nickname kamu dulu!");
             if (!msg) return alert("Komentarnya tidak boleh kosong!");
 
             localStorage.setItem('guest_name', name);
-
-            const btn = event.currentTarget;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-            btn.disabled = true;
+            const iconAsli = btn.innerHTML; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>'; btn.disabled = true;
 
             try {
+                const payload = { video_id: activeVideoId, nickname: name, message: msg };
+                if (replyingToId) payload.parent_id = replyingToId;
+
                 const response = await fetch('/api/comment', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ video_id: activeVideoId, nickname: name, message: msg })
+                    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
                 });
 
                 if (response.ok) {
-                    msgInput.value = '';
-                    loadComments(activeVideoId);
+                    msgInput.value = ''; loadComments(activeVideoId);
+                    const container = document.querySelector(`.comment-count-container[data-vid="${activeVideoId}"]`);
+                    if(container) updateCommentCountUI(activeVideoId, container);
                 }
-            } catch(e) {
-                alert("Gagal mengirim komentar.");
-            } finally {
-                btn.innerHTML = '<i class="fas fa-paper-plane"></i>';
-                btn.disabled = false;
-            }
+            } catch(e) { alert("Gagal mengirim komentar."); } 
+            finally { btn.innerHTML = iconAsli; btn.disabled = false; }
         }
 
+        async function fetchCommentLikes(cid) {
+            try { const res = await fetch(`/api/comment_like?comment_id=${cid}`); const data = await res.json(); const span = document.querySelector(`.comment-like-count[data-cid="${cid}"]`); if(span) span.innerText = data.count || 0; } catch(e) {}
+        }
+
+        async function likeComment(cid, btn) {
+            if(localStorage.getItem('comment_liked_'+cid)) return; 
+            const icon = btn.querySelector('i'); icon.classList.remove('text-gray-500'); icon.classList.add('text-brand-accent', 'animate-ping'); setTimeout(() => icon.classList.remove('animate-ping'), 500);
+            try {
+                const res = await fetch('/api/comment_like', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({comment_id: cid}) });
+                if(res.ok) { localStorage.setItem('comment_liked_'+cid, 'true'); fetchCommentLikes(cid); }
+            } catch(e) { icon.classList.add('text-gray-500'); icon.classList.remove('text-brand-accent'); }
+        }
+
+        // --- 5. FUNGSI SOSIAL (VIDEO FEED & DOUBLE TAP LIKES) ---
         async function updateLikeCountUI(videoId, containerDiv) {
             try {
-                const response = await fetch(`/api/like?video_id=${videoId}`);
-                const data = await response.json();
-                
+                const response = await fetch(`/api/like?video_id=${videoId}`); const data = await response.json();
                 const countSpan = containerDiv.querySelector('.like-count-display');
-                if (countSpan && data.count !== undefined) {
-                    countSpan.innerText = data.count;
-                }
-
-                const icon = containerDiv.querySelector('i');
-                if(localStorage.getItem(`liked_${videoId}`)) {
-                    icon.classList.replace('text-white', 'text-brand-accent');
-                }
+                if (countSpan && data.count !== undefined) countSpan.innerText = data.count;
+                if(localStorage.getItem(`liked_${videoId}`)) containerDiv.querySelector('i').classList.replace('text-white', 'text-brand-accent');
             } catch(e) {}
         }
 
         async function updateCommentCountUI(videoId, containerDiv) {
             try {
-                const response = await fetch(`/api/comment?video_id=${videoId}`);
-                const data = await response.json();
-                
+                const response = await fetch(`/api/comment?video_id=${videoId}`); const data = await response.json();
                 const countSpan = containerDiv.querySelector('.comment-count-display');
-                if (countSpan && Array.isArray(data)) {
-                    countSpan.innerText = data.length;
-                }
+                if (countSpan && Array.isArray(data)) countSpan.innerText = data.length;
             } catch(e) {}
         }
 
         async function likeVideo(videoId, btn) {
             if(localStorage.getItem(`liked_${videoId}`)) return; 
-
-            const icon = btn.querySelector('i');
-            icon.classList.replace('text-white', 'text-brand-accent');
-            icon.classList.add('animate-ping');
-            setTimeout(() => icon.classList.remove('animate-ping'), 500);
-
+            const icon = btn.querySelector('i'); icon.classList.replace('text-white', 'text-brand-accent'); icon.classList.add('animate-ping'); setTimeout(() => icon.classList.remove('animate-ping'), 500);
             try {
-                const response = await fetch('/api/like', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ video_id: videoId })
-                });
-                
-                if (response.ok) {
-                    localStorage.setItem(`liked_${videoId}`, 'true'); 
-                    const container = btn.closest('.like-container');
-                    updateLikeCountUI(videoId, container);
-                }
-            } catch (e) { 
-                icon.classList.replace('text-brand-accent', 'text-white'); 
-            }
+                const response = await fetch('/api/like', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ video_id: videoId }) });
+                if (response.ok) { localStorage.setItem(`liked_${videoId}`, 'true'); updateLikeCountUI(videoId, btn.closest('.like-container')); }
+            } catch (e) { icon.classList.replace('text-brand-accent', 'text-white'); }
         }
 
-        // --- 5. FUNGSI SOSIAL (TIKTOK MODE + DOUBLE TAP) ---
-        let allVideosData = []; 
-        let obs; 
-        let lastTap = 0; // Menyimpan waktu ketukan terakhir
+        function handleVideoError(videoElement) { const container = videoElement.closest('.snap-start'); if (container) container.remove(); }
 
-        function handleVideoError(videoElement) {
-            const container = videoElement.closest('.snap-start');
-            if (container) container.remove();
-        }
-
-        // FITUR DOUBLE TAP DETECTOR
+        // DOUBLE TAP LOGIC + HATI POP UP
         function handleVideoClick(event, video, vidId) {
             const now = Date.now();
-            const TIMESLOT = 300; // Maksimal jeda 0.3 detik untuk double tap
-            
+            const TIMESLOT = 300; 
             if (now - lastTap < TIMESLOT) {
-                // --- KETUK 2X (LIKE) ---
                 const container = video.closest('.snap-start');
                 const likeBtn = container.querySelector('.like-container button');
                 likeVideo(vidId, likeBtn);
                 createHeartAt(event);
             } else {
-                // --- KETUK 1X (MUTE/UNMUTE) ---
-                setTimeout(() => {
-                    if (Date.now() - lastTap >= TIMESLOT) {
-                        toggleGlobalAudio(video);
-                    }
-                }, TIMESLOT);
+                setTimeout(() => { if (Date.now() - lastTap >= TIMESLOT) toggleGlobalAudio(video); }, TIMESLOT);
             }
             lastTap = now;
         }
 
-        // FITUR ANIMASI HATI POP-UP
         function createHeartAt(event) {
             const heart = document.createElement('i');
             heart.className = 'fas fa-heart heart-pop';
-            
-            // Mengambil titik koordinat sentuhan di HP atau klik di PC
-            const x = event.clientX || (event.touches && event.touches[0].clientX);
-            const y = event.clientY || (event.touches && event.touches[0].clientY);
-            
-            heart.style.left = `${x}px`;
-            heart.style.top = `${y}px`;
-            
+            const x = event.clientX || (event.touches && event.touches[0].clientX) || (window.innerWidth / 2);
+            const y = event.clientY || (event.touches && event.touches[0].clientY) || (window.innerHeight / 2);
+            heart.style.left = `${x}px`; heart.style.top = `${y}px`;
             document.body.appendChild(heart);
-            setTimeout(() => heart.remove(), 800); // Bersihkan sisa animasi
+            setTimeout(() => heart.remove(), 800); 
         }
 
         function setupVideoObserver() {
             obs = new IntersectionObserver(es => {
                 es.forEach(e => { 
                     if (e.isIntersecting) {
-                        e.target.play().catch(() => {});
-                        e.target.muted = isGlobalMuted; 
-                        
+                        e.target.play().catch(() => {}); e.target.muted = isGlobalMuted; 
                         let currentContainer = e.target.closest('.snap-start');
                         for(let j = 0; j < 2; j++) { 
                             currentContainer = currentContainer?.nextElementSibling;
                             if(currentContainer) {
                                 const nextVid = currentContainer.querySelector('video');
-                                if(nextVid && nextVid.getAttribute('preload') !== 'auto') {
-                                    nextVid.setAttribute('preload', 'auto');
-                                }
+                                if(nextVid && nextVid.getAttribute('preload') !== 'auto') nextVid.setAttribute('preload', 'auto');
                             }
                         }
-                    } else {
-                        e.target.pause();
-                    }
+                    } else { e.target.pause(); }
                 });
             }, { threshold: 0.6 });
         }
 
         async function loadVideos() {
-            const container = document.getElementById('feed-container');
-            const fakeLoader = document.getElementById('fake-loader');
-            const fakeProgress = document.getElementById('fake-progress');
-            
+            const container = document.getElementById('feed-container'); const fakeLoader = document.getElementById('fake-loader'); const fakeProgress = document.getElementById('fake-progress');
             const isFirstTime = !localStorage.getItem('hasVisitedSosial');
             if (obs) obs.disconnect(); 
-            
             try {
-                if (allVideosData.length === 0) {
-                    container.innerHTML = `
-                        <div class="w-full h-full relative bg-[#1A1133] animate-pulse flex flex-col justify-end p-6 flex-shrink-0 snap-start">
-                            <div class="absolute inset-0 flex items-center justify-center">
-                                <i class="fas fa-circle-notch fa-spin text-brand-accent text-4xl opacity-40"></i>
-                            </div>
-                        </div>`;
-                }
-
-                const res = await fetch('/api/get-videos');
-                let dataDariSheet = await res.json();
-                
-                for (let i = dataDariSheet.length - 1; i > 0; i--) {
-                    const j = Math.floor(Math.random() * (i + 1));
-                    [dataDariSheet[i], dataDariSheet[j]] = [dataDariSheet[j], dataDariSheet[i]];
-                }
-                
-                allVideosData = dataDariSheet; 
-                container.innerHTML = ''; 
-                
-                if (!allVideosData.length) {
-                    container.innerHTML = '<p class="text-center py-20 text-gray-500">Belum ada video.</p>';
-                    return;
-                }
-
+                if (allVideosData.length === 0) container.innerHTML = `<div class="w-full h-full relative bg-[#1A1133] animate-pulse flex flex-col justify-end p-6 flex-shrink-0 snap-start"><div class="absolute inset-0 flex items-center justify-center"><i class="fas fa-circle-notch fa-spin text-brand-accent text-4xl opacity-40"></i></div></div>`;
+                const res = await fetch('/api/get-videos'); let dataDariSheet = await res.json();
+                for (let i = dataDariSheet.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [dataDariSheet[i], dataDariSheet[j]] = [dataDariSheet[j], dataDariSheet[i]]; }
+                allVideosData = dataDariSheet; container.innerHTML = ''; 
+                if (!allVideosData.length) { container.innerHTML = '<p class="text-center py-20 text-gray-500">Belum ada video.</p>'; return; }
                 if (isFirstTime) {
-                    fakeLoader.classList.remove('hidden'); 
-                    fakeLoader.classList.add('flex');
-                    fakeProgress.style.transition = 'width 15s cubic-bezier(0.1, 0.7, 1.0, 0.1)';
+                    fakeLoader.classList.remove('hidden'); fakeLoader.classList.add('flex'); fakeProgress.style.transition = 'width 15s cubic-bezier(0.1, 0.7, 1.0, 0.1)';
                     setTimeout(() => { fakeProgress.style.width = '80%'; }, 100);
-
-                    setupVideoObserver();
-                    renderVideoBatch(); 
-
-                    const videosInDOM = document.querySelectorAll('.video-player');
-                    const targetCount = Math.min(10, videosInDOM.length); 
-                    let readyCount = 0;
-                    let isResolved = false;
-
+                    setupVideoObserver(); renderVideoBatch(); 
+                    const videosInDOM = document.querySelectorAll('.video-player'); const targetCount = Math.min(10, videosInDOM.length); 
+                    let readyCount = 0; let isResolved = false;
                     const finishLoading = () => {
-                        if (isResolved) return; 
-                        isResolved = true;
-                        fakeProgress.style.transition = 'width 0.4s ease-out';
-                        fakeProgress.style.width = '100%';
-                        setTimeout(() => {
-                            fakeLoader.classList.add('opacity-0');
-                            setTimeout(() => {
-                                fakeLoader.classList.add('hidden');
-                                fakeLoader.classList.remove('flex');
-                            }, 1000); 
-                            localStorage.setItem('hasVisitedSosial', 'true');
-                        }, 500);
+                        if (isResolved) return; isResolved = true; fakeProgress.style.transition = 'width 0.4s ease-out'; fakeProgress.style.width = '100%';
+                        setTimeout(() => { fakeLoader.classList.add('opacity-0'); setTimeout(() => { fakeLoader.classList.add('hidden'); fakeLoader.classList.remove('flex'); }, 1000); localStorage.setItem('hasVisitedSosial', 'true'); }, 500);
                     };
-
                     const safetyTimeout = setTimeout(() => { finishLoading(); }, 15000);
-
-                    if (targetCount === 0) {
-                        clearTimeout(safetyTimeout);
-                        finishLoading();
-                    } else {
+                    if (targetCount === 0) { clearTimeout(safetyTimeout); finishLoading(); } 
+                    else {
                         videosInDOM.forEach((vid, index) => {
                             if (index < targetCount) {
-                                vid.setAttribute('preload', 'auto');
-                                vid.load(); 
+                                vid.setAttribute('preload', 'auto'); vid.load(); 
                                 const onVideoReady = () => {
-                                    if (isResolved) return; 
-                                    readyCount++;
-                                    const progressPercent = 80 + ((readyCount / targetCount) * 20);
-                                    fakeProgress.style.width = `${progressPercent}%`;
-                                    if (readyCount >= targetCount) {
-                                        clearTimeout(safetyTimeout); 
-                                        finishLoading();
-                                    }
+                                    if (isResolved) return; readyCount++; const progressPercent = 80 + ((readyCount / targetCount) * 20); fakeProgress.style.width = `${progressPercent}%`;
+                                    if (readyCount >= targetCount) { clearTimeout(safetyTimeout); finishLoading(); }
                                 };
-                                if (vid.readyState >= 3) onVideoReady();
-                                else {
-                                    vid.addEventListener('canplay', onVideoReady, { once: true });
-                                    vid.addEventListener('loadeddata', onVideoReady, { once: true });
-                                }
+                                if (vid.readyState >= 3) onVideoReady(); else { vid.addEventListener('canplay', onVideoReady, { once: true }); vid.addEventListener('loadeddata', onVideoReady, { once: true }); }
                             }
                         });
                     }
-                } else {
-                    setupVideoObserver();
-                    renderVideoBatch();
-                }
-
-            } catch (e) { 
-                container.innerHTML = '<p class="text-center py-20 text-gray-500">Gagal memuat video.</p>'; 
-            }
+                } else { setupVideoObserver(); renderVideoBatch(); }
+            } catch (e) { container.innerHTML = '<p class="text-center py-20 text-gray-500">Gagal memuat video.</p>'; }
         }
 
         function renderVideoBatch() {
             const container = document.getElementById('feed-container');
-            
             const htmlString = allVideosData.map((vid) => `
                 <div class="snap-start w-full h-full flex-shrink-0 relative group flex items-center justify-center overflow-hidden bg-brand-dark">
-                    
-                    <div class="absolute inset-0 flex items-center justify-center z-0">
-                        <div class="w-12 h-12 border-4 border-brand-accent/20 border-t-brand-accent rounded-full animate-spin"></div>
-                    </div>
-
+                    <div class="absolute inset-0 flex items-center justify-center z-0"><div class="w-12 h-12 border-4 border-brand-accent/20 border-t-brand-accent rounded-full animate-spin"></div></div>
                     <video class="absolute inset-0 m-auto w-full h-full object-cover video-player transition-opacity duration-500 opacity-0 z-10" 
-                           onloadeddata="this.classList.remove('opacity-0')"
-                           loop muted playsinline 
-                           preload="metadata"
-                           onclick="handleVideoClick(event, this, '${vid.id}')"
-                           onerror="handleVideoError(this)">
+                           onloadeddata="this.classList.remove('opacity-0')" loop muted playsinline preload="metadata"
+                           onclick="handleVideoClick(event, this, '${vid.id}')" onerror="handleVideoError(this)">
                         <source src="${vid.video_url}" type="video/mp4">
                     </video>
-
                     <div class="absolute bottom-10 left-0 w-full p-6 flex justify-between items-end z-20 pointer-events-none">
-                        <div class="text-white drop-shadow-lg w-2/3 pointer-events-auto">
-                            <p class="font-bold text-sm shadow-black drop-shadow-md">@au2hub</p>
-                            <p class="text-xs opacity-90 shadow-black drop-shadow-md">${vid.caption}</p>
-                        </div>
+                        <div class="text-white drop-shadow-lg w-2/3 pointer-events-auto"><p class="font-bold text-sm shadow-black drop-shadow-md">@au2hub</p><p class="text-xs opacity-90 shadow-black drop-shadow-md">${vid.caption}</p></div>
                         <div class="flex flex-col gap-6 items-center pointer-events-auto">
-                            
                             <div class="like-container flex flex-col items-center gap-1" data-vid="${vid.id}">
-                                <button onclick="likeVideo('${vid.id}', this)" class="hover:scale-110 transition-transform">
-                                    <i class="fas fa-heart text-3xl text-white drop-shadow-md"></i>
-                                </button>
+                                <button onclick="likeVideo('${vid.id}', this)" class="hover:scale-110 transition-transform"><i class="fas fa-heart text-3xl text-white drop-shadow-md"></i></button>
                                 <span class="like-count-display text-white text-[12px] font-bold drop-shadow-md">0</span>
                             </div>
-
                             <div class="comment-count-container flex flex-col items-center gap-1" data-vid="${vid.id}">
-                                <button onclick="openComments('${vid.id}')" class="hover:scale-110 transition-transform">
-                                    <i class="fas fa-comment-dots text-3xl text-white drop-shadow-md"></i>
-                                </button>
+                                <button onclick="openComments('${vid.id}')" class="hover:scale-110 transition-transform"><i class="fas fa-comment-dots text-3xl text-white drop-shadow-md"></i></button>
                                 <span class="comment-count-display text-white text-[12px] font-bold drop-shadow-md">0</span>
                             </div>
-
                         </div>
                     </div>
                 </div>`).join('');
 
             container.insertAdjacentHTML('beforeend', htmlString);
 
-            // Ambil data angka Like & Komentar
             const videoActions = container.querySelectorAll('.snap-start:not(.data-loaded)');
             videoActions.forEach((card) => {
                 card.classList.add('data-loaded');
                 const vidId = card.querySelector('.like-container').dataset.vid;
-                
                 updateLikeCountUI(vidId, card.querySelector('.like-container'));
                 updateCommentCountUI(vidId, card.querySelector('.comment-count-container'));
             });
 
-            // Observer Infinite Scroll
             const unobservedVideos = container.querySelectorAll('.video-player:not(.observed)');
             unobservedVideos.forEach((v, i) => {
-                v.classList.add('observed');
-                if (obs) obs.observe(v);
+                v.classList.add('observed'); if (obs) obs.observe(v);
                 if (i === unobservedVideos.length - 1) {
                     const lastVideoObserver = new IntersectionObserver(entries => {
-                        if(entries[0].isIntersecting) {
-                            lastVideoObserver.disconnect(); 
-                            renderVideoBatch(); 
-                        }
+                        if(entries[0].isIntersecting) { lastVideoObserver.disconnect(); renderVideoBatch(); }
                     }, { threshold: 0.1 });
                     lastVideoObserver.observe(v.closest('.snap-start'));
                 }
@@ -1277,10 +1040,7 @@
             if(typeof renderFaqs === 'function') renderFaqs();
             if(typeof renderServices === 'function') renderServices();
             if(typeof muatDataRipper === 'function') muatDataRipper();
-            
-            if (savedTab !== 'sosial') {
-                loadVideos(); 
-            }
+            if (savedTab !== 'sosial') loadVideos(); 
         });
     </script>
 </body>
