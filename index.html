@@ -82,7 +82,11 @@
     </header>
     
     <main class="max-w-md mx-auto px-5 pt-24">
-        
+     <div id="install-container" class="hidden px-5 mb-6">
+    <button id="btn-install-manual" class="w-full bg-gradient-to-r from-brand-info to-brand-accent text-white font-bold py-4 rounded-2xl shadow-lg active:scale-95 transition-all text-sm border border-white/10">
+        <i class="fas fa-download mr-2"></i> INSTAL APLIKASI AU2HUB
+    </button>
+</div>   
         <section id="home" class="tab-content text-center min-h-[60vh] flex flex-col justify-center">
             <div class="relative inline-block mb-6 mx-auto">
                 <div class="absolute inset-0 bg-brand-accent blur-3xl opacity-20"></div>
@@ -1536,8 +1540,40 @@
             if(typeof renderServices === 'function') renderServices();
             if(typeof muatDataRipper === 'function') muatDataRipper();
             // Daftarkan Service Worker
+let deferredPrompt;
+const installContainer = document.getElementById('install-container');
+const btnInstallManual = document.getElementById('btn-install-manual');
+
+// 1. Tangkap perintah instalasi dari Chrome
+window.addEventListener('beforeinstallprompt', (e) => {
+    // Mencegah Chrome memunculkan bar otomatis yang sering gagal
+    e.preventDefault();
+    // Simpan perintahnya agar bisa dipakai nanti
+    deferredPrompt = e;
+    // Munculkan tombol buatan kita sendiri
+    if(installContainer) installContainer.classList.remove('hidden');
+});
+
+// 2. Logika ketika tombol kita diklik
+if(btnInstallManual) {
+    btnInstallManual.addEventListener('click', async () => {
+        if (deferredPrompt) {
+            // Munculkan jendela instalasi asli Google
+            deferredPrompt.prompt();
+            // Tunggu jawaban user
+            const { outcome } = await deferredPrompt.userChoice;
+            console.log(`User response: ${outcome}`);
+            // Reset perintah
+            deferredPrompt = null;
+            // Sembunyikan tombol lagi
+            installContainer.classList.add('hidden');
+        }
+    });
+}
+
+// 3. Daftarkan Service Worker seperti biasa
 if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/sw.js?v=2');
+    navigator.serviceWorker.register('/sw.js?v=3');
 }
         });
     </script>
