@@ -6,8 +6,8 @@ export default async function handler(req, res) {
     const bucketName = process.env.BIZNET_BUCKET_NAME;
 
     const client = new S3Client({
-        region: "us-east-1", 
-        endpoint: "https://is3.cloud.glo.id", // SAMAKAN ALAMATNYA
+        region: "idn", 
+        endpoint: "https://nos.wjv-1.neo.id", 
         credentials: {
             accessKeyId: process.env.BIZNET_ACCESS_KEY,
             secretAccessKey: process.env.BIZNET_SECRET_KEY,
@@ -27,7 +27,7 @@ export default async function handler(req, res) {
 
         res.status(200).json({
             uploadUrl: uploadUrl,
-            finalVideoUrl: `https://is3.cloud.glo.id/${bucketName}/videos/${uniqueFileName}`
+            finalVideoUrl: `https://nos.wjv-1.neo.id/${bucketName}/videos/${uniqueFileName}`
         });
     } catch (err) {
         res.status(500).json({ error: err.message });
