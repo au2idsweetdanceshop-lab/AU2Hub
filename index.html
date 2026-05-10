@@ -44,6 +44,11 @@
         .smooth-reveal { animation: smoothReveal 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; will-change: transform, opacity; }
         .heart-pop { position: fixed; color: #FF007A; font-size: 100px; pointer-events: none; z-index: 100; animation: heartAnim 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; text-shadow: 0 0 30px rgba(255, 0, 122, 0.8); transform: translate(-50%, -50%); }
         @keyframes heartAnim { 0% { transform: translate(-50%, -50%) scale(0) rotate(-15deg); opacity: 0; } 20% { transform: translate(-50%, -50%) scale(1.2) rotate(0deg); opacity: 0.9; } 40% { transform: translate(-50%, -50%) scale(1) rotate(5deg); opacity: 0.9; } 100% { transform: translate(-50%, -150%) scale(1.5) rotate(0deg); opacity: 0; } }
+        
+        /* Toast Animation */
+        @keyframes toastIn { from { opacity: 0; transform: translateY(-20px) scale(0.9); } to { opacity: 1; transform: translateY(0) scale(1); } }
+        .toast-anim { animation: toastIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
         .glass { background: rgba(26, 17, 51, 0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-top: 1px solid rgba(255, 255, 255, 0.05); }
         details > summary { list-style: none; }
         details > summary::-webkit-details-marker { display: none; }
@@ -59,6 +64,8 @@
     </style>
 </head>
 <body class="pb-24">
+
+    <div id="toast-container" class="fixed top-6 left-0 w-full px-4 z-[200] flex flex-col items-center gap-3 pointer-events-none"></div>
 
     <header class="fixed top-0 w-full z-40 glass border-b border-white/5 py-4 px-6 shadow-md">
         <div class="max-w-md mx-auto flex justify-between items-center">
@@ -336,6 +343,17 @@
         </div>
     </div>
 
+    <div id="modal-prompt" class="fixed inset-0 z-[200] hidden items-center justify-center bg-black/90 backdrop-blur-md px-6">
+        <div class="bg-brand-card w-full max-w-sm rounded-3xl border border-white/10 p-6 shadow-2xl relative modal-anim">
+            <h3 id="prompt-title" class="text-lg font-extrabold mb-2 text-white">Judul</h3>
+            <input type="text" id="prompt-input" class="w-full bg-black/30 border border-brand-accent/30 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-brand-accent mb-4">
+            <div class="flex gap-3">
+                <button id="prompt-cancel" class="flex-1 bg-white/10 text-white py-3 rounded-xl font-bold active:scale-95 transition-transform text-sm">Batal</button>
+                <button id="prompt-ok" class="flex-1 bg-brand-accent text-white py-3 rounded-xl font-bold active:scale-95 transition-transform text-sm">Simpan</button>
+            </div>
+        </div>
+    </div>
+
     <div id="modal-auth" class="fixed inset-0 z-[100] hidden items-center justify-center bg-black/90 backdrop-blur-md px-6">
         <div class="bg-brand-card w-full max-w-sm rounded-3xl border border-white/10 p-8 shadow-2xl relative modal-anim">
             <button onclick="closeAuthModal()" class="absolute top-4 right-4 text-gray-500 w-8 h-8 flex justify-center items-center rounded-full bg-white/5"><i class="fas fa-times"></i></button>
@@ -420,6 +438,55 @@
     </nav>
 
     <script>
+        // === 0. FUNGSI MODERN ALERT & PROMPT ===
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            
+            let bgColor = 'bg-[#1A1133] border-brand-info/50';
+            let icon = '<i class="fas fa-info-circle text-brand-info mr-3 text-lg"></i>';
+            if(type === 'error') { bgColor = 'bg-[#2A0815] border-red-500/50'; icon = '<i class="fas fa-exclamation-circle text-red-500 mr-3 text-lg"></i>'; }
+            if(type === 'success') { bgColor = 'bg-[#0A2010] border-[#25D366]/50'; icon = '<i class="fas fa-check-circle text-[#25D366] mr-3 text-lg"></i>'; }
+
+            toast.className = `flex items-center px-5 py-3.5 rounded-2xl border shadow-2xl text-xs font-bold text-white toast-anim w-[90%] max-w-sm glass ${bgColor}`;
+            toast.innerHTML = `${icon} <span class="leading-snug">${message}</span>`;
+            
+            container.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateY(-20px) scale(0.9)';
+                toast.style.transition = 'all 0.3s ease';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        function customPrompt(title, defaultValue = '') {
+            return new Promise((resolve) => {
+                const modal = document.getElementById('modal-prompt');
+                const titleEl = document.getElementById('prompt-title');
+                const inputEl = document.getElementById('prompt-input');
+                const btnOk = document.getElementById('prompt-ok');
+                const btnCancel = document.getElementById('prompt-cancel');
+
+                titleEl.innerText = title;
+                inputEl.value = defaultValue;
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+                inputEl.focus();
+
+                const cleanup = () => {
+                    modal.classList.add('hidden');
+                    modal.classList.remove('flex');
+                    btnOk.onclick = null;
+                    btnCancel.onclick = null;
+                };
+
+                btnOk.onclick = () => { cleanup(); resolve(inputEl.value); };
+                btnCancel.onclick = () => { cleanup(); resolve(null); };
+            });
+        }
+
         // === 1. KONFIGURASI SUPABASE ===
         const SUPABASE_URL = "https://divckiqkodtqudcoxkjz.supabase.co";
         const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRpdmNraXFrb2R0cXVkY294a2p6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgzNDY0MzIsImV4cCI6MjA5MzkyMjQzMn0.z_FIS_rpDQPQ7nNWpuvabH7qDYgu7uq6TlYj9LSOcJQ";
@@ -503,24 +570,24 @@
                 if (isAuthLogin) { 
                     const { error } = await supabaseClient.auth.signInWithPassword({ email, password }); 
                     if (error) throw error; 
+                    showToast("Login berhasil!", "success");
                 } else { 
                     const { data: { user }, error } = await supabaseClient.auth.signUp({ email, password }); 
                     if (error) throw error; 
                     const { error: dbErr } = await supabaseClient.from('profiles').upsert({ id: user.id, nickname: nick || "Player", avatar_url: "" }); 
                     if (dbErr) throw new Error("Database Profil Error: " + dbErr.message);
+                    showToast("Akun berhasil dibuat!", "success");
                 }
                 
-                // Form di-reset
                 document.getElementById('auth-email').value = '';
                 document.getElementById('auth-pass').value = '';
                 document.getElementById('auth-nick').value = '';
 
-                // Memperbarui UI tanpa reload
                 await checkSession();
                 closeAuthModal();
 
             } catch (e) { 
-                alert(e.message); 
+                showToast(e.message, "error");
             } finally {
                 btn.disabled = false; 
                 btn.innerText = isAuthLogin ? "Login" : "Daftar";
@@ -532,6 +599,7 @@
             currentUser = null;
             userProfile = null;
             checkSession();
+            showToast("Anda telah keluar.", "info");
         }
 
         function updateUIForLoggedIn() { 
@@ -566,24 +634,27 @@
                 
                 if (!response.ok) {
                     const errText = await response.text();
-                    throw new Error("Vercel API Error: " + errText);
+                    throw new Error(errText);
                 }
 
                 const data = await response.json();
-                if (!data.success) throw new Error("Gagal menyimpan ke Biznet: " + data.error);
+                if (!data.success) throw new Error(data.error);
                 
                 const currentNick = userProfile?.nickname || "Player";
                 const { error: dbErr } = await supabaseClient.from('profiles').upsert({ id: currentUser.id, nickname: currentNick, avatar_url: data.url }); 
-                if (dbErr) throw new Error("Gagal menyimpan link di Database: " + dbErr.message);
+                if (dbErr) throw new Error(dbErr.message);
 
                 document.getElementById('profile-img').src = data.url; 
                 
-                // Refresh data profil yang terlihat tanpa reload halaman
                 await fetchProfile();
                 updateUIForLoggedIn();
+                showToast("Foto profil berhasil diperbarui!", "success");
 
-            } catch (e) { alert("Gagal upload: " + e.message); } 
-            finally { icon.className = 'fas fa-camera text-xs'; }
+            } catch (e) { 
+                showToast("Gagal upload: " + e.message, "error"); 
+            } finally { 
+                icon.className = 'fas fa-camera text-xs'; 
+            }
         }
 
         function compressImage(file) { 
@@ -602,16 +673,16 @@
         }
 
         async function editNickname() { 
-            const n = prompt("Nickname baru:", userProfile?.nickname || ""); 
+            const n = await customPrompt("Masukkan Nickname Baru:", userProfile?.nickname || ""); 
             if (n && n.trim() !== "") { 
                 const currentAvatar = userProfile?.avatar_url || "";
                 const { error } = await supabaseClient.from('profiles').upsert({ id: currentUser.id, nickname: n.trim(), avatar_url: currentAvatar }); 
                 if (error) {
-                    alert("Gagal merubah Nickname: " + error.message);
+                    showToast("Gagal merubah Nickname: " + error.message, "error");
                 } else {
-                    // Update UI tanpa merefresh total
                     await fetchProfile();
                     updateUIForLoggedIn();
+                    showToast("Nickname berhasil diubah!", "success");
                 }
             } 
         }
@@ -641,7 +712,6 @@
 
             targetSection.classList.add('active');
             
-            // JANGAN reload ulang feed video jika tab sosial ditekan dan isinya sudah ada
             if (tabId === 'sosial' && allVideosData.length === 0) {
                 loadVideos();
             }
@@ -664,21 +734,18 @@
         window.addEventListener('popstate', () => {
             let isPopupClosed = false;
             
-            // Tutup Modal Event
             const modalEvent = document.getElementById('modal-event');
             if (!modalEvent.classList.contains('hidden')) {
                 modalEvent.classList.add('hidden'); modalEvent.classList.remove('flex');
                 document.body.style.overflow = 'auto'; isPopupClosed = true;
             }
             
-            // Tutup Floating Widget Chat
             const widget = document.getElementById('floating-widget');
             if (!widget.classList.contains('opacity-0')) {
                 widget.classList.add('opacity-0', 'pointer-events-none', 'translate-y-8', 'scale-95');
                 isPopupClosed = true;
             }
 
-            // Tutup Laci Komentar TANPA REFRESH
             const commentDrawer = document.getElementById('comment-drawer');
             if (commentDrawer.classList.contains('open')) {
                 commentDrawer.classList.remove('open');
@@ -686,7 +753,6 @@
                 isPopupClosed = true;
             }
 
-            // Tutup Modal Auth
             const authModal = document.getElementById('modal-auth');
             if (!authModal.classList.contains('hidden')) {
                 authModal.classList.add('hidden'); 
@@ -694,10 +760,7 @@
                 isPopupClosed = true;
             }
 
-            // PENTING: Jika tombol HP back ditekan dan dia cuma nutup laci/modal, Stop proses di sini. (Video gak akan kereload)
             if (isPopupClosed) return;
-            
-            // Jika gak ada yang ditutup, pindah tab biasa
             switchTab(window.location.hash.substring(1) || 'home', null, false);
         });
 
@@ -953,7 +1016,10 @@
             if (!currentUser) return openAuthModal(); 
             const msgInput = document.getElementById('comment-input');
             const msg = msgInput.value.trim();
-            if (!msg) return alert("Komentar kosong!");
+            if (!msg) {
+                showToast("Komentar tidak boleh kosong!", "error");
+                return;
+            }
 
             const btn = event.currentTarget;
             const iconAsli = btn.innerHTML; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>'; btn.disabled = true;
@@ -968,14 +1034,18 @@
 
                 if (response.ok) {
                     msgInput.value = ''; 
-                    // Silent Refresh True: tidak memunculkan icon loading muter-muter
                     await loadComments(activeVideoId, true);
                     const container = document.querySelector(`.comment-count-container[data-vid="${activeVideoId}"]`);
                     if(container) updateCommentCountUI(activeVideoId, container);
                     cancelReply();
+                } else {
+                    throw new Error("Gagal menyimpan komentar");
                 }
-            } catch(e) { alert("Gagal kirim komentar."); } 
-            finally { btn.innerHTML = iconAsli; btn.disabled = false; }
+            } catch(e) { 
+                showToast("Gagal kirim komentar.", "error"); 
+            } finally { 
+                btn.innerHTML = iconAsli; btn.disabled = false; 
+            }
         }
 
         async function fetchCommentLikes(cid) {
