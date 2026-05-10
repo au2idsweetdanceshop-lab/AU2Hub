@@ -1537,9 +1537,19 @@
             if(typeof muatDataRipper === 'function') muatDataRipper();
             // Daftarkan Service Worker
 if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('\sw.js');
-}
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js')
+        .then(reg => {
+          console.log('PWA Terdaftar!');
+          // Munculkan pesan di layar HP kalau sukses (Hanya untuk tes)
+          // alert('PWA Aktif! Tunggu sebentar lalu cek menu Chrome.'); 
+        })
+        .catch(err => {
+          // Kalau gagal, HP akan kasih tahu alasannya
+          alert('PWA Gagal: ' + err.message);
         });
+    });
+  }
     </script>
 </body>
 </html>
