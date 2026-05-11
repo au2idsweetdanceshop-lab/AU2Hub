@@ -341,7 +341,7 @@
                 </div>
 
                 <div id="profile-actions-own" class="flex gap-2 justify-center px-4 mb-6">
-                    <button onclick="editProfileInfo()" class="flex-1 bg-white/10 border border-white/10 py-2.5 rounded-xl text-[11px] font-bold text-white flex items-center justify-center gap-2 hover:bg-white/20 transition-colors">
+                    <button onclick="openEditProfileModal()" class="flex-1 bg-white/10 border border-white/10 py-2.5 rounded-xl text-[11px] font-bold text-white flex items-center justify-center gap-2 hover:bg-white/20 transition-colors">
                         <i class="fas fa-pen"></i> Edit Profil
                     </button>
                     <button onclick="handleLogout()" class="bg-red-500/10 border border-red-500/20 px-4 py-2.5 rounded-xl text-[11px] font-bold text-red-500 hover:bg-red-500/20 transition-colors">
@@ -396,7 +396,7 @@
         </div>
     </div>
 
-    <div id="comment-drawer" class="fixed inset-x-0 bottom-0 z-[60] h-[75vh] glass border-t border-white/10 rounded-t-3xl comment-drawer flex flex-col max-w-md mx-auto">
+    <div id="comment-drawer" class="fixed inset-x-0 bottom-0 z-[160] h-[75vh] glass border-t border-white/10 rounded-t-3xl comment-drawer flex flex-col max-w-md mx-auto">
         <div class="flex justify-between items-center p-5 border-b border-white/5 shrink-0 bg-brand-dark/50 rounded-t-3xl">
             <h4 class="font-bold text-white text-sm">Komentar (<span id="drawer-comment-count">0</span>)</h4>
             <button onclick="closeComments()" class="text-gray-400 text-lg w-8 h-8 rounded-full bg-white/5 flex items-center justify-center active:scale-95 transition-colors"><i class="fas fa-times"></i></button>
