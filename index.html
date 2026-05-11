@@ -1204,14 +1204,11 @@
             }
 
             v.src = url;
-            p.classList.remove('hidden'); p.classList.add('flex');
-            v.play();
-            history.pushState({ popup: 'floating_video' }, null);
-            v.src = url;
-            v.muted = isGlobalMuted; // <-- Tambahkan baris ini
-            p.classList.remove('hidden'); p.classList.add('flex');
-            v.play();
-            history.pushState({ popup: 'floating_video' }, null);
+v.muted = isGlobalMuted; 
+p.classList.remove('hidden'); 
+p.classList.add('flex');
+v.play();
+history.pushState({ popup: 'floating_video' }, null);
         }
 
         function closeFloatingVideo() {
