@@ -1724,7 +1724,7 @@ history.pushState({ popup: 'floating_video' }, null);
                            onclick="handleVideoClick(event, this, '${vid.id}')" onerror="handleVideoError(this)">
                         <source src="${vid.video_url}" type="video/mp4">
                     </video>
-                    <div class="absolute bottom-10 left-0 w-full p-6 flex justify-between items-end z-20 pointer-events-none">
+                    <div class="absolute bottom-0 left-0 w-full px-6 pb-5 flex justify-between items-end z-20 pointer-events-none">
                         <div class="text-white drop-shadow-lg w-2/3 pointer-events-auto"><p class="font-bold text-sm shadow-black drop-shadow-md"><p onclick="openUserProfile('${vid.user_id}')" class="font-bold text-sm cursor-pointer hover:text-brand-info">@${vid.nickname || "Player"}
                         </p>
                         <p class="text-xs opacity-90 shadow-black drop-shadow-md">${vid.caption}</p></div>
