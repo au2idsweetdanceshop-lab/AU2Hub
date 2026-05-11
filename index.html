@@ -2347,24 +2347,24 @@
         // --- LANGKAH 3: UPLOAD FISIK VIDEO ---
         await fetch(dataUrl.uploadUrl, { method: 'PUT', body: file, headers: { 'Content-Type': file.type } });
 
-        // --- LANGKAH 4: SUSUN METADATA ---
-        const spreadsheetPayload = {
-            ID_Video: 'vid_' + Date.now(),
-            URL_Video: dataUrl.finalVideoUrl,
-            Caption: captionInput.value,
-            Nickname: userProfile?.nickname || "Player",
-            Avatar_URL: userProfile?.avatar_url || "",
-            User_ID: currentUser.id,
-            Waktu: new Date().toISOString()
-        };
+        // Di dalam fungsi prosesUploadVideo()
+const spreadsheetPayload = {
+    id: 'vid_' + Date.now(),
+    video_url: dataUrl.finalVideoUrl,
+    caption: captionInput.value || "",
+    nickname: userProfile?.nickname || "Player",
+    avatar_url: userProfile?.avatar_url || "",
+    user_id: currentUser.id,
+    created_at: new Date().toISOString()
+};
 
-        // --- LANGKAH 5: SIMPAN KE GAS (MENGGUNAKAN LINK DARI CONFIG) ---
-        await fetch(config.gasUrl, {
-            method: 'POST',
-            mode: 'no-cors', // Penting agar tidak kena blokir CORS
-            headers: { 'Content-Type': 'text/plain' },
-            body: JSON.stringify(spreadsheetPayload)
-        });
+// Kirim ke GAS_URL
+await fetch(config.gasUrl, {
+    method: 'POST',
+    mode: 'no-cors', 
+    headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify(spreadsheetPayload)
+});
 
         showToast("Berhasil diposting!", "success");
         
