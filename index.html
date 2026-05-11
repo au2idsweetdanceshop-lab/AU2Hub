@@ -360,6 +360,64 @@
     </div>
 </div>
             
+            
+        </section>
+        <section id="profile" class="tab-content py-5 min-h-[60vh] flex flex-col justify-start relative">
+            
+            <button id="btn-back-profile" onclick="viewUserProfile(currentUser?.id)" class="hidden absolute top-0 left-2 text-white text-[10px] bg-white/10 hover:bg-white/20 border border-white/10 px-3 py-2 rounded-xl transition-all z-10 font-bold flex items-center">
+                <i class="fas fa-arrow-left mr-1.5"></i> Profil Saya
+            </button>
+
+            <div id="profile-loading" class="flex flex-col items-center justify-center py-20">
+                <div class="relative w-16 h-16 mb-4">
+                    <div class="absolute inset-0 border-4 border-brand-card rounded-full"></div>
+                    <div class="absolute inset-0 border-4 border-brand-info rounded-full border-t-transparent animate-spin"></div>
+                </div>
+                <p class="text-xs text-gray-400 font-bold tracking-widest animate-pulse">MEMUAT PROFIL...</p>
+            </div>
+
+            <div id="profile-logged-in" class="hidden text-center relative mt-6">
+                <div class="relative inline-block mb-3">
+                    <div class="avatar-ring">
+                        <img id="profile-img" src="https://ui-avatars.com/api/?name=User" class="w-24 h-24 rounded-full object-cover border-2 border-brand-dark" alt="Profile Picture">
+                    </div>
+                    <label id="btn-edit-avatar" for="avatar-input" class="absolute bottom-0 right-0 bg-brand-info text-brand-dark w-8 h-8 rounded-full flex items-center justify-center cursor-pointer border-4 border-brand-dark active:scale-90 transition-transform">
+                        <i class="fas fa-camera text-xs"></i>
+                    </label>
+                    <input type="file" id="avatar-input" class="hidden" accept="image/*" onchange="handleAvatarUpload(event)">
+                </div>
+                <h3 id="profile-nickname" class="text-xl font-extrabold text-white">@Nickname</h3>
+                
+                <p id="profile-bio" class="text-[11px] text-gray-300 mt-2 mb-4 px-6 leading-relaxed whitespace-pre-line">Mencari teman main Sweet Dance. Add ID aku ya!</p>
+
+                <div class="flex justify-center gap-8 mb-6 border-y border-white/5 py-3">
+                    <div class="flex flex-col items-center"><span class="font-bold text-white text-base">0</span><span class="text-[9px] text-gray-400 uppercase tracking-widest">Mengikuti</span></div>
+                    <div class="flex flex-col items-center"><span class="font-bold text-white text-base">0</span><span class="text-[9px] text-gray-400 uppercase tracking-widest">Pengikut</span></div>
+                    <div class="flex flex-col items-center"><span id="profile-total-likes" class="font-bold text-white text-base">0</span><span class="text-[9px] text-gray-400 uppercase tracking-widest">Suka</span></div>
+                </div>
+
+                <div id="profile-actions-own" class="flex gap-2 justify-center px-4 mb-6">
+                    <button onclick="editProfileInfo()" class="flex-1 bg-white/10 border border-white/10 py-2.5 rounded-xl text-[11px] font-bold text-white flex items-center justify-center gap-2 hover:bg-white/20 transition-colors">
+                        <i class="fas fa-pen"></i> Edit Profil
+                    </button>
+                    <button onclick="handleLogout()" class="bg-red-500/10 border border-red-500/20 px-4 py-2.5 rounded-xl text-[11px] font-bold text-red-500 hover:bg-red-500/20 transition-colors">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </button>
+                </div>
+
+                <div id="profile-actions-other" class="hidden flex gap-2 justify-center px-4 mb-6">
+                    <button onclick="showToast('Fitur Follow akan segera hadir!', 'info')" class="flex-1 bg-brand-accent py-2.5 rounded-xl text-[11px] font-extrabold text-white uppercase tracking-wide hover:scale-95 transition-transform shadow-[0_0_15px_rgba(255,0,122,0.3)]"> Ikuti </button>
+                    <button onclick="showToast('Fitur Chat akan segera hadir!', 'info')" class="flex-1 bg-white/10 border border-white/10 py-2.5 rounded-xl text-[11px] font-bold text-white hover:bg-white/20 transition-colors"> Kirim Pesan </button>
+                </div>
+
+                <div class="border-t border-white/10 pt-4 text-left px-2">
+                    <div class="flex justify-center border-b border-white/5 mb-2 pb-2">
+                        <h4 id="profile-video-title" class="font-bold text-white text-sm flex items-center border-b-2 border-brand-accent pb-1"><i class="fas fa-grip-vertical mr-2 text-brand-info"></i> Video Saya</h4>
+                    </div>
+                    <div id="profile-video-grid" class="grid grid-cols-3 gap-0.5"></div>
+                </div>
+            </div>
+            
             <div id="profile-logged-out" class="hidden text-center py-10">
                 <i class="fas fa-user-circle text-6xl text-gray-700 mb-4"></i>
                 <h3 class="text-xl font-extrabold text-white mb-2">Belum Login</h3>
@@ -614,19 +672,23 @@
         }
 
         async function fetchProfile() {
-            const { data, error } = await supabaseClient.from('profiles').select('*').eq('id', currentUser.id).single();
-            if (data) { 
-                userProfile = data; 
-            } else {
-                userProfile = { nickname: 'Player', avatar_url: '' };
-                await supabaseClient.from('profiles').upsert({ id: currentUser.id, nickname: 'Player', avatar_url: '' });
-            }
-            document.getElementById('profile-nickname').innerText = userProfile.nickname || "Player"; 
-            document.getElementById('profile-email').innerText = currentUser.email; 
-            if (userProfile.avatar_url && userProfile.avatar_url !== "") {
-                document.getElementById('profile-img').src = userProfile.avatar_url; 
-            }
+    const { data, error } = await supabaseClient.from('profiles').select('*').eq('id', currentUser.id).single();
+    if (data) { 
+        userProfile = data; 
+    } else {
+        userProfile = { nickname: 'Player', avatar_url: '', bio: 'Halo! Salam kenal.' };
+        await supabaseClient.from('profiles').upsert({ id: currentUser.id, nickname: 'Player', avatar_url: '', bio: 'Halo! Salam kenal.' });
+    }
+    
+    // Update view profil sendiri saat startup
+    if(!viewedUserId || viewedUserId === currentUser.id) {
+        document.getElementById('profile-nickname').innerText = "@" + (userProfile.nickname || "Player"); 
+        document.getElementById('profile-bio').innerText = userProfile.bio || "Belum ada deskripsi."; 
+        if (userProfile.avatar_url && userProfile.avatar_url !== "") {
+            document.getElementById('profile-img').src = userProfile.avatar_url; 
         }
+    }
+}
 
         function openAuthModal() { 
             history.pushState({ popup: 'auth' }, null, '#auth');
@@ -902,31 +964,41 @@ function openUploadModal() { history.pushState({ popup: 'upload' }, null, '#uplo
 
 function closeUploadModal() { if (window.location.hash === '#upload') history.back(); else { const m = document.getElementById('modal-upload'); m.classList.add('hidden'); m.classList.remove('flex'); } }
         async function openUserProfile(userId) {
-            viewedUserId = userId;
-            switchTab('profile', null, false);
-            document.getElementById('profile-loading').classList.remove('hidden');
-            document.getElementById('profile-logged-in').classList.add('hidden');
-            
-            const { data } = await supabaseClient.from('profiles').select('*').eq('id', userId).single();
-            if (data) { 
-                document.getElementById('profile-nickname').innerText = data.nickname || "Player";
-                document.getElementById('profile-img').src = data.avatar_url || `https://ui-avatars.com/api/?name=${data.nickname}`;
-                
-                const isOwn = (userId === currentUser?.id);
-                document.getElementById('profile-email').innerText = isOwn ? currentUser.email : "Community Member";
-                
-                const actions = document.querySelector('#profile-logged-in .space-y-3');
-                const inputAva = document.querySelector('label[for="avatar-input"]');
-                if(actions) actions.classList.toggle('hidden', !isOwn);
-                if(inputAva) inputAva.classList.toggle('hidden', !isOwn);
-                
-                renderProfileVideos(userId);
-            }
-            
-            document.getElementById('profile-loading').classList.add('hidden');
-            document.getElementById('profile-logged-in').classList.remove('hidden');
-            history.pushState({ popup: 'user_profile' }, null, `#profile?id=${userId}`);
-        }
+    viewedUserId = userId;
+    switchTab('profile', null, false);
+    document.getElementById('profile-loading').classList.remove('hidden');
+    document.getElementById('profile-logged-in').classList.add('hidden');
+    
+    const isOwn = (userId === currentUser?.id);
+    const { data } = await supabaseClient.from('profiles').select('*').eq('id', userId).single();
+    
+    document.getElementById('profile-nickname').innerText = "@" + (data?.nickname || "Player");
+    document.getElementById('profile-bio').innerText = data?.bio || "Belum ada deskripsi.";
+    document.getElementById('profile-img').src = data?.avatar_url || `https://ui-avatars.com/api/?name=${data?.nickname || 'Player'}&background=1A1133&color=fff`;
+    
+    // Tampilkan tombol yang sesuai (Milik Sendiri vs Orang Lain)
+    document.getElementById('profile-actions-own').classList.toggle('hidden', !isOwn);
+    document.getElementById('profile-actions-other').classList.toggle('hidden', isOwn);
+    document.getElementById('btn-back-profile').classList.toggle('hidden', isOwn);
+    
+    const inputAva = document.getElementById('btn-edit-avatar');
+    if(inputAva) inputAva.classList.toggle('hidden', !isOwn);
+
+    // Ubah teks Judul Video
+    const titleVideo = document.getElementById('profile-video-title');
+    if(isOwn) { titleVideo.innerHTML = `<i class="fas fa-grip-vertical mr-2 text-brand-info"></i> Video Saya`; } 
+    else { titleVideo.innerHTML = `<i class="fas fa-grip-vertical mr-2 text-brand-info"></i> Video ${data?.nickname || ''}`; }
+    
+    // Kalkulasi jumlah Suka (Dinamis berdasarkan video)
+    const userVideos = allVideosData.filter(v => v.user_id === userId);
+    document.getElementById('profile-total-likes').innerText = (userVideos.length * 3); // Contoh perkalian poin
+
+    renderProfileVideos(userId);
+    
+    document.getElementById('profile-loading').classList.add('hidden');
+    document.getElementById('profile-logged-in').classList.remove('hidden');
+    if(!isOwn) history.pushState({ popup: 'user_profile' }, null, `#profile?id=${userId}`);
+}
         
         function viewUserProfile(userId) {
             if (!userId || userId === 'undefined') {
