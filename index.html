@@ -940,15 +940,6 @@
                     </div>
                 </div>
             `}).join('');
-                <div class="aspect-[9/16] bg-black relative rounded-md overflow-hidden border border-white/10 group cursor-pointer" onclick="playFloatingVideo('${vid.video_url}', '${(vid.nickname || 'Player').replace(/'/g, "\\'")}', '${(vid.caption || '').replace(/'/g, "\\'")}', '${vid.id}')">
-                    <video class="w-full h-full object-cover" preload="metadata">
-                        <source src="${vid.video_url}" type="video/mp4">
-                    </video>
-                    <div class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                        <i class="fas fa-play text-white text-xl"></i>
-                    </div>
-                </div>
-            `).join('');
         }
 
         function timeAgo(dateString) {
