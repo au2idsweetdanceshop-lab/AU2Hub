@@ -308,11 +308,11 @@
         
         <section id="profile" class="tab-content py-5 min-h-[60vh] flex flex-col justify-start relative">
             
-            <button id="btn-back-profile" onclick="viewUserProfile(currentUser?.id)" class="hidden absolute top-0 left-2 text-white text-[10px] bg-white/10 hover:bg-white/20 border border-white/10 px-3 py-2 rounded-xl transition-all z-10 font-bold flex items-center">
-                <i class="fas fa-arrow-left mr-1.5"></i> Profil Saya
+            <button id="btn-back-profile" onclick="kembaliDariProfil()" class="hidden absolute top-4 left-4 text-white text-xs bg-black/40 backdrop-blur-md hover:bg-black/60 border border-white/10 px-4 py-2.5 rounded-full transition-all z-10 font-bold flex items-center shadow-lg">
+                <i class="fas fa-arrow-left mr-2"></i> Kembali
             </button>
 
-            <div id="profile-loading" class="flex flex-col items-center justify-center py-20">
+            <div id="profile-loading" class="flex flex-col items-center justify-center py-20 mt-10">
                 <div class="relative w-16 h-16 mb-4">
                     <div class="absolute inset-0 border-4 border-brand-card rounded-full"></div>
                     <div class="absolute inset-0 border-4 border-brand-info rounded-full border-t-transparent animate-spin"></div>
@@ -320,7 +320,7 @@
                 <p class="text-xs text-gray-400 font-bold tracking-widest animate-pulse">MEMUAT PROFIL...</p>
             </div>
 
-            <div id="profile-logged-in" class="hidden text-center relative mt-6">
+            <div id="profile-logged-in" class="hidden text-center relative mt-12">
                 <div class="relative inline-block mb-3">
                     <div class="avatar-ring">
                         <img id="profile-img" src="https://ui-avatars.com/api/?name=User" class="w-24 h-24 rounded-full object-cover border-2 border-brand-dark" alt="Profile Picture">
@@ -362,7 +362,7 @@
                 </div>
             </div>
             
-            <div id="profile-logged-out" class="hidden text-center py-10">
+            <div id="profile-logged-out" class="hidden text-center py-10 mt-10">
                 <i class="fas fa-user-circle text-6xl text-gray-700 mb-4"></i>
                 <h3 class="text-xl font-extrabold text-white mb-2">Belum Login</h3>
                 <p class="text-xs text-gray-400 mb-6">Silakan login untuk membalas komentar & upload foto.</p>
@@ -372,15 +372,30 @@
     </main>
     
     <div id="floating-video-player" class="fixed inset-0 z-[150] hidden items-center justify-center bg-black/95 backdrop-blur-lg px-4">
-    <button onclick="closeFloatingVideo()" class="absolute top-6 right-6 text-white bg-white/10 w-12 h-12 rounded-full flex items-center justify-center active:scale-90 z-[160]"><i class="fas fa-times text-xl"></i></button>
-    <div class="w-full max-w-sm aspect-[9/16] bg-black rounded-3xl overflow-hidden shadow-2xl relative">
-        <video id="v-floating" class="w-full h-full object-cover" loop controls playsinline></video>
-        <div class="absolute bottom-0 left-0 w-full p-6 bg-gradient-to-t from-black/80 to-transparent">
-            <p id="f-nickname" class="text-brand-info font-bold text-sm">@Nickname</p>
-            <p id="f-caption" class="text-white text-[11px] mt-1">Caption video...</p>
+        <button onclick="closeFloatingVideo()" class="absolute top-6 right-6 text-white bg-white/10 w-12 h-12 rounded-full flex items-center justify-center active:scale-90 z-[160]"><i class="fas fa-times text-xl"></i></button>
+        <div class="w-full max-w-sm aspect-[9/16] bg-black rounded-3xl overflow-hidden shadow-2xl relative">
+            <video id="v-floating" class="w-full h-full object-cover" loop playsinline onclick="handleFloatingVideoClick(event)"></video>
+            
+            <div class="absolute bottom-0 left-0 w-full p-6 flex justify-between items-end z-20 pointer-events-none bg-gradient-to-t from-black/80 to-transparent">
+                <div class="text-white drop-shadow-lg w-2/3 pointer-events-auto">
+                    <p id="f-nickname" class="font-bold text-sm shadow-black drop-shadow-md">@Nickname</p>
+                    <p id="f-caption" class="text-white text-[11px] mt-1 shadow-black drop-shadow-md">Caption video...</p>
+                </div>
+                
+                <div class="flex flex-col gap-6 items-center pointer-events-auto">
+                    <div id="float-like-container" class="like-container flex flex-col items-center gap-1" data-vid="">
+                        <button onclick="likeVideo(this.parentElement.dataset.vid, this)" class="hover:scale-110 transition-transform"><i class="fas fa-heart text-3xl text-white drop-shadow-md"></i></button>
+                        <span class="like-count-display text-white text-[12px] font-bold drop-shadow-md">0</span>
+                    </div>
+                    <div id="float-comment-container" class="comment-count-container flex flex-col items-center gap-1" data-vid="">
+                        <button onclick="openComments(this.parentElement.dataset.vid)" class="hover:scale-110 transition-transform"><i class="fas fa-comment-dots text-3xl text-white drop-shadow-md"></i></button>
+                        <span class="comment-count-display text-white text-[12px] font-bold drop-shadow-md">0</span>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
-</div>
+
     <div id="comment-drawer" class="fixed inset-x-0 bottom-0 z-[60] h-[75vh] glass border-t border-white/10 rounded-t-3xl comment-drawer flex flex-col max-w-md mx-auto">
         <div class="flex justify-between items-center p-5 border-b border-white/5 shrink-0 bg-brand-dark/50 rounded-t-3xl">
             <h4 class="font-bold text-white text-sm">Komentar (<span id="drawer-comment-count">0</span>)</h4>
@@ -408,6 +423,25 @@
             <div class="flex gap-3">
                 <button id="prompt-cancel" class="flex-1 bg-white/10 text-white py-3 rounded-xl font-bold active:scale-95 transition-transform text-sm">Batal</button>
                 <button id="prompt-ok" class="flex-1 bg-brand-accent text-white py-3 rounded-xl font-bold active:scale-95 transition-transform text-sm">Simpan</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL EDIT PROFIL KHUSUS -->
+    <div id="modal-edit-profile" class="fixed inset-0 z-[200] hidden items-center justify-center bg-black/90 backdrop-blur-md px-6">
+        <div class="bg-brand-card w-full max-w-sm rounded-3xl border border-white/10 p-6 shadow-2xl relative modal-anim">
+            <button onclick="closeEditProfileModal()" class="absolute top-4 right-4 text-gray-500 w-8 h-8 flex justify-center items-center rounded-full bg-white/5"><i class="fas fa-times"></i></button>
+            <h3 class="text-xl font-extrabold mb-5 text-white"><i class="fas fa-user-edit mr-2 text-brand-info"></i> Edit Profil</h3>
+            <div class="space-y-4">
+                <div>
+                    <label class="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-2 block">Nickname Game</label>
+                    <input type="text" id="edit-nick" placeholder="Nickname..." class="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-brand-accent">
+                </div>
+                <div>
+                    <label class="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-2 block">Bio / Deskripsi</label>
+                    <textarea id="edit-bio" rows="3" placeholder="Ceritakan tentangmu..." class="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-brand-accent resize-none"></textarea>
+                </div>
+                <button onclick="saveProfileInfo()" class="w-full bg-gradient-to-r from-brand-accent to-brand-purple text-white py-3.5 rounded-xl font-bold active:scale-95 transition-transform mt-2 shadow-[0_0_15px_rgba(255,0,122,0.3)]">Simpan Perubahan</button>
             </div>
         </div>
     </div>
@@ -521,11 +555,11 @@
                 <button onclick="closeChatRoom()" class="text-gray-400 hover:text-white transition-colors active:scale-90 w-8 h-8 flex items-center justify-center rounded-full bg-white/5"><i class="fas fa-arrow-left"></i></button>
                 <div class="relative cursor-pointer" onclick="viewUserProfile(activeChatUserId)">
                     <img id="active-chat-avatar" src="" class="w-9 h-9 rounded-full object-cover border border-[#FF007A]">
-                    <div class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-[#1A1133] rounded-full"></div>
+                    <div id="active-chat-online-dot" class="hidden absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-[#1A1133] rounded-full"></div>
                 </div>
                 <div class="flex-1 min-w-0 cursor-pointer" onclick="viewUserProfile(activeChatUserId)">
                     <h3 id="active-chat-name" class="font-bold text-white text-[13px] truncate">@Nickname</h3>
-                    <p class="text-[9px] text-brand-info">Online</p>
+                    <p id="active-chat-status" class="text-[9px] text-gray-500">Offline</p>
                 </div>
             </div>
             
@@ -534,16 +568,12 @@
                 <!-- Bubble Chat Akan Muncul Di Sini -->
             </div>
             
-            <!-- Area Input Pesan (ADA TOMBOL GAMBAR SEKARANG) -->
+            <!-- Area Input Pesan -->
             <div class="bg-[#1A1133] p-3 border-t border-white/10 flex items-center gap-2 shrink-0 relative z-10">
-                <!-- Input File Tersembunyi -->
                 <input type="file" id="chat-image-input" accept="image/*" class="hidden" onchange="uploadChatImage(event)">
-                
-                <!-- Tombol Attachment -->
                 <button onclick="document.getElementById('chat-image-input').click()" class="text-gray-400 hover:text-brand-info w-10 h-10 flex items-center justify-center transition-colors active:scale-90">
                     <i class="fas fa-image text-lg"></i>
                 </button>
-
                 <input type="text" id="chat-room-input" placeholder="Ketik pesan balasan..." class="flex-1 bg-black/50 border border-white/10 rounded-full px-4 py-3 text-xs text-white focus:outline-none focus:border-[#FF007A] transition-colors shadow-inner">
                 <button id="btn-send-room" class="bg-gradient-to-br from-[#FF007A] to-[#8A2BE2] text-white w-10 h-10 rounded-full flex items-center justify-center active:scale-90 transition-transform shadow-[0_0_15px_rgba(255,0,122,0.4)]">
                     <i class="fas fa-paper-plane text-xs ml-[-2px]"></i>
@@ -586,32 +616,6 @@
             }, 3000);
         }
 
-        function customPrompt(title, defaultValue = '') {
-            return new Promise((resolve) => {
-                const modal = document.getElementById('modal-prompt');
-                const titleEl = document.getElementById('prompt-title');
-                const inputEl = document.getElementById('prompt-input');
-                const btnOk = document.getElementById('prompt-ok');
-                const btnCancel = document.getElementById('prompt-cancel');
-
-                titleEl.innerText = title;
-                inputEl.value = defaultValue;
-                modal.classList.remove('hidden');
-                modal.classList.add('flex');
-                inputEl.focus();
-
-                const cleanup = () => {
-                    modal.classList.add('hidden');
-                    modal.classList.remove('flex');
-                    btnOk.onclick = null;
-                    btnCancel.onclick = null;
-                };
-
-                btnOk.onclick = () => { cleanup(); resolve(inputEl.value); };
-                btnCancel.onclick = () => { cleanup(); resolve(null); };
-            });
-        }
-
         // === 1. KONFIGURASI SUPABASE & VARIABLE GLOBAL ===
         const SUPABASE_URL = "https://divckiqkodtqudcoxkjz.supabase.co";
         const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRpdmNraXFrb2R0cXVkY294a2p6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgzNDY0MzIsImV4cCI6MjA5MzkyMjQzMn0.z_FIS_rpDQPQ7nNWpuvabH7qDYgu7uq6TlYj9LSOcJQ";
@@ -621,11 +625,17 @@
         let dataRipperGlobal = [], isRipperExpanded = localStorage.getItem('statusLihatSemua') === 'true';
         let viewedUserId = null; 
         
-        // Variable untuk Feed & Video
+        // Variable Feed & Sosial
         let allVideosData = []; 
         let newUploads = []; 
         let obs = null, activeVideoId = null, lastTap = 0, isGlobalMuted = true;
         let replyingToId = null, replyingToName = null;
+
+        // Variable Fitur Chat (Presence & Messages)
+        let activeChatUserId = null;
+        let messageSubscription = null;
+        let presenceChannel = null;
+        let onlineUsersMap = new Map();
 
         const services = [
             { id: 1, name: 'Joki Ballroom', price: 7500, label: '', desc: 'Estimasi pengerjaan 2 jam.' },
@@ -658,7 +668,9 @@
                 document.querySelectorAll('#profile-logged-in').forEach(el => el.classList.remove('hidden')); 
                 document.getElementById('profile-logged-out').classList.add('hidden'); 
                 updateUIForLoggedIn(); 
+                initPresence(); // Inisialisasi Deteksi Online
             } else { 
+                if (presenceChannel) { supabaseClient.removeChannel(presenceChannel); presenceChannel = null; }
                 document.querySelectorAll('#profile-logged-in').forEach(el => el.classList.add('hidden')); 
                 document.getElementById('profile-logged-out').classList.remove('hidden'); 
                 updateUIForLoggedOut(); 
@@ -869,38 +881,42 @@
             if (isPush && window.location.hash !== `#${tabId}`) history.pushState(null, null, `#${tabId}`);
         }
 
+        // PEROMBAKAN EVENT LISTENER TOMBOL KEMBALI
         window.addEventListener('popstate', () => {
+            let isPopupClosed = false;
+
+            // 1. Tutup Komentar Dulu (Prioritas Utama)
+            const commentDrawer = document.getElementById('comment-drawer');
+            if (commentDrawer.classList.contains('open')) {
+                commentDrawer.classList.remove('open');
+                cancelReply();
+                return; 
+            }
+
+            // 2. Tutup Video Mengambang Jika Komentar Sudah Tertutup
             const floatingPlayer = document.getElementById('floating-video-player');
             if (!floatingPlayer.classList.contains('hidden')) { 
                 closeFloatingVideo(); 
                 return; 
             }
 
-            if (window.location.hash.startsWith('#profile') && viewedUserId !== currentUser?.id) {
-                viewedUserId = currentUser?.id;
-                checkSession(); 
-                return;
-            }
-
-            let isPopupClosed = false;
-            
+            // 3. Tutup Popup Lainnya
             const modalEvent = document.getElementById('modal-event');
             if (!modalEvent.classList.contains('hidden')) {
                 modalEvent.classList.add('hidden'); modalEvent.classList.remove('flex');
                 document.body.style.overflow = 'auto'; isPopupClosed = true;
             }
-            
+
+            const modalEditProfile = document.getElementById('modal-edit-profile');
+            if (!modalEditProfile.classList.contains('hidden')) {
+                closeEditProfileModal();
+                isPopupClosed = true;
+            }
+
             const widget = document.getElementById('floating-widget');
             if (!widget.classList.contains('opacity-0')) {
                 widget.classList.add('opacity-0', 'pointer-events-none', 'translate-y-8', 'scale-95');
                 closeChatRoom(false);
-                isPopupClosed = true;
-            }
-
-            const commentDrawer = document.getElementById('comment-drawer');
-            if (commentDrawer.classList.contains('open')) {
-                commentDrawer.classList.remove('open');
-                cancelReply();
                 isPopupClosed = true;
             }
 
@@ -912,8 +928,25 @@
             }
 
             if (isPopupClosed) return;
-            switchTab(window.location.hash.substring(1) || 'home', null, false);
+
+            // 4. Deteksi Kembali dari Layar Profil
+            const newHash = window.location.hash.substring(1) || 'home';
+            
+            if (newHash === 'profile' && viewedUserId !== currentUser?.id) {
+                viewedUserId = currentUser?.id;
+                checkSession(); 
+            }
+
+            switchTab(newHash.split('?')[0], null, false);
         });
+
+        function kembaliDariProfil() {
+            if (window.history.length > 1) {
+                history.back();
+            } else {
+                switchTab('sosial');
+            }
+        }
 
         function openModalEvent() {
             history.pushState({ popup: 'modal' }, null, '#event'); 
@@ -952,6 +985,7 @@
             
             document.querySelectorAll('#profile-actions-own').forEach(el => el.classList.toggle('hidden', !isOwn));
             document.querySelectorAll('#profile-actions-other').forEach(el => el.classList.toggle('hidden', isOwn));
+            
             document.getElementById('btn-back-profile').classList.toggle('hidden', isOwn);
             
             const inputAva = document.getElementById('btn-edit-avatar');
@@ -970,6 +1004,7 @@
             
             document.getElementById('profile-loading').classList.add('hidden');
             document.querySelectorAll('#profile-logged-in').forEach(el => el.classList.remove('hidden'));
+            
             if(!isOwn) history.pushState({ popup: 'user_profile' }, null, `#profile?id=${userId}`);
         }
         
@@ -996,6 +1031,11 @@
             if (floatLike && floatComment) {
                 floatLike.dataset.vid = vidId;
                 floatComment.dataset.vid = vidId;
+                
+                floatLike.querySelector('i').classList.replace('text-brand-accent', 'text-white');
+                floatLike.querySelector('.like-count-display').innerText = '0';
+                floatComment.querySelector('.comment-count-display').innerText = '0';
+
                 updateLikeCountUI(vidId, floatLike);
                 updateCommentCountUI(vidId, floatComment);
             }
@@ -1011,6 +1051,27 @@
             const v = document.getElementById('v-floating');
             if(v) { v.pause(); v.src = ""; }
             if(p) { p.classList.add('hidden'); p.classList.remove('flex'); }
+        }
+        
+        function handleFloatingVideoClick(event) {
+            const now = Date.now();
+            const TIMESLOT = 300; 
+            const v = document.getElementById('v-floating');
+            
+            if (now - lastTap < TIMESLOT) {
+                const likeBtn = document.querySelector('#float-like-container button');
+                if (activeVideoId) {
+                    likeVideo(activeVideoId, likeBtn);
+                    createHeartAt(event);
+                }
+            } else {
+                setTimeout(() => { 
+                    if (Date.now() - lastTap >= TIMESLOT) {
+                        if (v.paused) v.play(); else v.pause();
+                    } 
+                }, TIMESLOT);
+            }
+            lastTap = now;
         }
 
         // === 5. RENDER INFO, JOKI, RIPPER ===
@@ -1260,6 +1321,12 @@
                     await loadComments(activeVideoId, true);
                     const container = document.querySelector(`.comment-count-container[data-vid="${activeVideoId}"]`);
                     if(container) updateCommentCountUI(activeVideoId, container);
+                    
+                    const floatComment = document.getElementById('float-comment-container');
+                    if (floatComment && floatComment.dataset.vid === activeVideoId) {
+                        updateCommentCountUI(activeVideoId, floatComment);
+                    }
+
                     cancelReply();
                 } else {
                     throw new Error("Gagal menyimpan komentar");
@@ -1332,7 +1399,7 @@
                 const response = await fetch('/api/like', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ video_id: videoId }) });
                 if (response.ok) { 
                     localStorage.setItem(`liked_${videoId}`, 'true'); 
-                    updateLikeCountUI(videoId, btn.closest('.like-container')); 
+                    updateLikeCountUI(videoId, btn.closest('.like-container') || document.getElementById('float-like-container')); 
                 } else {
                     localStorage.removeItem(`liked_${videoId}`);
                     icon.classList.replace('text-brand-accent', 'text-white');
@@ -1532,7 +1599,7 @@
             }
 
             grid.innerHTML = reversedVideos.map(vid => `
-                <div class="aspect-[9/16] bg-black relative rounded-md overflow-hidden border border-white/10 group cursor-pointer" onclick="playFloatingVideo('${vid.video_url}', '${vid.nickname || 'Player'}', '${(vid.caption || '').replace(/'/g, "\\'")}', '${vid.id}')">
+                <div class="aspect-[9/16] bg-black relative rounded-md overflow-hidden border border-white/10 group cursor-pointer" onclick="playFloatingVideo('${vid.video_url}', '${(vid.nickname || 'Player').replace(/'/g, "\\'")}', '${(vid.caption || '').replace(/'/g, "\\'")}', '${vid.id}')">
                     <video class="w-full h-full object-cover" preload="metadata">
                         <source src="${vid.video_url}" type="video/mp4">
                     </video>
@@ -1629,22 +1696,34 @@
         }
 
         // ==========================================
-        // FITUR PROFIL
+        // FITUR PROFIL & PRESENCE ONLINE
         // ==========================================
 
-        async function editProfileInfo() {
-            const newNick = await customPrompt("Ubah Nickname:", userProfile?.nickname || "");
-            if (newNick === null) return; 
+        function openEditProfileModal() {
+            if(!currentUser) return;
+            document.getElementById('edit-nick').value = userProfile?.nickname || '';
+            document.getElementById('edit-bio').value = userProfile?.bio || '';
+            document.getElementById('modal-edit-profile').classList.remove('hidden');
+            document.getElementById('modal-edit-profile').classList.add('flex');
+        }
+
+        function closeEditProfileModal() {
+            const m = document.getElementById('modal-edit-profile');
+            m.classList.add('hidden'); m.classList.remove('flex');
+        }
+
+        async function saveProfileInfo() {
+            const newNick = document.getElementById('edit-nick').value.trim();
+            const newBio = document.getElementById('edit-bio').value.trim();
             
-            const newBio = await customPrompt("Ubah Bio (Deskripsi):", userProfile?.bio || "");
-            if (newBio === null) return; 
+            if(!newNick) return showToast("Nickname tidak boleh kosong!", "error");
 
             const currentAvatar = userProfile?.avatar_url || "";
             
             const { error } = await supabaseClient.from('profiles').upsert({ 
                 id: currentUser.id, 
-                nickname: newNick.trim() || "Player", 
-                bio: newBio.trim(),
+                nickname: newNick || "Player", 
+                bio: newBio,
                 avatar_url: currentAvatar 
             }); 
 
@@ -1654,7 +1733,8 @@
                 await fetchProfile(); 
                 updateUIForLoggedIn(); 
                 
-                document.querySelectorAll('#profile-bio').forEach(el => el.innerText = newBio.trim());
+                document.querySelectorAll('#profile-bio').forEach(el => el.innerText = newBio || "Belum ada deskripsi.");
+                closeEditProfileModal();
                 showToast("Profil berhasil diperbarui!", "success");
             }
         }
@@ -1695,12 +1775,54 @@
             fetchFollowStats(targetUserId);
         }
 
-        // ==========================================
-        // FITUR PESAN PRIBADI (DIRECT MESSAGE) & KIRIM GAMBAR
-        // ==========================================
-        let activeChatUserId = null;
-        let messageSubscription = null;
+        async function initPresence() {
+            if (!currentUser || presenceChannel) return;
 
+            presenceChannel = supabaseClient.channel('global_presence', {
+                config: { presence: { key: currentUser.id } }
+            });
+
+            presenceChannel
+                .on('presence', { event: 'sync' }, () => {
+                    const newState = presenceChannel.presenceState();
+                    onlineUsersMap.clear();
+                    for (const id in newState) {
+                        onlineUsersMap.set(id, true);
+                    }
+                    updatePresenceUI();
+                })
+                .subscribe(async (status) => {
+                    if (status === 'SUBSCRIBED') {
+                        await presenceChannel.track({ online_at: new Date().toISOString() });
+                    }
+                });
+        }
+
+        function updatePresenceUI() {
+            if (activeChatUserId) {
+                const statusEl = document.getElementById('active-chat-status');
+                const dotEl = document.getElementById('active-chat-online-dot');
+                const isOnline = onlineUsersMap.has(activeChatUserId);
+                
+                if (statusEl) {
+                    statusEl.innerText = isOnline ? 'Online' : 'Offline';
+                    statusEl.className = isOnline ? 'text-[9px] text-brand-info' : 'text-[9px] text-gray-500';
+                }
+                if (dotEl) {
+                    isOnline ? dotEl.classList.remove('hidden') : dotEl.classList.add('hidden');
+                }
+            }
+            
+            document.querySelectorAll('.online-indicator').forEach(el => {
+                const uid = el.dataset.uid;
+                onlineUsersMap.has(uid) ? el.classList.remove('hidden') : el.classList.add('hidden');
+            });
+        }
+
+        // ==========================================
+        // FITUR PESAN PRIBADI (DIRECT MESSAGE) 
+        // ==========================================
+        
         function toggleWidget() {
             const widget = document.getElementById('floating-widget');
             if (widget.classList.contains('opacity-0')) {
@@ -1725,7 +1847,7 @@
                     <div class="flex flex-col items-center justify-center mt-20 p-6 text-center">
                         <i class="fas fa-user-lock text-4xl text-gray-600 mb-3"></i>
                         <h4 class="text-white font-bold text-sm mb-1">Login Diperlukan</h4>
-                        <p class="text-xs text-gray-500 mb-4">Silakan login untuk melihat dan membalas pesan.</p>
+                        <p class="text-xs text-gray-500 mb-4">Silakan login untuk melihat pesan.</p>
                         <button onclick="openAuthModal()" class="bg-brand-accent text-white px-6 py-2 rounded-full font-bold text-xs active:scale-95">Login Sekarang</button>
                     </div>`;
                 return;
@@ -1734,6 +1856,19 @@
             container.innerHTML = '<div class="flex justify-center mt-10"><i class="fas fa-spinner fa-spin text-brand-accent text-2xl"></i></div>';
 
             try {
+                // Hitung pesan yang belum terbaca
+                const unreadCounts = {};
+                const { data: unreads } = await supabaseClient
+                    .from('messages')
+                    .select('sender_id')
+                    .eq('receiver_id', currentUser.id)
+                    .eq('is_read', false);
+                
+                if (unreads) {
+                    unreads.forEach(u => { unreadCounts[u.sender_id] = (unreadCounts[u.sender_id] || 0) + 1; });
+                }
+
+                // Ambil daftar pesan
                 const { data: messages, error } = await supabaseClient
                     .from('messages')
                     .select('*')
@@ -1770,21 +1905,32 @@
                     const latestMsg = contacts[profile.id];
                     const ava = profile.avatar_url || `https://ui-avatars.com/api/?name=${profile.nickname}&background=1A1133&color=fff`;
                     const isMeSender = latestMsg.sender_id === currentUser.id;
-                    const prefix = isMeSender ? '<i class="fas fa-check-double text-brand-info mr-1 text-[10px]"></i>' : '';
                     
-                    // Deteksi teks preview untuk gambar
-                    let previewText = latestMsg.message;
-                    if(previewText.startsWith('[IMG]')) {
-                        previewText = '<i class="fas fa-image mr-1"></i> Mengirim gambar';
+                    let prefix = '';
+                    if (isMeSender) {
+                        prefix = (latestMsg.is_read || latestMsg.is_read === 'true') 
+                            ? '<i class="fas fa-check-double text-brand-info mr-1 text-[10px]"></i>' 
+                            : '<i class="fas fa-check text-white/60 mr-1 text-[10px]"></i>';
                     }
+                    
+                    let previewText = latestMsg.message;
+                    if(previewText.startsWith('[IMG]')) previewText = '<i class="fas fa-image mr-1"></i> Mengirim gambar';
+                    
+                    const unreadBadge = unreadCounts[profile.id] ? `<div class="bg-brand-accent text-white text-[9px] font-bold w-4 h-4 flex items-center justify-center rounded-full ml-2">${unreadCounts[profile.id]}</div>` : '';
                     
                     html += `
                     <div onclick="openChatRoom('${profile.id}', '${profile.nickname.replace(/'/g, "\\'")}', '${ava}')" class="flex items-center p-3 bg-brand-card/50 hover:bg-white/5 cursor-pointer rounded-2xl border border-white/5 transition-all mb-2">
-                        <img src="${ava}" class="w-12 h-12 rounded-full object-cover border border-brand-accent/30 shrink-0">
+                        <div class="relative shrink-0">
+                            <img src="${ava}" class="w-12 h-12 rounded-full object-cover border border-brand-accent/30">
+                            <div data-uid="${profile.id}" class="online-indicator hidden absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-[#1A1133] rounded-full"></div>
+                        </div>
                         <div class="flex-1 min-w-0 ml-3">
-                            <div class="flex justify-between items-baseline mb-1">
+                            <div class="flex justify-between items-center mb-1">
                                 <h4 class="font-bold text-white text-[13px] truncate">${profile.nickname}</h4>
-                                <span class="text-[9px] text-gray-500 shrink-0 ml-2">${timeAgo(latestMsg.created_at)}</span>
+                                <div class="flex items-center">
+                                    <span class="text-[9px] text-gray-500 shrink-0 ml-2">${timeAgo(latestMsg.created_at)}</span>
+                                    ${unreadBadge}
+                                </div>
                             </div>
                             <p class="text-[11px] text-gray-400 truncate">${prefix} ${previewText}</p>
                         </div>
@@ -1792,6 +1938,7 @@
                 });
                 
                 container.innerHTML = html;
+                updatePresenceUI(); // Update indikator online yg baru dirender
 
             } catch (e) {
                 container.innerHTML = '<div class="p-6 text-center text-xs text-red-500">Gagal memuat pesan.</div>';
@@ -1809,6 +1956,7 @@
 
             document.getElementById('active-chat-name').innerText = nickname;
             document.getElementById('active-chat-avatar').src = avatar;
+            updatePresenceUI();
 
             const container = document.getElementById('chat-messages-container');
             container.innerHTML = '<div class="flex justify-center mt-10"><i class="fas fa-spinner fa-spin text-brand-accent text-xl"></i></div>';
@@ -1816,14 +1964,19 @@
             const sendBtn = document.getElementById('btn-send-room');
             sendBtn.onclick = () => sendRoomMessage(userId);
 
-            const { data: messages } = await supabaseClient
-                .from('messages')
+            // Tandai pesan telah dibaca
+            await supabaseClient.from('messages')
+                .update({ is_read: true })
+                .eq('sender_id', userId)
+                .eq('receiver_id', currentUser.id)
+                .eq('is_read', false);
+
+            const { data: messages } = await supabaseClient.from('messages')
                 .select('*')
                 .or(`and(sender_id.eq.${currentUser.id},receiver_id.eq.${userId}),and(sender_id.eq.${userId},receiver_id.eq.${currentUser.id})`)
                 .order('created_at', { ascending: true });
 
             container.innerHTML = '';
-            
             if(messages && messages.length > 0) {
                 messages.forEach(msg => appendMessageBubble(msg));
             } else {
@@ -1838,12 +1991,21 @@
             if (messageSubscription) supabaseClient.removeChannel(messageSubscription);
             
             messageSubscription = supabaseClient
-                .channel('public:messages')
+                .channel(`room_${userId}`)
                 .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => {
                     const newMsg = payload.new;
                     if (newMsg.sender_id === activeChatUserId && newMsg.receiver_id === currentUser.id) {
                         appendMessageBubble(newMsg);
                         scrollToBottomChat();
+                        // Tandai langsung dibaca karena sedang buka room
+                        supabaseClient.from('messages').update({ is_read: true }).eq('id', newMsg.id).then();
+                    }
+                })
+                .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'messages' }, payload => {
+                    const updatedMsg = payload.new;
+                    if (updatedMsg.sender_id === currentUser.id && updatedMsg.is_read) {
+                        const tick = document.getElementById('tick-' + updatedMsg.id);
+                        if (tick) tick.className = 'fas fa-check-double text-[8px] text-brand-info';
                     }
                 })
                 .subscribe();
@@ -1864,7 +2026,6 @@
             if(reloadList) loadChatList(); 
         }
 
-        // --- RENDER BUBBLE CHAT (Mendukung Gambar & Teks) ---
         function appendMessageBubble(msg) {
             const container = document.getElementById('chat-messages-container');
             const isMe = msg.sender_id === currentUser.id;
@@ -1874,14 +2035,19 @@
 
             if(container.innerHTML.includes('fa-hand-sparkles')) container.innerHTML = '';
 
-            // Deteksi apakah pesan berupa gambar (diawali dengan [IMG])
             let contentHtml = '';
             if (msg.message.startsWith('[IMG]')) {
-                const imgUrl = msg.message.substring(5); // Ambil URL setelah teks [IMG]
+                const imgUrl = msg.message.substring(5); 
                 contentHtml = `<img src="${imgUrl}" alt="Sent Image" class="rounded-lg max-w-[200px] w-full object-cover mb-1 cursor-pointer" onclick="window.open('${imgUrl}', '_blank')">`;
             } else {
                 contentHtml = `<p class="text-[12px] leading-relaxed break-words">${msg.message}</p>`;
             }
+
+            const tickIcon = isMe 
+                ? (msg.is_read || msg.is_read === 'true' 
+                    ? `<i class="fas fa-check-double text-[8px] text-brand-info" id="tick-${msg.id || 'temp'}"></i>` 
+                    : `<i class="fas fa-check text-[8px] text-white/60" id="tick-${msg.id || 'temp'}"></i>`) 
+                : '';
 
             const div = document.createElement('div');
             div.className = `flex w-full mb-3 ${alignClass} message-anim`;
@@ -1890,7 +2056,7 @@
                     ${contentHtml}
                     <div class="flex items-center justify-end gap-1 mt-1">
                         <span class="text-[9px] text-white/60">${timeStr}</span>
-                        ${isMe ? '<i class="fas fa-check-double text-[8px] text-white/60"></i>' : ''}
+                        ${tickIcon}
                     </div>
                 </div>
             `;
@@ -1902,7 +2068,6 @@
             container.scrollTop = container.scrollHeight;
         }
 
-        // --- FUNGSI KIRIM TEKS ---
         async function sendRoomMessage(targetUserId) {
             const input = document.getElementById('chat-room-input');
             const msgText = input.value.trim();
@@ -1910,76 +2075,80 @@
 
             input.value = ''; 
             
+            const tempId = 'temp-' + Date.now();
             const tempMsg = {
+                id: tempId,
                 sender_id: currentUser.id,
                 receiver_id: targetUserId,
                 message: msgText,
-                created_at: new Date().toISOString()
+                created_at: new Date().toISOString(),
+                is_read: false
             };
             appendMessageBubble(tempMsg);
             scrollToBottomChat();
 
-            const { error } = await supabaseClient.from('messages').insert({
+            const { data, error } = await supabaseClient.from('messages').insert({
                 sender_id: currentUser.id,
                 receiver_id: targetUserId,
                 message: msgText
-            });
+            }).select().single();
 
-            if (error) showToast("Gagal mengirim pesan", "error");
+            if (error) {
+                showToast("Gagal mengirim pesan", "error");
+            } else if(data) {
+                const tempTick = document.getElementById('tick-' + tempId);
+                if(tempTick) tempTick.id = 'tick-' + data.id;
+            }
         }
         
-        // --- FUNGSI KIRIM GAMBAR (Upload ke BiznetGio -> Simpan link ke Supabase) ---
         async function uploadChatImage(event) {
             const file = event.target.files[0];
             if (!file || !activeChatUserId) return;
 
-            event.target.value = ''; // Reset input file
+            event.target.value = ''; 
             showToast("Menyiapkan gambar...", "info");
 
             try {
-                // 1. Minta Izin Upload ke Server (Pakai API yang sudah ada)
                 const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent('chat_'+Date.now()+'_'+file.name)}&filetype=${encodeURIComponent(file.type)}`);
                 if (!resUrl.ok) throw new Error("Gagal mendapat akses upload");
                 const dataUrl = await resUrl.json();
 
                 showToast("Mengirim gambar...", "info");
 
-                // 2. Upload file fisik ke BiznetGio Storage
                 const uploadRes = await fetch(dataUrl.uploadUrl, {
                     method: 'PUT',
                     body: file,
-                    headers: { 
-                        'Content-Type': file.type,
-                        'x-amz-acl': 'public-read' 
-                    }
+                    headers: { 'Content-Type': file.type, 'x-amz-acl': 'public-read' }
                 });
 
                 if (!uploadRes.ok) throw new Error("Gagal upload gambar");
 
-                // URL Gambar Akhir
                 const imageUrl = dataUrl.finalVideoUrl; 
-
-                // 3. Simpan URL tersebut ke Supabase Tabel Messages dengan kode [IMG]
                 const msgText = `[IMG]${imageUrl}`;
+                const tempId = 'temp-' + Date.now();
                 
-                // Tampilkan langsung di layar (Optimistic UI)
                 const tempMsg = {
+                    id: tempId,
                     sender_id: currentUser.id,
                     receiver_id: activeChatUserId,
                     message: msgText,
-                    created_at: new Date().toISOString()
+                    created_at: new Date().toISOString(),
+                    is_read: false
                 };
                 appendMessageBubble(tempMsg);
                 scrollToBottomChat();
 
-                // Simpan ke Database
-                const { error } = await supabaseClient.from('messages').insert({
+                const { data, error } = await supabaseClient.from('messages').insert({
                     sender_id: currentUser.id,
                     receiver_id: activeChatUserId,
                     message: msgText
-                });
+                }).select().single();
 
                 if (error) throw error;
+                if(data) {
+                    const tempTick = document.getElementById('tick-' + tempId);
+                    if(tempTick) tempTick.id = 'tick-' + data.id;
+                }
                 showToast("Gambar terkirim!", "success");
 
             } catch (err) {
@@ -1988,9 +2157,7 @@
         }
         
         document.getElementById('chat-room-input').addEventListener('keypress', function (e) {
-            if (e.key === 'Enter') {
-                document.getElementById('btn-send-room').click();
-            }
+            if (e.key === 'Enter') document.getElementById('btn-send-room').click();
         });
 
         async function kirimPesanPribadi(targetUserId) {
