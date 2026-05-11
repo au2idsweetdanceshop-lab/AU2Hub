@@ -47,7 +47,7 @@
         .modal-anim { animation: modalIn 0.3s ease-out forwards; will-change: transform, opacity; }
         @keyframes smoothReveal { 0% { opacity: 0; transform: translateY(15px); } 100% { opacity: 1; transform: translateY(0); } }
         .smooth-reveal { animation: smoothReveal 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; will-change: transform, opacity; }
-        .heart-pop { position: fixed; color: #FF007A; font-size: 100px; pointer-events: none; z-index: 100; animation: heartAnim 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; text-shadow: 0 0 30px rgba(255, 0, 122, 0.8); transform: translate(-50%, -50%); }
+        .heart-pop { position: fixed; color: #FF007A; font-size: 100px; pointer-events: none; z-index: 9999; animation: heartAnim 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; text-shadow: 0 0 30px rgba(255, 0, 122, 0.8); transform: translate(-50%, -50%); }
         @keyframes heartAnim { 0% { transform: translate(-50%, -50%) scale(0) rotate(-15deg); opacity: 0; } 20% { transform: translate(-50%, -50%) scale(1.2) rotate(0deg); opacity: 0.9; } 40% { transform: translate(-50%, -50%) scale(1) rotate(5deg); opacity: 0.9; } 100% { transform: translate(-50%, -150%) scale(1.5) rotate(0deg); opacity: 0; } }
         
         /* Toast Animation */
@@ -983,9 +983,23 @@
         }
 
         // === 4. FUNGSI NAVIGASI & POPUP ===
-        function toggleGlobalAudio(currentVideo) {
+        function toggleGlobalAudio() {
             isGlobalMuted = !isGlobalMuted;
+            
+            // Terapkan ke semua video di feed komunitas
             document.querySelectorAll('.video-player').forEach(v => v.muted = isGlobalMuted);
+            
+            // Terapkan juga ke video mengambang di profil (jika sedang dibuka)
+            const floatVid = document.getElementById('v-floating');
+            if (floatVid) floatVid.muted = isGlobalMuted;
+
+            // Munculkan notifikasi agar browser merespon suara
+            if(isGlobalMuted) {
+                showToast("Mute: Suara Dimatikan", "info");
+            } else {
+                showToast("Unmute: Suara Dinyalakan", "success");
+            }
+        }
         }
 
         function switchTab(tabId, event = null, isPush = true) {
@@ -1194,6 +1208,11 @@
             p.classList.remove('hidden'); p.classList.add('flex');
             v.play();
             history.pushState({ popup: 'floating_video' }, null);
+            v.src = url;
+            v.muted = isGlobalMuted; // <-- Tambahkan baris ini
+            p.classList.remove('hidden'); p.classList.add('flex');
+            v.play();
+            history.pushState({ popup: 'floating_video' }, null);
         }
 
         function closeFloatingVideo() {
@@ -1217,8 +1236,9 @@
             } else {
                 setTimeout(() => { 
                     if (Date.now() - lastTap >= TIMESLOT) {
-                        if (v.paused) v.play(); else v.pause();
-                    } 
+                        ifif (Date.now() - lastTap >= TIMESLOT) {
+                        toggleGlobalAudio(); // Panggil fungsi suara, BUKAN pause/play
+                    }
                 }, TIMESLOT);
             }
             lastTap = now;
@@ -1756,36 +1776,57 @@
         }
 
         async function saveProfileInfo() {
-            const newNick = document.getElementById('edit-nick').value.trim();
-            const newBio = document.getElementById('edit-bio').value.trim();
-            const newPass = document.getElementById('edit-pass').value.trim();
-            
-            if(!newNick) return showToast("Nickname tidak boleh kosong!", "error");
+            // Ubah tombol jadi animasi Loading saat diklik
+            const btn = document.querySelector('button[onclick="saveProfileInfo()"]');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Menyimpan...';
+            btn.disabled = true;
 
-            // Update Password Auth Jika Diisi
-            if (newPass) {
-                const { error: errPass } = await supabaseClient.auth.updateUser({ password: newPass });
-                if (errPass) return showToast("Gagal ganti password: " + errPass.message, "error");
-            }
+            try {
+                const newNick = document.getElementById('edit-nick').value.trim();
+                const newBio = document.getElementById('edit-bio').value.trim();
+                const newPass = document.getElementById('edit-pass').value.trim();
+                
+                // Pengecekan Nickname
+                if(!newNick) {
+                    showToast("Nickname tidak boleh kosong!", "error");
+                    return;
+                }
 
-            const currentAvatar = userProfile?.avatar_url || "";
-            
-            const { error } = await supabaseClient.from('profiles').upsert({ 
-                id: currentUser.id, 
-                nickname: newNick || "Player", 
-                bio: newBio,
-                avatar_url: currentAvatar 
-            }); 
+                // Jika kolom password diisi, maka update password
+                if (newPass) {
+                    const { error: errPass } = await supabaseClient.auth.updateUser({ password: newPass });
+                    if (errPass) {
+                        showToast("Gagal ganti password: " + errPass.message, "error");
+                        return;
+                    }
+                }
 
-            if (error) {
-                showToast("Gagal merubah Profil: " + error.message, "error");
-            } else {
+                // Update Database Profil
+                const currentAvatar = userProfile?.avatar_url || "";
+                const { error } = await supabaseClient.from('profiles').upsert({ 
+                    id: currentUser.id, 
+                    nickname: newNick, 
+                    bio: newBio,
+                    avatar_url: currentAvatar 
+                }); 
+
+                if (error) throw error; // Lempar ke blok catch jika gagal
+
+                // Refresh Layar Otomatis
                 await fetchProfile(); 
                 updateUIForLoggedIn(); 
                 
-                document.querySelectorAll('#profile-bio').forEach(el => el.innerText = newBio || "Belum ada deskripsi.");
                 closeEditProfileModal();
                 showToast("Profil berhasil diperbarui!", "success");
+
+            } catch (err) {
+                // Tampilkan pesan jika ada error dari database
+                showToast("Terjadi Kesalahan: " + err.message, "error");
+            } finally {
+                // Kembalikan tombol ke keadaan semula
+                btn.innerHTML = originalText;
+                btn.disabled = false;
             }
         }
 
