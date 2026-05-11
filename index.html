@@ -718,8 +718,8 @@
         let newUploads = []; 
         let obs = null, activeVideoId = null, lastTap = 0, isGlobalMuted = true;
         let replyingToId = null, replyingToName = null;
-        let currentVideoIndex = 0; // FIX 1
-        const BATCH_SIZE = 5; // FIX 1
+        let currentVideoIndex = 0; 
+        const BATCH_SIZE = 5; 
 
         function formatCaption(text) {
             if(!text) return '';
@@ -1703,7 +1703,7 @@
                 }
                 
                 allVideosData = dataDariSheet;
-                currentVideoIndex = 0; // FIX 1: Reset Index Batch
+                currentVideoIndex = 0; 
                 container.innerHTML = ''; 
                 
                 renderProfileVideos();
@@ -1741,7 +1741,6 @@
         function renderVideoBatch() {
             const container = document.getElementById('feed-container');
             
-            // FIX 1: Potong array agar tidak melooping semua data
             const nextBatch = allVideosData.slice(currentVideoIndex, currentVideoIndex + BATCH_SIZE);
             if (nextBatch.length === 0) return;
 
@@ -1782,7 +1781,6 @@
 
             container.insertAdjacentHTML('beforeend', htmlString);
             
-            // FIX 1: Update index video setelah berhasil dirender
             currentVideoIndex += BATCH_SIZE;
 
             const videoActions = container.querySelectorAll('.snap-start:not(.data-loaded)');
@@ -2323,6 +2321,7 @@
                 }
             }
         }
+        
         async function prosesUploadVideo() {
             if (!currentUser) {
                 closeUploadModal();
@@ -2366,7 +2365,19 @@
                 const videoUrl = dataUrl.finalVideoUrl;
                 const newId = 'vid_' + Date.now(); 
 
-                const newVideoData = {
+                // 1. FORMAT UNTUK SPREADSHEET (Sesuai Metadata Kolom)
+                const spreadsheetPayload = {
+                    ID_Video: newId,
+                    URL_Video: videoUrl,
+                    Caption: caption,
+                    Nickname: userProfile?.nickname || "Player",
+                    Avatar_URL: userProfile?.avatar_url || "",
+                    User_ID: currentUser.id,
+                    Waktu: new Date().toISOString()
+                };
+
+                // 2. FORMAT UNTUK CACHE APLIKASI (Agar tidak error di feed Frontend)
+                const localVideoData = {
                     id: newId,
                     video_id: newId,
                     user_id: currentUser.id,
@@ -2377,13 +2388,23 @@
                     created_at: new Date().toISOString()
                 };
 
-                try {
-                    await supabaseClient.from('videos').insert(newVideoData);
-                } catch(e) {
-                    console.log("Catatan: Insert tabel gagal/belum dibuat, lanjut via cache lokal.");
+                showToast("Menyimpan data ke Spreadsheet...", "info");
+
+                // Pastikan '/api/save-video' diganti dengan endpoint Anda yang asli
+                const responseSimpan = await fetch('/api/save-video', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(spreadsheetPayload)
+                });
+
+                if (!responseSimpan.ok) {
+                    throw new Error("Gagal menyimpan data ke Spreadsheet.");
                 }
 
-                newUploads.unshift(newVideoData);
+                // Jika sukses tersimpan, masukkan format lokal ke cache sementara agar langsung tayang
+                newUploads.unshift(localVideoData);
 
                 showToast("Video berhasil diposting!", "success");
                 
@@ -2402,6 +2423,7 @@
                 btn.disabled = false;
             }
         }
+        
         async function uploadChatImage(event) {
             const file = event.target.files[0];
             if (!file || !activeChatUserId) return;
