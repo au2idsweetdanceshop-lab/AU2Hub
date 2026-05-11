@@ -362,7 +362,7 @@
     <div id="floating-video-player" class="fixed inset-0 z-[150] hidden items-center justify-center bg-black/95 backdrop-blur-lg px-4">
     <button onclick="closeFloatingVideo()" class="absolute top-6 right-6 text-white bg-white/10 w-12 h-12 rounded-full flex items-center justify-center active:scale-90 z-[160]"><i class="fas fa-times text-xl"></i></button>
     <div class="w-full max-w-sm aspect-[9/16] bg-black rounded-3xl overflow-hidden shadow-2xl relative">
-        <video id="v-floating" class="w-full h-full object-cover" loop autoplay muted playsinline controls></video>
+        <video id="v-floating" class="w-full h-full object-cover" loop controls playsinline></video>
         <div class="absolute bottom-0 left-0 w-full p-6 bg-gradient-to-t from-black/80 to-transparent">
             <p id="f-nickname" class="text-brand-info font-bold text-sm">@Nickname</p>
             <p id="f-caption" class="text-white text-[11px] mt-1">Caption video...</p>
@@ -1007,17 +1007,70 @@
             dots.forEach((dot, index) => { if (index === activeIndex) { dot.className = "dot-indicator h-1.5 rounded-full transition-all duration-300 w-4 bg-brand-accent"; } else { dot.className = "dot-indicator h-1.5 rounded-full transition-all duration-300 w-1.5 bg-white/40"; } });
         }
 
-        // --- 6. SISTEM KOMENTAR (FIXED) ---
+        // --- 6. SISTEM KOMENTAR ---
+        function openComments(id) {
+            history.pushState({ popup: 'comments' }, null, '#comments'); 
+            activeVideoId = id; 
+            document.getElementById('comment-drawer').classList.add('open'); 
+            loadComments(id); 
+        }
+
+        function closeComments() {
+            if (window.location.hash === '#comments') {
+                history.back(); 
+            } else {
+                document.getElementById('comment-drawer').classList.remove('open'); 
+                cancelReply();
+            }
+        }
+
+        async function loadComments(videoId, silent = false) {
+            const list = document.getElementById('comment-list');
+            if (!silent) {
+                list.innerHTML = '<div class="flex justify-center mt-10"><i class="fas fa-spinner fa-spin text-brand-accent text-3xl"></i></div>'; 
+            }
+            cancelReply();
+
+            try {
+                const response = await fetch(`/api/comment?video_id=${videoId}`);
+                const data = await response.json();
+                
+                document.getElementById('drawer-comment-count').innerText = data.length || 0;
+
+                if (data && data.length > 0) {
+                    const mainComments = data.filter(c => !c.parent_id);
+                    const replies = data.filter(c => c.parent_id);
+
+                    if(mainComments.length === 0) {
+                        list.innerHTML = '<p class="text-center text-xs text-gray-500 italic mt-10">Belum ada komentar.</p>';
+                        return;
+                    }
+
+                    let htmlOutput = '';
+                    mainComments.forEach(c => {
+                        const childReplies = replies.filter(r => r.parent_id == c.id);
+                        htmlOutput += buildCommentHTML(c, childReplies);
+                    });
+                    list.innerHTML = htmlOutput; 
+
+                    setTimeout(() => { data.forEach(c => fetchCommentLikes(c.id)); }, 50);
+                } else {
+                    list.innerHTML = '<p class="text-center text-xs text-gray-500 italic mt-10">Jadilah yang pertama berkomentar!</p>';
+                }
+            } catch(e) { 
+                if(!silent) list.innerHTML = '<p class="text-center text-xs text-red-500 mt-10">Gagal memuat komentar.</p>'; 
+            }
+        }
+
         function buildCommentHTML(comment, replies = []) {
             const ava = comment.avatar_url || `https://ui-avatars.com/api/?name=${comment.nickname || 'User'}&background=1A1133&color=fff`;
-            
             let html = `
             <div class="flex items-start gap-3 mb-5">
                 <img src="${ava}" class="w-8 h-8 rounded-full object-cover border border-white/10 shrink-0 mt-1">
                 <div class="flex-1">
                     <div class="flex justify-between items-start">
                         <div class="pr-2">
-                            <b onclick="openUserProfile('${comment.user_id}'); closeComments();" class="text-brand-info text-[11px] cursor-pointer hover:underline">${comment.nickname}</b>
+                            <b class="text-brand-info text-[11px]">${comment.nickname}</b>
                             <p class="text-gray-200 text-xs mt-0.5 leading-relaxed break-words">${comment.message}</p>
                             <div class="flex items-center gap-4 mt-1.5"><span class="text-[9px] text-gray-600">${timeAgo(comment.created_at)}</span><button onclick="setReply('${comment.id}', '${comment.nickname}')" class="text-[10px] text-gray-400 font-bold hover:text-white">Balas</button></div>
                         </div>
@@ -1058,88 +1111,336 @@
             html += `</div></div>`; return html;
         }
 
+        function toggleReplies(id) {
+            const div = document.getElementById('replies-'+id); const icon = document.getElementById('icon-reply-'+id);
+            if(div.classList.contains('hidden')) { div.classList.remove('hidden'); icon.style.transform = 'rotate(180deg)'; } 
+            else { div.classList.add('hidden'); icon.style.transform = 'rotate(0deg)'; }
+        }
+
+        function setReply(parentId, nickname) {
+            replyingToId = parentId; replyingToName = nickname;
+            document.getElementById('reply-indicator').classList.remove('hidden');
+            document.getElementById('replying-to-name').innerText = '@' + nickname;
+            const input = document.getElementById('comment-input'); input.focus();
+            if(nickname) input.value = `@${nickname} `;
+        }
+
+        function cancelReply() {
+            replyingToId = null; replyingToName = null;
+            document.getElementById('reply-indicator').classList.add('hidden');
+            const input = document.getElementById('comment-input');
+            if (input.value.startsWith('@')) input.value = '';
+        }
+
         async function sendComment(event) {
             if (!currentUser) return openAuthModal(); 
             const msgInput = document.getElementById('comment-input');
             const msg = msgInput.value.trim();
-            if (!msg) { showToast("Komentar tidak boleh kosong!", "error"); return; }
+            if (!msg) {
+                showToast("Komentar tidak boleh kosong!", "error");
+                return;
+            }
+
             const btn = event.currentTarget;
             const iconAsli = btn.innerHTML; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>'; btn.disabled = true;
+
             try {
-                const payload = { 
-                    video_id: activeVideoId, 
-                    nickname: userProfile?.nickname || "Player", 
-                    message: msg, 
-                    avatar_url: userProfile?.avatar_url || "",
-                    user_id: currentUser.id 
-                };
+                const payload = { video_id: activeVideoId, nickname: userProfile?.nickname || "Player", message: msg, avatar_url: userProfile?.avatar_url || "" };
                 if (replyingToId) payload.parent_id = replyingToId;
-                const response = await fetch('/api/comment', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-                if (response.ok) { msgInput.value = ''; await loadComments(activeVideoId, true); cancelReply(); }
-            } catch(e) { showToast("Gagal kirim komentar.", "error"); } finally { btn.innerHTML = iconAsli; btn.disabled = false; }
+
+                const response = await fetch('/api/comment', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+                });
+
+                if (response.ok) {
+                    msgInput.value = ''; 
+                    await loadComments(activeVideoId, true);
+                    const container = document.querySelector(`.comment-count-container[data-vid="${activeVideoId}"]`);
+                    if(container) updateCommentCountUI(activeVideoId, container);
+                    cancelReply();
+                } else {
+                    throw new Error("Gagal menyimpan komentar");
+                }
+            } catch(e) { 
+                showToast("Gagal kirim komentar.", "error"); 
+            } finally { 
+                btn.innerHTML = iconAsli; btn.disabled = false; 
+            }
         }
 
-        // --- 7. FUNGSI SOSIAL & FEED (FIXED ICONS) ---
+        async function fetchCommentLikes(cid) {
+            try { const res = await fetch(`/api/comment_like?comment_id=${cid}`); const data = await res.json(); const span = document.querySelector(`.comment-like-count[data-cid="${cid}"]`); if(span) span.innerText = data.count || 0; } catch(e) {}
+        }
+
+        async function likeComment(cid, btn) {
+            if(localStorage.getItem('comment_liked_'+cid)) return; 
+            
+            // KUNCI LANGSUNG! (Pencegah Spam)
+            localStorage.setItem('comment_liked_'+cid, 'pending');
+
+            const icon = btn.querySelector('i'); 
+            icon.classList.remove('text-gray-500'); 
+            icon.classList.add('text-brand-accent', 'animate-ping'); 
+            setTimeout(() => icon.classList.remove('animate-ping'), 500);
+
+            try {
+                const res = await fetch('/api/comment_like', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({comment_id: cid}) });
+                if(res.ok) { 
+                    localStorage.setItem('comment_liked_'+cid, 'true'); 
+                    fetchCommentLikes(cid); 
+                } else {
+                    localStorage.removeItem('comment_liked_'+cid);
+                    icon.classList.add('text-gray-500'); icon.classList.remove('text-brand-accent');
+                }
+            } catch(e) { 
+                localStorage.removeItem('comment_liked_'+cid);
+                icon.classList.add('text-gray-500'); icon.classList.remove('text-brand-accent'); 
+            }
+        }
+
+        // --- 7. FUNGSI SOSIAL (VIDEO FEED & DOUBLE TAP LIKES) ---
+        async function updateLikeCountUI(videoId, containerDiv) {
+            try {
+                const response = await fetch(`/api/like?video_id=${videoId}`); const data = await response.json();
+                const countSpan = containerDiv.querySelector('.like-count-display');
+                if (countSpan && data.count !== undefined) countSpan.innerText = data.count;
+                if(localStorage.getItem(`liked_${videoId}`)) containerDiv.querySelector('i').classList.replace('text-white', 'text-brand-accent');
+            } catch(e) {}
+        }
+
+        async function updateCommentCountUI(videoId, containerDiv) {
+            try {
+                const response = await fetch(`/api/comment?video_id=${videoId}`); const data = await response.json();
+                const countSpan = containerDiv.querySelector('.comment-count-display');
+                if (countSpan && Array.isArray(data)) countSpan.innerText = data.length;
+            } catch(e) {}
+        }
+
+        async function likeVideo(videoId, btn) {
+            if(localStorage.getItem(`liked_${videoId}`)) return; 
+            
+            // KUNCI LANGSUNG! (Pencegah Spam)
+            localStorage.setItem(`liked_${videoId}`, 'pending'); 
+
+            const icon = btn.querySelector('i'); 
+            icon.classList.replace('text-white', 'text-brand-accent'); 
+            icon.classList.add('animate-ping'); 
+            setTimeout(() => icon.classList.remove('animate-ping'), 500);
+
+            try {
+                const response = await fetch('/api/like', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ video_id: videoId }) });
+                if (response.ok) { 
+                    localStorage.setItem(`liked_${videoId}`, 'true'); 
+                    updateLikeCountUI(videoId, btn.closest('.like-container')); 
+                } else {
+                    localStorage.removeItem(`liked_${videoId}`);
+                    icon.classList.replace('text-brand-accent', 'text-white');
+                }
+            } catch (e) { 
+                localStorage.removeItem(`liked_${videoId}`);
+                icon.classList.replace('text-brand-accent', 'text-white'); 
+            }
+        }
+
+        function handleVideoError(videoElement) { const container = videoElement.closest('.snap-start'); if (container) container.remove(); }
+
+        // DOUBLE TAP LOGIC + HATI POP UP
+        function handleVideoClick(event, video, vidId) {
+            const now = Date.now();
+            const TIMESLOT = 300; 
+            if (now - lastTap < TIMESLOT) {
+                const container = video.closest('.snap-start');
+                const likeBtn = container.querySelector('.like-container button');
+                likeVideo(vidId, likeBtn);
+                createHeartAt(event);
+            } else {
+                setTimeout(() => { if (Date.now() - lastTap >= TIMESLOT) toggleGlobalAudio(video); }, TIMESLOT);
+            }
+            lastTap = now;
+        }
+
+        function createHeartAt(event) {
+            const heart = document.createElement('i');
+            heart.className = 'fas fa-heart heart-pop';
+            const x = event.clientX || (event.touches && event.touches[0].clientX) || (window.innerWidth / 2);
+            const y = event.clientY || (event.touches && event.touches[0].clientY) || (window.innerHeight / 2);
+            heart.style.left = `${x}px`; heart.style.top = `${y}px`;
+            document.body.appendChild(heart);
+            setTimeout(() => heart.remove(), 800); 
+        }
+
+        function setupVideoObserver() {
+            obs = new IntersectionObserver(es => {
+                es.forEach(e => { 
+                    if (e.isIntersecting) {
+                        e.target.play().catch(() => {}); e.target.muted = isGlobalMuted; 
+                        let currentContainer = e.target.closest('.snap-start');
+                        for(let j = 0; j < 2; j++) { 
+                            currentContainer = currentContainer?.nextElementSibling;
+                            if(currentContainer) {
+                                const nextVid = currentContainer.querySelector('video');
+                                if(nextVid && nextVid.getAttribute('preload') !== 'auto') nextVid.setAttribute('preload', 'auto');
+                            }
+                        }
+                    } else { e.target.pause(); }
+                });
+            }, { threshold: 0.6 });
+        }
+
+        async function loadVideos() {
+            const container = document.getElementById('feed-container'); const fakeLoader = document.getElementById('fake-loader'); const fakeProgress = document.getElementById('fake-progress');
+            const isFirstTime = !localStorage.getItem('hasVisitedSosial');
+            if (obs) obs.disconnect(); 
+            try {
+                if (allVideosData.length === 0) container.innerHTML = `<div class="w-full h-full relative bg-[#1A1133] animate-pulse flex flex-col justify-end p-6 flex-shrink-0 snap-start"><div class="absolute inset-0 flex items-center justify-center"><i class="fas fa-circle-notch fa-spin text-brand-accent text-4xl opacity-40"></i></div></div>`;
+                
+                const res = await fetch('/api/get-videos'); 
+                let dataDariSheet = await res.json();
+                
+                // INJEKSI OPTIMISTIC UI: Masukkan video yang baru saja diupload (jika ada) ke dalam data yang ditarik dari server
+                newUploads.forEach(newVid => {
+                    if (!dataDariSheet.find(v => v.video_id === newVid.video_id)) {
+                        dataDariSheet.push(newVid);
+                    }
+                });
+                
+                // KEMBALIKAN FUNGSI SHUFFLE (Acak Video)
+                for (let i = dataDariSheet.length - 1; i > 0; i--) { 
+                    const j = Math.floor(Math.random() * (i + 1)); 
+                    [dataDariSheet[i], dataDariSheet[j]] = [dataDariSheet[j], dataDariSheet[i]]; 
+                }
+                
+                allVideosData = dataDariSheet; 
+                container.innerHTML = ''; 
+                
+                renderProfileVideos();
+
+                if (!allVideosData.length) { container.innerHTML = '<p class="text-center py-20 text-gray-500">Belum ada video.</p>'; return; }
+                if (isFirstTime) {
+                    fakeLoader.classList.remove('hidden'); fakeLoader.classList.add('flex'); fakeProgress.style.transition = 'width 15s cubic-bezier(0.1, 0.7, 1.0, 0.1)';
+                    setTimeout(() => { fakeProgress.style.width = '80%'; }, 100);
+                    setupVideoObserver(); renderVideoBatch(); 
+                    const videosInDOM = document.querySelectorAll('.video-player'); const targetCount = Math.min(10, videosInDOM.length); 
+                    let readyCount = 0; let isResolved = false;
+                    const finishLoading = () => {
+                        if (isResolved) return; isResolved = true; fakeProgress.style.transition = 'width 0.4s ease-out'; fakeProgress.style.width = '100%';
+                        setTimeout(() => { fakeLoader.classList.add('opacity-0'); setTimeout(() => { fakeLoader.classList.add('hidden'); fakeLoader.classList.remove('flex'); }, 1000); localStorage.setItem('hasVisitedSosial', 'true'); }, 500);
+                    };
+                    const safetyTimeout = setTimeout(() => { finishLoading(); }, 15000);
+                    if (targetCount === 0) { clearTimeout(safetyTimeout); finishLoading(); } 
+                    else {
+                        videosInDOM.forEach((vid, index) => {
+                            if (index < targetCount) {
+                                vid.setAttribute('preload', 'auto'); vid.load(); 
+                                const onVideoReady = () => {
+                                    if (isResolved) return; readyCount++; const progressPercent = 80 + ((readyCount / targetCount) * 20); fakeProgress.style.width = `${progressPercent}%`;
+                                    if (readyCount >= targetCount) { clearTimeout(safetyTimeout); finishLoading(); }
+                                };
+                                if (vid.readyState >= 3) onVideoReady(); else { vid.addEventListener('canplay', onVideoReady, { once: true }); vid.addEventListener('loadeddata', onVideoReady, { once: true }); }
+                            }
+                        });
+                    }
+                } else { setupVideoObserver(); renderVideoBatch(); }
+            } catch (e) { container.innerHTML = '<p class="text-center py-20 text-gray-500">Gagal memuat video.</p>'; }
+        }
+
         function renderVideoBatch() {
             const container = document.getElementById('feed-container');
-            const htmlString = allVideosData.map((vid) => {
-                const vidId = vid.video_id || vid.id; // Support kedua jenis ID
-                return `
+            const htmlString = allVideosData.map((vid) => `
                 <div class="snap-start w-full h-full flex-shrink-0 relative group flex items-center justify-center overflow-hidden bg-brand-dark">
                     <div class="absolute inset-0 flex items-center justify-center z-0"><div class="w-12 h-12 border-4 border-brand-accent/20 border-t-brand-accent rounded-full animate-spin"></div></div>
                     <video class="absolute inset-0 m-auto w-full h-full object-cover video-player transition-opacity duration-500 opacity-0 z-10" 
                            onloadeddata="this.classList.remove('opacity-0')" loop muted playsinline preload="metadata"
-                           onclick="handleVideoClick(event, this, '${vidId}')" onerror="handleVideoError(this)">
+                           onclick="handleVideoClick(event, this, '${vid.id}')" onerror="handleVideoError(this)">
                         <source src="${vid.video_url}" type="video/mp4">
                     </video>
                     <div class="absolute bottom-10 left-0 w-full p-6 flex justify-between items-end z-20 pointer-events-none">
-                        <div class="text-white drop-shadow-lg w-2/3 pointer-events-auto">
-                            <p onclick="openUserProfile('${vid.user_id}')" class="font-bold text-sm cursor-pointer hover:text-brand-info">@${vid.nickname || "Player"}</p>
-                            <p class="text-xs opacity-90 shadow-black drop-shadow-md">${vid.caption}</p>
-                        </div>
+                        <div class="text-white drop-shadow-lg w-2/3 pointer-events-auto"><p class="font-bold text-sm shadow-black drop-shadow-md"><p onclick="openUserProfile('${vid.user_id}')" class="font-bold text-sm cursor-pointer hover:text-brand-info">@${vid.nickname || "Player"}
+                        </p>
+                        <p class="text-xs opacity-90 shadow-black drop-shadow-md">${vid.caption}</p></div>
                         <div class="flex flex-col gap-6 items-center pointer-events-auto">
-                            <div class="like-container flex flex-col items-center gap-1" data-vid="${vidId}">
-                                <button onclick="likeVideo('${vidId}', this)" class="hover:scale-110 transition-transform"><i class="fas fa-heart text-3xl text-white drop-shadow-md"></i></button>
+                            <div class="like-container flex flex-col items-center gap-1" data-vid="${vid.id}">
+                                <button onclick="likeVideo('${vid.id}', this)" class="hover:scale-110 transition-transform"><i class="fas fa-heart text-3xl text-white drop-shadow-md"></i></button>
                                 <span class="like-count-display text-white text-[12px] font-bold drop-shadow-md">0</span>
                             </div>
-                            <div class="comment-count-container flex flex-col items-center gap-1" data-vid="${vidId}">
-                                <button onclick="openComments('${vidId}')" class="hover:scale-110 transition-transform"><i class="fas fa-comment-dots text-3xl text-white drop-shadow-md"></i></button>
+                            <div class="comment-count-container flex flex-col items-center gap-1" data-vid="${vid.id}">
+                                <button onclick="openComments('${vid.id}')" class="hover:scale-110 transition-transform"><i class="fas fa-comment-dots text-3xl text-white drop-shadow-md"></i></button>
                                 <span class="comment-count-display text-white text-[12px] font-bold drop-shadow-md">0</span>
                             </div>
                         </div>
                     </div>
-                </div>`;
-            }).join('');
+                </div>`).join('');
 
             container.insertAdjacentHTML('beforeend', htmlString);
-            container.querySelectorAll('.snap-start:not(.data-loaded)').forEach((card) => {
+
+            const videoActions = container.querySelectorAll('.snap-start:not(.data-loaded)');
+            videoActions.forEach((card) => {
                 card.classList.add('data-loaded');
                 const vidId = card.querySelector('.like-container').dataset.vid;
                 updateLikeCountUI(vidId, card.querySelector('.like-container'));
                 updateCommentCountUI(vidId, card.querySelector('.comment-count-container'));
             });
-            container.querySelectorAll('.video-player:not(.observed)').forEach((v) => {
+
+            const unobservedVideos = container.querySelectorAll('.video-player:not(.observed)');
+            unobservedVideos.forEach((v, i) => {
                 v.classList.add('observed'); if (obs) obs.observe(v);
+                if (i === unobservedVideos.length - 1) {
+                    const lastVideoObserver = new IntersectionObserver(entries => {
+                        if(entries[0].isIntersecting) { lastVideoObserver.disconnect(); renderVideoBatch(); }
+                    }, { threshold: 0.1 });
+                    lastVideoObserver.observe(v.closest('.snap-start'));
+                }
             });
         }
 
+        // --- FUNGSI UNTUK RENDER GRID VIDEO PROFIL ---
         async function renderProfileVideos(targetUserId = null) {
             const grid = document.getElementById('profile-video-grid');
             if (!grid) return;
+            
+            // Tentukan ID siapa yang akan dirender (jika tidak ada parameter, gunakan ID sendiri)
             const uidToRender = targetUserId || (currentUser ? currentUser.id : null);
-            if (!uidToRender) { grid.innerHTML = ''; return; }
-            const userVideos = allVideosData.filter(v => v.user_id === uidToRender);
-            const reversedVideos = [...userVideos].reverse();
-            if (reversedVideos.length === 0) {
-                grid.innerHTML = '<div class="col-span-3 text-center text-xs text-gray-500 py-8 bg-black/20 rounded-xl border border-white/5"><i class="fas fa-film text-2xl mb-2 opacity-50"></i><br>Belum ada video.</div>';
+
+            if (!uidToRender) {
+                grid.innerHTML = '';
                 return;
             }
+
+            if (allVideosData.length === 0) {
+                try {
+                    grid.innerHTML = '<div class="col-span-3 text-center text-xs text-brand-info py-4"><i class="fas fa-spinner fa-spin text-xl mb-2"></i><br>Memuat...</div>';
+                    const res = await fetch('/api/get-videos');
+                    let dataDariSheet = await res.json();
+                    
+                    newUploads.forEach(newVid => {
+                        if (!dataDariSheet.find(v => v.video_id === newVid.video_id)) dataDariSheet.push(newVid);
+                    });
+                    allVideosData = dataDariSheet;
+                } catch(e) {
+                    grid.innerHTML = '<p class="col-span-3 text-center text-xs text-red-500 py-4">Gagal memuat video profil.</p>';
+                    return;
+                }
+            }
+
+            // Gunakan uidToRender, bukan currentUser.id
+            const userVideos = allVideosData.filter(v => v.user_id === uidToRender);
+            const reversedVideos = [...userVideos].reverse();
+
+            if (reversedVideos.length === 0) {
+                grid.innerHTML = '<div class="col-span-3 text-center text-xs text-gray-500 py-8 bg-black/20 rounded-xl border border-white/5"><i class="fas fa-film text-2xl mb-2 opacity-50"></i><br>Belum ada video yang diupload.</div>';
+                return;
+            }
+
             grid.innerHTML = reversedVideos.map(vid => `
-                <div class="aspect-[9/16] bg-black relative rounded-md overflow-hidden border border-white/10 group cursor-pointer" 
-                     onclick="playFloatingVideo('${vid.video_url}', '${vid.nickname}', '${vid.caption}')">
-                    <video class="w-full h-full object-cover" preload="metadata"><source src="${vid.video_url}" type="video/mp4"></video>
-                    <div class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"><i class="fas fa-play text-white text-xl"></i></div>
-                </div>`).join('');
+                <div class="aspect-[9/16] bg-black relative rounded-md overflow-hidden border border-white/10 group cursor-pointer" onclick="switchTab('sosial')">
+                    <video class="w-full h-full object-cover" preload="metadata">
+                        <source src="${vid.video_url}" type="video/mp4">
+                    </video>
+                    <div class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                        <i class="fas fa-play text-white text-xl"></i>
+                    </div>
+                </div>
+            `).join('');
         }
 
         // Fungsi untuk mengubah format waktu menjadi "X waktu yang lalu"
