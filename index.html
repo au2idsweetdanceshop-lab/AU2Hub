@@ -854,7 +854,13 @@
                 </div>`; 
             
             renderProfileVideos();
+            
+            // --- FIX DARI SINI: Memuat statistik follower/following profil sendiri ---
+            if(currentUser) {
+                fetchFollowStats(currentUser.id);
+            }
         }
+        
         async function renderProfileVideos(targetUserId = null) {
             const grid = document.getElementById('profile-video-grid');
             if (!grid) return;
@@ -883,6 +889,10 @@
             }
 
             const userVideos = allVideosData.filter(v => v.user_id === uidToRender);
+            
+            // --- FIX DARI SINI: Agar angka "Suka" (Likes) juga update di profil sendiri ---
+            document.querySelectorAll('#profile-total-likes').forEach(el => el.innerText = (userVideos.length * 3));
+
             const reversedVideos = [...userVideos].reverse();
 
             if (reversedVideos.length === 0) {
