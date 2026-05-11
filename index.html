@@ -701,6 +701,7 @@
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
         
         let currentUser = null, userProfile = null, isAuthLogin = true;
+        let tabSebelumnya = 'home';
         let dataRipperGlobal = [], isRipperExpanded = localStorage.getItem('statusLihatSemua') === 'true';
         let viewedUserId = null; 
         
@@ -1003,6 +1004,7 @@
 
         function switchTab(tabId, event = null, isPush = true) {
             if (event) event.preventDefault();
+            if (tabId !== 'profile' && tabId !== 'pembayaran') {tabSebelumnya = tabId;} 
             if (tabId === 'layanan' && isPush && document.getElementById('pembayaran').classList.contains('active')) {
                 window.scrollTo({ top: 0, behavior: 'smooth' }); return; 
             }
@@ -1103,8 +1105,12 @@
         });
 
         function kembaliDariProfil() {
-            if (window.history.length > 1) { history.back(); } else { switchTab('sosial'); }
-        }
+    // Balik ke tab terakhir yang dibuka sebelum masuk profil
+    switchTab(tabSebelumnya);
+    
+    // Reset viewedUserId agar profil kembali menampilkan milik sendiri
+    viewedUserId = currentUser?.id; 
+}
 
         function openModalEvent() {
             history.pushState({ popup: 'modal' }, null, '#event'); 
