@@ -2323,106 +2323,62 @@
         }
         
         async function prosesUploadVideo() {
-            if (!currentUser) {
-                closeUploadModal();
-                return openAuthModal();
-            }
-            
-            const fileInput = document.getElementById('input-video-file');
-            const captionInput = document.getElementById('input-video-caption');
-            const file = fileInput.files[0];
-            const caption = captionInput.value.trim();
+    if (!currentUser) return openAuthModal();
+    
+    const fileInput = document.getElementById('input-video-file');
+    const captionInput = document.getElementById('input-video-caption');
+    const file = fileInput.files[0];
+    if (!file) return showToast("Pilih video dulu!", "error");
 
-            if (!file) {
-                return showToast("Pilih video terlebih dahulu dari galeri!", "error");
-            }
+    const btn = document.querySelector('button[onclick="prosesUploadVideo()"]');
+    btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
 
-            const btn = document.querySelector('button[onclick="prosesUploadVideo()"]');
-            const originalText = btn.innerHTML;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Mengunggah...';
-            btn.disabled = true;
+    try {
+        // --- LANGKAH 1: AMBIL KONFIGURASI ---
+        const configRes = await fetch('/api/get-config');
+        const config = await configRes.json();
+        
+        if (!config.gasUrl) throw new Error("Link GAS tidak ditemukan di config");
 
-            try {
-                showToast("Menyiapkan server...", "info");
-                
-                const namaFile = encodeURIComponent('feed_' + Date.now() + '_' + file.name);
-                const tipeFile = encodeURIComponent(file.type);
-                const resUrl = await fetch(`/api/upload-url?filename=${namaFile}&filetype=${tipeFile}`);
-                
-                if (!resUrl.ok) throw new Error("Gagal mendapat akses upload ke server.");
-                const dataUrl = await resUrl.json();
+        // --- LANGKAH 2: IZIN UPLOAD BIZNET ---
+        const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent(file.name)}&filetype=${file.type}`);
+        const dataUrl = await resUrl.json();
 
-                showToast("Mengunggah video, mohon tunggu...", "info");
+        // --- LANGKAH 3: UPLOAD FISIK VIDEO ---
+        await fetch(dataUrl.uploadUrl, { method: 'PUT', body: file, headers: { 'Content-Type': file.type } });
 
-                const uploadRes = await fetch(dataUrl.uploadUrl, {
-                    method: 'PUT',
-                    body: file,
-                    headers: { 'Content-Type': file.type, 'x-amz-acl': 'public-read' }
-                });
+        // --- LANGKAH 4: SUSUN METADATA ---
+        const spreadsheetPayload = {
+            ID_Video: 'vid_' + Date.now(),
+            URL_Video: dataUrl.finalVideoUrl,
+            Caption: captionInput.value,
+            Nickname: userProfile?.nickname || "Player",
+            Avatar_URL: userProfile?.avatar_url || "",
+            User_ID: currentUser.id,
+            Waktu: new Date().toISOString()
+        };
 
-                if (!uploadRes.ok) throw new Error("Gagal mengunggah file video.");
+        // --- LANGKAH 5: SIMPAN KE GAS (MENGGUNAKAN LINK DARI CONFIG) ---
+        await fetch(config.gasUrl, {
+            method: 'POST',
+            mode: 'no-cors', // Penting agar tidak kena blokir CORS
+            headers: { 'Content-Type': 'text/plain' },
+            body: JSON.stringify(spreadsheetPayload)
+        });
 
-                const videoUrl = dataUrl.finalVideoUrl;
-                const newId = 'vid_' + Date.now(); 
+        showToast("Berhasil diposting!", "success");
+        
+        // Bersihkan UI & Refresh
+        fileInput.value = ''; captionInput.value = ''; closeUploadModal();
+        allVideosData = []; 
+        loadVideos();
 
-                // 1. FORMAT UNTUK SPREADSHEET (Sesuai Metadata Kolom)
-                const spreadsheetPayload = {
-                    ID_Video: newId,
-                    URL_Video: videoUrl,
-                    Caption: caption,
-                    Nickname: userProfile?.nickname || "Player",
-                    Avatar_URL: userProfile?.avatar_url || "",
-                    User_ID: currentUser.id,
-                    Waktu: new Date().toISOString()
-                };
-
-                // 2. FORMAT UNTUK CACHE APLIKASI (Agar tidak error di feed Frontend)
-                const localVideoData = {
-                    id: newId,
-                    video_id: newId,
-                    user_id: currentUser.id,
-                    nickname: userProfile?.nickname || "Player",
-                    avatar_url: userProfile?.avatar_url || "",
-                    video_url: videoUrl,
-                    caption: caption,
-                    created_at: new Date().toISOString()
-                };
-
-                showToast("Menyimpan data ke Spreadsheet...", "info");
-
-                // Pastikan '/api/save-video' diganti dengan endpoint Anda yang asli
-                const responseSimpan = await fetch('/api/get-config', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(spreadsheetPayload)
-                });
-
-                if (!responseSimpan.ok) {
-                    throw new Error("Gagal menyimpan data ke Spreadsheet.");
-                }
-
-                // Jika sukses tersimpan, masukkan format lokal ke cache sementara agar langsung tayang
-                newUploads.unshift(localVideoData);
-
-                showToast("Video berhasil diposting!", "success");
-                
-                fileInput.value = '';
-                captionInput.value = '';
-                document.getElementById('nama-file-info').innerText = '';
-                closeUploadModal();
-                
-                allVideosData = []; 
-                loadVideos();       
-
-            } catch (err) {
-                showToast("Error: " + err.message, "error");
-            } finally {
-                btn.innerHTML = originalText;
-                btn.disabled = false;
-            }
-        }
+    } catch (err) {
+        showToast("Error: " + err.message, "error");
+    } finally {
+        btn.disabled = false; btn.innerHTML = 'Posting Video';
+    }
+}
         
         async function uploadChatImage(event) {
             const file = event.target.files[0];
