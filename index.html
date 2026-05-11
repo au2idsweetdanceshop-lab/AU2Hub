@@ -2254,4 +2254,23 @@
             const installContainer = document.getElementById('install-container');
             const btnInstallManual = document.getElementById('btn-install-manual');
 
-            window.addEventListener('beforeinstall
+            window.addEventListener('beforeinstallprompt', (e) => {
+                e.preventDefault(); deferredPrompt = e;
+                if(installContainer) installContainer.classList.remove('hidden');
+            });
+
+            if(btnInstallManual) {
+                btnInstallManual.addEventListener('click', async () => {
+                    if (deferredPrompt) {
+                        deferredPrompt.prompt();
+                        const { outcome } = await deferredPrompt.userChoice;
+                        deferredPrompt = null; installContainer.classList.add('hidden');
+                    }
+                });
+            }
+
+            if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js?v=3');
+        });
+    </script>
+</body>
+</html>
