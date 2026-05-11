@@ -1000,7 +1000,6 @@
                 showToast("Unmute: Suara Dinyalakan", "success");
             }
         }
-        }
 
         function switchTab(tabId, event = null, isPush = true) {
             if (event) event.preventDefault();
@@ -1236,7 +1235,6 @@
             } else {
                 setTimeout(() => { 
                     if (Date.now() - lastTap >= TIMESLOT) {
-                        ifif (Date.now() - lastTap >= TIMESLOT) {
                         toggleGlobalAudio(); // Panggil fungsi suara, BUKAN pause/play
                     }
                 }, TIMESLOT);
