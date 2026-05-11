@@ -1064,34 +1064,14 @@
 
         function buildCommentHTML(comment, replies = []) {
             const ava = comment.avatar_url || `https://ui-avatars.com/api/?name=${comment.nickname || 'User'}&background=1A1133&color=fff`;
-            onclick="openUserProfile" pada nickname
-    let html = `
-    <div class="flex items-start gap-3 mb-5">
-        <img src="${ava}" class="w-8 h-8 rounded-full object-cover border border-white/10 shrink-0 mt-1">
-        <div class="flex-1">
-            <div class="flex justify-between items-start">
-                <div class="pr-2">
-                    <b onclick="openUserProfile('${comment.user_id}'); closeComments();" class="text-brand-info text-[11px] cursor-pointer hover:underline">${comment.nickname}</b>
-                    <p class="text-gray-200 text-xs mt-0.5 leading-relaxed break-words">${comment.message}</p>
-                    <div class="flex items-center gap-4 mt-1.5">
-                        <span class="text-[9px] text-gray-600">${timeAgo(comment.created_at)}</span>
-                        <button onclick="setReply('${comment.id}', '${comment.nickname}')" class="text-[10px] text-gray-400 font-bold hover:text-white">Balas</button>
-                    </div>
-                </div>
-                <div class="flex flex-col items-center gap-1 ml-1 shrink-0">
-                    <button onclick="likeComment('${comment.id}', this)" class="text-gray-500 hover:text-brand-accent transition-colors active:scale-75">
-                        <i class="fas fa-heart text-sm ${localStorage.getItem('comment_liked_'+comment.id) ? 'text-brand-accent' : ''}"></i>
-                    </button>
-                    <span class="text-[9px] text-gray-500 font-medium comment-like-count" data-cid="${comment.id}">0</span>
-                </div>
-            </div>`;
+            
             let html = `
             <div class="flex items-start gap-3 mb-5">
                 <img src="${ava}" class="w-8 h-8 rounded-full object-cover border border-white/10 shrink-0 mt-1">
                 <div class="flex-1">
                     <div class="flex justify-between items-start">
                         <div class="pr-2">
-                            <b class="text-brand-info text-[11px]">${comment.nickname}</b>
+                            <b onclick="openUserProfile('${comment.user_id}'); closeComments();" class="text-brand-info text-[11px] cursor-pointer hover:underline">${comment.nickname}</b>
                             <p class="text-gray-200 text-xs mt-0.5 leading-relaxed break-words">${comment.message}</p>
                             <div class="flex items-center gap-4 mt-1.5"><span class="text-[9px] text-gray-600">${timeAgo(comment.created_at)}</span><button onclick="setReply('${comment.id}', '${comment.nickname}')" class="text-[10px] text-gray-400 font-bold hover:text-white">Balas</button></div>
                         </div>
@@ -1166,7 +1146,7 @@
             const iconAsli = btn.innerHTML; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>'; btn.disabled = true;
 
             try {
-                const payload = { video_id: activeVideoId, nickname: userProfile?.nickname || "Player", message: msg, avatar_url: userProfile?.avatar_url || "" };
+                const payload = { video_id: activeVideoId, nickname: userProfile?.nickname || "Player", message: msg, avatar_url: userProfile?.avatar_url || "",nuser_id: currentUser.id };
                 if (replyingToId) payload.parent_id = replyingToId;
 
                 const response = await fetch('/api/comment', {
@@ -1428,25 +1408,44 @@
                 grid.innerHTML = '';
                 return;
             }
+
+            if (allVideosData.length === 0) {
+                try {
+                    grid.innerHTML = '<div class="col-span-3 text-center text-xs text-brand-info py-4"><i class="fas fa-spinner fa-spin text-xl mb-2"></i><br>Memuat...</div>';
+                    const res = await fetch('/api/get-videos');
+                    let dataDariSheet = await res.json();
+                    
+                    newUploads.forEach(newVid => {
+                        if (!dataDariSheet.find(v => v.video_id === newVid.video_id)) dataDariSheet.push(newVid);
+                    });
+                    allVideosData = dataDariSheet;
+                } catch(e) {
+                    grid.innerHTML = '<p class="col-span-3 text-center text-xs text-red-500 py-4">Gagal memuat video profil.</p>';
+                    return;
+                }
+            }
+
+            // Gunakan uidToRender, bukan currentUser.id
             const userVideos = allVideosData.filter(v => v.user_id === uidToRender);
-    const reversedVideos = [...userVideos].reverse();
+            const reversedVideos = [...userVideos].reverse();
 
-    if (reversedVideos.length === 0) {
-        grid.innerHTML = '<div class="col-span-3 text-center text-xs text-gray-500 py-8 bg-black/20 rounded-xl border border-white/5">...</div>';
-        return;
-    }
+            if (reversedVideos.length === 0) {
+                grid.innerHTML = '<div class="col-span-3 text-center text-xs text-gray-500 py-8 bg-black/20 rounded-xl border border-white/5"><i class="fas fa-film text-2xl mb-2 opacity-50"></i><br>Belum ada video yang diupload.</div>';
+                return;
+            }
 
-    grid.innerHTML = reversedVideos.map(vid => `
-        <div class="aspect-[9/16] bg-black relative rounded-md overflow-hidden border border-white/10 group cursor-pointer" 
-             onclick="playFloatingVideo('${vid.video_url}', '${vid.nickname}', '${vid.caption}')">
-            <video class="w-full h-full object-cover" preload="metadata">
-                <source src="${vid.video_url}" type="video/mp4">
-            </video>
-            <div class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                <i class="fas fa-play text-white text-xl"></i>
-            </div>
-        </div>
-    `).join('');
+            grid.innerHTML = reversedVideos.map(vid => `
+                <div class="aspect-[9/16] bg-black relative rounded-md overflow-hidden border border-white/10 group cursor-pointer" 
+                     onclick="playFloatingVideo('${vid.video_url}', '${vid.nickname}', '${vid.caption}')">
+                    <video class="w-full h-full object-cover" preload="metadata">
+                        <source src="${vid.video_url}" type="video/mp4">
+                    </video>
+                    <div class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                        <i class="fas fa-play text-white text-xl"></i>
+                    </div>
+                </div>
+            `).join('');
+        }
 }
 
             if (allVideosData.length === 0) {
