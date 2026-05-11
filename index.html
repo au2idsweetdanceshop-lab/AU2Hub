@@ -1004,35 +1004,42 @@
 
         function switchTab(tabId, event = null, isPush = true) {
     if (event) event.preventDefault();
-    if (tabId !== 'profile' && tabId !== 'pembayaran') {tabSebelumnya = tabId;} 
+    if (tabId !== 'profile' && tabId !== 'pembayaran') { tabSebelumnya = tabId; }
+    
     if (tabId === 'layanan' && isPush && document.getElementById('pembayaran').classList.contains('active')) {
-        window.scrollTo({ top: 0, behavior: 'smooth' }); return; 
+        window.scrollTo({ top: 0, behavior: 'smooth' }); 
+        return; 
     }
 
-    // === TAMBAHAN: Deteksi kembali ke profil pribadi ===
+    // === Deteksi kembali ke profil pribadi ===
     if (tabId === 'profile' && currentUser && viewedUserId !== currentUser.id) {
         openUserProfile(currentUser.id);
         return; 
     }
-    // ====================================================
 
     const targetSection = document.getElementById(tabId) || document.getElementById('home');
     if (!targetSection) return;
 
     localStorage.setItem('lastTab', tabId);
+    
+    // Sembunyikan semua konten tab
     document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+    
+    // Reset status navigasi
     document.querySelectorAll('.nav-item').forEach(n => {
         n.classList.remove('active');
         const icon = n.querySelector('i');
         if (icon) icon.style.animation = 'none';
     });
 
+    // Aktifkan tab tujuan
     targetSection.classList.add('active');
     
     if (tabId === 'sosial') {
         loadVideos();
     }
 
+    // Update tampilan Navigasi Bawah
     const navMap = { 'home': 0, 'info': 1, 'layanan': 2, 'sosial': 3, 'rekber': 4, 'ripper': 5, 'profile': 6, 'pembayaran': 2 };
     const activeIndex = navMap[tabId];
     if (activeIndex !== undefined) {
@@ -1040,7 +1047,10 @@
         if (activeNav) {
             activeNav.classList.add('active');
             const icon = activeNav.querySelector('i');
-            if (icon) { void icon.offsetWidth; icon.style.animation = 'popBounce 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards'; }
+            if (icon) { 
+                void icon.offsetWidth; 
+                icon.style.animation = 'popBounce 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards'; 
+            }
         }
     }
     
