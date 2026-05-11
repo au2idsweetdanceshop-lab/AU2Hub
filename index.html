@@ -2330,7 +2330,95 @@ history.pushState({ popup: 'floating_video' }, null);
                 }
             }
         }
-        
+        async function prosesUploadVideo() {
+            // 1. Cek apakah user sudah login
+            if (!currentUser) {
+                closeUploadModal();
+                return openAuthModal();
+            }
+            
+            const fileInput = document.getElementById('input-video-file');
+            const captionInput = document.getElementById('input-video-caption');
+            const file = fileInput.files[0];
+            const caption = captionInput.value.trim();
+
+            if (!file) {
+                return showToast("Pilih video terlebih dahulu dari galeri!", "error");
+            }
+
+            // 2. Ubah tampilan tombol jadi loading
+            const btn = document.querySelector('button[onclick="prosesUploadVideo()"]');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Mengunggah...';
+            btn.disabled = true;
+
+            try {
+                showToast("Menyiapkan server...", "info");
+                
+                // 3. Minta akses URL Upload (Menggunakan sistem yang sama dengan chat)
+                const namaFile = encodeURIComponent('feed_' + Date.now() + '_' + file.name);
+                const tipeFile = encodeURIComponent(file.type);
+                const resUrl = await fetch(`/api/upload-url?filename=${namaFile}&filetype=${tipeFile}`);
+                
+                if (!resUrl.ok) throw new Error("Gagal mendapat akses upload ke server.");
+                const dataUrl = await resUrl.json();
+
+                showToast("Mengunggah video, mohon tunggu...", "info");
+
+                // 4. Proses Upload ke Cloud Storage
+                const uploadRes = await fetch(dataUrl.uploadUrl, {
+                    method: 'PUT',
+                    body: file,
+                    headers: { 'Content-Type': file.type, 'x-amz-acl': 'public-read' }
+                });
+
+                if (!uploadRes.ok) throw new Error("Gagal mengunggah file video.");
+
+                const videoUrl = dataUrl.finalVideoUrl;
+                const newId = 'vid_' + Date.now(); // Buat ID unik
+
+                // 5. Susun data video baru
+                const newVideoData = {
+                    id: newId,
+                    video_id: newId,
+                    user_id: currentUser.id,
+                    nickname: userProfile?.nickname || "Player",
+                    avatar_url: userProfile?.avatar_url || "",
+                    video_url: videoUrl,
+                    caption: caption,
+                    created_at: new Date().toISOString()
+                };
+
+                // 6. Simpan ke Database Supabase (Opsional: Jika Anda punya tabel 'videos')
+                try {
+                    await supabaseClient.from('videos').insert(newVideoData);
+                } catch(e) {
+                    console.log("Catatan: Insert tabel gagal/belum dibuat, lanjut via cache lokal.");
+                }
+
+                // 7. Simpan di cache lokal (Sistem Vercel/Sheet Anda) agar langsung muncul
+                newUploads.unshift(newVideoData);
+
+                showToast("Video berhasil diposting!", "success");
+                
+                // 8. Bersihkan form & Tutup Modal
+                fileInput.value = '';
+                captionInput.value = '';
+                document.getElementById('nama-file-info').innerText = '';
+                closeUploadModal();
+                
+                // 9. Refresh Feed Komunitas
+                allVideosData = []; // Kosongkan cache lama
+                loadVideos();       // Render ulang feed
+
+            } catch (err) {
+                showToast("Error: " + err.message, "error");
+            } finally {
+                // Kembalikan tombol ke semula
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        }
         async function uploadChatImage(event) {
             const file = event.target.files[0];
             if (!file || !activeChatUserId) return;
