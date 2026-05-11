@@ -897,6 +897,16 @@
             document.getElementById('profile-logged-in').classList.remove('hidden');
             history.pushState({ popup: 'user_profile' }, null, `#profile?id=${userId}`);
         }
+        
+        function viewUserProfile(userId) {
+            if (!userId || userId === 'undefined') {
+                showToast("Profil tidak dapat dibuka karena ID tidak ditemukan.", "error");
+                return;
+            }
+            document.getElementById('comment-drawer').classList.remove('open');
+            cancelReply();
+            openUserProfile(userId);
+        }
 
         function playFloatingVideo(url, nick, cap) {
             const p = document.getElementById('floating-video-player');
@@ -1066,11 +1076,11 @@
             const ava = comment.avatar_url || `https://ui-avatars.com/api/?name=${comment.nickname || 'User'}&background=1A1133&color=fff`;
             let html = `
             <div class="flex items-start gap-3 mb-5">
-                <img src="${ava}" class="w-8 h-8 rounded-full object-cover border border-white/10 shrink-0 mt-1">
+                <img src="${ava}" onclick="viewUserProfile('${comment.user_id}')" class="w-8 h-8 rounded-full object-cover border border-white/10 shrink-0 mt-1 cursor-pointer hover:opacity-80 transition-opacity">
                 <div class="flex-1">
                     <div class="flex justify-between items-start">
                         <div class="pr-2">
-                            <b class="text-brand-info text-[11px]">${comment.nickname}</b>
+                            <b onclick="viewUserProfile('${comment.user_id}')" class="text-brand-info text-[11px] cursor-pointer hover:underline">${comment.nickname}</b>
                             <p class="text-gray-200 text-xs mt-0.5 leading-relaxed break-words">${comment.message}</p>
                             <div class="flex items-center gap-4 mt-1.5"><span class="text-[9px] text-gray-600">${timeAgo(comment.created_at)}</span><button onclick="setReply('${comment.id}', '${comment.nickname}')" class="text-[10px] text-gray-400 font-bold hover:text-white">Balas</button></div>
                         </div>
@@ -1090,11 +1100,11 @@
                     const rAva = r.avatar_url || `https://ui-avatars.com/api/?name=${r.nickname || 'User'}&background=1A1133&color=fff`;
                     html += `
                             <div class="flex items-start gap-2 relative">
-                                <img src="${rAva}" class="w-6 h-6 rounded-full object-cover border border-white/10 shrink-0 mt-0.5">
+                                <img src="${rAva}" onclick="viewUserProfile('${r.user_id}')" class="w-6 h-6 rounded-full object-cover border border-white/10 shrink-0 mt-0.5 cursor-pointer hover:opacity-80 transition-opacity">
                                 <div class="flex-1">
                                     <div class="flex justify-between items-start">
                                         <div class="pr-2">
-                                            <b class="text-brand-purple text-[10px]">${r.nickname}</b>
+                                            <b onclick="viewUserProfile('${r.user_id}')" class="text-brand-purple text-[10px] cursor-pointer hover:underline">${r.nickname}</b>
                                             <p class="text-gray-300 text-[11px] mt-0.5 leading-relaxed break-words">${r.message}</p>
                                             <div class="flex items-center gap-3 mt-1"><button onclick="setReply('${comment.id}', '${r.nickname}')" class="text-[9px] text-gray-500 font-bold hover:text-white">Balas</button></div>
                                         </div>
@@ -1145,7 +1155,13 @@
             const iconAsli = btn.innerHTML; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>'; btn.disabled = true;
 
             try {
-                const payload = { video_id: activeVideoId, nickname: userProfile?.nickname || "Player", message: msg, avatar_url: userProfile?.avatar_url || "" };
+                const payload = { 
+                    video_id: activeVideoId, 
+                    nickname: userProfile?.nickname || "Player", 
+                    message: msg, 
+                    avatar_url: userProfile?.avatar_url || "",
+                    user_id: currentUser.id
+                };
                 if (replyingToId) payload.parent_id = replyingToId;
 
                 const response = await fetch('/api/comment', {
@@ -1432,7 +1448,7 @@
             }
 
             grid.innerHTML = reversedVideos.map(vid => `
-                <div class="aspect-[9/16] bg-black relative rounded-md overflow-hidden border border-white/10 group cursor-pointer" onclick="switchTab('sosial')">
+                <div class="aspect-[9/16] bg-black relative rounded-md overflow-hidden border border-white/10 group cursor-pointer" onclick="playFloatingVideo('${vid.video_url}', '${vid.nickname || 'Player'}', '${(vid.caption || '').replace(/'/g, "\\'")}')">
                     <video class="w-full h-full object-cover" preload="metadata">
                         <source src="${vid.video_url}" type="video/mp4">
                     </video>
