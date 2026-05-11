@@ -2318,6 +2318,16 @@ history.pushState({ popup: 'floating_video' }, null);
             } else if(data) {
                 const tempTick = document.getElementById('tick-' + tempId);
                 if(tempTick) tempTick.id = 'tick-' + data.id;
+                
+                // --- PERBAIKAN: Update ID Gelembung & Berikan Fungsi Klik ---
+                const tempBubble = document.getElementById('bubble-msg-' + tempId);
+                if (tempBubble) {
+                    tempBubble.id = 'bubble-msg-' + data.id;
+                    const parentDiv = tempBubble.closest('.max-w-\\[80\\%\\]'); 
+                    if (parentDiv) {
+                        parentDiv.setAttribute('onclick', `showMsgOptions('${data.id}', true)`);
+                    }
+                }
             }
         }
         
@@ -2368,6 +2378,16 @@ history.pushState({ popup: 'floating_video' }, null);
                 if(data) {
                     const tempTick = document.getElementById('tick-' + tempId);
                     if(tempTick) tempTick.id = 'tick-' + data.id;
+
+                    // --- PERBAIKAN: Update ID Gelembung & Berikan Fungsi Klik ---
+                    const tempBubble = document.getElementById('bubble-msg-' + tempId);
+                    if (tempBubble) {
+                        tempBubble.id = 'bubble-msg-' + data.id;
+                        const parentDiv = tempBubble.closest('.max-w-\\[80\\%\\]'); 
+                        if (parentDiv) {
+                            parentDiv.setAttribute('onclick', `showMsgOptions('${data.id}', true)`);
+                        }
+                    }
                 }
                 showToast("Gambar terkirim!", "success");
 
