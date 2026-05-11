@@ -1238,6 +1238,26 @@ history.pushState({ popup: 'floating_video' }, null);
             }
             lastTap = now;
         }
+        function handleVideoClick(event, videoElement, vidId) {
+    const now = Date.now();
+    const TIMESLOT = 300; 
+    
+    if (now - lastTap < TIMESLOT) {
+        // Double Tap: Like video di feed
+        const card = videoElement.closest('.snap-start');
+        const likeBtn = card.querySelector('.like-container button');
+        likeVideo(vidId, likeBtn);
+        createHeartAt(event);
+    } else {
+        // Single Tap: Nyalakan/Matikan Suara Se-Aplikasi
+        setTimeout(() => { 
+            if (Date.now() - lastTap >= TIMESLOT) {
+                toggleGlobalAudio(); 
+            }
+        }, TIMESLOT);
+    }
+    lastTap = now;
+}
 
         // HAPUS VIDEO DARI SISI CLIENT (Pura-pura agar cepat, bisa ditambah fetch ke backend)
         async function deleteVideo(vidId) {
@@ -1700,7 +1720,7 @@ history.pushState({ popup: 'floating_video' }, null);
                 <div class="snap-start w-full h-full flex-shrink-0 relative group flex items-center justify-center overflow-hidden bg-brand-dark">
                     <div class="absolute inset-0 flex items-center justify-center z-0"><div class="w-12 h-12 border-4 border-brand-accent/20 border-t-brand-accent rounded-full animate-spin"></div></div>
                     <video class="absolute inset-0 m-auto w-full h-full object-cover video-player transition-opacity duration-500 opacity-0 z-10" 
-                           onloadeddata="this.classList.remove('opacity-0')" loop muted playsinline preload="metadata"
+                           onloadeddata="this.classList.remove('opacity-0')" loop ${isGlobalMuted ? 'muted' : ''} playsinline preload="metadata"
                            onclick="handleVideoClick(event, this, '${vid.id}')" onerror="handleVideoError(this)">
                         <source src="${vid.video_url}" type="video/mp4">
                     </video>
