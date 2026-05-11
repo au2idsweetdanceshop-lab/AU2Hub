@@ -724,6 +724,17 @@
         let newUploads = []; 
         let obs = null, activeVideoId = null, lastTap = 0, isGlobalMuted = true;
         let replyingToId = null, replyingToName = null;
+        // Fungsi untuk mengamankan caption dari karakter perusak kode
+        function formatCaption(text) {
+            if(!text) return '';
+            return text
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;")
+                .replace(/\n/g, "<br>"); // Mengubah 'Enter' menjadi baris baru yang aman
+        }
 
         // Variable Fitur Chat
         let activeChatUserId = null;
@@ -915,7 +926,20 @@
                 return;
             }
 
-            grid.innerHTML = reversedVideos.map(vid => `
+            grid.innerHTML = reversedVideos.map(vid => {
+                // Bersihkan caption khusus untuk parameter fungsi klik
+                const amanCaption = (vid.caption || '').replace(/'/g, "\\'").replace(/"/g, "&quot;").replace(/\n/g, " ");
+                
+                return `
+                <div class="aspect-[9/16] bg-black relative rounded-md overflow-hidden border border-white/10 group cursor-pointer" onclick="playFloatingVideo('${vid.video_url}', '${(vid.nickname || 'Player').replace(/'/g, "\\'")}', '${amanCaption}', '${vid.id}')">
+                    <video class="w-full h-full object-cover" preload="metadata">
+                        <source src="${vid.video_url}" type="video/mp4">
+                    </video>
+                    <div class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                        <i class="fas fa-play text-white text-xl"></i>
+                    </div>
+                </div>
+            `}).join('');
                 <div class="aspect-[9/16] bg-black relative rounded-md overflow-hidden border border-white/10 group cursor-pointer" onclick="playFloatingVideo('${vid.video_url}', '${(vid.nickname || 'Player').replace(/'/g, "\\'")}', '${(vid.caption || '').replace(/'/g, "\\'")}', '${vid.id}')">
                     <video class="w-full h-full object-cover" preload="metadata">
                         <source src="${vid.video_url}" type="video/mp4">
@@ -1761,7 +1785,7 @@ history.pushState({ popup: 'floating_video' }, null);
                                 @${vid.nickname || "Player"}
                             </p>
                             <div onclick="this.classList.toggle('expanded')" class="caption-text text-[13px] opacity-90 shadow-black drop-shadow-md cursor-pointer pr-2 leading-relaxed">
-                                ${vid.caption}
+                                ${formatCaption(vid.caption)}
                             </div>
                         </div>
                         <div class="flex flex-col gap-6 items-center pointer-events-auto mb-14">
