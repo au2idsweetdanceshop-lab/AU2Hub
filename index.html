@@ -116,7 +116,7 @@
                 <i class="fas fa-download mr-2"></i> INSTAL APLIKASI AU2HUB
             </button>
         </div>   
-        <section id="home" class="tab-content text-center min-h-[60vh] flex flex-col justify-center">
+        <section id="home" class="tab-content active text-center min-h-[60vh] flex flex-col justify-center">
             <div class="relative inline-block mb-6 mx-auto">
                 <div class="absolute inset-0 bg-brand-accent blur-3xl opacity-20"></div>
                 <div class="relative bg-brand-card p-6 rounded-full border border-brand-accent/30 shadow-[0_0_20px_rgba(255,0,122,0.2)]">
@@ -757,7 +757,15 @@
         
         let currentUser = null, userProfile = null, isAuthLogin = true;
         let tabSebelumnya = 'home';
-        let dataRipperGlobal = [], isRipperExpanded = localStorage.getItem('statusLihatSemua') === 'true';
+        
+        let dataRipperGlobal = [];
+        let isRipperExpanded = false;
+        try {
+            isRipperExpanded = localStorage.getItem('statusLihatSemua') === 'true';
+        } catch(e) {
+            console.warn("Akses LocalStorage diblokir browser");
+        }
+
         let viewedUserId = null; 
         
         let allVideosData = []; 
@@ -795,57 +803,6 @@
                 .replace(/"/g, """)
                 .replace(/'/g, "'")
                 .replace(/\n/g, "<br>");
-        }
-
-        async function fetchBlockedUsers() {
-            blockedUsersList = [];
-            if (!currentUser) return;
-            try {
-                // Asumsi terdapat tabel 'blocks' dengan field 'blocker_id' dan 'blocked_id'
-                const { data, error } = await supabaseClient.from('blocks').select('blocked_id').eq('blocker_id', currentUser.id);
-                if (data) {
-                    blockedUsersList = data.map(item => item.blocked_id);
-                }
-            } catch (e) {
-                console.warn("Could not fetch blocked users:", e);
-            }
-        }
-
-        async function checkGlobalUnreadMessages() {
-            if (!currentUser) return;
-            try {
-                const { count, error } = await supabaseClient
-                    .from('messages')
-                    .select('*', { count: 'exact', head: true })
-                    .eq('receiver_id', currentUser.id)
-                    .eq('is_read', false);
-                
-                const badge = document.getElementById('global-chat-badge');
-                if (badge) {
-                    if (count && count > 0) {
-                        badge.innerText = count > 99 ? '99+' : count;
-                        badge.classList.remove('hidden');
-                    } else {
-                        badge.classList.add('hidden');
-                    }
-                }
-            } catch(e) {
-                console.warn("Could not check unread messages", e);
-            }
-        }
-
-        // Tambahan fungsi-fungsi kosong agar tidak error jika dipanggil via UI
-        function toggleBlockUser(targetId) {
-            showToast("Fitur blokir sedang dalam pengembangan", "info");
-        }
-
-        function showUserList(type) {
-            showToast("Fitur daftar " + type + " sedang dikembangkan", "info");
-        }
-
-        function closeUserList() {
-            const modal = document.getElementById('modal-user-list');
-            if(modal) modal.classList.add('hidden');
         }
 
         async function checkSession() {
@@ -927,20 +884,7 @@
         }
 
         async function handleAuth() {
-            const email = document.getElementById('auth-email').value.trim();
-            const password = document.getElementById('auth-pass').value;
-            const nick = document.getElementById('auth-nick').value.trim();
-            const btn = document.getElementById('auth-btn');
-
-            // Validasi input kosong agar tidak mengirim request berlebihan
-            if (!email || !password) {
-                return showToast("Email dan Password tidak boleh kosong!", "error");
-            }
-
-            if (!isAuthLogin && !nick) {
-                return showToast("Nickname tidak boleh kosong!", "error");
-            }
-
+            const email = document.getElementById('auth-email').value, password = document.getElementById('auth-pass').value, nick = document.getElementById('auth-nick').value, btn = document.getElementById('auth-btn');
             btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
             try {
                 if (isAuthLogin) { 
@@ -1319,6 +1263,8 @@
             
             document.getElementById('profile-loading').classList.add('hidden');
             document.querySelectorAll('#profile-logged-in').forEach(el => el.classList.remove('hidden'));
+            
+            // checkBlockStatusUI(); // Dihapus karena fungsi tidak ada
             
             if(!isOwn) history.pushState({ popup: 'user_profile' }, null, `#profile?id=${userId}`);
         }
