@@ -438,14 +438,29 @@
                 <div id="chat-messages-container" class="flex-1 overflow-y-auto hide-scroll p-4 flex flex-col gap-1 relative bg-black/40"></div>
                 <div id="typing-indicator" class="hidden px-4 pb-2 bg-black/40 text-[10px] text-brand-info italic transition-all">User sedang mengetik...</div>
                 
-                <div class="p-3 border-t border-white/5 bg-brand-card shrink-0 flex items-center gap-2">
-                    <input type="file" id="chat-image-input" accept="image/*" class="hidden" onchange="uploadChatImage(event)">
-                    <label for="chat-image-input" class="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-center text-gray-400 cursor-pointer transition-colors shrink-0">
-                        <i class="fas fa-image"></i>
-                    </label>
-                    <input type="text" id="chat-room-input" oninput="sendTypingStatus()" placeholder="Tulis pesan..." class="flex-1 bg-black/40 border border-white/10 rounded-xl py-2.5 px-4 text-xs text-white outline-none focus:border-brand-accent transition-colors">
-                    <button id="btn-send-room" class="w-10 h-10 rounded-xl bg-brand-accent text-white flex items-center justify-center active:scale-90 transition-transform shrink-0"><i class="fas fa-paper-plane"></i></button>
-                </div>
+                <!-- INPUT CHAT MODERN -->
+<div class="p-4 border-t border-white/5 bg-brand-card/80 backdrop-blur-lg shrink-0">
+    <div class="flex items-end gap-3 max-w-md mx-auto">
+        <!-- Attachment Button -->
+        <div class="relative pb-1">
+            <input type="file" id="chat-image-input" accept="image/*" class="hidden" onchange="uploadChatImage(event)">
+            <label for="chat-image-input" class="w-12 h-12 rounded-2xl bg-white/5 hover:bg-brand-info/20 hover:text-brand-info flex items-center justify-center text-gray-400 cursor-pointer transition-all border border-white/10 active:scale-90">
+                <i class="fas fa-paperclip text-lg"></i>
+            </label>
+        </div>
+
+        <!-- Text Input Field -->
+        <div class="flex-1 relative">
+            <input type="text" id="chat-room-input" oninput="sendTypingStatus()" placeholder="Ketik pesan..." 
+                class="w-full bg-white/5 border border-white/10 rounded-[1.5rem] py-3.5 px-6 text-sm text-white outline-none focus:border-brand-accent/50 focus:bg-white/10 transition-all pr-12">
+        </div>
+
+        <!-- Send Button -->
+        <button id="btn-send-room" class="w-12 h-12 rounded-2xl bg-brand-accent text-white flex items-center justify-center shadow-lg shadow-brand-accent/20 active:scale-90 transition-all hover:rotate-12">
+            <i class="fas fa-paper-plane"></i>
+        </button>
+    </div>
+</div>
                 <p class="text-[9px] text-gray-500 text-center italic"><i class="fas fa-hourglass-half mr-1"></i> Pesan akan terhapus otomatis dalam 24 jam untuk menjaga performa.</p>
             </div>
         </div>
@@ -564,25 +579,59 @@
         </div>
     </div>
     
-    <div id="modal-upload" class="fixed inset-0 z-[100] hidden items-end sm:items-center justify-center bg-black/90 backdrop-blur-md sm:px-6 pb-0 sm:pb-6 transition-all duration-300">
-        <div class="bg-brand-card w-full max-w-sm rounded-t-3xl sm:rounded-3xl border border-white/10 p-6 shadow-2xl relative modal-anim">
-            <button onclick="closeUploadModal()" class="absolute top-4 right-4 text-gray-400 w-8 h-8 rounded-full bg-white/5 flex items-center justify-center"><i class="fas fa-times"></i></button>
-            <h3 class="text-lg font-extrabold mb-5 text-white"><i class="fas fa-cloud-upload-alt mr-2 text-brand-info"></i> Upload Video Feed</h3>
-            
-            <input type="file" id="input-video-file" accept="video/*" class="hidden" onchange="document.getElementById('nama-file-info').innerText = this.files[0].name">
-            <label for="input-video-file" class="w-full bg-black/40 border-2 border-dashed border-brand-accent/50 hover:border-brand-accent rounded-2xl p-8 mb-4 flex flex-col items-center justify-center cursor-pointer transition-colors group">
-                <i class="fas fa-film text-3xl text-gray-500 group-hover:text-brand-accent mb-2"></i>
-                <span class="text-xs font-bold text-gray-400">Pilih Video Dari Galeri</span>
-                <p id="nama-file-info" class="text-[10px] text-brand-info mt-3 italic text-center truncate w-full px-4"></p>
+    <!-- MODAL UPLOAD VIDEO MODERN -->
+<div id="modal-upload" class="fixed inset-0 z-[200] hidden items-end sm:items-center justify-center bg-black/95 backdrop-blur-xl px-0 sm:px-6 transition-all duration-500">
+    <div class="bg-brand-card w-full max-w-md rounded-t-[3rem] sm:rounded-[2.5rem] border-t border-x border-white/10 p-8 shadow-2xl relative modal-anim overflow-hidden">
+        <!-- Glow Effect Background -->
+        <div class="absolute -top-24 -left-24 w-48 h-48 bg-brand-accent/20 rounded-full blur-[80px]"></div>
+        
+        <div class="flex justify-between items-center mb-8 relative z-10">
+            <div>
+                <h3 class="text-2xl font-800 text-white tracking-tight">Create Post</h3>
+                <p class="text-[10px] text-brand-info font-bold uppercase tracking-widest opacity-70">Share your dance moves</p>
+            </div>
+            <button onclick="closeUploadModal()" class="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center text-white active:scale-90 transition-all border border-white/10">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <div class="space-y-6 relative z-10">
+            <!-- Upload Area / Preview Box -->
+            <input type="file" id="input-video-file" accept="video/*" class="hidden" onchange="handleVideoSelect(this)">
+            <label for="input-video-file" id="drop-zone" class="relative w-full aspect-video rounded-[2rem] border-2 border-dashed border-white/10 bg-white/5 flex flex-col items-center justify-center cursor-pointer overflow-hidden group hover:border-brand-accent/50 transition-all">
+                <!-- Tampilan sebelum pilih file -->
+                <div id="upload-placeholder" class="flex flex-col items-center transition-all duration-300">
+                    <div class="w-16 h-16 bg-gradient-to-tr from-brand-accent to-brand-purple rounded-2xl flex items-center justify-center shadow-lg shadow-brand-accent/20 mb-4 group-hover:scale-110 transition-transform">
+                        <i class="fas fa-plus text-2xl text-white"></i>
+                    </div>
+                    <span class="text-sm font-bold text-white/80">Pilih Video Kerenmu</span>
+                    <span class="text-[10px] text-gray-500 mt-1 uppercase tracking-tighter">MP4, MOV up to 50MB</span>
+                </div>
+                <!-- Mini Preview (Akan muncul setelah pilih file) -->
+                <div id="video-preview-container" class="hidden absolute inset-0 bg-black">
+                     <video id="video-preview-element" class="w-full h-full object-cover opacity-60"></video>
+                     <div class="absolute inset-0 flex items-center justify-center">
+                         <div class="bg-black/40 backdrop-blur-md px-4 py-2 rounded-full border border-white/20">
+                             <span id="nama-file-info" class="text-[10px] font-bold text-white truncate max-w-[150px]"></span>
+                         </div>
+                     </div>
+                </div>
             </label>
 
-            <textarea id="input-video-caption" rows="3" placeholder="Tulis caption videomu..." class="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-xs text-white outline-none focus:border-brand-accent mb-5 resize-none"></textarea>
+            <!-- Caption Box -->
+            <div class="relative group">
+                <textarea id="input-video-caption" rows="3" placeholder="Tulis caption yang bikin viral..." 
+                    class="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-sm text-white outline-none focus:border-brand-accent/50 focus:bg-white/10 transition-all resize-none placeholder:text-gray-600"></textarea>
+                <div class="absolute bottom-3 right-4 text-[9px] text-gray-600 font-bold uppercase">Public Post</div>
+            </div>
             
-            <button onclick="prosesUploadVideo()" class="w-full bg-gradient-to-r from-brand-accent to-brand-purple text-white py-3.5 rounded-xl font-bold active:scale-95 transition-transform flex justify-center items-center">
-                <i class="fas fa-paper-plane mr-2"></i> Posting Video
+            <button onclick="prosesUploadVideo()" class="w-full bg-gradient-to-r from-brand-info via-brand-accent to-brand-purple text-white py-5 rounded-2xl font-800 text-sm active:scale-95 transition-all shadow-[0_15px_30px_rgba(255,0,122,0.3)] flex justify-center items-center gap-3">
+                <span>POSTING SEKARANG</span>
+                <i class="fas fa-paper-plane"></i>
             </button>
         </div>
     </div>
+</div>
 
     <div id="modal-event" class="fixed inset-0 z-[60] hidden items-center justify-center bg-black/80 backdrop-blur-sm px-4">
         <div class="absolute inset-0" onclick="closeModalEvent()"></div>
@@ -1424,7 +1473,40 @@
         
         function openUploadModal() { history.pushState({ popup: 'upload' }, null, '#upload'); const m = document.getElementById('modal-upload'); m.classList.remove('hidden'); m.classList.add('flex'); }
 
-        function closeUploadModal() { if (window.location.hash === '#upload') history.back(); else { const m = document.getElementById('modal-upload'); m.classList.add('hidden'); m.classList.remove('flex'); } }
+        // Tambahkan fungsi ini agar preview video muncul saat dipilih
+function handleVideoSelect(input) {
+    const file = input.files[0];
+    const placeholder = document.getElementById('upload-placeholder');
+    const previewContainer = document.getElementById('video-preview-container');
+    const previewVideo = document.getElementById('video-preview-element');
+    const fileNameInfo = document.getElementById('nama-file-info');
+
+    if (file) {
+        const url = URL.createObjectURL(file);
+        previewVideo.src = url;
+        previewVideo.play();
+        
+        placeholder.classList.add('opacity-0');
+        setTimeout(() => {
+            placeholder.classList.add('hidden');
+            previewContainer.classList.remove('hidden');
+            previewContainer.classList.add('flex', 'animate-fade-in');
+            fileNameInfo.innerText = file.name;
+        }, 300);
+    }
+}
+
+// Pastikan fungsi closeUploadModal mereset preview
+function closeUploadModal() {
+    if (window.location.hash === '#upload') history.back();
+    const m = document.getElementById('modal-upload');
+    m.classList.add('hidden'); m.classList.remove('flex');
+    
+    // Reset preview
+    document.getElementById('upload-placeholder').classList.remove('hidden', 'opacity-0');
+    document.getElementById('video-preview-container').classList.add('hidden');
+    document.getElementById('video-preview-element').src = '';
+}
         
         async function openUserProfile(userId) {
             viewedUserId = userId;
