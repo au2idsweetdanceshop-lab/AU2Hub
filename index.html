@@ -2342,13 +2342,16 @@
         async function loadChatList() {
             const container = document.getElementById('chat-list-container');
             
+            ifasync function loadChatList() {
+            const container = document.getElementById('chat-list-container');
+            
             if (!currentUser) {
                 container.innerHTML = `
                     <div class="flex flex-col items-center justify-center mt-20 p-6 text-center">
                         <i class="fas fa-user-lock text-4xl text-gray-600 mb-3"></i>
                         <h4 class="text-white font-bold text-sm mb-1">Login Diperlukan</h4>
                         <p class="text-xs text-gray-500 mb-4">Silakan login untuk melihat pesan.</p>
-                        <button onclick="openAuthModal()" class="bg-brand-accent text-white px-6 py-2 rounded-full font-bold text-xs active:scale-95">Login Sekarang</button>
+                        <button onclick="toggleWidget(); openAuthModal();" class="bg-brand-accent text-white px-6 py-2 rounded-full font-bold text-xs active:scale-95">Login Sekarang</button>
                     </div>`;
                 return;
             }
