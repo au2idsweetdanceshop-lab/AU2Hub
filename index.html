@@ -556,71 +556,6 @@
         </div>
     </div>
 
-    <button onclick="toggleWidget()" class="fixed bottom-[90px] right-5 z-50 bg-gradient-to-r from-brand-info to-brand-purple text-white w-14 h-14 rounded-full shadow-[0_0_20px_rgba(0,240,255,0.4)] flex items-center justify-center active:scale-90 transition-transform relative">
-        <i class="fas fa-comment-dots text-2xl"></i>
-        <span id="global-chat-badge" class="hidden absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center border-2 border-brand-dark animate-bounce">0</span>
-    </button>
-
-    <div id="floating-widget" class="fixed bottom-[100px] left-1/2 -translate-x-1/2 z-50 w-[92vw] max-w-[380px] h-[500px] bg-[#1A1133]/95 border border-[#FF007A]/30 rounded-3xl shadow-[0_0_30px_rgba(255,0,122,0.3)] flex flex-col overflow-hidden backdrop-blur-xl transition-all duration-300 ease-out opacity-0 pointer-events-none translate-y-8 scale-95">
-        
-        <div id="chat-list-view" class="flex flex-col w-full h-full">
-            <div class="bg-gradient-to-r from-[#1A1133] to-[#0F0920] px-5 py-4 border-b border-white/10 flex justify-between items-center shrink-0 shadow-md relative z-10">
-                <div class="flex items-center gap-3">
-                    <div class="relative">
-                        <i class="fas fa-comments text-[#FF007A] text-lg"></i>
-                        <span class="absolute -top-1 -right-1 flex h-2 w-2">
-                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-info opacity-75"></span>
-                            <span class="relative inline-flex rounded-full h-2 w-2 bg-brand-info"></span>
-                        </span>
-                    </div>
-                    <div>
-                        <h3 class="font-bold text-white text-xs tracking-wide uppercase">Pesan Pribadi</h3>
-                        <p class="text-[9px] text-[#FF007A] font-bold uppercase tracking-widest opacity-80">Inbox</p>
-                    </div>
-                </div>
-                <button onclick="toggleWidget()" class="text-gray-400 hover:text-[#FF007A] transition-colors w-8 h-8 rounded-full bg-white/5 flex items-center justify-center"><i class="fas fa-times text-sm"></i></button>
-            </div>
-            
-            <div class="bg-[#0F0920] px-4 py-2 shrink-0 border-b border-white/5">
-                <div class="relative">
-                    <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-[10px]"></i>
-                    <input type="text" id="search-user-chat" placeholder="Cari nickname user..." class="w-full bg-[#1A1133] border border-white/10 rounded-full pl-8 pr-4 py-2 text-xs text-white focus:outline-none focus:border-brand-accent transition-colors" oninput="searchUsersForChat(this.value)">
-                </div>
-            </div>
-
-            <div id="chat-list-container" class="flex-1 overflow-y-auto chat-scroll p-2 bg-[#0F0920]">
-                </div>
-        </div>
-
-        <div id="chat-room-view" class="hidden flex-col w-full h-full bg-[#0F0920]">
-            <div class="bg-gradient-to-r from-[#1A1133] to-[#0F0920] px-4 py-3 border-b border-white/10 flex items-center gap-3 shrink-0 shadow-md relative z-10">
-                <button onclick="closeChatRoom()" class="text-gray-400 hover:text-white transition-colors active:scale-90 w-8 h-8 flex items-center justify-center rounded-full bg-white/5"><i class="fas fa-arrow-left"></i></button>
-                <div class="relative cursor-pointer" onclick="viewUserProfile(activeChatUserId)">
-                    <img id="active-chat-avatar" src="" class="w-9 h-9 rounded-full object-cover border border-[#FF007A]">
-                    <div id="active-chat-online-dot" class="hidden absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-[#1A1133] rounded-full"></div>
-                </div>
-                <div class="flex-1 min-w-0 cursor-pointer" onclick="viewUserProfile(activeChatUserId)">
-                    <h3 id="active-chat-name" class="font-bold text-white text-[13px] truncate">@Nickname</h3>
-                    <p id="active-chat-status" class="text-[9px] text-gray-500">Offline</p>
-                </div>
-            </div>
-            
-            <div id="chat-messages-container" class="flex-1 overflow-y-auto chat-scroll p-4 space-y-3 bg-[#0F0920] relative pb-10">
-                </div>
-            
-            <div class="bg-[#1A1133] p-3 border-t border-white/10 flex items-center gap-2 shrink-0 relative z-10">
-                <input type="file" id="chat-image-input" accept="image/*" class="hidden" onchange="uploadChatImage(event)">
-                <button onclick="document.getElementById('chat-image-input').click()" class="text-gray-400 hover:text-brand-info w-10 h-10 flex items-center justify-center transition-colors active:scale-90">
-                    <i class="fas fa-image text-lg"></i>
-                </button>
-                <input type="text" id="chat-room-input" placeholder="Ketik pesan balasan..." class="flex-1 bg-black/50 border border-white/10 rounded-full px-4 py-3 text-xs text-white focus:outline-none focus:border-[#FF007A] transition-colors shadow-inner">
-                <button id="btn-send-room" class="bg-gradient-to-br from-[#FF007A] to-[#8A2BE2] text-white w-10 h-10 rounded-full flex items-center justify-center active:scale-90 transition-transform shadow-[0_0_15px_rgba(255,0,122,0.4)]">
-                    <i class="fas fa-paper-plane text-xs ml-[-2px]"></i>
-                </button>
-            </div>
-        </div>
-    </div>
-
     <div id="modal-user-list" class="fixed inset-0 z-[250] hidden items-center justify-center bg-black/90 backdrop-blur-md px-6">
         <div class="bg-brand-card w-full max-w-sm rounded-3xl border border-white/10 shadow-2xl relative modal-anim flex flex-col max-h-[70vh]">
             <div class="flex justify-between items-center p-4 border-b border-white/5">
@@ -757,11 +692,11 @@
         function formatCaption(text) {
             if(!text) return '';
             return text
-                .replace(/&/g, "&")
-                .replace(/</g, "<")
-                .replace(/>/g, ">")
-                .replace(/"/g, """)
-                .replace(/'/g, "'")
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#39;")
                 .replace(/\n/g, "<br>");
         }
 
@@ -939,7 +874,7 @@
             }
 
             grid.innerHTML = reversedVideos.map(vid => {
-                const amanCaption = (vid.caption || '').replace(/'/g, "\\'").replace(/"/g, """).replace(/\n/g, " ");
+                const amanCaption = (vid.caption || '').replace(/'/g, "\\'").replace(/"/g, "&quot;").replace(/\n/g, " ");
                 
                 return `
                 <div class="aspect-[9/16] bg-black relative rounded-md overflow-hidden border border-white/10 group cursor-pointer" onclick="playFloatingVideo('${vid.video_url}', '${(vid.nickname || 'Player').replace(/'/g, "\\'")}', '${amanCaption}', '${vid.id}')">
