@@ -501,9 +501,6 @@
             <p class="text-[9px] text-gray-500 text-center italic mt-2 opacity-80"><i class="fas fa-hourglass-half mr-1"></i> Komentar Anda akan terhapus otomatis dalam 24 jam.</p>
         </div>
     </div>
-            </div>
-        </div>
-    </div>
 
     <!-- MENGAMBANG LIGHTBOX FOTO DI CHAT -->
     <div id="lightbox-modal" class="fixed inset-0 z-[400] hidden items-center justify-center bg-black/95 backdrop-blur-md opacity-0 transition-opacity duration-300" onclick="closeLightbox()">
@@ -2077,11 +2074,16 @@ function closeUploadModal() {
                 if(cBox) cBox.style.display = 'none';
 
                 try {
-                    // await fetch(`/api/delete-comment?id=${cid}`, { method: 'DELETE' });
-                    showToast("Komentar dihapus.", "success");
-                } catch(e) {}
-            }
+                    const { error } = await supabaseClient.from('comments').delete().eq('id', cid);
+            if(error) throw error;
+            
+            showToast("Komentar dihapus.", "success");
+        } catch(e) {
+            showToast("Gagal menghapus komentar dari database.", "error");
+            if(cBox) cBox.style.display = 'flex'; // Kembalikan ke layar jika gagal
         }
+    }
+}
 
         function toggleReplies(id) {
             const div = document.getElementById('replies-'+id); const icon = document.getElementById('icon-reply-'+id);
@@ -2731,7 +2733,6 @@ function closeUploadModal() {
 
     } catch (e) { container.innerHTML = '<div class="p-6 text-center text-xs text-red-500">Gagal memuat pesan.</div>'; }
 }
-
         async function openChatRoom(targetId, name, avatar, isGroup = false) {
     if (!currentUser) return;
     
@@ -2770,6 +2771,47 @@ function closeUploadModal() {
             const isTarget = isGroup ? newMsg.group_id === activeGroupId : (newMsg.sender_id === activeChatUserId && newMsg.receiver_id === currentUser.id);
             if (isTarget) { appendMessageBubble(newMsg); scrollToBottomChat(); if(!isGroup) supabaseClient.from('messages').update({ is_read: true }).eq('id', newMsg.id).then(); }
         }).subscribe();
+}
+
+async function sendRoomMessage(targetId, isGroup) {
+    if (!currentUser) return showToast("Silakan login terlebih dahulu!", "error");
+    
+    const input = document.getElementById('chat-room-input');
+    const msg = input.value.trim();
+    if (!msg) return;
+
+    input.value = ''; // Kosongkan input
+    const btn = document.getElementById('btn-send-room');
+    btn.disabled = true;
+
+    // Tampilkan pesan sementara di layar agar terasa instan (Optimistic UI)
+    const tempId = 'temp-' + Date.now();
+    const tempMsg = { 
+        id: tempId, 
+        sender_id: currentUser.id, 
+        message: msg, 
+        created_at: new Date().toISOString() 
+    };
+    if (isGroup) tempMsg.group_id = targetId;
+    else tempMsg.receiver_id = targetId;
+    
+    appendMessageBubble(tempMsg);
+    scrollToBottomChat();
+
+    // Proses kirim ke Supabase
+    try {
+        const insertData = { sender_id: currentUser.id, message: msg };
+        if (isGroup) insertData.group_id = targetId;
+        else insertData.receiver_id = targetId;
+
+        const { error } = await supabaseClient.from('messages').insert(insertData);
+        if (error) throw error;
+    } catch (err) {
+        showToast("Gagal mengirim pesan", "error");
+    } finally {
+        btn.disabled = false;
+        input.focus();
+    }
 }
 
         function closeChatRoom(reloadList = true, fromPopstate = false) {
