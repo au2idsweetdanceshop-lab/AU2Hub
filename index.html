@@ -466,13 +466,16 @@
                 </div>
                 <div id="chat-messages-container" class="flex-1 overflow-y-auto hide-scroll p-4 flex flex-col gap-1 relative bg-black/20"></div>
                 
-                <div class="p-3 border-t border-white/5 bg-brand-card/90 shrink-0 flex items-center gap-2">
-                    <input type="file" id="chat-image-input" accept="image/*" class="hidden" onchange="uploadChatImage(event)">
-                    <label for="chat-image-input" class="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-center text-gray-400 cursor-pointer transition-colors shrink-0">
-                        <i class="fas fa-image"></i>
-                    </label>
-                    <input type="text" id="chat-room-input" placeholder="Tulis pesan..." class="flex-1 bg-black/40 border border-white/10 rounded-xl py-2.5 px-4 text-xs text-white outline-none focus:border-brand-accent transition-colors">
-                    <button id="btn-send-room" class="w-10 h-10 rounded-xl bg-brand-accent text-white flex items-center justify-center active:scale-90 transition-transform shrink-0 shadow-[0_0_10px_rgba(255,0,122,0.3)]"><i class="fas fa-paper-plane"></i></button>
+                <div class="p-3 border-t border-white/5 bg-brand-card/90 shrink-0 flex flex-col gap-2">
+                    <div class="flex items-center gap-2 w-full">
+                        <input type="file" id="chat-image-input" accept="image/*" class="hidden" onchange="uploadChatImage(event)">
+                        <label for="chat-image-input" class="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-center text-gray-400 cursor-pointer transition-colors shrink-0">
+                            <i class="fas fa-image"></i>
+                        </label>
+                        <input type="text" id="chat-room-input" placeholder="Tulis pesan..." class="flex-1 bg-black/40 border border-white/10 rounded-xl py-2.5 px-4 text-xs text-white outline-none focus:border-brand-accent transition-colors">
+                        <button id="btn-send-room" class="w-10 h-10 rounded-xl bg-brand-accent text-white flex items-center justify-center active:scale-95 transition-transform shrink-0 shadow-[0_0_10px_rgba(255,0,122,0.3)]"><i class="fas fa-paper-plane"></i></button>
+                    </div>
+                    <p class="text-[9px] text-gray-500 text-center italic"><i class="fas fa-hourglass-half mr-1"></i> Pesan akan terhapus otomatis dalam 24 jam untuk menjaga performa.</p>
                 </div>
             </div>
         </div>
@@ -522,6 +525,7 @@
                 <input type="text" id="comment-input" placeholder="Tambahkan komentar..." class="flex-1 bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-brand-accent">
                 <button onclick="sendComment(event)" class="bg-brand-accent text-white w-12 h-[42px] rounded-xl active:scale-95 transition-transform flex items-center justify-center"><i class="fas fa-paper-plane"></i></button>
             </div>
+            <p class="text-[9px] text-gray-500 text-center italic mt-2 opacity-80"><i class="fas fa-hourglass-half mr-1"></i> Komentar Anda akan terhapus otomatis dalam 24 jam.</p>
         </div>
     </div>
 
@@ -594,6 +598,9 @@
                     </div>
                     <button onclick="handleAuth()" id="auth-btn" class="w-full bg-brand-accent text-white py-3.5 rounded-xl font-bold active:scale-95 transition-transform">Login</button>
                     <p class="text-center text-[11px] text-gray-500 mt-4"><span id="toggle-text">Belum punya akun?</span> <button onclick="toggleAuthMode()" id="toggle-btn" class="text-brand-info font-bold underline ml-1">Daftar</button></p>
+                    <div class="border-t border-white/5 pt-3 mt-3">
+                        <p class="text-[9px] text-gray-500 text-center italic"><i class="fas fa-shield-alt text-brand-info mr-1"></i> Self-cleaning system: Interaksi akan dibersihkan setiap 24 jam agar aplikasi tetap cepat.</p>
+                    </div>
                 </div>
             </div>
         </div>
