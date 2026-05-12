@@ -1,8 +1,6 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
-    <script>eruda.init();</script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>AU2Hub - Pusat Komunitas & Joki</title>
@@ -2733,7 +2731,6 @@ function closeUploadModal() {
 
     } catch (e) { container.innerHTML = '<div class="p-6 text-center text-xs text-red-500">Gagal memuat pesan.</div>'; }
 }
-}
 
         async function openChatRoom(targetId, name, avatar, isGroup = false) {
     if (!currentUser) return;
@@ -2886,8 +2883,6 @@ function closeUploadModal() {
     document.getElementById('chat-room-view').classList.add('hidden'); document.getElementById('chat-room-view').classList.remove('flex');
     if(reloadList) loadChatList(); 
 }
-            }
-        }
         
         async function prosesUploadVideo() {
             if (!currentUser) return openAuthModal();
