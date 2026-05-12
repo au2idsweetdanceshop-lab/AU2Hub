@@ -775,7 +775,7 @@
 
         let activeChatUserId = null;
         let messageSubscription = null;
-        let globalMessageSubscription = null; // PENAMBAHAN UNTUK REALTIME CHAT GLOBAL
+        let globalMessageSubscription = null;
         let presenceChannel = null;
         let onlineUsersMap = new Map();
         let selectedMessageId = null;
@@ -804,7 +804,6 @@
                 .replace(/\n/g, "<br>");
         }
         
-        // FUNGSI BLOKIR DAN REALTIME CHAT BADGE
         async function fetchBlockedUsers() {
             if(!currentUser) return;
             try {
@@ -840,7 +839,6 @@
             }
         }
 
-        // FUNGSI LISTENER PESAN REALTIME DI BACKGROUND
         function initGlobalMessageListener() {
             if (!currentUser || globalMessageSubscription) return;
 
@@ -978,7 +976,7 @@
                 document.getElementById('profile-logged-out').classList.add('hidden'); 
                 updateUIForLoggedIn(); 
                 initPresence(); 
-                initGlobalMessageListener(); // INIT REALTIME GLOBAL
+                initGlobalMessageListener(); 
             } else { 
                 if (presenceChannel) { supabaseClient.removeChannel(presenceChannel); presenceChannel = null; }
                 if (globalMessageSubscription) { supabaseClient.removeChannel(globalMessageSubscription); globalMessageSubscription = null; }
@@ -1074,7 +1072,6 @@
             userProfile = null;
             blockedUsersList = [];
             
-            // BERSIHKAN LISTENER GLOBAL AGAR TIDAK ERROR SAAT LOGOUT
             if (globalMessageSubscription) {
                 supabaseClient.removeChannel(globalMessageSubscription);
                 globalMessageSubscription = null;
@@ -1253,6 +1250,16 @@
 
         function switchTab(tabId, event = null, isPush = true) {
             if (event) event.preventDefault();
+            
+            // RESET PROFIL KE MILIK SENDIRI JIKA KLIK MENU BAWAH NAVIGASI PROFIL
+            if (tabId === 'profile' && event !== null && currentUser) {
+                if (viewedUserId !== currentUser.id) {
+                    viewedUserId = currentUser.id;
+                    openUserProfile(currentUser.id);
+                    return; // hentikan karena openUserProfile akan mengeksekusi switchTab secara mandiri
+                }
+            }
+
             if (tabId !== 'profile' && tabId !== 'pembayaran' && tabId !== 'upload') {tabSebelumnya = tabId;} 
             if (tabId === 'layanan' && isPush && document.getElementById('pembayaran').classList.contains('active')) {
                 window.scrollTo({ top: 0, behavior: 'smooth' }); return; 
@@ -1364,9 +1371,39 @@
             switchTab(newHash.split('?')[0], null, false);
         });
 
+        // FUNGSI KEMBALI DARI PROFIL YANG SUDAH DIPERBAIKI SANGAT AMAN
         function kembaliDariProfil() {
-            switchTab(tabSebelumnya);
-            viewedUserId = currentUser?.id; 
+            // Pindah tab secara visual
+            switchTab(tabSebelumnya, null, false);
+            
+            // Mengganti URL tanpa memicu popstate yang berisiko bentrok dengan chat widget
+            history.replaceState(null, null, '#' + tabSebelumnya);
+            
+            // Reset profil yang tertinggal di background (agar siap pas di-klik dari bawah)
+            if (currentUser) {
+                viewedUserId = currentUser.id;
+                
+                const pNick = document.getElementById('profile-nickname'); if(pNick) pNick.innerText = "@" + (userProfile?.nickname || "Player");
+                const pBio = document.getElementById('profile-bio'); if(pBio) pBio.innerText = userProfile?.bio || "Belum ada deskripsi.";
+                const pImg = document.getElementById('profile-img'); if(pImg) pImg.src = userProfile?.avatar_url || `https://ui-avatars.com/api/?name=${userProfile?.nickname || 'Player'}&background=1A1133&color=fff`;
+
+                const actionOwn = document.getElementById('profile-actions-own'); if(actionOwn) actionOwn.classList.remove('hidden');
+                const actionOther = document.getElementById('profile-actions-other'); if(actionOther) actionOther.classList.add('hidden');
+                
+                const btnBack = document.getElementById('btn-back-profile'); if(btnBack) btnBack.classList.add('hidden');
+                const btnEditAva = document.getElementById('btn-edit-avatar'); if(btnEditAva) btnEditAva.classList.remove('hidden');
+                
+                const elVidTitle = document.getElementById('profile-video-title');
+                if(elVidTitle) elVidTitle.innerHTML = `<i class="fas fa-grip-vertical mr-2 text-brand-info"></i> Video Saya`;
+
+                renderProfileVideos(currentUser.id);
+                fetchFollowStats(currentUser.id);
+            } else {
+                viewedUserId = null;
+                document.querySelectorAll('#profile-logged-in').forEach(el => el.classList.add('hidden'));
+                document.getElementById('profile-logged-out').classList.remove('hidden');
+                const btnBack = document.getElementById('btn-back-profile'); if(btnBack) btnBack.classList.add('hidden');
+            }
         }
 
         function openModalEvent() {
@@ -1431,10 +1468,18 @@
             if(!isOwn) history.pushState({ popup: 'user_profile' }, null, `#profile?id=${userId}`);
         }
         
+        // FUNGSI MELIHAT PROFIL USER LAIN DARI MANA SAJA
         function viewUserProfile(userId) {
             if (!userId || userId === 'undefined') { showToast("Profil tidak dapat dibuka karena ID tidak ditemukan.", "error"); return; }
             document.getElementById('comment-drawer').classList.remove('open');
             cancelReply();
+            
+            // Sembunyikan widget obrolan agar profil dapat dilihat tanpa dihalangi widget chat
+            const widget = document.getElementById('floating-widget');
+            if (widget && !widget.classList.contains('opacity-0')) {
+                widget.classList.add('opacity-0', 'pointer-events-none', 'translate-y-8', 'scale-95');
+            }
+
             openUserProfile(userId);
         }
 
