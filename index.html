@@ -466,17 +466,15 @@
                 </div>
                 <div id="chat-messages-container" class="flex-1 overflow-y-auto hide-scroll p-4 flex flex-col gap-1 relative bg-black/20"></div>
                 
-                <div class="p-3 border-t border-white/5 bg-brand-card/90 shrink-0 flex flex-col gap-2">
-                    <div class="flex items-center gap-2 w-full">
-                        <input type="file" id="chat-image-input" accept="image/*" class="hidden" onchange="uploadChatImage(event)">
-                        <label for="chat-image-input" class="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-center text-gray-400 cursor-pointer transition-colors shrink-0">
-                            <i class="fas fa-image"></i>
-                        </label>
-                        <input type="text" id="chat-room-input" placeholder="Tulis pesan..." class="flex-1 bg-black/40 border border-white/10 rounded-xl py-2.5 px-4 text-xs text-white outline-none focus:border-brand-accent transition-colors">
-                        <button id="btn-send-room" class="w-10 h-10 rounded-xl bg-brand-accent text-white flex items-center justify-center active:scale-95 transition-transform shrink-0 shadow-[0_0_10px_rgba(255,0,122,0.3)]"><i class="fas fa-paper-plane"></i></button>
-                    </div>
-                    <p class="text-[9px] text-gray-500 text-center italic"><i class="fas fa-hourglass-half mr-1"></i> Pesan akan terhapus otomatis dalam 24 jam untuk menjaga performa.</p>
+                <div class="p-3 border-t border-white/5 bg-brand-card/90 shrink-0 flex items-center gap-2">
+                    <input type="file" id="chat-image-input" accept="image/*" class="hidden" onchange="uploadChatImage(event)">
+                    <label for="chat-image-input" class="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-center text-gray-400 cursor-pointer transition-colors shrink-0">
+                        <i class="fas fa-image"></i>
+                    </label>
+                    <input type="text" id="chat-room-input" placeholder="Tulis pesan..." class="flex-1 bg-black/40 border border-white/10 rounded-xl py-2.5 px-4 text-xs text-white outline-none focus:border-brand-accent transition-colors">
+                    <button id="btn-send-room" class="w-10 h-10 rounded-xl bg-brand-accent text-white flex items-center justify-center active:scale-90 transition-transform shrink-0 shadow-[0_0_10px_rgba(255,0,122,0.3)]"><i class="fas fa-paper-plane"></i></button>
                 </div>
+                <p class="text-[9px] text-gray-500 text-center italic"><i class="fas fa-hourglass-half mr-1"></i> Pesan akan terhapus otomatis dalam 24 jam untuk menjaga performa.</p>
             </div>
         </div>
     </main>
@@ -528,7 +526,7 @@
             <p class="text-[9px] text-gray-500 text-center italic mt-2 opacity-80"><i class="fas fa-hourglass-half mr-1"></i> Komentar Anda akan terhapus otomatis dalam 24 jam.</p>
         </div>
     </div>
-
+    
     <div id="lightbox-modal" class="fixed inset-0 z-[400] hidden items-center justify-center bg-black/95 backdrop-blur-md opacity-0 transition-opacity duration-300" onclick="closeLightbox()">
         <button onclick="closeLightbox()" class="absolute top-6 right-6 text-white bg-white/10 w-12 h-12 rounded-full flex items-center justify-center active:scale-90 z-[410]"><i class="fas fa-times text-xl"></i></button>
         <img id="lightbox-img" src="" class="max-w-[90%] max-h-[80vh] object-contain rounded-lg shadow-2xl scale-95 transition-transform duration-300">
