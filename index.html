@@ -1576,25 +1576,39 @@
                                 <p class="font-bold text-[15px] shadow-black drop-shadow-md mb-1.5">@${vid.nickname || "Player"}</p>
                                 <div onclick="this.classList.toggle('expanded')" class="caption-text text-[13px] opacity-90 shadow-black drop-shadow-md cursor-pointer pr-2 leading-relaxed">${formatCaption(vid.caption)}</div>
                             </div>
-                            <div class="flex flex-col gap-6 items-center pointer-events-auto mb-4">
-                                <div class="like-container flex flex-col items-center gap-1" data-vid="${vid.id}">
-                                    <button onclick="likeVideo('${vid.id}', this)" class="hover:scale-110 transition-transform"><i class="fas fa-heart text-3xl text-white drop-shadow-md"></i></button>
-                                    <span class="like-count-display text-white text-[12px] font-bold drop-shadow-md">0</span>
-                                </div>
-                                <div class="comment-count-container flex flex-col items-center gap-1" data-vid="${vid.id}">
-                                    <button onclick="openComments('${vid.id}')" class="hover:scale-110 transition-transform"><i class="fas fa-comment-dots text-3xl text-white drop-shadow-md"></i></button>
-                                    <span class="comment-count-display text-white text-[12px] font-bold drop-shadow-md">0</span>
-                                </div>
-                                <!-- TOMBOL SHARE JUGAAAA -->
-                                <div class="flex flex-col items-center gap-1 mt-3">
-                                    <button onclick="shareVideo('${vid.id}', this)" class="hover:scale-110 transition-transform">
-                                        <i class="fas fa-share text-2xl text-white drop-shadow-md"></i>
+                            <!-- KUMPULAN ICON PROFIL KANAN (STYLE TIKTOK) -->
+                            <div class="flex flex-col gap-4 items-center pointer-events-auto mb-2 mr-1">
+                                
+                                <!-- Like -->
+                                <div class="like-container flex flex-col items-center gap-0.5" data-vid="${vid.id}">
+                                    <button onclick="likeVideo('${vid.id}', this)" class="hover:scale-110 transition-transform active:scale-90">
+                                        <i class="fas fa-heart text-[32px] text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]"></i>
                                     </button>
-                                    <span class="text-white text-[10px] font-bold drop-shadow-md">Share</span>
+                                    <span class="like-count-display text-white text-[12px] font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">0</span>
                                 </div>
+
+                                <!-- Komentar -->
+                                <div class="comment-count-container flex flex-col items-center gap-0.5" data-vid="${vid.id}">
+                                    <button onclick="openComments('${vid.id}')" class="hover:scale-110 transition-transform active:scale-90">
+                                        <i class="fas fa-comment-dots text-[32px] text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]" style="transform: scaleX(-1);"></i>
+                                    </button>
+                                    <span class="comment-count-display text-white text-[12px] font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">0</span>
+                                </div>
+
+                                <!-- Share -->
+                                <div class="flex flex-col items-center gap-0.5 mt-1">
+                                    <button onclick="shareVideo('${vid.id}', this)" class="hover:scale-110 transition-transform active:scale-90">
+                                        <i class="fas fa-share text-[30px] text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]"></i>
+                                    </button>
+                                    <span class="text-white text-[11px] font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">Share</span>
+                                </div>
+
+                                <!-- Hapus (Hanya muncul jika profil sendiri) -->
                                 ${currentUser && vid.user_id === currentUser.id ? `
-                                <button onclick="deleteVideo('${vid.id}')" class="hover:scale-110 transition-transform mt-2">
-                                    <i class="fas fa-trash text-red-500 text-2xl drop-shadow-md"></i>
+                                <button onclick="deleteVideo('${vid.id}')" class="hover:scale-110 transition-transform mt-3 active:scale-90">
+                                    <div class="bg-black/50 p-2 rounded-full border border-white/20 backdrop-blur-sm">
+                                        <i class="fas fa-trash text-red-500 text-xl drop-shadow-md"></i>
+                                    </div>
                                 </button>
                                 ` : ''}
                             </div>
@@ -2207,28 +2221,43 @@
                                 ${formatCaption(vid.caption)}
                             </div>
                         </div>
-                        <div class="flex flex-col gap-6 items-center pointer-events-auto mb-14">
-                            <div class="like-container flex flex-col items-center gap-1" data-vid="${vid.id}">
-                                <button onclick="likeVideo('${vid.id}', this)" class="hover:scale-110 transition-transform"><i class="fas fa-heart text-3xl text-white drop-shadow-md"></i></button>
-                                <span class="like-count-display text-white text-[12px] font-bold drop-shadow-md">0</span>
-                            </div>
-                            <div class="comment-count-container flex flex-col items-center gap-1" data-vid="${vid.id}">
-                                <button onclick="openComments('${vid.id}')" class="hover:scale-110 transition-transform"><i class="fas fa-comment-dots text-3xl text-white drop-shadow-md"></i></button>
-                                <span class="comment-count-display text-white text-[12px] font-bold drop-shadow-md">0</span>
-                                <button onclick="openUploadModal()" class="hover:scale-110 transition-transform mt-3">
-                                    <div class="bg-brand-info rounded-full w-9 h-9 flex items-center justify-center border-2 border-white drop-shadow-[0_0_8px_rgba(0,0,0,0.8)]">
-                                        <i class="fas fa-plus text-brand-dark text-lg"></i>
-                                    </div>
+                        
+                        <!-- KUMPULAN ICON KANAN (STYLE TIKTOK) -->
+                        <div class="flex flex-col gap-4 items-center pointer-events-auto mb-6 sm:mb-10 mr-1">
+                            
+                            <!-- 1. Foto Profil + Tombol Plus (Upload) -->
+                            <div class="relative mb-2 cursor-pointer hover:scale-105 transition-transform" onclick="openUserProfile('${vid.user_id}')">
+                                <img src="${vid.avatar_url || 'https://ui-avatars.com/api/?name=User&background=1A1133&color=fff'}" class="w-11 h-11 rounded-full object-cover border-[1.5px] border-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
+                                <button onclick="event.stopPropagation(); openUploadModal()" class="absolute -bottom-2.5 left-1/2 -translate-x-1/2 bg-[#FF007A] text-white rounded-full w-[22px] h-[22px] flex items-center justify-center border-2 border-transparent drop-shadow-md active:scale-90 transition-transform">
+                                    <i class="fas fa-plus text-[10px]"></i>
                                 </button>
                             </div>
-                            <!-- TOMBOL SHARE -->
-                            <div class="flex flex-col items-center gap-1 mt-3">
-                                <button onclick="shareVideo('${vid.id}', this)" class="hover:scale-110 transition-transform">
-                                    <i class="fas fa-share text-2xl text-white drop-shadow-md"></i>
+
+                            <!-- 2. Like (Heart) -->
+                            <div class="like-container flex flex-col items-center gap-0.5" data-vid="${vid.id}">
+                                <button onclick="likeVideo('${vid.id}', this)" class="hover:scale-110 transition-transform active:scale-90">
+                                    <i class="fas fa-heart text-[32px] text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]"></i>
                                 </button>
-                                <span class="text-white text-[10px] font-bold drop-shadow-md">Share</span>
+                                <span class="like-count-display text-white text-[12px] font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">0</span>
+                            </div>
+
+                            <!-- 3. Komentar -->
+                            <div class="comment-count-container flex flex-col items-center gap-0.5" data-vid="${vid.id}">
+                                <button onclick="openComments('${vid.id}')" class="hover:scale-110 transition-transform active:scale-90">
+                                    <i class="fas fa-comment-dots text-[32px] text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]" style="transform: scaleX(-1);"></i>
+                                </button>
+                                <span class="comment-count-display text-white text-[12px] font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">0</span>
+                            </div>
+
+                            <!-- 4. Share -->
+                            <div class="flex flex-col items-center gap-0.5 mt-1">
+                                <button onclick="shareVideo('${vid.id}', this)" class="hover:scale-110 transition-transform active:scale-90">
+                                    <i class="fas fa-share text-[30px] text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]"></i>
+                                </button>
+                                <span class="text-white text-[11px] font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">Share</span>
                             </div>
                         </div>
+
                     </div>
                 </div>`).join('');
 
