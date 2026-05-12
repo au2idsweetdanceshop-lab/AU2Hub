@@ -2842,7 +2842,7 @@ async function loadChatList() {
             const { data: profiles } = await supabaseClient.from('profiles').select('id, nickname, avatar_url').in('id', partnerIds);
             // Cek story 24 jam terakhir (Asumsi ada tabel 'stories')
             const past24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-            const { data: activeStories } = await supabaseClient.from('stories').select('user_id').gte('created_at', 24hAgo);
+            const { data: activeStories } = await supabaseClient.from('stories').select('user_id').gte('created_at', past24h);
             if (activeStories) usersWithStory = activeStories.map(s => s.user_id);
 
             if (profiles) profiles.forEach(p => personalList.push({ type: 'personal', id: p.id, name: p.nickname, avatar: p.avatar_url, latestMsg: personalContacts[p.id], unread: unreadCounts[p.id] || 0, hasStory: usersWithStory.includes(p.id) }));
@@ -2913,7 +2913,7 @@ async function loadStories() {
     try {
         const past24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
         // Asumsi kamu sudah membuat tabel 'stories' di Supabase
-        const { data: stories } = await supabaseClient.from('stories').select('*, profiles(nickname, avatar_url)').gte('created_at', 24hAgo).order('created_at', { ascending: false });
+        const { data: stories } = await supabaseClient.from('stories').select('*, profiles(nickname, avatar_url)').gte('created_at', past24h).order('created_at', { ascending: false });
         
         if (!stories || stories.length === 0) {
             container.innerHTML = `<div class="text-center py-6 text-xs text-gray-500">Belum ada pembaruan status.</div>`;
@@ -2986,7 +2986,7 @@ async function viewStory(userId, name, avatar) {
     
     // Ambil story user ini dari database
     const past24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-    const { data: stories } = await supabaseClient.from('stories').select('*').eq('user_id', userId).gte('created_at', 24hAgo).order('created_at', { ascending: true });
+    const { data: stories } = await supabaseClient.from('stories').select('*').eq('user_id', userId).gte('created_at', past24h).order('created_at', { ascending: true });
     
     if(!stories || stories.length === 0) {
         showToast("Status sudah kedaluwarsa.", "error");
