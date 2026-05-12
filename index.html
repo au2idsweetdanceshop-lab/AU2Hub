@@ -1910,12 +1910,23 @@
         }
 
         async function updateLikeCountUI(videoId, containerDiv) {
+            if (!containerDiv) return;
             try {
-                const response = await fetch(`/api/like?video_id=${videoId}`); const data = await response.json();
+                // Hitung jumlah like langsung dari Supabase
+                const { count, error } = await supabaseClient
+                    .from('video_likes')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('video_id', videoId);
+                
                 const countSpan = containerDiv.querySelector('.like-count-display');
-                if (countSpan && data.count !== undefined) countSpan.innerText = data.count;
-                if(localStorage.getItem(`liked_${videoId}`)) containerDiv.querySelector('i').classList.replace('text-white', 'text-brand-accent');
-            } catch(e) {}
+                if (countSpan && !error) countSpan.innerText = count || 0;
+
+                if(localStorage.getItem(`liked_${videoId}`)) {
+                    containerDiv.querySelector('i').classList.replace('text-white', 'text-brand-accent');
+                }
+            } catch(e) {
+                console.error("Gagal update UI like", e);
+            }
         }
 
         async function updateCommentCountUI(videoId, containerDiv) {
@@ -1927,6 +1938,12 @@
         }
 
         async function likeVideo(videoId, btn) {
+            // Wajib login untuk melike
+            if (!currentUser) {
+                showToast("Silakan login untuk menyukai video!", "error");
+                return openAuthModal();
+            }
+
             if(localStorage.getItem(`liked_${videoId}`)) return; 
             
             localStorage.setItem(`liked_${videoId}`, 'pending'); 
@@ -1937,17 +1954,22 @@
             setTimeout(() => icon.classList.remove('animate-ping'), 500);
 
             try {
-                const response = await fetch('/api/like', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ video_id: videoId }) });
-                if (response.ok) { 
+                // Insert data like ke Supabase
+                const { error } = await supabaseClient.from('video_likes').insert({
+                    video_id: videoId,
+                    user_id: currentUser.id
+                });
+
+                if (!error) { 
                     localStorage.setItem(`liked_${videoId}`, 'true'); 
                     updateLikeCountUI(videoId, btn.closest('.like-container') || document.getElementById('float-like-container')); 
                 } else {
-                    localStorage.removeItem(`liked_${videoId}`);
-                    icon.classList.replace('text-brand-accent', 'text-white');
+                    throw error;
                 }
             } catch (e) { 
                 localStorage.removeItem(`liked_${videoId}`);
                 icon.classList.replace('text-brand-accent', 'text-white'); 
+                showToast("Gagal menyukai video.", "error");
             }
         }
 
