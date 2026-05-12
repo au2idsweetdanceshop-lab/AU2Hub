@@ -2841,17 +2841,27 @@ function closeUploadModal() {
         }
 
         function showMsgOptions(msgId, isMe) {
-            selectedMessageId = msgId;
-            const modal = document.getElementById('modal-msg-option');
-            
-            const btnAll = document.getElementById('btn-del-msg-all');
-            isMe ? btnAll.classList.replace('hidden', 'block') : btnAll.classList.replace('block', 'hidden');
+    selectedMessageId = msgId;
+    const modal = document.getElementById('modal-msg-option');
+    const btnAll = document.getElementById('btn-del-msg-all');
+    
+    // PERBAIKAN BUG: Gunakan add/remove class secara eksplisit
+    if (isMe) {
+        btnAll.classList.remove('hidden');
+        // Aktifkan tombol Hapus Semua HANYA jika ini pesan saya
+        btnAll.onclick = () => actionDeleteMessage('all');
+    } else {
+        btnAll.classList.add('hidden');
+        // KOSONGKAN fungsi agar tidak "nyangkut" dari klik pesan sebelumnya
+        btnAll.onclick = null; 
+    }
 
-            document.getElementById('btn-del-msg-me').onclick = () => actionDeleteMessage('me');
-            if(isMe) btnAll.onclick = () => actionDeleteMessage('all');
+    // Tombol "Hapus untuk Saya" selalu muncul untuk semua pesan
+    document.getElementById('btn-del-msg-me').onclick = () => actionDeleteMessage('me');
 
-            modal.classList.remove('hidden'); modal.classList.add('flex');
-        }
+    modal.classList.remove('hidden'); 
+    modal.classList.add('flex');
+}
 
         async function actionDeleteMessage(type) {
             document.getElementById('modal-msg-option').classList.replace('flex', 'hidden');
