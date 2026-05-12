@@ -775,6 +775,7 @@
 
         let activeChatUserId = null;
         let messageSubscription = null;
+        let globalMessageSubscription = null; // PENAMBAHAN UNTUK REALTIME CHAT GLOBAL
         let presenceChannel = null;
         let onlineUsersMap = new Map();
         let selectedMessageId = null;
@@ -803,7 +804,7 @@
                 .replace(/\n/g, "<br>");
         }
         
-        // FUNGSI YANG HILANG DITAMBAHKAN DI SINI
+        // FUNGSI BLOKIR DAN REALTIME CHAT BADGE
         async function fetchBlockedUsers() {
             if(!currentUser) return;
             try {
@@ -837,6 +838,33 @@
             } catch(e) { 
                 console.error("Error unread messages", e); 
             }
+        }
+
+        // FUNGSI LISTENER PESAN REALTIME DI BACKGROUND
+        function initGlobalMessageListener() {
+            if (!currentUser || globalMessageSubscription) return;
+
+            globalMessageSubscription = supabaseClient
+                .channel('global_messages')
+                .on('postgres_changes', { 
+                    event: 'INSERT', 
+                    schema: 'public', 
+                    table: 'messages',
+                    filter: `receiver_id=eq.${currentUser.id}` 
+                }, payload => {
+                    checkGlobalUnreadMessages();
+                    
+                    if (activeChatUserId !== payload.new.sender_id) {
+                        showToast("Ada pesan baru masuk!", "info");
+                    }
+                    
+                    const widget = document.getElementById('floating-widget');
+                    const chatList = document.getElementById('chat-list-view');
+                    if (!widget.classList.contains('opacity-0') && chatList.classList.contains('flex')) {
+                        setTimeout(() => loadChatList(), 300); 
+                    }
+                })
+                .subscribe();
         }
 
         async function showUserList(type) {
@@ -950,8 +978,10 @@
                 document.getElementById('profile-logged-out').classList.add('hidden'); 
                 updateUIForLoggedIn(); 
                 initPresence(); 
+                initGlobalMessageListener(); // INIT REALTIME GLOBAL
             } else { 
                 if (presenceChannel) { supabaseClient.removeChannel(presenceChannel); presenceChannel = null; }
+                if (globalMessageSubscription) { supabaseClient.removeChannel(globalMessageSubscription); globalMessageSubscription = null; }
                 document.querySelectorAll('#profile-logged-in').forEach(el => el.classList.add('hidden')); 
                 document.getElementById('profile-logged-out').classList.remove('hidden'); 
                 updateUIForLoggedOut(); 
@@ -1043,6 +1073,13 @@
             currentUser = null;
             userProfile = null;
             blockedUsersList = [];
+            
+            // BERSIHKAN LISTENER GLOBAL AGAR TIDAK ERROR SAAT LOGOUT
+            if (globalMessageSubscription) {
+                supabaseClient.removeChannel(globalMessageSubscription);
+                globalMessageSubscription = null;
+            }
+
             checkSession();
             showToast("Anda telah keluar.", "info");
         }
