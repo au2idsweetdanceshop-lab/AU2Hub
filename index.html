@@ -2730,6 +2730,7 @@ function closeUploadModal() {
         container.innerHTML = html; checkGlobalUnreadMessages();
 
     } catch (e) { container.innerHTML = '<div class="p-6 text-center text-xs text-red-500">Gagal memuat pesan.</div>'; }
+}
 
         async function openChatRoom(targetId, name, avatar, isGroup = false) {
     if (!currentUser) return;
