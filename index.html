@@ -3391,12 +3391,13 @@ function previewGroupAvatar(input, imgId) {
     }
 }
 
-// 3. Proses Eksekusi Buat Grup ke Database
+// 3. Proses Eksekusi Buat Grup ke Database (DIPERBAIKI)
 async function prosesCreateGroup() {
     if (!currentUser) return showToast("Silakan login dulu!", "error");
     
     const nameInput = document.getElementById('create-group-name').value.trim();
     const descInput = document.getElementById('create-group-desc').value.trim();
+    const fileInput = document.getElementById('create-group-avatar'); // Ambil elemen file foto
     const btn = document.getElementById('btn-submit-group');
 
     if (!nameInput) return showToast("Nama grup wajib diisi!", "error");
@@ -3406,13 +3407,32 @@ async function prosesCreateGroup() {
     btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Membuat...';
 
     try {
-        // Buat avatar default dari inisial nama grup
-        let avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(nameInput)}&background=1A1133&color=fff`;
+        // Default avatar (jika user tidak memilih foto)
+        let finalAvatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(nameInput)}&background=1A1133&color=fff`;
 
-        // Masukkan data grup ke tabel 'groups'
+        // LOGIKA BARU: Jika user memilih foto, upload fotonya dulu!
+        if (fileInput.files && fileInput.files[0]) {
+            const file = fileInput.files[0];
+            showToast("Mengunggah foto grup...", "info");
+            
+            // Proses upload ke storage menggunakan API-mu
+            const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent('group_'+Date.now())}&filetype=${encodeURIComponent(file.type)}`);
+            const dataUrl = await resUrl.json();
+            
+            await fetch(dataUrl.uploadUrl, { 
+                method: 'PUT', 
+                body: file, 
+                headers: { 'Content-Type': file.type, 'x-amz-acl': 'public-read' } 
+            });
+            
+            // Ganti URL default dengan URL foto yang berhasil di-upload
+            finalAvatarUrl = dataUrl.finalVideoUrl; 
+        }
+
+        // Masukkan data grup ke tabel 'groups' (sekarang pakai finalAvatarUrl)
         const { data: groupData, error: groupErr } = await supabaseClient
             .from('groups')
-            .insert({ name: nameInput, description: descInput, avatar_url: avatarUrl, created_by: currentUser.id })
+            .insert({ name: nameInput, description: descInput, avatar_url: finalAvatarUrl, created_by: currentUser.id })
             .select().single();
 
         if (groupErr) throw groupErr;
@@ -3430,9 +3450,10 @@ async function prosesCreateGroup() {
         // Reset form
         document.getElementById('create-group-name').value = '';
         document.getElementById('create-group-desc').value = '';
+        fileInput.value = ''; // Reset input file foto
         document.getElementById('create-group-preview').src = 'https://ui-avatars.com/api/?name=Grup&background=1A1133&color=fff';
 
-        // Reload daftar chat agar grup baru muncul
+        // Reload daftar chat agar grup baru muncul beserta fotonya
         loadChatList(); 
 
     } catch (err) {
