@@ -76,7 +76,7 @@
         }
         .caption-text.expanded { 
             -webkit-line-clamp: unset; 
-            max-height: 12rem; /* Batas maksimal panjang teks saat diklik */
+            max-height: 12rem;
             overflow-y: auto; 
         }
         .caption-text::-webkit-scrollbar { width: 2px; }
@@ -350,8 +350,8 @@
                 <p id="profile-bio" class="text-[11px] text-gray-300 mt-2 mb-4 px-6 leading-relaxed whitespace-pre-line">Mencari teman main Sweet Dance. Add ID aku ya!</p>
 
                 <div class="flex justify-center gap-8 mb-6 border-y border-white/5 py-3">
-                    <div class="flex flex-col items-center"><span id="stat-mengikuti" class="font-bold text-white text-base">0</span><span class="text-[9px] text-gray-400 uppercase tracking-widest">Mengikuti</span></div>
-                    <div class="flex flex-col items-center"><span id="stat-pengikut" class="font-bold text-white text-base">0</span><span class="text-[9px] text-gray-400 uppercase tracking-widest">Pengikut</span></div>
+                    <div class="flex flex-col items-center cursor-pointer hover:opacity-70 transition-opacity" onclick="showUserList('mengikuti')"><span id="stat-mengikuti" class="font-bold text-white text-base">0</span><span class="text-[9px] text-gray-400 uppercase tracking-widest">Mengikuti</span></div>
+                    <div class="flex flex-col items-center cursor-pointer hover:opacity-70 transition-opacity" onclick="showUserList('pengikut')"><span id="stat-pengikut" class="font-bold text-white text-base">0</span><span class="text-[9px] text-gray-400 uppercase tracking-widest">Pengikut</span></div>
                     <div class="flex flex-col items-center"><span id="profile-total-likes" class="font-bold text-white text-base">0</span><span class="text-[9px] text-gray-400 uppercase tracking-widest">Suka</span></div>
                 </div>
 
@@ -364,9 +364,12 @@
                     </button>
                 </div>
 
-                <div id="profile-actions-other" class="hidden flex gap-2 justify-center px-4 mb-6">
-                    <button id="btn-follow" onclick="toggleFollow(viewedUserId)" class="flex-1 bg-brand-accent py-2.5 rounded-xl text-[11px] font-extrabold text-white uppercase tracking-wide hover:scale-95 transition-transform shadow-[0_0_15px_rgba(255,0,122,0.3)]">Ikuti</button>
-                    <button onclick="kirimPesanPribadi(viewedUserId)" class="flex-1 bg-white/10 border border-white/10 py-2.5 rounded-xl text-[11px] font-bold text-white hover:bg-white/20 transition-colors">Kirim Pesan</button>
+                <div id="profile-actions-other" class="hidden flex-col gap-2 justify-center px-4 mb-6">
+                    <div class="flex gap-2">
+                        <button id="btn-follow" onclick="toggleFollow(viewedUserId)" class="flex-1 bg-brand-accent py-2.5 rounded-xl text-[11px] font-extrabold text-white uppercase tracking-wide hover:scale-95 transition-transform shadow-[0_0_15px_rgba(255,0,122,0.3)]">Ikuti</button>
+                        <button onclick="kirimPesanPribadi(viewedUserId)" class="flex-1 bg-white/10 border border-white/10 py-2.5 rounded-xl text-[11px] font-bold text-white hover:bg-white/20 transition-colors">Kirim Pesan</button>
+                    </div>
+                    <button id="btn-block-user" onclick="toggleBlockUser(viewedUserId)" class="w-full bg-red-500/10 border border-red-500/20 py-2 rounded-xl text-[10px] font-bold text-red-500 hover:bg-red-500/20 transition-colors mt-1"><i class="fas fa-ban mr-1"></i> Blokir Pengguna</button>
                 </div>
 
                 <div class="border-t border-white/10 pt-4 text-left px-2">
@@ -553,8 +556,9 @@
         </div>
     </div>
 
-    <button onclick="toggleWidget()" class="fixed bottom-[90px] right-5 z-50 bg-gradient-to-r from-brand-info to-brand-purple text-white w-14 h-14 rounded-full shadow-[0_0_20px_rgba(0,240,255,0.4)] flex items-center justify-center active:scale-90 transition-transform">
+    <button onclick="toggleWidget()" class="fixed bottom-[90px] right-5 z-50 bg-gradient-to-r from-brand-info to-brand-purple text-white w-14 h-14 rounded-full shadow-[0_0_20px_rgba(0,240,255,0.4)] flex items-center justify-center active:scale-90 transition-transform relative">
         <i class="fas fa-comment-dots text-2xl"></i>
+        <span id="global-chat-badge" class="hidden absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center border-2 border-brand-dark animate-bounce">0</span>
     </button>
 
     <div id="floating-widget" class="fixed bottom-[100px] left-1/2 -translate-x-1/2 z-50 w-[92vw] max-w-[380px] h-[500px] bg-[#1A1133]/95 border border-[#FF007A]/30 rounded-3xl shadow-[0_0_30px_rgba(255,0,122,0.3)] flex flex-col overflow-hidden backdrop-blur-xl transition-all duration-300 ease-out opacity-0 pointer-events-none translate-y-8 scale-95">
@@ -614,6 +618,16 @@
                     <i class="fas fa-paper-plane text-xs ml-[-2px]"></i>
                 </button>
             </div>
+        </div>
+    </div>
+
+    <div id="modal-user-list" class="fixed inset-0 z-[250] hidden items-center justify-center bg-black/90 backdrop-blur-md px-6">
+        <div class="bg-brand-card w-full max-w-sm rounded-3xl border border-white/10 shadow-2xl relative modal-anim flex flex-col max-h-[70vh]">
+            <div class="flex justify-between items-center p-4 border-b border-white/5">
+                <h3 id="user-list-title" class="font-bold text-white text-sm">Daftar Pengguna</h3>
+                <button onclick="closeUserList()" class="text-gray-400 hover:text-white w-8 h-8 rounded-full bg-white/5 flex items-center justify-center"><i class="fas fa-times"></i></button>
+            </div>
+            <div id="user-list-container" class="flex-1 overflow-y-auto p-2 hide-scroll"></div>
         </div>
     </div>
 
@@ -721,22 +735,12 @@
         let currentVideoIndex = 0; 
         const BATCH_SIZE = 5; 
 
-        function formatCaption(text) {
-            if(!text) return '';
-            return text
-                .replace(/&/g, "&amp;")
-                .replace(/</g, "&lt;")
-                .replace(/>/g, "&gt;")
-                .replace(/"/g, "&quot;")
-                .replace(/'/g, "&#039;")
-                .replace(/\n/g, "<br>");
-        }
-
         let activeChatUserId = null;
         let messageSubscription = null;
         let presenceChannel = null;
         let onlineUsersMap = new Map();
         let selectedMessageId = null;
+        let blockedUsersList = [];
 
         const services = [
             { id: 1, name: 'Joki Ballroom', price: 7500, label: '', desc: 'Estimasi pengerjaan 2 jam.' },
@@ -749,6 +753,17 @@
             { t: "Apakah akun aman tidak kena Banned?", j: "100% Aman. Joki dikerjakan murni manual oleh player profesional." },
             { t: "Apakah harga Pricelist sudah termasuk biaya admin?", j: "Ya, sudah Include biaya Rekber NIKKY." }
         ];
+
+        function formatCaption(text) {
+            if(!text) return '';
+            return text
+                .replace(/&/g, "&")
+                .replace(/</g, "<")
+                .replace(/>/g, ">")
+                .replace(/"/g, """)
+                .replace(/'/g, "'")
+                .replace(/\n/g, "<br>");
+        }
 
         async function checkSession() {
             document.getElementById('profile-loading').classList.remove('hidden');
@@ -765,6 +780,8 @@
             if (user) { 
                 currentUser = user; 
                 await fetchProfile(); 
+                await fetchBlockedUsers(); 
+                checkGlobalUnreadMessages();
                 document.querySelectorAll('#profile-logged-in').forEach(el => el.classList.remove('hidden')); 
                 document.getElementById('profile-logged-out').classList.add('hidden'); 
                 updateUIForLoggedIn(); 
@@ -900,6 +917,8 @@
                     newUploads.forEach(newVid => {
                         if (!dataDariSheet.find(v => v.video_id === newVid.video_id)) dataDariSheet.push(newVid);
                     });
+                    
+                    dataDariSheet = dataDariSheet.filter(v => !blockedUsersList.includes(v.user_id));
                     allVideosData = dataDariSheet;
                 } catch(e) {
                     grid.innerHTML = '<p class="col-span-3 text-center text-xs text-red-500 py-4">Gagal memuat video profil.</p>';
@@ -920,7 +939,7 @@
             }
 
             grid.innerHTML = reversedVideos.map(vid => {
-                const amanCaption = (vid.caption || '').replace(/'/g, "\\'").replace(/"/g, "&quot;").replace(/\n/g, " ");
+                const amanCaption = (vid.caption || '').replace(/'/g, "\\'").replace(/"/g, """).replace(/\n/g, " ");
                 
                 return `
                 <div class="aspect-[9/16] bg-black relative rounded-md overflow-hidden border border-white/10 group cursor-pointer" onclick="playFloatingVideo('${vid.video_url}', '${(vid.nickname || 'Player').replace(/'/g, "\\'")}', '${amanCaption}', '${vid.id}')">
@@ -1102,6 +1121,12 @@
                 closeEditProfileModal();
                 isPopupClosed = true;
             }
+            
+            const modalUserList = document.getElementById('modal-user-list');
+            if (!modalUserList.classList.contains('hidden')) {
+                closeUserList();
+                isPopupClosed = true;
+            }
 
             const widget = document.getElementById('floating-widget');
             if (!widget.classList.contains('opacity-0')) {
@@ -1193,6 +1218,8 @@
             document.getElementById('profile-loading').classList.add('hidden');
             document.querySelectorAll('#profile-logged-in').forEach(el => el.classList.remove('hidden'));
             
+            checkBlockStatusUI();
+            
             if(!isOwn) history.pushState({ popup: 'user_profile' }, null, `#profile?id=${userId}`);
         }
         
@@ -1201,6 +1228,18 @@
             document.getElementById('comment-drawer').classList.remove('open');
             cancelReply();
             openUserProfile(userId);
+        }
+
+        async function kirimPesanPribadi(userId) {
+            const { data } = await supabaseClient.from('profiles').select('nickname, avatar_url').eq('id', userId).single();
+            if (data) {
+                const ava = data.avatar_url || `https://ui-avatars.com/api/?name=${data.nickname}&background=1A1133&color=fff`;
+                const widget = document.getElementById('floating-widget');
+                if (widget.classList.contains('opacity-0')) {
+                    toggleWidget(); 
+                }
+                setTimeout(() => openChatRoom(userId, data.nickname, ava), 300);
+            }
         }
 
         function playFloatingVideo(url, nick, cap, vidId) {
@@ -1697,6 +1736,8 @@
                     }
                 });
                 
+                dataDariSheet = dataDariSheet.filter(v => !blockedUsersList.includes(v.user_id));
+                
                 for (let i = dataDariSheet.length - 1; i > 0; i--) { 
                     const j = Math.floor(Math.random() * (i + 1)); 
                     [dataDariSheet[i], dataDariSheet[j]] = [dataDariSheet[j], dataDariSheet[i]]; 
@@ -2102,6 +2143,7 @@
                 
                 container.innerHTML = html;
                 updatePresenceUI(); 
+                checkGlobalUnreadMessages();
 
             } catch (e) {
                 container.innerHTML = '<div class="p-6 text-center text-xs text-red-500">Gagal memuat pesan.</div>';
@@ -2323,62 +2365,61 @@
         }
         
         async function prosesUploadVideo() {
-    if (!currentUser) return openAuthModal();
-    
-    const fileInput = document.getElementById('input-video-file');
-    const captionInput = document.getElementById('input-video-caption');
-    const file = fileInput.files[0];
-    if (!file) return showToast("Pilih video dulu!", "error");
+            if (!currentUser) return openAuthModal();
+            
+            const fileInput = document.getElementById('input-video-file');
+            const captionInput = document.getElementById('input-video-caption');
+            const file = fileInput.files[0];
+            if (!file) return showToast("Pilih video dulu!", "error");
 
-    const btn = document.querySelector('button[onclick="prosesUploadVideo()"]');
-    btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            const btn = document.querySelector('button[onclick="prosesUploadVideo()"]');
+            btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
 
-    try {
-        // --- LANGKAH 1: AMBIL KONFIGURASI ---
-        const configRes = await fetch('/api/get-config');
-        const config = await configRes.json();
-        
-        if (!config.gasUrl) throw new Error("Link GAS tidak ditemukan di config");
+            try {
+                const configRes = await fetch('/api/get-config');
+                const config = await configRes.json();
+                
+                if (!config.gasUrl) throw new Error("Link GAS tidak ditemukan di config");
 
-        // --- LANGKAH 2: IZIN UPLOAD BIZNET ---
-        const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent(file.name)}&filetype=${file.type}`);
-        const dataUrl = await resUrl.json();
+                const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent(file.name)}&filetype=${file.type}`);
+                const dataUrl = await resUrl.json();
 
-        // --- LANGKAH 3: UPLOAD FISIK VIDEO ---
-        await fetch(dataUrl.uploadUrl, { method: 'PUT', body: file, headers: { 'Content-Type': file.type } });
+                await fetch(dataUrl.uploadUrl, { method: 'PUT', body: file, headers: { 'Content-Type': file.type } });
 
-        // Di dalam fungsi prosesUploadVideo()
-const spreadsheetPayload = {
-    id: 'vid_' + Date.now(),
-    video_url: dataUrl.finalVideoUrl,
-    caption: captionInput.value || "",
-    nickname: userProfile?.nickname || "Player",
-    avatar_url: userProfile?.avatar_url || "",
-    user_id: currentUser.id,
-    created_at: new Date().toISOString()
-};
+                const spreadsheetPayload = {
+                    id: 'vid_' + Date.now(),
+                    video_url: dataUrl.finalVideoUrl,
+                    caption: captionInput.value || "",
+                    nickname: userProfile?.nickname || "Player",
+                    avatar_url: userProfile?.avatar_url || "",
+                    user_id: currentUser.id,
+                    created_at: new Date().toISOString()
+                };
 
-// Kirim ke GAS_URL
-await fetch(config.gasUrl, {
-    method: 'POST',
-    mode: 'no-cors', 
-    headers: { 'Content-Type': 'text/plain' },
-    body: JSON.stringify(spreadsheetPayload)
-});
+                await fetch(config.gasUrl, {
+                    method: 'POST',
+                    mode: 'no-cors', 
+                    headers: { 'Content-Type': 'text/plain' },
+                    body: JSON.stringify(spreadsheetPayload)
+                });
 
-        showToast("Berhasil diposting!", "success");
-        
-        // Bersihkan UI & Refresh
-        fileInput.value = ''; captionInput.value = ''; closeUploadModal();
-        allVideosData = []; 
-        loadVideos();
+                showToast("Berhasil diposting!", "success");
+                
+                // Bersihkan UI & Refresh
+                fileInput.value = ''; captionInput.value = ''; 
+                closeUploadModal();
+                allVideosData = []; 
+                
+                // Redirect ke Halaman Feed Sosial
+                switchTab('sosial');
+                loadVideos();
 
-    } catch (err) {
-        showToast("Error: " + err.message, "error");
-    } finally {
-        btn.disabled = false; btn.innerHTML = 'Posting Video';
-    }
-}
+            } catch (err) {
+                showToast("Error: " + err.message, "error");
+            } finally {
+                btn.disabled = false; btn.innerHTML = '<i class="fas fa-paper-plane mr-2"></i> Posting Video';
+            }
+        }
         
         async function uploadChatImage(event) {
             const file = event.target.files[0];
@@ -2441,6 +2482,123 @@ await fetch(config.gasUrl, {
 
             } catch (err) {
                 showToast("Error: " + err.message, "error");
+            }
+        }
+
+        // ================= FITUR BARU =================
+
+        // --- FITUR DAFTAR FOLLOWERS/FOLLOWING ---
+        async function showUserList(tipe) {
+            if (!viewedUserId) return;
+            const modal = document.getElementById('modal-user-list');
+            const title = document.getElementById('user-list-title');
+            const container = document.getElementById('user-list-container');
+            
+            modal.classList.remove('hidden'); modal.classList.add('flex');
+            title.innerText = tipe === 'pengikut' ? 'Daftar Pengikut' : 'Sedang Mengikuti';
+            container.innerHTML = '<div class="text-center py-10"><i class="fas fa-spinner fa-spin text-brand-info text-2xl"></i></div>';
+            
+            history.pushState({ popup: 'user_list' }, null, '#userlist'); 
+
+            try {
+                let query = supabaseClient.from('follows').select('*, profiles!inner(*)');
+                if (tipe === 'pengikut') query = query.eq('following_id', viewedUserId);
+                if (tipe === 'mengikuti') query = query.eq('follower_id', viewedUserId);
+
+                const { data } = await query;
+                
+                if (!data || data.length === 0) {
+                    container.innerHTML = '<div class="text-center py-6 text-xs text-gray-500">Belum ada pengguna.</div>';
+                    return;
+                }
+
+                container.innerHTML = data.map(item => {
+                    const profile = item.profiles || {}; 
+                    const actualUserId = tipe === 'pengikut' ? item.follower_id : item.following_id;
+                    const ava = profile.avatar_url || `https://ui-avatars.com/api/?name=${profile.nickname || 'User'}&background=1A1133&color=fff`;
+                    
+                    return `
+                    <div onclick="closeUserList(true); viewUserProfile('${actualUserId}')" class="flex items-center p-3 hover:bg-white/5 cursor-pointer rounded-2xl transition-all border-b border-white/5 last:border-0">
+                        <img src="${ava}" class="w-10 h-10 rounded-full object-cover border border-white/10 shrink-0">
+                        <div class="ml-3"><h4 class="font-bold text-white text-xs">${profile.nickname || 'Player'}</h4></div>
+                    </div>`;
+                }).join('');
+            } catch (err) {
+                container.innerHTML = '<div class="text-center py-6 text-xs text-red-500">Gagal memuat data.</div>';
+            }
+        }
+
+        function closeUserList(fromItemClick = false) {
+            document.getElementById('modal-user-list').classList.add('hidden');
+            document.getElementById('modal-user-list').classList.remove('flex');
+            if(!fromItemClick && window.location.hash === '#userlist') {
+                history.back();
+            }
+        }
+
+        // --- FITUR NOTIFIKASI WIDGET CHAT GLOBAL ---
+        async function checkGlobalUnreadMessages() {
+            if (!currentUser) return;
+            const badge = document.getElementById('global-chat-badge');
+            
+            const { count } = await supabaseClient
+                .from('messages')
+                .select('*', { count: 'exact', head: true })
+                .eq('receiver_id', currentUser.id)
+                .eq('is_read', false);
+            
+            if (count && count > 0) {
+                badge.innerText = count > 99 ? '99+' : count;
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
+        }
+
+        // --- FITUR BLOKIR USER ---
+        async function fetchBlockedUsers() {
+            if (!currentUser) return;
+            const { data } = await supabaseClient.from('blocks').select('blocked_id').eq('blocker_id', currentUser.id);
+            if (data) blockedUsersList = data.map(b => b.blocked_id);
+        }
+
+        async function toggleBlockUser(targetId) {
+            if (!currentUser) return openAuthModal();
+            const btn = document.getElementById('btn-block-user');
+            
+            const isBlocked = blockedUsersList.includes(targetId);
+            
+            if (isBlocked) {
+                const unblock = confirm("Buka blokir pengguna ini?");
+                if (!unblock) return;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Membuka...';
+                await supabaseClient.from('blocks').delete().eq('blocker_id', currentUser.id).eq('blocked_id', targetId);
+                blockedUsersList = blockedUsersList.filter(id => id !== targetId);
+                btn.innerHTML = '<i class="fas fa-ban mr-1"></i> Blokir Pengguna';
+                showToast("Blokir dibuka.", "info");
+            } else {
+                const blokir = confirm("Blokir pengguna ini? Mereka tidak akan bisa melihat atau mengirim pesan ke Anda.");
+                if (!blokir) return;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memblokir...';
+                await supabaseClient.from('blocks').insert({ blocker_id: currentUser.id, blocked_id: targetId });
+                blockedUsersList.push(targetId);
+                btn.innerHTML = '<i class="fas fa-unlock mr-1"></i> Buka Blokir';
+                showToast("Pengguna diblokir.", "success");
+            }
+            
+            // Refresh feed agar video user yang diblokir hilang
+            allVideosData = [];
+            if(document.getElementById('sosial').classList.contains('active')) loadVideos();
+        }
+
+        function checkBlockStatusUI() {
+            const btn = document.getElementById('btn-block-user');
+            if(btn && viewedUserId) {
+                if (blockedUsersList.includes(viewedUserId)) {
+                    btn.innerHTML = '<i class="fas fa-unlock mr-1"></i> Buka Blokir';
+                } else {
+                    btn.innerHTML = '<i class="fas fa-ban mr-1"></i> Blokir Pengguna';
+                }
             }
         }
         
