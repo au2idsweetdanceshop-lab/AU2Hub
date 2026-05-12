@@ -2841,7 +2841,7 @@ async function loadChatList() {
         if (partnerIds.length > 0) {
             const { data: profiles } = await supabaseClient.from('profiles').select('id, nickname, avatar_url').in('id', partnerIds);
             // Cek story 24 jam terakhir (Asumsi ada tabel 'stories')
-            const 24hAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+            const past24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
             const { data: activeStories } = await supabaseClient.from('stories').select('user_id').gte('created_at', 24hAgo);
             if (activeStories) usersWithStory = activeStories.map(s => s.user_id);
 
@@ -2911,7 +2911,7 @@ async function loadStories() {
     document.getElementById('my-story-avatar').src = userProfile?.avatar_url || `https://ui-avatars.com/api/?name=${userProfile?.nickname || 'Me'}`;
 
     try {
-        const 24hAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+        const past24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
         // Asumsi kamu sudah membuat tabel 'stories' di Supabase
         const { data: stories } = await supabaseClient.from('stories').select('*, profiles(nickname, avatar_url)').gte('created_at', 24hAgo).order('created_at', { ascending: false });
         
@@ -2985,7 +2985,7 @@ async function viewStory(userId, name, avatar) {
     document.getElementById('viewer-story-avatar').src = avatar;
     
     // Ambil story user ini dari database
-    const 24hAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    const past24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
     const { data: stories } = await supabaseClient.from('stories').select('*').eq('user_id', userId).gte('created_at', 24hAgo).order('created_at', { ascending: true });
     
     if(!stories || stories.length === 0) {
