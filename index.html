@@ -2656,7 +2656,7 @@ function closeUploadModal() {
         if (unreads) unreads.forEach(u => { unreadCounts[u.sender_id] = (unreadCounts[u.sender_id] || 0) + 1; });
 
         // Ambil pesan pribadi & pesan grup sekaligus
-        const { data: messages } = await supabaseClient.from('messages').select('*').or(`sender_id.eq.${currentUser.id},receiver_id.eq.${currentUser.id},group_id.neq.null`).order('created_at', { ascending: false });
+        const { data: messages } = await supabaseClient.from('messages').select('*').or(`sender_id.eq.${currentUser.id},receiver_id.eq.${currentUser.id},group_id.not.is.null`).order('created_at', { ascending: false });
         
         const { data: myGroups } = await supabaseClient.from('group_members').select('group_id').eq('user_id', currentUser.id);
 
