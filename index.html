@@ -13,7 +13,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
     
     <script>
         tailwind.config = {
@@ -29,9 +29,6 @@
                             purple: '#8A2BE2',
                             success: '#25D366'
                         }
-                    },
-                    transitionTimingFunction: {
-                        'spring': 'cubic-bezier(0.175, 0.885, 0.32, 1.275)'
                     }
                 }
             }
@@ -39,16 +36,9 @@
     </script>
 
     <style>
-        body { 
-            background-color: #0F0920; 
-            color: #E2E8F0; 
-            -webkit-tap-highlight-color: transparent; 
-            overflow-x: hidden; 
-            scroll-behavior: smooth;
-            overscroll-behavior-y: contain; 
-        }
+        body { background-color: #0F0920; color: #E2E8F0; -webkit-tap-highlight-color: transparent; overflow-x: hidden; }
         .tab-content:not(.active) { display: none !important; }
-        .tab-content.active { animation: slideUpFade 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; will-change: transform, opacity; }
+        .tab-content.active { animation: slideUpFade 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; will-change: transform, opacity; }
         @keyframes slideUpFade { from { opacity: 0; transform: translateY(20px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
         @keyframes popBounce { 0% { transform: scale(1) translateY(0); } 40% { transform: scale(0.7) translateY(2px); } 100% { transform: scale(1.1) translateY(-4px); } }
         .nav-item.active { color: #FF007A; }
@@ -72,7 +62,7 @@
         }
         .skeleton { animation: skeleton-loading 1.5s infinite linear; border-radius: 0.5rem; }
 
-        .glass { background: rgba(26, 17, 51, 0.65); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border-top: 1px solid rgba(255, 255, 255, 0.05); }
+        .glass { background: rgba(26, 17, 51, 0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-top: 1px solid rgba(255, 255, 255, 0.05); }
         details > summary { list-style: none; }
         details > summary::-webkit-details-marker { display: none; }
         .ripper-list::-webkit-scrollbar { width: 4px; }
@@ -105,112 +95,83 @@
         .message-anim { animation: msgAnim 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
     </style>
 </head>
-<body class="pb-24 relative">
-
-    <!-- Ambient Aurora Background -->
-    <div class="fixed inset-0 z-[-1] overflow-hidden pointer-events-none">
-        <div class="absolute top-[-10%] left-[-10%] w-[50%] h-[40%] bg-brand-purple/20 rounded-full blur-[100px] animate-pulse" style="animation-duration: 8s;"></div>
-        <div class="absolute bottom-[10%] right-[-20%] w-[60%] h-[50%] bg-brand-accent/15 rounded-full blur-[120px] animate-pulse" style="animation-duration: 12s;"></div>
-        <div class="absolute top-[30%] left-[50%] w-[40%] h-[40%] bg-brand-info/10 rounded-full blur-[100px] animate-pulse" style="animation-duration: 10s;"></div>
-    </div>
+<body class="pb-24">
 
     <div id="toast-container" class="fixed top-6 left-0 w-full px-4 z-[200] flex flex-col items-center gap-3 pointer-events-auto"></div>
 
     <header class="fixed top-0 w-full z-40 glass border-b border-white/5 py-4 px-6 shadow-md">
         <div class="max-w-md mx-auto flex justify-between items-center">
-            <h1 class="font-black text-xl tracking-tight cursor-pointer" onclick="switchTab('home')">
-                <span class="text-brand-info drop-shadow-[0_0_8px_rgba(0,240,255,0.5)]">AU2</span><span class="text-brand-accent drop-shadow-[0_0_8px_rgba(255,0,122,0.5)]">Hub</span>
+            <h1 class="font-extrabold text-xl tracking-tight cursor-pointer" onclick="switchTab('home')">
+                <span class="text-brand-info">AU2</span><span class="text-brand-accent">Hub</span>
             </h1>
             <div id="header-user">
-                <button onclick="openAuthModal()" class="text-[10px] font-bold bg-white/10 px-4 py-2 rounded-full border border-white/10 uppercase active:scale-95 transition-transform duration-300 ease-spring backdrop-blur-md">Login / Daftar</button>
+                <button onclick="openAuthModal()" class="text-[10px] font-bold bg-white/10 px-4 py-2 rounded-full border border-white/10 uppercase active:scale-95 transition-transform">Login / Daftar</button>
             </div>
         </div>
     </header>
     
     <main class="max-w-md mx-auto px-5 pt-24">
         <div id="install-container" class="hidden px-5 mb-6">
-            <button id="btn-install-manual" class="w-full bg-gradient-to-r from-brand-info to-brand-accent text-white font-bold py-4 rounded-3xl shadow-lg active:scale-95 transition-transform duration-300 ease-spring text-sm border border-white/10">
+            <button id="btn-install-manual" class="w-full bg-gradient-to-r from-brand-info to-brand-accent text-white font-bold py-4 rounded-2xl shadow-lg active:scale-95 transition-all text-sm border border-white/10">
                 <i class="fas fa-download mr-2"></i> INSTAL APLIKASI AU2HUB
             </button>
         </div>   
-        
-        <!-- BENTO GRID HOME -->
         <section id="home" class="tab-content text-center min-h-[60vh] flex flex-col justify-center">
             <div class="relative inline-block mb-6 mx-auto">
-                <div class="absolute inset-0 bg-brand-accent blur-3xl opacity-30"></div>
-                <div class="relative bg-brand-card/80 backdrop-blur-md p-6 rounded-full border border-white/10 shadow-[0_0_30px_rgba(255,0,122,0.2)]">
-                    <i class="fas fa-headphones-simple text-4xl text-transparent bg-clip-text bg-gradient-to-br from-brand-info to-brand-accent"></i>
+                <div class="absolute inset-0 bg-brand-accent blur-3xl opacity-20"></div>
+                <div class="relative bg-brand-card p-6 rounded-full border border-brand-accent/30 shadow-[0_0_20px_rgba(255,0,122,0.2)]">
+                    <i class="fas fa-headphones-simple text-4xl text-brand-accent"></i>
                 </div>
             </div>
-            <h2 class="text-2xl sm:text-3xl font-black mb-3 leading-tight tracking-tight">
+            <h2 class="text-2xl sm:text-3xl font-extrabold mb-3 leading-snug">
                 PUSAT KOMUNITAS <br>
                 <span class="bg-gradient-to-r from-brand-info to-brand-accent bg-clip-text text-transparent">AU2ID SWEET DANCE</span>
             </h2>
-            <p class="text-white/60 text-xs sm:text-sm mb-8 px-2 leading-relaxed">
+            <p class="text-gray-400 text-xs sm:text-sm mb-8 px-2 leading-relaxed">
                 Satu pintu untuk info update terbaru, panduan pemula, jasa joki profesional, dan rekber aman. Dikelola langsung oleh <strong>ADT</strong>.
             </p>
-            
-            <div class="grid grid-cols-2 gap-3 w-full">
-                <button onclick="switchTab('layanan', event)" class="col-span-2 flex flex-col justify-center items-start w-full bg-gradient-to-br from-brand-accent/80 to-brand-purple/80 text-white p-6 rounded-3xl shadow-[0_8px_30px_rgba(255,0,122,0.3)] active:scale-[0.98] transition-all duration-300 ease-spring overflow-hidden relative group border border-white/20 backdrop-blur-md">
-                    <div class="absolute top-[-20%] right-[-10%] w-32 h-32 bg-white/20 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-700"></div>
-                    <i class="fas fa-bolt text-4xl mb-3 opacity-80 group-hover:scale-110 transition-transform duration-300 ease-spring drop-shadow-md"></i>
-                    <span class="font-black text-xl tracking-tight">Lihat Layanan Joki</span>
-                    <span class="text-[11px] text-white/90 mt-1 font-semibold">Pricelist & Pemesanan Otomatis</span>
+            <div class="flex flex-col gap-3">
+                <button onclick="switchTab('info', event)" class="flex justify-center items-center w-full bg-brand-card hover:bg-white/5 border border-white/10 font-bold py-3.5 px-6 rounded-2xl active:scale-95 transition-all text-sm">
+                    <i class="fas fa-bullhorn text-brand-info mr-3"></i> Info & FAQ Terbaru
                 </button>
-                
-                <button onclick="switchTab('info', event)" class="flex flex-col justify-center items-center bg-brand-card/60 backdrop-blur-xl border border-white/5 p-5 rounded-3xl active:scale-95 transition-all duration-300 ease-spring shadow-lg hover:bg-brand-card/80">
-                    <div class="w-12 h-12 rounded-full bg-brand-info/20 flex items-center justify-center mb-3 shadow-[0_0_15px_rgba(0,240,255,0.2)]">
-                        <i class="fas fa-bullhorn text-brand-info text-xl"></i>
-                    </div>
-                    <span class="font-bold text-xs text-white">Info & FAQ</span>
+                <button onclick="switchTab('layanan', event)" class="flex justify-center items-center w-full bg-gradient-to-r from-brand-accent to-brand-purple text-white font-bold py-3.5 px-6 rounded-2xl shadow-[0_0_15px_rgba(255,0,122,0.3)] active:scale-95 transition-all text-sm">
+                    <i class="fas fa-bolt mr-3"></i> Lihat Layanan
                 </button>
-
-                <button onclick="switchTab('sosial', event)" class="flex flex-col justify-center items-center bg-brand-card/60 backdrop-blur-xl border border-white/5 p-5 rounded-3xl active:scale-95 transition-all duration-300 ease-spring shadow-lg hover:bg-brand-card/80">
-                    <div class="w-12 h-12 rounded-full bg-[#25D366]/20 flex items-center justify-center mb-3 shadow-[0_0_15px_rgba(37,211,102,0.2)]">
-                        <i class="fas fa-camera-retro text-[#25D366] text-xl"></i>
-                    </div>
-                    <span class="font-bold text-xs text-white">Feed Sosial</span>
+                <button onclick="switchTab('sosial', event)" class="flex justify-center items-center w-full bg-gradient-to-r from-[#25D366] to-[#128C7E] text-white font-bold py-3.5 px-6 rounded-2xl shadow-[0_0_15px_rgba(37,211,102,0.3)] active:scale-95 transition-all text-sm">
+                    <i class="fas fa-camera-retro mr-3"></i> Feed & Grup Komunitas
                 </button>
-
-                <button onclick="switchTab('rekber', event)" class="flex flex-col justify-center items-center bg-brand-card/60 backdrop-blur-xl border border-white/5 p-5 rounded-3xl active:scale-95 transition-all duration-300 ease-spring shadow-lg hover:bg-brand-card/80">
-                    <div class="w-12 h-12 rounded-full bg-brand-purple/20 flex items-center justify-center mb-3 shadow-[0_0_15px_rgba(138,43,226,0.2)]">
-                        <i class="fas fa-shield-alt text-brand-purple text-xl"></i>
-                    </div>
-                    <span class="font-bold text-xs text-white">Rekber Aman</span>
+                <button onclick="switchTab('rekber', event)" class="flex justify-center items-center w-full bg-gradient-to-r from-brand-accent to-brand-purple text-white font-bold py-3.5 px-6 rounded-2xl shadow-[0_0_15px_rgba(255,0,122,0.3)] active:scale-95 transition-all text-sm">
+                    <i class="fas fa-shield-alt mr-3"></i> Lihat Rekening Bersama
                 </button>
-
-                <button onclick="switchTab('ripper', event)" class="flex flex-col justify-center items-center bg-brand-card/60 backdrop-blur-xl border border-white/5 p-5 rounded-3xl active:scale-95 transition-all duration-300 ease-spring shadow-lg hover:bg-brand-card/80">
-                    <div class="w-12 h-12 rounded-full bg-red-500/20 flex items-center justify-center mb-3 shadow-[0_0_15px_rgba(239,68,68,0.2)]">
-                        <i class="fas fa-user-ninja text-red-500 text-xl"></i>
-                    </div>
-                    <span class="font-bold text-xs text-white">Data Ripper</span>
+                <button onclick="switchTab('ripper', event)" class="flex justify-center items-center w-full bg-gradient-to-r from-brand-accent to-brand-purple text-white font-bold py-3.5 px-6 rounded-2xl shadow-[0_0_15px_rgba(255,0,122,0.3)] active:scale-95 transition-all text-sm">
+                    <i class="fas fa-user-ninja mr-3"></i> Lihat Database Ripper
                 </button>
             </div>
         </section>
 
         <section id="info" class="tab-content py-2">
-            <h2 class="text-xl font-black tracking-tight text-white mb-5 flex items-center gap-2">
+            <h2 class="text-xl font-extrabold text-white mb-5 flex items-center gap-2">
                 <span class="w-1.5 h-6 bg-brand-info rounded-full"></span> Info Game & Bantuan
             </h2>
             <div class="space-y-4 mb-8">
-                <div class="bg-brand-card/60 backdrop-blur-md rounded-3xl p-5 border border-white/5 shadow-lg">
+                <div class="bg-brand-card rounded-2xl p-4 border border-white/5">
                     <div class="flex items-start">
-                        <i class="fas fa-bullhorn text-brand-info text-2xl mt-1 mr-4 drop-shadow-[0_0_8px_rgba(0,240,255,0.5)]"></i>
+                        <i class="fas fa-bullhorn text-brand-info text-xl mt-1 mr-3"></i>
                         <div class="w-full">
                             <h3 class="font-bold text-white mb-1">Maintenance Weekly</h3>
-                            <p class="text-xs text-white/60 mb-4 leading-relaxed">Rangkuman event terbaru, bocoran kostum, dan hadiah update mingguan agar tidak ketinggalan info.</p>
-                            <button onclick="openModalEvent()" class="inline-flex items-center text-xs font-bold bg-brand-accent/20 border border-brand-accent/40 text-brand-accent py-3 px-4 rounded-xl active:scale-95 transition-transform duration-300 ease-spring w-full justify-center">
+                            <p class="text-xs text-gray-400 mb-3 leading-relaxed">Rangkuman event terbaru, bocoran kostum, dan hadiah update mingguan agar tidak ketinggalan info.</p>
+                            <button onclick="openModalEvent()" class="inline-flex items-center text-xs font-bold bg-brand-accent/20 border border-brand-accent/40 text-brand-accent py-2.5 px-4 rounded-xl active:scale-95 transition-transform w-full justify-center">
                                 <i class="fas fa-image mr-2"></i> Lihat Poster Event
                             </button>
                         </div>
                     </div>
                 </div>
-                <div class="bg-brand-card/60 backdrop-blur-md rounded-3xl p-5 border border-white/5 shadow-lg">
+                <div class="bg-brand-card rounded-2xl p-4 border border-white/5">
                     <div class="flex items-start">
-                        <i class="fas fa-book-open text-brand-purple text-2xl mt-1 mr-4 drop-shadow-[0_0_8px_rgba(138,43,226,0.5)]"></i>
+                        <i class="fas fa-book-open text-brand-purple text-xl mt-1 mr-3"></i>
                         <div>
                             <h3 class="font-bold text-white mb-2">Panduan Dasar Pemula</h3>
-                            <ul class="text-xs text-white/60 space-y-2">
+                            <ul class="text-xs text-gray-400 space-y-2">
                                 <li><i class="fas fa-check text-brand-success mr-2"></i> Rajin selesaikan Misi Harian.</li>
                                 <li><i class="fas fa-check text-brand-success mr-2"></i> Gabung komunitas/fam untuk benefit.</li>
                                 <li><i class="fas fa-shield-alt text-brand-info mr-2"></i> <strong>Waspada:</strong> Transaksi akun wajib Rekber.</li>
@@ -219,47 +180,47 @@
                     </div>
                 </div>
             </div>
-            <h2 class="text-lg font-black tracking-tight text-white mb-4 text-center">Tanya Jawab (FAQ)</h2>
+            <h2 class="text-lg font-extrabold text-white mb-4 text-center">Tanya Jawab (FAQ)</h2>
             <div class="relative mb-4">
-                <i class="fas fa-search absolute left-5 top-1/2 -translate-y-1/2 text-gray-400"></i>
-                <input type="text" id="faqSearch" placeholder="Cari info atau pertanyaan..." class="w-full bg-brand-card/60 backdrop-blur-md border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-sm text-white focus:outline-none focus:border-brand-info transition-all shadow-[0_0_15px_rgba(0,240,255,0.05)]">
+                <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-500"></i>
+                <input type="text" id="faqSearch" placeholder="Cari info atau pertanyaan..." class="w-full bg-brand-card border border-white/10 rounded-2xl py-3.5 pl-12 pr-4 text-sm text-white focus:outline-none focus:border-brand-info transition-all shadow-[0_0_10px_rgba(0,240,255,0.05)]">
             </div>
             <div id="faq-container" class="space-y-3 pb-4"></div>
         </section>
 
         <section id="layanan" class="tab-content py-2">
             <div class="relative mb-5">
-                <i class="fas fa-search absolute left-5 top-1/2 -translate-y-1/2 text-brand-accent/70"></i>
-                <input type="text" id="serviceSearch" placeholder="Cari layanan..." class="w-full bg-brand-card/60 backdrop-blur-md border border-brand-accent/30 rounded-2xl py-4 pl-12 pr-4 text-sm text-white focus:outline-none focus:border-brand-accent transition-all shadow-[0_0_15px_rgba(255,0,122,0.1)]">
+                <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-brand-accent/70"></i>
+                <input type="text" id="serviceSearch" placeholder="Cari layanan..." class="w-full bg-brand-card border border-brand-accent/30 rounded-2xl py-3.5 pl-12 pr-4 text-sm text-white focus:outline-none focus:border-brand-accent transition-all shadow-[0_0_10px_rgba(255,0,122,0.1)]">
             </div>
             <div class="flex justify-between items-center mb-5">
-                <h3 class="text-xl font-black tracking-tight flex items-center gap-2">
+                <h3 class="text-xl font-extrabold flex items-center gap-2">
                     <div class="w-1.5 h-6 bg-brand-accent rounded-full"></div> Layanan Joki
                 </h3>
-                <span class="text-[10px] bg-brand-accent/20 text-brand-accent px-3 py-1.5 rounded-lg font-bold border border-brand-accent/30 tracking-wider">100% AMAN</span>
+                <span class="text-[10px] bg-brand-accent/20 text-brand-accent px-2 py-1.5 rounded-lg font-bold border border-brand-accent/30 tracking-wider">100% AMAN</span>
             </div>
             <div id="service-list" class="space-y-3 mb-6"></div>
-            <div class="bg-brand-info/10 backdrop-blur-md rounded-3xl p-5 border border-brand-info/20 mb-8">
+            <div class="bg-brand-info/5 rounded-2xl p-4 border border-brand-info/20 mb-8">
                 <h3 class="font-bold text-sm text-brand-info mb-2 flex items-center"><i class="fas fa-info-circle mr-2"></i> Cara Memesan:</h3>
-                <p class="text-xs text-white/70 leading-relaxed">Pilih dan klik tombol <strong>"Beli"</strong> pada paket di atas. Anda akan diarahkan ke halaman pembayaran otomatis untuk melihat detail transfer dan konfirmasi langsung ke WhatsApp Admin.</p>
+                <p class="text-xs text-gray-400 leading-relaxed">Pilih dan klik tombol <strong>"Beli"</strong> pada paket di atas. Anda akan diarahkan ke halaman pembayaran otomatis untuk melihat detail transfer dan konfirmasi langsung ke WhatsApp Admin.</p>
             </div>
         </section>
 
         <section id="sosial" class="tab-content py-2">
             <div class="flex justify-between items-center mb-5">
-                <h3 class="text-xl font-black tracking-tight flex items-center gap-2">
+                <h3 class="text-xl font-extrabold flex items-center gap-2">
                     <div class="w-1.5 h-6 bg-[#25D366] rounded-full"></div> Feed Komunitas
                 </h3>
             </div>
             
-            <div class="relative w-full h-[calc(100dvh-240px)] min-h-[400px] rounded-[32px] overflow-hidden border border-white/10 shadow-2xl bg-brand-dark flex flex-col backdrop-blur-md">
+            <div class="relative w-full h-[calc(100dvh-240px)] min-h-[400px] rounded-3xl overflow-hidden border border-white/10 shadow-lg bg-brand-dark flex flex-col">
                 <div id="fake-loader" class="absolute inset-0 z-50 bg-brand-dark flex flex-col items-center justify-center hidden transition-opacity duration-1000">
                     <div class="relative w-20 h-20 mb-6">
                         <div class="absolute inset-0 border-4 border-brand-card rounded-full"></div>
                         <div class="absolute inset-0 border-4 border-brand-accent rounded-full border-t-transparent animate-spin"></div>
                         <div class="absolute inset-0 flex items-center justify-center text-brand-info"><i class="fas fa-bolt animate-pulse text-2xl"></i></div>
                     </div>
-                    <h3 class="text-white font-black tracking-widest text-sm mb-1 animate-pulse">MENYIAPKAN FEED</h3>
+                    <h3 class="text-white font-extrabold tracking-widest text-sm mb-1 animate-pulse">MENYIAPKAN FEED</h3>
                     <p class="text-[10px] text-gray-500 text-center px-8">Sedang mengoptimalkan kualitas video untuk perangkat Anda. Mohon tunggu sebentar...</p>
                     <div class="w-48 h-1.5 bg-white/10 rounded-full mt-6 overflow-hidden"><div id="fake-progress" class="h-full bg-gradient-to-r from-brand-info to-brand-accent w-0 rounded-full"></div></div>
                 </div>
@@ -268,44 +229,44 @@
         </section>
 
         <section id="rekber" class="tab-content py-2">
-            <h2 class="text-xl font-black tracking-tight text-white mb-5 flex items-center gap-2">
+            <h2 class="text-xl font-extrabold text-white mb-5 flex items-center gap-2">
                 <span class="w-1.5 h-6 bg-brand-purple rounded-full"></span> Rekber & Kontak
             </h2>
-            <div class="bg-brand-card/60 backdrop-blur-md rounded-3xl p-6 border border-white/5 mb-6 relative overflow-hidden shadow-lg">
-                <div class="absolute -right-4 -top-4 text-7xl text-brand-info opacity-5"><i class="fas fa-shield-alt"></i></div>
-                <h3 class="font-bold text-brand-info text-sm mb-4 relative z-10"><i class="fas fa-shield-alt mr-2"></i> Prosedur Rekber NIKKY</h3>
-                <ol class="list-decimal list-inside text-xs text-white/70 space-y-3 mb-5 relative z-10 leading-relaxed">
+            <div class="bg-brand-card rounded-2xl p-5 border border-white/5 mb-6 relative overflow-hidden">
+                <div class="absolute -right-4 -top-4 text-6xl text-brand-info opacity-5"><i class="fas fa-shield-alt"></i></div>
+                <h3 class="font-bold text-brand-info text-sm mb-3 relative z-10"><i class="fas fa-shield-alt mr-2"></i> Prosedur Rekber NIKKY</h3>
+                <ol class="list-decimal list-inside text-xs text-gray-300 space-y-2 mb-4 relative z-10 leading-relaxed">
                     <li>Buat grup WA (Penjual, Pembeli, Admin).</li><li>Pembeli bayar ke Rekening Admin <em>(Harga include fee)</em>.</li>
                     <li>Penjual kasih data, Pembeli cek akun.</li><li>Akun aman? Dana diteruskan ke Penjual. Selesai.</li>
                 </ol>
-                <div class="bg-black/40 rounded-xl p-4 text-xs text-gray-400 border border-white/5 relative z-10 backdrop-blur-sm">
+                <div class="bg-black/30 rounded-xl p-3 text-xs text-gray-400 border border-white/5 relative z-10">
                     <i class="fas fa-clock text-brand-accent mr-2"></i> <strong>Jam Operasional:</strong> Harap chat admin terlebih dahulu.
                 </div>
             </div>
 
             <div>
-                <h3 class="text-[10px] font-bold text-white/50 uppercase tracking-widest mb-3 ml-2">Kontak Resmi (Anti Clone)</h3>
+                <h3 class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">Kontak Resmi (Anti Clone)</h3>
                 <div class="space-y-3 mb-6">
-                    <a href="https://wa.me/9647808097471" target="_blank" class="flex items-center p-4 bg-brand-card/60 backdrop-blur-md rounded-3xl border border-brand-accent/20 active:scale-95 transition-transform duration-300 ease-spring">
-                        <div class="bg-brand-accent/10 w-12 h-12 rounded-full flex items-center justify-center mr-4 shadow-[0_0_15px_rgba(255,0,122,0.2)]"><i class="fas fa-user-tie text-brand-accent text-xl"></i></div>
+                    <a href="https://wa.me/9647808097471" target="_blank" class="flex items-center p-4 bg-brand-card rounded-2xl border border-brand-accent/20 active:scale-95 transition-transform">
+                        <div class="bg-brand-accent/10 w-10 h-10 rounded-full flex items-center justify-center mr-4"><i class="fas fa-user-tie text-brand-accent text-lg"></i></div>
                         <div><div class="font-bold text-white text-sm">Contact Owner (ADT)</div><div class="text-[11px] text-gray-400 mt-0.5">Pusat Informasi & Keluhan</div></div>
                     </a>
-                    <a href="https://wa.me/6283815584661" target="_blank" class="flex items-center p-4 bg-brand-card/60 backdrop-blur-md rounded-3xl border border-brand-info/20 active:scale-95 transition-transform duration-300 ease-spring">
-                        <div class="bg-brand-info/10 w-12 h-12 rounded-full flex items-center justify-center mr-4 shadow-[0_0_15px_rgba(0,240,255,0.2)]"><i class="fas fa-headset text-brand-info text-xl"></i></div>
+                    <a href="https://wa.me/6283815584661" target="_blank" class="flex items-center p-4 bg-brand-card rounded-2xl border border-brand-info/20 active:scale-95 transition-transform">
+                        <div class="bg-brand-info/10 w-10 h-10 rounded-full flex items-center justify-center mr-4"><i class="fas fa-headset text-brand-info text-lg"></i></div>
                         <div><div class="font-bold text-white text-sm">Admin Joki & Rekber NIKKY</div><div class="text-[11px] text-gray-400 mt-0.5">Pemesanan & Transaksi</div></div>
                     </a>
                 </div>
 
-                <h3 class="text-[10px] font-bold text-white/50 uppercase tracking-widest mb-3 ml-2">Grup Komunitas</h3>
+                <h3 class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">Grup Komunitas</h3>
                 <div class="grid grid-cols-2 gap-3 pb-4">
-                    <a href="https://chat.whatsapp.com/ITAOkcEjaU2DOzZrpKUUUS" target="_blank" class="bg-[#25D366]/10 backdrop-blur-md border border-[#25D366]/20 py-4 px-2 rounded-3xl text-center active:scale-95 transition-transform duration-300 flex flex-col items-center justify-center">
-                        <i class="fab fa-whatsapp text-[#25D366] text-3xl mb-2 drop-shadow-md"></i><div class="text-xs font-bold text-white">Grup WA 1</div>
+                    <a href="https://chat.whatsapp.com/ITAOkcEjaU2DOzZrpKUUUS" target="_blank" class="bg-[#25D366]/10 border border-[#25D366]/20 py-3 px-2 rounded-2xl text-center active:scale-95 transition-transform flex flex-col items-center justify-center">
+                        <i class="fab fa-whatsapp text-[#25D366] text-2xl mb-1.5"></i><div class="text-[11px] font-bold text-white">Grup WA 1</div>
                     </a>
-                    <a href="https://chat.whatsapp.com/L5eyd3wZdbN6XlUhEDvQqf" target="_blank" class="bg-[#25D366]/10 backdrop-blur-md border border-[#25D366]/20 py-4 px-2 rounded-3xl text-center active:scale-95 transition-transform duration-300 flex flex-col items-center justify-center">
-                        <i class="fab fa-whatsapp text-[#25D366] text-3xl mb-2 drop-shadow-md"></i><div class="text-xs font-bold text-white">Grup WA 2</div>
+                    <a href="https://chat.whatsapp.com/L5eyd3wZdbN6XlUhEDvQqf" target="_blank" class="bg-[#25D366]/10 border border-[#25D366]/20 py-3 px-2 rounded-2xl text-center active:scale-95 transition-transform flex flex-col items-center justify-center">
+                        <i class="fab fa-whatsapp text-[#25D366] text-2xl mb-1.5"></i><div class="text-[11px] font-bold text-white">Grup WA 2</div>
                     </a>
-                    <a href="https://m.facebook.com/groups/704614341865158/?ref=share&mibextid=KtfwRi" target="_blank" class="col-span-2 bg-[#1877F2]/10 backdrop-blur-md border border-[#1877F2]/20 p-4 rounded-3xl flex items-center justify-center active:scale-95 transition-transform duration-300 ease-spring">
-                        <i class="fab fa-facebook text-[#1877F2] text-2xl mr-3"></i><div class="text-sm font-bold text-white">Grup Facebook Resmi</div>
+                    <a href="https://m.facebook.com/groups/704614341865158/?ref=share&mibextid=KtfwRi" target="_blank" class="col-span-2 bg-[#1877F2]/10 border border-[#1877F2]/20 p-3 rounded-2xl flex items-center justify-center active:scale-95 transition-transform">
+                        <i class="fab fa-facebook text-[#1877F2] text-xl mr-3"></i><div class="text-xs font-bold text-white">Grup Facebook Resmi</div>
                     </a>
                 </div>
             </div>
@@ -313,124 +274,134 @@
 
         <section id="ripper" class="tab-content py-2">
             <div class="flex items-center justify-between mb-4">
-                <h3 class="text-xl font-black tracking-tight text-red-500 flex items-center drop-shadow-[0_0_8px_rgba(239,68,68,0.5)]"><i class="fas fa-user-ninja mr-2"></i> Database Ripper</h3>
-                <span id="ripper-count" class="text-[10px] bg-red-500/10 text-red-500 px-3 py-1.5 rounded-lg border border-red-500/20 font-bold">0 Data</span>
+                <h3 class="text-xl font-extrabold text-red-500 flex items-center"><i class="fas fa-user-ninja mr-2"></i> Database Ripper</h3>
+                <span id="ripper-count" class="text-[10px] bg-red-500/10 text-red-500 px-2 py-1 rounded-md border border-red-500/20 font-bold">0 Data</span>
             </div>
-            <p class="text-xs text-white/60 mb-5 leading-relaxed">Cek daftar blacklist. Fitur pencarian instan tanpa loading. Tetap waspada dan selalu gunakan Rekber.</p>
+            <p class="text-xs text-gray-400 mb-5 leading-relaxed">Cek daftar blacklist. Fitur pencarian instan tanpa loading. Tetap waspada dan selalu gunakan Rekber.</p>
 
             <div class="relative mb-4">
-                <i class="fas fa-search absolute left-5 top-1/2 -translate-y-1/2 text-gray-500"></i>
-                <input type="text" id="ripperSearch" placeholder="Cari nama, ID, atau rekening..." class="w-full bg-brand-card/60 backdrop-blur-md border border-red-500/30 rounded-2xl py-4 pl-12 pr-4 text-sm text-white focus:outline-none focus:border-red-500 transition-all shadow-[0_0_15px_rgba(239,68,68,0.1)]">
+                <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-500"></i>
+                <input type="text" id="ripperSearch" placeholder="Cari nama, ID, atau rekening..." class="w-full bg-brand-card border border-red-500/30 rounded-2xl py-3.5 pl-12 pr-4 text-sm text-white focus:outline-none focus:border-red-500 transition-all shadow-[0_0_10px_rgba(239,68,68,0.1)]">
             </div>
             
-            <div class="bg-brand-card/60 backdrop-blur-md rounded-3xl border border-white/5 overflow-hidden flex flex-col">
+            <div class="bg-brand-card rounded-2xl border border-white/5 overflow-hidden flex flex-col">
                 <div id="ripper-container" class="ripper-list space-y-0 max-h-[55vh] overflow-y-auto w-full"></div>
             </div>
-            <p class="text-[10px] text-gray-500 mt-4 text-center">*Lapor penipu baru ke Admin/Owner beserta SS Chat & Transfer.</p>
+            <p class="text-[10px] text-gray-500 mt-3 text-center">*Lapor penipu baru ke Admin/Owner beserta SS Chat & Transfer.</p>
         </section>
 
         <section id="pembayaran" class="tab-content py-2">
             <div class="flex items-center mb-6">
-                <button onclick="history.back()" class="text-gray-400 hover:text-white bg-brand-card/60 backdrop-blur-md p-2 rounded-full w-10 h-10 flex items-center justify-center border border-white/5 active:scale-95 transition-all">
+                <button onclick="history.back()" class="text-gray-400 hover:text-white bg-brand-card p-2 rounded-full w-10 h-10 flex items-center justify-center border border-white/5 active:scale-95 transition-all">
                     <i class="fas fa-arrow-left"></i>
                 </button>
-                <h2 class="text-lg font-black text-white ml-4 tracking-tight">Detail Pembayaran</h2>
+                <h2 class="text-lg font-extrabold text-white ml-4">Detail Pembayaran</h2>
             </div>
 
-            <div class="bg-brand-card/60 backdrop-blur-md rounded-[32px] p-6 border border-white/5 shadow-2xl relative overflow-hidden mb-6">
-                <div class="absolute -right-10 -top-10 w-32 h-32 bg-brand-accent/20 rounded-full blur-3xl pointer-events-none"></div>
-                <div class="text-[10px] font-bold text-white/50 uppercase tracking-widest mb-1">Total Tagihan</div>
+            <div class="bg-brand-card rounded-3xl p-6 border border-white/10 shadow-lg relative overflow-hidden mb-6">
+                <div class="absolute -right-10 -top-10 w-32 h-32 bg-brand-accent/10 rounded-full blur-2xl"></div>
+                <div class="text-xs text-gray-500 uppercase tracking-widest mb-1">Total Tagihan</div>
                 <div class="flex justify-between items-end mb-6 relative z-10">
-                    <div id="pay-total" class="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-br from-brand-info to-brand-accent tracking-tight">Rp 0</div>
+                    <div id="pay-total" class="text-3xl font-extrabold text-brand-accent tracking-tight">Rp 0</div>
                     <button onclick="salinNominal()" id="btn-salin" class="bg-brand-info/10 text-brand-info border border-brand-info/30 text-[10px] font-bold px-3 py-1.5 rounded-lg active:scale-95 transition-all flex items-center h-max">
                         <i class="fas fa-copy mr-1.5"></i> Salin
                     </button>
                     <input type="hidden" id="nominal-asli" value="0">
                 </div>
-                <div class="bg-white p-3 rounded-3xl mb-6 mx-auto w-max shadow-[0_0_30px_rgba(0,240,255,0.15)] relative group z-10">
-                    <img src="https://lh3.googleusercontent.com/u/0/d/1TbGGJpXDTarVbZspPd3YCANMZ_XQNNIE" alt="QRIS ADT" class="w-48 h-48 object-cover rounded-2xl" onerror="this.src='https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=Contoh-QRIS'">
-                    <div class="absolute inset-0 bg-black/60 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-3xl backdrop-blur-sm">
-                        <i class="fas fa-camera text-white text-3xl mb-2"></i>
-                        <span class="text-white text-[11px] font-bold">Screenshot & Simpan</span>
+                <div class="bg-white p-3 rounded-2xl mb-6 mx-auto w-max shadow-[0_0_20px_rgba(0,240,255,0.15)] relative group z-10">
+                    <img src="https://lh3.googleusercontent.com/u/0/d/1TbGGJpXDTarVbZspPd3YCANMZ_XQNNIE" alt="QRIS ADT" class="w-44 h-44 object-cover rounded-xl" onerror="this.src='https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=Contoh-QRIS'">
+                    <div class="absolute inset-0 bg-black/60 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl backdrop-blur-sm">
+                        <i class="fas fa-camera text-white text-2xl mb-2"></i>
+                        <span class="text-white text-[10px] font-bold">Screenshot & Simpan</span>
                     </div>
                 </div>
-                <div class="text-[11px] font-black text-center text-white/80 uppercase tracking-widest mb-6 relative z-10">ADT STORE</div>
+                <div class="text-[11px] font-bold text-center text-white uppercase tracking-widest mb-6 relative z-10">ADT STORE</div>
 
-                <div class="space-y-3 mb-8 bg-black/40 backdrop-blur-md p-4 rounded-2xl border border-white/5 relative z-10">
-                    <div class="flex justify-between text-xs border-b border-white/5 pb-3"><span class="text-gray-400">Paket Pesanan</span><span id="pay-product" class="text-white font-bold text-right pl-4 leading-tight">-</span></div>
-                    <div class="flex justify-between text-xs pt-2"><span class="text-gray-400">Admin Rekber NIKKY</span><span class="text-brand-info font-bold">Include (Gratis)</span></div>
+                <div class="space-y-3 mb-8 bg-black/30 p-4 rounded-2xl border border-white/5 relative z-10">
+                    <div class="flex justify-between text-xs border-b border-white/5 pb-2"><span class="text-gray-400">Paket Pesanan</span><span id="pay-product" class="text-white font-bold text-right pl-4 leading-tight">-</span></div>
+                    <div class="flex justify-between text-xs pt-1"><span class="text-gray-400">Admin Rekber NIKKY</span><span class="text-brand-info font-bold">Include (Gratis)</span></div>
                 </div>
 
-                <a id="wa-confirm" href="#" target="_blank" class="flex justify-center items-center w-full bg-[#25D366] hover:bg-[#20bd5a] active:scale-[0.98] transition-transform duration-300 ease-spring text-white font-black tracking-wide py-4 rounded-2xl shadow-[0_8px_20px_rgba(37,211,102,0.25)] text-sm relative z-10">
-                    <i class="fab fa-whatsapp text-xl mr-2"></i> KONFIRMASI KE ADMIN
+                <a id="wa-confirm" href="#" target="_blank" class="flex justify-center items-center w-full bg-[#25D366] hover:bg-[#20bd5a] active:scale-[0.98] transition-all text-white font-bold py-4 rounded-2xl shadow-[0_8px_20px_rgba(37,211,102,0.25)] text-sm relative z-10">
+                    <i class="fab fa-whatsapp text-lg mr-2"></i> Konfirmasi ke Admin
                 </a>
+                <p class="text-center text-[10px] text-gray-500 mt-4 leading-relaxed relative z-10">*Sistem otomatis menyiapkan chat pesanan. Jangan lupa lampirkan screenshot bukti transfer.</p>
             </div>
         </section>
         
         <section id="profile" class="tab-content py-5 min-h-[60vh] flex flex-col justify-start relative">
+            
             <button id="btn-back-profile" onclick="kembaliDariProfil()" class="hidden absolute top-4 left-4 text-white text-xs bg-black/40 backdrop-blur-md hover:bg-black/60 border border-white/10 px-4 py-2.5 rounded-full transition-all z-10 font-bold flex items-center shadow-lg">
                 <i class="fas fa-arrow-left mr-2"></i> Kembali
             </button>
+
+            <!-- Loading Skeleton Update -->
             <div id="profile-loading" class="flex flex-col items-center justify-center py-20 mt-10">
                 <div class="w-24 h-24 skeleton rounded-full mb-4"></div>
                 <div class="w-32 h-6 skeleton rounded-md mb-2"></div>
                 <div class="w-48 h-4 skeleton rounded-md"></div>
             </div>
+
             <div id="profile-logged-in" class="hidden text-center relative mt-12">
                 <div class="relative inline-block mb-3">
-                    <div class="avatar-ring shadow-[0_0_20px_rgba(0,240,255,0.3)]">
-                        <img id="profile-img" src="https://ui-avatars.com/api/?name=User" class="w-28 h-28 rounded-full object-cover border-4 border-brand-dark" alt="Profile Picture">
+                    <div class="avatar-ring">
+                        <img id="profile-img" src="https://ui-avatars.com/api/?name=User" class="w-24 h-24 rounded-full object-cover border-2 border-brand-dark" alt="Profile Picture">
                     </div>
-                    <label id="btn-edit-avatar" for="avatar-input" class="absolute bottom-1 right-1 bg-brand-info text-brand-dark w-9 h-9 rounded-full flex items-center justify-center cursor-pointer border-4 border-brand-dark active:scale-90 transition-transform shadow-lg">
-                        <i class="fas fa-camera text-sm"></i>
+                    <label id="btn-edit-avatar" for="avatar-input" class="absolute bottom-0 right-0 bg-brand-info text-brand-dark w-8 h-8 rounded-full flex items-center justify-center cursor-pointer border-4 border-brand-dark active:scale-90 transition-transform">
+                        <i class="fas fa-camera text-xs"></i>
                     </label>
                     <input type="file" id="avatar-input" class="hidden" accept="image/*" onchange="handleAvatarUpload(event)">
                 </div>
-                <h3 id="profile-nickname" class="text-2xl font-black tracking-tight text-white">@Nickname</h3>
-                <p id="profile-bio" class="text-xs text-white/70 mt-2 mb-6 px-6 leading-relaxed whitespace-pre-line">Mencari teman main Sweet Dance. Add ID aku ya!</p>
-                <div class="flex justify-center gap-8 mb-6 border-y border-white/5 py-4 bg-brand-card/40 backdrop-blur-sm rounded-3xl mx-4">
-                    <div class="flex flex-col items-center cursor-pointer hover:opacity-70 transition-opacity" onclick="showUserList('mengikuti')"><span id="stat-mengikuti" class="font-black text-white text-lg">0</span><span class="text-[9px] text-white/50 font-bold uppercase tracking-widest mt-1">Mengikuti</span></div>
-                    <div class="flex flex-col items-center cursor-pointer hover:opacity-70 transition-opacity" onclick="showUserList('pengikut')"><span id="stat-pengikut" class="font-black text-white text-lg">0</span><span class="text-[9px] text-white/50 font-bold uppercase tracking-widest mt-1">Pengikut</span></div>
-                    <div class="flex flex-col items-center"><span id="profile-total-likes" class="font-black text-white text-lg">0</span><span class="text-[9px] text-white/50 font-bold uppercase tracking-widest mt-1">Suka</span></div>
+                <h3 id="profile-nickname" class="text-xl font-extrabold text-white">@Nickname</h3>
+                
+                <p id="profile-bio" class="text-[11px] text-gray-300 mt-2 mb-4 px-6 leading-relaxed whitespace-pre-line">Mencari teman main Sweet Dance. Add ID aku ya!</p>
+
+                <div class="flex justify-center gap-8 mb-6 border-y border-white/5 py-3">
+                    <div class="flex flex-col items-center cursor-pointer hover:opacity-70 transition-opacity" onclick="showUserList('mengikuti')"><span id="stat-mengikuti" class="font-bold text-white text-base">0</span><span class="text-[9px] text-gray-400 uppercase tracking-widest">Mengikuti</span></div>
+                    <div class="flex flex-col items-center cursor-pointer hover:opacity-70 transition-opacity" onclick="showUserList('pengikut')"><span id="stat-pengikut" class="font-bold text-white text-base">0</span><span class="text-[9px] text-gray-400 uppercase tracking-widest">Pengikut</span></div>
+                    <div class="flex flex-col items-center"><span id="profile-total-likes" class="font-bold text-white text-base">0</span><span class="text-[9px] text-gray-400 uppercase tracking-widest">Suka</span></div>
                 </div>
-                <div id="profile-actions-own" class="flex gap-2 justify-center px-4 mb-8">
-                    <button onclick="openEditProfileModal()" class="flex-1 bg-white/10 border border-white/10 py-3 rounded-xl text-[11px] font-bold text-white flex items-center justify-center gap-2 hover:bg-white/20 transition-colors backdrop-blur-md">
+
+                <div id="profile-actions-own" class="flex gap-2 justify-center px-4 mb-6">
+                    <button onclick="openEditProfileModal()" class="flex-1 bg-white/10 border border-white/10 py-2.5 rounded-xl text-[11px] font-bold text-white flex items-center justify-center gap-2 hover:bg-white/20 transition-colors">
                         <i class="fas fa-pen"></i> Edit Profil
                     </button>
-                    <button onclick="handleLogout()" class="bg-red-500/10 border border-red-500/20 px-5 py-3 rounded-xl text-[11px] font-bold text-red-500 hover:bg-red-500/20 transition-colors backdrop-blur-md">
+                    <button onclick="handleLogout()" class="bg-red-500/10 border border-red-500/20 px-4 py-2.5 rounded-xl text-[11px] font-bold text-red-500 hover:bg-red-500/20 transition-colors">
                         <i class="fas fa-sign-out-alt"></i>
                     </button>
                 </div>
-                <div id="profile-actions-other" class="hidden flex-col gap-2 justify-center px-4 mb-8">
+
+                <div id="profile-actions-other" class="hidden flex-col gap-2 justify-center px-4 mb-6">
                     <div class="flex gap-2">
-                        <button id="btn-follow" onclick="toggleFollow(viewedUserId)" class="flex-1 bg-brand-accent py-3 rounded-xl text-[11px] font-black text-white uppercase tracking-wide hover:scale-95 transition-transform shadow-[0_0_15px_rgba(255,0,122,0.3)]">Ikuti</button>
-                        <button onclick="kirimPesanPribadi(viewedUserId)" class="flex-1 bg-white/10 border border-white/10 py-3 rounded-xl text-[11px] font-bold text-white hover:bg-white/20 transition-colors backdrop-blur-md">Kirim Pesan</button>
+                        <button id="btn-follow" onclick="toggleFollow(viewedUserId)" class="flex-1 bg-brand-accent py-2.5 rounded-xl text-[11px] font-extrabold text-white uppercase tracking-wide hover:scale-95 transition-transform shadow-[0_0_15px_rgba(255,0,122,0.3)]">Ikuti</button>
+                        <button onclick="kirimPesanPribadi(viewedUserId)" class="flex-1 bg-white/10 border border-white/10 py-2.5 rounded-xl text-[11px] font-bold text-white hover:bg-white/20 transition-colors">Kirim Pesan</button>
                     </div>
-                    <button id="btn-block-user" onclick="toggleBlockUser(viewedUserId)" class="w-full bg-red-500/10 border border-red-500/20 py-2.5 rounded-xl text-[10px] font-bold text-red-500 hover:bg-red-500/20 transition-colors mt-1"><i class="fas fa-ban mr-1"></i> Blokir Pengguna</button>
+                    <button id="btn-block-user" onclick="toggleBlockUser(viewedUserId)" class="w-full bg-red-500/10 border border-red-500/20 py-2 rounded-xl text-[10px] font-bold text-red-500 hover:bg-red-500/20 transition-colors mt-1"><i class="fas fa-ban mr-1"></i> Blokir Pengguna</button>
                 </div>
-                <div class="border-t border-white/10 pt-5 text-left px-2">
-                    <div class="flex justify-center border-b border-white/5 mb-3 pb-3">
+
+                <div class="border-t border-white/10 pt-4 text-left px-2">
+                    <div class="flex justify-center border-b border-white/5 mb-2 pb-2">
                         <h4 id="profile-video-title" class="font-bold text-white text-sm flex items-center border-b-2 border-brand-accent pb-1"><i class="fas fa-grip-vertical mr-2 text-brand-info"></i> Video Saya</h4>
                     </div>
-                    <div id="profile-video-grid" class="grid grid-cols-3 gap-1 rounded-xl overflow-hidden"></div>
+                    <div id="profile-video-grid" class="grid grid-cols-3 gap-0.5"></div>
                 </div>
             </div>
             
             <div id="profile-logged-out" class="hidden text-center py-10 mt-10">
-                <i class="fas fa-user-circle text-7xl text-white/20 mb-4 drop-shadow-md"></i>
-                <h3 class="text-xl font-black tracking-tight text-white mb-2">Belum Login</h3>
-                <p class="text-xs text-white/50 mb-6">Silakan login untuk membalas komentar & upload foto.</p>
-                <button onclick="openAuthModal()" class="bg-brand-accent text-white px-8 py-3.5 rounded-full font-bold active:scale-95 transition-transform shadow-[0_0_20px_rgba(255,0,122,0.3)]">Login Sekarang</button>
+                <i class="fas fa-user-circle text-6xl text-gray-700 mb-4"></i>
+                <h3 class="text-xl font-extrabold text-white mb-2">Belum Login</h3>
+                <p class="text-xs text-gray-400 mb-6">Silakan login untuk membalas komentar & upload foto.</p>
+                <button onclick="openAuthModal()" class="bg-brand-accent text-white px-8 py-3.5 rounded-xl font-bold active:scale-95 transition-transform">Login Sekarang</button>
             </div>
         </section>
 
         <!-- WIDGET CHAT GLOBAL MENGAMBANG -->
-        <button onclick="toggleWidget()" class="fixed bottom-24 right-5 z-50 w-14 h-14 bg-gradient-to-r from-brand-purple to-brand-accent rounded-full shadow-[0_8px_30px_rgba(255,0,122,0.5)] flex items-center justify-center text-white text-2xl active:scale-90 transition-transform duration-300 ease-spring">
+        <button onclick="toggleWidget()" class="fixed bottom-24 right-5 z-50 w-14 h-14 bg-gradient-to-r from-brand-purple to-brand-accent rounded-full shadow-[0_0_20px_rgba(255,0,122,0.4)] flex items-center justify-center text-white text-2xl active:scale-90 transition-transform">
             <i class="fas fa-comment-dots"></i>
-            <span id="global-chat-badge" class="hidden absolute -top-1 -right-1 bg-brand-info text-brand-dark text-[10px] font-black w-5 h-5 flex items-center justify-center rounded-full border-2 border-brand-dark">0</span>
+            <span id="global-chat-badge" class="hidden absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full border-2 border-brand-dark">0</span>
         </button>
 
-        <div id="floating-widget" class="fixed bottom-40 right-5 z-[150] w-[90%] max-w-[350px] h-[60vh] max-h-[500px] bg-brand-card/80 backdrop-blur-xl border border-white/10 rounded-3xl shadow-2xl opacity-0 pointer-events-none translate-y-8 scale-95 transition-all duration-300 ease-spring flex flex-col overflow-hidden origin-bottom-right">
+        <div id="floating-widget" class="fixed bottom-40 right-5 z-[150] w-[90%] max-w-[350px] h-[60vh] max-h-[500px] bg-brand-card border border-white/10 rounded-3xl shadow-2xl opacity-0 pointer-events-none translate-y-8 scale-95 transition-all duration-300 flex flex-col overflow-hidden glass origin-bottom-right">
             
             <!-- Tampilan Daftar Obrolan -->
             <div id="chat-list-view" class="flex flex-col h-full">
@@ -464,21 +435,20 @@
                         </div>
                     </div>
                 </div>
-                <div id="chat-messages-container" class="flex-1 overflow-y-auto hide-scroll p-4 flex flex-col gap-1 relative bg-black/20"></div>
+                <div id="chat-messages-container" class="flex-1 overflow-y-auto hide-scroll p-4 flex flex-col gap-1 relative bg-black/40"></div>
                 
-                <div class="p-3 border-t border-white/5 bg-brand-card/90 shrink-0 flex flex-col gap-2">
-                    <div class="flex items-center gap-2 w-full">
-                        <input type="file" id="chat-image-input" accept="image/*" class="hidden" onchange="uploadChatImage(event)">
-                        <label for="chat-image-input" class="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-center text-gray-400 cursor-pointer transition-colors shrink-0">
-                            <i class="fas fa-image"></i>
-                        </label>
-                        <input type="text" id="chat-room-input" placeholder="Tulis pesan..." class="flex-1 bg-black/40 border border-white/10 rounded-xl py-2.5 px-4 text-xs text-white outline-none focus:border-brand-accent transition-colors">
-                        <button id="btn-send-room" class="w-10 h-10 rounded-xl bg-brand-accent text-white flex items-center justify-center active:scale-95 transition-transform shrink-0 shadow-[0_0_10px_rgba(255,0,122,0.3)]"><i class="fas fa-paper-plane"></i></button>
-                    </div>
-                    <p class="text-[9px] text-gray-500 text-center italic"><i class="fas fa-hourglass-half mr-1"></i> Pesan akan terhapus otomatis dalam 24 jam untuk menjaga performa.</p>
+                <div class="p-3 border-t border-white/5 bg-brand-card shrink-0 flex items-center gap-2">
+                    <input type="file" id="chat-image-input" accept="image/*" class="hidden" onchange="uploadChatImage(event)">
+                    <label for="chat-image-input" class="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-center text-gray-400 cursor-pointer transition-colors shrink-0">
+                        <i class="fas fa-image"></i>
+                    </label>
+                    <input type="text" id="chat-room-input" placeholder="Tulis pesan..." class="flex-1 bg-black/40 border border-white/10 rounded-xl py-2.5 px-4 text-xs text-white outline-none focus:border-brand-accent transition-colors">
+                    <button id="btn-send-room" class="w-10 h-10 rounded-xl bg-brand-accent text-white flex items-center justify-center active:scale-90 transition-transform shrink-0"><i class="fas fa-paper-plane"></i></button>
                 </div>
+                <p class="text-[9px] text-gray-500 text-center italic"><i class="fas fa-hourglass-half mr-1"></i> Pesan akan terhapus otomatis dalam 24 jam untuk menjaga performa.</p>
             </div>
         </div>
+
     </main>
     
     <div id="floating-video-player" class="fixed inset-0 z-[150] hidden items-center justify-center bg-black/95 backdrop-blur-lg px-4">
@@ -524,11 +494,15 @@
             <div class="flex gap-2">
                 <input type="text" id="comment-input" placeholder="Tambahkan komentar..." class="flex-1 bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-brand-accent">
                 <button onclick="sendComment(event)" class="bg-brand-accent text-white w-12 h-[42px] rounded-xl active:scale-95 transition-transform flex items-center justify-center"><i class="fas fa-paper-plane"></i></button>
-            </div>
+                </div>
             <p class="text-[9px] text-gray-500 text-center italic mt-2 opacity-80"><i class="fas fa-hourglass-half mr-1"></i> Komentar Anda akan terhapus otomatis dalam 24 jam.</p>
         </div>
     </div>
+            </div>
+        </div>
+    </div>
 
+    <!-- MENGAMBANG LIGHTBOX FOTO DI CHAT -->
     <div id="lightbox-modal" class="fixed inset-0 z-[400] hidden items-center justify-center bg-black/95 backdrop-blur-md opacity-0 transition-opacity duration-300" onclick="closeLightbox()">
         <button onclick="closeLightbox()" class="absolute top-6 right-6 text-white bg-white/10 w-12 h-12 rounded-full flex items-center justify-center active:scale-90 z-[410]"><i class="fas fa-times text-xl"></i></button>
         <img id="lightbox-img" src="" class="max-w-[90%] max-h-[80vh] object-contain rounded-lg shadow-2xl scale-95 transition-transform duration-300">
@@ -668,13 +642,14 @@
         </div>
     </div>
 
-    <nav class="fixed bottom-0 left-0 w-full glass z-40 flex justify-around items-center h-[75px] px-2 shadow-[0_-10px_40px_rgba(0,0,0,0.5)] rounded-t-[32px] border-t border-white/10">
-        <a href="#home" onclick="switchTab('home', event)" class="nav-item flex flex-col items-center justify-center flex-1 text-white/40 hover:text-white/80 transition-colors"><i class="fas fa-home text-xl mb-1"></i><span class="text-[9px] font-bold mt-0.5 tracking-wide">Home</span></a>
-        <a href="#info" onclick="switchTab('info', event)" class="nav-item flex flex-col items-center justify-center flex-1 text-white/40 hover:text-white/80 transition-colors"><i class="fas fa-bullhorn text-xl mb-1"></i><span class="text-[9px] font-bold mt-0.5 tracking-wide">Info</span></a>
-        <a href="#layanan" onclick="switchTab('layanan', event)" class="nav-item flex flex-col items-center justify-center flex-1 text-white/40 hover:text-white/80 transition-colors"><i class="fas fa-bolt text-xl mb-1"></i><span class="text-[9px] font-bold mt-0.5 tracking-wide">Layanan</span></a>
-        <a href="#sosial" onclick="switchTab('sosial', event)" class="nav-item flex flex-col items-center justify-center flex-1 text-white/40 hover:text-white/80 transition-colors"><i class="fas fa-camera-retro text-xl mb-1"></i><span class="text-[9px] font-bold mt-0.5 tracking-wide">Sosial</span></a>
-        <a href="#rekber" onclick="switchTab('rekber', event)" class="nav-item flex flex-col items-center justify-center flex-1 text-white/40 hover:text-white/80 transition-colors"><i class="fas fa-shield-alt text-xl mb-1"></i><span class="text-[9px] font-bold mt-0.5 tracking-wide">Rekber</span></a>
-        <a href="#profile" onclick="switchTab('profile', event)" class="nav-item flex flex-col items-center justify-center flex-1 text-white/40 hover:text-white/80 transition-colors"><i class="fas fa-user-circle text-xl mb-1"></i><span class="text-[9px] font-bold mt-0.5 tracking-wide">Profil</span></a>
+    <nav class="fixed bottom-0 left-0 w-full glass z-40 flex justify-around items-center h-[70px] px-1 shadow-[0_-10px_30px_rgba(0,0,0,0.5)]">
+        <a href="#home" onclick="switchTab('home', event)" class="nav-item flex flex-col items-center justify-center flex-1 text-gray-500 transition-colors"><i class="fas fa-home text-xl mb-1"></i><span class="text-[9px] font-bold mt-0.5">Home</span></a>
+        <a href="#info" onclick="switchTab('info', event)" class="nav-item flex flex-col items-center justify-center flex-1 text-gray-500 transition-colors"><i class="fas fa-bullhorn text-xl mb-1"></i><span class="text-[9px] font-bold mt-0.5">Info</span></a>
+        <a href="#layanan" onclick="switchTab('layanan', event)" class="nav-item flex flex-col items-center justify-center flex-1 text-gray-500 transition-colors"><i class="fas fa-bolt text-xl mb-1"></i><span class="text-[9px] font-bold mt-0.5">Layanan</span></a>
+        <a href="#sosial" onclick="switchTab('sosial', event)" class="nav-item flex flex-col items-center justify-center flex-1 text-gray-500 transition-colors"><i class="fas fa-camera-retro text-xl mb-1"></i><span class="text-[9px] font-bold mt-0.5">Sosial</span></a>
+        <a href="#rekber" onclick="switchTab('rekber', event)" class="nav-item flex flex-col items-center justify-center flex-1 text-gray-500 transition-colors"><i class="fas fa-shield-alt text-xl mb-1"></i><span class="text-[9px] font-bold mt-0.5">Rekber</span></a>
+        <a href="#ripper" onclick="switchTab('ripper', event)" class="nav-item flex flex-col items-center justify-center flex-1 text-gray-500 transition-colors"><i class="fas fa-user-ninja text-xl mb-1"></i><span class="text-[9px] font-bold mt-0.5">Ripper</span></a>
+        <a href="#profile" onclick="switchTab('profile', event)" class="nav-item flex flex-col items-center justify-center flex-1 text-gray-500 transition-colors"><i class="fas fa-user-circle text-xl mb-1"></i><span class="text-[9px] font-bold mt-0.5">Profil</span></a>
     </nav>
 
     <script>
@@ -1284,11 +1259,12 @@
         function switchTab(tabId, event = null, isPush = true) {
             if (event) event.preventDefault();
             
+            // RESET PROFIL KE MILIK SENDIRI JIKA KLIK MENU BAWAH NAVIGASI PROFIL
             if (tabId === 'profile' && event !== null && currentUser) {
                 if (viewedUserId !== currentUser.id) {
                     viewedUserId = currentUser.id;
                     openUserProfile(currentUser.id);
-                    return; 
+                    return; // hentikan karena openUserProfile akan mengeksekusi switchTab secara mandiri
                 }
             }
 
@@ -1403,11 +1379,15 @@
             switchTab(newHash.split('?')[0], null, false);
         });
 
+        // FUNGSI KEMBALI DARI PROFIL YANG SUDAH DIPERBAIKI SANGAT AMAN
         function kembaliDariProfil() {
+            // Pindah tab secara visual
             switchTab(tabSebelumnya, null, false);
             
+            // Mengganti URL tanpa memicu popstate yang berisiko bentrok dengan chat widget
             history.replaceState(null, null, '#' + tabSebelumnya);
             
+            // Reset profil yang tertinggal di background (agar siap pas di-klik dari bawah)
             if (currentUser) {
                 viewedUserId = currentUser.id;
                 
@@ -1496,11 +1476,13 @@
             if(!isOwn) history.pushState({ popup: 'user_profile' }, null, `#profile?id=${userId}`);
         }
         
+        // FUNGSI MELIHAT PROFIL USER LAIN DARI MANA SAJA
         function viewUserProfile(userId) {
             if (!userId || userId === 'undefined') { showToast("Profil tidak dapat dibuka karena ID tidak ditemukan.", "error"); return; }
             document.getElementById('comment-drawer').classList.remove('open');
             cancelReply();
             
+            // Sembunyikan widget obrolan agar profil dapat dilihat tanpa dihalangi widget chat
             const widget = document.getElementById('floating-widget');
             if (widget && !widget.classList.contains('opacity-0')) {
                 widget.classList.add('opacity-0', 'pointer-events-none', 'translate-y-8', 'scale-95');
@@ -2061,14 +2043,6 @@
         function renderVideoBatch() {
             const container = document.getElementById('feed-container');
             
-            if (currentVideoIndex >= allVideosData.length && allVideosData.length > 0) {
-                currentVideoIndex = 0;
-                for (let i = allVideosData.length - 1; i > 0; i--) { 
-                    const j = Math.floor(Math.random() * (i + 1)); 
-                    [allVideosData[i], allVideosData[j]] = [allVideosData[j], allVideosData[i]]; 
-                }
-            }
-
             const nextBatch = allVideosData.slice(currentVideoIndex, currentVideoIndex + BATCH_SIZE);
             if (nextBatch.length === 0) return;
 
@@ -2579,15 +2553,10 @@
             const modal = document.getElementById('modal-msg-option');
             
             const btnAll = document.getElementById('btn-del-msg-all');
-            if (isMe) {
-                btnAll.classList.remove('hidden');
-                btnAll.onclick = () => actionDeleteMessage('all');
-            } else {
-                btnAll.classList.add('hidden');
-                btnAll.onclick = null;
-            }
+            isMe ? btnAll.classList.replace('hidden', 'block') : btnAll.classList.replace('block', 'hidden');
 
             document.getElementById('btn-del-msg-me').onclick = () => actionDeleteMessage('me');
+            if(isMe) btnAll.onclick = () => actionDeleteMessage('all');
 
             modal.classList.remove('hidden'); modal.classList.add('flex');
         }
