@@ -436,13 +436,14 @@
                     </div>
                 </div>
                 <div id="chat-messages-container" class="flex-1 overflow-y-auto hide-scroll p-4 flex flex-col gap-1 relative bg-black/40"></div>
+                <div id="typing-indicator" class="hidden px-4 pb-2 bg-black/40 text-[10px] text-brand-info italic transition-all">User sedang mengetik...</div>
                 
                 <div class="p-3 border-t border-white/5 bg-brand-card shrink-0 flex items-center gap-2">
                     <input type="file" id="chat-image-input" accept="image/*" class="hidden" onchange="uploadChatImage(event)">
                     <label for="chat-image-input" class="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-center text-gray-400 cursor-pointer transition-colors shrink-0">
                         <i class="fas fa-image"></i>
                     </label>
-                    <input type="text" id="chat-room-input" placeholder="Tulis pesan..." class="flex-1 bg-black/40 border border-white/10 rounded-xl py-2.5 px-4 text-xs text-white outline-none focus:border-brand-accent transition-colors">
+                    <input type="text" id="chat-room-input" oninput="sendTypingStatus()" placeholder="Tulis pesan..." class="flex-1 bg-black/40 border border-white/10 rounded-xl py-2.5 px-4 text-xs text-white outline-none focus:border-brand-accent transition-colors">
                     <button id="btn-send-room" class="w-10 h-10 rounded-xl bg-brand-accent text-white flex items-center justify-center active:scale-90 transition-transform shrink-0"><i class="fas fa-paper-plane"></i></button>
                 </div>
                 <p class="text-[9px] text-gray-500 text-center italic"><i class="fas fa-hourglass-half mr-1"></i> Pesan akan terhapus otomatis dalam 24 jam untuk menjaga performa.</p>
@@ -788,6 +789,7 @@
         let onlineUsersMap = new Map();
         let selectedMessageId = null;
         let blockedUsersList = [];
+        let typingTimer; // VARIABEL TYPING INDICATOR
 
         const services = [
             { id: 1, name: 'Joki Ballroom', price: 7500, label: '', desc: 'Estimasi pengerjaan 2 jam.' },
@@ -862,6 +864,13 @@
                     
                     if (activeChatUserId !== payload.new.sender_id) {
                         showToast("Ada pesan baru masuk!", "info");
+                        // FITUR NOTIFIKASI WEB
+                        if ("Notification" in window && Notification.permission === "granted" && document.hidden) {
+                            new Notification("AU2Hub", {
+                                body: "Anda menerima pesan baru!",
+                                icon: "/app-icon-192.png"
+                            });
+                        }
                     }
                     
                     const widget = document.getElementById('floating-widget');
@@ -1062,6 +1071,11 @@
                 document.getElementById('auth-email').value = '';
                 document.getElementById('auth-pass').value = '';
                 document.getElementById('auth-nick').value = '';
+
+                // FITUR IZIN NOTIFIKASI
+                if ("Notification" in window && Notification.permission !== "granted") {
+                    Notification.requestPermission();
+                }
 
                 await checkSession();
                 closeAuthModal();
@@ -1598,6 +1612,20 @@
                 showToast("Video berhasil dihapus", "success");
             }
         }
+        
+        // FITUR SHARE VIDEO
+        function shareVideo(vidId, btn) {
+            const link = window.location.origin + window.location.pathname + '#sosial?vid=' + vidId;
+            navigator.clipboard.writeText(link).then(() => {
+                showToast("Link video disalin!", "success");
+                btn.querySelector('i').classList.replace('fa-share', 'fa-check');
+                btn.querySelector('i').classList.replace('text-white', 'text-brand-success');
+                setTimeout(() => {
+                    btn.querySelector('i').classList.replace('fa-check', 'fa-share');
+                    btn.querySelector('i').classList.replace('text-brand-success', 'text-white');
+                }, 2000);
+            });
+        }
 
         function renderFaqs(data = faqs) {
             const container = document.getElementById('faq-container');
@@ -2121,6 +2149,13 @@
                                     </div>
                                 </button>
                             </div>
+                            <!-- TOMBOL SHARE -->
+                            <div class="flex flex-col items-center gap-1 mt-3">
+                                <button onclick="shareVideo('${vid.id}', this)" class="hover:scale-110 transition-transform">
+                                    <i class="fas fa-share text-2xl text-white drop-shadow-md"></i>
+                                </button>
+                                <span class="text-white text-[10px] font-bold drop-shadow-md">Share</span>
+                            </div>
                         </div>
                     </div>
                 </div>`).join('');
@@ -2147,6 +2182,12 @@
                     lastVideoObserver.observe(v.closest('.snap-start'));
                 }
             });
+        }
+
+        // FUNGSI TYPING INDICATOR
+        function sendTypingStatus() {
+            if(!messageSubscription || !activeChatUserId) return;
+            messageSubscription.send({ type: 'broadcast', event: 'typing', payload: { userId: currentUser.id } });
         }
 
         function openEditProfileModal() {
@@ -2502,6 +2543,15 @@
             
             messageSubscription = supabaseClient
                 .channel(`room_${userId}`)
+                // LISTENER TYPING
+                .on('broadcast', { event: 'typing' }, payload => {
+                    if (payload.payload.userId === activeChatUserId) {
+                        const ind = document.getElementById('typing-indicator');
+                        ind.classList.remove('hidden');
+                        clearTimeout(typingTimer);
+                        typingTimer = setTimeout(() => ind.classList.add('hidden'), 2000);
+                    }
+                })
                 .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => {
                     const newMsg = payload.new;
                     if (newMsg.sender_id === activeChatUserId && newMsg.receiver_id === currentUser.id) {
@@ -2810,6 +2860,17 @@
             if(typeof renderServices === 'function') renderServices();
             if(typeof muatDataRipper === 'function') muatDataRipper();
             
+            // FUNGSI CEK URL UNTUK SHARE VIDEO
+            const urlParams = new URLSearchParams(window.location.hash.split('?')[1]);
+            const shareVidId = urlParams.get('vid');
+            if (shareVidId) {
+                switchTab('sosial');
+                setTimeout(() => {
+                    const vidData = allVideosData.find(v => v.id === shareVidId);
+                    if(vidData) playFloatingVideo(vidData.video_url, vidData.nickname, vidData.caption, vidData.id);
+                }, 1500);
+            }
+
             let deferredPrompt;
             const installContainer = document.getElementById('install-container');
             const btnInstallManual = document.getElementById('btn-install-manual');
