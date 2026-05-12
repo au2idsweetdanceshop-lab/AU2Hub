@@ -802,6 +802,132 @@
                 .replace(/'/g, "&#39;")
                 .replace(/\n/g, "<br>");
         }
+        
+        // FUNGSI YANG HILANG DITAMBAHKAN DI SINI
+        async function fetchBlockedUsers() {
+            if(!currentUser) return;
+            try {
+                const { data, error } = await supabaseClient.from('blocks').select('blocked_id').eq('blocker_id', currentUser.id);
+                if(!error && data) {
+                    blockedUsersList = data.map(d => d.blocked_id);
+                }
+            } catch(e) {
+                console.error("Gagal mengambil status blokir", e);
+            }
+        }
+
+        async function checkGlobalUnreadMessages() {
+            if(!currentUser) return;
+            try {
+                const { count, error } = await supabaseClient
+                    .from('messages')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('receiver_id', currentUser.id)
+                    .eq('is_read', false);
+                
+                const badge = document.getElementById('global-chat-badge');
+                if(badge) {
+                    if(!error && count && count > 0) {
+                        badge.innerText = count > 99 ? '99+' : count;
+                        badge.classList.remove('hidden');
+                    } else {
+                        badge.classList.add('hidden');
+                    }
+                }
+            } catch(e) { 
+                console.error("Error unread messages", e); 
+            }
+        }
+
+        async function showUserList(type) {
+            if (!currentUser && viewedUserId === null) return;
+            const targetId = viewedUserId || currentUser.id;
+            
+            const modal = document.getElementById('modal-user-list');
+            const container = document.getElementById('user-list-container');
+            const title = document.getElementById('user-list-title');
+            
+            title.innerText = type === 'mengikuti' ? 'Mengikuti' : 'Pengikut';
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            container.innerHTML = '<div class="flex justify-center mt-10"><i class="fas fa-spinner fa-spin text-brand-accent text-xl"></i></div>';
+            
+            let query = supabaseClient.from('follows').select(type === 'mengikuti' ? 'following_id' : 'follower_id').eq(type === 'mengikuti' ? 'follower_id' : 'following_id', targetId);
+            const { data: follows } = await query;
+            
+            if (!follows || follows.length === 0) {
+                container.innerHTML = `<p class="text-center text-xs text-gray-500 mt-10">Belum ada ${type}.</p>`;
+                return;
+            }
+            
+            const ids = follows.map(f => type === 'mengikuti' ? f.following_id : f.follower_id);
+            const { data: profiles } = await supabaseClient.from('profiles').select('id, nickname, avatar_url, bio').in('id', ids);
+            
+            if (profiles && profiles.length > 0) {
+                container.innerHTML = profiles.map(p => {
+                    const ava = p.avatar_url || `https://ui-avatars.com/api/?name=${p.nickname}&background=1A1133&color=fff`;
+                    return `
+                    <div onclick="viewUserProfile('${p.id}'); closeUserList();" class="flex items-center p-3 hover:bg-white/5 cursor-pointer rounded-2xl transition-all border-b border-white/5 last:border-0">
+                        <img src="${ava}" class="w-10 h-10 rounded-full object-cover border border-white/10 shrink-0">
+                        <div class="ml-3">
+                            <h4 class="font-bold text-white text-xs">${p.nickname}</h4>
+                            <p class="text-[10px] text-gray-400 truncate w-48">${p.bio || ''}</p>
+                        </div>
+                    </div>`;
+                }).join('');
+            }
+        }
+
+        function closeUserList() {
+            const modal = document.getElementById('modal-user-list');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        async function toggleBlockUser(userId) {
+            if(!currentUser) return openAuthModal();
+            const btn = document.getElementById('btn-block-user');
+            
+            try {
+                if(blockedUsersList.includes(userId)) {
+                    const hapus = confirm("Buka blokir pengguna ini?");
+                    if(hapus) {
+                        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memproses...';
+                        await supabaseClient.from('blocks').delete().eq('blocker_id', currentUser.id).eq('blocked_id', userId);
+                        blockedUsersList = blockedUsersList.filter(id => id !== userId);
+                        showToast("Blokir dibuka", "success");
+                        checkBlockStatusUI();
+                    }
+                } else {
+                    const blokir = confirm("Blokir pengguna ini? Anda tidak akan melihat video dan pesannya.");
+                    if(blokir) {
+                        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memproses...';
+                        await supabaseClient.from('blocks').insert({ blocker_id: currentUser.id, blocked_id: userId });
+                        blockedUsersList.push(userId);
+                        showToast("Pengguna diblokir", "info");
+                        checkBlockStatusUI();
+                        allVideosData = allVideosData.filter(v => v.user_id !== userId);
+                        if(document.getElementById('sosial').classList.contains('active')) loadVideos();
+                    }
+                }
+            } catch(e) {
+                showToast("Terjadi kesalahan sistem blokir", "error");
+                checkBlockStatusUI();
+            }
+        }
+
+        function checkBlockStatusUI() {
+            const btn = document.getElementById('btn-block-user');
+            if(!btn || !viewedUserId) return;
+            
+            if(blockedUsersList.includes(viewedUserId)) {
+                btn.innerHTML = '<i class="fas fa-unlock mr-1"></i> Buka Blokir';
+                btn.className = 'w-full bg-gray-500/10 border border-gray-500/20 py-2 rounded-xl text-[10px] font-bold text-gray-400 hover:bg-gray-500/20 transition-colors mt-1';
+            } else {
+                btn.innerHTML = '<i class="fas fa-ban mr-1"></i> Blokir Pengguna';
+                btn.className = 'w-full bg-red-500/10 border border-red-500/20 py-2 rounded-xl text-[10px] font-bold text-red-500 hover:bg-red-500/20 transition-colors mt-1';
+            }
+        }
 
         async function checkSession() {
             document.getElementById('profile-loading').classList.remove('hidden');
@@ -916,6 +1042,7 @@
             await supabaseClient.auth.signOut(); 
             currentUser = null;
             userProfile = null;
+            blockedUsersList = [];
             checkSession();
             showToast("Anda telah keluar.", "info");
         }
