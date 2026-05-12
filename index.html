@@ -2499,14 +2499,25 @@ function closeUploadModal() {
                 }
 
                 const currentAvatar = userProfile?.avatar_url || "";
-                const { error } = await supabaseClient.from('profiles').upsert({ 
-                    id: currentUser.id, 
-                    nickname: newNick, 
-                    bio: newBio,
-                    avatar_url: currentAvatar 
-                }); 
+        const { error } = await supabaseClient.from('profiles').upsert({
+            id: currentUser.id,
+            nickname: newNick,
+            bio: newBio,
+            avatar_url: currentAvatar
+        });
 
-                if (error) throw error; 
+        if (error) {
+            // Jika error karena nickname sudah dipakai (Kode error PostgreSQL: 23505)
+            if (error.code === '23505') {
+                throw new Error("Nickname tersebut sudah dipakai player lain. Silakan cari yang lain!");
+            }
+            throw error; 
+        }
+
+        await fetchProfile(); 
+        updateUIForLoggedIn(); 
+        closeEditProfileModal();
+        showToast("Profil berhasil diperbarui!", "success");
 
                 await fetchProfile(); 
                 updateUIForLoggedIn(); 
