@@ -2646,229 +2646,140 @@ function closeUploadModal() {
 
         async function loadChatList() {
     const container = document.getElementById('chat-list-container');
-    
-    if (!currentUser) {
-        container.innerHTML = `
-            <div class="flex flex-col items-center justify-center mt-20 p-6 text-center">
-                <i class="fas fa-user-lock text-4xl text-gray-600 mb-3"></i>
-                <h4 class="text-white font-bold text-sm mb-1">Login Diperlukan</h4>
-                <p class="text-xs text-gray-500 mb-4">Silakan login untuk melihat pesan.</p>
-                <button onclick="toggleWidget(); setTimeout(() => openAuthModal(), 300);" class="bg-brand-accent text-white px-6 py-2 rounded-full font-bold text-xs active:scale-95">Login Sekarang</button>
-            </div>`;
-        return;
-    }
+    if (!currentUser) return container.innerHTML = `<div class="text-center mt-20 text-xs text-gray-500">Silakan login untuk melihat pesan.</div>`;
 
     container.innerHTML = '<div class="flex justify-center mt-10"><i class="fas fa-spinner fa-spin text-brand-accent text-2xl"></i></div>';
 
     try {
         const unreadCounts = {};
-        const { data: unreads } = await supabaseClient
-            .from('messages')
-            .select('sender_id')
-            .eq('receiver_id', currentUser.id)
-            .eq('is_read', false);
+        const { data: unreads } = await supabaseClient.from('messages').select('sender_id').is('group_id', null).eq('receiver_id', currentUser.id).eq('is_read', false);
+        if (unreads) unreads.forEach(u => { unreadCounts[u.sender_id] = (unreadCounts[u.sender_id] || 0) + 1; });
+
+        // Ambil pesan pribadi & pesan grup sekaligus
+        const { data: messages } = await supabaseClient.from('messages').select('*').or(`sender_id.eq.${currentUser.id},receiver_id.eq.${currentUser.id},group_id.neq.null`).order('created_at', { ascending: false });
         
-        if (unreads) {
-            unreads.forEach(u => { unreadCounts[u.sender_id] = (unreadCounts[u.sender_id] || 0) + 1; });
+        const { data: myGroups } = await supabaseClient.from('group_members').select('group_id').eq('user_id', currentUser.id);
+
+        if ((!messages || messages.length === 0) && (!myGroups || myGroups.length === 0)) {
+            return container.innerHTML = `<div class="text-center mt-20 text-xs text-gray-500">Belum ada obrolan atau grup.</div>`;
         }
 
-        const { data: messages, error } = await supabaseClient
-            .from('messages')
-            .select('*')
-            .or(`sender_id.eq.${currentUser.id},receiver_id.eq.${currentUser.id}`)
-            .order('created_at', { ascending: false });
-
-        if (error) throw error;
-
-        if (!messages || messages.length === 0) {
-            container.innerHTML = `
-                <div class="flex flex-col items-center justify-center mt-20 p-6 text-center">
-                    <i class="fas fa-comment-slash text-4xl text-gray-600 mb-3"></i>
-                    <p class="text-xs text-gray-500">Belum ada obrolan.</p>
-                </div>`;
-            return;
+        const personalContacts = {}, groupContacts = {};
+        if (messages) {
+            messages.forEach(msg => {
+                if (msg.group_id) {
+                    if (!groupContacts[msg.group_id]) groupContacts[msg.group_id] = msg;
+                } else {
+                    const partnerId = msg.sender_id === currentUser.id ? msg.receiver_id : msg.sender_id;
+                    if (partnerId && !personalContacts[partnerId]) personalContacts[partnerId] = msg; 
+                }
+            });
         }
 
-        const contacts = {};
-        messages.forEach(msg => {
-            const partnerId = msg.sender_id === currentUser.id ? msg.receiver_id : msg.sender_id;
-            if (!contacts[partnerId]) {
-                contacts[partnerId] = msg; 
-            }
-        });
+        if (myGroups) {
+            myGroups.forEach(g => {
+                if (!groupContacts[g.group_id]) groupContacts[g.group_id] = { created_at: '1970-01-01T00:00:00Z', is_empty: true, message: 'Grup baru dibuat' }; 
+            });
+        }
 
-        const partnerIds = Object.keys(contacts);
-        const { data: profiles } = await supabaseClient
-            .from('profiles')
-            .select('id, nickname, avatar_url')
-            .in('id', partnerIds);
+        let chatList = [];
+        const partnerIds = Object.keys(personalContacts), groupIds = Object.keys(groupContacts);
 
-        let html = '';
-        let deletedForMe = JSON.parse(localStorage.getItem('deleted_msgs') || '[]');
+        if (partnerIds.length > 0) {
+            const { data: profiles } = await supabaseClient.from('profiles').select('id, nickname, avatar_url').in('id', partnerIds);
+            if (profiles) profiles.forEach(p => chatList.push({ type: 'personal', id: p.id, name: p.nickname, avatar: p.avatar_url, latestMsg: personalContacts[p.id], unread: unreadCounts[p.id] || 0 }));
+        }
 
-        // --- AWAL BAGIAN YANG DIPERBAIKI (SORTING) ---
-        // 1. Gabungkan profil dengan pesan terakhirnya
-        let chatList = profiles.map(profile => {
-            return {
-                profile: profile,
-                latestMsg: contacts[profile.id]
-            };
-        });
+        if (groupIds.length > 0) {
+            const { data: groups } = await supabaseClient.from('groups').select('id, name, avatar_url').in('id', groupIds);
+            if (groups) groups.forEach(g => chatList.push({ type: 'group', id: g.id, name: g.name, avatar: g.avatar_url, latestMsg: groupContacts[g.id], unread: 0 }));
+        }
 
-        // 2. Urutkan berdasarkan waktu pesan (paling baru di posisi index 0 atau teratas)
         chatList.sort((a, b) => new Date(b.latestMsg.created_at) - new Date(a.latestMsg.created_at));
 
-        // 3. Render HTML menggunakan data yang sudah rapi
+        let html = '', deletedForMe = JSON.parse(localStorage.getItem('deleted_msgs') || '[]');
         chatList.forEach(item => {
-            const profile = item.profile;
-            const latestMsg = item.latestMsg;
-        // --- AKHIR BAGIAN YANG DIPERBAIKI ---
+            const isGroup = item.type === 'group';
+            const ava = item.avatar || `https://ui-avatars.com/api/?name=${item.name}&background=1A1133&color=fff`;
+            const msg = item.latestMsg;
+            let prefix = '', preview = msg.message;
 
-            const ava = profile.avatar_url || `https://ui-avatars.com/api/?name=${profile.nickname}&background=1A1133&color=fff`;
-            const isMeSender = latestMsg.sender_id === currentUser.id;
-            
-            let prefix = '';
-            if (isMeSender) {
-                prefix = (latestMsg.is_read || latestMsg.is_read === 'true') 
-                    ? '<i class="fas fa-check-double text-brand-info mr-1 text-[10px]"></i>' 
-                    : '<i class="fas fa-check text-white/60 mr-1 text-[10px]"></i>';
+            if (isGroup && !msg.is_empty) {
+                prefix = msg.sender_id === currentUser.id ? 'Anda: ' : '<i class="fas fa-user text-[8px] mr-1"></i> ';
+            } else if (!isGroup && msg.sender_id === currentUser.id) {
+                prefix = (msg.is_read || msg.is_read === 'true') ? '<i class="fas fa-check-double text-brand-info mr-1 text-[10px]"></i>' : '<i class="fas fa-check text-white/60 mr-1 text-[10px]"></i>';
             }
+
+            if (preview === '[DELETED]') { preview = '<i class="fas fa-ban mr-1"></i> Dihapus'; prefix = ''; } 
+            else if (deletedForMe.includes(msg.id)) { preview = '...'; prefix = ''; } 
+            else if (preview.startsWith('[IMG]')) { preview = '<i class="fas fa-image mr-1"></i> Gambar'; }
             
-            let previewText = latestMsg.message;
-            if(previewText === '[DELETED]') {
-                previewText = '<i class="fas fa-ban mr-1"></i> Pesan dihapus';
-                prefix = '';
-            } else if(deletedForMe.includes(latestMsg.id)) {
-                previewText = '...'; 
-                prefix = '';
-            } else if(previewText.startsWith('[IMG]')) {
-                previewText = '<i class="fas fa-image mr-1"></i> Mengirim gambar';
-            }
-            
-            const unreadBadge = unreadCounts[profile.id] ? `<div class="bg-brand-accent text-white text-[9px] font-bold w-4 h-4 flex items-center justify-center rounded-full ml-2">${unreadCounts[profile.id]}</div>` : '';
-            
+            const badge = item.unread > 0 ? `<div class="bg-brand-accent text-white text-[9px] font-bold w-4 h-4 flex items-center justify-center rounded-full ml-2">${item.unread}</div>` : '';
+            const icon = isGroup ? '<div class="absolute -bottom-1 -right-1 bg-brand-dark p-0.5 rounded-full"><i class="fas fa-users text-[10px] text-brand-info"></i></div>' : '';
+
             html += `
-            <div onclick="openChatRoom('${profile.id}', '${profile.nickname.replace(/'/g, "\\'")}', '${ava}')" class="flex items-center p-3 bg-brand-card/50 hover:bg-white/5 cursor-pointer rounded-2xl border border-white/5 transition-all mb-2">
-                <div class="relative shrink-0">
-                    <img src="${ava}" class="w-12 h-12 rounded-full object-cover border border-brand-accent/30">
-                    <div data-uid="${profile.id}" class="online-indicator hidden absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-[#1A1133] rounded-full"></div>
-                </div>
+            <div onclick="openChatRoom('${item.id}', '${item.name.replace(/'/g, "\\'")}', '${ava}', ${isGroup})" class="flex items-center p-3 bg-brand-card/50 hover:bg-white/5 cursor-pointer rounded-2xl border border-white/5 transition-all mb-2">
+                <div class="relative shrink-0"><img src="${ava}" class="w-12 h-12 rounded-full object-cover border border-brand-accent/30">${icon}</div>
                 <div class="flex-1 min-w-0 ml-3">
-                    <div class="flex justify-between items-center mb-1">
-                        <h4 class="font-bold text-white text-[13px] truncate">${profile.nickname}</h4>
-                        <div class="flex items-center">
-                            <span class="text-[9px] text-gray-500 shrink-0 ml-2">${timeAgo(latestMsg.created_at)}</span>
-                            ${unreadBadge}
-                        </div>
-                    </div>
-                    <p class="text-[11px] text-gray-400 truncate">${prefix} ${previewText}</p>
+                    <div class="flex justify-between items-center mb-1"><h4 class="font-bold text-white text-[13px] truncate">${item.name}</h4><div class="flex items-center"><span class="text-[9px] text-gray-500 shrink-0 ml-2">${msg.is_empty ? 'Baru' : timeAgo(msg.created_at)}</span>${badge}</div></div>
+                    <p class="text-[11px] text-gray-400 truncate">${prefix} ${preview}</p>
                 </div>
             </div>`;
         });
         
-        container.innerHTML = html;
-        updatePresenceUI(); 
-        checkGlobalUnreadMessages();
+        container.innerHTML = html; checkGlobalUnreadMessages();
 
-    } catch (e) {
-        container.innerHTML = '<div class="p-6 text-center text-xs text-red-500">Gagal memuat pesan.</div>';
-    }
+    } catch (e) { container.innerHTML = '<div class="p-6 text-center text-xs text-red-500">Gagal memuat pesan.</div>'; }
+}
 }
 
-        async function openChatRoom(userId, nickname, avatar) {
-            if (!currentUser) return;
-            activeChatUserId = userId;
-            
-            document.getElementById('chat-list-view').classList.add('hidden');
-            document.getElementById('chat-list-view').classList.remove('flex');
-            document.getElementById('chat-room-view').classList.remove('hidden');
-            document.getElementById('chat-room-view').classList.add('flex');
-            history.pushState({ popup: 'chatroom' }, null, '#chatroom'); 
+        async function openChatRoom(targetId, name, avatar, isGroup = false) {
+    if (!currentUser) return;
+    
+    if (isGroup) { activeGroupId = targetId; activeChatUserId = null; } 
+    else { activeChatUserId = targetId; activeGroupId = null; }
+    
+    document.getElementById('chat-list-view').classList.add('hidden'); document.getElementById('chat-list-view').classList.remove('flex');
+    document.getElementById('chat-room-view').classList.remove('hidden'); document.getElementById('chat-room-view').classList.add('flex');
+    
+    document.getElementById('active-chat-name').innerText = name;
+    document.getElementById('active-chat-avatar').src = avatar;
 
-            document.getElementById('active-chat-name').innerText = nickname;
-            document.getElementById('active-chat-avatar').src = avatar;
-            updatePresenceUI();
+    const container = document.getElementById('chat-messages-container');
+    container.innerHTML = '<div class="flex justify-center mt-10"><i class="fas fa-spinner fa-spin text-brand-accent text-xl"></i></div>';
 
-            const container = document.getElementById('chat-messages-container');
-            container.innerHTML = '<div class="flex justify-center mt-10"><i class="fas fa-spinner fa-spin text-brand-accent text-xl"></i></div>';
+    document.getElementById('btn-send-room').onclick = () => sendRoomMessage(targetId, isGroup);
 
-            const sendBtn = document.getElementById('btn-send-room');
-            sendBtn.onclick = () => sendRoomMessage(userId);
+    if (!isGroup) await supabaseClient.from('messages').update({ is_read: true }).eq('sender_id', targetId).eq('receiver_id', currentUser.id).eq('is_read', false);
 
-            await supabaseClient.from('messages')
-                .update({ is_read: true })
-                .eq('sender_id', userId)
-                .eq('receiver_id', currentUser.id)
-                .eq('is_read', false);
+    let query = supabaseClient.from('messages').select('*');
+    if (isGroup) query = query.eq('group_id', targetId);
+    else query = query.or(`and(sender_id.eq.${currentUser.id},receiver_id.eq.${targetId},group_id.is.null),and(sender_id.eq.${targetId},receiver_id.eq.${currentUser.id},group_id.is.null)`);
+    
+    const { data: messages } = await query.order('created_at', { ascending: true });
 
-            const { data: messages } = await supabaseClient.from('messages')
-                .select('*')
-                .or(`and(sender_id.eq.${currentUser.id},receiver_id.eq.${userId}),and(sender_id.eq.${userId},receiver_id.eq.${currentUser.id})`)
-                .order('created_at', { ascending: true });
+    container.innerHTML = '';
+    if(messages && messages.length > 0) messages.forEach(msg => appendMessageBubble(msg));
+    else container.innerHTML = `<div class="flex flex-col items-center justify-center h-full opacity-50"><p class="text-xs text-gray-300">Kirim pesan pertama</p></div>`;
+    
+    scrollToBottomChat();
 
-            container.innerHTML = '';
-            if(messages && messages.length > 0) {
-                messages.forEach(msg => appendMessageBubble(msg));
-            } else {
-                container.innerHTML = `
-                    <div class="flex flex-col items-center justify-center h-full opacity-50">
-                        <div class="bg-brand-accent/20 p-4 rounded-full mb-2"><i class="fas fa-hand-sparkles text-2xl text-brand-accent"></i></div>
-                        <p class="text-xs text-gray-300">Kirim pesan pertamamu ke ${nickname}</p>
-                    </div>`;
-            }
-            scrollToBottomChat();
-
-            if (messageSubscription) supabaseClient.removeChannel(messageSubscription);
-            
-            messageSubscription = supabaseClient
-                .channel(`room_${userId}`)
-                // LISTENER TYPING
-                .on('broadcast', { event: 'typing' }, payload => {
-                    if (payload.payload.userId === activeChatUserId) {
-                        const ind = document.getElementById('typing-indicator');
-                        ind.classList.remove('hidden');
-                        clearTimeout(typingTimer);
-                        typingTimer = setTimeout(() => ind.classList.add('hidden'), 2000);
-                    }
-                })
-                .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => {
-                    const newMsg = payload.new;
-                    if (newMsg.sender_id === activeChatUserId && newMsg.receiver_id === currentUser.id) {
-                        appendMessageBubble(newMsg);
-                        scrollToBottomChat();
-                        supabaseClient.from('messages').update({ is_read: true }).eq('id', newMsg.id).then();
-                    }
-                })
-                .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'messages' }, payload => {
-                    const updatedMsg = payload.new;
-                    if (updatedMsg.message === '[DELETED]') {
-                        const bubble = document.getElementById('bubble-msg-' + updatedMsg.id);
-                        if(bubble) {
-                            bubble.innerHTML = `<p class="text-[11px] text-white/50 italic"><i class="fas fa-ban mr-1"></i> Pesan ini telah dihapus</p>`;
-                        }
-                    } else if (updatedMsg.sender_id === currentUser.id && updatedMsg.is_read) {
-                        const tick = document.getElementById('tick-' + updatedMsg.id);
-                        if (tick) tick.className = 'fas fa-check-double text-[8px] text-brand-info';
-                    }
-                })
-                .subscribe();
-        }
+    if (messageSubscription) supabaseClient.removeChannel(messageSubscription);
+    messageSubscription = supabaseClient.channel(isGroup ? `group_${targetId}` : `room_${targetId}`)
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => {
+            const newMsg = payload.new;
+            const isTarget = isGroup ? newMsg.group_id === activeGroupId : (newMsg.sender_id === activeChatUserId && newMsg.receiver_id === currentUser.id);
+            if (isTarget) { appendMessageBubble(newMsg); scrollToBottomChat(); if(!isGroup) supabaseClient.from('messages').update({ is_read: true }).eq('id', newMsg.id).then(); }
+        }).subscribe();
+}
 
         function closeChatRoom(reloadList = true, fromPopstate = false) {
-            activeChatUserId = null;
-            if (messageSubscription) {
-                supabaseClient.removeChannel(messageSubscription);
-                messageSubscription = null;
-            }
-            
-            document.getElementById('chat-list-view').classList.remove('hidden');
-            document.getElementById('chat-list-view').classList.add('flex');
-            document.getElementById('chat-room-view').classList.add('hidden');
-            document.getElementById('chat-room-view').classList.remove('flex');
-            
-            if(reloadList) loadChatList(); 
-            if(!fromPopstate && window.location.hash === '#chatroom') history.back();
-        }
+    activeChatUserId = null; activeGroupId = null; // Tambahan penting
+    if (messageSubscription) { supabaseClient.removeChannel(messageSubscription); messageSubscription = null; }
+    document.getElementById('chat-list-view').classList.remove('hidden'); document.getElementById('chat-list-view').classList.add('flex');
+    document.getElementById('chat-room-view').classList.add('hidden'); document.getElementById('chat-room-view').classList.remove('flex');
+    if(reloadList) loadChatList(); 
+}
 
         function appendMessageBubble(msg) {
             const container = document.getElementById('chat-messages-container');
@@ -2966,45 +2877,13 @@ function closeUploadModal() {
             container.scrollTop = container.scrollHeight;
         }
 
-        async function sendRoomMessage(targetUserId) {
-            const input = document.getElementById('chat-room-input');
-            const msgText = input.value.trim();
-            if (!msgText) return;
-
-            input.value = ''; 
-            
-            const tempId = 'temp-' + Date.now();
-            const tempMsg = {
-                id: tempId,
-                sender_id: currentUser.id,
-                receiver_id: targetUserId,
-                message: msgText,
-                created_at: new Date().toISOString(),
-                is_read: false
-            };
-            appendMessageBubble(tempMsg);
-            scrollToBottomChat();
-
-            const { data, error } = await supabaseClient.from('messages').insert({
-                sender_id: currentUser.id,
-                receiver_id: targetUserId,
-                message: msgText
-            }).select().single();
-
-            if (error) {
-                showToast("Gagal mengirim pesan", "error");
-            } else if(data) {
-                const tempTick = document.getElementById('tick-' + tempId);
-                if(tempTick) tempTick.id = 'tick-' + data.id;
-                
-                const tempBubble = document.getElementById('bubble-msg-' + tempId);
-                if (tempBubble) {
-                    tempBubble.id = 'bubble-msg-' + data.id;
-                    const parentDiv = tempBubble.closest('.max-w-\\[80\\%\\]'); 
-                    if (parentDiv) {
-                        parentDiv.setAttribute('onclick', `showMsgOptions('${data.id}', true)`);
-                    }
-                }
+        function closeChatRoom(reloadList = true, fromPopstate = false) {
+    activeChatUserId = null; activeGroupId = null; // Tambahan penting
+    if (messageSubscription) { supabaseClient.removeChannel(messageSubscription); messageSubscription = null; }
+    document.getElementById('chat-list-view').classList.remove('hidden'); document.getElementById('chat-list-view').classList.add('flex');
+    document.getElementById('chat-room-view').classList.add('hidden'); document.getElementById('chat-room-view').classList.remove('flex');
+    if(reloadList) loadChatList(); 
+}
             }
         }
         
@@ -3073,68 +2952,24 @@ function closeUploadModal() {
         }
         
         async function uploadChatImage(event) {
-            const file = event.target.files[0];
-            if (!file || !activeChatUserId) return;
+    const file = event.target.files[0];
+    if (!file || (!activeChatUserId && !activeGroupId)) return;
+    const isGroup = !!activeGroupId; const targetId = isGroup ? activeGroupId : activeChatUserId;
+    event.target.value = ''; showToast("Mengirim gambar...", "info");
 
-            event.target.value = ''; 
-            showToast("Menyiapkan gambar...", "info");
+    try {
+        const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent('img_'+Date.now())}&filetype=${encodeURIComponent(file.type)}`);
+        const dataUrl = await resUrl.json();
+        await fetch(dataUrl.uploadUrl, { method: 'PUT', body: file, headers: { 'Content-Type': file.type, 'x-amz-acl': 'public-read' } });
+        
+        const tempMsg = { id: 't-'+Date.now(), sender_id: currentUser.id, message: `[IMG]${dataUrl.finalVideoUrl}`, created_at: new Date().toISOString() };
+        appendMessageBubble(tempMsg); scrollToBottomChat();
 
-            try {
-                const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent('chat_'+Date.now()+'_'+file.name)}&filetype=${encodeURIComponent(file.type)}`);
-                if (!resUrl.ok) throw new Error("Gagal mendapat akses upload");
-                const dataUrl = await resUrl.json();
-
-                showToast("Mengirim gambar...", "info");
-
-                const uploadRes = await fetch(dataUrl.uploadUrl, {
-                    method: 'PUT',
-                    body: file,
-                    headers: { 'Content-Type': file.type, 'x-amz-acl': 'public-read' }
-                });
-
-                if (!uploadRes.ok) throw new Error("Gagal upload gambar");
-
-                const imageUrl = dataUrl.finalVideoUrl; 
-                const msgText = `[IMG]${imageUrl}`;
-                const tempId = 'temp-' + Date.now();
-                
-                const tempMsg = {
-                    id: tempId,
-                    sender_id: currentUser.id,
-                    receiver_id: activeChatUserId,
-                    message: msgText,
-                    created_at: new Date().toISOString(),
-                    is_read: false
-                };
-                appendMessageBubble(tempMsg);
-                scrollToBottomChat();
-
-                const { data, error } = await supabaseClient.from('messages').insert({
-                    sender_id: currentUser.id,
-                    receiver_id: activeChatUserId,
-                    message: msgText
-                }).select().single();
-
-                if (error) throw error;
-                if(data) {
-                    const tempTick = document.getElementById('tick-' + tempId);
-                    if(tempTick) tempTick.id = 'tick-' + data.id;
-
-                    const tempBubble = document.getElementById('bubble-msg-' + tempId);
-                    if (tempBubble) {
-                        tempBubble.id = 'bubble-msg-' + data.id;
-                        const parentDiv = tempBubble.closest('.max-w-\\[80\\%\\]'); 
-                        if (parentDiv) {
-                            parentDiv.setAttribute('onclick', `showMsgOptions('${data.id}', true)`);
-                        }
-                    }
-                }
-                showToast("Gambar terkirim!", "success");
-
-            } catch (err) {
-                showToast("Error: " + err.message, "error");
-            }
-        }
+        const insertData = { sender_id: currentUser.id, message: `[IMG]${dataUrl.finalVideoUrl}` };
+        if (isGroup) insertData.group_id = targetId; else insertData.receiver_id = targetId;
+        await supabaseClient.from('messages').insert(insertData);
+    } catch (err) { showToast("Gagal gambar", "error"); }
+}
 
         document.getElementById('chat-room-input').addEventListener('keypress', function (e) {
             if (e.key === 'Enter') document.getElementById('btn-send-room').click();
