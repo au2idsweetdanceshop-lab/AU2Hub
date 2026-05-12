@@ -1881,10 +1881,27 @@
         }
 
         async function fetchCommentLikes(cid) {
-            try { const res = await fetch(`/api/comment_like?comment_id=${cid}`); const data = await res.json(); const span = document.querySelector(`.comment-like-count[data-cid="${cid}"]`); if(span) span.innerText = data.count || 0; } catch(e) {}
+            try { 
+                // Hitung jumlah like komentar langsung dari Supabase
+                const { count, error } = await supabaseClient
+                    .from('comment_likes')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('comment_id', cid);
+                
+                const span = document.querySelector(`.comment-like-count[data-cid="${cid}"]`); 
+                if(span && !error) span.innerText = count || 0; 
+            } catch(e) {
+                console.error("Gagal mengambil like komentar", e);
+            }
         }
 
         async function likeComment(cid, btn) {
+            // Wajib login untuk melike komentar
+            if (!currentUser) {
+                showToast("Silakan login untuk menyukai komentar!", "error");
+                return openAuthModal();
+            }
+
             if(localStorage.getItem('comment_liked_'+cid)) return; 
             
             localStorage.setItem('comment_liked_'+cid, 'pending');
@@ -1895,17 +1912,22 @@
             setTimeout(() => icon.classList.remove('animate-ping'), 500);
 
             try {
-                const res = await fetch('/api/comment_like', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({comment_id: cid}) });
-                if(res.ok) { 
+                // Insert data like komentar ke Supabase
+                const { error } = await supabaseClient.from('comment_likes').insert({
+                    comment_id: cid,
+                    user_id: currentUser.id
+                });
+
+                if(!error) { 
                     localStorage.setItem('comment_liked_'+cid, 'true'); 
                     fetchCommentLikes(cid); 
                 } else {
-                    localStorage.removeItem('comment_liked_'+cid);
-                    icon.classList.add('text-gray-500'); icon.classList.remove('text-brand-accent');
+                    throw error;
                 }
             } catch(e) { 
                 localStorage.removeItem('comment_liked_'+cid);
                 icon.classList.add('text-gray-500'); icon.classList.remove('text-brand-accent'); 
+                showToast("Gagal menyukai komentar.", "error");
             }
         }
 
