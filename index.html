@@ -1251,12 +1251,11 @@
         function switchTab(tabId, event = null, isPush = true) {
             if (event) event.preventDefault();
             
-            // RESET PROFIL KE MILIK SENDIRI JIKA KLIK MENU BAWAH NAVIGASI PROFIL
             if (tabId === 'profile' && event !== null && currentUser) {
                 if (viewedUserId !== currentUser.id) {
                     viewedUserId = currentUser.id;
                     openUserProfile(currentUser.id);
-                    return; // hentikan karena openUserProfile akan mengeksekusi switchTab secara mandiri
+                    return; 
                 }
             }
 
@@ -1371,15 +1370,11 @@
             switchTab(newHash.split('?')[0], null, false);
         });
 
-        // FUNGSI KEMBALI DARI PROFIL YANG SUDAH DIPERBAIKI SANGAT AMAN
         function kembaliDariProfil() {
-            // Pindah tab secara visual
             switchTab(tabSebelumnya, null, false);
             
-            // Mengganti URL tanpa memicu popstate yang berisiko bentrok dengan chat widget
             history.replaceState(null, null, '#' + tabSebelumnya);
             
-            // Reset profil yang tertinggal di background (agar siap pas di-klik dari bawah)
             if (currentUser) {
                 viewedUserId = currentUser.id;
                 
@@ -1468,13 +1463,11 @@
             if(!isOwn) history.pushState({ popup: 'user_profile' }, null, `#profile?id=${userId}`);
         }
         
-        // FUNGSI MELIHAT PROFIL USER LAIN DARI MANA SAJA
         function viewUserProfile(userId) {
             if (!userId || userId === 'undefined') { showToast("Profil tidak dapat dibuka karena ID tidak ditemukan.", "error"); return; }
             document.getElementById('comment-drawer').classList.remove('open');
             cancelReply();
             
-            // Sembunyikan widget obrolan agar profil dapat dilihat tanpa dihalangi widget chat
             const widget = document.getElementById('floating-widget');
             if (widget && !widget.classList.contains('opacity-0')) {
                 widget.classList.add('opacity-0', 'pointer-events-none', 'translate-y-8', 'scale-95');
@@ -2032,9 +2025,21 @@
             } catch (e) { container.innerHTML = '<p class="text-center py-20 text-gray-500">Gagal memuat video.</p>'; }
         }
 
+        // FUNGSI INI TELAH DIPERBAIKI (INFINITE SCROLL/LOOP FEED VIDEO)
         function renderVideoBatch() {
             const container = document.getElementById('feed-container');
             
+            // === INFINITE SCROLL LOGIC ===
+            // Jika video sudah habis, kita loop kembali dari awal dan acak ulang urutannya
+            if (currentVideoIndex >= allVideosData.length && allVideosData.length > 0) {
+                currentVideoIndex = 0;
+                for (let i = allVideosData.length - 1; i > 0; i--) { 
+                    const j = Math.floor(Math.random() * (i + 1)); 
+                    [allVideosData[i], allVideosData[j]] = [allVideosData[j], allVideosData[i]]; 
+                }
+            }
+            // ==============================
+
             const nextBatch = allVideosData.slice(currentVideoIndex, currentVideoIndex + BATCH_SIZE);
             if (nextBatch.length === 0) return;
 
@@ -2545,10 +2550,15 @@
             const modal = document.getElementById('modal-msg-option');
             
             const btnAll = document.getElementById('btn-del-msg-all');
-            isMe ? btnAll.classList.replace('hidden', 'block') : btnAll.classList.replace('block', 'hidden');
+            if (isMe) {
+                btnAll.classList.remove('hidden');
+                btnAll.onclick = () => actionDeleteMessage('all');
+            } else {
+                btnAll.classList.add('hidden');
+                btnAll.onclick = null;
+            }
 
             document.getElementById('btn-del-msg-me').onclick = () => actionDeleteMessage('me');
-            if(isMe) btnAll.onclick = () => actionDeleteMessage('all');
 
             modal.classList.remove('hidden'); modal.classList.add('flex');
         }
