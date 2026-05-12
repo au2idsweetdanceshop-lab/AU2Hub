@@ -335,7 +335,6 @@
                 <i class="fas fa-arrow-left mr-2"></i> Kembali
             </button>
 
-            <!-- Loading Skeleton Update -->
             <div id="profile-loading" class="flex flex-col items-center justify-center py-20 mt-10">
                 <div class="w-24 h-24 skeleton rounded-full mb-4"></div>
                 <div class="w-32 h-6 skeleton rounded-md mb-2"></div>
@@ -395,7 +394,6 @@
             </div>
         </section>
 
-        <!-- WIDGET CHAT GLOBAL MENGAMBANG -->
         <button onclick="toggleWidget()" class="fixed bottom-24 right-5 z-50 w-14 h-14 bg-gradient-to-r from-brand-purple to-brand-accent rounded-full shadow-[0_0_20px_rgba(255,0,122,0.4)] flex items-center justify-center text-white text-2xl active:scale-90 transition-transform">
             <i class="fas fa-comment-dots"></i>
             <span id="global-chat-badge" class="hidden absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full border-2 border-brand-dark">0</span>
@@ -403,7 +401,6 @@
 
         <div id="floating-widget" class="fixed bottom-40 right-5 z-[150] w-[90%] max-w-[350px] h-[60vh] max-h-[500px] bg-brand-card border border-white/10 rounded-3xl shadow-2xl opacity-0 pointer-events-none translate-y-8 scale-95 transition-all duration-300 flex flex-col overflow-hidden glass origin-bottom-right">
             
-            <!-- Tampilan Daftar Obrolan -->
             <div id="chat-list-view" class="flex flex-col h-full">
                 <div class="p-4 border-b border-white/5 bg-black/20 flex justify-between items-center">
                     <h3 class="font-bold text-white text-sm"><i class="fas fa-comments text-brand-info mr-2"></i> Pesan Masuk</h3>
@@ -418,7 +415,6 @@
                 <div id="chat-list-container" class="flex-1 overflow-y-auto hide-scroll p-2 space-y-1"></div>
             </div>
 
-            <!-- Tampilan Ruang Obrolan -->
             <div id="chat-room-view" class="hidden flex-col h-full">
                 <div class="p-3 border-b border-white/5 bg-black/20 flex justify-between items-center z-10 shrink-0">
                     <div class="flex items-center gap-3">
@@ -497,7 +493,6 @@
         </div>
     </div>
 
-    <!-- MENGAMBANG LIGHTBOX FOTO DI CHAT -->
     <div id="lightbox-modal" class="fixed inset-0 z-[400] hidden items-center justify-center bg-black/95 backdrop-blur-md opacity-0 transition-opacity duration-300" onclick="closeLightbox()">
         <button onclick="closeLightbox()" class="absolute top-6 right-6 text-white bg-white/10 w-12 h-12 rounded-full flex items-center justify-center active:scale-90 z-[410]"><i class="fas fa-times text-xl"></i></button>
         <img id="lightbox-img" src="" class="max-w-[90%] max-h-[80vh] object-contain rounded-lg shadow-2xl scale-95 transition-transform duration-300">
@@ -623,7 +618,6 @@
         </div>
     </div>
 
-    <!-- MODAL DAFTAR USER FOLLOW/FOLLOWING -->
     <div id="modal-user-list" class="fixed inset-0 z-[250] hidden items-center justify-center bg-black/90 backdrop-blur-md px-6">
         <div class="bg-brand-card w-full max-w-sm rounded-3xl border border-white/10 shadow-2xl relative modal-anim flex flex-col max-h-[70vh]">
             <div class="flex justify-between items-center p-4 border-b border-white/5">
@@ -795,12 +789,63 @@
         function formatCaption(text) {
             if(!text) return '';
             return text
-                .replace(/&/g, "&amp;")
-                .replace(/</g, "&lt;")
-                .replace(/>/g, "&gt;")
-                .replace(/"/g, "&quot;")
-                .replace(/'/g, "&#39;")
+                .replace(/&/g, "&")
+                .replace(/</g, "<")
+                .replace(/>/g, ">")
+                .replace(/"/g, """)
+                .replace(/'/g, "'")
                 .replace(/\n/g, "<br>");
+        }
+
+        async function fetchBlockedUsers() {
+            blockedUsersList = [];
+            if (!currentUser) return;
+            try {
+                // Asumsi terdapat tabel 'blocks' dengan field 'blocker_id' dan 'blocked_id'
+                const { data, error } = await supabaseClient.from('blocks').select('blocked_id').eq('blocker_id', currentUser.id);
+                if (data) {
+                    blockedUsersList = data.map(item => item.blocked_id);
+                }
+            } catch (e) {
+                console.warn("Could not fetch blocked users:", e);
+            }
+        }
+
+        async function checkGlobalUnreadMessages() {
+            if (!currentUser) return;
+            try {
+                const { count, error } = await supabaseClient
+                    .from('messages')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('receiver_id', currentUser.id)
+                    .eq('is_read', false);
+                
+                const badge = document.getElementById('global-chat-badge');
+                if (badge) {
+                    if (count && count > 0) {
+                        badge.innerText = count > 99 ? '99+' : count;
+                        badge.classList.remove('hidden');
+                    } else {
+                        badge.classList.add('hidden');
+                    }
+                }
+            } catch(e) {
+                console.warn("Could not check unread messages", e);
+            }
+        }
+
+        // Tambahan fungsi-fungsi kosong agar tidak error jika dipanggil via UI
+        function toggleBlockUser(targetId) {
+            showToast("Fitur blokir sedang dalam pengembangan", "info");
+        }
+
+        function showUserList(type) {
+            showToast("Fitur daftar " + type + " sedang dikembangkan", "info");
+        }
+
+        function closeUserList() {
+            const modal = document.getElementById('modal-user-list');
+            if(modal) modal.classList.add('hidden');
         }
 
         async function checkSession() {
@@ -882,7 +927,20 @@
         }
 
         async function handleAuth() {
-            const email = document.getElementById('auth-email').value, password = document.getElementById('auth-pass').value, nick = document.getElementById('auth-nick').value, btn = document.getElementById('auth-btn');
+            const email = document.getElementById('auth-email').value.trim();
+            const password = document.getElementById('auth-pass').value;
+            const nick = document.getElementById('auth-nick').value.trim();
+            const btn = document.getElementById('auth-btn');
+
+            // Validasi input kosong agar tidak mengirim request berlebihan
+            if (!email || !password) {
+                return showToast("Email dan Password tidak boleh kosong!", "error");
+            }
+
+            if (!isAuthLogin && !nick) {
+                return showToast("Nickname tidak boleh kosong!", "error");
+            }
+
             btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
             try {
                 if (isAuthLogin) { 
@@ -977,7 +1035,7 @@
             }
 
             grid.innerHTML = reversedVideos.map(vid => {
-                const amanCaption = (vid.caption || '').replace(/'/g, "\\'").replace(/"/g, "&quot;").replace(/\n/g, " ");
+                const amanCaption = (vid.caption || '').replace(/'/g, "\\'").replace(/"/g, """).replace(/\n/g, " ");
                 
                 return `
                 <div class="aspect-[9/16] bg-black relative rounded-md overflow-hidden border border-white/10 group cursor-pointer" onclick="playFloatingVideo('${vid.video_url}', '${(vid.nickname || 'Player').replace(/'/g, "\\'")}', '${amanCaption}', '${vid.id}')">
@@ -1261,8 +1319,6 @@
             
             document.getElementById('profile-loading').classList.add('hidden');
             document.querySelectorAll('#profile-logged-in').forEach(el => el.classList.remove('hidden'));
-            
-            checkBlockStatusUI();
             
             if(!isOwn) history.pushState({ popup: 'user_profile' }, null, `#profile?id=${userId}`);
         }
