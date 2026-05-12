@@ -406,9 +406,13 @@
             <!-- Tampilan Daftar Obrolan -->
             <div id="chat-list-view" class="flex flex-col h-full">
                 <div class="p-4 border-b border-white/5 bg-black/20 flex justify-between items-center">
-                    <h3 class="font-bold text-white text-sm"><i class="fas fa-comments text-brand-info mr-2"></i> Pesan Masuk</h3>
-                    <button onclick="toggleWidget()" class="text-gray-400 hover:text-white w-8 h-8 rounded-full bg-white/5 flex items-center justify-center transition-colors"><i class="fas fa-times"></i></button>
-                </div>
+    <h3 class="font-bold text-white text-sm"><i class="fas fa-comments text-brand-info mr-2"></i> Pesan Masuk</h3>
+    <div class="flex gap-2">
+        <!-- Tombol Buat Grup Baru -->
+        <button onclick="openCreateGroupModal()" class="text-white hover:text-brand-info w-8 h-8 rounded-full bg-white/5 flex items-center justify-center transition-colors" title="Buat Grup Baru"><i class="fas fa-users"></i></button>
+        <button onclick="toggleWidget()" class="text-gray-400 hover:text-white w-8 h-8 rounded-full bg-white/5 flex items-center justify-center transition-colors"><i class="fas fa-times"></i></button>
+    </div>
+</div>
                 <div class="p-3 border-b border-white/5">
                     <div class="relative">
                         <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-xs"></i>
@@ -423,7 +427,7 @@
                 <div class="p-3 border-b border-white/5 bg-black/20 flex justify-between items-center z-10 shrink-0">
                     <div class="flex items-center gap-3">
                         <button onclick="closeChatRoom(true)" class="text-gray-400 hover:text-white w-8 h-8 rounded-full bg-white/5 flex items-center justify-center transition-colors"><i class="fas fa-arrow-left"></i></button>
-                        <div class="flex items-center gap-2 cursor-pointer" onclick="viewUserProfile(activeChatUserId)">
+                        <div class="flex items-center gap-2 cursor-pointer" onclick="openChatHeaderInfo()">
                             <div class="relative">
                                 <img id="active-chat-avatar" src="" class="w-9 h-9 rounded-full object-cover border border-brand-accent/50">
                                 <div id="active-chat-online-dot" class="hidden absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border border-[#1A1133] rounded-full"></div>
@@ -551,6 +555,83 @@
             </div>
         </div>
     </div>
+    
+    <!-- MODAL BUAT GRUP BARU -->
+<div id="modal-create-group" class="fixed inset-0 z-[300] hidden items-center justify-center bg-black/90 backdrop-blur-md px-6 transition-all duration-300">
+    <div class="bg-brand-card w-full max-w-sm rounded-3xl border border-white/10 p-6 shadow-2xl relative modal-anim">
+        <button onclick="closeCreateGroupModal()" class="absolute top-4 right-4 text-gray-500 w-8 h-8 flex justify-center items-center rounded-full bg-white/5"><i class="fas fa-times"></i></button>
+        <h3 class="text-xl font-extrabold mb-5 text-white"><i class="fas fa-users mr-2 text-brand-info"></i> Buat Grup Baru</h3>
+        <div class="space-y-4">
+            <div class="flex justify-center">
+                <div class="relative inline-block">
+                    <img id="create-group-preview" src="https://ui-avatars.com/api/?name=Grup&background=1A1133&color=fff" class="w-20 h-20 rounded-full object-cover border-2 border-brand-info">
+                    <label for="create-group-avatar" class="absolute bottom-0 right-0 bg-brand-info text-brand-dark w-7 h-7 rounded-full flex items-center justify-center cursor-pointer border-2 border-brand-dark active:scale-90 transition-transform">
+                        <i class="fas fa-camera text-[10px]"></i>
+                    </label>
+                    <input type="file" id="create-group-avatar" class="hidden" accept="image/*" onchange="previewGroupAvatar(this, 'create-group-preview')">
+                </div>
+            </div>
+            <div>
+                <label class="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-2 block">Nama Grup</label>
+                <input type="text" id="create-group-name" placeholder="Masukkan nama grup..." class="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-brand-info">
+            </div>
+            <div>
+                <label class="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-2 block">Deskripsi Grup</label>
+                <textarea id="create-group-desc" rows="2" placeholder="Tujuan grup ini..." class="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-brand-info resize-none"></textarea>
+            </div>
+            <button onclick="prosesCreateGroup()" id="btn-submit-group" class="w-full bg-gradient-to-r from-brand-info to-brand-accent text-white py-3.5 rounded-xl font-bold active:scale-95 transition-transform mt-2 shadow-[0_0_15px_rgba(0,240,255,0.3)]"><i class="fas fa-plus mr-2"></i> Buat Grup</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL INFO GRUP / MANAJEMEN ANGGOTA -->
+<div id="modal-group-info" class="fixed inset-0 z-[300] hidden items-end sm:items-center justify-center bg-black/90 backdrop-blur-md px-0 sm:px-6 transition-all duration-300">
+    <div class="bg-brand-card w-full max-w-md sm:rounded-3xl rounded-t-3xl border border-white/10 p-6 shadow-2xl relative modal-anim max-h-[85vh] flex flex-col">
+        <button onclick="closeGroupInfoModal()" class="absolute top-4 right-4 text-gray-500 w-8 h-8 flex justify-center items-center rounded-full bg-white/5 z-10"><i class="fas fa-times"></i></button>
+        
+        <div class="overflow-y-auto hide-scroll flex-1 pb-4">
+            <!-- Header Info Grup -->
+            <div class="text-center mb-6 mt-4 relative">
+                <div class="relative inline-block">
+                    <img id="info-group-avatar" src="" class="w-24 h-24 rounded-full object-cover border-4 border-brand-dark shadow-lg">
+                    <label id="btn-edit-group-avatar" for="edit-group-avatar" class="hidden absolute bottom-0 right-0 bg-brand-info text-brand-dark w-8 h-8 rounded-full flex items-center justify-center cursor-pointer border-2 border-brand-dark active:scale-90 transition-transform">
+                        <i class="fas fa-camera text-xs"></i>
+                    </label>
+                    <input type="file" id="edit-group-avatar" class="hidden" accept="image/*">
+                </div>
+                <h3 id="info-group-name" class="text-xl font-extrabold text-white mt-3">Nama Grup</h3>
+                <p id="info-group-desc" class="text-[11px] text-gray-400 mt-1 px-4">Deskripsi Grup</p>
+                <button id="btn-edit-group-info" onclick="toggleEditGroupInfo()" class="hidden mx-auto mt-3 bg-white/10 border border-white/10 text-white text-[10px] px-4 py-2 rounded-full font-bold active:scale-95"><i class="fas fa-pen mr-1"></i> Edit Info Grup</button>
+                
+                <!-- Form Edit (Hidden by default) -->
+                <div id="form-edit-group-info" class="hidden mt-4 space-y-3 text-left bg-black/30 p-4 rounded-xl border border-white/5">
+                    <input type="text" id="input-edit-group-name" placeholder="Nama Baru..." class="w-full bg-black/50 border border-white/10 rounded-lg px-3 py-2 text-xs text-white outline-none focus:border-brand-info">
+                    <textarea id="input-edit-group-desc" rows="2" placeholder="Deskripsi Baru..." class="w-full bg-black/50 border border-white/10 rounded-lg px-3 py-2 text-xs text-white outline-none focus:border-brand-info resize-none"></textarea>
+                    <button id="btn-save-group-info" onclick="saveGroupInfo()" class="w-full bg-brand-info text-brand-dark text-xs font-bold py-2 rounded-lg active:scale-95">Simpan Perubahan</button>
+                </div>
+            </div>
+
+            <!-- Bagian Undang User (Hanya muncul jika user adalah Admin) -->
+            <div id="section-invite-group" class="hidden mb-6 border-t border-white/10 pt-4">
+                <h4 class="text-xs font-bold text-white mb-3"><i class="fas fa-user-plus mr-1 text-brand-success"></i> Undang Anggota</h4>
+                <div class="flex gap-2">
+                    <input type="text" id="invite-user-nickname" placeholder="Ketik Nickname User persis..." class="flex-1 bg-black/30 border border-white/10 rounded-xl px-4 py-2 text-xs text-white outline-none focus:border-brand-success">
+                    <button id="btn-invite-user" onclick="inviteToGroup()" class="bg-brand-success text-white px-4 rounded-xl font-bold active:scale-95 text-xs">Undang</button>
+                </div>
+            </div>
+
+            <!-- Daftar Anggota -->
+            <div class="border-t border-white/10 pt-4">
+                <h4 class="text-xs font-bold text-white mb-3"><i class="fas fa-users mr-1 text-brand-purple"></i> Anggota Grup (<span id="info-group-count">0</span>)</h4>
+                <div id="group-member-list" class="space-y-2">
+                    <!-- List Member akan di-load di sini oleh JS -->
+                </div>
+            </div>
+            
+            <button id="btn-leave-group" onclick="keluarDariGrup()" class="w-full mt-6 bg-red-500/10 border border-red-500/30 text-red-500 py-3 rounded-xl text-xs font-bold active:scale-95 transition-all"><i class="fas fa-sign-out-alt mr-2"></i> Keluar dari Grup</button>
+        </div>
+    </div>
+</div>
 
     <div id="modal-auth" class="fixed inset-0 z-[100] hidden items-center justify-center bg-black/90 backdrop-blur-md px-6">
         <div class="bg-brand-card w-full max-w-sm rounded-3xl border border-white/10 p-8 shadow-2xl relative modal-anim">
@@ -3100,6 +3181,236 @@ function closeUploadModal() {
 
             if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js?v=3');
         });
+        
+        // ==========================================
+// FITUR GRUP CHAT (TAHAP 3)
+// ==========================================
+let activeGroupId = null; // Menyimpan ID grup yang sedang dibuka
+let activeGroupRole = 'member'; // Menyimpan jabatan user di grup tersebut
+
+// 1. Buka / Tutup Modal Buat Grup
+function openCreateGroupModal() {
+    document.getElementById('modal-create-group').classList.remove('hidden');
+    document.getElementById('modal-create-group').classList.add('flex');
+}
+
+function closeCreateGroupModal() {
+    document.getElementById('modal-create-group').classList.add('hidden');
+    document.getElementById('modal-create-group').classList.remove('flex');
+}
+
+// 2. Preview Foto Grup Saat Dipilih
+function previewGroupAvatar(input, imgId) {
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) { document.getElementById(imgId).src = e.target.result; }
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+
+// 3. Proses Eksekusi Buat Grup ke Database
+async function prosesCreateGroup() {
+    if (!currentUser) return showToast("Silakan login dulu!", "error");
+    
+    const nameInput = document.getElementById('create-group-name').value.trim();
+    const descInput = document.getElementById('create-group-desc').value.trim();
+    const btn = document.getElementById('btn-submit-group');
+
+    if (!nameInput) return showToast("Nama grup wajib diisi!", "error");
+
+    btn.disabled = true;
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Membuat...';
+
+    try {
+        // Buat avatar default dari inisial nama grup
+        let avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(nameInput)}&background=1A1133&color=fff`;
+
+        // Masukkan data grup ke tabel 'groups'
+        const { data: groupData, error: groupErr } = await supabaseClient
+            .from('groups')
+            .insert({ name: nameInput, description: descInput, avatar_url: avatarUrl, created_by: currentUser.id })
+            .select().single();
+
+        if (groupErr) throw groupErr;
+
+        // Masukkan pembuat grup otomatis sebagai 'admin' di 'group_members'
+        const { error: memberErr } = await supabaseClient
+            .from('group_members')
+            .insert({ group_id: groupData.id, user_id: currentUser.id, role: 'admin' });
+
+        if (memberErr) throw memberErr;
+
+        showToast("Grup berhasil dibuat!", "success");
+        closeCreateGroupModal();
+        
+        // Reset form
+        document.getElementById('create-group-name').value = '';
+        document.getElementById('create-group-desc').value = '';
+        document.getElementById('create-group-preview').src = 'https://ui-avatars.com/api/?name=Grup&background=1A1133&color=fff';
+
+        // Reload daftar chat agar grup baru muncul
+        loadChatList(); 
+
+    } catch (err) {
+        showToast("Gagal buat grup: " + err.message, "error");
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+    }
+}
+
+// 4. Deteksi Klik Header (Buka Profil Teman atau Buka Info Grup)
+function openChatHeaderInfo() {
+    if (activeGroupId) {
+        loadGroupInfo(activeGroupId); // Jika ini chat grup
+    } else if (activeChatUserId) {
+        viewUserProfile(activeChatUserId); // Jika ini chat pribadi
+    }
+}
+
+function closeGroupInfoModal() {
+    document.getElementById('modal-group-info').classList.add('hidden');
+    document.getElementById('modal-group-info').classList.remove('flex');
+}
+
+// 5. Muat Data Info Grup & Anggota
+async function loadGroupInfo(groupId) {
+    document.getElementById('modal-group-info').classList.remove('hidden');
+    document.getElementById('modal-group-info').classList.add('flex');
+    
+    // Ambil data detail grup
+    const { data: group } = await supabaseClient.from('groups').select('*').eq('id', groupId).single();
+    if(!group) return;
+
+    document.getElementById('info-group-avatar').src = group.avatar_url;
+    document.getElementById('info-group-name').innerText = group.name;
+    document.getElementById('info-group-desc').innerText = group.description || "Tidak ada deskripsi";
+
+    // Ambil data semua member di grup ini
+    const { data: members } = await supabaseClient.from('group_members').select('role, user_id').eq('group_id', groupId);
+    
+    // Cek jabatan (role) kita di grup ini
+    const myData = members.find(m => m.user_id === currentUser.id);
+    activeGroupRole = myData ? myData.role : 'member';
+
+    // Tampilkan fitur Edit & Undang HANYA jika dia Admin
+    if (activeGroupRole === 'admin') {
+        document.getElementById('btn-edit-group-info').classList.remove('hidden');
+        document.getElementById('section-invite-group').classList.remove('hidden');
+        document.getElementById('btn-edit-group-avatar').classList.replace('hidden', 'flex');
+    } else {
+        document.getElementById('btn-edit-group-info').classList.add('hidden');
+        document.getElementById('section-invite-group').classList.add('hidden');
+        document.getElementById('btn-edit-group-avatar').classList.replace('flex', 'hidden');
+    }
+
+    renderGroupMembers(members);
+}
+
+// 6. Render Daftar Member di Modal
+async function renderGroupMembers(membersData) {
+    const list = document.getElementById('group-member-list');
+    document.getElementById('info-group-count').innerText = membersData.length;
+    list.innerHTML = '<div class="text-center py-4"><i class="fas fa-spinner fa-spin text-brand-info"></i></div>';
+
+    const userIds = membersData.map(m => m.user_id);
+    const { data: profiles } = await supabaseClient.from('profiles').select('id, nickname, avatar_url').in('id', userIds);
+
+    let html = '';
+    profiles.forEach(p => {
+        const m = membersData.find(x => x.user_id === p.id);
+        const badge = m.role === 'admin' ? '<span class="bg-brand-accent/20 text-brand-accent text-[8px] px-2 py-0.5 rounded border border-brand-accent/30 font-bold ml-2">ADMIN</span>' : '';
+        const ava = p.avatar_url || `https://ui-avatars.com/api/?name=${p.nickname}&background=1A1133&color=fff`;
+        
+        html += `
+        <div class="flex items-center p-2 bg-black/30 rounded-xl border border-white/5">
+            <img src="${ava}" class="w-8 h-8 rounded-full object-cover border border-white/10 shrink-0">
+            <div class="ml-3 flex-1 flex items-center">
+                <h4 class="font-bold text-white text-xs">${p.nickname}</h4>
+                ${badge}
+            </div>
+        </div>`;
+    });
+    list.innerHTML = html;
+}
+
+// 7. Buka Tutup Form Edit Info Grup
+function toggleEditGroupInfo() {
+    const form = document.getElementById('form-edit-group-info');
+    if (form.classList.contains('hidden')) {
+        form.classList.remove('hidden');
+        document.getElementById('input-edit-group-name').value = document.getElementById('info-group-name').innerText;
+        document.getElementById('input-edit-group-desc').value = document.getElementById('info-group-desc').innerText;
+    } else {
+        form.classList.add('hidden');
+    }
+}
+
+// 8. Simpan Editan Info Grup (Hanya Admin)
+async function saveGroupInfo() {
+    const name = document.getElementById('input-edit-group-name').value.trim();
+    const desc = document.getElementById('input-edit-group-desc').value.trim();
+    if(!name) return showToast("Nama tidak boleh kosong!", "error");
+
+    const btn = document.getElementById('btn-save-group-info');
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+    const { error } = await supabaseClient.from('groups').update({ name: name, description: desc }).eq('id', activeGroupId);
+    
+    btn.innerHTML = 'Simpan Perubahan';
+    if(error) return showToast("Gagal update: " + error.message, "error");
+    
+    showToast("Info grup diperbarui!", "success");
+    toggleEditGroupInfo();
+    loadGroupInfo(activeGroupId); // Refresh UI
+}
+
+// 9. Undang Teman Berdasarkan Nickname (Hanya Admin)
+async function inviteToGroup() {
+    const nick = document.getElementById('invite-user-nickname').value.trim();
+    if(!nick) return;
+
+    const btn = document.getElementById('btn-invite-user');
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+    try {
+        const { data: userProfile } = await supabaseClient.from('profiles').select('id').ilike('nickname', nick).single();
+        if(!userProfile) throw new Error("User tidak ditemukan!");
+
+        const { error } = await supabaseClient.from('group_members').insert({
+            group_id: activeGroupId,
+            user_id: userProfile.id,
+            role: 'member'
+        });
+
+        if(error) {
+            if(error.code === '23505') throw new Error("User ini sudah ada di grup!");
+            throw error;
+        }
+
+        showToast(nick + " berhasil ditambahkan!", "success");
+        document.getElementById('invite-user-nickname').value = '';
+        loadGroupInfo(activeGroupId); // Refresh anggota
+        
+    } catch (err) {
+        showToast(err.message, "error");
+    } finally {
+        btn.innerHTML = 'Undang';
+    }
+}
+
+// 10. Keluar dari Grup
+async function keluarDariGrup() {
+    const yakin = confirm("Yakin ingin keluar dari grup ini?");
+    if(!yakin) return;
+
+    await supabaseClient.from('group_members').delete().eq('group_id', activeGroupId).eq('user_id', currentUser.id);
+    showToast("Berhasil keluar dari grup", "success");
+    closeGroupInfoModal();
+    closeChatRoom(); 
+}
+        
     </script>
 </body>
 </html>
