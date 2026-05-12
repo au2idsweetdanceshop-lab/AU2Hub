@@ -452,30 +452,13 @@
 
     </main>
     
-    <div id="floating-video-player" class="fixed inset-0 z-[150] hidden items-center justify-center bg-black/95 backdrop-blur-lg px-4">
+    <!-- MENGAMBANG VIDEO PLAYER (PROFIL FEED SCROLL) -->
+    <div id="floating-video-player" class="fixed inset-0 z-[150] hidden flex-col bg-black/95 backdrop-blur-lg">
         <button onclick="closeFloatingVideo()" class="absolute top-6 right-6 text-white bg-white/10 w-12 h-12 rounded-full flex items-center justify-center active:scale-90 z-[160]"><i class="fas fa-times text-xl"></i></button>
-        <button id="btn-delete-float-vid" onclick="deleteVideo(activeVideoId)" class="hidden absolute top-6 left-6 text-red-500 bg-white/10 w-12 h-12 rounded-full flex items-center justify-center active:scale-90 z-[160]"><i class="fas fa-trash text-lg"></i></button>
         
-        <div class="w-full max-w-sm aspect-[9/16] bg-black rounded-3xl overflow-hidden shadow-2xl relative">
-            <video id="v-floating" class="w-full h-full object-cover" loop playsinline onclick="handleFloatingVideoClick(event)"></video>
-            
-            <div class="absolute bottom-0 left-0 w-full p-6 flex justify-between items-end z-20 pointer-events-none bg-gradient-to-t from-black/80 to-transparent">
-                <div class="text-white drop-shadow-lg w-2/3 pointer-events-auto">
-                    <p id="f-nickname" class="font-bold text-sm shadow-black drop-shadow-md">@Nickname</p>
-                    <p id="f-caption" class="text-white text-[11px] mt-1 shadow-black drop-shadow-md">Caption video...</p>
-                </div>
-                
-                <div class="flex flex-col gap-6 items-center pointer-events-auto">
-                    <div id="float-like-container" class="like-container flex flex-col items-center gap-1" data-vid="">
-                        <button onclick="likeVideo(this.parentElement.dataset.vid, this)" class="hover:scale-110 transition-transform"><i class="fas fa-heart text-3xl text-white drop-shadow-md"></i></button>
-                        <span class="like-count-display text-white text-[12px] font-bold drop-shadow-md">0</span>
-                    </div>
-                    <div id="float-comment-container" class="comment-count-container flex flex-col items-center gap-1" data-vid="">
-                        <button onclick="openComments(this.parentElement.dataset.vid)" class="hover:scale-110 transition-transform"><i class="fas fa-comment-dots text-3xl text-white drop-shadow-md"></i></button>
-                        <span class="comment-count-display text-white text-[12px] font-bold drop-shadow-md">0</span>
-                    </div>
-                </div>
-            </div>
+        <!-- Wadah Scroll Profil -->
+        <div id="floating-feed-container" class="flex-1 overflow-y-scroll snap-y snap-mandatory hide-scroll relative w-full h-full pb-5">
+            <!-- Video akan dimuat di sini -->
         </div>
     </div>
 
@@ -1160,10 +1143,8 @@
             }
 
             grid.innerHTML = reversedVideos.map(vid => {
-                const amanCaption = (vid.caption || '').replace(/'/g, "\\'").replace(/"/g, "&quot;").replace(/\n/g, " ");
-                
                 return `
-                <div class="aspect-[9/16] bg-black relative rounded-md overflow-hidden border border-white/10 group cursor-pointer" onclick="playFloatingVideo('${vid.video_url}', '${(vid.nickname || 'Player').replace(/'/g, "\\'")}', '${amanCaption}', '${vid.id}')">
+                <div class="aspect-[9/16] bg-black relative rounded-md overflow-hidden border border-white/10 group cursor-pointer" onclick="openProfileFeed('${vid.user_id}', '${vid.id}')">
                     <video class="w-full h-full object-cover" preload="metadata">
                         <source src="${vid.video_url}" type="video/mp4">
                     </video>
@@ -1258,10 +1239,7 @@
 
         function toggleGlobalAudio() {
             isGlobalMuted = !isGlobalMuted;
-            document.querySelectorAll('.video-player').forEach(v => v.muted = isGlobalMuted);
-            
-            const floatVid = document.getElementById('v-floating');
-            if (floatVid) floatVid.muted = isGlobalMuted;
+            document.querySelectorAll('.video-player, .float-video-player').forEach(v => v.muted = isGlobalMuted);
 
             if(isGlobalMuted) {
                 showToast("Mute: Suara Dimatikan", "info");
@@ -1517,71 +1495,160 @@
             }
         }
 
-        function playFloatingVideo(url, nick, cap, vidId) {
-            activeVideoId = vidId; 
-            const p = document.getElementById('floating-video-player');
-            const v = document.getElementById('v-floating');
+        // ================== LOGIKA PROFIL FEED SCROLL TANPA UJUNG ==================
+        let currentProfileVideos = [];
+        let profileFeedIndex = 0;
+        let floatObs = null;
+
+        function setupFloatVideoObserver() {
+            floatObs = new IntersectionObserver(es => {
+                es.forEach(e => {
+                    if (e.isIntersecting) {
+                        e.target.play().catch(() => {}); e.target.muted = isGlobalMuted;
+                        // Preload video selanjutnya agar mulus
+                        let currentContainer = e.target.closest('.snap-start');
+                        for(let j = 0; j < 2; j++) { 
+                            currentContainer = currentContainer?.nextElementSibling;
+                            if(currentContainer) {
+                                const nextVid = currentContainer.querySelector('video');
+                                if(nextVid && nextVid.getAttribute('preload') !== 'auto') nextVid.setAttribute('preload', 'auto');
+                            }
+                        }
+                    } else { e.target.pause(); }
+                });
+            }, { threshold: 0.6 });
+        }
+
+        function openProfileFeed(userId, clickedVidId) {
+            currentProfileVideos = allVideosData.filter(v => v.user_id === userId);
+            if(currentProfileVideos.length === 0) return;
+
+            currentProfileVideos = [...currentProfileVideos].reverse();
+
+            // Cari urutan video yang sedang di-klik
+            let startIdx = currentProfileVideos.findIndex(v => v.id === clickedVidId);
+            if(startIdx === -1) startIdx = 0;
+
+            // Menyusun ulang video agar video yang diklik ada di urutan pertama dan berulang terus
+            const reorderedVideos = [
+                ...currentProfileVideos.slice(startIdx),
+                ...currentProfileVideos.slice(0, startIdx)
+            ];
             
-            document.getElementById('f-nickname').innerText = `@${nick}`;
-            document.getElementById('f-caption').innerText = cap;
+            currentProfileVideos = reorderedVideos;
+            profileFeedIndex = 0;
+
+            const container = document.getElementById('floating-feed-container');
+            container.innerHTML = '';
             
-            const floatLike = document.getElementById('float-like-container');
-            const floatComment = document.getElementById('float-comment-container');
-            const btnDelete = document.getElementById('btn-delete-float-vid');
+            document.getElementById('floating-video-player').classList.remove('hidden');
+            document.getElementById('floating-video-player').classList.add('flex');
 
-            const currentVidData = allVideosData.find(vd => vd.id === vidId);
-            if (currentUser && currentVidData && currentVidData.user_id === currentUser.id) {
-                btnDelete.classList.remove('hidden'); btnDelete.classList.add('flex');
-            } else {
-                btnDelete.classList.add('hidden'); btnDelete.classList.remove('flex');
-            }
+            if(floatObs) floatObs.disconnect();
+            setupFloatVideoObserver();
 
-            if (floatLike && floatComment) {
-                floatLike.dataset.vid = vidId;
-                floatComment.dataset.vid = vidId;
-                
-                floatLike.querySelector('i').classList.replace('text-brand-accent', 'text-white');
-                floatLike.querySelector('.like-count-display').innerText = '0';
-                floatComment.querySelector('.comment-count-display').innerText = '0';
-
-                updateLikeCountUI(vidId, floatLike);
-                updateCommentCountUI(vidId, floatComment);
-            }
-
-            v.src = url;
-            v.muted = isGlobalMuted; 
-            p.classList.remove('hidden'); 
-            p.classList.add('flex');
-            v.play();
+            renderProfileVideoBatch();
             history.pushState({ popup: 'floating_video' }, null);
+        }
+
+        function renderProfileVideoBatch() {
+            const container = document.getElementById('floating-feed-container');
+
+            // --- LOGIKA FEED PROFIL TANPA UJUNG (INFINITE LOOP) ---
+            if (profileFeedIndex >= currentProfileVideos.length) {
+                profileFeedIndex = 0;
+            }
+
+            const nextBatch = currentProfileVideos.slice(profileFeedIndex, profileFeedIndex + 3);
+            if (nextBatch.length === 0) return;
+
+            const htmlString = nextBatch.map((vid) => `
+                <div class="snap-start w-full h-full flex-shrink-0 relative flex items-center justify-center overflow-hidden bg-black/95 px-0 sm:px-4 py-0 sm:py-6">
+                    <div class="w-full max-w-sm aspect-[9/16] relative bg-brand-dark mx-auto h-full sm:h-auto sm:rounded-3xl overflow-hidden shadow-2xl">
+                        <div class="absolute inset-0 flex items-center justify-center z-0"><div class="w-12 h-12 border-4 border-brand-accent/20 border-t-brand-accent rounded-full animate-spin"></div></div>
+                        <video class="absolute inset-0 m-auto w-full h-full object-cover float-video-player transition-opacity duration-500 opacity-0 z-10" 
+                               onloadeddata="this.classList.remove('opacity-0')" loop ${isGlobalMuted ? 'muted' : ''} playsinline preload="metadata"
+                               onclick="handleFloatVideoClick(event, this, '${vid.id}')" onerror="handleVideoError(this)">
+                            <source src="${vid.video_url}" type="video/mp4">
+                        </video>
+                        <div class="absolute bottom-0 left-0 w-full p-6 flex justify-between items-end z-20 pointer-events-none bg-gradient-to-t from-black/80 to-transparent pb-10 sm:pb-6">
+                            <div class="text-white drop-shadow-lg w-[75%] pointer-events-auto">
+                                <p class="font-bold text-[15px] shadow-black drop-shadow-md mb-1.5">@${vid.nickname || "Player"}</p>
+                                <div onclick="this.classList.toggle('expanded')" class="caption-text text-[13px] opacity-90 shadow-black drop-shadow-md cursor-pointer pr-2 leading-relaxed">${formatCaption(vid.caption)}</div>
+                            </div>
+                            <div class="flex flex-col gap-6 items-center pointer-events-auto mb-4">
+                                <div class="like-container flex flex-col items-center gap-1" data-vid="${vid.id}">
+                                    <button onclick="likeVideo('${vid.id}', this)" class="hover:scale-110 transition-transform"><i class="fas fa-heart text-3xl text-white drop-shadow-md"></i></button>
+                                    <span class="like-count-display text-white text-[12px] font-bold drop-shadow-md">0</span>
+                                </div>
+                                <div class="comment-count-container flex flex-col items-center gap-1" data-vid="${vid.id}">
+                                    <button onclick="openComments('${vid.id}')" class="hover:scale-110 transition-transform"><i class="fas fa-comment-dots text-3xl text-white drop-shadow-md"></i></button>
+                                    <span class="comment-count-display text-white text-[12px] font-bold drop-shadow-md">0</span>
+                                </div>
+                                <!-- TOMBOL SHARE JUGAAAA -->
+                                <div class="flex flex-col items-center gap-1 mt-3">
+                                    <button onclick="shareVideo('${vid.id}', this)" class="hover:scale-110 transition-transform">
+                                        <i class="fas fa-share text-2xl text-white drop-shadow-md"></i>
+                                    </button>
+                                    <span class="text-white text-[10px] font-bold drop-shadow-md">Share</span>
+                                </div>
+                                ${currentUser && vid.user_id === currentUser.id ? `
+                                <button onclick="deleteVideo('${vid.id}')" class="hover:scale-110 transition-transform mt-2">
+                                    <i class="fas fa-trash text-red-500 text-2xl drop-shadow-md"></i>
+                                </button>
+                                ` : ''}
+                            </div>
+                        </div>
+                    </div>
+                </div>`).join('');
+
+            container.insertAdjacentHTML('beforeend', htmlString);
+            profileFeedIndex += 3;
+
+            // Bind UI (Like, Comment) untuk profil feed
+            const videoActions = container.querySelectorAll('.snap-start:not(.data-loaded)');
+            videoActions.forEach((card) => {
+                card.classList.add('data-loaded');
+                const vidId = card.querySelector('.like-container').dataset.vid;
+                updateLikeCountUI(vidId, card.querySelector('.like-container'));
+                updateCommentCountUI(vidId, card.querySelector('.comment-count-container'));
+            });
+
+            // Observer Infinite Scroll Profile
+            const unobservedVideos = container.querySelectorAll('.float-video-player:not(.observed)');
+            unobservedVideos.forEach((v, i) => {
+                v.classList.add('observed'); if (floatObs) floatObs.observe(v);
+                if (i === unobservedVideos.length - 1) {
+                    const lastVideoObserver = new IntersectionObserver(entries => {
+                        if(entries[0].isIntersecting) { lastVideoObserver.disconnect(); renderProfileVideoBatch(); }
+                    }, { threshold: 0.1 });
+                    lastVideoObserver.observe(v.closest('.snap-start'));
+                }
+            });
+        }
+
+        function handleFloatVideoClick(event, videoElement, vidId) {
+            const now = Date.now();
+            const TIMESLOT = 300; 
+            
+            if (now - lastTap < TIMESLOT) {
+                const card = videoElement.closest('.snap-start');
+                const likeBtn = card.querySelector('.like-container button');
+                likeVideo(vidId, likeBtn);
+                createHeartAt(event);
+            } else {
+                setTimeout(() => { 
+                    if (Date.now() - lastTap >= TIMESLOT) { toggleGlobalAudio(); }
+                }, TIMESLOT);
+            }
+            lastTap = now;
         }
 
         function closeFloatingVideo() {
             const p = document.getElementById('floating-video-player');
-            const v = document.getElementById('v-floating');
-            if(v) { v.pause(); v.src = ""; }
-            if(p) { p.classList.add('hidden'); p.classList.remove('flex'); }
-        }
-        
-        function handleFloatingVideoClick(event) {
-            const now = Date.now();
-            const TIMESLOT = 300; 
-            const v = document.getElementById('v-floating');
-            
-            if (now - lastTap < TIMESLOT) {
-                const likeBtn = document.querySelector('#float-like-container button');
-                if (activeVideoId) {
-                    likeVideo(activeVideoId, likeBtn);
-                    createHeartAt(event);
-                }
-            } else {
-                setTimeout(() => { 
-                    if (Date.now() - lastTap >= TIMESLOT) {
-                        toggleGlobalAudio(); 
-                    }
-                }, TIMESLOT);
-            }
-            lastTap = now;
+            p.classList.add('hidden'); p.classList.remove('flex');
+            document.getElementById('floating-feed-container').innerHTML = '';
+            if(floatObs) floatObs.disconnect(); // clean up
         }
 
         function handleVideoClick(event, videoElement, vidId) {
@@ -2115,6 +2182,11 @@
         function renderVideoBatch() {
             const container = document.getElementById('feed-container');
             
+            // --- LOGIKA FEED TANPA UJUNG (INFINITE LOOP) ---
+            if (currentVideoIndex >= allVideosData.length) {
+                currentVideoIndex = 0; // Jika video habis, ulang dari awal
+            }
+
             const nextBatch = allVideosData.slice(currentVideoIndex, currentVideoIndex + BATCH_SIZE);
             if (nextBatch.length === 0) return;
 
