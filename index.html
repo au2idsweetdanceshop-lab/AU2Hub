@@ -943,16 +943,26 @@
             }
         }
 
-        const ORACLE_API = "https://g7b08495a4ab649-au2hubdb.adb.ap-batam-1.oraclecloudapps.com/ords/admin/";
+        const ORACLE_API_URL = "https://g7b08495a4ab649-au2hubdb.adb.ap-batam-1.oraclecloudapps.com/ords/admin/";
 
 // Fungsi pembantu sederhana untuk Oracle API
 async function oracleFetch(table, options = {}) {
     try {
-        const response = await fetch(ORACLE_API + table, options);
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        // Gunakan nama variabel yang konsisten (ORACLE_API_URL)
+        const response = await fetch(ORACLE_API_URL + table, options);
+        if (!response.ok) {
+            const errorData = await response.json();
+            // Ini akan memberitahu kita jika email benar-benar sudah ada di database Oracle
+            if(errorData.cause.includes("unique constraint")) {
+                 throw new Error("Email ini sudah terdaftar di database Oracle!");
+            }
+            throw new Error(`Gagal ke Oracle: ${response.status}`);
+        }
         return await response.json();
     } catch (e) {
         console.error("Oracle API Error:", e);
+        // Tampilkan error aslinya di toast agar kita tidak menebak-nebak
+        showToast("Koneksi Database: " + e.message, "error");
         return null;
     }
 }
