@@ -495,7 +495,7 @@
                 <div class="p-4 border-t border-white/5 bg-brand-card/80 backdrop-blur-lg shrink-0">
                     <div class="flex items-end gap-3 max-w-md mx-auto">
                         <div class="relative pb-1">
-                            <input type="file" id="chat-image-input" accept="image/*" capture="environment" class="hidden" onchange="uploadChatImage(event)">
+                            <input type="file" id="chat-image-input" accept="image/*" class="hidden" onchange="uploadChatImage(event)">
                             <label for="chat-image-input" class="w-12 h-12 rounded-2xl bg-white/5 hover:bg-brand-info/20 hover:text-brand-info flex items-center justify-center text-gray-400 cursor-pointer transition-all border border-white/10 active:scale-90"><i class="fas fa-paperclip text-lg"></i></label>
                         </div>
                         <div class="flex-1 relative">
@@ -739,7 +739,7 @@
 
         <div class="space-y-6 relative z-10">
             <!-- Drop Zone / Area Pilih Video -->
-            <input type="file" id="input-video-file" accept="video/*" capture="environment" class="hidden" onchange="handleVideoSelect(this)">
+            <input type="file" id="input-video-file" accept="video/*" class="hidden" onchange="handleVideoSelect(this)">
             <label for="input-video-file" id="drop-zone" class="relative w-full aspect-[4/3] rounded-[2rem] border-2 border-dashed border-white/10 bg-white/5 flex flex-col items-center justify-center cursor-pointer overflow-hidden group hover:border-[#FF007A]/50 transition-all backdrop-blur-sm">
                 
                 <!-- Tampilan Sebelum Pilih Video -->
@@ -1039,7 +1039,7 @@
                 }, payload => {
                     checkGlobalUnreadMessages();
                     
-                    if (activeChatUserId !== payload.new.sender_id) {
+                    if (activeChatUserId !== payload.new.sender_id && !blockedUsersList.includes(payload.new.sender_id)) {
                         showToast("Ada pesan baru masuk!", "info");
                         // FITUR NOTIFIKASI WEB
                         if ("Notification" in window && Notification.permission === "granted" && document.hidden) {
@@ -1699,8 +1699,18 @@ function closeUploadModal() {
         }
         
         // FUNGSI MELIHAT PROFIL USER LAIN DARI MANA SAJA
-        function viewUserProfile(userId) {
-            if (!userId || userId === 'undefined') { showToast("Profil tidak dapat dibuka karena ID tidak ditemukan.", "error"); return; }
+                function viewUserProfile(userId) {
+            if (!userId || userId === 'undefined') { 
+                showToast("Profil tidak dapat dibuka karena ID tidak ditemukan.", "error"); 
+                return; 
+            }
+            
+            // CEK BLOKIR: Hentikan jika user ini ada di daftar blokir
+            if (blockedUsersList.includes(userId)) {
+                showToast("Anda telah memblokir pengguna ini. Buka blokir untuk melihat profil.", "error");
+                return;
+            }
+
             document.getElementById('comment-drawer').classList.remove('open');
             cancelReply();
             
@@ -1713,7 +1723,14 @@ function closeUploadModal() {
             openUserProfile(userId);
         }
 
-        async function kirimPesanPribadi(userId) {
+
+                async function kirimPesanPribadi(userId) {
+            // CEK BLOKIR: Hentikan jika mencoba nge-chat orang yang diblokir
+            if (blockedUsersList.includes(userId)) {
+                showToast("Buka blokir terlebih dahulu untuk mengirim pesan.", "error");
+                return;
+            }
+
             const { data } = await supabaseClient.from('profiles').select('nickname, avatar_url').eq('id', userId).single();
             if (data) {
                 const ava = data.avatar_url || `https://ui-avatars.com/api/?name=${data.nickname}&background=1A1133&color=fff`;
@@ -1724,6 +1741,7 @@ function closeUploadModal() {
                 setTimeout(() => openChatRoom(userId, data.nickname, ava), 300);
             }
         }
+
 
         // ================== LOGIKA PROFIL FEED SCROLL TANPA UJUNG ==================
         let currentProfileVideos = [];
@@ -2861,8 +2879,11 @@ async function loadChatList() {
                 if (msg.group_id) {
                     if (!groupContacts[msg.group_id]) groupContacts[msg.group_id] = msg;
                 } else {
-                    const partnerId = msg.sender_id === currentUser.id ? msg.receiver_id : msg.sender_id;
-                    if (partnerId && !personalContacts[partnerId]) personalContacts[partnerId] = msg; 
+                                        const partnerId = msg.sender_id === currentUser.id ? msg.receiver_id : msg.sender_id;
+                    // CEK BLOKIR: Jangan tampilkan chat jika partner ada di daftar blokir
+                    if (partnerId && !personalContacts[partnerId] && !blockedUsersList.includes(partnerId)) {
+                        personalContacts[partnerId] = msg; 
+                    }
                 }
             });
         }
