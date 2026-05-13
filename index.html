@@ -35,11 +35,7 @@
     </script>
 
     <style>
-        .story-ring {
-            padding: 2px;
-            background: linear-gradient(45deg, #FF007A, #8A2BE2, #00F0FF);
-            border-radius: 50%;
-        }
+        .story-ring { padding: 2px; background: linear-gradient(45deg, #FF007A, #8A2BE2, #00F0FF); border-radius: 50%; }
         body { background-color: #0F0920; color: #E2E8F0; -webkit-tap-highlight-color: transparent; overflow-x: hidden; }
         .tab-content:not(.active) { display: none !important; }
         .tab-content.active { animation: slideUpFade 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; will-change: transform, opacity; }
@@ -53,19 +49,10 @@
         .smooth-reveal { animation: smoothReveal 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; will-change: transform, opacity; }
         .heart-pop { position: fixed; color: #FF007A; font-size: 100px; pointer-events: none; z-index: 9999; animation: heartAnim 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; text-shadow: 0 0 30px rgba(255, 0, 122, 0.8); transform: translate(-50%, -50%); }
         @keyframes heartAnim { 0% { transform: translate(-50%, -50%) scale(0) rotate(-15deg); opacity: 0; } 20% { transform: translate(-50%, -50%) scale(1.2) rotate(0deg); opacity: 0.9; } 40% { transform: translate(-50%, -50%) scale(1) rotate(5deg); opacity: 0.9; } 100% { transform: translate(-50%, -150%) scale(1.5) rotate(0deg); opacity: 0; } }
-        
-        /* Toast Animation */
         @keyframes toastIn { from { opacity: 0; transform: translateY(-20px) scale(0.9); } to { opacity: 1; transform: translateY(0) scale(1); } }
         .toast-anim { animation: toastIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-
-        /* SKELETON LOADING ANIMATION */
-        @keyframes skeleton-loading {
-            0% { background-color: rgba(255, 255, 255, 0.05); }
-            50% { background-color: rgba(255, 255, 255, 0.12); }
-            100% { background-color: rgba(255, 255, 255, 0.05); }
-        }
+        @keyframes skeleton-loading { 0% { background-color: rgba(255, 255, 255, 0.05); } 50% { background-color: rgba(255, 255, 255, 0.12); } 100% { background-color: rgba(255, 255, 255, 0.05); } }
         .skeleton { animation: skeleton-loading 1.5s infinite linear; border-radius: 0.5rem; }
-
         .glass { background: rgba(26, 17, 51, 0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-top: 1px solid rgba(255, 255, 255, 0.05); }
         details > summary { list-style: none; }
         details > summary::-webkit-details-marker { display: none; }
@@ -78,30 +65,16 @@
         .comment-drawer { transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1); transform: translateY(100%); }
         .comment-drawer.open { transform: translateY(0); }
         .avatar-ring { padding: 3px; background: linear-gradient(to bottom right, #00F0FF, #FF007A); border-radius: 50%; }
-        .caption-text { 
-            display: -webkit-box; 
-            -webkit-line-clamp: 2; 
-            -webkit-box-orient: vertical; 
-            overflow: hidden; 
-            max-height: 2.8em; 
-            transition: max-height 0.3s ease; 
-        }
-        .caption-text.expanded { 
-            -webkit-line-clamp: unset; 
-            max-height: 12rem;
-            overflow-y: auto; 
-        }
+        .caption-text { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; max-height: 2.8em; transition: max-height 0.3s ease; }
+        .caption-text.expanded { -webkit-line-clamp: unset; max-height: 12rem; overflow-y: auto; }
         .caption-text::-webkit-scrollbar { width: 2px; }
         .caption-text::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.5); border-radius: 10px; }
-
-        /* Animasi Pesan Baru */
         @keyframes msgAnim { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .message-anim { animation: msgAnim 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
     </style>
 </head>
 <body class="pb-24">
 
-    <!-- OVERLAYS & MODALS -->
     <div id="toast-container" class="fixed top-6 left-0 w-full px-4 z-[200] flex flex-col items-center gap-3 pointer-events-auto"></div>
 
     <header class="fixed top-0 w-full z-40 glass border-b border-white/5 py-4 px-6 shadow-md">
@@ -116,14 +89,11 @@
     </header>
     
     <main class="max-w-md mx-auto px-5 pt-24">
-        <!-- Install PWA -->
         <div id="install-container" class="hidden px-5 mb-6">
             <button id="btn-install-manual" class="w-full bg-gradient-to-r from-brand-info to-brand-accent text-white font-bold py-4 rounded-2xl shadow-lg active:scale-95 transition-all text-sm border border-white/10">
                 <i class="fas fa-download mr-2"></i> INSTAL APLIKASI AU2HUB
             </button>
         </div>   
-
-        <!-- HOME TAB -->
         <section id="home" class="tab-content text-center min-h-[60vh] flex flex-col justify-center">
             <div class="relative inline-block mb-6 mx-auto">
                 <div class="absolute inset-0 bg-brand-accent blur-3xl opacity-20"></div>
@@ -157,7 +127,6 @@
             </div>
         </section>
 
-        <!-- INFO TAB -->
         <section id="info" class="tab-content py-2">
             <h2 class="text-xl font-extrabold text-white mb-5 flex items-center gap-2">
                 <span class="w-1.5 h-6 bg-brand-info rounded-full"></span> Info Game & Bantuan
@@ -197,7 +166,6 @@
             <div id="faq-container" class="space-y-3 pb-4"></div>
         </section>
 
-        <!-- LAYANAN TAB -->
         <section id="layanan" class="tab-content py-2">
             <div class="relative mb-5">
                 <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-brand-accent/70"></i>
@@ -216,7 +184,6 @@
             </div>
         </section>
 
-        <!-- SOSIAL / FEED TAB -->
         <section id="sosial" class="tab-content py-2">
             <div class="flex justify-between items-center mb-5 px-1">
                 <h3 class="text-xl font-extrabold flex items-center gap-2">
@@ -242,7 +209,6 @@
             </div>
         </section>
 
-        <!-- REKBER TAB -->
         <section id="rekber" class="tab-content py-2">
             <h2 class="text-xl font-extrabold text-white mb-5 flex items-center gap-2">
                 <span class="w-1.5 h-6 bg-brand-purple rounded-full"></span> Rekber & Kontak
@@ -287,7 +253,6 @@
             </div>
         </section>
 
-        <!-- RIPPER TAB -->
         <section id="ripper" class="tab-content py-2">
             <div class="flex items-center justify-between mb-4">
                 <h3 class="text-xl font-extrabold text-red-500 flex items-center"><i class="fas fa-user-ninja mr-2"></i> Database Ripper</h3>
@@ -306,7 +271,6 @@
             <p class="text-[10px] text-gray-500 mt-3 text-center">*Lapor penipu baru ke Admin/Owner beserta SS Chat & Transfer.</p>
         </section>
 
-        <!-- PEMBAYARAN TAB -->
         <section id="pembayaran" class="tab-content py-2">
             <div class="flex items-center mb-6">
                 <button onclick="history.back()" class="text-gray-400 hover:text-white bg-brand-card p-2 rounded-full w-10 h-10 flex items-center justify-center border border-white/5 active:scale-95 transition-all">
@@ -346,8 +310,8 @@
             </div>
         </section>
         
-        <!-- PROFILE TAB -->
         <section id="profile" class="tab-content py-5 min-h-[60vh] flex flex-col justify-start relative">
+            
             <button id="btn-back-profile" onclick="kembaliDariProfil()" class="hidden absolute top-4 left-4 text-white text-xs bg-black/40 backdrop-blur-md hover:bg-black/60 border border-white/10 px-4 py-2.5 rounded-full transition-all z-10 font-bold flex items-center shadow-lg">
                 <i class="fas fa-arrow-left mr-2"></i> Kembali
             </button>
@@ -539,7 +503,6 @@
         </div>
     </div>
 
-    <!-- COMMENT DRAWER -->
     <div id="comment-drawer" class="fixed inset-x-0 bottom-0 z-[160] h-[75vh] glass border-t border-white/10 rounded-t-3xl comment-drawer flex flex-col max-w-md mx-auto">
         <div class="flex justify-between items-center p-5 border-b border-white/5 shrink-0 bg-brand-dark/50 rounded-t-3xl">
             <h4 class="font-bold text-white text-sm">Komentar (<span id="drawer-comment-count">0</span>)</h4>
@@ -567,7 +530,6 @@
         <img id="lightbox-img" src="" class="max-w-[90%] max-h-[80vh] object-contain rounded-lg shadow-2xl scale-95 transition-transform duration-300">
     </div>
 
-    <!-- MODAL PROMPT UMUM -->
     <div id="modal-prompt" class="fixed inset-0 z-[200] hidden items-center justify-center bg-black/90 backdrop-blur-md px-6">
         <div class="bg-brand-card w-full max-w-sm rounded-3xl border border-white/10 p-6 shadow-2xl relative modal-anim">
             <h3 id="prompt-title" class="text-lg font-extrabold mb-2 text-white">Judul</h3>
@@ -579,7 +541,6 @@
         </div>
     </div>
 
-    <!-- MODAL OPSI PESAN CHAT -->
     <div id="modal-msg-option" class="fixed inset-0 z-[300] hidden items-end sm:items-center justify-center bg-black/90 backdrop-blur-md px-4 pb-6 transition-all">
         <div class="bg-brand-card w-full max-w-sm rounded-3xl border border-white/10 p-2 shadow-2xl relative modal-anim flex flex-col gap-1 overflow-hidden">
             <div class="p-4 border-b border-white/5 text-center"><h3 class="text-sm font-bold text-gray-300">Opsi Pesan</h3></div>
@@ -589,7 +550,6 @@
         </div>
     </div>
 
-    <!-- MODAL EDIT PROFIL -->
     <div id="modal-edit-profile" class="fixed inset-0 z-[200] hidden items-center justify-center bg-black/90 backdrop-blur-md px-6">
         <div class="bg-brand-card w-full max-w-sm rounded-3xl border border-white/10 p-6 shadow-2xl relative modal-anim">
             <button onclick="closeEditProfileModal()" class="absolute top-4 right-4 text-gray-500 w-8 h-8 flex justify-center items-center rounded-full bg-white/5"><i class="fas fa-times"></i></button>
@@ -615,78 +575,77 @@
         </div>
     </div>
     
-    <!-- MODAL BUAT GRUP BARU -->
-    <div id="modal-create-group" class="fixed inset-0 z-[300] hidden items-center justify-center bg-black/90 backdrop-blur-md px-6 transition-all duration-300">
-        <div class="bg-brand-card w-full max-w-sm rounded-3xl border border-white/10 p-6 shadow-2xl relative modal-anim">
-            <button onclick="closeCreateGroupModal()" class="absolute top-4 right-4 text-gray-500 w-8 h-8 flex justify-center items-center rounded-full bg-white/5"><i class="fas fa-times"></i></button>
-            <h3 class="text-xl font-extrabold mb-5 text-white"><i class="fas fa-users mr-2 text-brand-info"></i> Buat Grup Baru</h3>
-            <div class="space-y-4">
-                <div class="flex justify-center">
-                    <div class="relative inline-block">
-                        <img id="create-group-preview" src="https://ui-avatars.com/api/?name=Grup&background=1A1133&color=fff" class="w-20 h-20 rounded-full object-cover border-2 border-brand-info">
-                        <label for="create-group-avatar" class="absolute bottom-0 right-0 bg-brand-info text-brand-dark w-7 h-7 rounded-full flex items-center justify-center cursor-pointer border-2 border-brand-dark active:scale-90 transition-transform">
-                            <i class="fas fa-camera text-[10px]"></i>
-                        </label>
-                        <input type="file" id="create-group-avatar" class="hidden" accept="image/*" onchange="previewGroupAvatar(this, 'create-group-preview')">
-                    </div>
+<!-- MODAL BUAT GRUP BARU -->
+<div id="modal-create-group" class="fixed inset-0 z-[300] hidden items-center justify-center bg-black/90 backdrop-blur-md px-6 transition-all duration-300">
+    <div class="bg-brand-card w-full max-w-sm rounded-3xl border border-white/10 p-6 shadow-2xl relative modal-anim">
+        <button onclick="closeCreateGroupModal()" class="absolute top-4 right-4 text-gray-500 w-8 h-8 flex justify-center items-center rounded-full bg-white/5"><i class="fas fa-times"></i></button>
+        <h3 class="text-xl font-extrabold mb-5 text-white"><i class="fas fa-users mr-2 text-brand-info"></i> Buat Grup Baru</h3>
+        <div class="space-y-4">
+            <div class="flex justify-center">
+                <div class="relative inline-block">
+                    <img id="create-group-preview" src="https://ui-avatars.com/api/?name=Grup&background=1A1133&color=fff" class="w-20 h-20 rounded-full object-cover border-2 border-brand-info">
+                    <label for="create-group-avatar" class="absolute bottom-0 right-0 bg-brand-info text-brand-dark w-7 h-7 rounded-full flex items-center justify-center cursor-pointer border-2 border-brand-dark active:scale-90 transition-transform">
+                        <i class="fas fa-camera text-[10px]"></i>
+                    </label>
+                    <input type="file" id="create-group-avatar" class="hidden" accept="image/*" onchange="previewGroupAvatar(this, 'create-group-preview')">
                 </div>
-                <div>
-                    <label class="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-2 block">Nama Grup</label>
-                    <input type="text" id="create-group-name" placeholder="Masukkan nama grup..." class="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-brand-info">
-                </div>
-                <div>
-                    <label class="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-2 block">Deskripsi Grup</label>
-                    <textarea id="create-group-desc" rows="2" placeholder="Tujuan grup ini..." class="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-brand-info resize-none"></textarea>
-                </div>
-                <button onclick="prosesCreateGroup()" id="btn-submit-group" class="w-full bg-gradient-to-r from-brand-info to-brand-accent text-white py-3.5 rounded-xl font-bold active:scale-95 transition-transform mt-2 shadow-[0_0_15px_rgba(0,240,255,0.3)]"><i class="fas fa-plus mr-2"></i> Buat Grup</button>
             </div>
+            <div>
+                <label class="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-2 block">Nama Grup</label>
+                <input type="text" id="create-group-name" placeholder="Masukkan nama grup..." class="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-brand-info">
+            </div>
+            <div>
+                <label class="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-2 block">Deskripsi Grup</label>
+                <textarea id="create-group-desc" rows="2" placeholder="Tujuan grup ini..." class="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-brand-info resize-none"></textarea>
+            </div>
+            <button onclick="prosesCreateGroup()" id="btn-submit-group" class="w-full bg-gradient-to-r from-brand-info to-brand-accent text-white py-3.5 rounded-xl font-bold active:scale-95 transition-transform mt-2 shadow-[0_0_15px_rgba(0,240,255,0.3)]"><i class="fas fa-plus mr-2"></i> Buat Grup</button>
         </div>
     </div>
+</div>
 
-    <!-- MODAL INFO GRUP / MANAJEMEN ANGGOTA -->
-    <div id="modal-group-info" class="fixed inset-0 z-[300] hidden items-end sm:items-center justify-center bg-black/90 backdrop-blur-md px-0 sm:px-6 transition-all duration-300">
-        <div class="bg-brand-card w-full max-w-md sm:rounded-3xl rounded-t-3xl border border-white/10 p-6 shadow-2xl relative modal-anim max-h-[85vh] flex flex-col">
-            <button onclick="closeGroupInfoModal()" class="absolute top-4 right-4 text-gray-500 w-8 h-8 flex justify-center items-center rounded-full bg-white/5 z-10"><i class="fas fa-times"></i></button>
-            
-            <div class="overflow-y-auto hide-scroll flex-1 pb-4">
-                <div class="text-center mb-6 mt-4 relative">
-                    <div class="relative inline-block">
-                        <img id="info-group-avatar" src="" class="w-24 h-24 rounded-full object-cover border-4 border-brand-dark shadow-lg">
-                        <label id="btn-edit-group-avatar" for="edit-group-avatar" class="hidden absolute bottom-0 right-0 bg-brand-info text-brand-dark w-8 h-8 rounded-full flex items-center justify-center cursor-pointer border-2 border-brand-dark active:scale-90 transition-transform">
-                            <i class="fas fa-camera text-xs"></i>
-                        </label>
-                        <input type="file" id="edit-group-avatar" class="hidden" accept="image/*">
-                    </div>
-                    <h3 id="info-group-name" class="text-xl font-extrabold text-white mt-3">Nama Grup</h3>
-                    <p id="info-group-desc" class="text-[11px] text-gray-400 mt-1 px-4">Deskripsi Grup</p>
-                    <button id="btn-edit-group-info" onclick="toggleEditGroupInfo()" class="hidden mx-auto mt-3 bg-white/10 border border-white/10 text-white text-[10px] px-4 py-2 rounded-full font-bold active:scale-95"><i class="fas fa-pen mr-1"></i> Edit Info Grup</button>
-                    
-                    <div id="form-edit-group-info" class="hidden mt-4 space-y-3 text-left bg-black/30 p-4 rounded-xl border border-white/5">
-                        <input type="text" id="input-edit-group-name" placeholder="Nama Baru..." class="w-full bg-black/50 border border-white/10 rounded-lg px-3 py-2 text-xs text-white outline-none focus:border-brand-info">
-                        <textarea id="input-edit-group-desc" rows="2" placeholder="Deskripsi Baru..." class="w-full bg-black/50 border border-white/10 rounded-lg px-3 py-2 text-xs text-white outline-none focus:border-brand-info resize-none"></textarea>
-                        <button id="btn-save-group-info" onclick="saveGroupInfo()" class="w-full bg-brand-info text-brand-dark text-xs font-bold py-2 rounded-lg active:scale-95">Simpan Perubahan</button>
-                    </div>
+<!-- MODAL INFO GRUP / MANAJEMEN ANGGOTA -->
+<div id="modal-group-info" class="fixed inset-0 z-[300] hidden items-end sm:items-center justify-center bg-black/90 backdrop-blur-md px-0 sm:px-6 transition-all duration-300">
+    <div class="bg-brand-card w-full max-w-md sm:rounded-3xl rounded-t-3xl border border-white/10 p-6 shadow-2xl relative modal-anim max-h-[85vh] flex flex-col">
+        <button onclick="closeGroupInfoModal()" class="absolute top-4 right-4 text-gray-500 w-8 h-8 flex justify-center items-center rounded-full bg-white/5 z-10"><i class="fas fa-times"></i></button>
+        
+        <div class="overflow-y-auto hide-scroll flex-1 pb-4">
+            <div class="text-center mb-6 mt-4 relative">
+                <div class="relative inline-block">
+                    <img id="info-group-avatar" src="" class="w-24 h-24 rounded-full object-cover border-4 border-brand-dark shadow-lg">
+                    <label id="btn-edit-group-avatar" for="edit-group-avatar" class="hidden absolute bottom-0 right-0 bg-brand-info text-brand-dark w-8 h-8 rounded-full flex items-center justify-center cursor-pointer border-2 border-brand-dark active:scale-90 transition-transform">
+                        <i class="fas fa-camera text-xs"></i>
+                    </label>
+                    <input type="file" id="edit-group-avatar" class="hidden" accept="image/*">
                 </div>
-
-                <div id="section-invite-group" class="hidden mb-6 border-t border-white/10 pt-4">
-                    <h4 class="text-xs font-bold text-white mb-3"><i class="fas fa-user-plus mr-1 text-brand-success"></i> Undang Anggota</h4>
-                    <div class="flex gap-2">
-                        <input type="text" id="invite-user-nickname" placeholder="Ketik Nickname User persis..." class="flex-1 bg-black/30 border border-white/10 rounded-xl px-4 py-2 text-xs text-white outline-none focus:border-brand-success">
-                        <button id="btn-invite-user" onclick="inviteToGroup()" class="bg-brand-success text-white px-4 rounded-xl font-bold active:scale-95 text-xs">Undang</button>
-                    </div>
-                </div>
-
-                <div class="border-t border-white/10 pt-4">
-                    <h4 class="text-xs font-bold text-white mb-3"><i class="fas fa-users mr-1 text-brand-purple"></i> Anggota Grup (<span id="info-group-count">0</span>)</h4>
-                    <div id="group-member-list" class="space-y-2"></div>
-                </div>
+                <h3 id="info-group-name" class="text-xl font-extrabold text-white mt-3">Nama Grup</h3>
+                <p id="info-group-desc" class="text-[11px] text-gray-400 mt-1 px-4">Deskripsi Grup</p>
+                <button id="btn-edit-group-info" onclick="toggleEditGroupInfo()" class="hidden mx-auto mt-3 bg-white/10 border border-white/10 text-white text-[10px] px-4 py-2 rounded-full font-bold active:scale-95"><i class="fas fa-pen mr-1"></i> Edit Info Grup</button>
                 
-                <button id="btn-leave-group" onclick="keluarDariGrup()" class="w-full mt-6 bg-red-500/10 border border-red-500/30 text-red-500 py-3 rounded-xl text-xs font-bold active:scale-95 transition-all"><i class="fas fa-sign-out-alt mr-2"></i> Keluar dari Grup</button>
+                <div id="form-edit-group-info" class="hidden mt-4 space-y-3 text-left bg-black/30 p-4 rounded-xl border border-white/5">
+                    <input type="text" id="input-edit-group-name" placeholder="Nama Baru..." class="w-full bg-black/50 border border-white/10 rounded-lg px-3 py-2 text-xs text-white outline-none focus:border-brand-info">
+                    <textarea id="input-edit-group-desc" rows="2" placeholder="Deskripsi Baru..." class="w-full bg-black/50 border border-white/10 rounded-lg px-3 py-2 text-xs text-white outline-none focus:border-brand-info resize-none"></textarea>
+                    <button id="btn-save-group-info" onclick="saveGroupInfo()" class="w-full bg-brand-info text-brand-dark text-xs font-bold py-2 rounded-lg active:scale-95">Simpan Perubahan</button>
+                </div>
             </div>
+
+            <div id="section-invite-group" class="hidden mb-6 border-t border-white/10 pt-4">
+                <h4 class="text-xs font-bold text-white mb-3"><i class="fas fa-user-plus mr-1 text-brand-success"></i> Undang Anggota</h4>
+                <div class="flex gap-2">
+                    <input type="text" id="invite-user-nickname" placeholder="Ketik Nickname User persis..." class="flex-1 bg-black/30 border border-white/10 rounded-xl px-4 py-2 text-xs text-white outline-none focus:border-brand-success">
+                    <button id="btn-invite-user" onclick="inviteToGroup()" class="bg-brand-success text-white px-4 rounded-xl font-bold active:scale-95 text-xs">Undang</button>
+                </div>
+            </div>
+
+            <div class="border-t border-white/10 pt-4">
+                <h4 class="text-xs font-bold text-white mb-3"><i class="fas fa-users mr-1 text-brand-purple"></i> Anggota Grup (<span id="info-group-count">0</span>)</h4>
+                <div id="group-member-list" class="space-y-2"></div>
+            </div>
+            
+            <button id="btn-leave-group" onclick="keluarDariGrup()" class="w-full mt-6 bg-red-500/10 border border-red-500/30 text-red-500 py-3 rounded-xl text-xs font-bold active:scale-95 transition-all"><i class="fas fa-sign-out-alt mr-2"></i> Keluar dari Grup</button>
         </div>
     </div>
+</div>
 
-    <!-- BOTTOM NAVIGATION -->
     <nav class="fixed bottom-0 left-0 w-full glass z-40 flex justify-around items-center h-[70px] px-1 shadow-[0_-10px_30px_rgba(0,0,0,0.5)]">
         <a href="#home" onclick="switchTab('home', event)" class="nav-item flex flex-col items-center justify-center flex-1 text-gray-500 transition-colors"><i class="fas fa-home text-xl mb-1"></i><span class="text-[9px] font-bold mt-0.5">Home</span></a>
         <a href="#info" onclick="switchTab('info', event)" class="nav-item flex flex-col items-center justify-center flex-1 text-gray-500 transition-colors"><i class="fas fa-bullhorn text-xl mb-1"></i><span class="text-[9px] font-bold mt-0.5">Info</span></a>
@@ -697,20 +656,13 @@
         <a href="#profile" onclick="switchTab('profile', event)" class="nav-item flex flex-col items-center justify-center flex-1 text-gray-500 transition-colors"><i class="fas fa-user-circle text-xl mb-1"></i><span class="text-[9px] font-bold mt-0.5">Profil</span></a>
     </nav>
 
-    <!-- MAIN JAVASCRIPT LOGIC -->
     <script>
-        // --- ORACLE ORDS CONNECTION SETUP ---
-        // Ganti URL di bawah dengan API Oracle Cloud Anda
         const ORACLE_API = "https://g5b2c58961dbd6e-au2hubdb.adb.ap-batam-1.oraclecloudapps.com/ords/admin/";
 
-        // Fungsi pusat untuk menggantikan Supabase
-        // Fitur keamanan trailing slash (/) sudah diterapkan otomatis di sini
         async function oracleFetch(table, options = {}) {
             try {
                 const baseUrl = ORACLE_API.trim().replace(/\/$/, ''); 
                 let endpoint = table.replace(/^\//, ''); 
-                
-                // Menambahkan slash agar tidak terjadi redirect (CORS Error)
                 if (endpoint.includes('?') && !endpoint.includes('/?')) {
                     endpoint = endpoint.replace('?', '/?');
                 } else if (!endpoint.includes('?') && !endpoint.endsWith('/')) {
@@ -731,20 +683,20 @@
             }
         }
 
-        // --- GLOBAL VARIABLES ---
         let currentUser = null, userProfile = null, isAuthLogin = true;
         let tabSebelumnya = 'home';
         let dataRipperGlobal = [], isRipperExpanded = localStorage.getItem('statusLihatSemua') === 'true';
         let viewedUserId = null; 
         
         let allVideosData = []; 
+        let newUploads = []; 
         let obs = null, activeVideoId = null, lastTap = 0, isGlobalMuted = true;
         let replyingToId = null, replyingToName = null;
         let currentVideoIndex = 0; 
         const BATCH_SIZE = 5; 
 
         let activeChatUserId = null;
-        let chatInterval = null; // Pengganti Realtime Channel Supabase
+        let chatInterval = null;
         let unreadCheckInterval = null;
         let onlineUsersMap = new Map();
         let selectedMessageId = null;
@@ -752,7 +704,6 @@
         let activeGroupId = null;
         let activeGroupRole = 'member';
 
-        // --- STATIC DATA ---
         const services = [
             { id: 1, name: 'Joki Ballroom', price: 7500, label: '', desc: 'Estimasi pengerjaan 2 jam.' },
             { id: 2, name: 'Paket Joki AFK (Island/Japan/Hawai)', price: 65000, label: '', desc: 'Sesuai spek dan pesanan.' },
@@ -765,7 +716,6 @@
             { t: "Apakah harga Pricelist sudah termasuk biaya admin?", j: "Ya, sudah Include biaya Rekber NIKKY." }
         ];
 
-        // --- UTILITY FUNCTIONS ---
         function formatCaption(text) {
             if(!text) return '';
             return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;").replace(/\n/g, "<br>");
@@ -826,18 +776,15 @@
             else { input.type = "password"; icon.classList.replace('fa-eye-slash', 'fa-eye'); }
         }
 
-        // --- USER RELATIONSHIP (BLOCK / FOLLOW) ---
         async function fetchBlockedUsers() {
             if(!currentUser) return;
-            const query = encodeURIComponent(JSON.stringify({ blocker_id: currentUser.id }));
-            const res = await oracleFetch(`blocks/?q=${query}`);
+            const res = await oracleFetch(`blocks/?q={"blocker_id":"${currentUser.id}"}`);
             if(res && res.items) blockedUsersList = res.items.map(d => d.blocked_id);
         }
 
         async function checkGlobalUnreadMessages() {
             if(!currentUser) return;
-            const query = encodeURIComponent(JSON.stringify({ receiver_id: currentUser.id, is_read: 0 }));
-            const res = await oracleFetch(`messages/?q=${query}`);
+            const res = await oracleFetch(`messages/?q={"receiver_id":"${currentUser.id}","is_read":0}`);
             const badge = document.getElementById('global-chat-badge');
             if(badge) {
                 if(res && res.items && res.items.length > 0) {
@@ -861,8 +808,7 @@
             container.innerHTML = '<div class="flex justify-center mt-10"><i class="fas fa-spinner fa-spin text-brand-accent text-xl"></i></div>';
             
             const queryObj = type === 'mengikuti' ? { follower_id: targetId } : { following_id: targetId };
-            const queryStr = encodeURIComponent(JSON.stringify(queryObj));
-            const res = await oracleFetch(`follows/?q=${queryStr}`);
+            const res = await oracleFetch(`follows/?q=${JSON.stringify(queryObj)}`);
             
             if (!res || !res.items || res.items.length === 0) {
                 container.innerHTML = `<p class="text-center text-xs text-gray-500 mt-10">Belum ada ${type}.</p>`;
@@ -898,8 +844,7 @@
                 if(blockedUsersList.includes(userId)) {
                     if(confirm("Buka blokir pengguna ini?")) {
                         btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memproses...';
-                        const query = encodeURIComponent(JSON.stringify({ blocker_id: currentUser.id, blocked_id: userId }));
-                        const res = await oracleFetch(`blocks/?q=${query}`);
+                        const res = await oracleFetch(`blocks/?q={"blocker_id":"${currentUser.id}","blocked_id":"${userId}"}`);
                         if (res && res.items.length > 0) await oracleFetch(`blocks/${res.items[0].id}/`, {method:'DELETE'});
                         blockedUsersList = blockedUsersList.filter(id => id !== userId);
                         showToast("Blokir dibuka", "success"); checkBlockStatusUI();
@@ -927,11 +872,9 @@
             }
         }
 
-        // --- AUTHENTICATION & SESSION ---
         async function checkSession() {
             document.getElementById('profile-loading').classList.remove('hidden'); document.getElementById('profile-loading').classList.add('flex');
             document.querySelectorAll('#profile-logged-in').forEach(el => el.classList.add('hidden')); document.getElementById('profile-logged-out').classList.add('hidden');
-            
             const savedUserId = localStorage.getItem('au2hub_user_id');
             document.getElementById('profile-loading').classList.add('hidden'); document.getElementById('profile-loading').classList.remove('flex');
 
@@ -939,8 +882,6 @@
                 currentUser = { id: savedUserId }; 
                 await fetchProfile(); 
                 fetchBlockedUsers();
-                
-                // Mulai polling untuk notifikasi chat masuk (Menggantikan channel supabase)
                 if(unreadCheckInterval) clearInterval(unreadCheckInterval);
                 unreadCheckInterval = setInterval(checkGlobalUnreadMessages, 10000);
                 checkGlobalUnreadMessages();
@@ -954,8 +895,7 @@
         }
 
         async function fetchProfile() {
-            const query = encodeURIComponent(JSON.stringify({ id: currentUser.id }));
-            const res = await oracleFetch(`profiles/?q=${query}`);
+            const res = await oracleFetch(`profiles/?q={"id":"${currentUser.id}"}`);
             if (res && res.items && res.items.length > 0) { userProfile = res.items[0]; } 
             else { userProfile = { nickname: 'Player', avatar_url: '', bio: 'Halo! Salam kenal.' }; }
             
@@ -1000,7 +940,6 @@
             if(currentUser) fetchFollowStats(currentUser.id);
         }
 
-        // --- PROFILE LOGIC ---
         async function renderProfileVideos(targetUserId = null) {
             const grid = document.getElementById('profile-video-grid'); if (!grid) return;
             const uidToRender = targetUserId || (currentUser ? currentUser.id : null);
@@ -1060,13 +999,11 @@
                 const compressedBlob = await compressImage(file); 
                 const base64data = await new Promise((resolve) => { const reader = new FileReader(); reader.readAsDataURL(compressedBlob); reader.onloadend = () => resolve(reader.result); });
                 
-                // Asumsi endpoint custom backend ini tetap ada
                 const response = await fetch('/api/upload-foto', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fileBase64: base64data, userId: currentUser.id }) });
                 if (!response.ok) throw new Error(await response.text());
                 const data = await response.json(); if (!data.success) throw new Error(data.error);
                 
-                const query = encodeURIComponent(JSON.stringify({ id: currentUser.id }));
-                const res = await oracleFetch(`profiles/?q=${query}`);
+                const res = await oracleFetch(`profiles/?q={"id":"${currentUser.id}"}`);
                 if(res && res.items.length) {
                     let prof = res.items[0]; prof.avatar_url = data.url;
                     await oracleFetch(`profiles/${currentUser.id}/`, { method: 'PUT', body: JSON.stringify(prof) });
@@ -1095,7 +1032,6 @@
             if(isGlobalMuted) showToast("Mute: Suara Dimatikan", "info"); else showToast("Unmute: Suara Dinyalakan", "success");
         }
 
-        // --- NAVIGATION SYSTEM ---
         function switchTab(tabId, event = null, isPush = true) {
             if (event) event.preventDefault();
             if (tabId === 'profile' && event !== null && currentUser) {
@@ -1164,7 +1100,6 @@
             }
         }
 
-        // --- MISC UI FUNCTIONS ---
         function openModalEvent() { history.pushState({ popup: 'modal' }, null, '#event'); const modal = document.getElementById('modal-event'); modal.classList.remove('hidden'); modal.classList.add('flex'); document.body.style.overflow = 'hidden'; setTimeout(() => { const carousel = document.getElementById('image-carousel'); if(carousel) { carousel.scrollLeft = 0; updateCarouselDots(); } }, 50); }
         function closeModalEvent() { if (window.location.hash === '#event') { history.back(); } else { const modal = document.getElementById('modal-event'); modal.classList.add('hidden'); modal.classList.remove('flex'); document.body.style.overflow = 'auto'; } }
         function openUploadModal() { history.pushState({ popup: 'upload' }, null, '#upload'); const m = document.getElementById('modal-upload'); m.classList.remove('hidden'); m.classList.add('flex'); }
@@ -1186,10 +1121,8 @@
         async function openUserProfile(userId) {
             viewedUserId = userId; switchTab('profile', null, false);
             document.getElementById('profile-loading').classList.remove('hidden'); document.querySelectorAll('#profile-logged-in').forEach(el => el.classList.add('hidden'));
-            
             const isOwn = (userId === currentUser?.id);
-            const query = encodeURIComponent(JSON.stringify({ id: userId }));
-            const res = await oracleFetch(`profiles/?q=${query}`);
+            const res = await oracleFetch(`profiles/?q={"id":"${userId}"}`);
             const data = res && res.items ? res.items[0] : null;
             
             const elNick2 = document.getElementById('profile-nickname'); if(elNick2) elNick2.innerText = "@" + (data?.nickname || "Player");
@@ -1220,8 +1153,7 @@
         }
 
         async function kirimPesanPribadi(userId) {
-            const query = encodeURIComponent(JSON.stringify({ id: userId }));
-            const res = await oracleFetch(`profiles/?q=${query}`);
+            const res = await oracleFetch(`profiles/?q={"id":"${userId}"}`);
             const data = res && res.items ? res.items[0] : null;
             if (data) {
                 const ava = data.avatar_url || `https://ui-avatars.com/api/?name=${data.nickname}&background=1A1133&color=fff`;
@@ -1230,7 +1162,6 @@
             }
         }
 
-        // --- FEED / VIDEO LOGIC ---
         let currentProfileVideos = []; let profileFeedIndex = 0; let floatObs = null;
 
         function setupFloatVideoObserver() {
@@ -1373,9 +1304,7 @@
             setTimeout(() => { btnSalin.innerHTML = teksAsli; btnSalin.classList.replace('text-brand-success', 'text-brand-info'); btnSalin.classList.replace('bg-brand-success/10', 'bg-brand-info/10'); btnSalin.classList.replace('border-brand-success/30', 'border-brand-info/30'); }, 2000);
         }
 
-        // --- DATABASE RIPPER ---
         async function muatDataRipper() {
-            // Asumsi API Ripper tetap ada di backend sendiri atau bisa diubah ke oracleFetch
             const linkAPI = "/api/ripper"; const container = document.getElementById('ripper-container'); const dataTersimpan = localStorage.getItem('ripperCache');
             if (dataTersimpan) { dataRipperGlobal = JSON.parse(dataTersimpan); renderRippers(dataRipperGlobal, false); } 
             else { container.innerHTML = '<div class="text-center py-10 text-xs text-brand-info animate-pulse"><i class="fas fa-sync fa-spin mb-2 text-2xl"></i><br>Menyiapkan Database Pertama Kali...</div>'; }
@@ -1415,7 +1344,6 @@
             dots.forEach((dot, index) => { if (index === activeIndex) { dot.className = "dot-indicator h-1.5 rounded-full transition-all duration-300 w-4 bg-brand-accent"; } else { dot.className = "dot-indicator h-1.5 rounded-full transition-all duration-300 w-1.5 bg-white/40"; } });
         }
 
-        // --- COMMENTS SYSTEM ---
         function openComments(id) { history.pushState({ popup: 'comments' }, null, '#comments'); activeVideoId = id; document.getElementById('comment-drawer').classList.add('open'); loadComments(id); }
         function closeComments() { if (window.location.hash === '#comments') { history.back(); } else { document.getElementById('comment-drawer').classList.remove('open'); cancelReply(); } }
 
@@ -1424,8 +1352,8 @@
             cancelReply();
 
             try {
-                const query = encodeURIComponent(JSON.stringify({ video_id: videoId }));
-                const res = await oracleFetch(`comments/?q=${query}`);
+                // Assuming you have an endpoint for comments API OR we fetch directly from Oracle:
+                const res = await oracleFetch(`comments/?q={"video_id":"${videoId}"}`);
                 const data = res && res.items ? res.items : [];
                 
                 document.getElementById('drawer-comment-count').innerText = data.length || 0;
@@ -1529,8 +1457,7 @@
 
         async function updateCommentCountUI(videoId, containerDiv) {
             try {
-                const query = encodeURIComponent(JSON.stringify({ video_id: videoId }));
-                const res = await oracleFetch(`comments/?q=${query}`);
+                const res = await oracleFetch(`comments/?q={"video_id":"${videoId}"}`);
                 const countSpan = containerDiv.querySelector('.comment-count-display');
                 if (countSpan && res && res.items) countSpan.innerText = res.items.length;
             } catch(e) {}
@@ -1559,8 +1486,7 @@
 
         async function fetchCommentLikes(cid) {
             try { 
-                const query = encodeURIComponent(JSON.stringify({ comment_id: cid }));
-                const res = await oracleFetch(`comment_likes/?q=${query}`);
+                const res = await oracleFetch(`comment_likes/?q={"comment_id":"${cid}"}`);
                 const span = document.querySelector(`.comment-like-count[data-cid="${cid}"]`); 
                 if(span && res && res.items) span.innerText = res.items.length; 
             } catch(e) { console.error("Gagal mengambil like komentar", e); }
@@ -1584,8 +1510,7 @@
         async function updateLikeCountUI(videoId, containerDiv) {
             if (!containerDiv) return;
             try {
-                const query = encodeURIComponent(JSON.stringify({ video_id: videoId }));
-                const res = await oracleFetch(`video_likes/?q=${query}`);
+                const res = await oracleFetch(`video_likes/?q={"video_id":"${videoId}"}`);
                 const countSpan = containerDiv.querySelector('.like-count-display');
                 if (countSpan && res && res.items) countSpan.innerText = res.items.length;
                 if(localStorage.getItem(`liked_${videoId}`)) { containerDiv.querySelector('i').classList.replace('text-white', 'text-brand-accent'); }
@@ -1722,29 +1647,179 @@
             });
         }
 
-        async function prosesUploadVideo() {
-            if (!currentUser) return openAuthModal();
-            const fileInput = document.getElementById('input-video-file'); const captionInput = document.getElementById('input-video-caption'); const file = fileInput.files[0];
-            if (!file) return showToast("Pilih video dulu!", "error");
+        function sendTypingStatus() { } // Typing indicator disabled for purely REST API
 
-            const btn = document.querySelector('button[onclick="prosesUploadVideo()"]'); btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>'; isUploading = true;
-
-            try {
-                const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent(file.name)}&filetype=${encodeURIComponent(file.type)}`);
-                const dataUrl = await resUrl.json();
-                await fetch(dataUrl.uploadUrl, { method: 'PUT', body: file, headers: { 'Content-Type': file.type } });
-
-                const payload = { id: 'vid_' + Date.now(), user_id: currentUser.id, video_url: dataUrl.finalVideoUrl, caption: captionInput.value || "" };
-                const dbRes = await oracleFetch('videos/', { method: 'POST', body: JSON.stringify(payload) });
-                if (!dbRes) throw new Error("Gagal menyimpan data ke database Oracle");
-
-                showToast("Berhasil diposting!", "success"); fileInput.value = ''; captionInput.value = ''; closeUploadModal(); allVideosData = []; 
-                if (tabSebelumnya && tabSebelumnya !== 'sosial' && tabSebelumnya !== 'upload') { switchTab(tabSebelumnya); } else { switchTab('sosial'); }
-                loadVideos();
-            } catch (err) { showToast("Error: " + err.message, "error"); } finally { btn.disabled = false; btn.innerHTML = '<span>POSTING SEKARANG</span><i class="fas fa-paper-plane"></i>'; isUploading = false; }
+        function openEditProfileModal() {
+            if(!currentUser) return;
+            document.getElementById('edit-nick').value = userProfile?.nickname || ''; document.getElementById('edit-bio').value = userProfile?.bio || ''; document.getElementById('edit-pass').value = '';
+            document.getElementById('modal-edit-profile').classList.remove('hidden'); document.getElementById('modal-edit-profile').classList.add('flex'); history.pushState({ popup: 'edit_profile' }, null, '#edit');
         }
 
-        // --- STORY/STATUS SYSTEM ---
+        function closeEditProfileModal() {
+            if(window.location.hash === '#edit') history.back();
+            else { const m = document.getElementById('modal-edit-profile'); m.classList.add('hidden'); m.classList.remove('flex'); }
+        }
+
+        async function saveProfileInfo() {
+            const btn = document.querySelector('button[onclick="saveProfileInfo()"]'); const originalText = btn.innerHTML; btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Menyimpan...'; btn.disabled = true;
+
+            try {
+                const newNick = document.getElementById('edit-nick').value.trim(); const newBio = document.getElementById('edit-bio').value.trim(); const newPass = document.getElementById('edit-pass').value.trim();
+                if(!newNick) { showToast("Nickname tidak boleh kosong!", "error"); return; }
+
+                const res = await oracleFetch(`profiles/?q={"id":"${currentUser.id}"}`);
+                if (res && res.items.length) {
+                    let prof = res.items[0]; prof.nickname = newNick; prof.bio = newBio;
+                    if(newPass) prof.password = newPass;
+                    await oracleFetch(`profiles/${currentUser.id}/`, { method: 'PUT', body: JSON.stringify(prof) });
+                }
+
+                await fetchProfile(); updateUIForLoggedIn(); closeEditProfileModal(); showToast("Profil berhasil diperbarui!", "success");
+            } catch (err) { showToast("Terjadi Kesalahan: " + err.message, "error"); } 
+            finally { btn.innerHTML = originalText; btn.disabled = false; }
+        }
+
+        async function fetchFollowStats(targetUserId) {
+            const resFollowers = await oracleFetch(`follows/?q={"following_id":"${targetUserId}"}`);
+            const resFollowing = await oracleFetch(`follows/?q={"follower_id":"${targetUserId}"}`);
+            
+            const elPengikut = document.getElementById('stat-pengikut'); if(elPengikut) elPengikut.innerText = resFollowers && resFollowers.items ? resFollowers.items.length : 0;
+            const elMengikuti = document.getElementById('stat-mengikuti'); if(elMengikuti) elMengikuti.innerText = resFollowing && resFollowing.items ? resFollowing.items.length : 0;
+        }
+
+        async function toggleFollow(targetUserId) {
+            if (!currentUser) return openAuthModal(); if (currentUser.id === targetUserId) return;
+            const btns = document.querySelectorAll('#btn-follow'); btns.forEach(btn => btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>');
+
+            const res = await oracleFetch(`follows/?q={"follower_id":"${currentUser.id}","following_id":"${targetUserId}"}`);
+
+            if (res && res.items && res.items.length > 0) {
+                await oracleFetch(`follows/${res.items[0].id}/`, { method: 'DELETE' });
+                btns.forEach(btn => { btn.innerText = 'IKUTI'; btn.classList.replace('bg-white/10', 'bg-brand-accent'); }); showToast("Batal mengikuti", "info");
+            } else {
+                await oracleFetch(`follows/`, { method: 'POST', body: JSON.stringify({id: 'flw_'+Date.now(), follower_id: currentUser.id, following_id: targetUserId}) });
+                btns.forEach(btn => { btn.innerText = 'MENGIKUTI'; btn.classList.replace('bg-brand-accent', 'bg-white/10'); }); showToast("Berhasil mengikuti!", "success");
+            }
+            fetchFollowStats(targetUserId);
+        }
+        
+        async function feedToggleFollow(targetUserId, btnElement) {
+            if (!currentUser) return openAuthModal();
+            if (currentUser.id === targetUserId) { showToast("Ini video milikmu sendiri!", "info"); return; }
+            const icon = btnElement.querySelector('i'); icon.className = 'fas fa-spinner fa-spin text-[10px]';
+            try {
+                await toggleFollow(targetUserId); 
+                btnElement.classList.add('scale-0', 'opacity-0'); setTimeout(() => { btnElement.style.display = 'none'; }, 300);
+            } catch(e) { icon.className = 'fas fa-plus text-[10px]'; }
+        }
+
+        async function searchUsersForChat(query) {
+            if (!query.trim()) return loadChatList();
+            const container = document.getElementById('chat-list-container'); container.innerHTML = '<div class="flex justify-center mt-6"><i class="fas fa-spinner fa-spin text-brand-accent text-xl"></i></div>';
+            
+            const res = await oracleFetch(`profiles/?q={"nickname":{"$like":"%${query}%"}}`);
+            const data = res && res.items ? res.items : [];
+            
+            if (data.length > 0) {
+                let html = '<p class="text-[10px] text-gray-500 font-bold mb-2 ml-1 uppercase">Hasil Pencarian</p>';
+                data.forEach(p => {
+                    const ava = p.avatar_url || `https://ui-avatars.com/api/?name=${p.nickname}&background=1A1133&color=fff`;
+                    html += `
+                    <div onclick="openChatRoom('${p.id}', '${p.nickname.replace(/'/g, "\\'")}', '${ava}')" class="flex items-center p-3 hover:bg-white/5 cursor-pointer rounded-2xl transition-all">
+                        <img src="${ava}" class="w-10 h-10 rounded-full object-cover border border-white/10 shrink-0">
+                        <div class="ml-3"><h4 class="font-bold text-white text-xs">${p.nickname}</h4><p class="text-[10px] text-gray-400 truncate w-48">${p.bio || 'Pemain AU2'}</p></div>
+                    </div>`;
+                });
+                container.innerHTML = html;
+            } else { container.innerHTML = '<p class="text-center text-xs text-gray-500 mt-6">User tidak ditemukan.</p>'; }
+        }
+
+        function toggleWidget() {
+            const widget = document.getElementById('floating-widget');
+            if (widget.classList.contains('opacity-0')) {
+                history.pushState({ popup: 'widget' }, null, '#inbox'); widget.classList.remove('opacity-0', 'pointer-events-none', 'translate-y-8', 'scale-95'); document.getElementById('search-user-chat').value = ''; loadChatList();
+            } else { 
+                if (window.location.hash.startsWith('#inbox') || window.location.hash.startsWith('#chatroom')) { history.back(); } 
+                else { widget.classList.add('opacity-0', 'pointer-events-none', 'translate-y-8', 'scale-95'); closeChatRoom(false); }
+            }
+        }
+
+        function switchChatTab(tabName) {
+            const tabs = ['personal', 'group', 'status'];
+            tabs.forEach(t => {
+                const btn = document.getElementById(`tab-${t}`); const container = document.getElementById(`chat-${t}-container`);
+                if (t === tabName) { btn.classList.replace('text-gray-500', 'text-brand-accent'); btn.classList.replace('border-transparent', 'border-brand-accent'); container.classList.remove('hidden'); container.classList.add('block'); } 
+                else { btn.classList.replace('text-brand-accent', 'text-gray-500'); btn.classList.replace('border-brand-accent', 'border-transparent'); container.classList.remove('block'); container.classList.add('hidden'); }
+            });
+            const searchContainer = document.getElementById('chat-search-container');
+            if (tabName === 'status') { searchContainer.classList.add('hidden'); loadStories(); } else { searchContainer.classList.remove('hidden'); }
+        }
+
+        async function loadChatList() {
+            const cPersonal = document.getElementById('chat-personal-container'); const cGroup = document.getElementById('chat-group-container');
+            if (!currentUser) { cPersonal.innerHTML = `<div class="text-center mt-20 text-xs text-gray-500">Silakan login.</div>`; if (cGroup) cGroup.innerHTML = `<div class="text-center mt-20 text-xs text-gray-500">Silakan login.</div>`; return; }
+
+            cPersonal.innerHTML = '<div class="flex justify-center mt-10"><i class="fas fa-spinner fa-spin text-brand-accent text-2xl"></i></div>';
+            if (cGroup) cGroup.innerHTML = '<div class="flex justify-center mt-10"><i class="fas fa-spinner fa-spin text-brand-accent text-2xl"></i></div>';
+
+            try {
+                const [msgRes, myGroupsRes, profilesRes, storiesRes, groupsRes] = await Promise.all([
+                    oracleFetch(`messages/?limit=1000`), oracleFetch(`group_members/?limit=500`), oracleFetch(`profiles/?limit=1000`), oracleFetch(`stories/?limit=500`), oracleFetch(`groups/?limit=500`)
+                ]);
+
+                const allMessages = msgRes && msgRes.items ? msgRes.items : [];
+                const allMyGroupsData = myGroupsRes && myGroupsRes.items ? myGroupsRes.items.filter(g => g.user_id === currentUser.id) : [];
+                const dataProfiles = profilesRes && profilesRes.items ? profilesRes.items : [];
+                const dataStories = storiesRes && storiesRes.items ? storiesRes.items : [];
+                const dataGroups = groupsRes && groupsRes.items ? groupsRes.items : [];
+
+                const myGroupIds = allMyGroupsData.map(g => g.group_id);
+
+                const messages = allMessages.filter(msg => msg.sender_id === currentUser.id || msg.receiver_id === currentUser.id || (msg.group_id && myGroupIds.includes(msg.group_id)));
+
+                const unreadCounts = {}; const personalContacts = {}; const groupContacts = {};
+
+                messages.forEach(msg => {
+                    if (!msg.group_id && msg.receiver_id === currentUser.id && (msg.is_read === 0 || msg.is_read === 'false' || msg.is_read === false)) { unreadCounts[msg.sender_id] = (unreadCounts[msg.sender_id] || 0) + 1; }
+                    if (msg.group_id) { if (myGroupIds.includes(msg.group_id)) { if (!groupContacts[msg.group_id] || new Date(msg.created_at) > new Date(groupContacts[msg.group_id].created_at)) { groupContacts[msg.group_id] = msg; } } } 
+                    else { const partnerId = msg.sender_id === currentUser.id ? msg.receiver_id : msg.sender_id; if (partnerId) { if (!personalContacts[partnerId] || new Date(msg.created_at) > new Date(personalContacts[partnerId].created_at)) { personalContacts[partnerId] = msg; } } }
+                });
+
+                myGroupIds.forEach(gid => { if (!groupContacts[gid]) { groupContacts[gid] = { created_at: '1970-01-01T00:00:00Z', is_empty: true, message: 'Grup baru dibuat' }; } });
+
+                let personalList = [], groupList = [];
+                const partnerIds = Object.keys(personalContacts); const groupIds = Object.keys(groupContacts);
+
+                let usersWithStory = []; const past24h = new Date(Date.now() - 24 * 60 * 60 * 1000);
+                dataStories.forEach(s => { if (new Date(s.created_at) >= past24h) { if (!usersWithStory.includes(s.user_id)) usersWithStory.push(s.user_id); } });
+
+                if (partnerIds.length > 0) { partnerIds.forEach(pid => { const p = dataProfiles.find(x => x.id === pid) || { nickname: "User", avatar_url: "" }; personalList.push({ type: 'personal', id: pid, name: p.nickname, avatar: p.avatar_url, latestMsg: personalContacts[pid], unread: unreadCounts[pid] || 0, hasStory: usersWithStory.includes(pid) }); }); }
+                if (groupIds.length > 0) { groupIds.forEach(gid => { const g = dataGroups.find(x => x.id === gid) || { name: "Grup", avatar_url: "" }; groupList.push({ type: 'group', id: gid, name: g.name, avatar: g.avatar_url, latestMsg: groupContacts[gid], unread: 0 }); }); }
+
+                personalList.sort((a, b) => new Date(b.latestMsg.created_at) - new Date(a.latestMsg.created_at)); groupList.sort((a, b) => new Date(b.latestMsg.created_at) - new Date(a.latestMsg.created_at));
+                let deletedForMe = JSON.parse(localStorage.getItem('deleted_msgs') || '[]');
+                
+                const renderRow = (item, isGroup) => {
+                    const ava = item.avatar || `https://ui-avatars.com/api/?name=${item.name}&background=1A1133&color=fff`; const msg = item.latestMsg; let prefix = '', preview = msg.message;
+                    if (isGroup && !msg.is_empty) prefix = msg.sender_id === currentUser.id ? 'Anda: ' : '<i class="fas fa-user text-[8px] mr-1"></i> ';
+                    else if (!isGroup && msg.sender_id === currentUser.id) prefix = (msg.is_read || msg.is_read === 'true' || msg.is_read === 1) ? '<i class="fas fa-check-double text-brand-info mr-1 text-[10px]"></i>' : '<i class="fas fa-check text-white/60 mr-1 text-[10px]"></i>';
+                    if (preview === '[DELETED]') { preview = '<i class="fas fa-ban mr-1"></i> Dihapus'; prefix = ''; } else if (deletedForMe.includes(msg.id)) { preview = '...'; prefix = ''; } else if (preview.startsWith('[IMG]')) { preview = '<i class="fas fa-image mr-1"></i> Gambar'; }
+                    const badge = item.unread > 0 ? `<div class="bg-brand-accent text-white text-[9px] font-bold w-4 h-4 flex items-center justify-center rounded-full ml-2">${item.unread}</div>` : '';
+                    const icon = isGroup ? '<div class="absolute -bottom-1 -right-1 bg-brand-dark p-0.5 rounded-full"><i class="fas fa-users text-[10px] text-brand-info"></i></div>' : '';
+                    const ringClass = item.hasStory ? 'story-ring' : 'border border-white/10';
+                    const avatarClickCode = item.hasStory ? `event.stopPropagation(); viewStory('${item.id}', '${item.name}', '${ava}')` : `event.stopPropagation(); viewUserProfile('${item.id}')`;
+
+                    return `<div class="flex items-center p-3 bg-brand-card/50 hover:bg-white/5 cursor-pointer rounded-2xl border border-white/5 transition-all mb-2" onclick="openChatRoom('${item.id}', '${item.name.replace(/'/g, "\\'")}', '${ava}', ${isGroup})"><div class="relative shrink-0" onclick="${isGroup ? '' : avatarClickCode}"><div class="${isGroup ? 'border border-brand-accent/30 rounded-full' : ringClass}"><img src="${ava}" class="w-11 h-11 rounded-full object-cover border-2 border-brand-card"></div>${icon}</div><div class="flex-1 min-w-0 ml-3"><div class="flex justify-between items-center mb-1"><h4 class="font-bold text-white text-[13px] truncate">${item.name}</h4><div class="flex items-center"><span class="text-[9px] text-gray-500 shrink-0 ml-2">${msg.is_empty ? 'Baru' : timeAgo(msg.created_at)}</span>${badge}</div></div><p class="text-[11px] text-gray-400 truncate">${prefix} ${preview}</p></div></div>`;
+                };
+
+                cPersonal.innerHTML = personalList.length ? personalList.map(i => renderRow(i, false)).join('') : '<p class="text-center text-xs text-gray-500 mt-10">Belum ada obrolan.</p>';
+                if (cGroup) cGroup.innerHTML = groupList.length ? groupList.map(i => renderRow(i, true)).join('') : '<p class="text-center text-xs text-gray-500 mt-10">Belum ada grup.</p>';
+                
+                const badgeBtn = document.getElementById('global-chat-badge');
+                if(badgeBtn) { const totalUnread = Object.values(unreadCounts).reduce((a, b) => a + b, 0); if(totalUnread > 0) { badgeBtn.innerText = totalUnread > 99 ? '99+' : totalUnread; badgeBtn.classList.remove('hidden'); } else { badgeBtn.classList.add('hidden'); } }
+            } catch (e) { cPersonal.innerHTML = '<div class="p-6 text-center text-xs text-red-500">Gagal memuat pesan.</div>'; if (cGroup) cGroup.innerHTML = '<div class="p-6 text-center text-xs text-red-500">Gagal memuat grup.</div>'; }
+        }
+
         let currentActiveStories = []; let currentStoryTimer;
 
         async function loadStories() {
@@ -1816,8 +1891,6 @@
         function prevStory() { playStory(Math.max(0, currentActiveStories.currentIndex - 1)); }
         function closeStoryViewer() { clearTimeout(currentStoryTimer); const modal = document.getElementById('story-viewer-modal'); modal.classList.add('opacity-0'); setTimeout(() => { modal.classList.remove('flex'); modal.classList.add('hidden'); }, 300); }
 
-
-        // --- CHAT SYSTEM ---
         async function openChatRoom(targetId, name, avatar, isGroup = false) {
             if (!currentUser) return;
             if (isGroup) { activeGroupId = targetId; activeChatUserId = null; } else { activeChatUserId = targetId; activeGroupId = null; }
@@ -1910,8 +1983,7 @@
             if (type === 'me') {
                 let deletedForMe = JSON.parse(localStorage.getItem('deleted_msgs') || '[]'); deletedForMe.push(selectedMessageId); localStorage.setItem('deleted_msgs', JSON.stringify(deletedForMe)); showToast("Pesan dihapus untuk Anda.", "success");
             } else if (type === 'all') {
-                const query = encodeURIComponent(JSON.stringify({ id: selectedMessageId }));
-                const res = await oracleFetch(`messages/?q=${query}`);
+                const res = await oracleFetch(`messages/?q={"id":"${selectedMessageId}"}`);
                 if(res && res.items.length) { let m = res.items[0]; m.message = '[DELETED]'; await oracleFetch(`messages/${m.id}/`, {method:'PUT', body:JSON.stringify(m)}); }
             }
             if(activeChatUserId) openChatRoom(activeChatUserId, document.getElementById('active-chat-name').innerText, document.getElementById('active-chat-avatar').src);
@@ -1919,6 +1991,28 @@
 
         function scrollToBottomChat() { const container = document.getElementById('chat-messages-container'); container.scrollTop = container.scrollHeight; }
 
+        async function prosesUploadVideo() {
+            if (!currentUser) return openAuthModal();
+            const fileInput = document.getElementById('input-video-file'); const captionInput = document.getElementById('input-video-caption'); const file = fileInput.files[0];
+            if (!file) return showToast("Pilih video dulu!", "error");
+
+            const btn = document.querySelector('button[onclick="prosesUploadVideo()"]'); btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>'; isUploading = true;
+
+            try {
+                const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent(file.name)}&filetype=${encodeURIComponent(file.type)}`);
+                const dataUrl = await resUrl.json();
+                await fetch(dataUrl.uploadUrl, { method: 'PUT', body: file, headers: { 'Content-Type': file.type } });
+
+                const payload = { id: 'vid_' + Date.now(), user_id: currentUser.id, video_url: dataUrl.finalVideoUrl, caption: captionInput.value || "" };
+                const dbRes = await oracleFetch('videos/', { method: 'POST', body: JSON.stringify(payload) });
+                if (!dbRes) throw new Error("Gagal menyimpan data ke database Oracle");
+
+                showToast("Berhasil diposting!", "success"); fileInput.value = ''; captionInput.value = ''; closeUploadModal(); allVideosData = []; 
+                if (tabSebelumnya && tabSebelumnya !== 'sosial' && tabSebelumnya !== 'upload') { switchTab(tabSebelumnya); } else { switchTab('sosial'); }
+                loadVideos();
+            } catch (err) { showToast("Error: " + err.message, "error"); } finally { btn.disabled = false; btn.innerHTML = '<span>POSTING SEKARANG</span><i class="fas fa-paper-plane"></i>'; isUploading = false; }
+        }
+        
         async function uploadChatImage(event) {
             const file = event.target.files[0]; if (!file || (!activeChatUserId && !activeGroupId)) return;
             const isGroup = !!activeGroupId; const targetId = isGroup ? activeGroupId : activeChatUserId;
@@ -1938,9 +2032,24 @@
             } catch (err) { showToast("Gagal gambar", "error"); }
         }
 
-        // --- GROUP LOGIC ---
+        document.getElementById('chat-room-input').addEventListener('keypress', function (e) { if (e.key === 'Enter') document.getElementById('btn-send-room').click(); });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            checkSession(); const savedTab = localStorage.getItem('lastTab') || 'home'; switchTab(savedTab, null, false); 
+            if(typeof renderFaqs === 'function') renderFaqs(); if(typeof renderServices === 'function') renderServices(); if(typeof muatDataRipper === 'function') muatDataRipper();
+            
+            const urlParams = new URLSearchParams(window.location.hash.split('?')[1]); const shareVidId = urlParams.get('vid');
+            if (shareVidId) { switchTab('sosial'); setTimeout(() => { const vidData = allVideosData.find(v => v.id === shareVidId); if(vidData) playFloatingVideo(vidData.video_url, vidData.nickname, vidData.caption, vidData.id); }, 1500); }
+
+            let deferredPrompt; const installContainer = document.getElementById('install-container'); const btnInstallManual = document.getElementById('btn-install-manual');
+            window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredPrompt = e; if(installContainer) installContainer.classList.remove('hidden'); });
+            if(btnInstallManual) { btnInstallManual.addEventListener('click', async () => { if (deferredPrompt) { deferredPrompt.prompt(); await deferredPrompt.userChoice; deferredPrompt = null; installContainer.classList.add('hidden'); } }); }
+            if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js?v=3');
+        });
+
         function openCreateGroupModal() { document.getElementById('modal-create-group').classList.remove('hidden'); document.getElementById('modal-create-group').classList.add('flex'); }
         function closeCreateGroupModal() { document.getElementById('modal-create-group').classList.add('hidden'); document.getElementById('modal-create-group').classList.remove('flex'); }
+
         function previewGroupAvatar(input, imgId) { if (input.files && input.files[0]) { const reader = new FileReader(); reader.onload = function(e) { document.getElementById(imgId).src = e.target.result; }; reader.readAsDataURL(input.files[0]); } }
 
         async function prosesCreateGroup() {
@@ -1975,16 +2084,11 @@
 
         async function loadGroupInfo(groupId) {
             document.getElementById('modal-group-info').classList.remove('hidden'); document.getElementById('modal-group-info').classList.add('flex');
-            
-            const queryGroup = encodeURIComponent(JSON.stringify({ id: groupId }));
-            const gRes = await oracleFetch(`groups/?q=${queryGroup}`); 
-            const group = gRes && gRes.items ? gRes.items[0] : null; if(!group) return;
+            const gRes = await oracleFetch(`groups/?q={"id":"${groupId}"}`); const group = gRes && gRes.items ? gRes.items[0] : null; if(!group) return;
 
             document.getElementById('info-group-avatar').src = group.avatar_url; document.getElementById('info-group-name').innerText = group.name; document.getElementById('info-group-desc').innerText = group.description || "Tidak ada deskripsi";
 
-            const queryMembers = encodeURIComponent(JSON.stringify({ group_id: groupId }));
-            const mRes = await oracleFetch(`group_members/?q=${queryMembers}`); 
-            const members = mRes && mRes.items ? mRes.items : [];
+            const mRes = await oracleFetch(`group_members/?q={"group_id":"${groupId}"}`); const members = mRes && mRes.items ? mRes.items : [];
             const myData = members.find(m => m.user_id === currentUser.id); activeGroupRole = myData ? myData.role : 'member';
 
             if (activeGroupRole === 'admin') {
@@ -2020,8 +2124,7 @@
             if(!name) return showToast("Nama tidak boleh kosong!", "error");
 
             const btn = document.getElementById('btn-save-group-info'); btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-            const query = encodeURIComponent(JSON.stringify({ id: activeGroupId }));
-            const gRes = await oracleFetch(`groups/?q=${query}`);
+            const gRes = await oracleFetch(`groups/?q={"id":"${activeGroupId}"}`);
             if(gRes && gRes.items.length) {
                 let grp = gRes.items[0]; grp.name = name; grp.description = desc;
                 await oracleFetch(`groups/${grp.id}/`, {method:'PUT', body:JSON.stringify(grp)});
@@ -2035,8 +2138,7 @@
             const btn = document.getElementById('btn-invite-user'); btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
 
             try {
-                const query = encodeURIComponent(JSON.stringify({ nickname: { "$like": `%${nick}%` } }));
-                const res = await oracleFetch(`profiles/?q=${query}`);
+                const res = await oracleFetch(`profiles/?q={"nickname":{"$like":"%${nick}%"}}`);
                 if(!res || !res.items.length) throw new Error("User tidak ditemukan!");
 
                 await oracleFetch(`group_members/`, {method: 'POST', body: JSON.stringify({id: 'gm_'+Date.now(), group_id: activeGroupId, user_id: res.items[0].id, role: 'member'})});
@@ -2046,27 +2148,11 @@
 
         async function keluarDariGrup() {
             if(!confirm("Yakin ingin keluar dari grup ini?")) return;
-            const query = encodeURIComponent(JSON.stringify({ group_id: activeGroupId, user_id: currentUser.id }));
-            const mRes = await oracleFetch(`group_members/?q=${query}`);
+            const mRes = await oracleFetch(`group_members/?q={"group_id":"${activeGroupId}","user_id":"${currentUser.id}"}`);
             if(mRes && mRes.items.length) { await oracleFetch(`group_members/${mRes.items[0].id}/`, {method:'DELETE'}); }
             showToast("Berhasil keluar dari grup", "success"); closeGroupInfoModal(); closeChatRoom(); 
         }
-
-        // --- INIT LISTENER ---
-        document.getElementById('chat-room-input').addEventListener('keypress', function (e) { if (e.key === 'Enter') document.getElementById('btn-send-room').click(); });
-
-        document.addEventListener('DOMContentLoaded', () => {
-            checkSession(); const savedTab = localStorage.getItem('lastTab') || 'home'; switchTab(savedTab, null, false); 
-            if(typeof renderFaqs === 'function') renderFaqs(); if(typeof renderServices === 'function') renderServices(); if(typeof muatDataRipper === 'function') muatDataRipper();
-            
-            const urlParams = new URLSearchParams(window.location.hash.split('?')[1]); const shareVidId = urlParams.get('vid');
-            if (shareVidId) { switchTab('sosial'); setTimeout(() => { const vidData = allVideosData.find(v => v.id === shareVidId); if(vidData) playFloatingVideo(vidData.video_url, vidData.nickname, vidData.caption, vidData.id); }, 1500); }
-
-            let deferredPrompt; const installContainer = document.getElementById('install-container'); const btnInstallManual = document.getElementById('btn-install-manual');
-            window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredPrompt = e; if(installContainer) installContainer.classList.remove('hidden'); });
-            if(btnInstallManual) { btnInstallManual.addEventListener('click', async () => { if (deferredPrompt) { deferredPrompt.prompt(); await deferredPrompt.userChoice; deferredPrompt = null; installContainer.classList.add('hidden'); } }); }
-            if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js?v=3');
-        });
+        
     </script>
 </body>
 </html>
