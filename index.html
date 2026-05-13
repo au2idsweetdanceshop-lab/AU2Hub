@@ -1848,7 +1848,7 @@ function closeUploadModal() {
                             <div class="flex flex-col gap-4 items-center pointer-events-auto mb-2 mr-1">
                                 
                                 <!-- Like -->
-                                <div class="like-container flex flex-col items-center gap-0.5" data-vid="${vid.id}">
+                                <div class="like-container flex flex-col items-center gap-0.5" data-vid="${vid.id || vid.video_id}">
                                     <button onclick="likeVideo('${vid.id}', this)" class="hover:scale-110 transition-transform active:scale-90">
                                         <i class="fas fa-heart text-[32px] text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]"></i>
                                     </button>
@@ -1856,7 +1856,7 @@ function closeUploadModal() {
                                 </div>
 
                                 <!-- Komentar -->
-                                <div class="comment-count-container flex flex-col items-center gap-0.5" data-vid="${vid.id}">
+                                <div class="comment-count-container flex flex-col items-center gap-0.5" data-vid="${vid.id || vid.video_id}">
                                     <button onclick="openComments('${vid.id}')" class="hover:scale-110 transition-transform active:scale-90">
                                         <i class="fas fa-comment-dots text-[32px] text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]" style="transform: scaleX(-1);"></i>
                                     </button>
@@ -2540,7 +2540,7 @@ function closeUploadModal() {
                             </div>
 
                             <!-- 2. Like (Heart) -->
-                            <div class="like-container flex flex-col items-center gap-0.5" data-vid="${vid.id}">
+                            <div class="like-container flex flex-col items-center gap-0.5" data-vid="${vid.id || vid.video_id}">
                                 <button onclick="likeVideo('${vid.id}', this)" class="hover:scale-110 transition-transform active:scale-90">
                                     <i class="fas fa-heart text-[32px] text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]"></i>
                                 </button>
@@ -2548,7 +2548,7 @@ function closeUploadModal() {
                             </div>
 
                             <!-- 3. Komentar -->
-                            <div class="comment-count-container flex flex-col items-center gap-0.5" data-vid="${vid.id}">
+                            <div class="comment-count-container flex flex-col items-center gap-0.5" data-vid="${vid.id || vid.video_id}">
                                 <button onclick="openComments('${vid.id}')" class="hover:scale-110 transition-transform active:scale-90">
                                     <i class="fas fa-comment-dots text-[32px] text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]" style="transform: scaleX(-1);"></i>
                                 </button>
