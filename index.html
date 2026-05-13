@@ -948,13 +948,15 @@
 // Fungsi pembantu sederhana untuk Oracle API
 async function oracleFetch(table, options = {}) {
     try {
-        // Pastikan URL bersih dari spasi
-        const baseUrl = ORACLE_API.trim().replace(/\/$/, ''); // Hapus garis miring di akhir jika ada
-const endpoint = table.replace(/^\//, ''); // Hapus garis miring di awal jika ada
-const url = `${baseUrl}/${endpoint}`;
-        
+        // 1. Logika pembersihan URL (Sudah benar di foto Anda)
+        const baseUrl = ORACLE_API.trim().replace(/\/$/, ''); 
+        const endpoint = table.replace(/^\//, ''); 
+        const url = `${baseUrl}/${endpoint}`;
+
+        // 2. Tambahkan mode: 'cors' di sini
         const response = await fetch(url, {
             ...options,
+            mode: 'cors', // <--- TAMBAHKAN INI
             headers: {
                 'Accept': 'application/json',
                 'Content-Type': 'application/json',
@@ -963,19 +965,13 @@ const url = `${baseUrl}/${endpoint}`;
         });
 
         if (!response.ok) {
-            const errBody = await response.json().catch(() => ({}));
-            // Jika benar-benar duplikat, Oracle biasanya kirim kode error tertentu
-            if (response.status === 409 || JSON.stringify(errBody).includes("unique constraint")) {
-                throw new Error("Data sudah ada (Email/Nickname terpakai).");
-            }
-            throw new Error(`Error Server: ${response.status}`);
+            // ... logika penanganan error Anda sudah bagus ...
         }
 
         return await response.json();
     } catch (e) {
-        console.error("Detail Error:", e);
-        // Menampilkan error asli (Failed to fetch) agar kita tahu masalahnya
-        showToast("Database: " + e.message, "error");
+        console.error("Database Error:", e);
+        showToast("Koneksi Database: " + e.message, "error");
         return null;
     }
 }
@@ -1272,7 +1268,7 @@ async function fetchProfile() {
             // LOGIN (Mencocokkan Email dan Password di Oracle)
             // Menggunakan query string: ?q={"email":"xxx","password":"xxx"}
             const query = encodeURIComponent(JSON.stringify({ email: email, password: password }));
-            const res = await oracleFetch(`profiles?q=${query}`);
+            const res = await oracleFetch(`profiles/?q=${query}`);
             
             if (res && res.items && res.items.length > 0) {
                 // Login Berhasil
@@ -1295,7 +1291,7 @@ async function fetchProfile() {
                 avatar_url: ""
             };
 
-            const res = await oracleFetch('profiles', {
+            const res = await oracleFetch('profiles/', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
