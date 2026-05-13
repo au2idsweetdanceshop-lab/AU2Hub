@@ -1865,7 +1865,7 @@ function closeUploadModal() {
 
                                 <!-- Share -->
                                 <div class="flex flex-col items-center gap-0.5 mt-1">
-                                    <button onclick="shareVideo('${vid.id}', this)" class="hover:scale-110 transition-transform active:scale-90">
+                                    <button onclick="shareVideo('${vid.id || vid.video_id}', this)" class="hover:scale-110 transition-transform active:scale-90">
                                         <i class="fas fa-share text-[30px] text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]"></i>
                                     </button>
                                     <span class="text-white text-[11px] font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">Share</span>
@@ -2557,7 +2557,7 @@ function closeUploadModal() {
 
                             <!-- 4. Share -->
                             <div class="flex flex-col items-center gap-0.5 mt-1">
-                                <button onclick="shareVideo('${vid.id}', this)" class="hover:scale-110 transition-transform active:scale-90">
+                                <button onclick="shareVideo('${vid.id || vid.video_id}', this)" class="hover:scale-110 transition-transform active:scale-90">
                                     <i class="fas fa-share text-[30px] text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]"></i>
                                 </button>
                                 <span class="text-white text-[11px] font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">Share</span>
