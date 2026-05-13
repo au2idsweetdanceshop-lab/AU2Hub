@@ -3810,6 +3810,136 @@ function updateSeek(e, containerElement, video) {
         }
     }
 }
+</script>
+    <!-- ======================================================================= -->
+    <!-- SCRIPT SUNTIKAN SUPER OPTIMASI (TIKTOK FEEL & WHATSAPP FEEL)            -->
+    <!-- ======================================================================= -->
+    <script>
+        window.addEventListener('load', () => {
+            
+            // ---------------------------------------------------------
+            // 1. SUNTIKAN TIKTOK (OPTIMASI MEMORI VIDEO ANTI LAG)
+            // ---------------------------------------------------------
+            window.setupVideoObserver = function() {
+                if (window.obs) window.obs.disconnect();
+
+                window.obs = new IntersectionObserver(es => {
+                    es.forEach(e => { 
+                        const video = e.target;
+                        
+                        if (e.isIntersecting) {
+                            // Saat masuk layar: Kembalikan video
+                            if (!video.src && video.dataset.src) {
+                                video.src = video.dataset.src;
+                            }
+                            video.play().catch(() => {}); 
+                            video.muted = isGlobalMuted; 
+                            
+                            // Preload 1 video selanjutnya saja
+                            const nextContainer = video.closest('.snap-start')?.nextElementSibling;
+                            if(nextContainer) {
+                                const nextVid = nextContainer.querySelector('video');
+                                if(nextVid && !nextVid.src && nextVid.dataset.src) {
+                                    nextVid.src = nextVid.dataset.src;
+                                }
+                            }
+                        } else { 
+                            // Saat keluar layar: Hapus video dari memori HP
+                            video.pause(); 
+                            if (video.src) {
+                                video.dataset.src = video.src; // Simpan link
+                                video.removeAttribute('src');  // Kosongkan RAM
+                                video.load(); // Reset
+                            }
+                        }
+                    });
+                }, { threshold: 0.6 });
+
+                // Terapkan ke video yang sudah ada
+                const videos = document.querySelectorAll('.video-player, .float-video-player');
+                videos.forEach(v => window.obs.observe(v));
+            };
+
+            // ---------------------------------------------------------
+            // 2. SUNTIKAN WHATSAPP (CACHE LOKAL CHAT & LIMIT)
+            // ---------------------------------------------------------
+            window.openChatRoom = async function(targetId, name, avatar, isGroup = false) {
+                if (!currentUser) return;
+                
+                if (isGroup) { activeGroupId = targetId; activeChatUserId = null; } 
+                else { activeChatUserId = targetId; activeGroupId = null; }
+                
+                // Transisi UI
+                document.getElementById('chat-list-view').classList.add('hidden'); document.getElementById('chat-list-view').classList.remove('flex');
+                document.getElementById('chat-room-view').classList.remove('hidden'); document.getElementById('chat-room-view').classList.add('flex');
+                
+                document.getElementById('active-chat-name').innerText = name;
+                document.getElementById('active-chat-avatar').src = avatar;
+
+                const container = document.getElementById('chat-messages-container');
+                document.getElementById('btn-send-room').onclick = () => sendRoomMessage(targetId, isGroup);
+
+                // === LOGIKA CACHE ALA WHATSAPP ===
+                const cacheKey = isGroup ? `chat_cache_group_${targetId}` : `chat_cache_user_${targetId}`;
+                const localChats = JSON.parse(localStorage.getItem(cacheKey) || '[]');
+                
+                // Tampilkan dari Cache seketika! (Nol Detik Loading)
+                if (localChats.length > 0) {
+                    container.innerHTML = '';
+                    localChats.forEach(msg => appendMessageBubble(msg));
+                    scrollToBottomChat();
+                } else {
+                    container.innerHTML = '<div class="flex justify-center mt-10"><i class="fas fa-spinner fa-spin text-brand-accent text-xl"></i></div>';
+                }
+
+                if (!isGroup) await supabaseClient.from('messages').update({ is_read: true }).eq('sender_id', targetId).eq('receiver_id', currentUser.id).eq('is_read', false);
+
+                // Tarik data baru dari server (Limit 50 chat terbaru agar ringan)
+                let query = supabaseClient.from('messages').select('*');
+                if (isGroup) query = query.eq('group_id', targetId);
+                else query = query.or(`and(sender_id.eq.${currentUser.id},receiver_id.eq.${targetId},group_id.is.null),and(sender_id.eq.${targetId},receiver_id.eq.${currentUser.id},group_id.is.null)`);
+                
+                const { data: rawMessages } = await query.order('created_at', { ascending: false }).limit(50);
+                const messages = rawMessages ? rawMessages.reverse() : [];
+
+                // Timpa cache dan UI dengan data segar
+                if(messages && messages.length > 0) {
+                    localStorage.setItem(cacheKey, JSON.stringify(messages)); // Simpan ke Cache
+                    container.innerHTML = '';
+                    messages.forEach(msg => appendMessageBubble(msg));
+                } else if (localChats.length === 0) {
+                    container.innerHTML = `<div class="flex flex-col items-center justify-center h-full opacity-50"><p class="text-xs text-gray-300">Kirim pesan pertama</p></div>`;
+                }
+                scrollToBottomChat();
+
+                // Observer pesan baru (Realtime)
+                if (messageSubscription) supabaseClient.removeChannel(messageSubscription);
+                messageSubscription = supabaseClient.channel(isGroup ? `group_${targetId}` : `room_${targetId}`)
+                    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => {
+                        const newMsg = payload.new;
+                        const isTarget = isGroup ? newMsg.group_id === activeGroupId : (newMsg.sender_id === activeChatUserId && newMsg.receiver_id === currentUser.id);
+                        if (isTarget) { 
+                            appendMessageBubble(newMsg); 
+                            scrollToBottomChat(); 
+                            if(!isGroup) supabaseClient.from('messages').update({ is_read: true }).eq('id', newMsg.id).then(); 
+                            
+                            // Tambahkan pesan baru ke Cache diam-diam
+                            let currentCache = JSON.parse(localStorage.getItem(cacheKey) || '[]');
+                            currentCache.push(newMsg);
+                            if(currentCache.length > 50) currentCache.shift(); // Jaga maksimal 50 chat di cache
+                            localStorage.setItem(cacheKey, JSON.stringify(currentCache));
+                        }
+                    }).subscribe();
+            };
+
+            // ---------------------------------------------------------
+            // AKTIFKAN SEMUA SUNTIKAN
+            // ---------------------------------------------------------
+            setTimeout(() => {
+                if (typeof setupVideoObserver === 'function') setupVideoObserver();
+                console.log("💉 Suntikan Optimasi TikTok & WhatsApp Berhasil Diaktifkan!");
+            }, 500);
+        });
 
         
     </script>
