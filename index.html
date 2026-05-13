@@ -1963,19 +1963,32 @@ function closeUploadModal() {
             }
         }
         
-        // FITUR SHARE VIDEO
+                // FITUR SHARE VIDEO (DIPERBAIKI)
         function shareVideo(vidId, btn) {
-            const link = window.location.origin + window.location.pathname + '#sosial?vid=' + vidId;
+            // Jika vidId tidak ada, coba ambil dari atribut data atau fallback
+            const finalId = vidId && vidId !== 'undefined' ? vidId : '';
+            
+            if (!finalId) {
+                showToast("Gagal menyalin link: ID Video tidak ditemukan", "error");
+                return;
+            }
+
+            const link = window.location.origin + window.location.pathname + '#sosial?vid=' + finalId;
+            
             navigator.clipboard.writeText(link).then(() => {
-                showToast("Link video disalin!", "success");
-                btn.querySelector('i').classList.replace('fa-share', 'fa-check');
-                btn.querySelector('i').classList.replace('text-white', 'text-brand-success');
+                showToast("Link video disalin ke clipboard!", "success");
+                const icon = btn.querySelector('i');
+                icon.classList.replace('fa-share', 'fa-check');
+                icon.classList.add('text-brand-success');
                 setTimeout(() => {
-                    btn.querySelector('i').classList.replace('fa-check', 'fa-share');
-                    btn.querySelector('i').classList.replace('text-brand-success', 'text-white');
+                    icon.classList.replace('fa-check', 'fa-share');
+                    icon.classList.remove('text-brand-success');
                 }, 2000);
+            }).catch(() => {
+                showToast("Gagal menyalin link otomatis", "error");
             });
         }
+
 
         function renderFaqs(data = faqs) {
             const container = document.getElementById('faq-container');
@@ -3391,16 +3404,33 @@ async function sendRoomMessage(targetId, isGroup) {
             if(typeof renderServices === 'function') renderServices();
             if(typeof muatDataRipper === 'function') muatDataRipper();
             
-            // FUNGSI CEK URL UNTUK SHARE VIDEO
-            const urlParams = new URLSearchParams(window.location.hash.split('?')[1]);
-            const shareVidId = urlParams.get('vid');
-            if (shareVidId) {
-                switchTab('sosial');
-                setTimeout(() => {
-                    const vidData = allVideosData.find(v => v.id === shareVidId);
-                    if(vidData) playFloatingVideo(vidData.video_url, vidData.nickname, vidData.caption, vidData.id);
-                }, 1500);
+                        // FUNGSI CEK URL UNTUK SHARE VIDEO (DIPERBAIKI)
+            const fullHash = window.location.hash;
+            if (fullHash.includes('?vid=')) {
+                const vidId = fullHash.split('?vid=')[1];
+                if (vidId) {
+                    // Beri waktu sebentar agar data video ter-load dari API
+                    setTimeout(async () => {
+                        // Jika data belum ada, tunggu loadVideos selesai
+                        if (allVideosData.length === 0) {
+                            await loadVideos();
+                        }
+                        
+                        const vidData = allVideosData.find(v => 
+                            String(v.id) === String(vidId) || String(v.video_id) === String(vidId)
+                        );
+                        
+                        if (vidData) {
+                            // Mencari posisi index video tersebut di dalam list user
+                            const userVideos = allVideosData.filter(v => v.user_id === vidData.user_id).reverse();
+                            const index = userVideos.findIndex(v => String(v.id || v.video_id) === String(vidId));
+                            
+                            openProfileFeed(vidData.user_id, index >= 0 ? index : 0);
+                        }
+                    }, 2000);
+                }
             }
+
 
             let deferredPrompt;
             const installContainer = document.getElementById('install-container');
