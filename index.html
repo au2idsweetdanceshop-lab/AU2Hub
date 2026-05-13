@@ -1783,17 +1783,15 @@ function closeUploadModal() {
     history.pushState({ popup: 'floating_video' }, null);
 }
 
-        function renderProfileVideoBatch() {
-    const container = document.getElementById('floating-feed-container');
+                function renderProfileVideoBatch() {
+            const container = document.getElementById('floating-feed-container');
 
-    // Mencegah error jika scroll sudah mentok di video terakhir
-    if (profileFeedIndex >= currentProfileVideos.length) {
-        return; // Hentikan render jika sudah tidak ada video (jangan di-loop dari 0 agar natural)
-    }
+            if (profileFeedIndex >= currentProfileVideos.length) {
+                return;
+            }
 
-    // Ambil 3 video selanjutnya dimulai dari profileFeedIndex
-    const nextBatch = currentProfileVideos.slice(profileFeedIndex, profileFeedIndex + 3);
-    if (nextBatch.length === 0) return;
+            const nextBatch = currentProfileVideos.slice(profileFeedIndex, profileFeedIndex + 3);
+            if (nextBatch.length === 0) return;
 
             const htmlString = nextBatch.map((vid) => `
                 <div class="snap-start w-full h-full flex-shrink-0 relative flex items-center justify-center overflow-hidden bg-black/95 px-0 sm:px-4 py-0 sm:py-6">
@@ -1801,9 +1799,29 @@ function closeUploadModal() {
                         <div class="absolute inset-0 flex items-center justify-center z-0"><div class="w-12 h-12 border-4 border-brand-accent/20 border-t-brand-accent rounded-full animate-spin"></div></div>
                         <video class="absolute inset-0 m-auto w-full h-full object-cover float-video-player transition-opacity duration-500 opacity-0 z-10" 
                                onloadeddata="this.classList.remove('opacity-0')" loop ${isGlobalMuted ? 'muted' : ''} playsinline preload="metadata"
+                               ontimeupdate="updateVideoProgress(this)"
                                onclick="handleFloatVideoClick(event, this, '${vid.id}')" onerror="handleVideoError(this)">
                             <source src="${vid.video_url}" type="video/mp4">
                         </video>
+                        
+                        <!-- INI INDIKATOR WAKTU POPUP -->
+                        <div class="time-indicator absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-white font-extrabold text-4xl drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)] opacity-0 transition-opacity z-[60] pointer-events-none tracking-wider bg-black/40 px-6 py-2 rounded-2xl backdrop-blur-sm">
+                            <span class="time-current">00:00</span> <span class="text-white/50 text-2xl mx-1">/</span> <span class="time-total text-white/70">00:00</span>
+                        </div>
+
+                        <!-- Progress Bar Scrubber (Area Bawah) -->
+                        <div class="absolute bottom-0 left-0 w-full h-3 z-50 cursor-pointer group touch-none flex flex-col justify-end pb-1"
+                             onpointerdown="startSeek(event, this)" 
+                             onpointermove="doSeek(event, this)" 
+                             onpointerup="endSeek(event, this)" 
+                             onpointercancel="endSeek(event, this)">
+                            <div class="w-full h-1 bg-white/30 relative">
+                                <div class="progress-fill h-full bg-white w-0 relative pointer-events-none transition-all duration-75 ease-linear">
+                                    <div class="absolute -right-2 top-1/2 -translate-y-1/2 w-4 h-4 bg-white rounded-full scale-0 group-hover:scale-100 transition-transform shadow-md"></div>
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="absolute bottom-0 left-0 w-full p-6 flex justify-between items-end z-20 pointer-events-none bg-gradient-to-t from-black/80 to-transparent pb-10 sm:pb-6">
                             <div class="text-white drop-shadow-lg w-[75%] pointer-events-auto">
                                 <p class="font-bold text-[15px] shadow-black drop-shadow-md mb-1.5">@${vid.nickname || "Player"}</p>
@@ -1873,6 +1891,7 @@ function closeUploadModal() {
                 }
             });
         }
+
 
         function handleFloatVideoClick(event, videoElement, vidId) {
             const now = Date.now();
@@ -2431,7 +2450,7 @@ function closeUploadModal() {
             } catch (e) { container.innerHTML = '<p class="text-center py-20 text-gray-500">Gagal memuat video.</p>'; }
         }
 
-        function renderVideoBatch() {
+                function renderVideoBatch() {
             const container = document.getElementById('feed-container');
             
             // --- LOGIKA FEED TANPA UJUNG (INFINITE LOOP) ---
@@ -2451,22 +2470,24 @@ function closeUploadModal() {
                            onclick="handleVideoClick(event, this, '${vid.id}')" onerror="handleVideoError(this)">
                         <source src="${vid.video_url}" type="video/mp4">
                     </video>
-                            <!-- INI INDIKATOR WAKTU POPUP -->
-        <div class="time-indicator absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-white font-extrabold text-4xl drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)] opacity-0 transition-opacity z-[60] pointer-events-none tracking-wider bg-black/40 px-6 py-2 rounded-2xl backdrop-blur-sm">
-            <span class="time-current">00:00</span> <span class="text-white/50 text-2xl mx-1">/</span> <span class="time-total text-white/70">00:00</span>
+                    
+                    <!-- INI INDIKATOR WAKTU POPUP -->
+                    <div class="time-indicator absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-white font-extrabold text-4xl drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)] opacity-0 transition-opacity z-[60] pointer-events-none tracking-wider bg-black/40 px-6 py-2 rounded-2xl backdrop-blur-sm">
+                        <span class="time-current">00:00</span> <span class="text-white/50 text-2xl mx-1">/</span> <span class="time-total text-white/70">00:00</span>
+                    </div>
+
                     <!-- Progress Bar Scrubber (Area Bawah) -->
-        <div class="absolute bottom-0 left-0 w-full h-3 z-50 cursor-pointer group touch-none flex flex-col justify-end pb-1"
-             onpointerdown="startSeek(event, this)" 
-             onpointermove="doSeek(event, this)" 
-             onpointerup="endSeek(event, this)" 
-             onpointercancel="endSeek(event, this)">
-            <div class="w-full h-1 bg-white/30 relative">
-                <div class="progress-fill h-full bg-white w-0 relative pointer-events-none transition-all duration-75 ease-linear">
-                    <div class="absolute -right-2 top-1/2 -translate-y-1/2 w-4 h-4 bg-white rounded-full scale-0 group-hover:scale-100 transition-transform shadow-md"></div>
-                </div>
-            </div>
-        </div>
-        </div>
+                    <div class="absolute bottom-0 left-0 w-full h-3 z-50 cursor-pointer group touch-none flex flex-col justify-end pb-1"
+                         onpointerdown="startSeek(event, this)" 
+                         onpointermove="doSeek(event, this)" 
+                         onpointerup="endSeek(event, this)" 
+                         onpointercancel="endSeek(event, this)">
+                        <div class="w-full h-1 bg-white/30 relative">
+                            <div class="progress-fill h-full bg-white w-0 relative pointer-events-none transition-all duration-75 ease-linear">
+                                <div class="absolute -right-2 top-1/2 -translate-y-1/2 w-4 h-4 bg-white rounded-full scale-0 group-hover:scale-100 transition-transform shadow-md"></div>
+                            </div>
+                        </div>
+                    </div>
 
                     <div class="absolute bottom-0 left-0 w-full px-5 pb-8 flex justify-between items-end z-20 pointer-events-none">
                         <div class="text-white drop-shadow-lg w-[75%] pointer-events-auto">
@@ -2540,6 +2561,7 @@ function closeUploadModal() {
                 }
             });
         }
+
 
         // FUNGSI TYPING INDICATOR
         function sendTypingStatus() {
