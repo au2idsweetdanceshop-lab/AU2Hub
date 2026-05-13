@@ -943,45 +943,9 @@
             }
         }
 
-        const ORACLE_API = "https://g5b2c58961dbd6e-au2hubdb.adb.ap-batam-1.oraclecloudapps.com/ords/admin/";
-
-// Fungsi pembantu sederhana untuk Oracle API
-async function oracleFetch(table, options = {}) {
-    try {
-        const baseUrl = ORACLE_API.trim().replace(/\/$/, ''); 
-        let endpoint = table.replace(/^\//, ''); 
-        
-        // [PENTING] Memperbaiki aturan ketat URL di Oracle ORDS
-        // Otomatis menambahkan '/' sebelum tanda '?' agar tidak diblokir (CORS/301)
-        if (endpoint.includes('?') && !endpoint.includes('/?')) {
-            endpoint = endpoint.replace('?', '/?');
-        } else if (!endpoint.includes('?') && !endpoint.endsWith('/')) {
-            endpoint = endpoint + '/';
-        }
-
-        const url = `${baseUrl}/${endpoint}`;
-
-        const response = await fetch(url, {
-            ...options,
-            headers: {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json',
-                ...options.headers
-            }
-        });
-
-        // Jika server merespons dengan error (misal 404 karena tabel belum aktif)
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}`);
-        }
-
-        return await response.json();
-    } catch (e) {
-        console.error("Database Error pada tabel:", table, e);
-        showToast("Koneksi Database: " + e.message, "error");
-        return null;
-    }
-}
+        const SUPABASE_URL = "https://divckiqkodtqudcoxkjz.supabase.co";
+        const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRpdmNraXFrb2R0cXVkY294a2p6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgzNDY0MzIsImV4cCI6MjA5MzkyMjQzMn0.z_FIS_rpDQPQ7nNWpuvabH7qDYgu7uq6TlYj9LSOcJQ";
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
         
         let currentUser = null, userProfile = null, isAuthLogin = true;
         let tabSebelumnya = 'home';
@@ -1186,50 +1150,53 @@ async function oracleFetch(table, options = {}) {
         }
 
         async function checkSession() {
-    document.getElementById('profile-loading').classList.remove('hidden');
-    document.getElementById('profile-loading').classList.add('flex');
-    document.querySelectorAll('#profile-logged-in').forEach(el => el.classList.add('hidden'));
-    document.getElementById('profile-logged-out').classList.add('hidden');
+            document.getElementById('profile-loading').classList.remove('hidden');
+            document.getElementById('profile-loading').classList.add('flex');
+            
+            document.querySelectorAll('#profile-logged-in').forEach(el => el.classList.add('hidden'));
+            document.getElementById('profile-logged-out').classList.add('hidden');
 
-    // Cek apakah ada sesi login tersimpan di HP
-    const savedUserId = localStorage.getItem('au2hub_user_id');
+            const { data: { user } } = await supabaseClient.auth.getUser();
+            
+            document.getElementById('profile-loading').classList.add('hidden');
+            document.getElementById('profile-loading').classList.remove('flex');
 
-    document.getElementById('profile-loading').classList.add('hidden');
-    document.getElementById('profile-loading').classList.remove('flex');
-
-    if (savedUserId) { 
-        currentUser = { id: savedUserId }; 
-        await fetchProfile(); 
-        
-        // Catatan: fetchBlockedUsers & chat real-time disederhanakan/dimatikan sementara untuk transisi
-        document.querySelectorAll('#profile-logged-in').forEach(el => el.classList.remove('hidden')); 
-        document.getElementById('profile-logged-out').classList.add('hidden'); 
-        updateUIForLoggedIn(); 
-    } else { 
-        document.querySelectorAll('#profile-logged-in').forEach(el => el.classList.add('hidden')); 
-        document.getElementById('profile-logged-out').classList.remove('hidden'); 
-        updateUIForLoggedOut(); 
-    }
-}
-
-async function fetchProfile() {
-    // Membaca data profil dari Oracle
-    const res = await oracleFetch(`profiles/${currentUser.id}/`);
-    
-    if (res && res.id) { 
-        userProfile = res; 
-    } else {
-        userProfile = { nickname: 'Player', avatar_url: '', bio: 'Halo! Salam kenal.' };
-    }
-    
-    if(!viewedUserId || viewedUserId === currentUser.id) {
-        const pNick = document.getElementById('profile-nickname'); if(pNick) pNick.innerText = "@" + (userProfile.nickname || "Player"); 
-        const pBio = document.getElementById('profile-bio'); if(pBio) pBio.innerText = userProfile.bio || "Belum ada deskripsi."; 
-        if (userProfile.avatar_url && userProfile.avatar_url !== "") {
-            const pImg = document.getElementById('profile-img'); if(pImg) pImg.src = userProfile.avatar_url; 
+            if (user) { 
+                currentUser = user; 
+                await fetchProfile(); 
+                await fetchBlockedUsers(); 
+                checkGlobalUnreadMessages();
+                document.querySelectorAll('#profile-logged-in').forEach(el => el.classList.remove('hidden')); 
+                document.getElementById('profile-logged-out').classList.add('hidden'); 
+                updateUIForLoggedIn(); 
+                initPresence(); 
+                initGlobalMessageListener(); 
+            } else { 
+                if (presenceChannel) { supabaseClient.removeChannel(presenceChannel); presenceChannel = null; }
+                if (globalMessageSubscription) { supabaseClient.removeChannel(globalMessageSubscription); globalMessageSubscription = null; }
+                document.querySelectorAll('#profile-logged-in').forEach(el => el.classList.add('hidden')); 
+                document.getElementById('profile-logged-out').classList.remove('hidden'); 
+                updateUIForLoggedOut(); 
+            }
         }
-    }
-}
+
+        async function fetchProfile() {
+            const { data, error } = await supabaseClient.from('profiles').select('*').eq('id', currentUser.id).single();
+            if (data) { 
+                userProfile = data; 
+            } else {
+                userProfile = { nickname: 'Player', avatar_url: '', bio: 'Halo! Salam kenal.' };
+                await supabaseClient.from('profiles').upsert({ id: currentUser.id, nickname: 'Player', avatar_url: '', bio: 'Halo! Salam kenal.' });
+            }
+            
+            if(!viewedUserId || viewedUserId === currentUser.id) {
+                const pNick = document.getElementById('profile-nickname'); if(pNick) pNick.innerText = "@" + (userProfile.nickname || "Player"); 
+                const pBio = document.getElementById('profile-bio'); if(pBio) pBio.innerText = userProfile.bio || "Belum ada deskripsi."; 
+                if (userProfile.avatar_url && userProfile.avatar_url !== "") {
+                    const pImg = document.getElementById('profile-img'); if(pImg) pImg.src = userProfile.avatar_url; 
+                }
+            }
+        }
 
         function openAuthModal() { 
             history.pushState({ popup: 'auth' }, null, '#auth');
@@ -1263,78 +1230,55 @@ async function fetchProfile() {
         }
 
         async function handleAuth() {
-    const email = document.getElementById('auth-email').value;
-    const password = document.getElementById('auth-pass').value;
-    const nick = document.getElementById('auth-nick').value;
-    const btn = document.getElementById('auth-btn');
-    
-    btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-    
-    try {
-        if (isAuthLogin) { 
-            // LOGIN (Mencocokkan Email dan Password di Oracle)
-            // Menggunakan query string: ?q={"email":"xxx","password":"xxx"}
-            const query = encodeURIComponent(JSON.stringify({ email: email, password: password }));
-            const res = await oracleFetch(`profiles/?q=${query}`);
-            
-            if (res && res.items && res.items.length > 0) {
-                // Login Berhasil
-                localStorage.setItem('au2hub_user_id', res.items[0].id);
-                showToast("Login berhasil!", "success");
-            } else {
-                throw new Error("Email atau password salah!");
-            }
-        } else { 
-            // REGISTER (Memasukkan data baru ke Oracle)
-            // Buat ID unik acak (UUID)
-            const newId = 'usr_' + Date.now() + Math.floor(Math.random() * 1000);
-            
-            const payload = {
-                id: newId,
-                email: email,
-                password: password,
-                nickname: nick || "Player",
-                bio: "Halo! Salam kenal.",
-                avatar_url: ""
-            };
+            const email = document.getElementById('auth-email').value, password = document.getElementById('auth-pass').value, nick = document.getElementById('auth-nick').value, btn = document.getElementById('auth-btn');
+            btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            try {
+                if (isAuthLogin) { 
+                    const { error } = await supabaseClient.auth.signInWithPassword({ email, password }); 
+                    if (error) throw error; 
+                    showToast("Login berhasil!", "success");
+                } else { 
+                    const { data: { user }, error } = await supabaseClient.auth.signUp({ email, password }); 
+                    if (error) throw error; 
+                    const { error: dbErr } = await supabaseClient.from('profiles').upsert({ id: user.id, nickname: nick || "Player", avatar_url: "" }); 
+                    if (dbErr) throw new Error("Database Profil Error: " + dbErr.message);
+                    showToast("Akun berhasil dibuat!", "success");
+                }
+                
+                document.getElementById('auth-email').value = '';
+                document.getElementById('auth-pass').value = '';
+                document.getElementById('auth-nick').value = '';
 
-            const res = await oracleFetch('profiles/', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
+                // FITUR IZIN NOTIFIKASI
+                if ("Notification" in window && Notification.permission !== "granted") {
+                    Notification.requestPermission();
+                }
 
-            if (res) {
-                localStorage.setItem('au2hub_user_id', newId);
-                showToast("Akun berhasil dibuat!", "success");
-            } else {
-                throw new Error("Gagal mendaftar. Email mungkin sudah terpakai.");
+                await checkSession();
+                closeAuthModal();
+
+            } catch (e) { 
+                showToast(e.message, "error");
+            } finally {
+                btn.disabled = false; 
+                btn.innerText = isAuthLogin ? "Login" : "Daftar";
             }
         }
-        
-        document.getElementById('auth-email').value = '';
-        document.getElementById('auth-pass').value = '';
-        document.getElementById('auth-nick').value = '';
 
-        await checkSession();
-        closeAuthModal();
+        async function handleLogout() { 
+            await supabaseClient.auth.signOut(); 
+            currentUser = null;
+            userProfile = null;
+            blockedUsersList = [];
+            
+            if (globalMessageSubscription) {
+                supabaseClient.removeChannel(globalMessageSubscription);
+                globalMessageSubscription = null;
+            }
 
-    } catch (e) { 
-        showToast(e.message, "error");
-    } finally {
-        btn.disabled = false; 
-        btn.innerText = isAuthLogin ? "Login" : "Daftar";
-    }
-}
-
-async function handleLogout() { 
-    localStorage.removeItem('au2hub_user_id');
-    currentUser = null;
-    userProfile = null;
-    
-    checkSession();
-    showToast("Anda telah keluar.", "info");
-}
+            checkSession();
+            showToast("Anda telah keluar.", "info");
+        }
 
         function updateUIForLoggedIn() { 
             const ava = (userProfile?.avatar_url && userProfile.avatar_url !== "") ? userProfile.avatar_url : `https://ui-avatars.com/api/?name=${userProfile?.nickname || 'User'}&background=1A1133&color=fff`; 
@@ -1352,83 +1296,58 @@ async function handleLogout() {
         }
         
         async function renderProfileVideos(targetUserId = null) {
-    const grid = document.getElementById('profile-video-grid');
-    if (!grid) return;
-    
-    const uidToRender = targetUserId || (currentUser ? currentUser.id : null);
-
-    if (!uidToRender) {
-        grid.innerHTML = '';
-        return;
-    }
-
-    if (allVideosData.length === 0) {
-        try {
-            grid.innerHTML = '<div class="col-span-3 text-center text-xs text-brand-info py-4"><i class="fas fa-spinner fa-spin text-xl mb-2"></i><br>Memuat...</div>';
+            const grid = document.getElementById('profile-video-grid');
+            if (!grid) return;
             
-            // --- BAGIAN YANG BERUBAH: Mengambil data dari Oracle ---
-            const [videosRes, profilesRes] = await Promise.all([
-                oracleFetch('videos/?limit=100'),
-                oracleFetch('profiles/?limit=1000')
-            ]);
-            
-            let dataDariDb = videosRes && videosRes.items ? videosRes.items : [];
-            const dataProfiles = profilesRes && profilesRes.items ? profilesRes.items : [];
-            
-            // Gabungkan data video dengan data avatar & nickname
-            dataDariDb = dataDariDb.map(vid => {
-                const user = dataProfiles.find(p => p.id === vid.user_id) || {};
-                return {
-                    ...vid,
-                    nickname: user.nickname || "Player",
-                    avatar_url: user.avatar_url || `https://ui-avatars.com/api/?name=${user.nickname || 'Player'}&background=1A1133&color=fff`
-                };
-            });
+            const uidToRender = targetUserId || (currentUser ? currentUser.id : null);
 
-            // --- FITUR ASLI ANDA DIPERTAHANKAN ---
-            if (typeof newUploads !== 'undefined') {
-                newUploads.forEach(newVid => {
-                    if (!dataDariDb.find(v => v.id === newVid.id || v.id === newVid.video_id)) {
-                        dataDariDb.push(newVid);
-                    }
-                });
+            if (!uidToRender) {
+                grid.innerHTML = '';
+                return;
             }
-            
-            if (typeof blockedUsersList !== 'undefined') {
-                dataDariDb = dataDariDb.filter(v => !blockedUsersList.includes(v.user_id));
+
+            if (allVideosData.length === 0) {
+                try {
+                    grid.innerHTML = '<div class="col-span-3 text-center text-xs text-brand-info py-4"><i class="fas fa-spinner fa-spin text-xl mb-2"></i><br>Memuat...</div>';
+                    const res = await fetch('/api/get-videos');
+                    let dataDariSheet = await res.json();
+                    
+                    newUploads.forEach(newVid => {
+                        if (!dataDariSheet.find(v => v.video_id === newVid.video_id)) dataDariSheet.push(newVid);
+                    });
+                    
+                    dataDariSheet = dataDariSheet.filter(v => !blockedUsersList.includes(v.user_id));
+                    allVideosData = dataDariSheet;
+                } catch(e) {
+                    grid.innerHTML = '<p class="col-span-3 text-center text-xs text-red-500 py-4">Gagal memuat video profil.</p>';
+                    return;
+                }
             }
+
+            const userVideos = allVideosData.filter(v => v.user_id === uidToRender);
             
-            allVideosData = dataDariDb;
-        } catch(e) {
-            grid.innerHTML = '<p class="col-span-3 text-center text-xs text-red-500 py-4">Gagal memuat video profil.</p>';
-            return;
+            const elLikes = document.getElementById('profile-total-likes');
+            if (elLikes) elLikes.innerText = (userVideos.length * 3);
+
+            const reversedVideos = [...userVideos].reverse();
+
+            if (reversedVideos.length === 0) {
+                grid.innerHTML = '<div class="col-span-3 text-center text-xs text-gray-500 py-8 bg-black/20 rounded-xl border border-white/5"><i class="fas fa-film text-2xl mb-2 opacity-50"></i><br>Belum ada video yang diupload.</div>';
+                return;
+            }
+
+            grid.innerHTML = reversedVideos.map(vid => {
+                return `
+                <div class="aspect-[9/16] bg-black relative rounded-md overflow-hidden border border-white/10 group cursor-pointer" onclick="openProfileFeed('${vid.user_id}', '${vid.id}')">
+                    <video class="w-full h-full object-cover" preload="metadata">
+                        <source src="${vid.video_url}" type="video/mp4">
+                    </video>
+                    <div class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                        <i class="fas fa-play text-white text-xl"></i>
+                    </div>
+                </div>
+            `}).join('');
         }
-    }
-
-    const userVideos = allVideosData.filter(v => v.user_id === uidToRender);
-    
-    const elLikes = document.getElementById('profile-total-likes');
-    if (elLikes) elLikes.innerText = (userVideos.length * 3);
-
-    const reversedVideos = [...userVideos].reverse();
-
-    if (reversedVideos.length === 0) {
-        grid.innerHTML = '<div class="col-span-3 text-center text-xs text-gray-500 py-8 bg-black/20 rounded-xl border border-white/5"><i class="fas fa-film text-2xl mb-2 opacity-50"></i><br>Belum ada video yang diupload.</div>';
-        return;
-    }
-
-    grid.innerHTML = reversedVideos.map(vid => {
-        return `
-        <div class="aspect-[9/16] bg-black relative rounded-md overflow-hidden border border-white/10 group cursor-pointer" onclick="openProfileFeed('${vid.user_id}', '${vid.id}')">
-            <video class="w-full h-full object-cover" preload="metadata">
-                <source src="${vid.video_url}" type="video/mp4">
-            </video>
-            <div class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                <i class="fas fa-play text-white text-xl"></i>
-            </div>
-        </div>
-    `}).join('');
-}
 
         function timeAgo(dateString) {
             if (!dateString) return "Baru saja";
@@ -2260,17 +2179,6 @@ function closeUploadModal() {
             if (input.value.startsWith('@')) input.value = '';
         }
 
-        async function updateCommentCountUI(videoId, containerDiv) {
-            try {
-                // Ambil jumlah komentar langsung dari Oracle
-                const query = encodeURIComponent(JSON.stringify({ video_id: videoId }));
-                const res = await oracleFetch(`comments?q=${query}`);
-                
-                const countSpan = containerDiv.querySelector('.comment-count-display');
-                if (countSpan && res && res.items) countSpan.innerText = res.items.length;
-            } catch(e) {}
-        }
-
         async function sendComment(event) {
             if (!currentUser) return openAuthModal(); 
             const msgInput = document.getElementById('comment-input');
@@ -2284,25 +2192,22 @@ function closeUploadModal() {
             const iconAsli = btn.innerHTML; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>'; btn.disabled = true;
 
             try {
-                // Data disesuaikan untuk database Oracle
                 const payload = { 
-                    id: 'cmt_' + Date.now(),
                     video_id: activeVideoId, 
-                    user_id: currentUser.id,
-                    message: msg
+                    nickname: userProfile?.nickname || "Player", 
+                    message: msg, 
+                    avatar_url: userProfile?.avatar_url || "",
+                    user_id: currentUser.id
                 };
                 if (replyingToId) payload.parent_id = replyingToId;
 
-                const dbRes = await oracleFetch('comments', {
-                    method: 'POST', 
-                    headers: { 'Content-Type': 'application/json' }, 
-                    body: JSON.stringify(payload)
+                const response = await fetch('/api/comment', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
                 });
 
-                if (dbRes) {
+                if (response.ok) {
                     msgInput.value = ''; 
                     await loadComments(activeVideoId, true);
-                    
                     const container = document.querySelector(`.comment-count-container[data-vid="${activeVideoId}"]`);
                     if(container) updateCommentCountUI(activeVideoId, container);
                     
@@ -2410,26 +2315,34 @@ function closeUploadModal() {
 
             if(localStorage.getItem(`liked_${videoId}`)) return; 
             
-            // Set like secara visual (UI Only)
-            localStorage.setItem(`liked_${videoId}`, 'true'); 
+            localStorage.setItem(`liked_${videoId}`, 'pending'); 
 
             const icon = btn.querySelector('i'); 
             icon.classList.replace('text-white', 'text-brand-accent'); 
             icon.classList.add('animate-ping'); 
             setTimeout(() => icon.classList.remove('animate-ping'), 500);
 
-            // Tambah angka like secara visual di layar
-            const container = btn.closest('.like-container') || document.getElementById('float-like-container');
-            if (container) {
-                const countSpan = container.querySelector('.like-count-display');
-                if (countSpan) countSpan.innerText = parseInt(countSpan.innerText || 0) + 1;
+            try {
+                // Insert data like ke Supabase
+                const { error } = await supabaseClient.from('video_likes').insert({
+                    video_id: videoId,
+                    user_id: currentUser.id
+                });
+
+                if (!error) { 
+                    localStorage.setItem(`liked_${videoId}`, 'true'); 
+                    updateLikeCountUI(videoId, btn.closest('.like-container') || document.getElementById('float-like-container')); 
+                } else {
+                    throw error;
+                }
+            } catch (e) { 
+                localStorage.removeItem(`liked_${videoId}`);
+                icon.classList.replace('text-brand-accent', 'text-white'); 
+                showToast("Gagal menyukai video.", "error");
             }
         }
 
-        function handleVideoError(videoElement) { 
-            const container = videoElement.closest('.snap-start'); 
-            if (container) container.remove(); 
-        }
+        function handleVideoError(videoElement) { const container = videoElement.closest('.snap-start'); if (container) container.remove(); }
 
         function createHeartAt(event) {
             const heart = document.createElement('i');
@@ -2460,82 +2373,63 @@ function closeUploadModal() {
         }
 
         async function loadVideos() {
-    const container = document.getElementById('feed-container'); 
-    const fakeLoader = document.getElementById('fake-loader'); 
-    const fakeProgress = document.getElementById('fake-progress');
-    const isFirstTime = !localStorage.getItem('hasVisitedSosial');
-    
-    if (obs) obs.disconnect(); 
-    
-    try {
-        if (allVideosData.length === 0) container.innerHTML = `<div class="w-full h-full relative bg-[#1A1133] animate-pulse flex flex-col justify-end p-6 flex-shrink-0 snap-start"><div class="absolute inset-0 flex items-center justify-center"><i class="fas fa-circle-notch fa-spin text-brand-accent text-4xl opacity-40"></i></div></div>`;
-        
-        // --- BAGIAN YANG BERUBAH: Mengambil data dari Oracle ---
-        const [videosRes, profilesRes] = await Promise.all([
-            oracleFetch('videos?limit=100'),
-            oracleFetch('profiles?limit=1000')
-        ]);
-        
-        let dataDariDb = videosRes && videosRes.items ? videosRes.items : [];
-        const dataProfiles = profilesRes && profilesRes.items ? profilesRes.items : [];
-        
-        // Gabungkan video dengan data user (Avatar & Nickname)
-        dataDariDb = dataDariDb.map(vid => {
-            const user = dataProfiles.find(p => p.id === vid.user_id) || {};
-            return {
-                ...vid,
-                nickname: user.nickname || "Player",
-                avatar_url: user.avatar_url || `https://ui-avatars.com/api/?name=${user.nickname || 'Player'}&background=1A1133&color=fff`
-            };
-        });
-        
-        // Filter user yang diblokir (Fitur asli Anda tetap dipertahankan)
-        if (typeof blockedUsersList !== 'undefined') {
-            dataDariDb = dataDariDb.filter(v => !blockedUsersList.includes(v.user_id));
-        }
-        
-        // Acak video
-        for (let i = dataDariDb.length - 1; i > 0; i--) { 
-            const j = Math.floor(Math.random() * (i + 1)); 
-            [dataDariDb[i], dataDariDb[j]] = [dataDariDb[j], dataDariDb[i]]; 
-        }
-        
-        allVideosData = dataDariDb;
-        currentVideoIndex = 0; 
-        container.innerHTML = ''; 
-        
-        renderProfileVideos();
-
-        if (!allVideosData.length) { container.innerHTML = '<p class="text-center py-20 text-gray-500">Belum ada video.</p>'; return; }
-        
-        // Logika Animasi Loading (Sama persis dengan kode asli Anda)
-        if (isFirstTime) {
-            fakeLoader.classList.remove('hidden'); fakeLoader.classList.add('flex'); fakeProgress.style.transition = 'width 15s cubic-bezier(0.1, 0.7, 1.0, 0.1)';
-            setTimeout(() => { fakeProgress.style.width = '80%'; }, 100);
-            setupVideoObserver(); renderVideoBatch(); 
-            const videosInDOM = document.querySelectorAll('.video-player'); const targetCount = Math.min(10, videosInDOM.length); 
-            let readyCount = 0; let isResolved = false;
-            const finishLoading = () => {
-                if (isResolved) return; isResolved = true; fakeProgress.style.transition = 'width 0.4s ease-out'; fakeProgress.style.width = '100%';
-                setTimeout(() => { fakeLoader.classList.add('opacity-0'); setTimeout(() => { fakeLoader.classList.add('hidden'); fakeLoader.classList.remove('flex'); }, 1000); localStorage.setItem('hasVisitedSosial', 'true'); }, 500);
-            };
-            const safetyTimeout = setTimeout(() => { finishLoading(); }, 15000);
-            if (targetCount === 0) { clearTimeout(safetyTimeout); finishLoading(); } 
-            else {
-                videosInDOM.forEach((vid, index) => {
-                    if (index < targetCount) {
-                        vid.setAttribute('preload', 'auto'); vid.load(); 
-                        const onVideoReady = () => {
-                            if (isResolved) return; readyCount++; const progressPercent = 80 + ((readyCount / targetCount) * 20); fakeProgress.style.width = `${progressPercent}%`;
-                            if (readyCount >= targetCount) { clearTimeout(safetyTimeout); finishLoading(); }
-                        };
-                        if (vid.readyState >= 3) onVideoReady(); else { vid.addEventListener('canplay', onVideoReady, { once: true }); vid.addEventListener('loadeddata', onVideoReady, { once: true }); }
+            const container = document.getElementById('feed-container'); const fakeLoader = document.getElementById('fake-loader'); const fakeProgress = document.getElementById('fake-progress');
+            const isFirstTime = !localStorage.getItem('hasVisitedSosial');
+            if (obs) obs.disconnect(); 
+            try {
+                if (allVideosData.length === 0) container.innerHTML = `<div class="w-full h-full relative bg-[#1A1133] animate-pulse flex flex-col justify-end p-6 flex-shrink-0 snap-start"><div class="absolute inset-0 flex items-center justify-center"><i class="fas fa-circle-notch fa-spin text-brand-accent text-4xl opacity-40"></i></div></div>`;
+                
+                const res = await fetch('/api/get-videos'); 
+                let dataDariSheet = await res.json();
+                
+                newUploads.forEach(newVid => {
+                    if (!dataDariSheet.find(v => v.video_id === newVid.video_id)) {
+                        dataDariSheet.push(newVid);
                     }
                 });
-            }
-        } else { setupVideoObserver(); renderVideoBatch(); }
-    } catch (e) { container.innerHTML = '<p class="text-center py-20 text-gray-500">Gagal memuat video dari Oracle.</p>'; }
-}
+                
+                dataDariSheet = dataDariSheet.filter(v => !blockedUsersList.includes(v.user_id));
+                
+                for (let i = dataDariSheet.length - 1; i > 0; i--) { 
+                    const j = Math.floor(Math.random() * (i + 1)); 
+                    [dataDariSheet[i], dataDariSheet[j]] = [dataDariSheet[j], dataDariSheet[i]]; 
+                }
+                
+                allVideosData = dataDariSheet;
+                currentVideoIndex = 0; 
+                container.innerHTML = ''; 
+                
+                renderProfileVideos();
+
+                if (!allVideosData.length) { container.innerHTML = '<p class="text-center py-20 text-gray-500">Belum ada video.</p>'; return; }
+                
+                if (isFirstTime) {
+                    fakeLoader.classList.remove('hidden'); fakeLoader.classList.add('flex'); fakeProgress.style.transition = 'width 15s cubic-bezier(0.1, 0.7, 1.0, 0.1)';
+                    setTimeout(() => { fakeProgress.style.width = '80%'; }, 100);
+                    setupVideoObserver(); renderVideoBatch(); 
+                    const videosInDOM = document.querySelectorAll('.video-player'); const targetCount = Math.min(10, videosInDOM.length); 
+                    let readyCount = 0; let isResolved = false;
+                    const finishLoading = () => {
+                        if (isResolved) return; isResolved = true; fakeProgress.style.transition = 'width 0.4s ease-out'; fakeProgress.style.width = '100%';
+                        setTimeout(() => { fakeLoader.classList.add('opacity-0'); setTimeout(() => { fakeLoader.classList.add('hidden'); fakeLoader.classList.remove('flex'); }, 1000); localStorage.setItem('hasVisitedSosial', 'true'); }, 500);
+                    };
+                    const safetyTimeout = setTimeout(() => { finishLoading(); }, 15000);
+                    if (targetCount === 0) { clearTimeout(safetyTimeout); finishLoading(); } 
+                    else {
+                        videosInDOM.forEach((vid, index) => {
+                            if (index < targetCount) {
+                                vid.setAttribute('preload', 'auto'); vid.load(); 
+                                const onVideoReady = () => {
+                                    if (isResolved) return; readyCount++; const progressPercent = 80 + ((readyCount / targetCount) * 20); fakeProgress.style.width = `${progressPercent}%`;
+                                    if (readyCount >= targetCount) { clearTimeout(safetyTimeout); finishLoading(); }
+                                };
+                                if (vid.readyState >= 3) onVideoReady(); else { vid.addEventListener('canplay', onVideoReady, { once: true }); vid.addEventListener('loadeddata', onVideoReady, { once: true }); }
+                            }
+                        });
+                    }
+                } else { setupVideoObserver(); renderVideoBatch(); }
+            } catch (e) { container.innerHTML = '<p class="text-center py-20 text-gray-500">Gagal memuat video.</p>'; }
+        }
 
         function renderVideoBatch() {
             const container = document.getElementById('feed-container');
@@ -2713,13 +2607,7 @@ function closeUploadModal() {
         }
 
         async function fetchFollowStats(targetUserId) {
-            const queryFollowers = encodeURIComponent(JSON.stringify({ following_id: targetUserId }));
-const resFollowers = await oracleFetch(`follows/?q=${queryFollowers}`);
-const followers = resFollowers && resFollowers.items ? resFollowers.items.length : 0;
-
-const queryFollowing = encodeURIComponent(JSON.stringify({ follower_id: targetUserId }));
-const resFollowing = await oracleFetch(`follows/?q=${queryFollowing}`);
-const following = resFollowing && resFollowing.items ? resFollowing.items.length : 0;
+            const { count: followers } = await supabaseClient.from('follows').select('*', { count: 'exact', head: true }).eq('following_id', targetUserId);
             const { count: following } = await supabaseClient.from('follows').select('*', { count: 'exact', head: true }).eq('follower_id', targetUserId);
 
             const elPengikut = document.getElementById('stat-pengikut'); if(elPengikut) elPengikut.innerText = followers || 0;
@@ -2907,113 +2795,62 @@ function switchChatTab(tabName) {
 }
 
 // 2. GANTI FUNGSI loadChatList LAMA DENGAN INI
-let chatInterval = null; // Variabel Polling untuk menyegarkan chat otomatis
-
 async function loadChatList() {
     const cPersonal = document.getElementById('chat-personal-container');
     const cGroup = document.getElementById('chat-group-container');
     
     if (!currentUser) {
         cPersonal.innerHTML = `<div class="text-center mt-20 text-xs text-gray-500">Silakan login.</div>`;
-        if (cGroup) cGroup.innerHTML = `<div class="text-center mt-20 text-xs text-gray-500">Silakan login.</div>`;
         return;
     }
 
     cPersonal.innerHTML = '<div class="flex justify-center mt-10"><i class="fas fa-spinner fa-spin text-brand-accent text-2xl"></i></div>';
-    if (cGroup) cGroup.innerHTML = '<div class="flex justify-center mt-10"><i class="fas fa-spinner fa-spin text-brand-accent text-2xl"></i></div>';
+    cGroup.innerHTML = '<div class="flex justify-center mt-10"><i class="fas fa-spinner fa-spin text-brand-accent text-2xl"></i></div>';
 
     try {
-        // Ambil semua data yang dibutuhkan sekaligus dari Oracle
-        const [msgRes, myGroupsRes, profilesRes, storiesRes, groupsRes] = await Promise.all([
-            oracleFetch(`messages?limit=1000`),
-            oracleFetch(`group_members?limit=500`),
-            oracleFetch(`profiles?limit=1000`),
-            oracleFetch(`stories?limit=500`),
-            oracleFetch(`groups?limit=500`)
-        ]);
-
-        const allMessages = msgRes && msgRes.items ? msgRes.items : [];
-        const allMyGroupsData = myGroupsRes && myGroupsRes.items ? myGroupsRes.items.filter(g => g.user_id === currentUser.id) : [];
-        const dataProfiles = profilesRes && profilesRes.items ? profilesRes.items : [];
-        const dataStories = storiesRes && storiesRes.items ? storiesRes.items : [];
-        const dataGroups = groupsRes && groupsRes.items ? groupsRes.items : [];
-
-        // Kumpulkan ID grup saya
-        const myGroupIds = allMyGroupsData.map(g => g.group_id);
-
-        // Filter pesan: Hanya yang berkaitan dengan user ini atau grupnya
-        const messages = allMessages.filter(msg => 
-            msg.sender_id === currentUser.id || 
-            msg.receiver_id === currentUser.id || 
-            (msg.group_id && myGroupIds.includes(msg.group_id))
-        );
-
         const unreadCounts = {};
-        const personalContacts = {};
-        const groupContacts = {};
+        const { data: unreads } = await supabaseClient.from('messages').select('sender_id').is('group_id', null).eq('receiver_id', currentUser.id).eq('is_read', false);
+        if (unreads) unreads.forEach(u => { unreadCounts[u.sender_id] = (unreadCounts[u.sender_id] || 0) + 1; });
 
-        messages.forEach(msg => {
-            // Hitung unread (personal chat)
-            if (!msg.group_id && msg.receiver_id === currentUser.id && (msg.is_read === 0 || msg.is_read === 'false' || msg.is_read === false)) {
-                unreadCounts[msg.sender_id] = (unreadCounts[msg.sender_id] || 0) + 1;
-            }
+        const { data: messages } = await supabaseClient.from('messages').select('*').or(`sender_id.eq.${currentUser.id},receiver_id.eq.${currentUser.id},group_id.not.is.null`).order('created_at', { ascending: false });
+        const { data: myGroups } = await supabaseClient.from('group_members').select('group_id').eq('user_id', currentUser.id);
 
-            if (msg.group_id) {
-                if (myGroupIds.includes(msg.group_id)) {
-                    if (!groupContacts[msg.group_id] || new Date(msg.created_at) > new Date(groupContacts[msg.group_id].created_at)) {
-                        groupContacts[msg.group_id] = msg;
-                    }
+        const personalContacts = {}, groupContacts = {};
+        if (messages) {
+            messages.forEach(msg => {
+                if (msg.group_id) {
+                    if (!groupContacts[msg.group_id]) groupContacts[msg.group_id] = msg;
+                } else {
+                    const partnerId = msg.sender_id === currentUser.id ? msg.receiver_id : msg.sender_id;
+                    if (partnerId && !personalContacts[partnerId]) personalContacts[partnerId] = msg; 
                 }
-            } else {
-                const partnerId = msg.sender_id === currentUser.id ? msg.receiver_id : msg.sender_id;
-                if (partnerId) {
-                    if (!personalContacts[partnerId] || new Date(msg.created_at) > new Date(personalContacts[partnerId].created_at)) {
-                        personalContacts[partnerId] = msg;
-                    }
-                }
-            }
-        });
-
-        // Pastikan grup yang belum ada chat tetap muncul di list
-        myGroupIds.forEach(gid => {
-            if (!groupContacts[gid]) {
-                groupContacts[gid] = { created_at: '1970-01-01T00:00:00Z', is_empty: true, message: 'Grup baru dibuat' };
-            }
-        });
-
-        let personalList = [], groupList = [];
-        const partnerIds = Object.keys(personalContacts);
-        const groupIds = Object.keys(groupContacts);
-
-        // Cek story (status) 24 jam terakhir untuk animasi cincin avatar
-        let usersWithStory = [];
-        const past24h = new Date(Date.now() - 24 * 60 * 60 * 1000);
-        dataStories.forEach(s => {
-            if (new Date(s.created_at) >= past24h) {
-                if (!usersWithStory.includes(s.user_id)) usersWithStory.push(s.user_id);
-            }
-        });
-
-        // Susun daftar Chat Personal
-        if (partnerIds.length > 0) {
-            partnerIds.forEach(pid => {
-                const p = dataProfiles.find(x => x.id === pid) || { nickname: "User", avatar_url: "" };
-                personalList.push({ 
-                    type: 'personal', id: pid, name: p.nickname, avatar: p.avatar_url, 
-                    latestMsg: personalContacts[pid], unread: unreadCounts[pid] || 0, hasStory: usersWithStory.includes(pid) 
-                });
             });
         }
 
-        // Susun daftar Grup
-        if (groupIds.length > 0) {
-            groupIds.forEach(gid => {
-                const g = dataGroups.find(x => x.id === gid) || { name: "Grup", avatar_url: "" };
-                groupList.push({ 
-                    type: 'group', id: gid, name: g.name, avatar: g.avatar_url, 
-                    latestMsg: groupContacts[gid], unread: 0 
-                });
+        if (myGroups) {
+            myGroups.forEach(g => {
+                if (!groupContacts[g.group_id]) groupContacts[g.group_id] = { created_at: '1970-01-01T00:00:00Z', is_empty: true, message: 'Grup baru dibuat' }; 
             });
+        }
+
+        let personalList = [], groupList = [];
+        const partnerIds = Object.keys(personalContacts), groupIds = Object.keys(groupContacts);
+
+        // Ambil data user & cek apakah mereka punya story aktif
+        let usersWithStory = [];
+        if (partnerIds.length > 0) {
+            const { data: profiles } = await supabaseClient.from('profiles').select('id, nickname, avatar_url').in('id', partnerIds);
+            // Cek story 24 jam terakhir (Asumsi ada tabel 'stories')
+            const past24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+            const { data: activeStories } = await supabaseClient.from('stories').select('user_id').gte('created_at', past24h);
+            if (activeStories) usersWithStory = activeStories.map(s => s.user_id);
+
+            if (profiles) profiles.forEach(p => personalList.push({ type: 'personal', id: p.id, name: p.nickname, avatar: p.avatar_url, latestMsg: personalContacts[p.id], unread: unreadCounts[p.id] || 0, hasStory: usersWithStory.includes(p.id) }));
+        }
+
+        if (groupIds.length > 0) {
+            const { data: groups } = await supabaseClient.from('groups').select('id, name, avatar_url').in('id', groupIds);
+            if (groups) groups.forEach(g => groupList.push({ type: 'group', id: g.id, name: g.name, avatar: g.avatar_url, latestMsg: groupContacts[g.id], unread: 0 }));
         }
 
         personalList.sort((a, b) => new Date(b.latestMsg.created_at) - new Date(a.latestMsg.created_at));
@@ -3021,13 +2858,14 @@ async function loadChatList() {
 
         let deletedForMe = JSON.parse(localStorage.getItem('deleted_msgs') || '[]');
         
+        // Fungsi helper render HTML Row
         const renderRow = (item, isGroup) => {
             const ava = item.avatar || `https://ui-avatars.com/api/?name=${item.name}&background=1A1133&color=fff`;
             const msg = item.latestMsg;
             let prefix = '', preview = msg.message;
 
             if (isGroup && !msg.is_empty) prefix = msg.sender_id === currentUser.id ? 'Anda: ' : '<i class="fas fa-user text-[8px] mr-1"></i> ';
-            else if (!isGroup && msg.sender_id === currentUser.id) prefix = (msg.is_read || msg.is_read === 'true' || msg.is_read === 1) ? '<i class="fas fa-check-double text-brand-info mr-1 text-[10px]"></i>' : '<i class="fas fa-check text-white/60 mr-1 text-[10px]"></i>';
+            else if (!isGroup && msg.sender_id === currentUser.id) prefix = (msg.is_read || msg.is_read === 'true') ? '<i class="fas fa-check-double text-brand-info mr-1 text-[10px]"></i>' : '<i class="fas fa-check text-white/60 mr-1 text-[10px]"></i>';
 
             if (preview === '[DELETED]') { preview = '<i class="fas fa-ban mr-1"></i> Dihapus'; prefix = ''; } 
             else if (deletedForMe.includes(msg.id)) { preview = '...'; prefix = ''; } 
@@ -3036,6 +2874,7 @@ async function loadChatList() {
             const badge = item.unread > 0 ? `<div class="bg-brand-accent text-white text-[9px] font-bold w-4 h-4 flex items-center justify-center rounded-full ml-2">${item.unread}</div>` : '';
             const icon = isGroup ? '<div class="absolute -bottom-1 -right-1 bg-brand-dark p-0.5 rounded-full"><i class="fas fa-users text-[10px] text-brand-info"></i></div>' : '';
             
+            // Logika Klik Avatar (Buka Story jika ada, selain itu buka profil)
             const ringClass = item.hasStory ? 'story-ring' : 'border border-white/10';
             const avatarClickCode = item.hasStory ? `event.stopPropagation(); viewStory('${item.id}', '${item.name}', '${ava}')` : `event.stopPropagation(); viewUserProfile('${item.id}')`;
 
@@ -3053,23 +2892,11 @@ async function loadChatList() {
         };
 
         cPersonal.innerHTML = personalList.length ? personalList.map(i => renderRow(i, false)).join('') : '<p class="text-center text-xs text-gray-500 mt-10">Belum ada obrolan.</p>';
-        if (cGroup) cGroup.innerHTML = groupList.length ? groupList.map(i => renderRow(i, true)).join('') : '<p class="text-center text-xs text-gray-500 mt-10">Belum ada grup.</p>';
+        cGroup.innerHTML = groupList.length ? groupList.map(i => renderRow(i, true)).join('') : '<p class="text-center text-xs text-gray-500 mt-10">Belum ada grup.</p>';
         
-        // Update notifikasi merah (badge) di tombol chat mengambang
-        const badgeBtn = document.getElementById('global-chat-badge');
-        if(badgeBtn) {
-            const totalUnread = Object.values(unreadCounts).reduce((a, b) => a + b, 0);
-            if(totalUnread > 0) {
-                badgeBtn.innerText = totalUnread > 99 ? '99+' : totalUnread;
-                badgeBtn.classList.remove('hidden');
-            } else {
-                badgeBtn.classList.add('hidden');
-            }
-        }
-
+        checkGlobalUnreadMessages();
     } catch (e) { 
         cPersonal.innerHTML = '<div class="p-6 text-center text-xs text-red-500">Gagal memuat pesan.</div>'; 
-        if (cGroup) cGroup.innerHTML = '<div class="p-6 text-center text-xs text-red-500">Gagal memuat grup.</div>';
     }
 }
 
@@ -3216,139 +3043,93 @@ function closeStoryViewer() {
     }, 300);
 }
         async function openChatRoom(targetId, name, avatar, isGroup = false) {
-            if (!currentUser) return;
-            
-            if (isGroup) { activeGroupId = targetId; activeChatUserId = null; } 
-            else { activeChatUserId = targetId; activeGroupId = null; }
-            
-            document.getElementById('chat-list-view').classList.add('hidden'); document.getElementById('chat-list-view').classList.remove('flex');
-            document.getElementById('chat-room-view').classList.remove('hidden'); document.getElementById('chat-room-view').classList.add('flex');
-            
-            document.getElementById('active-chat-name').innerText = name;
-            document.getElementById('active-chat-avatar').src = avatar;
+    if (!currentUser) return;
+    
+    if (isGroup) { activeGroupId = targetId; activeChatUserId = null; } 
+    else { activeChatUserId = targetId; activeGroupId = null; }
+    
+    document.getElementById('chat-list-view').classList.add('hidden'); document.getElementById('chat-list-view').classList.remove('flex');
+    document.getElementById('chat-room-view').classList.remove('hidden'); document.getElementById('chat-room-view').classList.add('flex');
+    
+    document.getElementById('active-chat-name').innerText = name;
+    document.getElementById('active-chat-avatar').src = avatar;
 
-            const container = document.getElementById('chat-messages-container');
-            container.innerHTML = '<div class="flex justify-center mt-10"><i class="fas fa-spinner fa-spin text-brand-accent text-xl"></i></div>';
+    const container = document.getElementById('chat-messages-container');
+    container.innerHTML = '<div class="flex justify-center mt-10"><i class="fas fa-spinner fa-spin text-brand-accent text-xl"></i></div>';
 
-            document.getElementById('btn-send-room').onclick = () => sendRoomMessage(targetId, isGroup);
+    document.getElementById('btn-send-room').onclick = () => sendRoomMessage(targetId, isGroup);
 
-            // Update pesan menjadi dibaca di Oracle (Hanya untuk personal chat)
-            if (!isGroup) {
-                const queryUnread = encodeURIComponent(JSON.stringify({ sender_id: targetId, receiver_id: currentUser.id, is_read: 0 }));
-                oracleFetch(`messages?q=${queryUnread}`).then(res => {
-                    if(res && res.items) res.items.forEach(m => oracleFetch(`messages/${m.id}`, { method: 'PUT', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({...m, is_read: 1}) }));
-                });
-            }
+    if (!isGroup) await supabaseClient.from('messages').update({ is_read: true }).eq('sender_id', targetId).eq('receiver_id', currentUser.id).eq('is_read', false);
 
-            await fetchMessages(targetId, isGroup);
-            
-            // Hapus interval lama jika ada, lalu mulai Polling Penyegaran Chat setiap 3 detik
-            if (typeof chatInterval !== 'undefined' && chatInterval) clearInterval(chatInterval);
-            chatInterval = setInterval(() => fetchMessages(targetId, isGroup, true), 3000);
-        }
+    let query = supabaseClient.from('messages').select('*');
+    if (isGroup) query = query.eq('group_id', targetId);
+    else query = query.or(`and(sender_id.eq.${currentUser.id},receiver_id.eq.${targetId},group_id.is.null),and(sender_id.eq.${targetId},receiver_id.eq.${currentUser.id},group_id.is.null)`);
+    
+    const { data: messages } = await query.order('created_at', { ascending: true });
 
-        // FUNGSI BARU: Dipisahkan agar polling bisa berjalan di latar belakang
-        async function fetchMessages(targetId, isGroup, isPolling = false) {
-            try {
-                let queryObj;
-                if (isGroup) {
-                    queryObj = { group_id: targetId };
-                } else {
-                    queryObj = { "$or": [
-                        { "$and": [{ "sender_id": currentUser.id }, { "receiver_id": targetId }] },
-                        { "$and": [{ "sender_id": targetId }, { "receiver_id": currentUser.id }] }
-                    ]};
-                }
-                
-                const queryStr = encodeURIComponent(JSON.stringify(queryObj));
-                const res = await oracleFetch(`messages?q=${queryStr}&limit=200`);
-                
-                let messages = res && res.items ? res.items : [];
-                if (!isGroup) messages = messages.filter(m => !m.group_id);
+    container.innerHTML = '';
+    if(messages && messages.length > 0) messages.forEach(msg => appendMessageBubble(msg));
+    else container.innerHTML = `<div class="flex flex-col items-center justify-center h-full opacity-50"><p class="text-xs text-gray-300">Kirim pesan pertama</p></div>`;
+    
+    scrollToBottomChat();
 
-                messages.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+    if (messageSubscription) supabaseClient.removeChannel(messageSubscription);
+    messageSubscription = supabaseClient.channel(isGroup ? `group_${targetId}` : `room_${targetId}`)
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => {
+            const newMsg = payload.new;
+            const isTarget = isGroup ? newMsg.group_id === activeGroupId : (newMsg.sender_id === activeChatUserId && newMsg.receiver_id === currentUser.id);
+            if (isTarget) { appendMessageBubble(newMsg); scrollToBottomChat(); if(!isGroup) supabaseClient.from('messages').update({ is_read: true }).eq('id', newMsg.id).then(); }
+        }).subscribe();
+}
 
-                const container = document.getElementById('chat-messages-container');
-                
-                // Jika sedang polling, jangan render ulang jika jumlah pesan sama (agar tidak berkedip)
-                if (isPolling) {
-                    const currentMsgCount = container.children.length;
-                    if (messages.length === currentMsgCount) return; 
-                }
+async function sendRoomMessage(targetId, isGroup) {
+    if (!currentUser) return showToast("Silakan login terlebih dahulu!", "error");
+    
+    const input = document.getElementById('chat-room-input');
+    const msg = input.value.trim();
+    if (!msg) return;
 
-                container.innerHTML = '';
-                if(messages.length > 0) {
-                    messages.forEach(msg => appendMessageBubble(msg));
-                    scrollToBottomChat();
-                } else {
-                    container.innerHTML = `<div class="flex flex-col items-center justify-center h-full opacity-50"><p class="text-xs text-gray-300">Kirim pesan pertama</p></div>`;
-                }
-            } catch(e) {}
-        }
+    input.value = ''; // Kosongkan input
+    const btn = document.getElementById('btn-send-room');
+    btn.disabled = true;
 
-        async function sendRoomMessage(targetId, isGroup) {
-            if (!currentUser) return showToast("Silakan login terlebih dahulu!", "error");
-            
-            const input = document.getElementById('chat-room-input');
-            const msg = input.value.trim();
-            if (!msg) return;
+    // Tampilkan pesan sementara di layar agar terasa instan (Optimistic UI)
+    const tempId = 'temp-' + Date.now();
+    const tempMsg = { 
+        id: tempId, 
+        sender_id: currentUser.id, 
+        message: msg, 
+        created_at: new Date().toISOString() 
+    };
+    if (isGroup) tempMsg.group_id = targetId;
+    else tempMsg.receiver_id = targetId;
+    
+    appendMessageBubble(tempMsg);
+    scrollToBottomChat();
 
-            input.value = ''; 
-            const btn = document.getElementById('btn-send-room');
-            btn.disabled = true;
+    // Proses kirim ke Supabase
+    try {
+        const insertData = { sender_id: currentUser.id, message: msg };
+        if (isGroup) insertData.group_id = targetId;
+        else insertData.receiver_id = targetId;
 
-            // Optimistic UI: Tampilkan pesan sementara di layar
-            const tempId = 'temp-' + Date.now();
-            const tempMsg = { 
-                id: tempId, 
-                sender_id: currentUser.id, 
-                message: msg, 
-                created_at: new Date().toISOString(),
-                is_read: 0
-            };
-            if (isGroup) tempMsg.group_id = targetId;
-            else tempMsg.receiver_id = targetId;
-            
-            appendMessageBubble(tempMsg);
-            scrollToBottomChat();
-
-            // Proses kirim ke Oracle
-            try {
-                const insertData = {
-                    id: 'msg_' + Date.now(),
-                    sender_id: currentUser.id, 
-                    message: msg,
-                    is_read: 0
-                };
-                if (isGroup) insertData.group_id = targetId;
-                else insertData.receiver_id = targetId;
-
-                await oracleFetch('messages', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(insertData)
-                });
-            } catch (err) {
-                showToast("Gagal mengirim pesan", "error");
-            } finally {
-                btn.disabled = false;
-                input.focus();
-            }
-        }
+        const { error } = await supabaseClient.from('messages').insert(insertData);
+        if (error) throw error;
+    } catch (err) {
+        showToast("Gagal mengirim pesan", "error");
+    } finally {
+        btn.disabled = false;
+        input.focus();
+    }
+}
 
         function closeChatRoom(reloadList = true, fromPopstate = false) {
-            activeChatUserId = null; activeGroupId = null; 
-            
-            // Matikan polling Oracle (Menggantikan removeChannel Supabase)
-            if (typeof chatInterval !== 'undefined' && chatInterval) { 
-                clearInterval(chatInterval); 
-                chatInterval = null; 
-            }
-            
-            document.getElementById('chat-list-view').classList.remove('hidden'); document.getElementById('chat-list-view').classList.add('flex');
-            document.getElementById('chat-room-view').classList.add('hidden'); document.getElementById('chat-room-view').classList.remove('flex');
-            if(reloadList) loadChatList(); 
-        }
+    activeChatUserId = null; activeGroupId = null; // Tambahan penting
+    if (messageSubscription) { supabaseClient.removeChannel(messageSubscription); messageSubscription = null; }
+    document.getElementById('chat-list-view').classList.remove('hidden'); document.getElementById('chat-list-view').classList.add('flex');
+    document.getElementById('chat-room-view').classList.add('hidden'); document.getElementById('chat-room-view').classList.remove('flex');
+    if(reloadList) loadChatList(); 
+}
 
         function appendMessageBubble(msg) {
             const container = document.getElementById('chat-messages-container');
@@ -3455,66 +3236,68 @@ function closeStoryViewer() {
 }
         
         async function prosesUploadVideo() {
-    if (!currentUser) return openAuthModal();
-    
-    const fileInput = document.getElementById('input-video-file');
-    const captionInput = document.getElementById('input-video-caption');
-    const file = fileInput.files[0];
-    if (!file) return showToast("Pilih video dulu!", "error");
+            if (!currentUser) return openAuthModal();
+            
+            const fileInput = document.getElementById('input-video-file');
+            const captionInput = document.getElementById('input-video-caption');
+            const file = fileInput.files[0];
+            if (!file) return showToast("Pilih video dulu!", "error");
 
-    const btn = document.querySelector('button[onclick="prosesUploadVideo()"]');
-    btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-    
-    // Kunci window unload
-    isUploading = true;
+            const btn = document.querySelector('button[onclick="prosesUploadVideo()"]');
+            btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            
+            // Kunci window unload
+            isUploading = true;
 
-    try {
-        // 1. Upload file ke Storage Anda (Sistem asli Anda dipertahankan)
-        const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent(file.name)}&filetype=${encodeURIComponent(file.type)}`);
-        const dataUrl = await resUrl.json();
+            try {
+                const configRes = await fetch('/api/get-config');
+                const config = await configRes.json();
+                
+                if (!config.gasUrl) throw new Error("Link GAS tidak ditemukan di config");
 
-        await fetch(dataUrl.uploadUrl, { method: 'PUT', body: file, headers: { 'Content-Type': file.type } });
+                const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent(file.name)}&filetype=${file.type}`);
+                const dataUrl = await resUrl.json();
 
-        // 2. BAGIAN BARU: Simpan data POST ke Database Oracle
-        const payload = {
-            id: 'vid_' + Date.now(),
-            user_id: currentUser.id,
-            video_url: dataUrl.finalVideoUrl,
-            caption: captionInput.value || ""
-            // Catatan: nickname, avatar, dan created_at tidak perlu dikirim karena
-            // Oracle mengambil created_at otomatis dan nickname/avatar di-join saat meload video
-        };
+                await fetch(dataUrl.uploadUrl, { method: 'PUT', body: file, headers: { 'Content-Type': file.type } });
 
-        const dbRes = await oracleFetch('videos', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
+                const spreadsheetPayload = {
+                    id: 'vid_' + Date.now(),
+                    video_url: dataUrl.finalVideoUrl,
+                    caption: captionInput.value || "",
+                    nickname: userProfile?.nickname || "Player",
+                    avatar_url: userProfile?.avatar_url || "",
+                    user_id: currentUser.id,
+                    created_at: new Date().toISOString()
+                };
 
-        if (!dbRes) throw new Error("Gagal menyimpan data ke database Oracle");
+                await fetch(config.gasUrl, {
+                    method: 'POST',
+                    mode: 'no-cors', 
+                    headers: { 'Content-Type': 'text/plain' },
+                    body: JSON.stringify(spreadsheetPayload)
+                });
 
-        showToast("Berhasil diposting!", "success");
-        
-        fileInput.value = ''; captionInput.value = ''; 
-        closeUploadModal();
-        allVideosData = []; 
-        
-        // Smart Redirect: Cek apakah halaman sblmnya valid, jika tidak lempar ke feed sosial
-        if (tabSebelumnya && tabSebelumnya !== 'sosial' && tabSebelumnya !== 'upload') {
-            switchTab(tabSebelumnya);
-        } else {
-            switchTab('sosial');
+                showToast("Berhasil diposting!", "success");
+                
+                fileInput.value = ''; captionInput.value = ''; 
+                closeUploadModal();
+                allVideosData = []; 
+                
+                // Smart Redirect: Cek apakah halaman sblmnya valid, jika tidak lempar ke feed sosial
+                if (tabSebelumnya && tabSebelumnya !== 'sosial' && tabSebelumnya !== 'upload') {
+                    switchTab(tabSebelumnya);
+                } else {
+                    switchTab('sosial');
+                }
+                loadVideos();
+
+            } catch (err) {
+                showToast("Error: " + err.message, "error");
+            } finally {
+                btn.disabled = false; btn.innerHTML = '<i class="fas fa-paper-plane mr-2"></i> Posting Video';
+                isUploading = false; // Buka kunci window unload
+            }
         }
-        loadVideos();
-
-    } catch (err) {
-        showToast("Error: " + err.message, "error");
-    } finally {
-        btn.disabled = false; 
-        btn.innerHTML = '<i class="fas fa-paper-plane mr-2"></i> Posting Video';
-        isUploading = false; // Buka kunci window unload
-    }
-}
         
         async function uploadChatImage(event) {
     const file = event.target.files[0];
