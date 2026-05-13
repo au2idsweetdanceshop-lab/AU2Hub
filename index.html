@@ -949,7 +949,9 @@
 async function oracleFetch(table, options = {}) {
     try {
         // Pastikan URL bersih dari spasi
-        const url = ORACLE_API.trim() + table;
+        const baseUrl = ORACLE_API.trim().replace(/\/$/, ''); // Hapus garis miring di akhir jika ada
+const endpoint = table.replace(/^\//, ''); // Hapus garis miring di awal jika ada
+const url = `${baseUrl}/${endpoint}`;
         
         const response = await fetch(url, {
             ...options,
