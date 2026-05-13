@@ -3812,74 +3812,93 @@ function updateSeek(e, containerElement, video) {
 }
 </script>
 <!-- ======================================================================= -->
-<!-- SCRIPT SUNTIKAN SUPER OPTIMASI V2 (ANTI STUCK SAAT SCROLL CEPAT)        -->
+<!-- SCRIPT SUNTIKAN SUPER OPTIMASI V3 (FINAL: VIDEO JALAN & RAM AMAN)       -->
 <!-- ======================================================================= -->
 <script>
     window.addEventListener('load', () => {
         
         // ---------------------------------------------------------
-        // 1. SUNTIKAN TIKTOK V2 (MEMORI AMAN, SCROLL MULUS)
+        // 1. SUNTIKAN TIKTOK V3 (FIX BUG OBSERVER & SOURCE TAG)
         // ---------------------------------------------------------
         window.setupVideoObserver = function() {
-            if (window.obs) window.obs.disconnect();
+            // Putuskan koneksi observer lama (memakai variabel 'obs' dari kode asli Anda)
+            if (typeof obs !== 'undefined' && obs) obs.disconnect();
 
-            // Kita buat tempat penyimpanan timer
             window.videoClearTimers = window.videoClearTimers || new Map();
 
-            window.obs = new IntersectionObserver(es => {
+            // SANGAT PENTING: Kita timpa langsung variabel 'obs', bukan 'window.obs'
+            obs = new IntersectionObserver(es => {
                 es.forEach(e => { 
                     const video = e.target;
                     
                     if (e.isIntersecting) {
-                        // Batalin timer penghapusan kalau video masuk ke layar lagi
+                        // Batalin penghapusan jika video terburu-buru balik ke layar
                         if (window.videoClearTimers.has(video)) {
                             clearTimeout(window.videoClearTimers.get(video));
                             window.videoClearTimers.delete(video);
                         }
 
-                        // Kembalikan video jika sempat dihapus
-                        if (!video.src && video.dataset.src) {
-                            video.src = video.dataset.src;
+                        // Restore video jika sebelumnya dikosongkan
+                        if (video.dataset.savedSrc) {
+                            video.src = video.dataset.savedSrc;
+                            video.dataset.savedSrc = ''; 
+                            video.load(); // Perintah agar browser merender ulang URL
                         }
                         
                         video.muted = (typeof isGlobalMuted !== 'undefined') ? isGlobalMuted : true;
                         
-                        // Play video dengan pelindung Error (agar tidak stuck saat scroll cepat)
-                        const playPromise = video.play();
-                        if (playPromise !== undefined) {
-                            playPromise.catch(error => {
-                                // Abaikan error jika video keburu di-pause sebelum sempat play
-                            });
+                        // Mainkan video dengan aman
+                        const playVideo = () => {
+                            const playPromise = video.play();
+                            if (playPromise !== undefined) {
+                                playPromise.catch(err => { /* Abaikan error autoplay browser */ });
+                            }
+                        };
+
+                        // Tunggu video sampai siap dimainkan
+                        if (video.readyState >= 2) {
+                            playVideo();
+                        } else {
+                            video.onloadeddata = () => {
+                                video.classList.remove('opacity-0'); // Munculkan efek transisi
+                                playVideo();
+                            };
                         }
                         
                     } else { 
-                        // Langsung pause saat keluar layar (ini cepat dan ringan)
+                        // Saat scroll terlewat, langsung PAUSE
                         video.pause(); 
                         
-                        // TUNDA PENGHAPUSAN MEMORI 1.5 DETIK
-                        // Jadi kalau user cuma scroll lewat, RAM tidak dikuras paksa
+                        // Jeda 1.5 detik sebelum MENGHANCURKAN memori
                         const timerId = setTimeout(() => {
-                            if (video.src) {
-                                video.dataset.src = video.src;
+                            // Cek URL (mendukung atribut src langsung maupun tag <source>)
+                            let currentUrl = video.currentSrc || video.src || (video.querySelector('source') ? video.querySelector('source').src : '');
+                            
+                            // Jika ada URL-nya, hancurkan dari RAM!
+                            if (currentUrl && currentUrl.length > 5) {
+                                video.dataset.savedSrc = currentUrl; // Simpan dulu
+                                
                                 video.removeAttribute('src'); 
-                                video.load(); // Bersihkan RAM
+                                if (video.querySelector('source')) {
+                                    video.querySelector('source').removeAttribute('src');
+                                }
+                                video.load(); // Kosongkan RAM!
                             }
                             window.videoClearTimers.delete(video);
-                        }, 1500); // 1500 milidetik = 1.5 detik
+                        }, 1500);
 
                         window.videoClearTimers.set(video, timerId);
                     }
                 });
-            }, { threshold: 0.5 }); // Threshold diturunkan sedikit agar lebih responsif
+            }, { threshold: 0.5 });
 
-            // Terapkan ke video yang sudah ada
+            // Hubungkan ke semua video yang sudah ter-render di layar
             const videos = document.querySelectorAll('.video-player, .float-video-player');
-            videos.forEach(v => window.obs.observe(v));
+            videos.forEach(v => obs.observe(v));
         };
 
         // ---------------------------------------------------------
         // 2. SUNTIKAN WHATSAPP (CACHE LOKAL CHAT & LIMIT)
-        // (Ini tetap sama, karena sudah bekerja dengan baik)
         // ---------------------------------------------------------
         window.openChatRoom = async function(targetId, name, avatar, isGroup = false) {
             if (typeof currentUser === 'undefined' || !currentUser) return;
@@ -3943,14 +3962,12 @@ function updateSeek(e, containerElement, video) {
                 }).subscribe();
         };
 
-        // AKTIFKAN SEMUA SUNTIKAN
+        // AKTIFKAN SEMUA SUNTIKAN KETIKA APLIKASI SELESAI DIMUAT
         setTimeout(() => {
             if (typeof setupVideoObserver === 'function') setupVideoObserver();
-            console.log("💉 Suntikan Optimasi V2 Berhasil Diaktifkan!");
-        }, 500);
+            console.log("💉 Suntikan Optimasi V3 (Final Fix) Berhasil Diaktifkan!");
+        }, 800);
     });
-
-        
     </script>
 </body>
 </html>
