@@ -506,8 +506,34 @@
                 </div>
             </div>
         </div>
+        
+            <!-- MODAL PREVIEW STORY ALA WHATSAPP -->
+    <div id="modal-story-preview" class="fixed inset-0 z-[700] hidden items-center justify-center bg-black/95 backdrop-blur-xl transition-all duration-300 opacity-0">
+        <div class="w-full h-full sm:max-w-md sm:h-[90vh] bg-brand-dark sm:rounded-[2.5rem] border border-white/10 overflow-hidden shadow-2xl flex flex-col relative transform scale-95 transition-transform duration-300" id="story-preview-content">
+            
+            <!-- Header Batal -->
+            <button onclick="closeStoryPreview()" class="absolute top-4 left-4 z-50 text-white w-10 h-10 rounded-full flex items-center justify-center bg-black/40 backdrop-blur-md border border-white/20 active:scale-90 transition-transform">
+                <i class="fas fa-times text-lg"></i>
+            </button>
+            
+            <!-- Area Preview Gambar / Video -->
+            <div class="flex-1 bg-black relative flex items-center justify-center overflow-hidden">
+                <img id="story-preview-img" class="w-full h-full object-contain hidden">
+                <video id="story-preview-vid" class="w-full h-full object-contain hidden" autoplay loop muted playsinline></video>
+            </div>
+            
+            <!-- Area Input Caption -->
+            <div class="p-4 bg-brand-card/90 backdrop-blur-lg border-t border-white/10 flex items-center gap-3 w-full pb-6 sm:pb-4">
+                <input type="text" id="story-caption-input" placeholder="Tambahkan keterangan..." class="flex-1 bg-black/50 border border-white/10 rounded-full px-5 py-3 text-sm text-white focus:outline-none focus:border-brand-accent transition-colors">
+                <button id="btn-send-story" onclick="submitStory()" class="bg-brand-accent text-white w-12 h-12 rounded-full flex items-center justify-center active:scale-90 transition-transform shrink-0 shadow-[0_0_15px_rgba(255,0,122,0.4)]">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </div>
+        </div>
+    </div>
 
-        <!-- FULLSCREEN STORY VIEWER -->
+
+                <!-- FULLSCREEN STORY VIEWER (DIPERBARUI) -->
         <div id="story-viewer-modal" class="fixed inset-0 z-[600] hidden items-center justify-center bg-black/95 backdrop-blur-md opacity-0 transition-opacity duration-300">
             <!-- Progress Bar Story -->
             <div class="absolute top-4 left-4 right-4 flex gap-1 z-50">
@@ -524,14 +550,21 @@
                 </div>
                 <button onclick="closeStoryViewer()" class="text-white text-2xl drop-shadow-md active:scale-90"><i class="fas fa-times"></i></button>
             </div>
-            <!-- Media Story -->
-            <img id="viewer-story-img" src="" class="w-full h-full object-contain">
+            
+            <!-- Media Story (Gambar & Video) -->
+            <img id="viewer-story-img" src="" class="w-full h-full object-contain hidden">
+            <video id="viewer-story-vid" src="" class="w-full h-full object-contain hidden" playsinline></video>
+            
+            <!-- Text Caption -->
+            <div id="viewer-story-caption" class="absolute bottom-16 sm:bottom-10 left-4 right-4 text-white text-sm text-center drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] bg-black/50 p-3 rounded-2xl backdrop-blur-sm hidden z-40 leading-relaxed border border-white/10"></div>
+
             <!-- Area Ketuk Kiri/Kanan -->
-            <div class="absolute inset-0 flex">
+            <div class="absolute inset-0 flex z-30">
                 <div class="w-1/2 h-full" onclick="prevStory()"></div>
                 <div class="w-1/2 h-full" onclick="nextStory()"></div>
             </div>
         </div>
+
 
     </main>
     
@@ -761,6 +794,8 @@
                      </div>
                 </div>
             </label>
+            
+            
 
             <!-- Kolom Caption -->
             <div class="relative group">
@@ -1820,7 +1855,7 @@ function closeUploadModal() {
             const nextBatch = currentProfileVideos.slice(profileFeedIndex, profileFeedIndex + 3);
             if (nextBatch.length === 0) return;
 
-                                    const htmlString = nextBatch.map((vid) => `
+                              const htmlString = nextBatch.map((vid) => `
                 <div class="snap-start w-full h-full flex-shrink-0 relative flex items-center justify-center overflow-hidden bg-black/95 px-0 sm:px-4 py-0 sm:py-6">
                     <div class="w-full max-w-sm aspect-[9/16] relative bg-brand-dark mx-auto h-full sm:h-auto sm:rounded-3xl overflow-hidden shadow-2xl">
                         <div class="absolute inset-0 flex items-center justify-center z-0"><div class="w-12 h-12 border-4 border-brand-accent/20 border-t-brand-accent rounded-full animate-spin"></div></div>
@@ -1831,69 +1866,45 @@ function closeUploadModal() {
                             <source src="${vid.video_url}" type="video/mp4">
                         </video>
                         
-                        <!-- INI INDIKATOR WAKTU POPUP -->
                         <div class="time-indicator absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-white font-extrabold text-4xl drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)] opacity-0 transition-opacity z-[60] pointer-events-none tracking-wider bg-black/40 px-6 py-2 rounded-2xl backdrop-blur-sm">
                             <span class="time-current">00:00</span> <span class="text-white/50 text-2xl mx-1">/</span> <span class="time-total text-white/70">00:00</span> 
                         </div>
 
-                        <!-- Progress Bar Scrubber (Area Bawah) -->
                         <div class="absolute bottom-0 left-0 w-full h-3 z-50 cursor-pointer group touch-none flex flex-col justify-end pb-1"
-                             onpointerdown="startSeek(event, this)" 
-                             onpointermove="doSeek(event, this)" 
-                             onpointerup="endSeek(event, this)" 
-                             onpointercancel="endSeek(event, this)">
+                             onpointerdown="startSeek(event, this)" onpointermove="doSeek(event, this)" onpointerup="endSeek(event, this)">
                             <div class="w-full h-1 bg-white/30 relative">
-                                <div class="progress-fill h-full bg-white w-0 relative pointer-events-none transition-all duration-75 ease-linear">
-                                    <div class="absolute -right-2 top-1/2 -translate-y-1/2 w-4 h-4 bg-white rounded-full scale-0 group-hover:scale-100 transition-transform shadow-md"></div>
-                                </div>
+                                <div class="progress-fill h-full bg-white w-0 relative pointer-events-none transition-all duration-75 ease-linear"></div>
                             </div>
                         </div>
 
                         <div class="absolute bottom-0 left-0 w-full p-6 flex justify-between items-end z-20 pointer-events-none bg-gradient-to-t from-black/80 to-transparent pb-10 sm:pb-6">
                             <div class="text-white drop-shadow-lg w-[75%] pointer-events-auto">
-                                <p class="font-bold text-[15px] shadow-black drop-shadow-md mb-1.5">@${vid.nickname || "Player"}</p>
-                                <div onclick="this.classList.toggle('expanded')" class="caption-text text-[13px] opacity-90 shadow-black drop-shadow-md cursor-pointer pr-2 leading-relaxed">${formatCaption(vid.caption)}</div>
+                                <p class="font-bold text-[15px] mb-1.5">@${vid.nickname || "Player"}</p>
+                                <div onclick="this.classList.toggle('expanded')" class="caption-text text-[13px] opacity-90 cursor-pointer pr-2 leading-relaxed">${formatCaption(vid.caption)}</div>
                             </div>
                             
-                            <!-- KUMPULAN ICON PROFIL KANAN (STYLE TIKTOK) -->
+                            <!-- CONTAINER IKON TUNGGAL (TIDAK MENUMPUK) -->
                             <div class="flex flex-col gap-4 items-center pointer-events-auto mb-2 mr-1">
-                                
-                                <!-- Like -->
                                 <div class="like-container flex flex-col items-center gap-0.5" data-vid="${vid.id}">
-                                    <button onclick="likeVideo('${vid.id}', this)" class="hover:scale-110 transition-transform active:scale-90">
-                                        <i class="fas fa-heart text-[32px] text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]"></i>
-                                    </button>
-                                    <span class="like-count-display text-white text-[12px] font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">0</span>
+                                    <button onclick="likeVideo('${vid.id}', this)" class="active:scale-90"><i class="fas fa-heart text-[32px] text-white"></i></button>
+                                    <span class="like-count-display text-white text-[12px] font-bold">0</span>
                                 </div>
-
-                                <!-- Komentar -->
                                 <div class="comment-count-container flex flex-col items-center gap-0.5" data-vid="${vid.id}">
-                                    <button onclick="openComments('${vid.id}')" class="hover:scale-110 transition-transform active:scale-90">
-                                        <i class="fas fa-comment-dots text-[32px] text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]" style="transform: scaleX(-1);"></i>
-                                    </button>
-                                    <span class="comment-count-display text-white text-[12px] font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">0</span>
+                                    <button onclick="openComments('${vid.id}')" class="active:scale-90"><i class="fas fa-comment-dots text-[32px] text-white" style="transform: scaleX(-1);"></i></button>
+                                    <span class="comment-count-display text-white text-[12px] font-bold">0</span>
                                 </div>
-
-                                <!-- Share -->
-                                <div class="flex flex-col items-center gap-0.5 mt-1">
-                                    <button onclick="shareVideo('${vid.id}', this)" class="hover:scale-110 transition-transform active:scale-90">
-                                        <i class="fas fa-share text-[30px] text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]"></i>
-                                    </button>
-                                    <span class="text-white text-[11px] font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">Share</span>
+                                <div class="flex flex-col items-center gap-0.5">
+                                    <button onclick="shareVideo('${vid.id}', this)" class="active:scale-90"><i class="fas fa-share text-[30px] text-white"></i></button>
+                                    <span class="text-white text-[11px] font-bold">Share</span>
                                 </div>
-
-                                <!-- Hapus (Hanya muncul jika profil sendiri) -->
                                 ${currentUser && vid.user_id === currentUser.id ? `
-                                <button onclick="deleteVideo('${vid.id}')" class="hover:scale-110 transition-transform mt-3 active:scale-90">
-                                    <div class="bg-black/50 p-2 rounded-full border border-white/20 backdrop-blur-sm">
-                                        <i class="fas fa-trash text-red-500 text-xl drop-shadow-md"></i>
-                                    </div>
-                                </button>
+                                <button onclick="deleteVideo('${vid.id}')" class="mt-3"><i class="fas fa-trash text-red-500 text-xl"></i></button>
                                 ` : ''}
                             </div>
                         </div>
                     </div>
                 </div>`).join('');
+
 
 
 
@@ -3045,40 +3056,119 @@ async function loadStories() {
     }
 }
 
-async function handleUploadStory(event) {
+// ==========================================
+// 3. LOGIKA STORY / STATUS (DIPERBARUI ALA WHATSAPP)
+// ==========================================
+let currentActiveStories = [];
+let currentStoryTimer;
+let pendingStoryFile = null; // Menyimpan file sementara sebelum dikirim
+
+// [Fungsi loadStories kamu yang lama biarkan saja, atau pastikan aman]
+
+// A. MUNCULKAN PREVIEW SAAT FILE DIPILIH
+function handleUploadStory(event) {
     const file = event.target.files[0];
     if (!file) return;
-    event.target.value = ''; 
-    showToast("Mengunggah status...", "info");
+    
+    pendingStoryFile = file;
+    const modal = document.getElementById('modal-story-preview');
+    const imgPreview = document.getElementById('story-preview-img');
+    const vidPreview = document.getElementById('story-preview-vid');
+    
+    // Reset layar
+    imgPreview.classList.add('hidden');
+    vidPreview.classList.add('hidden');
+    vidPreview.pause();
+    document.getElementById('story-caption-input').value = '';
+    
+    const fileUrl = URL.createObjectURL(file);
+    
+    // Cek apakah itu video atau gambar
+    if (file.type.startsWith('video/')) {
+        vidPreview.src = fileUrl;
+        vidPreview.classList.remove('hidden');
+    } else {
+        imgPreview.src = fileUrl;
+        imgPreview.classList.remove('hidden');
+    }
+    
+    // Tampilkan Animasi Jendela Preview
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    setTimeout(() => {
+        modal.classList.remove('opacity-0');
+        document.getElementById('story-preview-content').classList.remove('scale-95');
+        document.getElementById('story-preview-content').classList.add('scale-100');
+    }, 10);
+    
+    event.target.value = ''; // Reset input agar bisa upload file yang sama lagi
+}
 
+// B. TUTUP PREVIEW (BATAL)
+function closeStoryPreview() {
+    const modal = document.getElementById('modal-story-preview');
+    modal.classList.add('opacity-0');
+    document.getElementById('story-preview-content').classList.add('scale-95');
+    document.getElementById('story-preview-content').classList.remove('scale-100');
+    
+    setTimeout(() => {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+        document.getElementById('story-preview-vid').pause();
+        document.getElementById('story-preview-vid').src = '';
+        document.getElementById('story-preview-img').src = '';
+        pendingStoryFile = null;
+    }, 300);
+}
+
+// C. TOMBOL KIRIM (UPLOAD BENERAN)
+async function submitStory() {
+    if (!pendingStoryFile || !currentUser) return;
+    
+    const caption = document.getElementById('story-caption-input').value.trim();
+    const btn = document.getElementById('btn-send-story');
+    const originalIcon = btn.innerHTML;
+    
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    btn.disabled = true;
+    
     try {
-        // Upload file ke storage (bisa re-use API upload-url kamu)
+        showToast("Mempersiapkan status...", "info");
+        const file = pendingStoryFile;
+        
+        // 1. Upload ke Storage
         const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent('story_'+Date.now())}&filetype=${encodeURIComponent(file.type)}`);
         const dataUrl = await resUrl.json();
         await fetch(dataUrl.uploadUrl, { method: 'PUT', body: file, headers: { 'Content-Type': file.type, 'x-amz-acl': 'public-read' } });
         
-        // Simpan ke database Supabase tabel 'stories'
+        // 2. Simpan ke Database (beserta caption)
         const { error } = await supabaseClient.from('stories').insert({
             user_id: currentUser.id,
             media_url: dataUrl.finalVideoUrl,
-            media_type: file.type.startsWith('video/') ? 'video' : 'image'
+            media_type: file.type.startsWith('video/') ? 'video' : 'image',
+            caption: caption // MENGIRIM CAPTION KE DATABASE
         });
 
         if (error) throw error;
+        
         showToast("Status berhasil diperbarui!", "success");
-        loadStories(); // Refresh list
+        closeStoryPreview();
+        loadStories(); // Refresh list obrolan status
 
     } catch (err) { 
         showToast("Gagal mengunggah status.", "error"); 
+    } finally {
+        btn.innerHTML = originalIcon;
+        btn.disabled = false;
     }
 }
 
-// STORY VIEWER LOGIC
+// STORY VIEWER LOGIC (DIPERBARUI)
 async function viewStory(userId, name, avatar) {
     document.getElementById('viewer-story-name').innerText = name;
     document.getElementById('viewer-story-avatar').src = avatar;
     
-    // Ambil story user ini dari database
+    // Ambil story user ini dari database (24 jam terakhir)
     const past24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
     const { data: stories } = await supabaseClient.from('stories').select('*').eq('user_id', userId).gte('created_at', past24h).order('created_at', { ascending: true });
     
@@ -3106,9 +3196,36 @@ function playStory(index) {
     const story = currentActiveStories[index];
     
     document.getElementById('viewer-story-time').innerText = timeAgo(story.created_at);
-    document.getElementById('viewer-story-img').src = story.media_url;
     
-    // Reset dan jalan progress bar (Durasi story 5 detik)
+    const imgEl = document.getElementById('viewer-story-img');
+    const vidEl = document.getElementById('viewer-story-vid');
+    const capEl = document.getElementById('viewer-story-caption');
+    
+    // Matikan media sebelumnya
+    imgEl.classList.add('hidden');
+    vidEl.classList.add('hidden');
+    vidEl.pause();
+    
+    // Tampilkan Media Baru
+    if (story.media_type === 'video') {
+        vidEl.src = story.media_url;
+        vidEl.classList.remove('hidden');
+        vidEl.play().catch(e=>console.log(e));
+        vidEl.muted = false; // Boleh dikasih suara
+    } else {
+        imgEl.src = story.media_url;
+        imgEl.classList.remove('hidden');
+    }
+
+    // Tampilkan Caption jika ada
+    if (story.caption && story.caption.trim() !== '') {
+        capEl.innerText = story.caption;
+        capEl.classList.remove('hidden');
+    } else {
+        capEl.classList.add('hidden');
+    }
+    
+    // Progress bar berjalan 5 detik
     const progressBar = document.getElementById('story-progress');
     progressBar.style.transition = 'none';
     progressBar.style.width = '0%';
@@ -3116,11 +3233,14 @@ function playStory(index) {
     clearTimeout(currentStoryTimer);
     
     setTimeout(() => {
-        progressBar.style.transition = 'width 5s linear';
+        // Jika video, ikuti durasi videonya. Jika gambar, 5 detik.
+        const durasi = story.media_type === 'video' ? 15000 : 5000; // Default max 15s untuk video
+        
+        progressBar.style.transition = `width ${durasi/1000}s linear`;
         progressBar.style.width = '100%';
         currentStoryTimer = setTimeout(() => {
             nextStory();
-        }, 5000);
+        }, durasi);
     }, 50);
 }
 
@@ -3131,6 +3251,11 @@ function closeStoryViewer() {
     clearTimeout(currentStoryTimer);
     const modal = document.getElementById('story-viewer-modal');
     modal.classList.add('opacity-0');
+    
+    // Matikan video jika ada
+    document.getElementById('viewer-story-vid').pause();
+    document.getElementById('viewer-story-vid').src = '';
+    
     setTimeout(() => {
         modal.classList.remove('flex');
         modal.classList.add('hidden');
