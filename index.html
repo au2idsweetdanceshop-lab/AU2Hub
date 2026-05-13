@@ -948,15 +948,21 @@
 // Fungsi pembantu sederhana untuk Oracle API
 async function oracleFetch(table, options = {}) {
     try {
-        // 1. Logika pembersihan URL (Sudah benar di foto Anda)
         const baseUrl = ORACLE_API.trim().replace(/\/$/, ''); 
-        const endpoint = table.replace(/^\//, ''); 
+        let endpoint = table.replace(/^\//, ''); 
+        
+        // [PENTING] Memperbaiki aturan ketat URL di Oracle ORDS
+        // Otomatis menambahkan '/' sebelum tanda '?' agar tidak diblokir (CORS/301)
+        if (endpoint.includes('?') && !endpoint.includes('/?')) {
+            endpoint = endpoint.replace('?', '/?');
+        } else if (!endpoint.includes('?') && !endpoint.endsWith('/')) {
+            endpoint = endpoint + '/';
+        }
+
         const url = `${baseUrl}/${endpoint}`;
 
-        // 2. Tambahkan mode: 'cors' di sini
         const response = await fetch(url, {
             ...options,
-            mode: 'cors', // <--- TAMBAHKAN INI
             headers: {
                 'Accept': 'application/json',
                 'Content-Type': 'application/json',
@@ -964,13 +970,14 @@ async function oracleFetch(table, options = {}) {
             }
         });
 
+        // Jika server merespons dengan error (misal 404 karena tabel belum aktif)
         if (!response.ok) {
-            // ... logika penanganan error Anda sudah bagus ...
+            throw new Error(`HTTP ${response.status}`);
         }
 
         return await response.json();
     } catch (e) {
-        console.error("Database Error:", e);
+        console.error("Database Error pada tabel:", table, e);
         showToast("Koneksi Database: " + e.message, "error");
         return null;
     }
@@ -1207,7 +1214,7 @@ async function oracleFetch(table, options = {}) {
 
 async function fetchProfile() {
     // Membaca data profil dari Oracle
-    const res = await oracleFetch(`profiles/${currentUser.id}`);
+    const res = await oracleFetch(`profiles/${currentUser.id}/`);
     
     if (res && res.id) { 
         userProfile = res; 
@@ -1361,8 +1368,8 @@ async function handleLogout() {
             
             // --- BAGIAN YANG BERUBAH: Mengambil data dari Oracle ---
             const [videosRes, profilesRes] = await Promise.all([
-                oracleFetch('videos?limit=100'),
-                oracleFetch('profiles?limit=1000')
+                oracleFetch('videos/?limit=100'),
+                oracleFetch('profiles/?limit=1000')
             ]);
             
             let dataDariDb = videosRes && videosRes.items ? videosRes.items : [];
@@ -2706,7 +2713,13 @@ function closeUploadModal() {
         }
 
         async function fetchFollowStats(targetUserId) {
-            const { count: followers } = await supabaseClient.from('follows').select('*', { count: 'exact', head: true }).eq('following_id', targetUserId);
+            const queryFollowers = encodeURIComponent(JSON.stringify({ following_id: targetUserId }));
+const resFollowers = await oracleFetch(`follows/?q=${queryFollowers}`);
+const followers = resFollowers && resFollowers.items ? resFollowers.items.length : 0;
+
+const queryFollowing = encodeURIComponent(JSON.stringify({ follower_id: targetUserId }));
+const resFollowing = await oracleFetch(`follows/?q=${queryFollowing}`);
+const following = resFollowing && resFollowing.items ? resFollowing.items.length : 0;
             const { count: following } = await supabaseClient.from('follows').select('*', { count: 'exact', head: true }).eq('follower_id', targetUserId);
 
             const elPengikut = document.getElementById('stat-pengikut'); if(elPengikut) elPengikut.innerText = followers || 0;
