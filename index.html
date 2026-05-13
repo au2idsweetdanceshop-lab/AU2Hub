@@ -1295,7 +1295,7 @@
             }
         }
         
-        async function renderProfileVideos(targetUserId = null) {
+                async function renderProfileVideos(targetUserId = null) {
             const grid = document.getElementById('profile-video-grid');
             if (!grid) return;
             
@@ -1337,8 +1337,10 @@
             }
 
             grid.innerHTML = reversedVideos.map(vid => {
+                // PERBAIKAN: Pastikan mengambil ID yang valid (id atau video_id)
+                const uniqueVidId = vid.id || vid.video_id; 
                 return `
-                <div class="aspect-[9/16] bg-black relative rounded-md overflow-hidden border border-white/10 group cursor-pointer" onclick="openProfileFeed('${vid.user_id}', '${vid.id}')">
+                <div class="aspect-[9/16] bg-black relative rounded-md overflow-hidden border border-white/10 group cursor-pointer" onclick="openProfileFeed('${vid.user_id}', '${uniqueVidId}')">
                     <video class="w-full h-full object-cover" preload="metadata">
                         <source src="${vid.video_url}" type="video/mp4">
                     </video>
@@ -1348,6 +1350,7 @@
                 </div>
             `}).join('');
         }
+
 
         function timeAgo(dateString) {
             if (!dateString) return "Baru saja";
@@ -1746,42 +1749,43 @@ function closeUploadModal() {
             }, { threshold: 0.6 });
         }
 
-        function openProfileFeed(userId, clickedVidId) {
-    // 1. Ambil video milik user ini saja
-    currentProfileVideos = allVideosData.filter(v => v.user_id === userId);
-    if(currentProfileVideos.length === 0) return;
+                function openProfileFeed(userId, clickedVidId) {
+            // 1. Ambil video milik user ini saja
+            currentProfileVideos = allVideosData.filter(v => v.user_id === userId);
+            if(currentProfileVideos.length === 0) return;
 
-    // 2. Balikkan urutan agar yang terbaru ada di atas
-    currentProfileVideos = [...currentProfileVideos].reverse();
+            // 2. Balikkan urutan agar yang terbaru ada di atas (Sama seperti urutan grid)
+            currentProfileVideos = [...currentProfileVideos].reverse();
 
-    // 3. CARI POSISI VIDEO YANG DIKLIK (PERBAIKAN: Cek v.id atau v.video_id)
-    let startIdx = currentProfileVideos.findIndex(v => (v.id === clickedVidId || v.video_id === clickedVidId));
-    
-    // Jika karena suatu hal tidak ketemu, paksa mulai dari 0
-    if(startIdx === -1) {
-        console.warn("Video ID tidak cocok, mulai dari awal.");
-        startIdx = 0; 
-    }
+            // 3. CARI POSISI VIDEO YANG DIKLIK (PERBAIKAN: String perbandingan yang lebih aman)
+            let startIdx = currentProfileVideos.findIndex(v => (String(v.id) === String(clickedVidId) || String(v.video_id) === String(clickedVidId)));
+            
+            // Jika karena suatu hal tidak ketemu, paksa mulai dari 0
+            if(startIdx === -1) {
+                console.warn("Video ID tidak cocok, mulai dari awal.");
+                startIdx = 0; 
+            }
 
-    // 4. ATUR INDEX MULAI KE POSISI VIDEO YANG DIKLIK (Tanpa merusak array)
-    profileFeedIndex = startIdx;
+            // 4. ATUR INDEX MULAI KE POSISI VIDEO YANG DIKLIK
+            profileFeedIndex = startIdx;
 
-    // Bersihkan layar player
-    const container = document.getElementById('floating-feed-container');
-    container.innerHTML = '';
-    
-    // Tampilkan floating player
-    document.getElementById('floating-video-player').classList.remove('hidden');
-    document.getElementById('floating-video-player').classList.add('flex');
+            // Bersihkan layar player
+            const container = document.getElementById('floating-feed-container');
+            container.innerHTML = '';
+            
+            // Tampilkan floating player
+            document.getElementById('floating-video-player').classList.remove('hidden');
+            document.getElementById('floating-video-player').classList.add('flex');
 
-    if(floatObs) floatObs.disconnect();
-    setupFloatVideoObserver();
+            if(floatObs) floatObs.disconnect();
+            setupFloatVideoObserver();
 
-    // Render video mulai dari index yang di-klik
-    renderProfileVideoBatch();
-    
-    history.pushState({ popup: 'floating_video' }, null);
-}
+            // Render video mulai dari index yang di-klik
+            renderProfileVideoBatch();
+            
+            history.pushState({ popup: 'floating_video' }, null);
+        }
+
 
                 function renderProfileVideoBatch() {
             const container = document.getElementById('floating-feed-container');
