@@ -1295,7 +1295,7 @@
             }
         }
         
-                async function renderProfileVideos(targetUserId = null) {
+                        async function renderProfileVideos(targetUserId = null) {
             const grid = document.getElementById('profile-video-grid');
             if (!grid) return;
             
@@ -1336,11 +1336,10 @@
                 return;
             }
 
-            grid.innerHTML = reversedVideos.map(vid => {
-                // PERBAIKAN: Pastikan mengambil ID yang valid (id atau video_id)
-                const uniqueVidId = vid.id || vid.video_id; 
+            // PERBAIKAN: Menggunakan map dengan parameter (vid, index)
+            grid.innerHTML = reversedVideos.map((vid, index) => {
                 return `
-                <div class="aspect-[9/16] bg-black relative rounded-md overflow-hidden border border-white/10 group cursor-pointer" onclick="openProfileFeed('${vid.user_id}', '${uniqueVidId}')">
+                <div class="aspect-[9/16] bg-black relative rounded-md overflow-hidden border border-white/10 group cursor-pointer" onclick="openProfileFeed('${vid.user_id}', ${index})">
                     <video class="w-full h-full object-cover" preload="metadata">
                         <source src="${vid.video_url}" type="video/mp4">
                     </video>
@@ -1350,6 +1349,7 @@
                 </div>
             `}).join('');
         }
+
 
 
         function timeAgo(dateString) {
@@ -1749,29 +1749,24 @@ function closeUploadModal() {
             }, { threshold: 0.6 });
         }
 
-                function openProfileFeed(userId, clickedVidId) {
+                        function openProfileFeed(userId, startIndex) {
             // 1. Ambil video milik user ini saja
             currentProfileVideos = allVideosData.filter(v => v.user_id === userId);
             if(currentProfileVideos.length === 0) return;
 
-            // 2. Balikkan urutan agar yang terbaru ada di atas (Sama seperti urutan grid)
+            // 2. Balikkan urutan agar yang terbaru ada di atas (Sama persis seperti urutan grid)
             currentProfileVideos = [...currentProfileVideos].reverse();
 
-            // 3. CARI POSISI VIDEO YANG DIKLIK (PERBAIKAN: String perbandingan yang lebih aman)
-            let startIdx = currentProfileVideos.findIndex(v => (String(v.id) === String(clickedVidId) || String(v.video_id) === String(clickedVidId)));
-            
-            // Jika karena suatu hal tidak ketemu, paksa mulai dari 0
-            if(startIdx === -1) {
-                console.warn("Video ID tidak cocok, mulai dari awal.");
-                startIdx = 0; 
-            }
-
-            // 4. ATUR INDEX MULAI KE POSISI VIDEO YANG DIKLIK
-            profileFeedIndex = startIdx;
+            // 3. ATUR INDEX MULAI KE POSISI VIDEO YANG DIKLIK
+            // Karena kita mengirim index dari grid, tidak perlu lagi pencarian ID yang rawan error
+            profileFeedIndex = parseInt(startIndex) || 0;
 
             // Bersihkan layar player
             const container = document.getElementById('floating-feed-container');
             container.innerHTML = '';
+            
+            // PERBAIKAN PENTING: Reset scroll ke atas jika sebelumnya user pernah scroll
+            container.scrollTop = 0; 
             
             // Tampilkan floating player
             document.getElementById('floating-video-player').classList.remove('hidden');
@@ -1785,6 +1780,7 @@ function closeUploadModal() {
             
             history.pushState({ popup: 'floating_video' }, null);
         }
+
 
 
                 function renderProfileVideoBatch() {
