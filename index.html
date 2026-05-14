@@ -447,21 +447,26 @@
                 <!-- CONTAINER STATUS STORY -->
                 <div id="chat-status-container" class="flex-1 overflow-y-auto hide-scroll p-2 hidden">
                     <!-- Status Saya -->
-                    <div class="p-2 mb-2 border-b border-white/10">
-                        <div class="flex items-center cursor-pointer hover:bg-white/5 p-2 rounded-2xl transition-all relative" onclick="document.getElementById('upload-story-input').click()">
-                            <div class="relative shrink-0">
-                                <img id="my-story-avatar" src="https://ui-avatars.com/api/?name=Me" class="w-12 h-12 rounded-full object-cover border border-white/10">
-                                <div class="absolute bottom-0 right-0 bg-brand-success text-white w-4 h-4 rounded-full flex items-center justify-center border border-brand-dark shadow-lg">
-                                    <i class="fas fa-plus text-[8px]"></i>
-                                </div>
-                            </div>
-                            <div class="ml-3 flex-1">
-                                <h4 class="font-bold text-white text-[13px]">Status Saya</h4>
-                                <p class="text-[10px] text-gray-400">Ketuk untuk menambahkan update status</p>
-                            </div>
-                            <input type="file" id="upload-story-input" accept="image/*,video/*" class="hidden" onchange="handleUploadStory(event)">
-                        </div>
-                    </div>
+<div class="p-2 mb-2 border-b border-white/10">
+    <!-- Menggunakan fungsi window.viewMyStory() dari Javascript -->
+    <div class="flex items-center cursor-pointer hover:bg-white/5 p-2 rounded-2xl transition-all relative" onclick="if(window.viewMyStory){window.viewMyStory()}else{document.getElementById('upload-story-input').click()}">
+        
+        <!-- Tambahkan id="my-story-ring" di div ini -->
+        <div id="my-story-ring" class="relative shrink-0 border border-white/10 rounded-full">
+            <img id="my-story-avatar" src="https://ui-avatars.com/api/?name=Me" class="w-11 h-11 rounded-full object-cover border-2 border-brand-card">
+            <div class="absolute bottom-0 right-0 bg-brand-success text-white w-4 h-4 rounded-full flex items-center justify-center border border-brand-dark shadow-lg">
+                <i class="fas fa-plus text-[8px]"></i>
+            </div>
+        </div>
+        
+        <div class="ml-3 flex-1">
+            <h4 class="font-bold text-white text-[13px]">Status Saya</h4>
+            <!-- Tambahkan id="my-status-text" di p ini -->
+            <p id="my-status-text" class="text-[10px] text-gray-400">Ketuk untuk menambahkan update status</p>
+        </div>
+        <input type="file" id="upload-story-input" accept="image/*,video/*" class="hidden" onchange="handleUploadStory(event)">
+    </div>
+</div>
                     <!-- List Status Teman -->
                     <p class="text-[10px] text-gray-500 font-bold mb-2 ml-3 uppercase">Pembaruan Terbaru</p>
                     <div id="status-list-container" class="space-y-1">
