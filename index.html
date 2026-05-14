@@ -839,6 +839,15 @@
         <a href="#profile" onclick="switchTab('profile', event)" class="nav-item flex flex-col items-center justify-center flex-1 text-gray-500 transition-colors"><i class="fas fa-user-circle text-xl mb-1"></i><span class="text-[9px] font-bold mt-0.5">Profil</span></a>
     </nav>
 
-    <script src="app-v7.js"></script>
+window.addEventListener('error', function(e) {
+        alert("🚨 ERROR DITEMUKAN!\n\nPesan: " + e.message + "\nBaris: " + e.lineno);
+    });
+</script>
+
+<!-- PEMANGGIL FILE JS -->
+<script src="./app-v7.js" 
+        onerror="alert('❌ GAWAT: File app-v7.js TIDAK DITEMUKAN! Pastikan nama file benar dan berada di folder yang sama dengan HTML.')" 
+        onload="alert('✅ SUKSES: File app-v7.js berhasil ditemukan dan terbaca!')">
+</script>
 </body>
 </html>
