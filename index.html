@@ -3813,99 +3813,102 @@ function updateSeek(e, containerElement, video) {
 </script>
 
 <!-- ======================================================================= -->
-<!-- SCRIPT SUNTIKAN SUPER OPTIMASI V4 (TIKTOK BRUTAL, WHATSAPP, & BOOSTER)  -->
+<!-- SCRIPT SUNTIKAN SUPER OPTIMASI V5 (ANTI CHOKE + GPU ACCELERATION)       -->
 <!-- ======================================================================= -->
 <script>
     window.addEventListener('load', () => {
         
         // ---------------------------------------------------------
-        // 1. SUNTIKAN TIKTOK V4 (MODE BRUTAL SCROLL / INSTANT PLAY)
+        // 1. SUNTIKAN TIKTOK V5 (HARDWARE ACCEL & DEBOUNCE PLAY)
         // ---------------------------------------------------------
         window.setupVideoObserver = function() {
             if (typeof obs !== 'undefined' && obs) obs.disconnect();
 
+            // [SIHIR 1] Paksa HP menggunakan GPU (VGA) untuk scroll, bukan CPU!
+            if (!document.getElementById('gpu-hack')) {
+                const style = document.createElement('style');
+                style.id = 'gpu-hack';
+                style.innerHTML = `
+                    .snap-start { transform: translateZ(0); will-change: transform, opacity; }
+                    video { will-change: contents; }
+                `;
+                document.head.appendChild(style);
+            }
+
             window.videoClearTimers = window.videoClearTimers || new Map();
+            window.videoPlayTimers = window.videoPlayTimers || new Map(); // Timer baru
 
             obs = new IntersectionObserver(es => {
                 es.forEach(e => { 
                     const video = e.target;
                     
                     if (e.isIntersecting) {
-                        // Batalin penghapusan jika video kembali ke layar
+                        // Batalin hapus memori
                         if (window.videoClearTimers.has(video)) {
                             clearTimeout(window.videoClearTimers.get(video));
                             window.videoClearTimers.delete(video);
                         }
 
-                        // Restore video secepat kilat
-                        if (video.dataset.savedSrc) {
-                            video.src = video.dataset.savedSrc;
-                            video.dataset.savedSrc = ''; 
-                            video.load(); 
-                        }
-                        
-                        video.muted = (typeof isGlobalMuted !== 'undefined') ? isGlobalMuted : true;
-                        
-                        const playVideo = () => {
-                            const playPromise = video.play();
-                            if (playPromise !== undefined) {
-                                playPromise.catch(err => { /* Abaikan error autoplay */ });
+                        // [SIHIR 2] JANGAN LANGSUNG LOAD/PLAY JIKA SCROLL BARBAR!
+                        // Beri jeda 150ms. Jika layar menetap, baru videonya disiapkan.
+                        const playTimerId = setTimeout(() => {
+                            if (video.dataset.savedSrc) {
+                                video.src = video.dataset.savedSrc;
+                                video.dataset.savedSrc = ''; 
+                                video.load(); 
                             }
-                        };
+                            
+                            video.muted = (typeof isGlobalMuted !== 'undefined') ? isGlobalMuted : true;
+                            
+                            // Gunakan requestAnimationFrame agar UI tidak nge-freeze
+                            requestAnimationFrame(() => {
+                                const playPromise = video.play();
+                                if (playPromise !== undefined) {
+                                    playPromise.catch(err => { /* Abaikan error */ });
+                                }
+                                video.classList.remove('opacity-0');
+                            });
 
-                        if (video.readyState >= 2) {
-                            playVideo();
-                        } else {
-                            video.onloadeddata = () => {
-                                video.classList.remove('opacity-0'); 
-                                playVideo();
-                            };
-                        }
-
-                        // PRELOAD DIAM-DIAM (ATAS & BAWAH)
-                        const card = video.closest('.snap-start');
-                        const preloadSibling = (sibling) => {
-                            if (sibling) {
-                                const sibVid = sibling.querySelector('video');
-                                if (sibVid && sibVid.dataset.savedSrc && !sibVid.src) {
-                                    sibVid.src = sibVid.dataset.savedSrc;
-                                    sibVid.dataset.savedSrc = '';
-                                    sibVid.setAttribute('preload', 'auto');
+                            // Preload HANYA 1 tetangga terdekat agar hemat memori
+                            const card = video.closest('.snap-start');
+                            if (card && card.nextElementSibling) {
+                                const nextVid = card.nextElementSibling.querySelector('video');
+                                if (nextVid && nextVid.dataset.savedSrc && !nextVid.src) {
+                                    nextVid.src = nextVid.dataset.savedSrc;
+                                    nextVid.dataset.savedSrc = '';
+                                    nextVid.setAttribute('preload', 'auto');
                                 }
                             }
-                        };
+                        }, 150); // Waktu toleransi scroll barbar (150 milidetik)
 
-                        if (card) {
-                            preloadSibling(card.nextElementSibling);     
-                            preloadSibling(card.previousElementSibling); 
-                        }
+                        window.videoPlayTimers.set(video, playTimerId);
                         
                     } else { 
+                        // Jika video keburu lewat sebelum 150ms, BATALKAN proses load/play!
+                        if (window.videoPlayTimers.has(video)) {
+                            clearTimeout(window.videoPlayTimers.get(video));
+                            window.videoPlayTimers.delete(video);
+                        }
+
                         video.pause(); 
                         
-                        // Jeda 2 detik sebelum memori dihapus
+                        // Jeda sebelum memori dikosongkan
                         const timerId = setTimeout(() => {
                             let currentUrl = video.currentSrc || video.src || (video.querySelector('source') ? video.querySelector('source').src : '');
-                            
                             if (currentUrl && currentUrl.length > 5) {
                                 video.dataset.savedSrc = currentUrl; 
-                                
                                 video.removeAttribute('src'); 
-                                if (video.querySelector('source')) {
-                                    video.querySelector('source').removeAttribute('src');
-                                }
+                                if (video.querySelector('source')) video.querySelector('source').removeAttribute('src');
                                 video.removeAttribute('preload');
                                 video.load(); // Kosongkan RAM
                             }
                             window.videoClearTimers.delete(video);
-                        }, 2000);
+                        }, 1500);
 
                         window.videoClearTimers.set(video, timerId);
                     }
                 });
-            }, { 
-                threshold: 0.4 // Ngegas sebelum layar berhenti
-            });
+            }, { threshold: 0.5 }); // Kembalikan ke 0.5 untuk kestabilan
 
             const videos = document.querySelectorAll('.video-player, .float-video-player');
             videos.forEach(v => obs.observe(v));
@@ -3979,7 +3982,7 @@ function updateSeek(e, containerElement, video) {
         // AKTIFKAN SEMUA SUNTIKAN UTAMA
         setTimeout(() => {
             if (typeof setupVideoObserver === 'function') setupVideoObserver();
-            console.log("💉 Suntikan Optimasi V4 (Mode Brutal + Chat) Berhasil Diaktifkan!");
+            console.log("💉 Suntikan Optimasi V5 (GPU Accel + Anti-Choke) Berhasil Diaktifkan!");
         }, 800);
     });
 
@@ -3987,7 +3990,6 @@ function updateSeek(e, containerElement, video) {
     // 3. SUNTIKAN SPEED BOOSTER (JALAN TOL & LAZY LOAD)
     // ---------------------------------------------------------
     window.addEventListener('DOMContentLoaded', () => {
-        // PRECONNECT
         const serverUrls = [
             "https://divckiqkodtqudcoxkjz.supabase.co", 
             "https://ui-avatars.com",
@@ -4002,7 +4004,6 @@ function updateSeek(e, containerElement, video) {
             document.head.appendChild(link);
         });
 
-        // GLOBAL LAZY LOADING GAMBAR
         const observerGambar = new MutationObserver((mutations) => {
             mutations.forEach((mutation) => {
                 mutation.addedNodes.forEach((node) => {
