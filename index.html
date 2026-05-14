@@ -3811,162 +3811,147 @@ function updateSeek(e, containerElement, video) {
     }
 }
 </script>
-<!-- ======================================================================= -->
-<!-- SCRIPT SUNTIKAN SUPER OPTIMASI V3 (FINAL: VIDEO JALAN & RAM AMAN)       -->
-<!-- ======================================================================= -->
-<script>
-    window.addEventListener('load', () => {
-        
         // ---------------------------------------------------------
-        // 1. SUNTIKAN TIKTOK V3 (FIX BUG OBSERVER & SOURCE TAG)
+        // 1. SUNTIKAN TIKTOK V4 (MODE BRUTAL SCROLL / INSTANT PLAY)
         // ---------------------------------------------------------
         window.setupVideoObserver = function() {
-            // Putuskan koneksi observer lama (memakai variabel 'obs' dari kode asli Anda)
             if (typeof obs !== 'undefined' && obs) obs.disconnect();
 
             window.videoClearTimers = window.videoClearTimers || new Map();
 
-            // SANGAT PENTING: Kita timpa langsung variabel 'obs', bukan 'window.obs'
             obs = new IntersectionObserver(es => {
                 es.forEach(e => { 
                     const video = e.target;
                     
                     if (e.isIntersecting) {
-                        // Batalin penghapusan jika video terburu-buru balik ke layar
+                        // Batalin penghapusan jika video kembali ke layar
                         if (window.videoClearTimers.has(video)) {
                             clearTimeout(window.videoClearTimers.get(video));
                             window.videoClearTimers.delete(video);
                         }
 
-                        // Restore video jika sebelumnya dikosongkan
+                        // Restore video secepat kilat
                         if (video.dataset.savedSrc) {
                             video.src = video.dataset.savedSrc;
                             video.dataset.savedSrc = ''; 
-                            video.load(); // Perintah agar browser merender ulang URL
+                            video.load(); 
                         }
                         
                         video.muted = (typeof isGlobalMuted !== 'undefined') ? isGlobalMuted : true;
                         
-                        // Mainkan video dengan aman
                         const playVideo = () => {
                             const playPromise = video.play();
                             if (playPromise !== undefined) {
-                                playPromise.catch(err => { /* Abaikan error autoplay browser */ });
+                                playPromise.catch(err => { /* Abaikan error autoplay */ });
                             }
                         };
 
-                        // Tunggu video sampai siap dimainkan
                         if (video.readyState >= 2) {
                             playVideo();
                         } else {
                             video.onloadeddata = () => {
-                                video.classList.remove('opacity-0'); // Munculkan efek transisi
+                                video.classList.remove('opacity-0'); 
                                 playVideo();
                             };
                         }
+
+                        // ========================================================
+                        // RAHASIA BRUTAL SCROLL: PRELOAD DIAM-DIAM (ATAS & BAWAH)
+                        // ========================================================
+                        const card = video.closest('.snap-start');
+                        const preloadSibling = (sibling) => {
+                            if (sibling) {
+                                const sibVid = sibling.querySelector('video');
+                                // Jika video tetangga kosong, diam-diam isi URL-nya buat buffering
+                                if (sibVid && sibVid.dataset.savedSrc && !sibVid.src) {
+                                    sibVid.src = sibVid.dataset.savedSrc;
+                                    sibVid.dataset.savedSrc = '';
+                                    sibVid.setAttribute('preload', 'auto');
+                                }
+                            }
+                        };
+
+                        if (card) {
+                            preloadSibling(card.nextElementSibling);     // Siapkan 1 Video di bawah
+                            preloadSibling(card.previousElementSibling); // Siapkan 1 Video di atas
+                        }
+                        // ========================================================
                         
                     } else { 
-                        // Saat scroll terlewat, langsung PAUSE
                         video.pause(); 
                         
-                        // Jeda 1.5 detik sebelum MENGHANCURKAN memori
+                        // Jeda ditambah jadi 2 detik biar kuat nahan scroll bolak-balik
                         const timerId = setTimeout(() => {
-                            // Cek URL (mendukung atribut src langsung maupun tag <source>)
                             let currentUrl = video.currentSrc || video.src || (video.querySelector('source') ? video.querySelector('source').src : '');
                             
-                            // Jika ada URL-nya, hancurkan dari RAM!
                             if (currentUrl && currentUrl.length > 5) {
-                                video.dataset.savedSrc = currentUrl; // Simpan dulu
+                                video.dataset.savedSrc = currentUrl; 
                                 
                                 video.removeAttribute('src'); 
                                 if (video.querySelector('source')) {
                                     video.querySelector('source').removeAttribute('src');
                                 }
-                                video.load(); // Kosongkan RAM!
+                                video.removeAttribute('preload');
+                                video.load(); // Kosongkan RAM
                             }
                             window.videoClearTimers.delete(video);
-                        }, 1500);
+                        }, 2000);
 
                         window.videoClearTimers.set(video, timerId);
                     }
                 });
-            }, { threshold: 0.5 });
+            }, { 
+                threshold: 0.4 // Angka dikecilkan agar video langsung "nge-gas" sebelum layarnya berhenti sempurna
+            });
 
-            // Hubungkan ke semua video yang sudah ter-render di layar
             const videos = document.querySelectorAll('.video-player, .float-video-player');
             videos.forEach(v => obs.observe(v));
         };
 
-        // ---------------------------------------------------------
-        // 2. SUNTIKAN WHATSAPP (CACHE LOKAL CHAT & LIMIT)
-        // ---------------------------------------------------------
-        window.openChatRoom = async function(targetId, name, avatar, isGroup = false) {
-            if (typeof currentUser === 'undefined' || !currentUser) return;
-            
-            if (isGroup) { activeGroupId = targetId; activeChatUserId = null; } 
-            else { activeChatUserId = targetId; activeGroupId = null; }
-            
-            document.getElementById('chat-list-view').classList.add('hidden'); document.getElementById('chat-list-view').classList.remove('flex');
-            document.getElementById('chat-room-view').classList.remove('hidden'); document.getElementById('chat-room-view').classList.add('flex');
-            
-            document.getElementById('active-chat-name').innerText = name;
-            document.getElementById('active-chat-avatar').src = avatar;
+<!-- ======================================================================= -->
+<!-- SCRIPT SUNTIKAN SPEED BOOSTER (HEMAT KUOTA & LOADING KILAT)             -->
+<!-- ======================================================================= -->
+<script>
+    window.addEventListener('DOMContentLoaded', () => {
+        
+        // 1. MEMBUKA "JALAN TOL" KONEKSI (PRECONNECT)
+        // Membangkunkan server Supabase, Avatar, dan FontAwesome lebih awal
+        const serverUrls = [
+            "https://divckiqkodtqudcoxkjz.supabase.co", 
+            "https://ui-avatars.com",
+            "https://cdnjs.cloudflare.com"
+        ];
+        
+        serverUrls.forEach(url => {
+            const link = document.createElement('link');
+            link.rel = 'preconnect';
+            link.href = url;
+            link.crossOrigin = 'anonymous';
+            document.head.appendChild(link);
+        });
 
-            const container = document.getElementById('chat-messages-container');
-            document.getElementById('btn-send-room').onclick = () => sendRoomMessage(targetId, isGroup);
-
-            const cacheKey = isGroup ? `chat_cache_group_${targetId}` : `chat_cache_user_${targetId}`;
-            const localChats = JSON.parse(localStorage.getItem(cacheKey) || '[]');
-            
-            if (localChats.length > 0) {
-                container.innerHTML = '';
-                localChats.forEach(msg => appendMessageBubble(msg));
-                scrollToBottomChat();
-            } else {
-                container.innerHTML = '<div class="flex justify-center mt-10"><i class="fas fa-spinner fa-spin text-brand-accent text-xl"></i></div>';
-            }
-
-            if (!isGroup) await supabaseClient.from('messages').update({ is_read: true }).eq('sender_id', targetId).eq('receiver_id', currentUser.id).eq('is_read', false);
-
-            let query = supabaseClient.from('messages').select('*');
-            if (isGroup) query = query.eq('group_id', targetId);
-            else query = query.or(`and(sender_id.eq.${currentUser.id},receiver_id.eq.${targetId},group_id.is.null),and(sender_id.eq.${targetId},receiver_id.eq.${currentUser.id},group_id.is.null)`);
-            
-            const { data: rawMessages } = await query.order('created_at', { ascending: false }).limit(50);
-            const messages = rawMessages ? rawMessages.reverse() : [];
-
-            if(messages && messages.length > 0) {
-                localStorage.setItem(cacheKey, JSON.stringify(messages));
-                container.innerHTML = '';
-                messages.forEach(msg => appendMessageBubble(msg));
-            } else if (localChats.length === 0) {
-                container.innerHTML = `<div class="flex flex-col items-center justify-center h-full opacity-50"><p class="text-xs text-gray-300">Kirim pesan pertama</p></div>`;
-            }
-            scrollToBottomChat();
-
-            if (typeof messageSubscription !== 'undefined' && messageSubscription) supabaseClient.removeChannel(messageSubscription);
-            messageSubscription = supabaseClient.channel(isGroup ? `group_${targetId}` : `room_${targetId}`)
-                .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => {
-                    const newMsg = payload.new;
-                    const isTarget = isGroup ? newMsg.group_id === activeGroupId : (newMsg.sender_id === activeChatUserId && newMsg.receiver_id === currentUser.id);
-                    if (isTarget) { 
-                        appendMessageBubble(newMsg); 
-                        scrollToBottomChat(); 
-                        if(!isGroup) supabaseClient.from('messages').update({ is_read: true }).eq('id', newMsg.id).then(); 
-                        
-                        let currentCache = JSON.parse(localStorage.getItem(cacheKey) || '[]');
-                        currentCache.push(newMsg);
-                        if(currentCache.length > 50) currentCache.shift();
-                        localStorage.setItem(cacheKey, JSON.stringify(currentCache));
+        // 2. GLOBAL LAZY LOADING (HEMAT KUOTA)
+        // Mencegat semua elemen baru di website dan memaksa gambar menjadi "Lazy"
+        const observerGambar = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+                mutation.addedNodes.forEach((node) => {
+                    // Jika node yang ditambahkan adalah gambar
+                    if (node.tagName === 'IMG' && !node.hasAttribute('loading')) {
+                        node.setAttribute('loading', 'lazy');
+                    } 
+                    // Jika node adalah wadah (div) yang berisi banyak gambar
+                    else if (node.nodeType === 1) { 
+                        const imgs = node.querySelectorAll('img:not([loading])');
+                        imgs.forEach(img => img.setAttribute('loading', 'lazy'));
                     }
-                }).subscribe();
-        };
+                });
+            });
+        });
+        
+        // Pantau seluruh perubahan di dalam Body website
+        observerGambar.observe(document.body, { childList: true, subtree: true });
 
-        // AKTIFKAN SEMUA SUNTIKAN KETIKA APLIKASI SELESAI DIMUAT
-        setTimeout(() => {
-            if (typeof setupVideoObserver === 'function') setupVideoObserver();
-            console.log("💉 Suntikan Optimasi V3 (Final Fix) Berhasil Diaktifkan!");
-        }, 800);
+        console.log("🚀 Suntikan Speed Booster (Jalan Tol & Lazy Load) Aktif!");
     });
     </script>
 </body>
