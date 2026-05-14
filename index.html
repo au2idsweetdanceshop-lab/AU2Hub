@@ -444,20 +444,32 @@
                 <!-- CONTAINER GRUP -->
                 <div id="chat-group-container" class="flex-1 overflow-y-auto hide-scroll p-2 space-y-1 hidden"></div>
 
-                <!-- CONTAINER STATUS STORY -->
+                                <!-- CONTAINER STATUS STORY -->
                 <div id="chat-status-container" class="flex-1 overflow-y-auto hide-scroll p-2 hidden">
                     <!-- Status Saya -->
-<div class="p-2 mb-2 border-b border-white/10">
-    <!-- Menggunakan fungsi window.viewMyStory() dari Javascript -->
-    <div class="flex items-center cursor-pointer hover:bg-white/5 p-2 rounded-2xl transition-all relative" onclick="if(window.viewMyStory){window.viewMyStory()}else{document.getElementById('upload-story-input').click()}">
-        
-        <!-- Tambahkan id="my-story-ring" di div ini -->
-        <div id="my-story-ring" class="relative shrink-0 border border-white/10 rounded-full">
-            <img id="my-story-avatar" src="https://ui-avatars.com/api/?name=Me" class="w-11 h-11 rounded-full object-cover border-2 border-brand-card">
-            <div class="absolute bottom-0 right-0 bg-brand-success text-white w-4 h-4 rounded-full flex items-center justify-center border border-brand-dark shadow-lg">
-                <i class="fas fa-plus text-[8px]"></i>
-            </div>
-        </div>
+                    <div class="p-2 mb-2 border-b border-white/10">
+                        <div class="flex items-center hover:bg-white/5 p-2 rounded-2xl transition-all relative">
+                            
+                            <!-- Lingkaran Avatar (Untuk Nonton) -->
+                            <div id="my-story-ring" class="relative shrink-0 border border-white/10 rounded-full cursor-pointer" onclick="if(window.viewMyStory){window.viewMyStory()}else{document.getElementById('upload-story-input').click()}">
+                                <img id="my-story-avatar" src="https://ui-avatars.com/api/?name=Me" class="w-11 h-11 rounded-full object-cover border-2 border-brand-card">
+                            </div>
+
+                            <!-- Tombol Plus Dibuat Terpisah (Agar Selalu Bisa Tambah Story Baru) -->
+                            <div class="absolute left-10 bottom-2 bg-brand-success text-white w-4 h-4 rounded-full flex items-center justify-center border border-brand-dark shadow-lg cursor-pointer z-10 hover:scale-110 active:scale-90" onclick="document.getElementById('upload-story-input').click()">
+                                <i class="fas fa-plus text-[8px]"></i>
+                            </div>
+                            
+                            <!-- Teks Keterangan (Untuk Nonton) -->
+                            <div class="ml-3 flex-1 cursor-pointer" onclick="if(window.viewMyStory){window.viewMyStory()}else{document.getElementById('upload-story-input').click()}">
+                                <h4 class="font-bold text-white text-[13px]">Status Saya</h4>
+                                <p id="my-status-text" class="text-[10px] text-gray-400">Ketuk untuk menambahkan update status</p>
+                            </div>
+                            
+                            <input type="file" id="upload-story-input" accept="image/*,video/*" class="hidden" onchange="handleUploadStory(event)">
+                        </div>
+                    </div>
+
         
         <div class="ml-3 flex-1">
             <h4 class="font-bold text-white text-[13px]">Status Saya</h4>
@@ -514,11 +526,11 @@
 
                 <!-- FULLSCREEN STORY VIEWER -->
         <div id="story-viewer-modal" class="fixed inset-0 z-[600] hidden items-center justify-center bg-black/95 backdrop-blur-md opacity-0 transition-opacity duration-300">
-            <!-- Progress Bar Story -->
-            <div class="absolute top-4 left-4 right-4 flex gap-1 z-50">
-                <div class="h-1 bg-white/30 w-full rounded-full overflow-hidden">
-                    <div id="story-progress" class="h-full bg-white w-0 transition-all ease-linear"></div>
-                </div>
+            <!-- PROGRESS BAR STORY -->
+<div id="story-progress-container" class="absolute top-4 left-4 right-4 flex gap-1 z-50">
+    <!-- Segmen garis akan digenerate otomatis oleh Javascript di sini -->
+</div>
+
             </div>
             <!-- Header Story -->
             <div class="absolute top-8 left-4 right-4 flex justify-between items-center z-50">
@@ -2630,6 +2642,54 @@ function closeUploadModal() {
             });
         }
 
+// ==========================================
+// FITUR SWIPE DOWN (USAP KE BAWAH) UNTUK TUTUP STORY
+// ==========================================
+let storyStartY = 0;
+let storyCurrentY = 0;
+const storyModal = document.getElementById('story-viewer-modal');
+
+storyModal.addEventListener('touchstart', (e) => {
+    // Abaikan jika user memiliki 2 jari di layar
+    if (e.touches.length > 1) return; 
+    storyStartY = e.touches[0].clientY;
+}, { passive: true });
+
+storyModal.addEventListener('touchmove', (e) => {
+    if (storyStartY === 0) return;
+    storyCurrentY = e.touches[0].clientY;
+    const diffY = storyCurrentY - storyStartY;
+    
+    // Jika ditarik ke bawah (diffY positif)
+    if (diffY > 0) {
+        storyModal.style.transition = 'none'; // Hilangkan delay agar mulus mengikuti jari
+        storyModal.style.transform = `translateY(${diffY}px)`;
+        
+        // Buat background makin pudar/transparan saat ditarik
+        const opacity = Math.max(0.3, 0.95 - (diffY / window.innerHeight));
+        storyModal.style.backgroundColor = `rgba(0, 0, 0, ${opacity})`;
+    }
+}, { passive: true });
+
+storyModal.addEventListener('touchend', (e) => {
+    if (storyStartY === 0 || storyCurrentY === 0) return;
+    const diffY = storyCurrentY - storyStartY;
+    
+    // Jika ditarik lebih dari 120 pixel ke bawah, TUTUP!
+    if (diffY > 120) {
+        closeStoryViewer();
+    } else {
+        // Jika ditarik sedikit / nanggung, kembalikan posisi ke atas
+        storyModal.style.transition = 'transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.3s ease';
+        storyModal.style.transform = 'translateY(0)';
+        storyModal.style.backgroundColor = 'rgba(0, 0, 0, 0.95)';
+    }
+    
+    // Reset Koordinat
+    storyStartY = 0;
+    storyCurrentY = 0;
+});
+
 
         // FUNGSI TYPING INDICATOR
         function sendTypingStatus() {
@@ -3150,26 +3210,37 @@ async function handleUploadStory(event) {
 }
 
 
-// STORY VIEWER LOGIC
+// STORY VIEWER LOGIC (WHATSAPP STYLE)
 async function viewStory(userId, name, avatar) {
     document.getElementById('viewer-story-name').innerText = name;
     document.getElementById('viewer-story-avatar').src = avatar;
     
-    // Ambil story user ini dari database
     const past24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
     const { data: stories } = await supabaseClient.from('stories').select('*').eq('user_id', userId).gte('created_at', past24h).order('created_at', { ascending: true });
     
     if(!stories || stories.length === 0) {
         showToast("Status sudah kedaluwarsa.", "error");
-        return loadChatList(); // Refresh
+        return loadChatList(); 
     }
 
     currentActiveStories = stories;
     currentActiveStories.currentIndex = 0;
     
+    // -- BIKIN GARIS PROGRESS SEBANYAK JUMLAH STORY --
+    const progressContainer = document.getElementById('story-progress-container');
+    progressContainer.innerHTML = stories.map((_, i) => `
+        <div class="h-1 bg-white/30 rounded-full overflow-hidden flex-1">
+            <div id="story-progress-${i}" class="h-full bg-white w-0"></div>
+        </div>
+    `).join('');
+    
     const modal = document.getElementById('story-viewer-modal');
     modal.classList.remove('hidden');
     modal.classList.add('flex');
+    
+    // Pastikan posisi normal sebelum dibuka (jika sebelumnya ditarik)
+    modal.style.transform = 'translateY(0)';
+    modal.style.backgroundColor = 'rgba(0, 0, 0, 0.95)';
     setTimeout(() => modal.classList.remove('opacity-0'), 10);
     
     playStory(0);
@@ -3185,7 +3256,6 @@ function playStory(index) {
     document.getElementById('viewer-story-time').innerText = timeAgo(story.created_at);
     document.getElementById('viewer-story-img').src = story.media_url;
     
-    // LOGIKA TAMPILKAN CAPTION
     const captionEl = document.getElementById('viewer-story-caption');
     if (captionEl) {
         if (story.caption && story.caption.trim() !== '') {
@@ -3197,36 +3267,52 @@ function playStory(index) {
         }
     }
     
-    // Reset dan jalan progress bar (Durasi 5 detik)
-    const progressBar = document.getElementById('story-progress');
-    progressBar.style.transition = 'none';
-    progressBar.style.width = '0%';
+    // -- UPDATE PROGRESS BAR ALA WHATSAPP --
+    for (let i = 0; i < currentActiveStories.length; i++) {
+        const bar = document.getElementById(`story-progress-${i}`);
+        if (!bar) continue;
+        
+        bar.style.transition = 'none'; 
+        if (i < index) {
+            bar.style.width = '100%'; // Garis sebelumnya FULL
+        } else if (i > index) {
+            bar.style.width = '0%';   // Garis selanjutnya KOSONG
+        } else {
+            bar.style.width = '0%';   // Garis saat ini reset ke 0 dulu
+        }
+    }
     
     clearTimeout(currentStoryTimer);
     
+    // Jalankan garis saat ini selama 5 detik
     setTimeout(() => {
-        progressBar.style.transition = 'width 5s linear';
-        progressBar.style.width = '100%';
+        const activeBar = document.getElementById(`story-progress-${index}`);
+        if (activeBar) {
+            activeBar.style.transition = 'width 5s linear';
+            activeBar.style.width = '100%';
+        }
         currentStoryTimer = setTimeout(() => {
             nextStory();
         }, 5000);
     }, 50);
 }
 
-
-
-function nextStory() { playStory(currentActiveStories.currentIndex + 1); }
-function prevStory() { playStory(Math.max(0, currentActiveStories.currentIndex - 1)); }
-
 function closeStoryViewer() {
     clearTimeout(currentStoryTimer);
     const modal = document.getElementById('story-viewer-modal');
+    
+    modal.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
     modal.classList.add('opacity-0');
+    modal.style.transform = 'translateY(50px)'; // Efek turun sedikit saat ditutup
+    
     setTimeout(() => {
         modal.classList.remove('flex');
         modal.classList.add('hidden');
+        // Reset posisi kembali normal
+        modal.style.transform = 'translateY(0)';
     }, 300);
 }
+
         async function openChatRoom(targetId, name, avatar, isGroup = false) {
     if (!currentUser) return;
     
