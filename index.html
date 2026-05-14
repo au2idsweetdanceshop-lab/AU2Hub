@@ -569,7 +569,6 @@
                 <input type="text" id="comment-input" placeholder="Tambahkan komentar..." class="flex-1 bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-brand-accent">
                 <button onclick="sendComment(event)" class="bg-brand-accent text-white w-12 h-[42px] rounded-xl active:scale-95 transition-transform flex items-center justify-center"><i class="fas fa-paper-plane"></i></button>
                 </div>
-            <p class="text-[9px] text-gray-500 text-center italic mt-2 opacity-80"><i class="fas fa-hourglass-half mr-1"></i> Komentar Anda akan terhapus otomatis dalam 24 jam.</p>
         </div>
     </div>
 
@@ -4079,101 +4078,6 @@ function updateSeek(e, containerElement, video) {
             const videos = document.querySelectorAll('.video-player, .float-video-player');
             videos.forEach(v => obs.observe(v));
         };
-
-        // ---------------------------------------------------------
-        // 2. SUNTIKAN WHATSAPP (CACHE LOKAL CHAT & LIMIT)
-        // ---------------------------------------------------------
-        window.openChatRoom = async function(targetId, name, avatar, isGroup = false) {
-            if (typeof currentUser === 'undefined' || !currentUser) return;
-            
-            if (isGroup) { activeGroupId = targetId; activeChatUserId = null; } 
-            else { activeChatUserId = targetId; activeGroupId = null; }
-            
-            document.getElementById('chat-list-view').classList.add('hidden'); document.getElementById('chat-list-view').classList.remove('flex');
-            document.getElementById('chat-room-view').classList.remove('hidden'); document.getElementById('chat-room-view').classList.add('flex');
-            
-            document.getElementById('active-chat-name').innerText = name;
-            document.getElementById('active-chat-avatar').src = avatar;
-
-            const container = document.getElementById('chat-messages-container');
-            document.getElementById('btn-send-room').onclick = () => sendRoomMessage(targetId, isGroup);
-
-            const cacheKey = isGroup ? `chat_cache_group_${targetId}` : `chat_cache_user_${targetId}`;
-            const localChats = JSON.parse(localStorage.getItem(cacheKey) || '[]');
-            
-            if (localChats.length > 0) {
-                container.innerHTML = '';
-                localChats.forEach(msg => appendMessageBubble(msg));
-                scrollToBottomChat();
-            } else {
-                container.innerHTML = '<div class="flex justify-center mt-10"><i class="fas fa-spinner fa-spin text-brand-accent text-xl"></i></div>';
-            }
-
-            if (!isGroup) await supabaseClient.from('messages').update({ is_read: true }).eq('sender_id', targetId).eq('receiver_id', currentUser.id).eq('is_read', false);
-
-            let query = supabaseClient.from('messages').select('*');
-            if (isGroup) query = query.eq('group_id', targetId);
-            else query = query.or(`and(sender_id.eq.${currentUser.id},receiver_id.eq.${targetId},group_id.is.null),and(sender_id.eq.${targetId},receiver_id.eq.${currentUser.id},group_id.is.null)`);
-            
-            const { data: rawMessages } = await query.order('created_at', { ascending: false }).limit(50);
-            const messages = rawMessages ? rawMessages.reverse() : [];
-
-            if(messages && messages.length > 0) {
-                localStorage.setItem(cacheKey, JSON.stringify(messages));
-                container.innerHTML = '';
-                messages.forEach(msg => appendMessageBubble(msg));
-            } else if (localChats.length === 0) {
-                container.innerHTML = `<div class="flex flex-col items-center justify-center h-full opacity-50"><p class="text-xs text-gray-300">Kirim pesan pertama</p></div>`;
-            }
-            scrollToBottomChat();
-
-            if (typeof messageSubscription !== 'undefined' && messageSubscription) supabaseClient.removeChannel(messageSubscription);
-            messageSubscription = supabaseClient.channel(isGroup ? `group_${targetId}` : `room_${targetId}`)
-                .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => {
-                    const newMsg = payload.new;
-                    const isTarget = isGroup ? newMsg.group_id === activeGroupId : (newMsg.sender_id === activeChatUserId && newMsg.receiver_id === currentUser.id);
-                    if (isTarget) { 
-                        appendMessageBubble(newMsg); 
-                        scrollToBottomChat(); 
-                        if(!isGroup) supabaseClient.from('messages').update({ is_read: true }).eq('id', newMsg.id).then(); 
-                        
-                        let currentCache = JSON.parse(localStorage.getItem(cacheKey) || '[]');
-                        currentCache.push(newMsg);
-                        if(currentCache.length > 50) currentCache.shift();
-                        localStorage.setItem(cacheKey, JSON.stringify(currentCache));
-                    }
-                }).subscribe();
-        };
-
-        // AKTIFKAN SEMUA SUNTIKAN UTAMA
-        setTimeout(() => {
-            if (typeof setupVideoObserver === 'function') setupVideoObserver();
-            console.log("💉 Suntikan Optimasi V6 (Ultimate) Berhasil Diaktifkan!");
-        }, 800);
-    });
-
-    // ---------------------------------------------------------
-    // 3. SUNTIKAN SPEED BOOSTER (JALAN TOL & LAZY LOAD)
-    // ---------------------------------------------------------
-    window.addEventListener('DOMContentLoaded', () => {
-        const serverUrls = [
-            "https://divckiqkodtqudcoxkjz.supabase.co", 
-            "https://ui-avatars.com",
-            "https://cdnjs.cloudflare.com"
-        ];
-        
-        serverUrls.forEach(url => {
-            const link = document.createElement('link');
-            link.rel = 'preconnect';
-            link.href = url;
-            link.crossOrigin = 'anonymous';
-            document.head.appendChild(link);
-        });
-
-        // MutationObserver SUDAH DIHAPUS TOTAL DI SINI
-
-        console.log("🚀 Speed Booster (Jalan Tol & Lazy Load) Aktif!");
-    });
 
 </script>
 </body>
