@@ -98,6 +98,47 @@
         /* Animasi Pesan Baru */
         @keyframes msgAnim { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .message-anim { animation: msgAnim 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        
+                /* EFEK VIDEO MENGAMBANG (FOCUS MODE) */
+        .video-inner-wrap {
+            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), border-radius 0.4s ease, box-shadow 0.4s ease, border 0.4s ease;
+            will-change: transform, border-radius;
+            transform-origin: center center;
+            border: 1px solid transparent;
+        }
+        .floating-focus {
+            transform: scale(0.92) !important;
+            border-radius: 1.5rem !important;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.9), 0 0 20px rgba(0, 240, 255, 0.15) !important; /* Efek Glow Cyan */
+            border: 1px solid rgba(255, 255, 255, 0.15) !important;
+        }
+
+        /* JURUS 1: Isolasi Rendering (Sangat Ampuh) */
+/* Memberitahu browser agar tidak menghitung elemen di luar layar */
+.snap-start {
+    content-visibility: auto;
+    contain-intrinsic-size: 100vh; /* Sesuaikan dengan tinggi kontainer video */
+    contain: strict; /* Mengunci elemen agar tidak memengaruhi layout elemen lain saat di-scroll */
+}
+
+/* JURUS 2: Paksa elemen video pakai layer GPU terpisah */
+.video-player, .float-video-player {
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    perspective: 1000px;
+}
+
+/* JURUS 3: Paksa elemen yang ada efek kaca (blur) agar tidak bentrok dengan video */
+.backdrop-blur-sm, .backdrop-blur-md, .backdrop-blur-lg {
+    transform: translate3d(0, 0, 0);
+    will-change: transform, backdrop-filter;
+}
+
+/* JURUS 4: Ringankan progress bar saat video jalan */
+.progress-fill {
+    will-change: transform; /* Ubah dari width ke transform scaleX kalau memungkinkan, tapi will-change ini sudah lumayan bantu */
+}
+
     </style>
 </head>
 <body class="pb-24">
@@ -1449,16 +1490,27 @@
             }); 
         }
 
-        function toggleGlobalAudio() {
+                function toggleGlobalAudio() {
             isGlobalMuted = !isGlobalMuted;
             document.querySelectorAll('.video-player, .float-video-player').forEach(v => v.muted = isGlobalMuted);
 
+            const allWraps = document.querySelectorAll('.video-inner-wrap');
             if(isGlobalMuted) {
-                showToast("Mute: Suara Dimatikan", "info");
+                showToast("Suara Dimatikan", "info");
+                // Cabut efek mengambang (Kembali normal)
+                allWraps.forEach(wrap => wrap.classList.remove('floating-focus'));
             } else {
-                showToast("Unmute: Suara Dinyalakan", "success");
+                showToast("Suara Dinyalakan", "success");
+                // Cari video yang sedang play, kasih efek mengambang
+                document.querySelectorAll('.video-player').forEach(v => {
+                    if (!v.paused) {
+                        const wrap = v.closest('.video-inner-wrap');
+                        if (wrap) wrap.classList.add('floating-focus');
+                    }
+                });
             }
         }
+
 
         function switchTab(tabId, event = null, isPush = true) {
             if (event) event.preventDefault();
@@ -2523,76 +2575,69 @@ function closeUploadModal() {
             const nextBatch = allVideosData.slice(currentVideoIndex, currentVideoIndex + BATCH_SIZE);
             if (nextBatch.length === 0) return;
 
-            const htmlString = nextBatch.map((vid) => `
-                <div class="snap-start w-full h-full flex-shrink-0 relative group flex items-center justify-center overflow-hidden bg-brand-dark">
-                    <div class="absolute inset-0 flex items-center justify-center z-0"><div class="w-12 h-12 border-4 border-brand-accent/20 border-t-brand-accent rounded-full animate-spin"></div></div>
-                    <video class="absolute inset-0 m-auto w-full h-full object-cover video-player transition-opacity duration-500 opacity-0 z-10" 
-                           onloadeddata="this.classList.remove('opacity-0')" loop ${isGlobalMuted ? 'muted' : ''} playsinline preload="metadata"
-                           ontimeupdate="updateVideoProgress(this)"
-                           onclick="handleVideoClick(event, this, '${vid.id}')" onerror="handleVideoError(this)">
-                        <source src="${vid.video_url}" type="video/mp4">
-                    </video>
+                        const htmlString = nextBatch.map((vid) => `
+                <div class="snap-start w-full h-full flex-shrink-0 relative flex items-center justify-center overflow-hidden bg-[#0A0614]">
                     
-                    <!-- INI INDIKATOR WAKTU POPUP -->
-                    <div class="time-indicator absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-white font-extrabold text-4xl drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)] opacity-0 transition-opacity z-[60] pointer-events-none tracking-wider bg-black/40 px-6 py-2 rounded-2xl backdrop-blur-sm">
-                        <span class="time-current">00:00</span> <span class="text-white/50 text-2xl mx-1">/</span> <span class="time-total text-white/70">00:00</span> </div>
-
-                    <!-- Progress Bar Scrubber (Area Bawah) -->
-                    <div class="absolute bottom-0 left-0 w-full h-3 z-50 cursor-pointer group touch-none flex flex-col justify-end pb-1"
-                         onpointerdown="startSeek(event, this)" 
-                         onpointermove="doSeek(event, this)" 
-                         onpointerup="endSeek(event, this)" 
-                         onpointercancel="endSeek(event, this)">
-                        <div class="w-full h-1 bg-white/30 relative">
-                            <div class="progress-fill h-full bg-white w-0 relative pointer-events-none transition-all duration-75 ease-linear">
-                                <div class="absolute -right-2 top-1/2 -translate-y-1/2 w-4 h-4 bg-white rounded-full scale-0 group-hover:scale-100 transition-transform shadow-md"></div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="absolute bottom-0 left-0 w-full px-5 pb-8 flex justify-between items-end z-20 pointer-events-none">
-                        <div class="text-white drop-shadow-lg w-[75%] pointer-events-auto">
-                            <p onclick="openUserProfile('${vid.user_id}')" class="font-bold text-[15px] cursor-pointer hover:text-brand-info shadow-black drop-shadow-md mb-1.5">
-                                @${vid.nickname || "Player"}
-                            </p>
-                            <div onclick="this.classList.toggle('expanded')" class="caption-text text-[13px] opacity-90 shadow-black drop-shadow-md cursor-pointer pr-2 leading-relaxed">
-                                ${formatCaption(vid.caption)}
-                            </div>
-                        </div>
+                    <div class="video-inner-wrap w-full h-full relative bg-brand-dark ${!isGlobalMuted ? 'floating-focus' : ''}">
                         
-                                                <!-- KUMPULAN ICON KANAN (STYLE TIKTOK) -->
-                        <div class="flex flex-col gap-4 items-center pointer-events-auto mb-6 sm:mb-10 mr-1">
+                        <div class="absolute inset-0 flex items-center justify-center z-0"><div class="w-12 h-12 border-4 border-brand-accent/20 border-t-brand-accent rounded-full animate-spin"></div></div>
+                        <video class="absolute inset-0 m-auto w-full h-full object-cover video-player transition-opacity duration-500 opacity-0 z-10" 
+                               onloadeddata="this.classList.remove('opacity-0')" loop ${isGlobalMuted ? 'muted' : ''} playsinline preload="metadata"
+                               ontimeupdate="updateVideoProgress(this)"
+                               onclick="handleVideoClick(event, this, '${vid.id}')" onerror="handleVideoError(this)">
+                            <source src="${vid.video_url}" type="video/mp4">
+                        </video>
+                        
+                        <div class="time-indicator absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-white font-extrabold text-4xl drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)] opacity-0 transition-opacity z-[60] pointer-events-none tracking-wider bg-black/40 px-6 py-2 rounded-2xl">
+                            <span class="time-current">00:00</span> <span class="text-white/50 text-2xl mx-1">/</span> <span class="time-total text-white/70">00:00</span> </div>
+
+                        <div class="absolute bottom-0 left-0 w-full h-3 z-50 cursor-pointer group touch-none flex flex-col justify-end pb-1"
+                             onpointerdown="startSeek(event, this)" onpointermove="doSeek(event, this)" onpointerup="endSeek(event, this)" onpointercancel="endSeek(event, this)">
+                            <div class="w-full h-1 bg-white/30 relative">
+                                <div class="progress-fill h-full bg-white w-0 relative pointer-events-none transition-all duration-75 ease-linear">
+                                    <div class="absolute -right-2 top-1/2 -translate-y-1/2 w-4 h-4 bg-white rounded-full scale-0 group-hover:scale-100 transition-transform shadow-md"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="absolute bottom-0 left-0 w-full px-5 pb-8 flex justify-between items-end z-20 pointer-events-none bg-gradient-to-t from-black/80 to-transparent pt-10">
+                            <div class="text-white drop-shadow-lg w-[75%] pointer-events-auto">
+                                <p onclick="openUserProfile('${vid.user_id}')" class="font-bold text-[15px] cursor-pointer hover:text-brand-info drop-shadow-md mb-1.5">
+                                    @${vid.nickname || "Player"}
+                                </p>
+                                <div onclick="this.classList.toggle('expanded')" class="caption-text text-[13px] opacity-90 drop-shadow-md cursor-pointer pr-2 leading-relaxed">
+                                    ${formatCaption(vid.caption)}
+                                </div>
+                            </div>
                             
-                            <!-- 1. Foto Profil + Tombol Plus (Upload) -->
-                            <div class="relative mb-2 cursor-pointer hover:scale-105 transition-transform" onclick="openUserProfile('${vid.user_id}')">
-                                <img src="${vid.avatar_url || 'https://ui-avatars.com/api/?name=User&background=1A1133&color=fff'}" loading="lazy" class="w-11 h-11 rounded-full object-cover border-[1.5px] border-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
-                                <button id="feed-follow-btn-${vid.user_id}" onclick="event.stopPropagation(); feedToggleFollow('${vid.user_id}', this)" class="absolute -bottom-2.5 left-1/2 -translate-x-1/2 bg-[#FF007A] text-white rounded-full w-[22px] h-[22px] flex items-center justify-center border-[1.5px] border-brand-dark drop-shadow-md active:scale-90 transition-transform z-30">
-                                    <i class="fas fa-plus text-[10px]"></i>
-                                </button>
-                            </div>
+                            <div class="flex flex-col gap-4 items-center pointer-events-auto mb-6 sm:mb-10 mr-1">
+                                <div class="relative mb-2 cursor-pointer hover:scale-105 transition-transform" onclick="openUserProfile('${vid.user_id}')">
+                                    <img src="${vid.avatar_url || 'https://ui-avatars.com/api/?name=User&background=1A1133&color=fff'}" loading="lazy" class="w-11 h-11 rounded-full object-cover border-[1.5px] border-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
+                                    <button id="feed-follow-btn-${vid.user_id}" onclick="event.stopPropagation(); feedToggleFollow('${vid.user_id}', this)" class="absolute -bottom-2.5 left-1/2 -translate-x-1/2 bg-[#FF007A] text-white rounded-full w-[22px] h-[22px] flex items-center justify-center border-[1.5px] border-brand-dark drop-shadow-md active:scale-90 transition-transform z-30">
+                                        <i class="fas fa-plus text-[10px]"></i>
+                                    </button>
+                                </div>
 
-                            <!-- 2. Like (Heart) -->
-                            <div class="like-container flex flex-col items-center gap-0.5" data-vid="${vid.id}">
-                                <button onclick="likeVideo('${vid.id}', this)" class="hover:scale-110 transition-transform active:scale-90">
-                                    <i class="fas fa-heart text-[32px] text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]"></i>
-                                </button>
-                                <span class="like-count-display text-white text-[12px] font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">0</span>
-                            </div>
+                                <div class="like-container flex flex-col items-center gap-0.5" data-vid="${vid.id}">
+                                    <button onclick="likeVideo('${vid.id}', this)" class="hover:scale-110 transition-transform active:scale-90">
+                                        <i class="fas fa-heart text-[32px] text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]"></i>
+                                    </button>
+                                    <span class="like-count-display text-white text-[12px] font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">0</span>
+                                </div>
 
-                            <!-- 3. Komentar -->
-                            <div class="comment-count-container flex flex-col items-center gap-0.5" data-vid="${vid.id}">
-                                <button onclick="openComments('${vid.id}')" class="hover:scale-110 transition-transform active:scale-90">
-                                    <i class="fas fa-comment-dots text-[32px] text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]" style="transform: scaleX(-1);"></i>
-                                </button>
-                                <span class="comment-count-display text-white text-[12px] font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">0</span>
-                            </div>
+                                <div class="comment-count-container flex flex-col items-center gap-0.5" data-vid="${vid.id}">
+                                    <button onclick="openComments('${vid.id}')" class="hover:scale-110 transition-transform active:scale-90">
+                                        <i class="fas fa-comment-dots text-[32px] text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]" style="transform: scaleX(-1);"></i>
+                                    </button>
+                                    <span class="comment-count-display text-white text-[12px] font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">0</span>
+                                </div>
 
-                            <!-- 4. Share -->
-                            <div class="flex flex-col items-center gap-0.5 mt-1">
-                                <button onclick="shareVideo('${vid.id}', this)" class="hover:scale-110 transition-transform active:scale-90">
-                                    <i class="fas fa-share text-[30px] text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]"></i>
-                                </button>
-                                <span class="text-white text-[11px] font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">Share</span>
+                                <div class="flex flex-col items-center gap-0.5 mt-1">
+                                    <button onclick="shareVideo('${vid.id}', this)" class="hover:scale-110 transition-transform active:scale-90">
+                                        <i class="fas fa-share text-[30px] text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]"></i>
+                                    </button>
+                                    <span class="text-white text-[11px] font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">Share</span>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -3981,6 +4026,12 @@ function updateSeek(e, containerElement, video) {
         // ---------------------------------------------------------
         // 1. SUNTIKAN TIKTOK V6 (REQUEST IDLE CALLBACK / ANTI-STUTTER)
         // ---------------------------------------------------------
+                <script>
+    window.addEventListener('load', () => {
+        
+        // ---------------------------------------------------------
+        // 1. SUNTIKAN TIKTOK V6 (REQUEST IDLE CALLBACK / ANTI-STUTTER)
+        // ---------------------------------------------------------
         window.setupVideoObserver = function() {
             if (typeof obs !== 'undefined' && obs) obs.disconnect();
 
@@ -3998,13 +4049,13 @@ function updateSeek(e, containerElement, video) {
             window.videoPlayTimers = window.videoPlayTimers || new Map(); 
 
             obs = new IntersectionObserver(es => {
-                // ---> TAMBAHAN BARU: CEK APAKAH PLAYER MENGAMBANG SEDANG DIBUKA
+                // Cek apakah player mengambang sedang dibuka
                 const isFloatingOpen = !document.getElementById('floating-video-player').classList.contains('hidden');
 
                 es.forEach(e => { 
                     const video = e.target;
                     
-                    // ---> TAMBAHAN BARU: Hanya play video JIKA player mengambang sedang TERTUTUP
+                    // Hanya play video JIKA player mengambang sedang TERTUTUP
                     if (e.isIntersecting && !isFloatingOpen) {
                         if (window.videoClearTimers.has(video)) {
                             clearTimeout(window.videoClearTimers.get(video));
@@ -4019,6 +4070,16 @@ function updateSeek(e, containerElement, video) {
                             }
                             
                             video.muted = (typeof isGlobalMuted !== 'undefined') ? isGlobalMuted : true;
+                            
+                            // =========================================
+                            // EFEK MENGAMBANG OTOMATIS (FOCUS MODE)
+                            // =========================================
+                            const wrap = video.closest('.video-inner-wrap');
+                            if (wrap) {
+                                if (!isGlobalMuted) wrap.classList.add('floating-focus');
+                                else wrap.classList.remove('floating-focus');
+                            }
+                            // =========================================
                             
                             requestAnimationFrame(() => {
                                 const playPromise = video.play();
@@ -4078,6 +4139,101 @@ function updateSeek(e, containerElement, video) {
             const videos = document.querySelectorAll('.video-player, .float-video-player');
             videos.forEach(v => obs.observe(v));
         };
+
+        // ---------------------------------------------------------
+        // 2. SUNTIKAN WHATSAPP (CACHE LOKAL CHAT & LIMIT)
+        // ---------------------------------------------------------
+        window.openChatRoom = async function(targetId, name, avatar, isGroup = false) {
+            if (typeof currentUser === 'undefined' || !currentUser) return;
+            
+            if (isGroup) { activeGroupId = targetId; activeChatUserId = null; } 
+            else { activeChatUserId = targetId; activeGroupId = null; }
+            
+            document.getElementById('chat-list-view').classList.add('hidden'); document.getElementById('chat-list-view').classList.remove('flex');
+            document.getElementById('chat-room-view').classList.remove('hidden'); document.getElementById('chat-room-view').classList.add('flex');
+            
+            document.getElementById('active-chat-name').innerText = name;
+            document.getElementById('active-chat-avatar').src = avatar;
+
+            const container = document.getElementById('chat-messages-container');
+            document.getElementById('btn-send-room').onclick = () => sendRoomMessage(targetId, isGroup);
+
+            const cacheKey = isGroup ? `chat_cache_group_${targetId}` : `chat_cache_user_${targetId}`;
+            const localChats = JSON.parse(localStorage.getItem(cacheKey) || '[]');
+            
+            if (localChats.length > 0) {
+                container.innerHTML = '';
+                localChats.forEach(msg => appendMessageBubble(msg));
+                scrollToBottomChat();
+            } else {
+                container.innerHTML = '<div class="flex justify-center mt-10"><i class="fas fa-spinner fa-spin text-brand-accent text-xl"></i></div>';
+            }
+
+            if (!isGroup) await supabaseClient.from('messages').update({ is_read: true }).eq('sender_id', targetId).eq('receiver_id', currentUser.id).eq('is_read', false);
+
+            let query = supabaseClient.from('messages').select('*');
+            if (isGroup) query = query.eq('group_id', targetId);
+            else query = query.or(`and(sender_id.eq.${currentUser.id},receiver_id.eq.${targetId},group_id.is.null),and(sender_id.eq.${targetId},receiver_id.eq.${currentUser.id},group_id.is.null)`);
+            
+            const { data: rawMessages } = await query.order('created_at', { ascending: false }).limit(50);
+            const messages = rawMessages ? rawMessages.reverse() : [];
+
+            if(messages && messages.length > 0) {
+                localStorage.setItem(cacheKey, JSON.stringify(messages));
+                container.innerHTML = '';
+                messages.forEach(msg => appendMessageBubble(msg));
+            } else if (localChats.length === 0) {
+                container.innerHTML = `<div class="flex flex-col items-center justify-center h-full opacity-50"><p class="text-xs text-gray-300">Kirim pesan pertama</p></div>`;
+            }
+            scrollToBottomChat();
+
+            if (typeof messageSubscription !== 'undefined' && messageSubscription) supabaseClient.removeChannel(messageSubscription);
+            messageSubscription = supabaseClient.channel(isGroup ? `group_${targetId}` : `room_${targetId}`)
+                .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => {
+                    const newMsg = payload.new;
+                    const isTarget = isGroup ? newMsg.group_id === activeGroupId : (newMsg.sender_id === activeChatUserId && newMsg.receiver_id === currentUser.id);
+                    if (isTarget) { 
+                        appendMessageBubble(newMsg); 
+                        scrollToBottomChat(); 
+                        if(!isGroup) supabaseClient.from('messages').update({ is_read: true }).eq('id', newMsg.id).then(); 
+                        
+                        let currentCache = JSON.parse(localStorage.getItem(cacheKey) || '[]');
+                        currentCache.push(newMsg);
+                        if(currentCache.length > 50) currentCache.shift();
+                        localStorage.setItem(cacheKey, JSON.stringify(currentCache));
+                    }
+                }).subscribe();
+        };
+
+        // =========================================================
+        // KABEL STARTER: AKTIFKAN SEMUA SUNTIKAN UTAMA
+        // =========================================================
+        setTimeout(() => {
+            if (typeof setupVideoObserver === 'function') setupVideoObserver();
+            console.log("💉 Suntikan Optimasi V6 (Ultimate) Berhasil Diaktifkan!");
+        }, 800);
+    });
+
+    // ---------------------------------------------------------
+    // 3. SUNTIKAN SPEED BOOSTER (JALAN TOL & LAZY LOAD)
+    // ---------------------------------------------------------
+    window.addEventListener('DOMContentLoaded', () => {
+        const serverUrls = [
+            "https://divckiqkodtqudcoxkjz.supabase.co", 
+            "https://ui-avatars.com",
+            "https://cdnjs.cloudflare.com"
+        ];
+        
+        serverUrls.forEach(url => {
+            const link = document.createElement('link');
+            link.rel = 'preconnect';
+            link.href = url;
+            link.crossOrigin = 'anonymous';
+            document.head.appendChild(link);
+        });
+
+        console.log("🚀 Speed Booster (Jalan Tol & Lazy Load) Aktif!");
+    });
 
 </script>
 </body>
