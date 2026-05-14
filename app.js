@@ -17,7 +17,7 @@ let replyingToId = null, replyingToName = null;
 let currentVideoIndex = 0; 
 const BATCH_SIZE = 5; 
 
-// Tambahan Variabel yang sebelumnya hilang
+// Status & Story Variables
 let isUploading = false;
 let currentActiveStories = [];
 let currentStoryTimer = null;
@@ -954,9 +954,6 @@ function shareVideo(vidId, btn) {
     }).catch(() => { showToast("Gagal menyalin link otomatis", "error"); });
 }
 
-// ----------------------------------------------------------
-// FUNGSI LOAD VIDEOS (UNTUK TAB SOSIAL / FEED UTAMA)
-// ----------------------------------------------------------
 async function loadVideos() {
     const container = document.getElementById('feed-container');
     const fakeLoader = document.getElementById('fake-loader');
@@ -1086,9 +1083,6 @@ async function loadVideos() {
     }
 }
 
-// ----------------------------------------------------------
-// FUNGSI TOGGLE GLOBAL AUDIO
-// ----------------------------------------------------------
 function toggleGlobalAudio() {
     isGlobalMuted = !isGlobalMuted;
     document.querySelectorAll('video').forEach(vid => {
@@ -1627,10 +1621,6 @@ function closeStoryViewer() {
 // ==========================================
 // 11. WIDGET CHAT & LOGIKA PESAN (PERSONAL)
 // ==========================================
-
-// ----------------------------------------------------------
-// FUNGSI INISIALISASI PRESENCE (STATUS ONLINE)
-// ----------------------------------------------------------
 function initPresence() {
     if (!currentUser) return;
     if (presenceChannel) {
