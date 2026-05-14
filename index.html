@@ -112,17 +112,19 @@
     z-index: 10;
 }
 
-/* EFEK FLOATING ZOOM IN (MEMBESAR & MELAYANG) */
-.floating-focus {
-    /* Mengubah scale(0.92) menjadi scale(1.05) agar ZOOM IN */
-    transform: scale(1.05) translateY(-10px) !important; 
-    border-radius: 1.5rem !important; 
-    
-    /* Mengubah warna glow cyan menjadi warna tema (Pink Accent atau Info Cyan) */
-    box-shadow: 0 40px 80px rgba(0,0,0,0.95), 0 0 35px rgba(255, 0, 122, 0.35) !important; 
-    border: 1px solid rgba(255, 0, 122, 0.5) !important;
-    z-index: 50 !important;
-}
+        /* EFEK FLOATING ZOOM IN (MEMBESAR & MELAYANG) */
+        .floating-focus {
+            transform: scale(1.05) translateY(-5px) !important; 
+            border-radius: 1.5rem !important; 
+            
+            /* Trik Infinite Shadow: Menggelapkan background tanpa menutupi video! */
+            box-shadow: 0 0 0 9999px rgba(10, 6, 20, 0.85), 
+                        0 30px 60px rgba(0,0,0,0.9), 
+                        0 0 35px rgba(255, 0, 122, 0.4) !important; 
+            border: 1px solid rgba(255, 0, 122, 0.5) !important;
+            z-index: 50 !important;
+        }
+
 
 /* PASTIKAN BACKGROUND BLUR LEBIH DRAMATIS SAAT ZOOM IN */
 .blur-backdrop {
@@ -142,7 +144,7 @@
 }
 
         
-        .floating-focus {
+                .floating-focus {
             /* Bergerak NAIK ke atas (-20px) dan sedikit merapat agar background blur bisa mengintip dari pinggir layar */
             transform: scale(0.92) translateY(-20px) !important; 
             border-radius: 2rem !important;
@@ -150,6 +152,24 @@
             border: 1px solid rgba(0, 240, 255, 0.4) !important;
             z-index: 50 !important;
         }
+
+        /* LAYAR KACA BLUR (BACKGROUND OTOMATIS) */
+        .blur-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(10, 6, 20, 0.6); /* Warna gelap transparant */
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            z-index: 40; /* Berada tepat di tengah: Di atas video lain, di bawah video fokus */
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.4s ease;
+        }
+        .blur-backdrop.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
 
         /* LAYAR KACA BLUR (BACKGROUND OTOMATIS) */
         .blur-backdrop {
@@ -1546,33 +1566,20 @@
             }); 
         }
 
-                        function toggleGlobalAudio() {
+                                function toggleGlobalAudio() {
             isGlobalMuted = !isGlobalMuted;
             document.querySelectorAll('.video-player, .float-video-player').forEach(v => v.muted = isGlobalMuted);
 
             const allWraps = document.querySelectorAll('.video-inner-wrap');
-            
-            // 1. Buat elemen Kaca Blur jika belum ada di dalam HTML
-            let backdrop = document.getElementById('global-blur-backdrop');
-            if (!backdrop) {
-                backdrop = document.createElement('div');
-                backdrop.id = 'global-blur-backdrop';
-                backdrop.className = 'blur-backdrop';
-                // 2. Kalau layar blurnya diklik, otomatis balik tidur (suara mati)
-                backdrop.onclick = () => toggleGlobalAudio(); 
-                document.body.appendChild(backdrop);
-            }
 
             if(isGlobalMuted) {
                 showToast("Suara Dimatikan", "info");
                 allWraps.forEach(wrap => wrap.classList.remove('floating-focus'));
-                backdrop.classList.remove('active'); // Matikan blur belakang
             } else {
                 showToast("Suara Dinyalakan", "success");
-                backdrop.classList.add('active'); // Nyalakan blur belakang super elegan
                 
                 // Cari video yang sedang play, kasih efek mengambang ke atas
-                document.querySelectorAll('.video-player').forEach(v => {
+                document.querySelectorAll('.video-player, .float-video-player').forEach(v => {
                     if (!v.paused) {
                         const wrap = v.closest('.video-inner-wrap');
                         if (wrap) wrap.classList.add('floating-focus');
@@ -1580,6 +1587,7 @@
                 });
             }
         }
+
 
 
         function switchTab(tabId, event = null, isPush = true) {
@@ -1968,7 +1976,7 @@ function closeUploadModal() {
 
                                     const htmlString = nextBatch.map((vid) => `
                 <div class="snap-start w-full h-full flex-shrink-0 relative flex items-center justify-center overflow-hidden bg-black/95 px-0 sm:px-4 py-0 sm:py-6">
-                    <div class="w-full max-w-sm aspect-[9/16] relative bg-brand-dark mx-auto h-full sm:h-auto sm:rounded-3xl overflow-hidden shadow-2xl">
+                    <div class="video-inner-wrap w-full max-w-sm aspect-[9/16] relative bg-brand-dark mx-auto h-full sm:h-auto sm:rounded-3xl overflow-hidden shadow-2xl">
                         <div class="absolute inset-0 flex items-center justify-center z-0"><div class="w-12 h-12 border-4 border-brand-accent/20 border-t-brand-accent rounded-full animate-spin"></div></div>
                         <video class="absolute inset-0 m-auto w-full h-full object-cover float-video-player transition-opacity duration-500 opacity-0 z-10" 
                                onloadeddata="this.classList.remove('opacity-0')" loop ${isGlobalMuted ? 'muted' : ''} playsinline preload="metadata"
