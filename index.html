@@ -410,7 +410,7 @@
             <span id="global-chat-badge" class="hidden absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full border-2 border-brand-dark">0</span>
         </button>
 
-        <!-- WIDGET CHAT GLOBAL MENGAMBANG (DIPERBARUI) -->
+                <!-- WIDGET CHAT GLOBAL MENGAMBANG (DIPERBARUI) -->
         <div id="floating-widget" class="fixed bottom-24 right-5 sm:right-10 z-[150] w-[90%] max-w-[380px] h-[80vh] max-h-[800px] bg-brand-card border border-white/10 rounded-3xl shadow-2xl opacity-0 pointer-events-none translate-y-8 scale-95 transition-all duration-300 flex flex-col overflow-hidden glass origin-bottom-right">
             
             <!-- Tampilan Daftar Obrolan -->
@@ -423,14 +423,14 @@
                     </div>
                 </div>
 
-                <!-- 3 NAVIGASI TAB (Baru) -->
+                <!-- 3 NAVIGASI TAB -->
                 <div class="flex border-b border-white/10 bg-black/30 shrink-0">
                     <button onclick="switchChatTab('personal')" id="tab-personal" class="flex-1 py-3 text-[11px] font-bold text-brand-accent border-b-2 border-brand-accent transition-colors">Chat Pribadi</button>
                     <button onclick="switchChatTab('group')" id="tab-group" class="flex-1 py-3 text-[11px] font-bold text-gray-500 border-b-2 border-transparent transition-colors">Grup</button>
                     <button onclick="switchChatTab('status')" id="tab-status" class="flex-1 py-3 text-[11px] font-bold text-gray-500 border-b-2 border-transparent transition-colors">Status Story</button>
                 </div>
 
-                <!-- PENCARIAN (Hanya muncul di tab Pribadi & Grup) -->
+                <!-- PENCARIAN -->
                 <div id="chat-search-container" class="p-3 border-b border-white/5 shrink-0">
                     <div class="relative">
                         <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-xs"></i>
@@ -444,41 +444,24 @@
                 <!-- CONTAINER GRUP -->
                 <div id="chat-group-container" class="flex-1 overflow-y-auto hide-scroll p-2 space-y-1 hidden"></div>
 
-                                <!-- CONTAINER STATUS STORY -->
+                <!-- CONTAINER STATUS STORY -->
                 <div id="chat-status-container" class="flex-1 overflow-y-auto hide-scroll p-2 hidden">
                     <!-- Status Saya -->
                     <div class="p-2 mb-2 border-b border-white/10">
                         <div class="flex items-center hover:bg-white/5 p-2 rounded-2xl transition-all relative">
-                            
-                            <!-- Lingkaran Avatar (Untuk Nonton) -->
                             <div id="my-story-ring" class="relative shrink-0 border border-white/10 rounded-full cursor-pointer" onclick="if(window.viewMyStory){window.viewMyStory()}else{document.getElementById('upload-story-input').click()}">
                                 <img id="my-story-avatar" src="https://ui-avatars.com/api/?name=Me" class="w-11 h-11 rounded-full object-cover border-2 border-brand-card">
                             </div>
-
-                            <!-- Tombol Plus Dibuat Terpisah (Agar Selalu Bisa Tambah Story Baru) -->
                             <div class="absolute left-10 bottom-2 bg-brand-success text-white w-4 h-4 rounded-full flex items-center justify-center border border-brand-dark shadow-lg cursor-pointer z-10 hover:scale-110 active:scale-90" onclick="document.getElementById('upload-story-input').click()">
                                 <i class="fas fa-plus text-[8px]"></i>
                             </div>
-                            
-                            <!-- Teks Keterangan (Untuk Nonton) -->
                             <div class="ml-3 flex-1 cursor-pointer" onclick="if(window.viewMyStory){window.viewMyStory()}else{document.getElementById('upload-story-input').click()}">
                                 <h4 class="font-bold text-white text-[13px]">Status Saya</h4>
                                 <p id="my-status-text" class="text-[10px] text-gray-400">Ketuk untuk menambahkan update status</p>
                             </div>
-                            
                             <input type="file" id="upload-story-input" accept="image/*,video/*" class="hidden" onchange="handleUploadStory(event)">
                         </div>
                     </div>
-
-        
-        <div class="ml-3 flex-1">
-            <h4 class="font-bold text-white text-[13px]">Status Saya</h4>
-            <!-- Tambahkan id="my-status-text" di p ini -->
-            <p id="my-status-text" class="text-[10px] text-gray-400">Ketuk untuk menambahkan update status</p>
-        </div>
-        <input type="file" id="upload-story-input" accept="image/*,video/*" class="hidden" onchange="handleUploadStory(event)">
-    </div>
-</div>
                     <!-- List Status Teman -->
                     <p class="text-[10px] text-gray-500 font-bold mb-2 ml-3 uppercase">Pembaruan Terbaru</p>
                     <div id="status-list-container" class="space-y-1">
@@ -489,7 +472,6 @@
 
             <!-- Tampilan Ruang Obrolan (TETAP SAMA SEPERTI SEBELUMNYA) -->
             <div id="chat-room-view" class="hidden flex-col h-full">
-                <!-- ... (Biarkan isi chat-room-view persis seperti kode lamamu) ... -->
                 <div class="p-3 border-b border-white/5 bg-black/20 flex justify-between items-center z-10 shrink-0">
                     <div class="flex items-center gap-3">
                         <button onclick="closeChatRoom(true)" class="text-gray-400 hover:text-white w-8 h-8 rounded-full bg-white/5 flex items-center justify-center transition-colors"><i class="fas fa-arrow-left"></i></button>
@@ -524,13 +506,12 @@
             </div>
         </div>
 
+
                 <!-- FULLSCREEN STORY VIEWER -->
         <div id="story-viewer-modal" class="fixed inset-0 z-[600] hidden items-center justify-center bg-black/95 backdrop-blur-md opacity-0 transition-opacity duration-300">
             <!-- PROGRESS BAR STORY -->
 <div id="story-progress-container" class="absolute top-4 left-4 right-4 flex gap-1 z-50">
     <!-- Segmen garis akan digenerate otomatis oleh Javascript di sini -->
-</div>
-
             </div>
             <!-- Header Story -->
             <div class="absolute top-8 left-4 right-4 flex justify-between items-center z-50">
