@@ -4021,94 +4021,95 @@ async function keluarDariGrup() {
     closeGroupInfoModal();
     closeChatRoom(); 
 }
-// ==========================================
-// LOGIKA VIDEO PROGRESS BAR (SUPER SMOOTH FIX)
-// ==========================================
-function formatTime(seconds) {
-    if (isNaN(seconds)) return "00:00";
-    const m = Math.floor(seconds / 60).toString().padStart(2, '0');
-    const s = Math.floor(seconds % 60).toString().padStart(2, '0');
-    return `${m}:${s}`;
-}
-
-function updateVideoProgress(video) {
-    if (video.isDragging) return; 
-    
-    if (!video.progressFill) {
-        const container = video.closest('.snap-start');
-        if (container) video.progressFill = container.querySelector('.progress-fill');
+<script>
+    // ==========================================
+    // LOGIKA VIDEO PROGRESS BAR (SUPER SMOOTH FIX)
+    // ==========================================
+    function formatTime(seconds) {
+        if (isNaN(seconds)) return "00:00";
+        const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+        const s = Math.floor(seconds % 60).toString().padStart(2, '0');
+        return `${m}:${s}`;
     }
-    
-    if (video.progressFill && video.duration) {
-        requestAnimationFrame(() => {
-            const percent = (video.currentTime / video.duration) * 100;
-            video.progressFill.style.width = `${percent}%`;
-        });
-    }
-}
 
-// ==========================================
-// LOGIKA DRAG / GESER PROGRESS BAR
-// ==========================================
-function startSeek(e, containerElement) {
-    const video = containerElement.closest('.snap-start').querySelector('video');
-    if (!video) return;
-    video.isDragging = true;
-    
-    const timeIndicator = containerElement.closest('.snap-start').querySelector('.time-indicator');
-    if (timeIndicator) timeIndicator.classList.replace('opacity-0', 'opacity-100');
-    
-    updateSeek(e, containerElement, video);
-}
-
-function doSeek(e, containerElement) {
-    const video = containerElement.closest('.snap-start').querySelector('video');
-    if (!video || !video.isDragging) return;
-    updateSeek(e, containerElement, video);
-}
-
-function endSeek(e, containerElement) {
-    const video = containerElement.closest('.snap-start').querySelector('video');
-    if (!video) return;
-    
-    if (video.isDragging) {
-        updateSeek(e, containerElement, video);
-        video.isDragging = false;
-    }
-    
-    const timeIndicator = containerElement.closest('.snap-start').querySelector('.time-indicator');
-    if (timeIndicator) timeIndicator.classList.replace('opacity-100', 'opacity-0');
-}
-
-function updateSeek(e, containerElement, video) {
-    const rect = containerElement.getBoundingClientRect();
-    let x = e.clientX; 
-    if (x === undefined && e.touches && e.touches.length > 0) x = e.touches[0].clientX;
-    if (x === undefined) return;
-    
-    let pos = (x - rect.left) / rect.width;
-    pos = Math.max(0, Math.min(1, pos)); 
-    
-    const fill = containerElement.querySelector('.progress-fill');
-    if (fill) fill.style.width = `${pos * 100}%`;
-    
-    if (video.duration) {
-        video.currentTime = pos * video.duration;
+    function updateVideoProgress(video) {
+        if (video.isDragging) return; 
         
-        const timeIndicator = containerElement.closest('.snap-start').querySelector('.time-indicator');
-        if (timeIndicator) {
-            timeIndicator.querySelector('.time-current').innerText = formatTime(video.currentTime);
-            timeIndicator.querySelector('.time-total').innerText = formatTime(video.duration);
+        if (!video.progressFill) {
+            const container = video.closest('.snap-start');
+            if (container) video.progressFill = container.querySelector('.progress-fill');
+        }
+        
+        if (video.progressFill && video.duration) {
+            requestAnimationFrame(() => {
+                const percent = (video.currentTime / video.duration) * 100;
+                video.progressFill.style.width = `${percent}%`;
+            });
         }
     }
-}
-<script>
+
+    // ==========================================
+    // LOGIKA DRAG / GESER PROGRESS BAR
+    // ==========================================
+    function startSeek(e, containerElement) {
+        const video = containerElement.closest('.snap-start').querySelector('video');
+        if (!video) return;
+        video.isDragging = true;
+        
+        const timeIndicator = containerElement.closest('.snap-start').querySelector('.time-indicator');
+        if (timeIndicator) timeIndicator.classList.replace('opacity-0', 'opacity-100');
+        
+        updateSeek(e, containerElement, video);
+    }
+
+    function doSeek(e, containerElement) {
+        const video = containerElement.closest('.snap-start').querySelector('video');
+        if (!video || !video.isDragging) return;
+        updateSeek(e, containerElement, video);
+    }
+
+    function endSeek(e, containerElement) {
+        const video = containerElement.closest('.snap-start').querySelector('video');
+        if (!video) return;
+        
+        if (video.isDragging) {
+            updateSeek(e, containerElement, video);
+            video.isDragging = false;
+        }
+        
+        const timeIndicator = containerElement.closest('.snap-start').querySelector('.time-indicator');
+        if (timeIndicator) timeIndicator.classList.replace('opacity-100', 'opacity-0');
+    }
+
+    function updateSeek(e, containerElement, video) {
+        const rect = containerElement.getBoundingClientRect();
+        let x = e.clientX; 
+        if (x === undefined && e.touches && e.touches.length > 0) x = e.touches[0].clientX;
+        if (x === undefined) return;
+        
+        let pos = (x - rect.left) / rect.width;
+        pos = Math.max(0, Math.min(1, pos)); 
+        
+        const fill = containerElement.querySelector('.progress-fill');
+        if (fill) fill.style.width = `${pos * 100}%`;
+        
+        if (video.duration) {
+            video.currentTime = pos * video.duration;
+            
+            const timeIndicator = containerElement.closest('.snap-start').querySelector('.time-indicator');
+            if (timeIndicator) {
+                timeIndicator.querySelector('.time-current').innerText = formatTime(video.currentTime);
+                timeIndicator.querySelector('.time-total').innerText = formatTime(video.duration);
+            }
+        }
+    }
+
     window.addEventListener('load', () => {
         
         // ---------------------------------------------------------
         // 1. SUNTIKAN TIKTOK V6 (REQUEST IDLE CALLBACK / ANTI-STUTTER)
         // ---------------------------------------------------------
-                window.setupVideoObserver = function() {
+        window.setupVideoObserver = function() {
             if (typeof obs !== 'undefined' && obs) obs.disconnect();
 
             if (!document.getElementById('gpu-hack')) {
@@ -4196,7 +4197,6 @@ function updateSeek(e, containerElement, video) {
             const videos = document.querySelectorAll('.video-player, .float-video-player');
             videos.forEach(v => obs.observe(v));
         };
-
 
         // ---------------------------------------------------------
         // 2. SUNTIKAN WHATSAPP (CACHE LOKAL CHAT & LIMIT)
@@ -4292,7 +4292,6 @@ function updateSeek(e, containerElement, video) {
 
         console.log("🚀 Speed Booster (Jalan Tol & Lazy Load) Aktif!");
     });
-
 </script>
 </body>
 </html>
