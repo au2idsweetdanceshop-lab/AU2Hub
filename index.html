@@ -526,6 +526,12 @@
             </div>
             <!-- Media Story -->
             <img id="viewer-story-img" src="" class="w-full h-full object-contain">
+            
+            <!-- ---> TAMBAHAN BARU: CAPTION STORY -->
+            <div class="absolute bottom-10 left-4 right-4 z-50 flex justify-center pointer-events-none">
+                <div id="viewer-story-caption" class="bg-black/60 backdrop-blur-sm text-white text-sm px-4 py-2 rounded-2xl shadow-lg text-center max-w-[80%] hidden break-words"></div>
+            </div>
+
             <!-- Area Ketuk Kiri/Kanan -->
             <div class="absolute inset-0 flex">
                 <div class="w-1/2 h-full" onclick="prevStory()"></div>
@@ -3052,6 +3058,11 @@ async function handleUploadStory(event) {
     const file = event.target.files[0];
     if (!file) return;
     event.target.value = ''; 
+    
+    // ---> MUNCULKAN POP-UP TANYA CAPTION DULU SEBELUM UPLOAD MULAI
+    const captionStory = await customPrompt("Tulis caption untuk status ini:", "");
+    if (captionStory === null) return; // Dibatalkan jika user klik Batal
+
     showToast("Mengunggah status...", "info");
 
     try {
@@ -3064,7 +3075,8 @@ async function handleUploadStory(event) {
         const { error } = await supabaseClient.from('stories').insert({
             user_id: currentUser.id,
             media_url: dataUrl.finalVideoUrl,
-            media_type: file.type.startsWith('video/') ? 'video' : 'image'
+            media_type: file.type.startsWith('video/') ? 'video' : 'image',
+            caption: captionStory // ---> SIMPAN CAPTION KE DATABASE
         });
 
         if (error) throw error;
@@ -3075,6 +3087,7 @@ async function handleUploadStory(event) {
         showToast("Gagal mengunggah status.", "error"); 
     }
 }
+
 
 // STORY VIEWER LOGIC
 async function viewStory(userId, name, avatar) {
@@ -3111,6 +3124,18 @@ function playStory(index) {
     document.getElementById('viewer-story-time').innerText = timeAgo(story.created_at);
     document.getElementById('viewer-story-img').src = story.media_url;
     
+    // ---> TAMBAHAN BARU: TAMPILKAN CAPTION JIKA ADA
+    const captionEl = document.getElementById('viewer-story-caption');
+    if (captionEl) {
+        if (story.caption && story.caption.trim() !== '') {
+            captionEl.innerText = story.caption;
+            captionEl.classList.remove('hidden');
+        } else {
+            captionEl.classList.add('hidden');
+            captionEl.innerText = '';
+        }
+    }
+    
     // Reset dan jalan progress bar (Durasi story 5 detik)
     const progressBar = document.getElementById('story-progress');
     progressBar.style.transition = 'none';
@@ -3126,6 +3151,7 @@ function playStory(index) {
         }, 5000);
     }, 50);
 }
+
 
 function nextStory() { playStory(currentActiveStories.currentIndex + 1); }
 function prevStory() { playStory(Math.max(0, currentActiveStories.currentIndex - 1)); }
