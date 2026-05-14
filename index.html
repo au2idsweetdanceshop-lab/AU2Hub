@@ -2556,7 +2556,7 @@ function closeUploadModal() {
                             
                             <!-- 1. Foto Profil + Tombol Plus (Upload) -->
                             <div class="relative mb-2 cursor-pointer hover:scale-105 transition-transform" onclick="openUserProfile('${vid.user_id}')">
-                                <img src="${vid.avatar_url || 'https://ui-avatars.com/api/?name=User&background=1A1133&color=fff'}" class="w-11 h-11 rounded-full object-cover border-[1.5px] border-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
+                                <img src="${vid.avatar_url || 'https://ui-avatars.com/api/?name=User&background=1A1133&color=fff'}" loading="lazy" class="w-11 h-11 rounded-full object-cover border-[1.5px] border-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
                                 <button id="feed-follow-btn-${vid.user_id}" onclick="event.stopPropagation(); feedToggleFollow('${vid.user_id}', this)" class="absolute -bottom-2.5 left-1/2 -translate-x-1/2 bg-[#FF007A] text-white rounded-full w-[22px] h-[22px] flex items-center justify-center border-[1.5px] border-brand-dark drop-shadow-md active:scale-90 transition-transform z-30">
                                     <i class="fas fa-plus text-[10px]"></i>
                                 </button>
@@ -2975,7 +2975,7 @@ async function loadChatList() {
             return `
             <div class="flex items-center p-3 bg-brand-card/50 hover:bg-white/5 cursor-pointer rounded-2xl border border-white/5 transition-all mb-2" onclick="openChatRoom('${item.id}', '${item.name.replace(/'/g, "\\'")}', '${ava}', ${isGroup})">
                 <div class="relative shrink-0" onclick="${isGroup ? '' : avatarClickCode}">
-                    <div class="${isGroup ? 'border border-brand-accent/30 rounded-full' : ringClass}"><img src="${ava}" class="w-11 h-11 rounded-full object-cover border-2 border-brand-card"></div>
+                    <div class="${isGroup ? 'border border-brand-accent/30 rounded-full' : ringClass}"><img src="${ava}" loading="lazy" class="w-11 h-11 rounded-full object-cover border-2 border-brand-card"></div>
                     ${icon}
                 </div>
                 <div class="flex-1 min-w-0 ml-3">
@@ -4001,20 +4001,8 @@ function updateSeek(e, containerElement, video) {
             document.head.appendChild(link);
         });
 
-        const observerGambar = new MutationObserver((mutations) => {
-            mutations.forEach((mutation) => {
-                mutation.addedNodes.forEach((node) => {
-                    if (node.tagName === 'IMG' && !node.hasAttribute('loading')) {
-                        node.setAttribute('loading', 'lazy');
-                    } else if (node.nodeType === 1) { 
-                        const imgs = node.querySelectorAll('img:not([loading])');
-                        imgs.forEach(img => img.setAttribute('loading', 'lazy'));
-                    }
-                });
-            });
-        });
-        
-        observerGambar.observe(document.body, { childList: true, subtree: true });
+        // MutationObserver SUDAH DIHAPUS TOTAL DI SINI
+
         console.log("🚀 Speed Booster (Jalan Tol & Lazy Load) Aktif!");
     });
 </script>
