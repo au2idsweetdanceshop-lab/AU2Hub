@@ -100,18 +100,74 @@
         .message-anim { animation: msgAnim 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
         
                 /* EFEK VIDEO MENGAMBANG (FOCUS MODE) */
-        .video-inner-wrap {
-            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), border-radius 0.4s ease, box-shadow 0.4s ease, border 0.4s ease;
-            will-change: transform, border-radius;
-            transform-origin: center center;
-            border: 1px solid transparent;
-        }
+        /* GABUNGKAN DAN PERBAIKI CLASS WRAPPER VIDEO */
+.video-inner-wrap {
+    transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275), 
+                border-radius 0.5s ease, 
+                box-shadow 0.5s ease, 
+                border 0.5s ease;
+    will-change: transform, border-radius, box-shadow;
+    transform-origin: center center;
+    border: 1px solid transparent;
+    z-index: 10;
+}
+
+/* EFEK FLOATING ZOOM IN (MEMBESAR & MELAYANG) */
+.floating-focus {
+    /* Mengubah scale(0.92) menjadi scale(1.05) agar ZOOM IN */
+    transform: scale(1.05) translateY(-10px) !important; 
+    border-radius: 1.5rem !important; 
+    
+    /* Mengubah warna glow cyan menjadi warna tema (Pink Accent atau Info Cyan) */
+    box-shadow: 0 40px 80px rgba(0,0,0,0.95), 0 0 35px rgba(255, 0, 122, 0.35) !important; 
+    border: 1px solid rgba(255, 0, 122, 0.5) !important;
+    z-index: 50 !important;
+}
+
+/* PASTIKAN BACKGROUND BLUR LEBIH DRAMATIS SAAT ZOOM IN */
+.blur-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 9, 32, 0.75); /* Sedikit lebih pekat */
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    z-index: 40; 
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.5s ease;
+}
+.blur-backdrop.active {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+        
         .floating-focus {
-            transform: scale(0.92) !important;
-            border-radius: 1.5rem !important;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.9), 0 0 20px rgba(0, 240, 255, 0.15) !important; /* Efek Glow Cyan */
-            border: 1px solid rgba(255, 255, 255, 0.15) !important;
+            /* Bergerak NAIK ke atas (-20px) dan sedikit merapat agar background blur bisa mengintip dari pinggir layar */
+            transform: scale(0.92) translateY(-20px) !important; 
+            border-radius: 2rem !important;
+            box-shadow: 0 40px 80px rgba(0,0,0,0.9), 0 0 30px rgba(0, 240, 255, 0.3) !important; /* Efek Glow Cyan */
+            border: 1px solid rgba(0, 240, 255, 0.4) !important;
+            z-index: 50 !important;
         }
+
+        /* LAYAR KACA BLUR (BACKGROUND OTOMATIS) */
+        .blur-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(10, 6, 20, 0.6); /* Warna gelap transparant */
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            z-index: 40; /* Berada tepat di tengah: Di atas video lain, di bawah video fokus */
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.4s ease;
+        }
+        .blur-backdrop.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
 
         /* JURUS 1: Isolasi Rendering (Sangat Ampuh) */
 /* Memberitahu browser agar tidak menghitung elemen di luar layar */
@@ -1490,18 +1546,32 @@
             }); 
         }
 
-                function toggleGlobalAudio() {
+                        function toggleGlobalAudio() {
             isGlobalMuted = !isGlobalMuted;
             document.querySelectorAll('.video-player, .float-video-player').forEach(v => v.muted = isGlobalMuted);
 
             const allWraps = document.querySelectorAll('.video-inner-wrap');
+            
+            // 1. Buat elemen Kaca Blur jika belum ada di dalam HTML
+            let backdrop = document.getElementById('global-blur-backdrop');
+            if (!backdrop) {
+                backdrop = document.createElement('div');
+                backdrop.id = 'global-blur-backdrop';
+                backdrop.className = 'blur-backdrop';
+                // 2. Kalau layar blurnya diklik, otomatis balik tidur (suara mati)
+                backdrop.onclick = () => toggleGlobalAudio(); 
+                document.body.appendChild(backdrop);
+            }
+
             if(isGlobalMuted) {
                 showToast("Suara Dimatikan", "info");
-                // Cabut efek mengambang (Kembali normal)
                 allWraps.forEach(wrap => wrap.classList.remove('floating-focus'));
+                backdrop.classList.remove('active'); // Matikan blur belakang
             } else {
                 showToast("Suara Dinyalakan", "success");
-                // Cari video yang sedang play, kasih efek mengambang
+                backdrop.classList.add('active'); // Nyalakan blur belakang super elegan
+                
+                // Cari video yang sedang play, kasih efek mengambang ke atas
                 document.querySelectorAll('.video-player').forEach(v => {
                     if (!v.paused) {
                         const wrap = v.closest('.video-inner-wrap');
@@ -1815,13 +1885,22 @@ function closeUploadModal() {
         let profileFeedIndex = 0;
         let floatObs = null;
 
-        function setupFloatVideoObserver() {
+                function setupFloatVideoObserver() {
             floatObs = new IntersectionObserver(es => {
                 es.forEach(e => {
+                    const video = e.target;
+                    const wrap = video.closest('.video-inner-wrap');
+                    
                     if (e.isIntersecting) {
-                        e.target.play().catch(() => {}); e.target.muted = isGlobalMuted;
-                        // Preload video selanjutnya agar mulus
-                        let currentContainer = e.target.closest('.snap-start');
+                        video.play().catch(() => {}); 
+                        video.muted = isGlobalMuted;
+                        
+                        if (wrap) {
+                            if (!isGlobalMuted) wrap.classList.add('floating-focus');
+                            else wrap.classList.remove('floating-focus');
+                        }
+                        
+                        let currentContainer = video.closest('.snap-start');
                         for(let j = 0; j < 2; j++) { 
                             currentContainer = currentContainer?.nextElementSibling;
                             if(currentContainer) {
@@ -1829,10 +1908,15 @@ function closeUploadModal() {
                                 if(nextVid && nextVid.getAttribute('preload') !== 'auto') nextVid.setAttribute('preload', 'auto');
                             }
                         }
-                    } else { e.target.pause(); }
+                    } else { 
+                        video.pause(); 
+                        if (wrap) wrap.classList.remove('floating-focus');
+                    }
                 });
             }, { threshold: 0.6 });
         }
+
+
 
                                 function openProfileFeed(userId, startIndex) {
             // 1. Ambil video milik user ini saja
@@ -2578,15 +2662,18 @@ function closeUploadModal() {
                         const htmlString = nextBatch.map((vid) => `
                 <div class="snap-start w-full h-full flex-shrink-0 relative flex items-center justify-center overflow-hidden bg-[#0A0614]">
                     
-                    <div class="video-inner-wrap w-full h-full relative bg-brand-dark ${!isGlobalMuted ? 'floating-focus' : ''}">
-                        
-                        <div class="absolute inset-0 flex items-center justify-center z-0"><div class="w-12 h-12 border-4 border-brand-accent/20 border-t-brand-accent rounded-full animate-spin"></div></div>
-                        <video class="absolute inset-0 m-auto w-full h-full object-cover video-player transition-opacity duration-500 opacity-0 z-10" 
-                               onloadeddata="this.classList.remove('opacity-0')" loop ${isGlobalMuted ? 'muted' : ''} playsinline preload="metadata"
-                               ontimeupdate="updateVideoProgress(this)"
-                               onclick="handleVideoClick(event, this, '${vid.id}')" onerror="handleVideoError(this)">
-                            <source src="${vid.video_url}" type="video/mp4">
-                        </video>
+                    <div class="video-inner-wrap w-full h-full relative bg-brand-dark ${!isGlobalMuted ? 'floating-focus' : ''}"
+     onclick="handleVideoClick(event, this.querySelector('video'), '${vid.id}')">
+    
+    <div class="absolute inset-0 flex items-center justify-center z-0"><div class="w-12 h-12 border-4 border-brand-accent/20 border-t-brand-accent rounded-full animate-spin"></div></div>
+    
+    <video class="absolute inset-0 m-auto w-full h-full object-cover video-player transition-opacity duration-500 opacity-0 z-10 pointer-events-none" 
+           onloadeddata="this.classList.remove('opacity-0')" loop ${isGlobalMuted ? 'muted' : ''} playsinline preload="metadata"
+           ontimeupdate="updateVideoProgress(this)"
+           onerror="handleVideoError(this)"> 
+        <source src="${vid.video_url}" type="video/mp4">
+    </video>
+
                         
                         <div class="time-indicator absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-white font-extrabold text-4xl drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)] opacity-0 transition-opacity z-[60] pointer-events-none tracking-wider bg-black/40 px-6 py-2 rounded-2xl">
                             <span class="time-current">00:00</span> <span class="text-white/50 text-2xl mx-1">/</span> <span class="time-total text-white/70">00:00</span> </div>
@@ -4014,25 +4101,13 @@ function updateSeek(e, containerElement, video) {
         }
     }
 }
-</script>
-
-<!-- ======================================================================= -->
-<!-- SCRIPT SUNTIKAN SUPER OPTIMASI V6 (ULTIMATE IDLE CALLBACK)              -->
-<!-- ======================================================================= -->
 <script>
     window.addEventListener('load', () => {
         
         // ---------------------------------------------------------
-        // ---------------------------------------------------------
         // 1. SUNTIKAN TIKTOK V6 (REQUEST IDLE CALLBACK / ANTI-STUTTER)
         // ---------------------------------------------------------
-                <script>
-    window.addEventListener('load', () => {
-        
-        // ---------------------------------------------------------
-        // 1. SUNTIKAN TIKTOK V6 (REQUEST IDLE CALLBACK / ANTI-STUTTER)
-        // ---------------------------------------------------------
-        window.setupVideoObserver = function() {
+                window.setupVideoObserver = function() {
             if (typeof obs !== 'undefined' && obs) obs.disconnect();
 
             if (!document.getElementById('gpu-hack')) {
@@ -4049,13 +4124,12 @@ function updateSeek(e, containerElement, video) {
             window.videoPlayTimers = window.videoPlayTimers || new Map(); 
 
             obs = new IntersectionObserver(es => {
-                // Cek apakah player mengambang sedang dibuka
                 const isFloatingOpen = !document.getElementById('floating-video-player').classList.contains('hidden');
 
                 es.forEach(e => { 
                     const video = e.target;
+                    const wrap = video.closest('.video-inner-wrap');
                     
-                    // Hanya play video JIKA player mengambang sedang TERTUTUP
                     if (e.isIntersecting && !isFloatingOpen) {
                         if (window.videoClearTimers.has(video)) {
                             clearTimeout(window.videoClearTimers.get(video));
@@ -4071,33 +4145,16 @@ function updateSeek(e, containerElement, video) {
                             
                             video.muted = (typeof isGlobalMuted !== 'undefined') ? isGlobalMuted : true;
                             
-                            // =========================================
-                            // EFEK MENGAMBANG OTOMATIS (FOCUS MODE)
-                            // =========================================
-                            const wrap = video.closest('.video-inner-wrap');
                             if (wrap) {
                                 if (!isGlobalMuted) wrap.classList.add('floating-focus');
                                 else wrap.classList.remove('floating-focus');
                             }
-                            // =========================================
                             
                             requestAnimationFrame(() => {
                                 const playPromise = video.play();
-                                if (playPromise !== undefined) {
-                                    playPromise.catch(err => {});
-                                }
+                                if (playPromise !== undefined) playPromise.catch(err => {});
                                 video.classList.remove('opacity-0');
                             });
-
-                            const card = video.closest('.snap-start');
-                            if (card && card.nextElementSibling) {
-                                const nextVid = card.nextElementSibling.querySelector('video');
-                                if (nextVid && nextVid.dataset.savedSrc && !nextVid.src) {
-                                    nextVid.src = nextVid.dataset.savedSrc;
-                                    nextVid.dataset.savedSrc = '';
-                                    nextVid.setAttribute('preload', 'auto');
-                                }
-                            }
                         }, 100); 
 
                         window.videoPlayTimers.set(video, playTimerId);
@@ -4109,6 +4166,8 @@ function updateSeek(e, containerElement, video) {
                         }
 
                         video.pause(); 
+                        
+                        if (wrap) wrap.classList.remove('floating-focus');
                         
                         const timerId = setTimeout(() => {
                             const hapusMemori = () => {
@@ -4123,22 +4182,20 @@ function updateSeek(e, containerElement, video) {
                                 window.videoClearTimers.delete(video);
                             };
 
-                            if ('requestIdleCallback' in window) {
-                                requestIdleCallback(hapusMemori, { timeout: 1000 });
-                            } else {
-                                hapusMemori();
-                            }
+                            if ('requestIdleCallback' in window) requestIdleCallback(hapusMemori, { timeout: 1000 });
+                            else hapusMemori();
 
                         }, 1000); 
 
                         window.videoClearTimers.set(video, timerId);
                     }
                 });
-            }, { threshold: 0.5 }); 
+            }, { threshold: 0.6 }); 
 
             const videos = document.querySelectorAll('.video-player, .float-video-player');
             videos.forEach(v => obs.observe(v));
         };
+
 
         // ---------------------------------------------------------
         // 2. SUNTIKAN WHATSAPP (CACHE LOKAL CHAT & LIMIT)
