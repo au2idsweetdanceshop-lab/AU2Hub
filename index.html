@@ -507,11 +507,13 @@
             </div>
         </div>
 
-        <!-- FULLSCREEN STORY VIEWER -->
+                <!-- FULLSCREEN STORY VIEWER -->
         <div id="story-viewer-modal" class="fixed inset-0 z-[600] hidden items-center justify-center bg-black/95 backdrop-blur-md opacity-0 transition-opacity duration-300">
             <!-- Progress Bar Story -->
             <div class="absolute top-4 left-4 right-4 flex gap-1 z-50">
-                <div class="h-1 bg-white/30 w-full rounded-full overflow-hidden"><div id="story-progress" class="h-full bg-white w-0 transition-all ease-linear"></div></div>
+                <div class="h-1 bg-white/30 w-full rounded-full overflow-hidden">
+                    <div id="story-progress" class="h-full bg-white w-0 transition-all ease-linear"></div>
+                </div>
             </div>
             <!-- Header Story -->
             <div class="absolute top-8 left-4 right-4 flex justify-between items-center z-50">
@@ -527,9 +529,9 @@
             <!-- Media Story -->
             <img id="viewer-story-img" src="" class="w-full h-full object-contain">
             
-            <!-- ---> TAMBAHAN BARU: CAPTION STORY -->
-            <div class="absolute bottom-10 left-4 right-4 z-50 flex justify-center pointer-events-none">
-                <div id="viewer-story-caption" class="bg-black/60 backdrop-blur-sm text-white text-sm px-4 py-2 rounded-2xl shadow-lg text-center max-w-[80%] hidden break-words"></div>
+            <!-- WADAH CAPTION STORY -->
+            <div class="absolute bottom-12 left-4 right-4 z-50 flex justify-center pointer-events-none">
+                <div id="viewer-story-caption" class="bg-black/60 backdrop-blur-md text-white text-sm px-5 py-3 rounded-2xl shadow-lg text-center max-w-[85%] hidden break-words leading-relaxed border border-white/10"></div>
             </div>
 
             <!-- Area Ketuk Kiri/Kanan -->
@@ -538,6 +540,7 @@
                 <div class="w-1/2 h-full" onclick="nextStory()"></div>
             </div>
         </div>
+        
 
     </main>
     
@@ -3011,28 +3014,79 @@ async function loadStories() {
     const container = document.getElementById('status-list-container');
     if (!currentUser) return;
     
-    document.getElementById('my-story-avatar').src = userProfile?.avatar_url || `https://ui-avatars.com/api/?name=${userProfile?.nickname || 'Me'}`;
+    // Set foto profil saya di bagian Status
+    const myAvatar = userProfile?.avatar_url || `https://ui-avatars.com/api/?name=${userProfile?.nickname || 'Me'}`;
+    document.getElementById('my-story-avatar').src = myAvatar;
 
     try {
         const past24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-        // Asumsi kamu sudah membuat tabel 'stories' di Supabase
-        const { data: stories } = await supabaseClient.from('stories').select('*, profiles(nickname, avatar_url)').gte('created_at', past24h).order('created_at', { ascending: false });
+        const { data: stories } = await supabaseClient
+            .from('stories')
+            .select('*, profiles(nickname, avatar_url)')
+            .gte('created_at', past24h)
+            .order('created_at', { ascending: false });
+        
+        // --- AMBIL ELEMEN UI STATUS SAYA ---
+        const myStoryRing = document.getElementById('my-story-ring');
+        const myStatusText = document.getElementById('my-status-text');
+        
+        // Reset tampilan ke default (Jika tidak ada story aktif)
+        window.viewMyStory = () => document.getElementById('upload-story-input').click();
+        if (myStoryRing) {
+            myStoryRing.classList.remove('story-ring');
+            myStoryRing.classList.add('border', 'border-white/10');
+        }
+        if (myStatusText) {
+            myStatusText.innerText = "Ketuk untuk menambahkan update status";
+            myStatusText.className = "text-[10px] text-gray-400";
+        }
         
         if (!stories || stories.length === 0) {
             container.innerHTML = `<div class="text-center py-6 text-xs text-gray-500">Belum ada pembaruan status.</div>`;
             return;
         }
 
-        // Kelompokkan per user
+        // Kelompokkan status berdasarkan user_id
         const groupedStories = {};
         stories.forEach(s => {
-            if (!groupedStories[s.user_id]) groupedStories[s.user_id] = { user_id: s.user_id, nickname: s.profiles?.nickname, avatar: s.profiles?.avatar_url, stories: [] };
+            if (!groupedStories[s.user_id]) {
+                groupedStories[s.user_id] = { 
+                    user_id: s.user_id, 
+                    nickname: s.profiles?.nickname, 
+                    avatar: s.profiles?.avatar_url, 
+                    stories: [] 
+                };
+            }
             groupedStories[s.user_id].stories.push(s);
         });
 
+        // --- CEK: APAKAH SAYA PUNYA STATUS AKTIF? ---
+        if (groupedStories[currentUser.id]) {
+            const myLatestTime = timeAgo(groupedStories[currentUser.id].stories[0].created_at);
+            
+            // 1. Nyalakan Ring Warna-warni
+            if (myStoryRing) {
+                myStoryRing.classList.add('story-ring');
+                myStoryRing.classList.remove('border', 'border-white/10');
+            }
+            // 2. Ganti teks jadi waktu (misal: "Baru saja")
+            if (myStatusText) {
+                myStatusText.innerText = myLatestTime;
+                myStatusText.className = "text-[10px] text-brand-info font-bold";
+            }
+            // 3. Jika diklik, fungsinya jadi MENONTON, bukan upload
+            window.viewMyStory = () => viewStory(
+                currentUser.id, 
+                userProfile?.nickname || 'Me', 
+                myAvatar
+            );
+        }
+
+        // --- RENDER LIST STATUS TEMAN ---
         let html = '';
         for (const uid in groupedStories) {
-            if (uid === currentUser.id) continue; // Skip diri sendiri dari list
+            if (uid === currentUser.id) continue; // Jangan masukkan status saya ke daftar teman
+            
             const user = groupedStories[uid];
             const ava = user.avatar || `https://ui-avatars.com/api/?name=${user.nickname}`;
             const latestTime = timeAgo(user.stories[0].created_at);
@@ -3050,9 +3104,11 @@ async function loadStories() {
         }
         container.innerHTML = html || `<div class="text-center py-6 text-xs text-gray-500">Belum ada pembaruan status teman.</div>`;
     } catch(e) {
-        container.innerHTML = `<div class="text-center py-6 text-xs text-red-500">Gagal memuat status. Pastikan tabel 'stories' sudah dibuat.</div>`;
+        console.error(e);
+        container.innerHTML = `<div class="text-center py-6 text-xs text-red-500">Gagal memuat status.</div>`;
     }
 }
+
 
 async function handleUploadStory(event) {
     const file = event.target.files[0];
@@ -3124,7 +3180,7 @@ function playStory(index) {
     document.getElementById('viewer-story-time').innerText = timeAgo(story.created_at);
     document.getElementById('viewer-story-img').src = story.media_url;
     
-    // ---> TAMBAHAN BARU: TAMPILKAN CAPTION JIKA ADA
+    // LOGIKA TAMPILKAN CAPTION
     const captionEl = document.getElementById('viewer-story-caption');
     if (captionEl) {
         if (story.caption && story.caption.trim() !== '') {
@@ -3136,7 +3192,7 @@ function playStory(index) {
         }
     }
     
-    // Reset dan jalan progress bar (Durasi story 5 detik)
+    // Reset dan jalan progress bar (Durasi 5 detik)
     const progressBar = document.getElementById('story-progress');
     progressBar.style.transition = 'none';
     progressBar.style.width = '0%';
@@ -3151,6 +3207,7 @@ function playStory(index) {
         }, 5000);
     }, 50);
 }
+
 
 
 function nextStory() { playStory(currentActiveStories.currentIndex + 1); }
