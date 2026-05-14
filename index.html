@@ -1885,7 +1885,7 @@ function closeUploadModal() {
         let profileFeedIndex = 0;
         let floatObs = null;
 
-                function setupFloatVideoObserver() {
+                        function setupFloatVideoObserver() {
             floatObs = new IntersectionObserver(es => {
                 es.forEach(e => {
                     const video = e.target;
@@ -1915,6 +1915,7 @@ function closeUploadModal() {
                 });
             }, { threshold: 0.6 });
         }
+
 
 
 
