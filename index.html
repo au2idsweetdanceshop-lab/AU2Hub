@@ -118,24 +118,38 @@
             pointer-events: auto !important;
         }
 
-        /* 2. KOTAK FEED MENGAMBANG OTOMATIS SEMUA DEVICE (REVISI TENGAH) */
+        /* 2. KOTAK FEED MENGAMBANG OTOMATIS SEMUA DEVICE (FLEXIBLE CENTER) */
         body.video-focused #sosial-wrapper {
             position: fixed !important;
-            top: 50% !important; /* Presisi tengah vertikal */
-            left: 50% !important; /* Presisi tengah horizontal */
+            /* Jarak aman wajib dari atas (header) dan bawah (nav) */
+            top: 80px !important;
+            bottom: 80px !important;
+            left: 0 !important;
+            right: 0 !important;
+            
+            /* Kunci agar dia berada tepat di tengah sisa ruang yang ada */
+            margin: auto !important;
+            
+            /* Batasan ukuran lebar */
             width: 100vw !important;
             max-width: 450px !important;
-            height: 80vh !important; /* Set a relative height */
-            max-height: calc(100vh - 160px) !important; /* Cegah menabrak header (atas ~70px) dan nav (bawah ~70px) */
-            margin: 0 !important;
+            
+            /* Tinggi akan otomatis meregang semaksimal mungkin di antara top & bottom */
+            height: auto !important;
+            max-height: 100% !important; /* Mencegah overflow aneh */
+
             z-index: 9999 !important;
             border-radius: 1.5rem !important; 
-            transform: translate(-50%, -50%) scale(1.02) !important; /* Kunci tepat di tengah dengan sedikit efek pop-out */
+            
+            /* Efek pop-out sedikit membesar tanpa menggeser pusat */
+            transform: scale(1.02) !important; 
+            
             /* Box shadow raksasa untuk menggelapkan area belakang */
             box-shadow: 0 0 0 100vmax rgba(10, 6, 20, 0.98), 0 20px 80px rgba(0,0,0,0.95), 0 0 40px rgba(0, 240, 255, 0.4) !important;
             border: 1px solid rgba(255, 255, 255, 0.2) !important;
             transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1) !important;
         }
+
 
 
 
