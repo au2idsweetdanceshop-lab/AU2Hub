@@ -156,17 +156,26 @@
     transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
 
-        /* MEMBUKA GEMBOK AGAR VIDEO BISA KELUAR DARI KOTAK */
+                /* ========================================================= */
+        /* MEMBUKA GEMBOK TOTAL AGAR VIDEO BISA MELOMPAT KELUAR KOTAK */
+        /* ========================================================= */
+        
+        /* 1. Hilangkan batasan potong (overflow) di container utama */
+        body.video-focused #sosial-wrapper,
+        body.video-focused #feed-container {
+            overflow: visible !important;
+            transform: none !important;
+            border-radius: 0 !important;
+        }
+
+        /* 2. Hancurkan "kandang besi" dari elemen pembungkus video */
         body.video-focused .snap-start {
             transform: none !important;
             will-change: auto !important;
+            content-visibility: visible !important; /* <--- INI KUNCI UTAMA YANG BIKIN NYANGKUT TADI */
+            contain: none !important;
         }
 
-        /* Mencegah kotak luar memotong video (khususnya untuk browser iPhone/Safari) */
-        body.video-focused #sosial-wrapper {
-            overflow: visible !important;
-            z-index: 99999 !important;
-        }
 
 
 
