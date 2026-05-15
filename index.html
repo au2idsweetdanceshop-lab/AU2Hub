@@ -109,20 +109,19 @@
             pointer-events: none !important; /* Mematikan semua sentuhan di luar kotak */
         }
 
-        /* Hidupkan kembali sentuhan HANYA untuk elemen yang penting */
-        body.video-focused #sosial-wrapper,
-        body.video-focused header,
-        body.video-focused nav,
-        body.video-focused #sosial-header,
-        #modal-upload, #toast-container, #modal-auth {
-            pointer-events: auto !important;
+        /* 1.5 KUNCI BEBAS DARI PENJARA PARENT (SANGAT PENTING!) */
+        /* Mematikan transform pada parent agar position:fixed bisa mengambang di layar utuh */
+        body.video-focused .tab-content.active {
+            transform: none !important;
+            will-change: auto !important;
+            animation: none !important;
         }
 
         /* 2. KOTAK FEED MENGAMBANG OTOMATIS SEMUA DEVICE (FLEXIBLE CENTER) */
         body.video-focused #sosial-wrapper {
             position: fixed !important;
             
-            /* Kunci agar posisi mulai dari titik tengah layar persis */
+            /* Kunci mulai dari titik tengah layar persis */
             top: 50% !important;
             left: 50% !important;
             
@@ -130,7 +129,7 @@
             width: 100% !important;
             max-width: 450px !important;
             
-            /* Jarak aman dari header dan nav bawah menggunakan kalkulasi dinamis */
+            /* Jarak aman dinamis dari header dan nav bawah */
             height: calc(100dvh - 160px) !important;
             max-height: 100% !important; 
             margin: 0 !important;
@@ -138,7 +137,7 @@
             z-index: 9999 !important;
             border-radius: 1.5rem !important; 
             
-            /* Tarik elemen ke tengah secara absolut (-50%, -50%) + Efek pop-out membesar (scale) */
+            /* Tarik elemen ke tengah secara absolut (-50%, -50%) + Efek pop-out membesar */
             transform: translate(-50%, -50%) scale(1.02) !important; 
             transform-origin: center center !important;
             
@@ -147,6 +146,7 @@
             border: 1px solid rgba(255, 255, 255, 0.2) !important;
             transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1) !important;
         }
+
 
 
 
