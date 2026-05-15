@@ -99,113 +99,56 @@
         @keyframes msgAnim { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .message-anim { animation: msgAnim 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
         
-        /* EFEK VIDEO MENGAMBANG (FOCUS MODE) */
-        .video-inner-wrap {
-            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), border-radius 0.4s ease, box-shadow 0.4s ease, border 0.4s ease;
-            will-change: transform, border-radius;
-            transform-origin: center center;
-            border: 1px solid transparent;
-            position: relative;
-            z-index: 10;
-        }
-
-        /* ------------------------------------------------------------- */
-        /* UNLOCKER & PENCEGAH BUG SCROLL/KLIK LAYAR BELAKANG            */
-        /* ------------------------------------------------------------- */
+        /* ========================================================= */
+        /* SOLUSI FINAL: EFEK MENGAMBANG & SCROLL LANCAR ANTI BUG    */
+        /* ========================================================= */
         
-        /* 1. Matikan scroll di body saat video fokus */
-        body.video-focused {
-            overflow: hidden !important;
-        }
-
-        /* 2. Matikan klik di konten utama agar tidak sengaja terpencet */
-        body.video-focused main {
-            pointer-events: none !important;
-        }
-        
-        /* 3. BAWA HEADER UTAMA (AU2Hub) & MENU BAWAH KE PALING DEPAN */
-        body.video-focused header,
-        body.video-focused nav,
-        #modal-upload, #toast-container, #modal-auth {
-            z-index: 9999999 !important;
-        }
-
-        /* 4. UKURAN VIDEO PAS DI TENGAH (TIDAK NABRAK ATAS & BAWAH) */
-        .floating-focus {
-            pointer-events: auto !important;
-            touch-action: auto !important;
-            position: fixed !important;
-            top: 50% !important; /* Posisi presisi di tengah layar */
-            left: 50% !important;
-            width: 100vw !important; 
-            height: calc(100dvh - 150px) !important; /* Tinggi dipotong otomatis agar pas dengan Header & Menu Nav */
-            max-width: 450px !important;
-            margin: 0 !important;
-            transform: translate(-50%, -50%) scale(1) !important; 
-            border-radius: 1.5rem !important; 
-            box-shadow: 0 0 0 100vmax rgba(10, 6, 20, 0.95), 0 20px 60px rgba(0,0,0,0.9), 0 0 40px rgba(0, 240, 255, 0.4) !important; 
+        /* 1. KOTAK FEED MENGAMBANG KESELURUHAN (BUKAN CUMA 1 VIDEO) */
+        /* Ini adalah kunci agar scroll tetap lancar! Kita zoom kotaknya, bukan videonya. */
+        body.video-focused #sosial-wrapper {
+            transform: scale(1.04) translateY(-10px) !important;
+            height: calc(100dvh - 170px) !important; 
+            z-index: 9999 !important;
+            box-shadow: 0 20px 80px rgba(0,0,0,0.95), 0 0 40px rgba(0, 240, 255, 0.4) !important;
             border: 1px solid rgba(255, 255, 255, 0.2) !important;
-            z-index: 9999 !important; 
             transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1) !important;
+            position: relative !important;
         }
 
-        /* 5. Pelindung Extra untuk menahan sentuhan di area pinggiran hitam */
-        .floating-focus::before {
+        /* 2. BACKGROUND GELAP/BLUR SEBAGAI PELINDUNG (ANTI KLIK TEMBUS) */
+        body.video-focused::before {
             content: '';
-            position: absolute;
-            inset: -100vmax;
-            backdrop-filter: blur(15px);
-            -webkit-backdrop-filter: blur(15px);
-            background: rgba(0, 0, 0, 0.1);
-            z-index: -1; 
-            pointer-events: auto !important; 
-            opacity: 0;
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(10, 6, 20, 0.85);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            z-index: 9990 !important;
+            pointer-events: auto !important; /* Memblokir total sentuhan ke layar belakang */
             animation: fadeInBlur 0.4s ease forwards;
         }
 
         @keyframes fadeInBlur {
+            from { opacity: 0; }
             to { opacity: 1; }
         }
 
-        /* ========================================================= */
-        /* MEMBUKA GEMBOK TOTAL AGAR VIDEO BISA MELOMPAT KELUAR KOTAK */
-        /* ========================================================= */
-        
-        /* 1. Hilangkan batasan potong (overflow) di container utama */
-        body.video-focused #sosial-wrapper,
-        body.video-focused #feed-container,
-        body.video-focused #floating-feed-container {
-            overflow: visible !important;
-            transform: none !important;
-            border-radius: 0 !important;
+        /* 3. PASTIKAN HEADER UTAMA, HEADER FEED, DAN MENU BAWAH TETAP DI DEPAN */
+        body.video-focused header.fixed.top-0,
+        body.video-focused nav.fixed.bottom-0,
+        #modal-upload, #toast-container, #modal-auth {
+            z-index: 9999999 !important;
         }
 
-        /* 2. Hancurkan "kandang besi" dari elemen pembungkus video */
-        body.video-focused .snap-start {
-            transform: none !important;
-            will-change: auto !important;
-            content-visibility: visible !important; 
-            contain: none !important;
-        }
-
-        /* ------------------------------------------------------------- */
-        /* EFEK HEADER & WIDGET CHAT SAAT MODE FOKUS                     */
-        /* ------------------------------------------------------------- */
-        
-        #sosial-header {
-            transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275), filter 0.4s ease;
+        /* TULISAN "FEED KOMUNITAS" BERBAYANG AGAR JELAS & ADA DI DEPAN BLUR */
+        body.video-focused #sosial-header {
+            transform: translateY(0) scale(1) !important; 
+            filter: drop-shadow(0 4px 10px rgba(0,0,0,0.8)); 
+            z-index: 9999999 !important;
             position: relative;
         }
 
-        /* TULISAN "FEED KOMUNITAS" TETAP DI TEMPAT & MENGAMBANG RAPI */
-        body.video-focused #sosial-header {
-            transform: translateY(0) scale(1) !important; 
-            z-index: 9999999 !important; 
-            pointer-events: auto !important; 
-            filter: drop-shadow(0 4px 10px rgba(0,0,0,0.8)); 
-        }
-
-        /* Tombol kamera terus berdenyut glow saat mode fokus */
+        /* Tombol kamera berdenyut */
         body.video-focused #sosial-header button {
             animation: pulseCamera 1.5s infinite;
         }
@@ -216,13 +159,40 @@
             100% { box-shadow: 0 0 15px rgba(255,0,122,0.4); transform: scale(1); }
         }
 
-        /* SEMBUNYIKAN WIDGET CHAT SAAT VIDEO DIKLIK */
+        /* 4. PASTIKAN FEED DI DALAM KOTAK TETAP BISA DI-SCROLL MULUS */
+        body.video-focused #feed-container {
+            overflow-y: scroll !important;
+            pointer-events: auto !important;
+            touch-action: pan-y !important;
+        }
+        
+        /* Matikan scroll body utamanya saja */
+        body.video-focused {
+            overflow: hidden !important;
+        }
+
+        /* 5. HANCURKAN BATASAN RENDER AGAR TIDAK TERPOTONG */
+        body.video-focused .snap-start {
+            content-visibility: visible !important; 
+            contain: none !important;
+            transform: none !important;
+        }
+
+        /* 6. SEMBUNYIKAN WIDGET CHAT SAAT VIDEO DIKLIK AGAR LEGA */
         body.video-focused button[onclick="toggleWidget()"] {
             opacity: 0 !important;
             transform: scale(0.5) !important;
             pointer-events: none !important;
             transition: all 0.3s ease !important;
         }
+
+        /* 7. KEMBALIKAN POSISI VIDEO INNER KE AWAL KARENA SEKARANG KOTAKNYA YANG ZOOM */
+        .video-inner-wrap {
+            position: relative;
+            z-index: 10;
+            transition: all 0.4s ease;
+        }
+
 
 
 
