@@ -120,7 +120,7 @@
         /* 2. KOTAK FEED MENGAMBANG OTOMATIS SEMUA DEVICE (FLEXIBLE CENTER) */
         body.video-focused #sosial-wrapper {
             position: fixed !important;
-            
+            pointer-events: auto !important;
             /* Teknik Centering Anti-Bug Scroll (Gunakan inset & margin auto) */
             top: 0 !important;
             bottom: 0 !important;
@@ -153,6 +153,7 @@
         body.video-focused header,
         body.video-focused nav {
             z-index: 9999999 !important;
+            pointer-events: auto !important;
         }
 
         /* TULISAN "FEED KOMUNITAS" BERBAYANG AGAR JELAS */
