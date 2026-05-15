@@ -4,8 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>AU2Hub - Pusat Komunitas & Joki</title>
-    <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
-<script>eruda.init();</script>
     <link rel="icon" type="image/png" href="/app-icon-192.png">
     <link rel="apple-touch-icon" href="/app-icon-192.png">
     <link rel="manifest" href="/manifest-v2.json">
@@ -4168,22 +4166,21 @@ function updateSeek(e, containerElement, video) {
     const fill = containerElement.querySelector('.progress-fill');
     if (fill) fill.style.width = `${pos * 100}%`;
     
-    if (video.duration) {
-        video.currentTime = pos * video.duration;
-        
-        const timeIndicator = containerElement.closest('.snap-start').querySelector('.time-indicator');
-        if (timeIndicator) {
-            timeIndicator.querySelector('.time-current').innerText = formatTime(video.currentTime);
-            timeIndicator.querySelector('.time-total').innerText = formatTime(video.duration);
+            if (video.duration) {
+            video.currentTime = pos * video.duration;
+            
+            const timeIndicator = containerElement.closest('.snap-start').querySelector('.time-indicator');
+            if (timeIndicator) {
+                timeIndicator.querySelector('.time-current').innerText = formatTime(video.currentTime);
+                timeIndicator.querySelector('.time-total').innerText = formatTime(video.duration);
+            }
         }
     }
-}
-<script>
-    window.addEventListener('load', () => {
-        
-        // ---------------------------------------------------------
-        // 1. SUNTIKAN TIKTOK V6 (REQUEST IDLE CALLBACK / ANTI-STUTTER)
-        // ---------------------------------------------------------
+    </script> <script>
+        window.addEventListener('load', () => {
+            
+            // 1. SUNTIKAN TIKTOK V6 (REQUEST IDLE CALLBACK / ANTI-STUTTER)
+
         window.setupVideoObserver = function() {
             if (typeof obs !== 'undefined' && obs) obs.disconnect();
 
