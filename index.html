@@ -1888,6 +1888,17 @@ function closeUploadModal() {
 }
         
         async function openUserProfile(userId) {
+            // 👇 KUNCI PERBAIKAN: Matikan mode floating layar penuh (Feed Utama) jika sedang aktif
+            if (document.body.classList.contains('video-focused')) {
+                toggleGlobalAudio(); 
+            }
+            
+            // 👇 KUNCI PERBAIKAN 2: Tutup video pop-up (Feed Profil) jika sedang terbuka
+            const floatingPlayer = document.getElementById('floating-video-player');
+            if (floatingPlayer && !floatingPlayer.classList.contains('hidden')) {
+                closeFloatingVideo();
+            }
+
             viewedUserId = userId;
             switchTab('profile', null, false);
             document.getElementById('profile-loading').classList.remove('hidden');
@@ -1928,6 +1939,7 @@ function closeUploadModal() {
             
             if(!isOwn) history.pushState({ popup: 'user_profile' }, null, `#profile?id=${userId}`);
         }
+
         
         // FUNGSI MELIHAT PROFIL USER LAIN DARI MANA SAJA
                 function viewUserProfile(userId) {
@@ -4056,7 +4068,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     switchTab(tabAwal, null, false);
     checkSession();
-    muatDataRipper(); 
+    muatDataRipper();
+    renderFaqs();
+    renderServices();
 
     // Mendaftarkan Service Worker
     if ('serviceWorker' in navigator) {
