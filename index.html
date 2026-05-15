@@ -1607,7 +1607,7 @@
             }); 
         }
 
-        function toggleGlobalAudio() {
+        function toggleGlobalAudio(skipHistory = false) {
             isGlobalMuted = !isGlobalMuted;
             document.querySelectorAll('.video-player, .float-video-player').forEach(v => v.muted = isGlobalMuted);
 
@@ -1625,8 +1625,8 @@
                 if(navBottom) navBottom.style.filter = 'none';
                 if(headerTop) headerTop.style.filter = 'none';
 
-                // Hapus jejak URL jika user menutup dengan mengklik layar video
-                if (window.location.hash === '#focused') {
+                // Hapus jejak URL HANYA jika tidak ada instruksi skipHistory
+                if (!skipHistory && window.location.hash === '#focused') {
                     history.back();
                 }
             } else {
@@ -1650,6 +1650,7 @@
                 if(headerTop) headerTop.style.filter = 'blur(8px) opacity(0.5)';
             }
         }
+
 
 
         function switchTab(tabId, event = null, isPush = true) {
@@ -1888,56 +1889,85 @@ function closeUploadModal() {
 }
         
         async function openUserProfile(userId) {
-            // 👇 KUNCI PERBAIKAN: Matikan mode floating layar penuh (Feed Utama) jika sedang aktif
-            if (document.body.classList.contains('video-focused')) {
-                toggleGlobalAudio(); 
+            try {
+                let wasPopupOpen = false;
+
+                // 1. Matikan mode video utama jika aktif
+                if (document.body.classList.contains('video-focused')) {
+                    toggleGlobalAudio(true); 
+                    wasPopupOpen = true;
+                }
+                
+                // 2. Tutup pop-up video profil jika aktif
+                const floatingPlayer = document.getElementById('floating-video-player');
+                if (floatingPlayer && !floatingPlayer.classList.contains('hidden')) {
+                    closeFloatingVideo(true);
+                    wasPopupOpen = true;
+                }
+
+                viewedUserId = userId;
+                
+                // 👇 KUNCI PERBAIKAN: Berikan jeda 10ms agar render browser tidak bertabrakan saat video dihancurkan
+                setTimeout(() => {
+                    switchTab('profile', null, false);
+                }, 10);
+
+                // Tampilkan loading skeleton
+                document.getElementById('profile-loading').classList.remove('hidden');
+                document.querySelectorAll('#profile-logged-in').forEach(el => el.classList.add('hidden'));
+                
+                const isOwn = (userId === currentUser?.id);
+                
+                // Ambil data profil (Aman dari silent error)
+                const { data, error } = await supabaseClient.from('profiles').select('*').eq('id', userId).single();
+                if (error && error.code !== 'PGRST116') {
+                    console.error("Error database:", error);
+                }
+                
+                // Render teks profil
+                const elNick2 = document.getElementById('profile-nickname'); if(elNick2) elNick2.innerText = "@" + (data?.nickname || "Player");
+                const elBio2 = document.getElementById('profile-bio'); if(elBio2) elBio2.innerText = data?.bio || "Belum ada deskripsi.";
+                const elImg2 = document.getElementById('profile-img'); if(elImg2) elImg2.src = data?.avatar_url || `https://ui-avatars.com/api/?name=${data?.nickname || 'Player'}&background=1A1133&color=fff`;
+
+                const actionOwn = document.getElementById('profile-actions-own'); if(actionOwn) actionOwn.classList.toggle('hidden', !isOwn);
+                const actionOther = document.getElementById('profile-actions-other'); if(actionOther) actionOther.classList.toggle('hidden', isOwn);
+                
+                document.getElementById('btn-back-profile').classList.toggle('hidden', isOwn);
+                
+                const inputAva = document.getElementById('btn-edit-avatar');
+                if(inputAva) inputAva.classList.toggle('hidden', !isOwn);
+
+                const elVidTitle = document.getElementById('profile-video-title');
+                if(elVidTitle) {
+                    if(isOwn) { elVidTitle.innerHTML = `<i class="fas fa-grip-vertical mr-2 text-brand-info"></i> Video Saya`; } 
+                    else { elVidTitle.innerHTML = `<i class="fas fa-grip-vertical mr-2 text-brand-info"></i> Video ${data?.nickname || ''}`; }
+                }
+                
+                const userVideos = allVideosData.filter(v => v.user_id === userId);
+                const elLikes = document.getElementById('profile-total-likes');
+                if (elLikes) elLikes.innerText = (userVideos.length * 3);
+
+                renderProfileVideos(userId);
+                fetchFollowStats(userId); 
+                
+                // Hilangkan loading dan munculkan profil
+                document.getElementById('profile-loading').classList.add('hidden');
+                document.querySelectorAll('#profile-logged-in').forEach(el => el.classList.remove('hidden'));
+                
+                checkBlockStatusUI();
+                
+                // Pastikan riwayat URL tidak kacau
+                if(!isOwn) {
+                    if (wasPopupOpen) {
+                        history.replaceState({ popup: 'user_profile' }, null, `#profile?id=${userId}`);
+                    } else {
+                        history.pushState({ popup: 'user_profile' }, null, `#profile?id=${userId}`);
+                    }
+                }
+            } catch (err) {
+                console.error("Gagal membuka profil:", err);
+                showToast("Terjadi kesalahan saat memuat profil.", "error");
             }
-            
-            // 👇 KUNCI PERBAIKAN 2: Tutup video pop-up (Feed Profil) jika sedang terbuka
-            const floatingPlayer = document.getElementById('floating-video-player');
-            if (floatingPlayer && !floatingPlayer.classList.contains('hidden')) {
-                closeFloatingVideo();
-            }
-
-            viewedUserId = userId;
-            switchTab('profile', null, false);
-            document.getElementById('profile-loading').classList.remove('hidden');
-            document.querySelectorAll('#profile-logged-in').forEach(el => el.classList.add('hidden'));
-            
-            const isOwn = (userId === currentUser?.id);
-            const { data } = await supabaseClient.from('profiles').select('*').eq('id', userId).single();
-            
-            const elNick2 = document.getElementById('profile-nickname'); if(elNick2) elNick2.innerText = "@" + (data?.nickname || "Player");
-            const elBio2 = document.getElementById('profile-bio'); if(elBio2) elBio2.innerText = data?.bio || "Belum ada deskripsi.";
-            const elImg2 = document.getElementById('profile-img'); if(elImg2) elImg2.src = data?.avatar_url || `https://ui-avatars.com/api/?name=${data?.nickname || 'Player'}&background=1A1133&color=fff`;
-
-            const actionOwn = document.getElementById('profile-actions-own'); if(actionOwn) actionOwn.classList.toggle('hidden', !isOwn);
-            const actionOther = document.getElementById('profile-actions-other'); if(actionOther) actionOther.classList.toggle('hidden', isOwn);
-            
-            document.getElementById('btn-back-profile').classList.toggle('hidden', isOwn);
-            
-            const inputAva = document.getElementById('btn-edit-avatar');
-            if(inputAva) inputAva.classList.toggle('hidden', !isOwn);
-
-            const elVidTitle = document.getElementById('profile-video-title');
-            if(elVidTitle) {
-                if(isOwn) { elVidTitle.innerHTML = `<i class="fas fa-grip-vertical mr-2 text-brand-info"></i> Video Saya`; } 
-                else { elVidTitle.innerHTML = `<i class="fas fa-grip-vertical mr-2 text-brand-info"></i> Video ${data?.nickname || ''}`; }
-            }
-            
-            const userVideos = allVideosData.filter(v => v.user_id === userId);
-            const elLikes = document.getElementById('profile-total-likes');
-            if (elLikes) elLikes.innerText = (userVideos.length * 3);
-
-            renderProfileVideos(userId);
-            fetchFollowStats(userId); 
-            
-            document.getElementById('profile-loading').classList.add('hidden');
-            document.querySelectorAll('#profile-logged-in').forEach(el => el.classList.remove('hidden'));
-            
-            checkBlockStatusUI();
-            
-            if(!isOwn) history.pushState({ popup: 'user_profile' }, null, `#profile?id=${userId}`);
         }
 
         
@@ -2046,19 +2076,21 @@ function closeUploadModal() {
             history.pushState({ popup: 'floating_video' }, null, '#profil_video');
         }
 
-        function closeFloatingVideo() {
-            // ✅ FINAL: Jika tombol close diklik manual, eksekusi tombol "Back" otomatis
-            if (window.location.hash === '#profil_video') {
+        function closeFloatingVideo(skipHistory = false) {
+            // 1. Matikan video dan bersihkan layar DULU
+            const p = document.getElementById('floating-video-player');
+            p.classList.add('hidden'); p.classList.remove('flex');
+            document.getElementById('floating-feed-container').innerHTML = '';
+            if(floatObs) floatObs.disconnect(); // clean up
+
+            // 2. BARU eksekusi history back di bawah, ITU PUN jika tidak di-skip
+            if (!skipHistory && window.location.hash === '#profil_video') {
                 history.back();
-            } else {
-                const p = document.getElementById('floating-video-player');
-                p.classList.add('hidden'); p.classList.remove('flex');
-                document.getElementById('floating-feed-container').innerHTML = '';
-                if(floatObs) floatObs.disconnect(); // clean up
             }
         }
 
-                function renderProfileVideoBatch() {
+
+        function renderProfileVideoBatch() {
             const container = document.getElementById('floating-feed-container');
 
             if (profileFeedIndex >= currentProfileVideos.length) {
@@ -2068,7 +2100,7 @@ function closeUploadModal() {
             const nextBatch = currentProfileVideos.slice(profileFeedIndex, profileFeedIndex + 3);
             if (nextBatch.length === 0) return;
 
-                                    const htmlString = nextBatch.map((vid) => `
+            const htmlString = nextBatch.map((vid) => `
                 <div class="snap-start w-full h-full flex-shrink-0 relative flex items-center justify-center overflow-hidden bg-black/95 px-0 sm:px-4 py-0 sm:py-6">
                     <div class="w-full max-w-sm aspect-[9/16] relative bg-brand-dark mx-auto h-full sm:h-auto sm:rounded-3xl overflow-hidden shadow-2xl">
                         <div class="absolute inset-0 flex items-center justify-center z-0"><div class="w-12 h-12 border-4 border-brand-accent/20 border-t-brand-accent rounded-full animate-spin"></div></div>
@@ -2079,12 +2111,10 @@ function closeUploadModal() {
                             <source src="${vid.video_url}" type="video/mp4">
                         </video>
                         
-                        <!-- INI INDIKATOR WAKTU POPUP -->
                         <div class="time-indicator absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-white font-extrabold text-4xl drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)] opacity-0 transition-opacity z-[60] pointer-events-none tracking-wider bg-black/40 px-6 py-2 rounded-2xl backdrop-blur-sm">
                             <span class="time-current">00:00</span> <span class="text-white/50 text-2xl mx-1">/</span> <span class="time-total text-white/70">00:00</span> 
                         </div>
 
-                        <!-- Progress Bar Scrubber (Area Bawah) -->
                         <div class="absolute bottom-0 left-0 w-full h-3 z-50 cursor-pointer group touch-none flex flex-col justify-end pb-1"
                              onpointerdown="startSeek(event, this)" 
                              onpointermove="doSeek(event, this)" 
@@ -2099,14 +2129,12 @@ function closeUploadModal() {
 
                         <div class="absolute bottom-0 left-0 w-full p-6 flex justify-between items-end z-20 pointer-events-none bg-gradient-to-t from-black/80 to-transparent pb-10 sm:pb-6">
                             <div class="text-white drop-shadow-lg w-[75%] pointer-events-auto">
-                                <p class="font-bold text-[15px] shadow-black drop-shadow-md mb-1.5">@${vid.nickname || "Player"}</p>
+                                <!-- 👇 PERBAIKAN 3: Kunci teks nama agar tidak tembus ke video -->
+                                <p onclick="event.stopPropagation(); viewUserProfile('${vid.user_id}')" class="font-bold text-[15px] cursor-pointer hover:text-brand-info shadow-black drop-shadow-md mb-1.5">@${vid.nickname || "Player"}</p>
                                 <div onclick="this.classList.toggle('expanded')" class="caption-text text-[13px] opacity-90 shadow-black drop-shadow-md cursor-pointer pr-2 leading-relaxed">${formatCaption(vid.caption)}</div>
                             </div>
                             
-                            <!-- KUMPULAN ICON PROFIL KANAN (STYLE TIKTOK) -->
                             <div class="flex flex-col gap-4 items-center pointer-events-auto mb-2 mr-1">
-                                
-                                <!-- Like -->
                                 <div class="like-container flex flex-col items-center gap-0.5" data-vid="${vid.id}">
                                     <button onclick="likeVideo('${vid.id}', this)" class="hover:scale-110 transition-transform active:scale-90">
                                         <i class="fas fa-heart text-[32px] text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]"></i>
@@ -2114,7 +2142,6 @@ function closeUploadModal() {
                                     <span class="like-count-display text-white text-[12px] font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">0</span>
                                 </div>
 
-                                <!-- Komentar -->
                                 <div class="comment-count-container flex flex-col items-center gap-0.5" data-vid="${vid.id}">
                                     <button onclick="openComments('${vid.id}')" class="hover:scale-110 transition-transform active:scale-90">
                                         <i class="fas fa-comment-dots text-[32px] text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]" style="transform: scaleX(-1);"></i>
@@ -2122,7 +2149,6 @@ function closeUploadModal() {
                                     <span class="comment-count-display text-white text-[12px] font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">0</span>
                                 </div>
 
-                                <!-- Share -->
                                 <div class="flex flex-col items-center gap-0.5 mt-1">
                                     <button onclick="shareVideo('${vid.id}', this)" class="hover:scale-110 transition-transform active:scale-90">
                                         <i class="fas fa-share text-[30px] text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]"></i>
@@ -2130,7 +2156,6 @@ function closeUploadModal() {
                                     <span class="text-white text-[11px] font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">Share</span>
                                 </div>
 
-                                <!-- Hapus (Hanya muncul jika profil sendiri) -->
                                 ${currentUser && vid.user_id === currentUser.id ? `
                                 <button onclick="deleteVideo('${vid.id}')" class="hover:scale-110 transition-transform mt-3 active:scale-90">
                                     <div class="bg-black/50 p-2 rounded-full border border-white/20 backdrop-blur-sm">
@@ -2143,13 +2168,9 @@ function closeUploadModal() {
                     </div>
                 </div>`).join('');
 
-
-
-
             container.insertAdjacentHTML('beforeend', htmlString);
             profileFeedIndex += 3;
 
-            // Bind UI (Like, Comment) untuk profil feed
             const videoActions = container.querySelectorAll('.snap-start:not(.data-loaded)');
             videoActions.forEach((card) => {
                 card.classList.add('data-loaded');
@@ -2158,7 +2179,6 @@ function closeUploadModal() {
                 updateCommentCountUI(vidId, card.querySelector('.comment-count-container'));
             });
 
-            // Observer Infinite Scroll Profile
             const unobservedVideos = container.querySelectorAll('.float-video-player:not(.observed)');
             unobservedVideos.forEach((v, i) => {
                 v.classList.add('observed'); if (floatObs) floatObs.observe(v);
@@ -2728,18 +2748,18 @@ function closeUploadModal() {
             } catch (e) { container.innerHTML = '<p class="text-center py-20 text-gray-500">Gagal memuat video.</p>'; }
         }
 
-                function renderVideoBatch() {
+        function renderVideoBatch() {
             const container = document.getElementById('feed-container');
             
             // --- LOGIKA FEED TANPA UJUNG (INFINITE LOOP) ---
             if (currentVideoIndex >= allVideosData.length) {
-                currentVideoIndex = 0; // Jika video habis, ulang dari awal
+                currentVideoIndex = 0; 
             }
 
             const nextBatch = allVideosData.slice(currentVideoIndex, currentVideoIndex + BATCH_SIZE);
             if (nextBatch.length === 0) return;
 
-                        const htmlString = nextBatch.map((vid) => `
+            const htmlString = nextBatch.map((vid) => `
                 <div class="snap-start w-full h-full flex-shrink-0 relative flex items-center justify-center bg-[#0A0614]">
                     
                     <div class="video-inner-wrap w-full h-full relative bg-brand-dark ${!isGlobalMuted ? 'floating-focus' : ''}">
@@ -2766,7 +2786,8 @@ function closeUploadModal() {
 
                         <div class="absolute bottom-0 left-0 w-full px-5 pb-8 flex justify-between items-end z-20 pointer-events-none bg-gradient-to-t from-black/80 to-transparent pt-10">
                             <div class="text-white drop-shadow-lg w-[75%] pointer-events-auto">
-                                <p onclick="openUserProfile('${vid.user_id}')" class="font-bold text-[15px] cursor-pointer hover:text-brand-info drop-shadow-md mb-1.5">
+                                <!-- 👇 PERBAIKAN 1: Tambah event.stopPropagation() agar klik teks tidak tembus ke video -->
+                                <p onclick="event.stopPropagation(); viewUserProfile('${vid.user_id}')" class="font-bold text-[15px] cursor-pointer hover:text-brand-info drop-shadow-md mb-1.5">
                                     @${vid.nickname || "Player"}
                                 </p>
                                 <div onclick="this.classList.toggle('expanded')" class="caption-text text-[13px] opacity-90 drop-shadow-md cursor-pointer pr-2 leading-relaxed">
@@ -2775,7 +2796,8 @@ function closeUploadModal() {
                             </div>
                             
                             <div class="flex flex-col gap-4 items-center pointer-events-auto mb-6 sm:mb-10 mr-1">
-                                <div class="relative mb-2 cursor-pointer hover:scale-105 transition-transform" onclick="openUserProfile('${vid.user_id}')">
+                                <!-- 👇 PERBAIKAN 2: Tambah event.stopPropagation() agar klik foto tidak tembus ke video -->
+                                <div class="relative mb-2 cursor-pointer hover:scale-105 transition-transform" onclick="event.stopPropagation(); viewUserProfile('${vid.user_id}')">
                                     <img src="${vid.avatar_url || 'https://ui-avatars.com/api/?name=User&background=1A1133&color=fff'}" loading="lazy" class="w-11 h-11 rounded-full object-cover border-[1.5px] border-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
                                     <button id="feed-follow-btn-${vid.user_id}" onclick="event.stopPropagation(); feedToggleFollow('${vid.user_id}', this)" class="absolute -bottom-2.5 left-1/2 -translate-x-1/2 bg-[#FF007A] text-white rounded-full w-[22px] h-[22px] flex items-center justify-center border-[1.5px] border-brand-dark drop-shadow-md active:scale-90 transition-transform z-30">
                                         <i class="fas fa-plus text-[10px]"></i>
@@ -2808,7 +2830,6 @@ function closeUploadModal() {
                 </div>`).join('');
 
             container.insertAdjacentHTML('beforeend', htmlString);
-            
             currentVideoIndex += BATCH_SIZE;
 
             const videoActions = container.querySelectorAll('.snap-start:not(.data-loaded)');
