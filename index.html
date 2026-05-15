@@ -1688,10 +1688,12 @@
         }
 
             window.addEventListener('popstate', () => {
-                        // --- TAMBAHAN BARU: TANGKAP TOMBOL KEMBALI UNTUK ZOOM VIDEO ---
-            if (document.body.classList.contains('video-focused')) {
-                toggleGlobalAudio(); // Matikan mode fokus
-                return; // Hentikan eksekusi kode di bawahnya
+        let isPopupClosed = false;
+
+        // --- TAMBAHAN BARU: TANGKAP TOMBOL KEMBALI UNTUK ZOOM VIDEO ---
+        if (document.body.classList.contains('video-focused')) {
+            toggleGlobalAudio(); // Matikan mode fokus
+            return; // Hentikan eksekusi kode di bawahnya
             }
             // -------------------------------------------------------------
 
