@@ -4022,11 +4022,10 @@ function updateSeek(e, containerElement, video) {
         // INISIALISASI HALAMAN PERTAMA KALI DIBUKA
         // ==========================================
         document.addEventListener('DOMContentLoaded', () => {
-            // 1. Cek dulu apakah ada tab yang diketik spesifik di URL (misal: web.com/#sosial)
+            // 1. Cek dulu apakah ada tab yang diketik spesifik di URL
             let tabAwal = window.location.hash.substring(1);
             
-            // 2. Jika tidak ada URL spesifik, baca memori 'lastTab' yang terakhir dibuka. 
-            // Jika memori masih kosong (baru pertama kali buka web), jadikan 'home' sebagai default.
+            // 2. Jika tidak ada URL spesifik, baca memori 'lastTab'
             if (!tabAwal) {
                 tabAwal = localStorage.getItem('lastTab') || 'home';
             }
@@ -4036,7 +4035,11 @@ function updateSeek(e, containerElement, video) {
             
             // 4. Jalankan pengecekan sesi login
             checkSession();
+
+            // 5. MUAT DATABASE RIPPER AGAR TIDAK HILANG
+            muatDataRipper(); 
         });
+
 
         
 </script>
