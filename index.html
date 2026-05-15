@@ -4078,32 +4078,55 @@ function updateSeek(e, containerElement, video) {
                 }
             });
 
-// 1. TARUH DI LUAR / GLOBAL SCOPE
+// ==========================================
+// 1. EVENT BROWSER PWA (TARUH DI LUAR DOMContentLoaded)
+// ==========================================
 let deferredPrompt;
+
+// Menangkap sinyal PWA dari browser secepat mungkin
 window.addEventListener('beforeinstallprompt', (e) => {
-    // Mencegah mini-infobar default muncul
     e.preventDefault();
     deferredPrompt = e;
     
-    // Munculkan tombol instal custom milikmu
+    // Munculkan tombol instal
     const btnInstallContainer = document.getElementById('install-container');
     if (btnInstallContainer) {
         btnInstallContainer.classList.remove('hidden');
     }
 });
 
-// Tutup tombol otomatis kalau PWA berhasil diinstal
+// Sembunyikan tombol jika aplikasi ternyata sudah terinstal
 window.addEventListener('appinstalled', () => {
-    console.log('AU2Hub sukses terpasang!');
+    console.log('AU2Hub sukses terpasang di perangkat!');
     deferredPrompt = null;
     const btnInstallContainer = document.getElementById('install-container');
-    if (btnInstallContainer) btnInstallContainer.classList.add('hidden');
+    if (btnInstallContainer) {
+        btnInstallContainer.classList.add('hidden');
+    }
 });
 
-// 2. LOGIKA KLIK DI DALAM DOMContentLoaded
-document.addEventListener('DOMContentLoaded', () => {
-    // ... (Logika routing dan Service Worker biarkan seperti aslinya) ...
 
+// ==========================================
+// 2. INISIALISASI HALAMAN (TETAP DI DALAM DOMContentLoaded)
+// ==========================================
+document.addEventListener('DOMContentLoaded', () => {
+    // Logika Routing Halaman
+    let tabAwal = window.location.hash.substring(1);
+    if (!tabAwal) {
+        tabAwal = localStorage.getItem('lastTab') || 'home';
+    }
+    switchTab(tabAwal, null, false);
+    checkSession();
+    muatDataRipper(); 
+
+    // Mendaftarkan Service Worker
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js')
+        .then(() => console.log("Service Worker AU2Hub Aktif!"))
+        .catch(err => console.error("Service Worker Gagal:", err));
+    }
+
+    // Logika ketika tombol "INSTAL APLIKASI AU2HUB" diklik oleh user
     const btnInstallManual = document.getElementById('btn-install-manual');
     const btnInstallContainer = document.getElementById('install-container');
 
@@ -4111,11 +4134,17 @@ document.addEventListener('DOMContentLoaded', () => {
         btnInstallManual.addEventListener('click', async () => {
             if (!deferredPrompt) return;
             
+            // Munculkan pop-up instalasi resmi dari sistem OS/Browser
             deferredPrompt.prompt();
-            const { outcome } = await deferredPrompt.userChoice;
-            console.log(`User memilih: ${outcome}`);
             
+            // Tunggu respons pilihan dari user (klik pasang atau batal)
+            const { outcome } = await deferredPrompt.userChoice;
+            console.log(`User memilih untuk: ${outcome}`);
+            
+            // Reset kembali variabelnya karena prompt hanya bisa dipakai sekali
             deferredPrompt = null;
+            
+            // Sembunyikan tombol setelah proses selesai
             if (btnInstallContainer) {
                 btnInstallContainer.classList.add('hidden');
             }
