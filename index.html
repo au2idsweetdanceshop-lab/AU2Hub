@@ -4039,6 +4039,76 @@ function updateSeek(e, containerElement, video) {
             // 5. MUAT DATABASE RIPPER AGAR TIDAK HILANG
             muatDataRipper(); 
         });
+        
+                // ==========================================
+        // INISIALISASI HALAMAN PERTAMA KALI DIBUKA & PWA
+        // ==========================================
+        document.addEventListener('DOMContentLoaded', () => {
+            // 1. Logika Routing Halaman
+            let tabAwal = window.location.hash.substring(1);
+            if (!tabAwal) {
+                tabAwal = localStorage.getItem('lastTab') || 'home';
+            }
+            switchTab(tabAwal, null, false);
+            checkSession();
+            muatDataRipper(); 
+
+            // 2. Mendaftarkan Service Worker
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('/sw.js')
+                .then(() => console.log("Service Worker AU2Hub Aktif!"))
+                .catch(err => console.error("Service Worker Gagal:", err));
+            }
+
+            // 3. LOGIKA TOMBOL INSTAL PWA (ANTI-GHAIB)
+            let deferredPrompt;
+            const btnInstallContainer = document.getElementById('install-container');
+            const btnInstallManual = document.getElementById('btn-install-manual');
+
+            // Browser akan memicu event ini jika web kamu sudah lolos syarat PWA
+            window.addEventListener('beforeinstallprompt', (e) => {
+                // Cegah browser memunculkan mini-banner bawaan yang mengganggu
+                e.preventDefault();
+                // Simpan event instalasi ke variabel memori
+                deferredPrompt = e;
+                
+                // Munculkan kontainer tombol instal manual di halaman Home kamu
+                if (btnInstallContainer) {
+                    btnInstallContainer.classList.remove('hidden');
+                }
+            });
+
+            // Logika ketika tombol "INSTAL APLIKASI AU2HUB" diklik oleh user
+            if (btnInstallManual) {
+                btnInstallManual.addEventListener('click', async () => {
+                    if (!deferredPrompt) return;
+                    
+                    // Munculkan pop-up instalasi resmi dari sistem OS/Browser
+                    deferredPrompt.prompt();
+                    
+                    // Tunggu respons pilihan dari user (klik pasang atau batal)
+                    const { outcome } = await deferredPrompt.userChoice;
+                    console.log(`User memilih untuk: ${outcome}`);
+                    
+                    // Reset kembali variabelnya karena prompt hanya bisa dipakai sekali
+                    deferredPrompt = null;
+                    
+                    // Sembunyikan tombol setelah proses selesai
+                    if (btnInstallContainer) {
+                        btnInstallContainer.classList.add('hidden');
+                    }
+                });
+            }
+
+            // Sembunyikan tombol jika aplikasi ternyata sudah terinstal di HP user
+            window.addEventListener('appinstalled', () => {
+                console.log('AU2Hub sukses terpasang di perangkat!');
+                deferredPrompt = null;
+                if (btnInstallContainer) {
+                    btnInstallContainer.classList.add('hidden');
+                }
+            });
+        });
 
 
         
