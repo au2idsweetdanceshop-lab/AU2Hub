@@ -109,7 +109,27 @@
             z-index: 10;
         }
 
-                  /* UNLOCKER SUPER: Menghancurkan 100% penjara CSS (Containing Block) */
+                 /* ------------------------------------------------------------- */
+        /* UNLOCKER & PENCEGAH BUG SCROLL/KLIK LAYAR BELAKANG            */
+        /* ------------------------------------------------------------- */
+        
+        /* 1. Matikan scroll & gesekan (swipe) di latar belakang */
+        body.video-focused,
+        body.video-focused #sosial-wrapper,
+        body.video-focused #feed-container,
+        body.video-focused #floating-feed-container {
+            overflow: hidden !important;
+            touch-action: none !important; 
+        }
+
+        /* 2. Matikan SEMUA klik di area aplikasi agar tidak bocor */
+        body.video-focused main,
+        body.video-focused header,
+        body.video-focused nav {
+            pointer-events: none !important;
+        }
+
+        /* 3. Buka gembok CSS agar video bisa terbang keluar layar */
         body.video-focused .tab-content.active,
         body.video-focused .snap-start,
         body.video-focused #sosial-wrapper,
@@ -117,40 +137,53 @@
         body.video-focused main {
             transform: none !important;
             animation: none !important;
-            will-change: auto !important; /* INI KUNCI PENYELAMATNYA */
+            will-change: auto !important;
             contain: none !important;
             content-visibility: visible !important;
             perspective: none !important;
-            overflow: visible !important;
         }
 
-        /* Saat diklik: Video Pop Out menjadi Fixed Floating */
+        /* ------------------------------------------------------------- */
+        /* EFEK MENGAMBANG (FOCUS MODE) KOTAK VIDEO                      */
+        /* ------------------------------------------------------------- */
+        .video-inner-wrap {
+            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), border-radius 0.4s ease, box-shadow 0.4s ease, border 0.4s ease;
+            will-change: transform, border-radius;
+            transform-origin: center center;
+            border: 1px solid transparent;
+            position: relative;
+            z-index: 10;
+        }
+
+        /* 4. HIDUPKAN KEMBALI KLIK KHUSUS UNTUK VIDEO INI SAJA */
         .floating-focus {
+            pointer-events: auto !important; /* <--- KUNCI PENYELESAIAN BUG SENTUHAN */
+            touch-action: auto !important;
             position: fixed !important;
             top: 50% !important;
             left: 50% !important;
-            width: 100vw !important; /* Memanjang memenuhi layar */
-            height: 90dvh !important; /* Tinggi memanjang ke atas & bawah */
+            width: 100vw !important; 
+            height: 90dvh !important; 
             max-width: 450px !important;
             margin: 0 !important;
             transform: translate(-50%, -50%) scale(1) !important;
             border-radius: 1.5rem !important;
-            /* Shadow hitam pekat menutupi seluruh background aplikasi */
             box-shadow: 0 0 0 100vmax rgba(10, 6, 20, 0.95), 0 40px 80px rgba(0,0,0,0.9), 0 0 40px rgba(0, 240, 255, 0.4) !important; 
             border: 1px solid rgba(255, 255, 255, 0.2) !important;
-            z-index: 999999 !important; /* Paksa tumpuk paling atas */
+            z-index: 999999 !important; 
             transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1) !important;
         }
 
-        /* Pseudo-element untuk efek BLUR pada layar belakang */
+        /* 5. Pelindung Extra untuk menahan sentuhan di area pinggiran hitam */
         .floating-focus::before {
             content: '';
             position: absolute;
             inset: -100vmax;
             backdrop-filter: blur(15px);
             -webkit-backdrop-filter: blur(15px);
+            background: rgba(0, 0, 0, 0.1); /* Lapisan tak terlihat penahan klik */
             z-index: -1; 
-            pointer-events: none;
+            pointer-events: auto !important; /* Menahan klik agar tidak tembus ke bawah */
             opacity: 0;
             animation: fadeInBlur 0.4s ease forwards;
         }
@@ -158,6 +191,35 @@
         @keyframes fadeInBlur {
             to { opacity: 1; }
         }
+                /* ------------------------------------------------------------- */
+        /* EFEK HEADER "FEED KOMUNITAS" IKUT MENGAMBANG & BERDENYUT      */
+        /* ------------------------------------------------------------- */
+        
+        #sosial-header {
+            /* Transisi cubic-bezier untuk efek mantul / berdenyut */
+            transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275), filter 0.4s ease;
+            position: relative;
+        }
+
+        /* Saat video diklik (mode fokus) */
+        body.video-focused #sosial-header {
+            transform: translateY(-12px) scale(1.08) !important; /* Naik ke atas & membesar */
+            z-index: 9999999 !important; /* Paksa tumpuk di atas bayangan gelap video */
+            pointer-events: auto !important; /* Tetap bisa diklik */
+            filter: drop-shadow(0 15px 20px rgba(0,0,0,0.9)); /* Beri bayangan agar terlihat melayang */
+        }
+
+        /* Tambahan: Biar tombol kamera terus berdenyut glow saat mode fokus */
+        body.video-focused #sosial-header button {
+            animation: pulseCamera 1.5s infinite;
+        }
+
+        @keyframes pulseCamera {
+            0% { box-shadow: 0 0 15px rgba(255,0,122,0.4); transform: scale(1); }
+            50% { box-shadow: 0 0 25px rgba(255,0,122,0.9); transform: scale(1.15); }
+            100% { box-shadow: 0 0 15px rgba(255,0,122,0.4); transform: scale(1); }
+        }
+
 
 
 
@@ -302,7 +364,7 @@
 
         <section id="sosial" class="tab-content py-2">
             <!-- HEADER SOSIAL BARU (Ada Tombol Upload) -->
-            <div class="flex justify-between items-center mb-5 px-1">
+            <div id="sosial-header" class="flex justify-between items-center mb-5 px-1">
                 <h3 class="text-xl font-extrabold flex items-center gap-2">
                     <div class="w-1.5 h-6 bg-[#25D366] rounded-full"></div> Feed Komunitas
                 </h3>
