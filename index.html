@@ -4,8 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>AU2Hub - Pusat Komunitas & Joki</title>
-    <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
-<script>eruda.init();</script>
     <link rel="icon" type="image/png" href="/app-icon-192.png">
     <link rel="apple-touch-icon" href="/app-icon-192.png">
     <link rel="manifest" href="/manifest-v2.json">
@@ -1688,7 +1686,8 @@
             setTimeout(() => { window.scrollTo({ top: 0, behavior: 'smooth' }); }, 10);
             if (isPush && window.location.hash !== `#${tabId}`) history.pushState(null, null, `#${tabId}`);
         }
-            
+
+            window.addEventListener('popstate', () => {
                         // --- TAMBAHAN BARU: TANGKAP TOMBOL KEMBALI UNTUK ZOOM VIDEO ---
             if (document.body.classList.contains('video-focused')) {
                 toggleGlobalAudio(); // Matikan mode fokus
