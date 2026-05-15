@@ -4078,37 +4078,50 @@ function updateSeek(e, containerElement, video) {
                 }
             });
 
-            // Logika ketika tombol "INSTAL APLIKASI AU2HUB" diklik oleh user
-            if (btnInstallManual) {
-                btnInstallManual.addEventListener('click', async () => {
-                    if (!deferredPrompt) return;
-                    
-                    // Munculkan pop-up instalasi resmi dari sistem OS/Browser
-                    deferredPrompt.prompt();
-                    
-                    // Tunggu respons pilihan dari user (klik pasang atau batal)
-                    const { outcome } = await deferredPrompt.userChoice;
-                    console.log(`User memilih untuk: ${outcome}`);
-                    
-                    // Reset kembali variabelnya karena prompt hanya bisa dipakai sekali
-                    deferredPrompt = null;
-                    
-                    // Sembunyikan tombol setelah proses selesai
-                    if (btnInstallContainer) {
-                        btnInstallContainer.classList.add('hidden');
-                    }
-                });
-            }
+// 1. TARUH DI LUAR / GLOBAL SCOPE
+let deferredPrompt;
+window.addEventListener('beforeinstallprompt', (e) => {
+    // Mencegah mini-infobar default muncul
+    e.preventDefault();
+    deferredPrompt = e;
+    
+    // Munculkan tombol instal custom milikmu
+    const btnInstallContainer = document.getElementById('install-container');
+    if (btnInstallContainer) {
+        btnInstallContainer.classList.remove('hidden');
+    }
+});
 
-            // Sembunyikan tombol jika aplikasi ternyata sudah terinstal di HP user
-            window.addEventListener('appinstalled', () => {
-                console.log('AU2Hub sukses terpasang di perangkat!');
-                deferredPrompt = null;
-                if (btnInstallContainer) {
-                    btnInstallContainer.classList.add('hidden');
-                }
-            });
+// Tutup tombol otomatis kalau PWA berhasil diinstal
+window.addEventListener('appinstalled', () => {
+    console.log('AU2Hub sukses terpasang!');
+    deferredPrompt = null;
+    const btnInstallContainer = document.getElementById('install-container');
+    if (btnInstallContainer) btnInstallContainer.classList.add('hidden');
+});
+
+// 2. LOGIKA KLIK DI DALAM DOMContentLoaded
+document.addEventListener('DOMContentLoaded', () => {
+    // ... (Logika routing dan Service Worker biarkan seperti aslinya) ...
+
+    const btnInstallManual = document.getElementById('btn-install-manual');
+    const btnInstallContainer = document.getElementById('install-container');
+
+    if (btnInstallManual) {
+        btnInstallManual.addEventListener('click', async () => {
+            if (!deferredPrompt) return;
+            
+            deferredPrompt.prompt();
+            const { outcome } = await deferredPrompt.userChoice;
+            console.log(`User memilih: ${outcome}`);
+            
+            deferredPrompt = null;
+            if (btnInstallContainer) {
+                btnInstallContainer.classList.add('hidden');
+            }
         });
+    }
+});
 
 
         
