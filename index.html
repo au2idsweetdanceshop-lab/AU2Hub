@@ -99,93 +99,41 @@
         @keyframes msgAnim { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .message-anim { animation: msgAnim 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
         
-                /* EFEK VIDEO MENGAMBANG (FOCUS MODE) */
-        /* GABUNGKAN DAN PERBAIKI CLASS WRAPPER VIDEO */
-.video-inner-wrap {
-    transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275), 
-                border-radius 0.5s ease, 
-                box-shadow 0.5s ease, 
-                border 0.5s ease;
-    will-change: transform, border-radius, box-shadow;
-    transform-origin: center center;
-    border: 1px solid transparent;
-    z-index: 10;
-}
+                        /* EFEK VIDEO MENGAMBANG (FOCUS MODE) */
+        .video-inner-wrap {
+            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), border-radius 0.4s ease, box-shadow 0.4s ease, border 0.4s ease;
+            will-change: transform, border-radius;
+            transform-origin: center center;
+            border: 1px solid transparent;
+            position: relative;
+            z-index: 10;
+        }
 
-        /* EFEK FLOATING ZOOM IN (MEMBESAR & MELAYANG) */
+        /* Saat diklik: Zoom In & Latar Belakang Blur Gelap */
         .floating-focus {
-            transform: scale(1.05) translateY(-5px) !important; 
-            border-radius: 1.5rem !important; 
-            
-            /* Trik Infinite Shadow: Menggelapkan background tanpa menutupi video! */
-            box-shadow: 0 0 0 9999px rgba(10, 6, 20, 0.85), 
-                        0 30px 60px rgba(0,0,0,0.9), 
-                        0 0 35px rgba(255, 0, 122, 0.4) !important; 
-            border: 1px solid rgba(255, 0, 122, 0.5) !important;
-            z-index: 50 !important;
+            transform: scale(1.05) !important; /* Zoom In */
+            border-radius: 1.5rem !important;
+            /* Spread bayangan super besar untuk menggelapkan latar belakang */
+            box-shadow: 0 0 0 100vmax rgba(15, 9, 32, 0.7), 0 30px 60px rgba(0,0,0,0.9), 0 0 30px rgba(0, 240, 255, 0.3) !important; 
+            border: 1px solid rgba(255, 255, 255, 0.2) !important;
+            z-index: 99 !important; /* Angkat video ke paling atas */
         }
 
-
-/* PASTIKAN BACKGROUND BLUR LEBIH DRAMATIS SAAT ZOOM IN */
-.blur-backdrop {
-    position: fixed;
-    inset: 0;
-    background: rgba(15, 9, 32, 0.75); /* Sedikit lebih pekat */
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    z-index: 40; 
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.5s ease;
-}
-.blur-backdrop.active {
-    opacity: 1;
-    pointer-events: auto;
-}
-
-        
-                .floating-focus {
-            /* Bergerak NAIK ke atas (-20px) dan sedikit merapat agar background blur bisa mengintip dari pinggir layar */
-            transform: scale(0.92) translateY(-20px) !important; 
-            border-radius: 2rem !important;
-            box-shadow: 0 40px 80px rgba(0,0,0,0.9), 0 0 30px rgba(0, 240, 255, 0.3) !important; /* Efek Glow Cyan */
-            border: 1px solid rgba(0, 240, 255, 0.4) !important;
-            z-index: 50 !important;
-        }
-
-        /* LAYAR KACA BLUR (BACKGROUND OTOMATIS) */
-        .blur-backdrop {
-            position: fixed;
-            inset: 0;
-            background: rgba(10, 6, 20, 0.6); /* Warna gelap transparant */
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            z-index: 40; /* Berada tepat di tengah: Di atas video lain, di bawah video fokus */
-            opacity: 0;
+        /* Pseudo-element untuk efek BLUR pada latar belakang */
+        .floating-focus::before {
+            content: '';
+            position: absolute;
+            inset: -100vmax;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            z-index: -1; /* Berada tepat di belakang video */
             pointer-events: none;
-            transition: opacity 0.4s ease;
-        }
-        .blur-backdrop.active {
-            opacity: 1;
-            pointer-events: auto;
-        }
-
-
-        /* LAYAR KACA BLUR (BACKGROUND OTOMATIS) */
-        .blur-backdrop {
-            position: fixed;
-            inset: 0;
-            background: rgba(10, 6, 20, 0.6); /* Warna gelap transparant */
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            z-index: 40; /* Berada tepat di tengah: Di atas video lain, di bawah video fokus */
             opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.4s ease;
+            animation: fadeInBlur 0.4s ease forwards;
         }
-        .blur-backdrop.active {
-            opacity: 1;
-            pointer-events: auto;
+
+        @keyframes fadeInBlur {
+            to { opacity: 1; }
         }
 
 
@@ -1566,25 +1514,33 @@
             }); 
         }
 
-                                function toggleGlobalAudio() {
+                        function toggleGlobalAudio() {
             isGlobalMuted = !isGlobalMuted;
             document.querySelectorAll('.video-player, .float-video-player').forEach(v => v.muted = isGlobalMuted);
 
             const allWraps = document.querySelectorAll('.video-inner-wrap');
+            const navBottom = document.querySelector('nav');
+            const headerTop = document.querySelector('header');
 
             if(isGlobalMuted) {
                 showToast("Suara Dimatikan", "info");
+                // Cabut efek mengambang & kembalikan UI normal
                 allWraps.forEach(wrap => wrap.classList.remove('floating-focus'));
+                if(navBottom) navBottom.style.filter = 'none';
+                if(headerTop) headerTop.style.filter = 'none';
             } else {
                 showToast("Suara Dinyalakan", "success");
-                
-                // Cari video yang sedang play, kasih efek mengambang ke atas
-                document.querySelectorAll('.video-player, .float-video-player').forEach(v => {
+                // Beri efek mengambang pada video yang play & blur UI lainnya
+                document.querySelectorAll('.video-player').forEach(v => {
                     if (!v.paused) {
                         const wrap = v.closest('.video-inner-wrap');
                         if (wrap) wrap.classList.add('floating-focus');
                     }
                 });
+                
+                // Blur navigasi dan header agar fokus penuh ke video
+                if(navBottom) navBottom.style.filter = 'blur(8px) opacity(0.5)';
+                if(headerTop) headerTop.style.filter = 'blur(8px) opacity(0.5)';
             }
         }
 
@@ -1893,22 +1849,13 @@ function closeUploadModal() {
         let profileFeedIndex = 0;
         let floatObs = null;
 
-                        function setupFloatVideoObserver() {
+        function setupFloatVideoObserver() {
             floatObs = new IntersectionObserver(es => {
                 es.forEach(e => {
-                    const video = e.target;
-                    const wrap = video.closest('.video-inner-wrap');
-                    
                     if (e.isIntersecting) {
-                        video.play().catch(() => {}); 
-                        video.muted = isGlobalMuted;
-                        
-                        if (wrap) {
-                            if (!isGlobalMuted) wrap.classList.add('floating-focus');
-                            else wrap.classList.remove('floating-focus');
-                        }
-                        
-                        let currentContainer = video.closest('.snap-start');
+                        e.target.play().catch(() => {}); e.target.muted = isGlobalMuted;
+                        // Preload video selanjutnya agar mulus
+                        let currentContainer = e.target.closest('.snap-start');
                         for(let j = 0; j < 2; j++) { 
                             currentContainer = currentContainer?.nextElementSibling;
                             if(currentContainer) {
@@ -1916,16 +1863,10 @@ function closeUploadModal() {
                                 if(nextVid && nextVid.getAttribute('preload') !== 'auto') nextVid.setAttribute('preload', 'auto');
                             }
                         }
-                    } else { 
-                        video.pause(); 
-                        if (wrap) wrap.classList.remove('floating-focus');
-                    }
+                    } else { e.target.pause(); }
                 });
             }, { threshold: 0.6 });
         }
-
-
-
 
                                 function openProfileFeed(userId, startIndex) {
             // 1. Ambil video milik user ini saja
@@ -1975,8 +1916,8 @@ function closeUploadModal() {
             if (nextBatch.length === 0) return;
 
                                     const htmlString = nextBatch.map((vid) => `
-                <div class="snap-start w-full h-full flex-shrink-0 relative flex items-center justify-center overflow-hidden bg-black/95 px-0 sm:px-4 py-0 sm:py-6">
-                    <div class="video-inner-wrap w-full max-w-sm aspect-[9/16] relative bg-brand-dark mx-auto h-full sm:h-auto sm:rounded-3xl overflow-hidden shadow-2xl">
+                <div class="snap-start w-full h-full flex-shrink-0 relative flex items-center justify-center bg-black/95 px-0 sm:px-4 py-0 sm:py-6">
+                    <div class="w-full max-w-sm aspect-[9/16] relative bg-brand-dark mx-auto h-full sm:h-auto sm:rounded-3xl overflow-hidden shadow-2xl">
                         <div class="absolute inset-0 flex items-center justify-center z-0"><div class="w-12 h-12 border-4 border-brand-accent/20 border-t-brand-accent rounded-full animate-spin"></div></div>
                         <video class="absolute inset-0 m-auto w-full h-full object-cover float-video-player transition-opacity duration-500 opacity-0 z-10" 
                                onloadeddata="this.classList.remove('opacity-0')" loop ${isGlobalMuted ? 'muted' : ''} playsinline preload="metadata"
@@ -2669,20 +2610,17 @@ function closeUploadModal() {
             if (nextBatch.length === 0) return;
 
                         const htmlString = nextBatch.map((vid) => `
-                <div class="snap-start w-full h-full flex-shrink-0 relative flex items-center justify-center overflow-hidden bg-[#0A0614]">
+                <div class="snap-start w-full h-full flex-shrink-0 relative flex items-center justify-center bg-[#0A0614]">
                     
-                    <div class="video-inner-wrap w-full h-full relative bg-brand-dark ${!isGlobalMuted ? 'floating-focus' : ''}"
-     onclick="handleVideoClick(event, this.querySelector('video'), '${vid.id}')">
-    
-    <div class="absolute inset-0 flex items-center justify-center z-0"><div class="w-12 h-12 border-4 border-brand-accent/20 border-t-brand-accent rounded-full animate-spin"></div></div>
-    
-    <video class="absolute inset-0 m-auto w-full h-full object-cover video-player transition-opacity duration-500 opacity-0 z-10 pointer-events-none" 
-           onloadeddata="this.classList.remove('opacity-0')" loop ${isGlobalMuted ? 'muted' : ''} playsinline preload="metadata"
-           ontimeupdate="updateVideoProgress(this)"
-           onerror="handleVideoError(this)"> 
-        <source src="${vid.video_url}" type="video/mp4">
-    </video>
-
+                    <div class="video-inner-wrap w-full h-full relative bg-brand-dark ${!isGlobalMuted ? 'floating-focus' : ''}">
+                        
+                        <div class="absolute inset-0 flex items-center justify-center z-0"><div class="w-12 h-12 border-4 border-brand-accent/20 border-t-brand-accent rounded-full animate-spin"></div></div>
+                        <video class="absolute inset-0 m-auto w-full h-full object-cover video-player transition-opacity duration-500 opacity-0 z-10" 
+                               onloadeddata="this.classList.remove('opacity-0')" loop ${isGlobalMuted ? 'muted' : ''} playsinline preload="metadata"
+                               ontimeupdate="updateVideoProgress(this)"
+                               onclick="handleVideoClick(event, this, '${vid.id}')" onerror="handleVideoError(this)">
+                            <source src="${vid.video_url}" type="video/mp4">
+                        </video>
                         
                         <div class="time-indicator absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-white font-extrabold text-4xl drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)] opacity-0 transition-opacity z-[60] pointer-events-none tracking-wider bg-black/40 px-6 py-2 rounded-2xl">
                             <span class="time-current">00:00</span> <span class="text-white/50 text-2xl mx-1">/</span> <span class="time-total text-white/70">00:00</span> </div>
@@ -4029,90 +3967,100 @@ async function keluarDariGrup() {
     closeGroupInfoModal();
     closeChatRoom(); 
 }
+// ==========================================
+// LOGIKA VIDEO PROGRESS BAR (SUPER SMOOTH FIX)
+// ==========================================
+function formatTime(seconds) {
+    if (isNaN(seconds)) return "00:00";
+    const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+    const s = Math.floor(seconds % 60).toString().padStart(2, '0');
+    return `${m}:${s}`;
+}
 
+function updateVideoProgress(video) {
+    if (video.isDragging) return; 
+    
+    if (!video.progressFill) {
+        const container = video.closest('.snap-start');
+        if (container) video.progressFill = container.querySelector('.progress-fill');
+    }
+    
+    if (video.progressFill && video.duration) {
+        requestAnimationFrame(() => {
+            const percent = (video.currentTime / video.duration) * 100;
+            video.progressFill.style.width = `${percent}%`;
+        });
+    }
+}
+
+// ==========================================
+// LOGIKA DRAG / GESER PROGRESS BAR
+// ==========================================
+function startSeek(e, containerElement) {
+    const video = containerElement.closest('.snap-start').querySelector('video');
+    if (!video) return;
+    video.isDragging = true;
+    
+    const timeIndicator = containerElement.closest('.snap-start').querySelector('.time-indicator');
+    if (timeIndicator) timeIndicator.classList.replace('opacity-0', 'opacity-100');
+    
+    updateSeek(e, containerElement, video);
+}
+
+function doSeek(e, containerElement) {
+    const video = containerElement.closest('.snap-start').querySelector('video');
+    if (!video || !video.isDragging) return;
+    updateSeek(e, containerElement, video);
+}
+
+function endSeek(e, containerElement) {
+    const video = containerElement.closest('.snap-start').querySelector('video');
+    if (!video) return;
+    
+    if (video.isDragging) {
+        updateSeek(e, containerElement, video);
+        video.isDragging = false;
+    }
+    
+    const timeIndicator = containerElement.closest('.snap-start').querySelector('.time-indicator');
+    if (timeIndicator) timeIndicator.classList.replace('opacity-100', 'opacity-0');
+}
+
+function updateSeek(e, containerElement, video) {
+    const rect = containerElement.getBoundingClientRect();
+    let x = e.clientX; 
+    if (x === undefined && e.touches && e.touches.length > 0) x = e.touches[0].clientX;
+    if (x === undefined) return;
+    
+    let pos = (x - rect.left) / rect.width;
+    pos = Math.max(0, Math.min(1, pos)); 
+    
+    const fill = containerElement.querySelector('.progress-fill');
+    if (fill) fill.style.width = `${pos * 100}%`;
+    
+    if (video.duration) {
+        video.currentTime = pos * video.duration;
+        
+        const timeIndicator = containerElement.closest('.snap-start').querySelector('.time-indicator');
+        if (timeIndicator) {
+            timeIndicator.querySelector('.time-current').innerText = formatTime(video.currentTime);
+            timeIndicator.querySelector('.time-total').innerText = formatTime(video.duration);
+        }
+    }
+}
+</script>
+
+<!-- ======================================================================= -->
+<!-- SCRIPT SUNTIKAN SUPER OPTIMASI V6 (ULTIMATE IDLE CALLBACK)              -->
+<!-- ======================================================================= -->
 <script>
-    // ==========================================
-    // LOGIKA VIDEO PROGRESS BAR (SUPER SMOOTH FIX)
-    // ==========================================
-    function formatTime(seconds) {
-        if (isNaN(seconds)) return "00:00";
-        const m = Math.floor(seconds / 60).toString().padStart(2, '0');
-        const s = Math.floor(seconds % 60).toString().padStart(2, '0');
-        return `${m}:${s}`;
-    }
-
-    function updateVideoProgress(video) {
-        if (video.isDragging) return; 
+    window.addEventListener('load', () => {
         
-        if (!video.progressFill) {
-            const container = video.closest('.snap-start');
-            if (container) video.progressFill = container.querySelector('.progress-fill');
-        }
-        
-        if (video.progressFill && video.duration) {
-            requestAnimationFrame(() => {
-                const percent = (video.currentTime / video.duration) * 100;
-                video.progressFill.style.width = `${percent}%`;
-            });
-        }
-    }
-
-    // ==========================================
-    // LOGIKA DRAG / GESER PROGRESS BAR
-    // ==========================================
-    function startSeek(e, containerElement) {
-        const video = containerElement.closest('.snap-start').querySelector('video');
-        if (!video) return;
-        video.isDragging = true;
-        
-        const timeIndicator = containerElement.closest('.snap-start').querySelector('.time-indicator');
-        if (timeIndicator) timeIndicator.classList.replace('opacity-0', 'opacity-100');
-        
-        updateSeek(e, containerElement, video);
-    }
-
-    function doSeek(e, containerElement) {
-        const video = containerElement.closest('.snap-start').querySelector('video');
-        if (!video || !video.isDragging) return;
-        updateSeek(e, containerElement, video);
-    }
-
-    function endSeek(e, containerElement) {
-        const video = containerElement.closest('.snap-start').querySelector('video');
-        if (!video) return;
-        
-        if (video.isDragging) {
-            updateSeek(e, containerElement, video);
-            video.isDragging = false;
-        }
-        
-        const timeIndicator = containerElement.closest('.snap-start').querySelector('.time-indicator');
-        if (timeIndicator) timeIndicator.classList.replace('opacity-100', 'opacity-0');
-    }
-
-    function updateSeek(e, containerElement, video) {
-        const rect = containerElement.getBoundingClientRect();
-        let x = e.clientX; 
-        if (x === undefined && e.touches && e.touches.length > 0) x = e.touches[0].clientX;
-        if (x === undefined) return;
-        
-        let pos = (x - rect.left) / rect.width;
-        pos = Math.max(0, Math.min(1, pos)); 
-        
-        const fill = containerElement.querySelector('.progress-fill');
-        if (fill) fill.style.width = `${pos * 100}%`;
-        
-        if (video.duration) {
-            video.currentTime = pos * video.duration;
-            
-            const timeIndicator = containerElement.closest('.snap-start').querySelector('.time-indicator');
-            if (timeIndicator) {
-                timeIndicator.querySelector('.time-current').innerText = formatTime(video.currentTime);
-                timeIndicator.querySelector('.time-total').innerText = formatTime(video.duration);
-            }
-        }
-    }
-
+        // ---------------------------------------------------------
+        // ---------------------------------------------------------
+        // 1. SUNTIKAN TIKTOK V6 (REQUEST IDLE CALLBACK / ANTI-STUTTER)
+        // ---------------------------------------------------------
+                <script>
     window.addEventListener('load', () => {
         
         // ---------------------------------------------------------
@@ -4135,12 +4083,13 @@ async function keluarDariGrup() {
             window.videoPlayTimers = window.videoPlayTimers || new Map(); 
 
             obs = new IntersectionObserver(es => {
+                // Cek apakah player mengambang sedang dibuka
                 const isFloatingOpen = !document.getElementById('floating-video-player').classList.contains('hidden');
 
                 es.forEach(e => { 
                     const video = e.target;
-                    const wrap = video.closest('.video-inner-wrap');
                     
+                    // Hanya play video JIKA player mengambang sedang TERTUTUP
                     if (e.isIntersecting && !isFloatingOpen) {
                         if (window.videoClearTimers.has(video)) {
                             clearTimeout(window.videoClearTimers.get(video));
@@ -4156,16 +4105,33 @@ async function keluarDariGrup() {
                             
                             video.muted = (typeof isGlobalMuted !== 'undefined') ? isGlobalMuted : true;
                             
+                            // =========================================
+                            // EFEK MENGAMBANG OTOMATIS (FOCUS MODE)
+                            // =========================================
+                            const wrap = video.closest('.video-inner-wrap');
                             if (wrap) {
                                 if (!isGlobalMuted) wrap.classList.add('floating-focus');
                                 else wrap.classList.remove('floating-focus');
                             }
+                            // =========================================
                             
                             requestAnimationFrame(() => {
                                 const playPromise = video.play();
-                                if (playPromise !== undefined) playPromise.catch(err => {});
+                                if (playPromise !== undefined) {
+                                    playPromise.catch(err => {});
+                                }
                                 video.classList.remove('opacity-0');
                             });
+
+                            const card = video.closest('.snap-start');
+                            if (card && card.nextElementSibling) {
+                                const nextVid = card.nextElementSibling.querySelector('video');
+                                if (nextVid && nextVid.dataset.savedSrc && !nextVid.src) {
+                                    nextVid.src = nextVid.dataset.savedSrc;
+                                    nextVid.dataset.savedSrc = '';
+                                    nextVid.setAttribute('preload', 'auto');
+                                }
+                            }
                         }, 100); 
 
                         window.videoPlayTimers.set(video, playTimerId);
@@ -4177,8 +4143,6 @@ async function keluarDariGrup() {
                         }
 
                         video.pause(); 
-                        
-                        if (wrap) wrap.classList.remove('floating-focus');
                         
                         const timerId = setTimeout(() => {
                             const hapusMemori = () => {
@@ -4193,15 +4157,18 @@ async function keluarDariGrup() {
                                 window.videoClearTimers.delete(video);
                             };
 
-                            if ('requestIdleCallback' in window) requestIdleCallback(hapusMemori, { timeout: 1000 });
-                            else hapusMemori();
+                            if ('requestIdleCallback' in window) {
+                                requestIdleCallback(hapusMemori, { timeout: 1000 });
+                            } else {
+                                hapusMemori();
+                            }
 
                         }, 1000); 
 
                         window.videoClearTimers.set(video, timerId);
                     }
                 });
-            }, { threshold: 0.6 }); 
+            }, { threshold: 0.5 }); 
 
             const videos = document.querySelectorAll('.video-player, .float-video-player');
             videos.forEach(v => obs.observe(v));
@@ -4301,6 +4268,7 @@ async function keluarDariGrup() {
 
         console.log("🚀 Speed Booster (Jalan Tol & Lazy Load) Aktif!");
     });
+
 </script>
 </body>
 </html>
