@@ -118,23 +118,26 @@
             pointer-events: auto !important;
         }
 
-        /* 2. KOTAK FEED MENGAMBANG KESELURUHAN (Scroll dijamin lancar) */
+        /* 2. KOTAK FEED MENGAMBANG OTOMATIS SEMUA DEVICE */
         body.video-focused #sosial-wrapper {
             position: fixed !important;
-            top: 50% !important; /* Tarik presisi ke tengah vertikal */
-            left: 50% !important; /* Tarik presisi ke tengah horizontal */
-            transform: translate(-50%, -50%) scale(1.02) !important; /* Kunci tepat di tengah dengan sedikit efek pop-out */
+            top: 85px !important; /* Jarak aman dari Header atas */
+            bottom: 85px !important; /* Jarak aman dari Menu Navigasi bawah */
+            left: 0 !important;
+            right: 0 !important;
+            margin: auto !important; /* Otomatis persis di tengah horizontal */
             width: 100vw !important;
             max-width: 450px !important;
-            height: calc(100dvh - 150px) !important; /* Jarak aman agar tidak nabrak atas dan bawah */
-            margin: 0 !important;
+            height: auto !important; /* KUNCI: Tinggi menyesuaikan sisa layar secara OTOMATIS */
             z-index: 9999 !important;
-            border-radius: 1.5rem !important; /* Pastikan sudutnya membulat elegan */
-            /* Box shadow raksasa untuk menggelapkan area belakang tanpa bug blur */
+            border-radius: 1.5rem !important; 
+            transform: scale(1.02) !important; /* Efek pop-out sedikit membesar */
+            /* Box shadow raksasa untuk menggelapkan area belakang */
             box-shadow: 0 0 0 100vmax rgba(10, 6, 20, 0.98), 0 20px 80px rgba(0,0,0,0.95), 0 0 40px rgba(0, 240, 255, 0.4) !important;
             border: 1px solid rgba(255, 255, 255, 0.2) !important;
             transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1) !important;
         }
+
 
 
         /* 3. PASTIKAN HEADER UTAMA & MENU BAWAH TETAP DI DEPAN BOX-SHADOW */
