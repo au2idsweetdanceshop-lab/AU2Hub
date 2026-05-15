@@ -4017,6 +4017,26 @@ function updateSeek(e, containerElement, video) {
             }
         }
     }
+    
+        // ==========================================
+        // INISIALISASI HALAMAN PERTAMA KALI DIBUKA
+        // ==========================================
+        document.addEventListener('DOMContentLoaded', () => {
+            // 1. Cek dulu apakah ada tab yang diketik spesifik di URL (misal: web.com/#sosial)
+            let tabAwal = window.location.hash.substring(1);
+            
+            // 2. Jika tidak ada URL spesifik, baca memori 'lastTab' yang terakhir dibuka. 
+            // Jika memori masih kosong (baru pertama kali buka web), jadikan 'home' sebagai default.
+            if (!tabAwal) {
+                tabAwal = localStorage.getItem('lastTab') || 'home';
+            }
+            
+            // 3. Eksekusi pembukaan tab!
+            switchTab(tabAwal, null, false);
+            
+            // 4. Jalankan pengecekan sesi login
+            checkSession();
+        });
 
         
 </script>
