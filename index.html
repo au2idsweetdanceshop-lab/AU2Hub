@@ -99,41 +99,33 @@
         @keyframes msgAnim { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .message-anim { animation: msgAnim 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
         
-                        /* EFEK VIDEO MENGAMBANG (FOCUS MODE) */
-        .video-inner-wrap {
-            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), border-radius 0.4s ease, box-shadow 0.4s ease, border 0.4s ease;
-            will-change: transform, border-radius;
-            transform-origin: center center;
-            border: 1px solid transparent;
-            position: relative;
-            z-index: 10;
-        }
-
-                 /* ------------------------------------------------------------- */
-        /* UNLOCKER & PENCEGAH BUG SCROLL/KLIK LAYAR BELAKANG            */
+        /* ------------------------------------------------------------- */
+        /* 1. UNLOCKER & SCROLL FIX (AGAR TETAP BISA DI-SCROLL)          */
         /* ------------------------------------------------------------- */
         
-        /* 1. Matikan scroll & gesekan (swipe) di latar belakang */
-        body.video-focused,
-        body.video-focused #sosial-wrapper,
+        /* Kunci body, TAPI biarkan area video TETAP bisa di-scroll */
+        body.video-focused {
+            overflow: hidden !important;
+        }
+        
         body.video-focused #feed-container,
         body.video-focused #floating-feed-container {
-            overflow: hidden !important;
-            touch-action: none !important; 
+            overflow-y: scroll !important;
+            touch-action: pan-y !important; /* Izinkan scroll atas-bawah */
+            pointer-events: auto !important; /* Hidupkan sentuhan di area scroll */
         }
 
-        /* 2. Matikan SEMUA klik di area aplikasi agar tidak bocor */
+        /* Matikan klik di elemen latar belakang agar tidak bocor */
         body.video-focused main,
         body.video-focused header,
         body.video-focused nav {
             pointer-events: none !important;
         }
 
-        /* 3. Buka gembok CSS agar video bisa terbang keluar layar */
+        /* Buka gembok CSS agar video bebas membesar */
         body.video-focused .tab-content.active,
         body.video-focused .snap-start,
         body.video-focused #sosial-wrapper,
-        body.video-focused #feed-container,
         body.video-focused main {
             transform: none !important;
             animation: none !important;
@@ -144,8 +136,9 @@
         }
 
         /* ------------------------------------------------------------- */
-        /* EFEK MENGAMBANG (FOCUS MODE) KOTAK VIDEO                      */
+        /* 2. EFEK MENGAMBANG (BISA DI-SCROLL) KOTAK VIDEO               */
         /* ------------------------------------------------------------- */
+        
         .video-inner-wrap {
             transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), border-radius 0.4s ease, box-shadow 0.4s ease, border 0.4s ease;
             will-change: transform, border-radius;
@@ -155,18 +148,12 @@
             z-index: 10;
         }
 
-        /* 4. HIDUPKAN KEMBALI KLIK KHUSUS UNTUK VIDEO INI SAJA */
+        /* Video membesar, tapi tetap di jalurnya agar BISA di-scroll */
         .floating-focus {
-            pointer-events: auto !important; /* <--- KUNCI PENYELESAIAN BUG SENTUHAN */
-            touch-action: auto !important;
-            position: fixed !important;
-            top: 50% !important;
-            left: 50% !important;
-            width: 100vw !important; 
-            height: 90dvh !important; 
-            max-width: 450px !important;
-            margin: 0 !important;
-            transform: translate(-50%, -50%) scale(1) !important;
+            pointer-events: auto !important; 
+            touch-action: pan-y !important; /* Izinkan scroll saat disentuh */
+            /* Kita HAPUS position: fixed; agar video ikut tergulung saat di-scroll */
+            transform: scale(1.08) !important; /* Membesar proporsional 8% */
             border-radius: 1.5rem !important;
             box-shadow: 0 0 0 100vmax rgba(10, 6, 20, 0.95), 0 40px 80px rgba(0,0,0,0.9), 0 0 40px rgba(0, 240, 255, 0.4) !important; 
             border: 1px solid rgba(255, 255, 255, 0.2) !important;
@@ -174,16 +161,16 @@
             transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1) !important;
         }
 
-        /* 5. Pelindung Extra untuk menahan sentuhan di area pinggiran hitam */
+        /* Efek blur background (Dibuat tembus sentuhan agar bisa scroll dari area hitam) */
         .floating-focus::before {
             content: '';
             position: absolute;
             inset: -100vmax;
             backdrop-filter: blur(15px);
             -webkit-backdrop-filter: blur(15px);
-            background: rgba(0, 0, 0, 0.1); /* Lapisan tak terlihat penahan klik */
+            background: rgba(0, 0, 0, 0.1); 
             z-index: -1; 
-            pointer-events: auto !important; /* Menahan klik agar tidak tembus ke bawah */
+            pointer-events: none !important; /* Tembus sentuhan ke container scroll */
             opacity: 0;
             animation: fadeInBlur 0.4s ease forwards;
         }
@@ -191,36 +178,16 @@
         @keyframes fadeInBlur {
             to { opacity: 1; }
         }
-                /* ------------------------------------------------------------- */
-        /* EFEK HEADER "FEED KOMUNITAS" IKUT MENGAMBANG & BERDENYUT      */
+
         /* ------------------------------------------------------------- */
-        
-        #sosial-header {
-            /* Transisi cubic-bezier untuk efek mantul / berdenyut */
-            transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275), filter 0.4s ease;
-            position: relative;
+        /* MODAL UPLOAD DI ATAS SEGALANYA (TANPA REFRESH)                */
+        /* ------------------------------------------------------------- */
+        #modal-upload {
+            z-index: 99999999 !important; /* Kasta tertinggi melebihi bayangan video */
         }
-
-        /* Saat video diklik (mode fokus) */
-        body.video-focused #sosial-header {
-            transform: translateY(-12px) scale(1.08) !important; /* Naik ke atas & membesar */
-            z-index: 9999999 !important; /* Paksa tumpuk di atas bayangan gelap video */
-            pointer-events: auto !important; /* Tetap bisa diklik */
-            filter: drop-shadow(0 15px 20px rgba(0,0,0,0.9)); /* Beri bayangan agar terlihat melayang */
+        body.video-focused #modal-upload * {
+            pointer-events: auto !important; /* Pastikan tombol di dalam modal tetap bisa diklik */
         }
-
-        /* Tambahan: Biar tombol kamera terus berdenyut glow saat mode fokus */
-        body.video-focused #sosial-header button {
-            animation: pulseCamera 1.5s infinite;
-        }
-
-        @keyframes pulseCamera {
-            0% { box-shadow: 0 0 15px rgba(255,0,122,0.4); transform: scale(1); }
-            50% { box-shadow: 0 0 25px rgba(255,0,122,0.9); transform: scale(1.15); }
-            100% { box-shadow: 0 0 15px rgba(255,0,122,0.4); transform: scale(1); }
-        }
-
-
 
 
         /* JURUS 1: Isolasi Rendering (Sangat Ampuh) */
@@ -4142,19 +4109,8 @@ function updateSeek(e, containerElement, video) {
         }
     }
 }
-</script>
 
-<!-- ======================================================================= -->
-<!-- SCRIPT SUNTIKAN SUPER OPTIMASI V6 (ULTIMATE IDLE CALLBACK)              -->
-<!-- ======================================================================= -->
 <script>
-    window.addEventListener('load', () => {
-        
-        // ---------------------------------------------------------
-        // ---------------------------------------------------------
-        // 1. SUNTIKAN TIKTOK V6 (REQUEST IDLE CALLBACK / ANTI-STUTTER)
-        // ---------------------------------------------------------
-                <script>
     window.addEventListener('load', () => {
         
         // ---------------------------------------------------------
