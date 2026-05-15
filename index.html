@@ -121,27 +121,24 @@
         body.video-focused #sosial-wrapper {
             position: fixed !important;
             
-            /* Kunci mulai dari titik tengah layar persis */
-            top: 50% !important;
-            left: 50% !important;
+            /* Teknik Centering Anti-Bug Scroll (Gunakan inset & margin auto) */
+            top: 0 !important;
+            bottom: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            margin: auto !important;
             
-            /* Batasan ukuran lebar. Pakai 100% (bukan 100vw) agar bebas bug scrollbar! */
             width: 100% !important;
             max-width: 450px !important;
-            
-            /* Jarak aman dinamis dari header dan nav bawah */
             height: calc(100dvh - 160px) !important;
             max-height: 100% !important; 
-            margin: 0 !important;
 
             z-index: 9999 !important;
             border-radius: 1.5rem !important; 
             
-            /* Tarik elemen ke tengah secara absolut (-50%, -50%) + Efek pop-out membesar */
-            transform: translate(-50%, -50%) scale(1.02) !important; 
-            transform-origin: center center !important;
+            /* Hanya gunakan scale, jangan pakai translate agar scroll tidak macet */
+            transform: scale(1.02) !important; 
             
-            /* Box shadow raksasa untuk menggelapkan area belakang */
             box-shadow: 0 0 0 100vmax rgba(10, 6, 20, 0.98), 0 20px 80px rgba(0,0,0,0.95), 0 0 40px rgba(0, 240, 255, 0.4) !important;
             border: 1px solid rgba(255, 255, 255, 0.2) !important;
             transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1) !important;
@@ -180,7 +177,9 @@
         /* 4. PASTIKAN FEED DI DALAM KOTAK TETAP BISA DI-SCROLL MULUS */
         body.video-focused #feed-container {
             overflow-y: scroll !important;
+            -webkit-overflow-scrolling: touch !important; /* Kunci kelancaran scroll iOS/Android */
             touch-action: pan-y !important;
+            height: 100% !important; /* Paksa mendeteksi tinggi area scroll */
         }
 
         /* 5. HANCURKAN BATASAN RENDER AGAR TIDAK TERPOTONG */
@@ -1611,33 +1610,32 @@
                 // Hapus efek blur pada UI
                 if(navBottom) navBottom.style.filter = 'none';
                 if(headerTop) headerTop.style.filter = 'none';
+
+                // Hapus jejak URL jika user menutup dengan mengklik layar video
+                if (window.location.hash === '#focused') {
+                    history.back();
+                }
             } else {
                 showToast("Suara Dinyalakan", "success");
                 // Buka gembok layar agar video bisa melayang keluar kotak
                 document.body.classList.add('video-focused'); 
                 
-                // Hanya terbangkan video yang sedang aktif/berjalan di layar
-                const activeVid = document.querySelector('.video-player:not(.paused)');
-                if (activeVid) {
-                    const wrap = activeVid.closest('.video-inner-wrap');
-                    if (wrap) wrap.classList.add('floating-focus');
-                } else {
-                    document.querySelectorAll('.video-player').forEach(v => {
-                        if (!v.paused) {
-                            const wrap = v.closest('.video-inner-wrap');
-                            if (wrap) wrap.classList.add('floating-focus');
-                        }
-                    });
-                }
+                // --- PENTING: TAMBAHKAN HISTORY AGAR TOMBOL KEMBALI HP TERDETEKSI ---
+                history.pushState({ popup: 'focused' }, null, '#focused');
+                
+                // Terbangkan HANYA video yang sedang aktif
+                document.querySelectorAll('.video-player').forEach(v => {
+                    if (!v.paused) {
+                        const wrap = v.closest('.video-inner-wrap');
+                        if (wrap) wrap.classList.add('floating-focus');
+                    }
+                });
                 
                 // Redupkan sisa antarmuka
                 if(navBottom) navBottom.style.filter = 'blur(8px) opacity(0.5)';
                 if(headerTop) headerTop.style.filter = 'blur(8px) opacity(0.5)';
             }
         }
-
-
-
 
 
         function switchTab(tabId, event = null, isPush = true) {
@@ -1691,6 +1689,19 @@
 
         window.addEventListener('popstate', () => {
             let isPopupClosed = false;
+
+            const lightbox = document.getElementById('lightbox-modal');
+            if(!lightbox.classList.contains('hidden')) {
+                closeLightbox();
+                return;
+            }
+            
+                        // --- TAMBAHAN BARU: TANGKAP TOMBOL KEMBALI UNTUK ZOOM VIDEO ---
+            if (document.body.classList.contains('video-focused')) {
+                toggleGlobalAudio(); // Matikan mode fokus
+                return; // Hentikan eksekusi kode di bawahnya
+            }
+            // -------------------------------------------------------------
 
             const lightbox = document.getElementById('lightbox-modal');
             if(!lightbox.classList.contains('hidden')) {
@@ -1823,42 +1834,6 @@
             const m = document.getElementById('modal-upload'); 
             m.classList.remove('hidden'); 
             m.classList.add('flex'); 
-        }
-
-        function toggleGlobalAudio() {
-            isGlobalMuted = !isGlobalMuted;
-            document.querySelectorAll('.video-player, .float-video-player').forEach(v => v.muted = isGlobalMuted);
-
-            const allWraps = document.querySelectorAll('.video-inner-wrap');
-            const navBottom = document.querySelector('nav');
-            const headerTop = document.querySelector('header');
-
-            if(isGlobalMuted) {
-                showToast("Suara Dimatikan", "info");
-                // Kembalikan video ke dalam kotak & gembok kembali
-                allWraps.forEach(wrap => wrap.classList.remove('floating-focus'));
-                document.body.classList.remove('video-focused'); 
-                
-                // Hapus efek blur pada UI
-                if(navBottom) navBottom.style.filter = 'none';
-                if(headerTop) headerTop.style.filter = 'none';
-            } else {
-                showToast("Suara Dinyalakan", "success");
-                // Buka gembok layar agar video bisa melayang keluar kotak
-                document.body.classList.add('video-focused'); 
-                
-                // Terbangkan HANYA video yang sedang aktif
-                document.querySelectorAll('.video-player').forEach(v => {
-                    if (!v.paused) {
-                        const wrap = v.closest('.video-inner-wrap');
-                        if (wrap) wrap.classList.add('floating-focus');
-                    }
-                });
-                
-                // Redupkan sisa antarmuka
-                if(navBottom) navBottom.style.filter = 'blur(8px) opacity(0.5)';
-                if(headerTop) headerTop.style.filter = 'blur(8px) opacity(0.5)';
-            }
         }
 
 
