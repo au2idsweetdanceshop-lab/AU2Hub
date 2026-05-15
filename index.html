@@ -99,7 +99,7 @@
         @keyframes msgAnim { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .message-anim { animation: msgAnim 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
         
-                        /* EFEK VIDEO MENGAMBANG (FOCUS MODE) */
+        /* EFEK VIDEO MENGAMBANG (FOCUS MODE) */
         .video-inner-wrap {
             transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), border-radius 0.4s ease, box-shadow 0.4s ease, border 0.4s ease;
             will-change: transform, border-radius;
@@ -109,20 +109,13 @@
             z-index: 10;
         }
 
-                 /* ------------------------------------------------------------- */
+        /* ------------------------------------------------------------- */
         /* UNLOCKER & PENCEGAH BUG SCROLL/KLIK LAYAR BELAKANG            */
         /* ------------------------------------------------------------- */
         
-        /* 1. Matikan scroll HANYA di body, biarkan feed tetap bisa di-scroll */
+        /* 1. Matikan scroll di body */
         body.video-focused {
             overflow: hidden !important;
-        }
-        body.video-focused #sosial-wrapper,
-        body.video-focused #feed-container,
-        body.video-focused #floating-feed-container {
-            overflow-y: scroll !important;
-            touch-action: pan-y !important;
-            pointer-events: auto !important; 
         }
 
         /* 2. Matikan klik di main & nav, TAPI header tetap bisa diklik agar bisa Upload */
@@ -136,33 +129,51 @@
             z-index: 9999999 !important;
         }
 
-
-        /* 4. HIDUPKAN KEMBALI KLIK KHUSUS UNTUK VIDEO INI SAJA */
+        /* 4. HIDUPKAN KEMBALI KLIK KHUSUS UNTUK VIDEO INI SAJA (UKURAN PROPORSIONAL) */
         .floating-focus {
-    pointer-events: auto !important; 
-    touch-action: auto !important;
-    position: fixed !important;
-    top: 45% !important; /* <--- UBAH INI: Membuatnya agak naik ke atas (sebelumnya 50%) */
-    left: 50% !important;
-    width: 100vw !important; 
-    height: 95dvh !important; /* <--- UBAH INI: Membuat video lebih tinggi memenuhi layar */
-    max-width: 450px !important;
-    margin: 0 !important;
-    transform: translate(-50%, -50%) scale(1.08) !important; /* <--- UBAH INI: Efek Zoom In 8% membesar keluar dari batas */
-    border-radius: 1rem !important; /* Sedikit mengurangi lengkungan sudut saat zoom */
-    box-shadow: 0 0 0 100vmax rgba(10, 6, 20, 0.95), 0 40px 80px rgba(0,0,0,0.9), 0 0 40px rgba(0, 240, 255, 0.4) !important; 
-    border: 1px solid rgba(255, 255, 255, 0.2) !important;
-    z-index: 9999 !important; 
-    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1) !important;
-}
+            pointer-events: auto !important;
+            touch-action: auto !important;
+            position: fixed !important;
+            top: 53% !important; /* Agak diturunkan sedikit agar tidak menabrak Header di atas */
+            left: 50% !important;
+            width: 100vw !important; 
+            height: 82dvh !important; /* Ukuran tinggi dikurangi agar ada ruang bernapas */
+            max-width: 450px !important;
+            margin: 0 !important;
+            transform: translate(-50%, -50%) scale(1.02) !important; /* Efek zoom diperhalus, tidak terlalu lebay */
+            border-radius: 1.5rem !important; /* Lengkungan dikembalikan agar lebih manis */
+            box-shadow: 0 0 0 100vmax rgba(10, 6, 20, 0.95), 0 40px 80px rgba(0,0,0,0.9), 0 0 40px rgba(0, 240, 255, 0.4) !important; 
+            border: 1px solid rgba(255, 255, 255, 0.2) !important;
+            z-index: 9999 !important; 
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1) !important;
+        }
 
-                /* ========================================================= */
+        /* 5. Pelindung Extra untuk menahan sentuhan di area pinggiran hitam */
+        .floating-focus::before {
+            content: '';
+            position: absolute;
+            inset: -100vmax;
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            background: rgba(0, 0, 0, 0.1);
+            z-index: -1; 
+            pointer-events: auto !important; 
+            opacity: 0;
+            animation: fadeInBlur 0.4s ease forwards;
+        }
+
+        @keyframes fadeInBlur {
+            to { opacity: 1; }
+        }
+
+        /* ========================================================= */
         /* MEMBUKA GEMBOK TOTAL AGAR VIDEO BISA MELOMPAT KELUAR KOTAK */
         /* ========================================================= */
         
         /* 1. Hilangkan batasan potong (overflow) di container utama */
         body.video-focused #sosial-wrapper,
-        body.video-focused #feed-container {
+        body.video-focused #feed-container,
+        body.video-focused #floating-feed-container {
             overflow: visible !important;
             transform: none !important;
             border-radius: 0 !important;
@@ -172,46 +183,25 @@
         body.video-focused .snap-start {
             transform: none !important;
             will-change: auto !important;
-            content-visibility: visible !important; /* <--- INI KUNCI UTAMA YANG BIKIN NYANGKUT TADI */
+            content-visibility: visible !important; 
             contain: none !important;
         }
 
-
-
-
-        /* 5. Pelindung Extra untuk menahan sentuhan di area pinggiran hitam */
-        .floating-focus::before {
-            content: '';
-            position: absolute;
-            inset: -100vmax;
-            backdrop-filter: blur(15px);
-            -webkit-backdrop-filter: blur(15px);
-            background: rgba(0, 0, 0, 0.1); /* Lapisan tak terlihat penahan klik */
-            z-index: -1; 
-            pointer-events: auto !important; /* Menahan klik agar tidak tembus ke bawah */
-            opacity: 0;
-            animation: fadeInBlur 0.4s ease forwards;
-        }
-
-        @keyframes fadeInBlur {
-            to { opacity: 1; }
-        }
-                /* ------------------------------------------------------------- */
-        /* EFEK HEADER "FEED KOMUNITAS" IKUT MENGAMBANG & BERDENYUT      */
+        /* ------------------------------------------------------------- */
+        /* EFEK HEADER & WIDGET CHAT SAAT MODE FOKUS                     */
         /* ------------------------------------------------------------- */
         
         #sosial-header {
-            /* Transisi cubic-bezier untuk efek mantul / berdenyut */
             transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275), filter 0.4s ease;
             position: relative;
         }
 
-        /* Saat video diklik (mode fokus) */
+        /* HEADER TETAP DI TEMPAT & TIDAK BERTUMPUK */
         body.video-focused #sosial-header {
-            transform: translateY(-12px) scale(1.08) !important; /* Naik ke atas & membesar */
-            z-index: 9999999 !important; /* Paksa tumpuk di atas bayangan gelap video */
-            pointer-events: auto !important; /* Tetap bisa diklik */
-            filter: drop-shadow(0 15px 20px rgba(0,0,0,0.9)); /* Beri bayangan agar terlihat melayang */
+            transform: translateY(0) scale(1) !important; 
+            z-index: 9999999 !important; 
+            pointer-events: auto !important; 
+            filter: drop-shadow(0 4px 10px rgba(0,0,0,0.8)); 
         }
 
         /* Tambahan: Biar tombol kamera terus berdenyut glow saat mode fokus */
@@ -224,6 +214,15 @@
             50% { box-shadow: 0 0 25px rgba(255,0,122,0.9); transform: scale(1.15); }
             100% { box-shadow: 0 0 15px rgba(255,0,122,0.4); transform: scale(1); }
         }
+
+        /* SEMBUNYIKAN WIDGET CHAT SAAT VIDEO DIKLIK */
+        body.video-focused button[onclick="toggleWidget()"] {
+            opacity: 0 !important;
+            transform: scale(0.5) !important;
+            pointer-events: none !important;
+            transition: all 0.3s ease !important;
+        }
+
 
 
 
@@ -254,9 +253,19 @@
     will-change: transform; /* Ubah dari width ke transform scaleX kalau memungkinkan, tapi will-change ini sudah lumayan bantu */
 }
 
-    </style>
-</head>
+        /* ... kode CSS kamu yang lain ... */
+
+        /* Sembunyikan Widget Chat Global saat video mode fokus */
+        body.video-focused button[onclick="toggleWidget()"] {
+            opacity: 0 !important;
+            transform: scale(0.5) !important;
+            pointer-events: none !important;
+            transition: all 0.3s ease !important;
+        }
+
+    </style> </head>
 <body class="pb-24">
+
 
     <div id="toast-container" class="fixed top-6 left-0 w-full px-4 z-[200] flex flex-col items-center gap-3 pointer-events-auto"></div>
 
