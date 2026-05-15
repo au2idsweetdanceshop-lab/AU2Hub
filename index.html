@@ -156,6 +156,19 @@
     transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
 
+        /* MEMBUKA GEMBOK AGAR VIDEO BISA KELUAR DARI KOTAK */
+        body.video-focused .snap-start {
+            transform: none !important;
+            will-change: auto !important;
+        }
+
+        /* Mencegah kotak luar memotong video (khususnya untuk browser iPhone/Safari) */
+        body.video-focused #sosial-wrapper {
+            overflow: visible !important;
+            z-index: 99999 !important;
+        }
+
+
 
         /* 5. Pelindung Extra untuk menahan sentuhan di area pinggiran hitam */
         .floating-focus::before {
