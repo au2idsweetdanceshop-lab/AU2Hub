@@ -1699,19 +1699,19 @@
             if (isPush && window.location.hash !== `#${tabId}`) history.pushState(null, null, `#${tabId}`);
         }
 
-            window.addEventListener('popstate', () => {
-        let isPopupClosed = false;
+        window.addEventListener('popstate', () => {
+            let isPopupClosed = false;
 
-        // --- TAMBAHAN BARU: TANGKAP TOMBOL KEMBALI UNTUK ZOOM VIDEO ---
-        if (document.body.classList.contains('video-focused')) {
-            toggleGlobalAudio(); // Matikan mode fokus
-            return; // Hentikan eksekusi kode di bawahnya
-            }
-            // -------------------------------------------------------------
-
+            // 1. TANGKAP SEMUA POP-UP DULU (Biar menutup duluan kalau tombol Back ditekan)
             const lightbox = document.getElementById('lightbox-modal');
             if(!lightbox.classList.contains('hidden')) {
                 closeLightbox();
+                return;
+            }
+
+            const storyModal = document.getElementById('story-viewer-modal');
+            if (storyModal && !storyModal.classList.contains('hidden')) {
+                closeStoryViewer();
                 return;
             }
 
@@ -1725,12 +1725,6 @@
             if (commentDrawer.classList.contains('open')) {
                 commentDrawer.classList.remove('open');
                 cancelReply();
-                return; 
-            }
-
-            const floatingPlayer = document.getElementById('floating-video-player');
-            if (!floatingPlayer.classList.contains('hidden')) { 
-                closeFloatingVideo(); 
                 return; 
             }
 
@@ -1770,6 +1764,18 @@
                 isPopupClosed = true;
             }
 
+            // 2. SETELAH POP-UP AMAN, BARU TANGKAP LAYAR MENGAMBANG
+            if (document.body.classList.contains('video-focused')) {
+                toggleGlobalAudio(); 
+                return; 
+            }
+
+            const floatingPlayer = document.getElementById('floating-video-player');
+            if (!floatingPlayer.classList.contains('hidden')) { 
+                closeFloatingVideo(); 
+                return; 
+            }
+
             if (isPopupClosed) return;
 
             const newHash = window.location.hash.substring(1) || 'home';
@@ -1779,6 +1785,7 @@
             }
             switchTab(newHash.split('?')[0], null, false);
         });
+
 
         // FUNGSI KEMBALI DARI PROFIL YANG SUDAH DIPERBAIKI SANGAT AMAN
         function kembaliDariProfil() {
