@@ -2,7 +2,7 @@ const CACHE_NAME = 'au2hub-v2';
 const assets = [
   '/',
   '/index.html',
-  '/manifest.json',
+  '/manifest-v2.json',
   '/icon-192.png',
   '/icon-512.png'
 ];
