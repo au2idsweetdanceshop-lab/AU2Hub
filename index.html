@@ -99,46 +99,7 @@
         @keyframes msgAnim { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .message-anim { animation: msgAnim 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
         
-        /* ------------------------------------------------------------- */
-        /* 1. UNLOCKER & SCROLL FIX (AGAR TETAP BISA DI-SCROLL)          */
-        /* ------------------------------------------------------------- */
-        
-        /* Kunci body, TAPI biarkan area video TETAP bisa di-scroll */
-        body.video-focused {
-            overflow: hidden !important;
-        }
-        
-        body.video-focused #feed-container,
-        body.video-focused #floating-feed-container {
-            overflow-y: scroll !important;
-            touch-action: pan-y !important; /* Izinkan scroll atas-bawah */
-            pointer-events: auto !important; /* Hidupkan sentuhan di area scroll */
-        }
-
-        /* Matikan klik di elemen latar belakang agar tidak bocor */
-        body.video-focused main,
-        body.video-focused header,
-        body.video-focused nav {
-            pointer-events: none !important;
-        }
-
-        /* Buka gembok CSS agar video bebas membesar */
-        body.video-focused .tab-content.active,
-        body.video-focused .snap-start,
-        body.video-focused #sosial-wrapper,
-        body.video-focused main {
-            transform: none !important;
-            animation: none !important;
-            will-change: auto !important;
-            contain: none !important;
-            content-visibility: visible !important;
-            perspective: none !important;
-        }
-
-        /* ------------------------------------------------------------- */
-        /* 2. EFEK MENGAMBANG (BISA DI-SCROLL) KOTAK VIDEO               */
-        /* ------------------------------------------------------------- */
-        
+                        /* EFEK VIDEO MENGAMBANG (FOCUS MODE) */
         .video-inner-wrap {
             transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), border-radius 0.4s ease, box-shadow 0.4s ease, border 0.4s ease;
             will-change: transform, border-radius;
@@ -148,29 +109,75 @@
             z-index: 10;
         }
 
-        /* Video membesar, tapi tetap di jalurnya agar BISA di-scroll */
-        .floating-focus {
+                 /* ------------------------------------------------------------- */
+        /* UNLOCKER & PENCEGAH BUG SCROLL/KLIK LAYAR BELAKANG            */
+        /* ------------------------------------------------------------- */
+        
+                /* 1. Matikan scroll HANYA di body, biarkan feed tetap bisa di-scroll */
+        body.video-focused {
+            overflow: hidden !important;
+        }
+        body.video-focused #sosial-wrapper,
+        body.video-focused #feed-container,
+        body.video-focused #floating-feed-container {
+            overflow-y: scroll !important;
+            touch-action: pan-y !important;
             pointer-events: auto !important; 
-            touch-action: pan-y !important; /* Izinkan scroll saat disentuh */
-            /* Kita HAPUS position: fixed; agar video ikut tergulung saat di-scroll */
-            transform: scale(1.08) !important; /* Membesar proporsional 8% */
+        }
+
+        /* 2. Matikan klik di main & nav, TAPI header tetap bisa diklik agar bisa Upload */
+        body.video-focused main,
+        body.video-focused nav {
+            pointer-events: none !important;
+        }
+        
+        /* 3. Pastikan modal upload dan alert selalu berada paling atas */
+        #modal-upload, #toast-container, #modal-auth {
+            z-index: 9999999 !important;
+        }
+
+
+        /* ------------------------------------------------------------- */
+        /* EFEK MENGAMBANG (FOCUS MODE) KOTAK VIDEO                      */
+        /* ------------------------------------------------------------- */
+        .video-inner-wrap {
+            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), border-radius 0.4s ease, box-shadow 0.4s ease, border 0.4s ease;
+            will-change: transform, border-radius;
+            transform-origin: center center;
+            border: 1px solid transparent;
+            position: relative;
+            z-index: 10;
+        }
+
+        /* 4. HIDUPKAN KEMBALI KLIK KHUSUS UNTUK VIDEO INI SAJA */
+        .floating-focus {
+            pointer-events: auto !important; /* <--- KUNCI PENYELESAIAN BUG SENTUHAN */
+            touch-action: auto !important;
+            position: fixed !important;
+            top: 50% !important;
+            left: 50% !important;
+            width: 100vw !important; 
+            height: 90dvh !important; 
+            max-width: 450px !important;
+            margin: 0 !important;
+            transform: translate(-50%, -50%) scale(1) !important;
             border-radius: 1.5rem !important;
             box-shadow: 0 0 0 100vmax rgba(10, 6, 20, 0.95), 0 40px 80px rgba(0,0,0,0.9), 0 0 40px rgba(0, 240, 255, 0.4) !important; 
             border: 1px solid rgba(255, 255, 255, 0.2) !important;
-            z-index: 999999 !important; 
+            z-index: 9999 !important; 
             transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1) !important;
         }
 
-        /* Efek blur background (Dibuat tembus sentuhan agar bisa scroll dari area hitam) */
+        /* 5. Pelindung Extra untuk menahan sentuhan di area pinggiran hitam */
         .floating-focus::before {
             content: '';
             position: absolute;
             inset: -100vmax;
             backdrop-filter: blur(15px);
             -webkit-backdrop-filter: blur(15px);
-            background: rgba(0, 0, 0, 0.1); 
+            background: rgba(0, 0, 0, 0.1); /* Lapisan tak terlihat penahan klik */
             z-index: -1; 
-            pointer-events: none !important; /* Tembus sentuhan ke container scroll */
+            pointer-events: auto !important; /* Menahan klik agar tidak tembus ke bawah */
             opacity: 0;
             animation: fadeInBlur 0.4s ease forwards;
         }
@@ -178,16 +185,35 @@
         @keyframes fadeInBlur {
             to { opacity: 1; }
         }
+                /* ------------------------------------------------------------- */
+        /* EFEK HEADER "FEED KOMUNITAS" IKUT MENGAMBANG & BERDENYUT      */
+        /* ------------------------------------------------------------- */
+        
+        #sosial-header {
+            /* Transisi cubic-bezier untuk efek mantul / berdenyut */
+            transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275), filter 0.4s ease;
+            position: relative;
+        }
 
-        /* ------------------------------------------------------------- */
-        /* MODAL UPLOAD DI ATAS SEGALANYA (TANPA REFRESH)                */
-        /* ------------------------------------------------------------- */
-        #modal-upload {
-            z-index: 99999999 !important; /* Kasta tertinggi melebihi bayangan video */
+        /* Saat video diklik (mode fokus) */
+        body.video-focused #sosial-header {
+            transform: translateY(-12px) scale(1.08) !important; /* Naik ke atas & membesar */
+            z-index: 9999999 !important; /* Paksa tumpuk di atas bayangan gelap video */
+            pointer-events: auto !important; /* Tetap bisa diklik */
+            filter: drop-shadow(0 15px 20px rgba(0,0,0,0.9)); /* Beri bayangan agar terlihat melayang */
         }
-        body.video-focused #modal-upload * {
-            pointer-events: auto !important; /* Pastikan tombol di dalam modal tetap bisa diklik */
+
+        /* Tambahan: Biar tombol kamera terus berdenyut glow saat mode fokus */
+        body.video-focused #sosial-header button {
+            animation: pulseCamera 1.5s infinite;
         }
+
+        @keyframes pulseCamera {
+            0% { box-shadow: 0 0 15px rgba(255,0,122,0.4); transform: scale(1); }
+            50% { box-shadow: 0 0 25px rgba(255,0,122,0.9); transform: scale(1.15); }
+            100% { box-shadow: 0 0 15px rgba(255,0,122,0.4); transform: scale(1); }
+        }
+
 
 
 
@@ -1568,7 +1594,7 @@
             }); 
         }
 
-                             function toggleGlobalAudio() {
+        function toggleGlobalAudio() {
             isGlobalMuted = !isGlobalMuted;
             document.querySelectorAll('.video-player, .float-video-player').forEach(v => v.muted = isGlobalMuted);
 
@@ -1590,13 +1616,19 @@
                 // Buka gembok layar agar video bisa melayang keluar kotak
                 document.body.classList.add('video-focused'); 
                 
-                // Terbangkan video yang sedang play ke tengah layar
-                document.querySelectorAll('.video-player').forEach(v => {
-                    if (!v.paused) {
-                        const wrap = v.closest('.video-inner-wrap');
-                        if (wrap) wrap.classList.add('floating-focus');
-                    }
-                });
+                // Hanya terbangkan video yang sedang aktif/berjalan di layar
+                const activeVid = document.querySelector('.video-player:not(.paused)');
+                if (activeVid) {
+                    const wrap = activeVid.closest('.video-inner-wrap');
+                    if (wrap) wrap.classList.add('floating-focus');
+                } else {
+                    document.querySelectorAll('.video-player').forEach(v => {
+                        if (!v.paused) {
+                            const wrap = v.closest('.video-inner-wrap');
+                            if (wrap) wrap.classList.add('floating-focus');
+                        }
+                    });
+                }
                 
                 // Redupkan sisa antarmuka
                 if(navBottom) navBottom.style.filter = 'blur(8px) opacity(0.5)';
@@ -1782,7 +1814,16 @@
             }
         }
         
-        function openUploadModal() { history.pushState({ popup: 'upload' }, null, '#upload'); const m = document.getElementById('modal-upload'); m.classList.remove('hidden'); m.classList.add('flex'); }
+        function openUploadModal() { 
+            // Matikan efek floating otomatis saat buka modal upload
+            if (document.body.classList.contains('video-focused')) {
+                toggleGlobalAudio(); 
+            }
+            history.pushState({ popup: 'upload' }, null, '#upload'); 
+            const m = document.getElementById('modal-upload'); 
+            m.classList.remove('hidden'); 
+            m.classList.add('flex'); 
+        }
 
         // Tambahkan fungsi ini agar preview video muncul saat dipilih
 function handleVideoSelect(input) {
@@ -4110,7 +4151,6 @@ function updateSeek(e, containerElement, video) {
         }
     }
 }
-
 <script>
     window.addEventListener('load', () => {
         
@@ -4319,7 +4359,6 @@ function updateSeek(e, containerElement, video) {
 
         console.log("🚀 Speed Booster (Jalan Tol & Lazy Load) Aktif!");
     });
-
 </script>
 </body>
 </html>
