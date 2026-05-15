@@ -109,15 +109,15 @@
             z-index: 10;
         }
 
-        /* Saat diklik: Zoom In & Latar Belakang Blur Gelap */
+                /* Saat diklik: Zoom In & Latar Belakang Blur Gelap */
         .floating-focus {
-            transform: scale(1.05) !important; /* Zoom In */
-            border-radius: 1.5rem !important;
-            /* Spread bayangan super besar untuk menggelapkan latar belakang */
-            box-shadow: 0 0 0 100vmax rgba(15, 9, 32, 0.7), 0 30px 60px rgba(0,0,0,0.9), 0 0 30px rgba(0, 240, 255, 0.3) !important; 
-            border: 1px solid rgba(255, 255, 255, 0.2) !important;
-            z-index: 99 !important; /* Angkat video ke paling atas */
+            transform: scale(1.15) !important; /* Diperbesar agar memanjang keluar kotak */
+            border-radius: 1rem !important; /* Sudut sedikit dipertajam */
+            box-shadow: 0 0 0 100vmax rgba(15, 9, 32, 0.85), 0 30px 60px rgba(0,0,0,0.9), 0 0 30px rgba(0, 240, 255, 0.4) !important; 
+            border: 1px solid rgba(255, 255, 255, 0.3) !important;
+            z-index: 999 !important; /* Angkat video ke paling atas */
         }
+
 
         /* Pseudo-element untuk efek BLUR pada latar belakang */
         .floating-focus::before {
@@ -138,12 +138,12 @@
 
 
         /* JURUS 1: Isolasi Rendering (Sangat Ampuh) */
-/* Memberitahu browser agar tidak menghitung elemen di luar layar */
 .snap-start {
     content-visibility: auto;
-    contain-intrinsic-size: 100vh; /* Sesuaikan dengan tinggi kontainer video */
-    contain: strict; /* Mengunci elemen agar tidak memengaruhi layout elemen lain saat di-scroll */
+    contain-intrinsic-size: 100vh;
+    /* contain: strict; sengaja dihapus agar video bisa memanjang keluar batas */
 }
+
 
 /* JURUS 2: Paksa elemen video pakai layer GPU terpisah */
 .video-player, .float-video-player {
@@ -287,7 +287,7 @@
                 </button>
             </div>
             
-            <div class="relative w-full h-[calc(100dvh-240px)] min-h-[400px] rounded-3xl overflow-hidden border border-white/10 shadow-lg bg-brand-dark flex flex-col">
+            <div id="sosial-wrapper" class="relative w-full h-[calc(100dvh-240px)] min-h-[400px] rounded-3xl overflow-hidden border border-white/10 shadow-lg bg-brand-dark flex flex-col transition-all duration-300">
                 <div id="fake-loader" class="absolute inset-0 z-50 bg-brand-dark flex flex-col items-center justify-center hidden transition-opacity duration-1000">
                     <div class="relative w-20 h-20 mb-6">
                         <div class="absolute inset-0 border-4 border-brand-card rounded-full"></div>
@@ -1514,13 +1514,17 @@
             }); 
         }
 
-                        function toggleGlobalAudio() {
+                                function toggleGlobalAudio() {
             isGlobalMuted = !isGlobalMuted;
             document.querySelectorAll('.video-player, .float-video-player').forEach(v => v.muted = isGlobalMuted);
 
             const allWraps = document.querySelectorAll('.video-inner-wrap');
             const navBottom = document.querySelector('nav');
             const headerTop = document.querySelector('header');
+            
+            // Ambil elemen wrapper dan main container
+            const sosialWrapper = document.getElementById('sosial-wrapper');
+            const mainContent = document.querySelector('main');
 
             if(isGlobalMuted) {
                 showToast("Suara Dimatikan", "info");
@@ -1528,9 +1532,28 @@
                 allWraps.forEach(wrap => wrap.classList.remove('floating-focus'));
                 if(navBottom) navBottom.style.filter = 'none';
                 if(headerTop) headerTop.style.filter = 'none';
+                
+                // Kembalikan batas (gembok) kotak feed agar scroll kembali rapi
+                if(sosialWrapper) sosialWrapper.classList.add('overflow-hidden');
+                
+                // Turunkan kembali z-index main
+                if(mainContent) {
+                    mainContent.style.zIndex = '';
+                    mainContent.style.position = '';
+                }
             } else {
                 showToast("Suara Dinyalakan", "success");
-                // Beri efek mengambang pada video yang play & blur UI lainnya
+                
+                // Cabut batas (gembok) kotak feed agar video bisa tumpah keluar
+                if(sosialWrapper) sosialWrapper.classList.remove('overflow-hidden');
+                
+                // Angkat main content agar video menimpa navigasi atas/bawah
+                if(mainContent) {
+                    mainContent.style.zIndex = '50';
+                    mainContent.style.position = 'relative';
+                }
+
+                // Beri efek mengambang pada video yang play
                 document.querySelectorAll('.video-player').forEach(v => {
                     if (!v.paused) {
                         const wrap = v.closest('.video-inner-wrap');
@@ -1538,11 +1561,12 @@
                     }
                 });
                 
-                // Blur navigasi dan header agar fokus penuh ke video
+                // Blur navigasi dan header
                 if(navBottom) navBottom.style.filter = 'blur(8px) opacity(0.5)';
                 if(headerTop) headerTop.style.filter = 'blur(8px) opacity(0.5)';
             }
         }
+
 
 
 
@@ -1916,7 +1940,7 @@ function closeUploadModal() {
             if (nextBatch.length === 0) return;
 
                                     const htmlString = nextBatch.map((vid) => `
-                <div class="snap-start w-full h-full flex-shrink-0 relative flex items-center justify-center bg-black/95 px-0 sm:px-4 py-0 sm:py-6">
+                <div class="snap-start w-full h-full flex-shrink-0 relative flex items-center justify-center overflow-hidden bg-black/95 px-0 sm:px-4 py-0 sm:py-6">
                     <div class="w-full max-w-sm aspect-[9/16] relative bg-brand-dark mx-auto h-full sm:h-auto sm:rounded-3xl overflow-hidden shadow-2xl">
                         <div class="absolute inset-0 flex items-center justify-center z-0"><div class="w-12 h-12 border-4 border-brand-accent/20 border-t-brand-accent rounded-full animate-spin"></div></div>
                         <video class="absolute inset-0 m-auto w-full h-full object-cover float-video-player transition-opacity duration-500 opacity-0 z-10" 
