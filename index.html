@@ -1989,7 +1989,7 @@ function closeUploadModal() {
             }, { threshold: 0.6 });
         }
 
-                                function openProfileFeed(userId, startIndex) {
+        function openProfileFeed(userId, startIndex) {
             // 1. Ambil video milik user ini saja
             currentProfileVideos = allVideosData.filter(v => v.user_id === userId);
             if(currentProfileVideos.length === 0) return;
@@ -2021,10 +2021,21 @@ function closeUploadModal() {
             // Render video mulai dari index yang di-klik
             renderProfileVideoBatch();
             
-            history.pushState({ popup: 'floating_video' }, null);
+            // ✅ FINAL: Tambahkan jejak URL '#profil_video' agar terdeteksi tombol back HP
+            history.pushState({ popup: 'floating_video' }, null, '#profil_video');
         }
 
-
+        function closeFloatingVideo() {
+            // ✅ FINAL: Jika tombol close diklik manual, eksekusi tombol "Back" otomatis
+            if (window.location.hash === '#profil_video') {
+                history.back();
+            } else {
+                const p = document.getElementById('floating-video-player');
+                p.classList.add('hidden'); p.classList.remove('flex');
+                document.getElementById('floating-feed-container').innerHTML = '';
+                if(floatObs) floatObs.disconnect(); // clean up
+            }
+        }
 
                 function renderProfileVideoBatch() {
             const container = document.getElementById('floating-feed-container');
@@ -2155,13 +2166,6 @@ function closeUploadModal() {
                 }, TIMESLOT);
             }
             lastTap = now;
-        }
-
-        function closeFloatingVideo() {
-            const p = document.getElementById('floating-video-player');
-            p.classList.add('hidden'); p.classList.remove('flex');
-            document.getElementById('floating-feed-container').innerHTML = '';
-            if(floatObs) floatObs.disconnect(); // clean up
         }
 
         function handleVideoClick(event, videoElement, vidId) {
