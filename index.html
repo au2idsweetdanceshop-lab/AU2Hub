@@ -121,28 +121,26 @@
         /* 2. KOTAK FEED MENGAMBANG OTOMATIS SEMUA DEVICE (FLEXIBLE CENTER) */
         body.video-focused #sosial-wrapper {
             position: fixed !important;
-            /* Jarak aman wajib dari atas (header) dan bawah (nav) */
-            top: 80px !important;
-            bottom: 80px !important;
-            left: 0 !important;
-            right: 0 !important;
             
-            /* Kunci agar dia berada tepat di tengah sisa ruang yang ada */
-            margin: auto !important;
+            /* Kunci agar posisi mulai dari titik tengah layar persis */
+            top: 50% !important;
+            left: 50% !important;
             
-            /* Batasan ukuran lebar */
-            width: 100vw !important;
+            /* Batasan ukuran lebar. Pakai 100% (bukan 100vw) agar bebas bug scrollbar! */
+            width: 100% !important;
             max-width: 450px !important;
             
-            /* Tinggi akan otomatis meregang semaksimal mungkin di antara top & bottom */
-            height: auto !important;
-            max-height: 100% !important; /* Mencegah overflow aneh */
+            /* Jarak aman dari header dan nav bawah menggunakan kalkulasi dinamis */
+            height: calc(100dvh - 160px) !important;
+            max-height: 100% !important; 
+            margin: 0 !important;
 
             z-index: 9999 !important;
             border-radius: 1.5rem !important; 
             
-            /* Efek pop-out sedikit membesar tanpa menggeser pusat */
-            transform: scale(1.02) !important; 
+            /* Tarik elemen ke tengah secara absolut (-50%, -50%) + Efek pop-out membesar (scale) */
+            transform: translate(-50%, -50%) scale(1.02) !important; 
+            transform-origin: center center !important;
             
             /* Box shadow raksasa untuk menggelapkan area belakang */
             box-shadow: 0 0 0 100vmax rgba(10, 6, 20, 0.98), 0 20px 80px rgba(0,0,0,0.95), 0 0 40px rgba(0, 240, 255, 0.4) !important;
