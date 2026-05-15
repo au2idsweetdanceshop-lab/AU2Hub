@@ -109,24 +109,47 @@
             z-index: 10;
         }
 
-                /* Saat diklik: Zoom In & Latar Belakang Blur Gelap */
-        .floating-focus {
-            transform: scale(1.15) !important; /* Diperbesar agar memanjang keluar kotak */
-            border-radius: 1rem !important; /* Sudut sedikit dipertajam */
-            box-shadow: 0 0 0 100vmax rgba(15, 9, 32, 0.85), 0 30px 60px rgba(0,0,0,0.9), 0 0 30px rgba(0, 240, 255, 0.4) !important; 
-            border: 1px solid rgba(255, 255, 255, 0.3) !important;
-            z-index: 999 !important; /* Angkat video ke paling atas */
+                  /* UNLOCKER SUPER: Menghancurkan 100% penjara CSS (Containing Block) */
+        body.video-focused .tab-content.active,
+        body.video-focused .snap-start,
+        body.video-focused #sosial-wrapper,
+        body.video-focused #feed-container,
+        body.video-focused main {
+            transform: none !important;
+            animation: none !important;
+            will-change: auto !important; /* INI KUNCI PENYELAMATNYA */
+            contain: none !important;
+            content-visibility: visible !important;
+            perspective: none !important;
+            overflow: visible !important;
         }
 
+        /* Saat diklik: Video Pop Out menjadi Fixed Floating */
+        .floating-focus {
+            position: fixed !important;
+            top: 50% !important;
+            left: 50% !important;
+            width: 100vw !important; /* Memanjang memenuhi layar */
+            height: 90dvh !important; /* Tinggi memanjang ke atas & bawah */
+            max-width: 450px !important;
+            margin: 0 !important;
+            transform: translate(-50%, -50%) scale(1) !important;
+            border-radius: 1.5rem !important;
+            /* Shadow hitam pekat menutupi seluruh background aplikasi */
+            box-shadow: 0 0 0 100vmax rgba(10, 6, 20, 0.95), 0 40px 80px rgba(0,0,0,0.9), 0 0 40px rgba(0, 240, 255, 0.4) !important; 
+            border: 1px solid rgba(255, 255, 255, 0.2) !important;
+            z-index: 999999 !important; /* Paksa tumpuk paling atas */
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1) !important;
+        }
 
-        /* Pseudo-element untuk efek BLUR pada latar belakang */
+        /* Pseudo-element untuk efek BLUR pada layar belakang */
         .floating-focus::before {
             content: '';
             position: absolute;
             inset: -100vmax;
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            z-index: -1; /* Berada tepat di belakang video */
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            z-index: -1; 
             pointer-events: none;
             opacity: 0;
             animation: fadeInBlur 0.4s ease forwards;
@@ -135,6 +158,7 @@
         @keyframes fadeInBlur {
             to { opacity: 1; }
         }
+
 
 
         /* JURUS 1: Isolasi Rendering (Sangat Ampuh) */
@@ -1514,46 +1538,29 @@
             }); 
         }
 
-                                function toggleGlobalAudio() {
+                             function toggleGlobalAudio() {
             isGlobalMuted = !isGlobalMuted;
             document.querySelectorAll('.video-player, .float-video-player').forEach(v => v.muted = isGlobalMuted);
 
             const allWraps = document.querySelectorAll('.video-inner-wrap');
             const navBottom = document.querySelector('nav');
             const headerTop = document.querySelector('header');
-            
-            // Ambil elemen wrapper dan main container
-            const sosialWrapper = document.getElementById('sosial-wrapper');
-            const mainContent = document.querySelector('main');
 
             if(isGlobalMuted) {
                 showToast("Suara Dimatikan", "info");
-                // Cabut efek mengambang & kembalikan UI normal
+                // Kembalikan video ke dalam kotak & gembok kembali
                 allWraps.forEach(wrap => wrap.classList.remove('floating-focus'));
+                document.body.classList.remove('video-focused'); 
+                
+                // Hapus efek blur pada UI
                 if(navBottom) navBottom.style.filter = 'none';
                 if(headerTop) headerTop.style.filter = 'none';
-                
-                // Kembalikan batas (gembok) kotak feed agar scroll kembali rapi
-                if(sosialWrapper) sosialWrapper.classList.add('overflow-hidden');
-                
-                // Turunkan kembali z-index main
-                if(mainContent) {
-                    mainContent.style.zIndex = '';
-                    mainContent.style.position = '';
-                }
             } else {
                 showToast("Suara Dinyalakan", "success");
+                // Buka gembok layar agar video bisa melayang keluar kotak
+                document.body.classList.add('video-focused'); 
                 
-                // Cabut batas (gembok) kotak feed agar video bisa tumpah keluar
-                if(sosialWrapper) sosialWrapper.classList.remove('overflow-hidden');
-                
-                // Angkat main content agar video menimpa navigasi atas/bawah
-                if(mainContent) {
-                    mainContent.style.zIndex = '50';
-                    mainContent.style.position = 'relative';
-                }
-
-                // Beri efek mengambang pada video yang play
+                // Terbangkan video yang sedang play ke tengah layar
                 document.querySelectorAll('.video-player').forEach(v => {
                     if (!v.paused) {
                         const wrap = v.closest('.video-inner-wrap');
@@ -1561,11 +1568,12 @@
                     }
                 });
                 
-                // Blur navigasi dan header
+                // Redupkan sisa antarmuka
                 if(navBottom) navBottom.style.filter = 'blur(8px) opacity(0.5)';
                 if(headerTop) headerTop.style.filter = 'blur(8px) opacity(0.5)';
             }
         }
+
 
 
 
