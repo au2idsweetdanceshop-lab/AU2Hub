@@ -113,7 +113,7 @@
         /* UNLOCKER & PENCEGAH BUG SCROLL/KLIK LAYAR BELAKANG            */
         /* ------------------------------------------------------------- */
         
-                /* 1. Matikan scroll HANYA di body, biarkan feed tetap bisa di-scroll */
+        /* 1. Matikan scroll HANYA di body, biarkan feed tetap bisa di-scroll */
         body.video-focused {
             overflow: hidden !important;
         }
@@ -136,18 +136,6 @@
             z-index: 9999999 !important;
         }
 
-
-        /* ------------------------------------------------------------- */
-        /* EFEK MENGAMBANG (FOCUS MODE) KOTAK VIDEO                      */
-        /* ------------------------------------------------------------- */
-        .video-inner-wrap {
-            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), border-radius 0.4s ease, box-shadow 0.4s ease, border 0.4s ease;
-            will-change: transform, border-radius;
-            transform-origin: center center;
-            border: 1px solid transparent;
-            position: relative;
-            z-index: 10;
-        }
 
         /* 4. HIDUPKAN KEMBALI KLIK KHUSUS UNTUK VIDEO INI SAJA */
         .floating-focus {
@@ -1814,7 +1802,7 @@
             }
         }
         
-        function openUploadModal() { 
+                function openUploadModal() { 
             // Matikan efek floating otomatis saat buka modal upload
             if (document.body.classList.contains('video-focused')) {
                 toggleGlobalAudio(); 
@@ -1824,6 +1812,43 @@
             m.classList.remove('hidden'); 
             m.classList.add('flex'); 
         }
+
+        function toggleGlobalAudio() {
+            isGlobalMuted = !isGlobalMuted;
+            document.querySelectorAll('.video-player, .float-video-player').forEach(v => v.muted = isGlobalMuted);
+
+            const allWraps = document.querySelectorAll('.video-inner-wrap');
+            const navBottom = document.querySelector('nav');
+            const headerTop = document.querySelector('header');
+
+            if(isGlobalMuted) {
+                showToast("Suara Dimatikan", "info");
+                // Kembalikan video ke dalam kotak & gembok kembali
+                allWraps.forEach(wrap => wrap.classList.remove('floating-focus'));
+                document.body.classList.remove('video-focused'); 
+                
+                // Hapus efek blur pada UI
+                if(navBottom) navBottom.style.filter = 'none';
+                if(headerTop) headerTop.style.filter = 'none';
+            } else {
+                showToast("Suara Dinyalakan", "success");
+                // Buka gembok layar agar video bisa melayang keluar kotak
+                document.body.classList.add('video-focused'); 
+                
+                // Terbangkan HANYA video yang sedang aktif
+                document.querySelectorAll('.video-player').forEach(v => {
+                    if (!v.paused) {
+                        const wrap = v.closest('.video-inner-wrap');
+                        if (wrap) wrap.classList.add('floating-focus');
+                    }
+                });
+                
+                // Redupkan sisa antarmuka
+                if(navBottom) navBottom.style.filter = 'blur(8px) opacity(0.5)';
+                if(headerTop) headerTop.style.filter = 'blur(8px) opacity(0.5)';
+            }
+        }
+
 
         // Tambahkan fungsi ini agar preview video muncul saat dipilih
 function handleVideoSelect(input) {
