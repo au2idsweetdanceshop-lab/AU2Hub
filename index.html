@@ -100,47 +100,43 @@
         .message-anim { animation: msgAnim 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
         
         /* ========================================================= */
-        /* SOLUSI FINAL: EFEK MENGAMBANG & SCROLL LANCAR ANTI BUG    */
+        /* SOLUSI FINAL V2: MENGAMBANG, SCROLL LANCAR, NO BLUR BUG   */
         /* ========================================================= */
         
-        /* 1. KOTAK FEED MENGAMBANG KESELURUHAN (BUKAN CUMA 1 VIDEO) */
-        /* Ini adalah kunci agar scroll tetap lancar! Kita zoom kotaknya, bukan videonya. */
+        /* 1. KUNCI ANTI-BOCOR KLIK (Matikan klik latar belakang) */
+        body.video-focused {
+            overflow: hidden !important;
+            pointer-events: none !important; /* Mematikan semua sentuhan di luar kotak */
+        }
+
+        /* Hidupkan kembali sentuhan HANYA untuk elemen yang penting */
+        body.video-focused #sosial-wrapper,
+        body.video-focused header,
+        body.video-focused nav,
+        body.video-focused #sosial-header,
+        #modal-upload, #toast-container, #modal-auth {
+            pointer-events: auto !important;
+        }
+
+        /* 2. KOTAK FEED MENGAMBANG KESELURUHAN (Scroll dijamin lancar) */
         body.video-focused #sosial-wrapper {
-            transform: scale(1.04) translateY(-10px) !important;
+            transform: scale(1.04) translateY(-8px) !important;
             height: calc(100dvh - 170px) !important; 
             z-index: 9999 !important;
-            box-shadow: 0 20px 80px rgba(0,0,0,0.95), 0 0 40px rgba(0, 240, 255, 0.4) !important;
+            /* Box shadow raksasa untuk menggelapkan area belakang tanpa bug blur */
+            box-shadow: 0 0 0 100vmax rgba(10, 6, 20, 0.95), 0 20px 80px rgba(0,0,0,0.95), 0 0 40px rgba(0, 240, 255, 0.4) !important;
             border: 1px solid rgba(255, 255, 255, 0.2) !important;
-            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1) !important;
+            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), height 0.4s ease !important;
             position: relative !important;
         }
 
-        /* 2. BACKGROUND GELAP/BLUR SEBAGAI PELINDUNG (ANTI KLIK TEMBUS) */
-        body.video-focused::before {
-            content: '';
-            position: fixed;
-            top: 0; left: 0; width: 100vw; height: 100vh;
-            background: rgba(10, 6, 20, 0.85);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            z-index: 9990 !important;
-            pointer-events: auto !important; /* Memblokir total sentuhan ke layar belakang */
-            animation: fadeInBlur 0.4s ease forwards;
-        }
-
-        @keyframes fadeInBlur {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-
-        /* 3. PASTIKAN HEADER UTAMA, HEADER FEED, DAN MENU BAWAH TETAP DI DEPAN */
-        body.video-focused header.fixed.top-0,
-        body.video-focused nav.fixed.bottom-0,
-        #modal-upload, #toast-container, #modal-auth {
+        /* 3. PASTIKAN HEADER UTAMA & MENU BAWAH TETAP DI DEPAN BOX-SHADOW */
+        body.video-focused header,
+        body.video-focused nav {
             z-index: 9999999 !important;
         }
 
-        /* TULISAN "FEED KOMUNITAS" BERBAYANG AGAR JELAS & ADA DI DEPAN BLUR */
+        /* TULISAN "FEED KOMUNITAS" BERBAYANG AGAR JELAS */
         body.video-focused #sosial-header {
             transform: translateY(0) scale(1) !important; 
             filter: drop-shadow(0 4px 10px rgba(0,0,0,0.8)); 
@@ -162,13 +158,7 @@
         /* 4. PASTIKAN FEED DI DALAM KOTAK TETAP BISA DI-SCROLL MULUS */
         body.video-focused #feed-container {
             overflow-y: scroll !important;
-            pointer-events: auto !important;
             touch-action: pan-y !important;
-        }
-        
-        /* Matikan scroll body utamanya saja */
-        body.video-focused {
-            overflow: hidden !important;
         }
 
         /* 5. HANCURKAN BATASAN RENDER AGAR TIDAK TERPOTONG */
@@ -186,16 +176,12 @@
             transition: all 0.3s ease !important;
         }
 
-        /* 7. KEMBALIKAN POSISI VIDEO INNER KE AWAL KARENA SEKARANG KOTAKNYA YANG ZOOM */
+        /* 7. KEMBALIKAN POSISI VIDEO INNER KE AWAL */
         .video-inner-wrap {
             position: relative;
             z-index: 10;
             transition: all 0.4s ease;
         }
-
-
-
-
 
 
 
