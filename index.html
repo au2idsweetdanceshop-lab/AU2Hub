@@ -1111,6 +1111,8 @@
         
         let currentUser = null, userProfile = null, isAuthLogin = true;
         let tabSebelumnya = 'home';
+        let activeGroupId = null; 
+        let activeGroupRole = 'member';
         let dataRipperGlobal = [], isRipperExpanded = localStorage.getItem('statusLihatSemua') === 'true';
         let viewedUserId = null; 
         
@@ -2644,23 +2646,7 @@ function closeUploadModal() {
             setTimeout(() => heart.remove(), 800); 
         }
 
-        function setupVideoObserver() {
-            obs = new IntersectionObserver(es => {
-                es.forEach(e => { 
-                    if (e.isIntersecting) {
-                        e.target.play().catch(() => {}); e.target.muted = isGlobalMuted; 
-                        let currentContainer = e.target.closest('.snap-start');
-                        for(let j = 0; j < 2; j++) { 
-                            currentContainer = currentContainer?.nextElementSibling;
-                            if(currentContainer) {
-                                const nextVid = currentContainer.querySelector('video');
-                                if(nextVid && nextVid.getAttribute('preload') !== 'auto') nextVid.setAttribute('preload', 'auto');
-                            }
-                        }
-                    } else { e.target.pause(); }
-                });
-            }, { threshold: 0.6 });
-        }
+        
 
         async function loadVideos() {
             const container = document.getElementById('feed-container'); const fakeLoader = document.getElementById('fake-loader'); const fakeProgress = document.getElementById('fake-progress');
@@ -3503,199 +3489,6 @@ function closeStoryViewer() {
         modal.style.transform = 'translateY(0)';
     }, 300);
 }
-
-        async function openChatRoom(targetId, name, avatar, isGroup = false) {
-    if (!currentUser) return;
-    
-    if (isGroup) { activeGroupId = targetId; activeChatUserId = null; } 
-    else { activeChatUserId = targetId; activeGroupId = null; }
-    
-    document.getElementById('chat-list-view').classList.add('hidden'); document.getElementById('chat-list-view').classList.remove('flex');
-    document.getElementById('chat-room-view').classList.remove('hidden'); document.getElementById('chat-room-view').classList.add('flex');
-    
-    document.getElementById('active-chat-name').innerText = name;
-    document.getElementById('active-chat-avatar').src = avatar;
-
-    const container = document.getElementById('chat-messages-container');
-    container.innerHTML = '<div class="flex justify-center mt-10"><i class="fas fa-spinner fa-spin text-brand-accent text-xl"></i></div>';
-
-    document.getElementById('btn-send-room').onclick = () => sendRoomMessage(targetId, isGroup);
-
-    if (!isGroup) await supabaseClient.from('messages').update({ is_read: true }).eq('sender_id', targetId).eq('receiver_id', currentUser.id).eq('is_read', false);
-
-    let query = supabaseClient.from('messages').select('*');
-    if (isGroup) query = query.eq('group_id', targetId);
-    else query = query.or(`and(sender_id.eq.${currentUser.id},receiver_id.eq.${targetId},group_id.is.null),and(sender_id.eq.${targetId},receiver_id.eq.${currentUser.id},group_id.is.null)`);
-    
-    const { data: messages } = await query.order('created_at', { ascending: true });
-
-    container.innerHTML = '';
-    if(messages && messages.length > 0) messages.forEach(msg => appendMessageBubble(msg));
-    else container.innerHTML = `<div class="flex flex-col items-center justify-center h-full opacity-50"><p class="text-xs text-gray-300">Kirim pesan pertama</p></div>`;
-    
-    scrollToBottomChat();
-
-    if (messageSubscription) supabaseClient.removeChannel(messageSubscription);
-    messageSubscription = supabaseClient.channel(isGroup ? `group_${targetId}` : `room_${targetId}`)
-        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => {
-            const newMsg = payload.new;
-            const isTarget = isGroup ? newMsg.group_id === activeGroupId : (newMsg.sender_id === activeChatUserId && newMsg.receiver_id === currentUser.id);
-            if (isTarget) { appendMessageBubble(newMsg); scrollToBottomChat(); if(!isGroup) supabaseClient.from('messages').update({ is_read: true }).eq('id', newMsg.id).then(); }
-        }).subscribe();
-}
-
-async function sendRoomMessage(targetId, isGroup) {
-    if (!currentUser) return showToast("Silakan login terlebih dahulu!", "error");
-    
-    const input = document.getElementById('chat-room-input');
-    const msg = input.value.trim();
-    if (!msg) return;
-
-    input.value = ''; // Kosongkan input
-    const btn = document.getElementById('btn-send-room');
-    btn.disabled = true;
-
-    // Tampilkan pesan sementara di layar agar terasa instan (Optimistic UI)
-    const tempId = 'temp-' + Date.now();
-    const tempMsg = { 
-        id: tempId, 
-        sender_id: currentUser.id, 
-        message: msg, 
-        created_at: new Date().toISOString() 
-    };
-    if (isGroup) tempMsg.group_id = targetId;
-    else tempMsg.receiver_id = targetId;
-    
-    appendMessageBubble(tempMsg);
-    scrollToBottomChat();
-
-    // Proses kirim ke Supabase
-    try {
-        const insertData = { sender_id: currentUser.id, message: msg };
-        if (isGroup) insertData.group_id = targetId;
-        else insertData.receiver_id = targetId;
-
-        const { error } = await supabaseClient.from('messages').insert(insertData);
-        if (error) throw error;
-    } catch (err) {
-        showToast("Gagal mengirim pesan", "error");
-    } finally {
-        btn.disabled = false;
-        input.focus();
-    }
-}
-
-        function closeChatRoom(reloadList = true, fromPopstate = false) {
-    activeChatUserId = null; activeGroupId = null; // Tambahan penting
-    if (messageSubscription) { supabaseClient.removeChannel(messageSubscription); messageSubscription = null; }
-    document.getElementById('chat-list-view').classList.remove('hidden'); document.getElementById('chat-list-view').classList.add('flex');
-    document.getElementById('chat-room-view').classList.add('hidden'); document.getElementById('chat-room-view').classList.remove('flex');
-    if(reloadList) loadChatList(); 
-}
-
-        function appendMessageBubble(msg) {
-            const container = document.getElementById('chat-messages-container');
-            const isMe = msg.sender_id === currentUser.id;
-            const alignClass = isMe ? 'justify-end' : 'justify-start';
-            const bubbleClass = isMe ? 'bg-gradient-to-br from-[#FF007A] to-[#8A2BE2] text-white rounded-tl-2xl rounded-tr-2xl rounded-bl-2xl rounded-br-sm' : 'bg-brand-card border border-white/5 text-white rounded-tl-2xl rounded-tr-2xl rounded-br-2xl rounded-bl-sm';
-            const timeStr = new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-            if(container.innerHTML.includes('fa-hand-sparkles')) container.innerHTML = '';
-
-            let deletedForMe = JSON.parse(localStorage.getItem('deleted_msgs') || '[]');
-            if(deletedForMe.includes(msg.id)) return; 
-
-            let contentHtml = '';
-            let isDeletedAll = msg.message === '[DELETED]';
-
-            if (isDeletedAll) {
-                contentHtml = `<p class="text-[11px] text-white/50 italic"><i class="fas fa-ban mr-1"></i> Pesan ini telah dihapus</p>`;
-            } else if (msg.message.startsWith('[IMG]')) {
-                const imgUrl = msg.message.substring(5); 
-                contentHtml = `<img src="${imgUrl}" alt="Sent Image" class="rounded-lg max-w-[200px] w-full object-cover mb-1 cursor-pointer" onclick="event.stopPropagation(); openLightbox('${imgUrl}')">`;
-            } else {
-                contentHtml = `<p class="text-[12px] leading-relaxed break-words">${msg.message}</p>`;
-            }
-
-            const tickIcon = isMe && !isDeletedAll
-                ? (msg.is_read || msg.is_read === 'true' 
-                    ? `<i class="fas fa-check-double text-[8px] text-brand-info" id="tick-${msg.id || 'temp'}"></i>` 
-                    : `<i class="fas fa-check text-[8px] text-white/60" id="tick-${msg.id || 'temp'}"></i>`) 
-                : '';
-
-            const div = document.createElement('div');
-            div.className = `flex w-full mb-3 ${alignClass} message-anim`;
-            
-            const onclickCode = (!isDeletedAll && msg.id && !msg.id.startsWith('temp')) 
-                ? `onclick="showMsgOptions('${msg.id}', ${isMe})"` 
-                : '';
-
-            div.innerHTML = `
-                <div class="max-w-[80%] px-4 py-2.5 shadow-md relative ${bubbleClass} cursor-pointer active:opacity-80 transition-opacity" ${onclickCode}>
-                    <div id="bubble-msg-${msg.id}">
-                        ${contentHtml}
-                    </div>
-                    <div class="flex items-center justify-end gap-1 mt-1">
-                        <span class="text-[9px] text-white/60">${timeStr}</span>
-                        ${tickIcon}
-                    </div>
-                </div>
-            `;
-            container.appendChild(div);
-        }
-
-        function showMsgOptions(msgId, isMe) {
-    selectedMessageId = msgId;
-    const modal = document.getElementById('modal-msg-option');
-    const btnAll = document.getElementById('btn-del-msg-all');
-    
-    // PERBAIKAN BUG: Gunakan add/remove class secara eksplisit
-    if (isMe) {
-        btnAll.classList.remove('hidden');
-        // Aktifkan tombol Hapus Semua HANYA jika ini pesan saya
-        btnAll.onclick = () => actionDeleteMessage('all');
-    } else {
-        btnAll.classList.add('hidden');
-        // KOSONGKAN fungsi agar tidak "nyangkut" dari klik pesan sebelumnya
-        btnAll.onclick = null; 
-    }
-
-    // Tombol "Hapus untuk Saya" selalu muncul untuk semua pesan
-    document.getElementById('btn-del-msg-me').onclick = () => actionDeleteMessage('me');
-
-    modal.classList.remove('hidden'); 
-    modal.classList.add('flex');
-}
-
-        async function actionDeleteMessage(type) {
-            document.getElementById('modal-msg-option').classList.replace('flex', 'hidden');
-            if(!selectedMessageId) return;
-
-            if (type === 'me') {
-                let deletedForMe = JSON.parse(localStorage.getItem('deleted_msgs') || '[]');
-                deletedForMe.push(selectedMessageId);
-                localStorage.setItem('deleted_msgs', JSON.stringify(deletedForMe));
-                showToast("Pesan dihapus untuk Anda.", "success");
-            } else if (type === 'all') {
-                const { error } = await supabaseClient.from('messages').update({ message: '[DELETED]' }).eq('id', selectedMessageId);
-                if (error) return showToast("Gagal menghapus pesan.", "error");
-            }
-            
-            if(activeChatUserId) openChatRoom(activeChatUserId, document.getElementById('active-chat-name').innerText, document.getElementById('active-chat-avatar').src);
-        }
-
-        function scrollToBottomChat() {
-            const container = document.getElementById('chat-messages-container');
-            container.scrollTop = container.scrollHeight;
-        }
-
-        function closeChatRoom(reloadList = true, fromPopstate = false) {
-    activeChatUserId = null; activeGroupId = null; // Tambahan penting
-    if (messageSubscription) { supabaseClient.removeChannel(messageSubscription); messageSubscription = null; }
-    document.getElementById('chat-list-view').classList.remove('hidden'); document.getElementById('chat-list-view').classList.add('flex');
-    document.getElementById('chat-room-view').classList.add('hidden'); document.getElementById('chat-room-view').classList.remove('flex');
-    if(reloadList) loadChatList(); 
-}
         
         async function prosesUploadVideo() {
             if (!currentUser) return openAuthModal();
@@ -3790,71 +3583,115 @@ async function sendRoomMessage(targetId, isGroup) {
         document.getElementById('chat-room-input').addEventListener('keypress', function (e) {
             if (e.key === 'Enter') document.getElementById('btn-send-room').click();
         });
+        
+        // ==========================================
+// OPTIMASI V6 (ANTI-STUTTER & MEMORY LEAK)
+// ==========================================
+function setupVideoObserver() {
+    if (typeof obs !== 'undefined' && obs) obs.disconnect();
 
-        document.addEventListener('DOMContentLoaded', () => {
-            checkSession();
-            const savedTab = localStorage.getItem('lastTab') || 'home';
-            switchTab(savedTab, null, false); 
+    if (!document.getElementById('gpu-hack')) {
+        const style = document.createElement('style');
+        style.id = 'gpu-hack';
+        style.innerHTML = `
+            .snap-start { transform: translateZ(0); will-change: transform, opacity; content-visibility: auto; }
+            video { will-change: contents; }
+        `;
+        document.head.appendChild(style);
+    }
+
+    window.videoClearTimers = window.videoClearTimers || new Map();
+    window.videoPlayTimers = window.videoPlayTimers || new Map(); 
+
+    obs = new IntersectionObserver(es => {
+        const isFloatingOpen = !document.getElementById('floating-video-player').classList.contains('hidden');
+
+        es.forEach(e => { 
+            const video = e.target;
             
-            if(typeof renderFaqs === 'function') renderFaqs();
-            if(typeof renderServices === 'function') renderServices();
-            if(typeof muatDataRipper === 'function') muatDataRipper();
-            
-                        // FUNGSI CEK URL UNTUK SHARE VIDEO (DIPERBAIKI)
-            const fullHash = window.location.hash;
-            if (fullHash.includes('?vid=')) {
-                const vidId = fullHash.split('?vid=')[1];
-                if (vidId) {
-                    // Beri waktu sebentar agar data video ter-load dari API
-                    setTimeout(async () => {
-                        // Jika data belum ada, tunggu loadVideos selesai
-                        if (allVideosData.length === 0) {
-                            await loadVideos();
-                        }
-                        
-                        const vidData = allVideosData.find(v => 
-                            String(v.id) === String(vidId) || String(v.video_id) === String(vidId)
-                        );
-                        
-                        if (vidData) {
-                            // Mencari posisi index video tersebut di dalam list user
-                            const userVideos = allVideosData.filter(v => v.user_id === vidData.user_id).reverse();
-                            const index = userVideos.findIndex(v => String(v.id || v.video_id) === String(vidId));
-                            
-                            openProfileFeed(vidData.user_id, index >= 0 ? index : 0);
-                        }
-                    }, 2000);
+            if (e.isIntersecting && !isFloatingOpen) {
+                if (window.videoClearTimers.has(video)) {
+                    clearTimeout(window.videoClearTimers.get(video));
+                    window.videoClearTimers.delete(video);
                 }
-            }
 
-
-            let deferredPrompt;
-            const installContainer = document.getElementById('install-container');
-            const btnInstallManual = document.getElementById('btn-install-manual');
-
-            window.addEventListener('beforeinstallprompt', (e) => {
-                e.preventDefault(); deferredPrompt = e;
-                if(installContainer) installContainer.classList.remove('hidden');
-            });
-
-            if(btnInstallManual) {
-                btnInstallManual.addEventListener('click', async () => {
-                    if (deferredPrompt) {
-                        deferredPrompt.prompt();
-                        const { outcome } = await deferredPrompt.userChoice;
-                        deferredPrompt = null; installContainer.classList.add('hidden');
+                const playTimerId = setTimeout(() => {
+                    if (video.dataset.savedSrc) {
+                        video.src = video.dataset.savedSrc;
+                        video.dataset.savedSrc = ''; 
+                        video.load(); 
                     }
-                });
-            }
+                    
+                    video.muted = (typeof isGlobalMuted !== 'undefined') ? isGlobalMuted : true;
+                    
+                    const wrap = video.closest('.video-inner-wrap');
+                    if (wrap) {
+                        if (!isGlobalMuted) wrap.classList.add('floating-focus');
+                        else wrap.classList.remove('floating-focus');
+                    }
+                    
+                    requestAnimationFrame(() => {
+                        const playPromise = video.play();
+                        if (playPromise !== undefined) {
+                            playPromise.catch(err => {});
+                        }
+                        video.classList.remove('opacity-0');
+                    });
 
-            if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js?v=3');
+                    const card = video.closest('.snap-start');
+                    if (card && card.nextElementSibling) {
+                        const nextVid = card.nextElementSibling.querySelector('video');
+                        if (nextVid && nextVid.dataset.savedSrc && !nextVid.src) {
+                            nextVid.src = nextVid.dataset.savedSrc;
+                            nextVid.dataset.savedSrc = '';
+                            nextVid.setAttribute('preload', 'auto');
+                        }
+                    }
+                }, 100); 
+
+                window.videoPlayTimers.set(video, playTimerId);
+                
+            } else { 
+                if (window.videoPlayTimers.has(video)) {
+                    clearTimeout(window.videoPlayTimers.get(video));
+                    window.videoPlayTimers.delete(video);
+                }
+
+                video.pause(); 
+                
+                const timerId = setTimeout(() => {
+                    const hapusMemori = () => {
+                        let currentUrl = video.currentSrc || video.src || (video.querySelector('source') ? video.querySelector('source').src : '');
+                        if (currentUrl && currentUrl.length > 5) {
+                            video.dataset.savedSrc = currentUrl; 
+                            video.removeAttribute('src'); 
+                            if (video.querySelector('source')) video.querySelector('source').removeAttribute('src');
+                            video.removeAttribute('preload');
+                            video.load(); 
+                        }
+                        window.videoClearTimers.delete(video);
+                    };
+
+                    if ('requestIdleCallback' in window) {
+                        requestIdleCallback(hapusMemori, { timeout: 1000 });
+                    } else {
+                        hapusMemori();
+                    }
+                }, 1000); 
+
+                window.videoClearTimers.set(video, timerId);
+            }
         });
+    }, { threshold: 0.5 }); 
+
+    const videos = document.querySelectorAll('.video-player, .float-video-player');
+    videos.forEach(v => obs.observe(v));
+}
+
         
         // ==========================================
 // FITUR GRUP CHAT (TAHAP 3)
 // ==========================================
-let activeGroupId = null; // Menyimpan ID grup yang sedang dibuka
-let activeGroupRole = 'member'; // Menyimpan jabatan user di grup tersebut
 
 // 1. Buka / Tutup Modal Buat Grup
 function openCreateGroupModal() {
@@ -4180,213 +4017,8 @@ function updateSeek(e, containerElement, video) {
             }
         }
     }
-    </script> <script>
-        window.addEventListener('load', () => {
-            
-            // 1. SUNTIKAN TIKTOK V6 (REQUEST IDLE CALLBACK / ANTI-STUTTER)
 
-        window.setupVideoObserver = function() {
-            if (typeof obs !== 'undefined' && obs) obs.disconnect();
-
-            if (!document.getElementById('gpu-hack')) {
-                const style = document.createElement('style');
-                style.id = 'gpu-hack';
-                style.innerHTML = `
-                    .snap-start { transform: translateZ(0); will-change: transform, opacity; content-visibility: auto; }
-                    video { will-change: contents; }
-                `;
-                document.head.appendChild(style);
-            }
-
-            window.videoClearTimers = window.videoClearTimers || new Map();
-            window.videoPlayTimers = window.videoPlayTimers || new Map(); 
-
-            obs = new IntersectionObserver(es => {
-                // Cek apakah player mengambang sedang dibuka
-                const isFloatingOpen = !document.getElementById('floating-video-player').classList.contains('hidden');
-
-                es.forEach(e => { 
-                    const video = e.target;
-                    
-                    // Hanya play video JIKA player mengambang sedang TERTUTUP
-                    if (e.isIntersecting && !isFloatingOpen) {
-                        if (window.videoClearTimers.has(video)) {
-                            clearTimeout(window.videoClearTimers.get(video));
-                            window.videoClearTimers.delete(video);
-                        }
-
-                        const playTimerId = setTimeout(() => {
-                            if (video.dataset.savedSrc) {
-                                video.src = video.dataset.savedSrc;
-                                video.dataset.savedSrc = ''; 
-                                video.load(); 
-                            }
-                            
-                            video.muted = (typeof isGlobalMuted !== 'undefined') ? isGlobalMuted : true;
-                            
-                            // =========================================
-                            // EFEK MENGAMBANG OTOMATIS (FOCUS MODE)
-                            // =========================================
-                            const wrap = video.closest('.video-inner-wrap');
-                            if (wrap) {
-                                if (!isGlobalMuted) wrap.classList.add('floating-focus');
-                                else wrap.classList.remove('floating-focus');
-                            }
-                            // =========================================
-                            
-                            requestAnimationFrame(() => {
-                                const playPromise = video.play();
-                                if (playPromise !== undefined) {
-                                    playPromise.catch(err => {});
-                                }
-                                video.classList.remove('opacity-0');
-                            });
-
-                            const card = video.closest('.snap-start');
-                            if (card && card.nextElementSibling) {
-                                const nextVid = card.nextElementSibling.querySelector('video');
-                                if (nextVid && nextVid.dataset.savedSrc && !nextVid.src) {
-                                    nextVid.src = nextVid.dataset.savedSrc;
-                                    nextVid.dataset.savedSrc = '';
-                                    nextVid.setAttribute('preload', 'auto');
-                                }
-                            }
-                        }, 100); 
-
-                        window.videoPlayTimers.set(video, playTimerId);
-                        
-                    } else { 
-                        if (window.videoPlayTimers.has(video)) {
-                            clearTimeout(window.videoPlayTimers.get(video));
-                            window.videoPlayTimers.delete(video);
-                        }
-
-                        video.pause(); 
-                        
-                        const timerId = setTimeout(() => {
-                            const hapusMemori = () => {
-                                let currentUrl = video.currentSrc || video.src || (video.querySelector('source') ? video.querySelector('source').src : '');
-                                if (currentUrl && currentUrl.length > 5) {
-                                    video.dataset.savedSrc = currentUrl; 
-                                    video.removeAttribute('src'); 
-                                    if (video.querySelector('source')) video.querySelector('source').removeAttribute('src');
-                                    video.removeAttribute('preload');
-                                    video.load(); 
-                                }
-                                window.videoClearTimers.delete(video);
-                            };
-
-                            if ('requestIdleCallback' in window) {
-                                requestIdleCallback(hapusMemori, { timeout: 1000 });
-                            } else {
-                                hapusMemori();
-                            }
-
-                        }, 1000); 
-
-                        window.videoClearTimers.set(video, timerId);
-                    }
-                });
-            }, { threshold: 0.5 }); 
-
-            const videos = document.querySelectorAll('.video-player, .float-video-player');
-            videos.forEach(v => obs.observe(v));
-        };
-
-        // ---------------------------------------------------------
-        // 2. SUNTIKAN WHATSAPP (CACHE LOKAL CHAT & LIMIT)
-        // ---------------------------------------------------------
-        window.openChatRoom = async function(targetId, name, avatar, isGroup = false) {
-            if (typeof currentUser === 'undefined' || !currentUser) return;
-            
-            if (isGroup) { activeGroupId = targetId; activeChatUserId = null; } 
-            else { activeChatUserId = targetId; activeGroupId = null; }
-            
-            document.getElementById('chat-list-view').classList.add('hidden'); document.getElementById('chat-list-view').classList.remove('flex');
-            document.getElementById('chat-room-view').classList.remove('hidden'); document.getElementById('chat-room-view').classList.add('flex');
-            
-            document.getElementById('active-chat-name').innerText = name;
-            document.getElementById('active-chat-avatar').src = avatar;
-
-            const container = document.getElementById('chat-messages-container');
-            document.getElementById('btn-send-room').onclick = () => sendRoomMessage(targetId, isGroup);
-
-            const cacheKey = isGroup ? `chat_cache_group_${targetId}` : `chat_cache_user_${targetId}`;
-            const localChats = JSON.parse(localStorage.getItem(cacheKey) || '[]');
-            
-            if (localChats.length > 0) {
-                container.innerHTML = '';
-                localChats.forEach(msg => appendMessageBubble(msg));
-                scrollToBottomChat();
-            } else {
-                container.innerHTML = '<div class="flex justify-center mt-10"><i class="fas fa-spinner fa-spin text-brand-accent text-xl"></i></div>';
-            }
-
-            if (!isGroup) await supabaseClient.from('messages').update({ is_read: true }).eq('sender_id', targetId).eq('receiver_id', currentUser.id).eq('is_read', false);
-
-            let query = supabaseClient.from('messages').select('*');
-            if (isGroup) query = query.eq('group_id', targetId);
-            else query = query.or(`and(sender_id.eq.${currentUser.id},receiver_id.eq.${targetId},group_id.is.null),and(sender_id.eq.${targetId},receiver_id.eq.${currentUser.id},group_id.is.null)`);
-            
-            const { data: rawMessages } = await query.order('created_at', { ascending: false }).limit(50);
-            const messages = rawMessages ? rawMessages.reverse() : [];
-
-            if(messages && messages.length > 0) {
-                localStorage.setItem(cacheKey, JSON.stringify(messages));
-                container.innerHTML = '';
-                messages.forEach(msg => appendMessageBubble(msg));
-            } else if (localChats.length === 0) {
-                container.innerHTML = `<div class="flex flex-col items-center justify-center h-full opacity-50"><p class="text-xs text-gray-300">Kirim pesan pertama</p></div>`;
-            }
-            scrollToBottomChat();
-
-            if (typeof messageSubscription !== 'undefined' && messageSubscription) supabaseClient.removeChannel(messageSubscription);
-            messageSubscription = supabaseClient.channel(isGroup ? `group_${targetId}` : `room_${targetId}`)
-                .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => {
-                    const newMsg = payload.new;
-                    const isTarget = isGroup ? newMsg.group_id === activeGroupId : (newMsg.sender_id === activeChatUserId && newMsg.receiver_id === currentUser.id);
-                    if (isTarget) { 
-                        appendMessageBubble(newMsg); 
-                        scrollToBottomChat(); 
-                        if(!isGroup) supabaseClient.from('messages').update({ is_read: true }).eq('id', newMsg.id).then(); 
-                        
-                        let currentCache = JSON.parse(localStorage.getItem(cacheKey) || '[]');
-                        currentCache.push(newMsg);
-                        if(currentCache.length > 50) currentCache.shift();
-                        localStorage.setItem(cacheKey, JSON.stringify(currentCache));
-                    }
-                }).subscribe();
-        };
-
-        // =========================================================
-        // KABEL STARTER: AKTIFKAN SEMUA SUNTIKAN UTAMA
-        // =========================================================
-        setTimeout(() => {
-            if (typeof setupVideoObserver === 'function') setupVideoObserver();
-            console.log("💉 Suntikan Optimasi V6 (Ultimate) Berhasil Diaktifkan!");
-        }, 800);
-    });
-
-    // ---------------------------------------------------------
-    // 3. SUNTIKAN SPEED BOOSTER (JALAN TOL & LAZY LOAD)
-    // ---------------------------------------------------------
-    window.addEventListener('DOMContentLoaded', () => {
-        const serverUrls = [
-            "https://divckiqkodtqudcoxkjz.supabase.co", 
-            "https://ui-avatars.com",
-            "https://cdnjs.cloudflare.com"
-        ];
         
-        serverUrls.forEach(url => {
-            const link = document.createElement('link');
-            link.rel = 'preconnect';
-            link.href = url;
-            link.crossOrigin = 'anonymous';
-            document.head.appendChild(link);
-        });
-
-        console.log("🚀 Speed Booster (Jalan Tol & Lazy Load) Aktif!");
-    });
 </script>
 </body>
 </html>
