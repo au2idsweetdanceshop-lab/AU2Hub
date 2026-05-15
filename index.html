@@ -149,11 +149,22 @@
 
 
 
-        /* 3. PASTIKAN HEADER UTAMA & MENU BAWAH TETAP DI DEPAN BOX-SHADOW */
+        /* 3. PASTIKAN HEADER, MODAL LOGIN, KOMENTAR, & UPLOAD TETAP HIDUP */
         body.video-focused header,
-        body.video-focused nav {
+        body.video-focused #modal-auth,
+        body.video-focused #comment-drawer,
+        body.video-focused #toast-container,
+        body.video-focused #modal-upload {
             z-index: 9999999 !important;
-            pointer-events: auto !important;
+            pointer-events: auto !important; 
+        }
+
+        /* 4. SEMBUNYIKAN MENU BAWAH SAAT MENGAMBANG BIAR FOKUS */
+        body.video-focused nav {
+            transform: translateY(100%); /* Geser menu ke luar layar bawah */
+            pointer-events: none !important; /* Matikan klik di area menu yang sembunyi */
+            opacity: 0 !important; /* Buat transparan */
+            transition: all 0.3s ease; /* Animasi mulus menghilang */
         }
 
         /* TULISAN "FEED KOMUNITAS" BERBAYANG AGAR JELAS */
@@ -175,7 +186,7 @@
             100% { box-shadow: 0 0 15px rgba(255,0,122,0.4); transform: scale(1); }
         }
 
-        /* 4. PASTIKAN FEED DI DALAM KOTAK TETAP BISA DI-SCROLL MULUS */
+        /* 5. PASTIKAN FEED DI DALAM KOTAK TETAP BISA DI-SCROLL MULUS */
         body.video-focused #feed-container {
             overflow-y: scroll !important;
             -webkit-overflow-scrolling: touch !important; /* Kunci kelancaran scroll iOS/Android */
@@ -183,14 +194,14 @@
             height: 100% !important; /* Paksa mendeteksi tinggi area scroll */
         }
 
-        /* 5. HANCURKAN BATASAN RENDER AGAR TIDAK TERPOTONG */
+        /* 6. HANCURKAN BATASAN RENDER AGAR TIDAK TERPOTONG */
         body.video-focused .snap-start {
             content-visibility: visible !important; 
             contain: none !important;
             transform: none !important;
         }
 
-        /* 6. SEMBUNYIKAN WIDGET CHAT SAAT VIDEO DIKLIK AGAR LEGA */
+        /* 7. SEMBUNYIKAN WIDGET CHAT SAAT VIDEO DIKLIK AGAR LEGA */
         body.video-focused button[onclick="toggleWidget()"] {
             opacity: 0 !important;
             transform: scale(0.5) !important;
@@ -198,7 +209,7 @@
             transition: all 0.3s ease !important;
         }
 
-        /* 7. KEMBALIKAN POSISI VIDEO INNER KE AWAL */
+        /* 8. KEMBALIKAN POSISI VIDEO INNER KE AWAL */
         .video-inner-wrap {
             position: relative;
             z-index: 10;
