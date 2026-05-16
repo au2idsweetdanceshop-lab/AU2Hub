@@ -3463,7 +3463,7 @@ async function feedToggleFollow(targetUserId, btnElement) {
             }
         }
 
-        // 1. FUNGSI MENGAMBIL PESAN DARI DATABASE (WHATSAPP STYLE WITH DATE DIVIDER)
+        // 1. FUNGSI MENGAMBIL PESAN DARI DATABASE (DENGAN FILTER CLEAR CHAT)
         async function loadRoomMessages() {
             const container = document.getElementById('chat-messages-container');
             const isGroup = !!activeGroupId;
@@ -3481,24 +3481,17 @@ async function feedToggleFollow(targetUserId, btnElement) {
                 }
 
                 const { data, error } = await query;
-                
-                if (error) {
-                    // 🔥 PERBAIKAN: Menggunakan modal alert kustom
-                    await customAlert("INFO ERROR SUPABASE:\n" + error.message);
-                    throw error;
-                }
+                if (error) { await customAlert("INFO ERROR SUPABASE:\n" + error.message); throw error; }
 
-                container.innerHTML = ''; // Bersihkan animasi loading
+                container.innerHTML = ''; 
                 
                 if (data && data.length > 0) {
                     let lastDateString = ''; 
                     
-                    // 🔥 FITUR BARU: FILTER PESAN YANG DIBERSIHKAN ATAU DIHAPUS UNTUK SAYA
                     let clearedChats = JSON.parse(localStorage.getItem('cleared_chats') || '{}');
                     let clearTime = clearedChats[targetId] ? new Date(clearedChats[targetId]) : new Date(0);
                     let deletedForMe = JSON.parse(localStorage.getItem('deleted_msgs') || '[]');
 
-                    // Saring/buang pesan yang waktunya lebih lama dari waktu Clear Chat, atau yang ID-nya sudah dihapus
                     let validMessages = data.filter(msg => {
                         const msgDate = new Date(msg.created_at);
                         if (msgDate <= clearTime) return false;
@@ -3516,30 +3509,21 @@ async function feedToggleFollow(targetUserId, btnElement) {
                             yesterday.setDate(yesterday.getDate() - 1);
 
                             let dateLabel = '';
-                            
-                            if (msgDate.toDateString() === today.toDateString()) {
-                                dateLabel = 'HARI INI';
-                            } else if (msgDate.toDateString() === yesterday.toDateString()) {
-                                dateLabel = 'KEMARIN';
-                            } else {
-                                dateLabel = msgDate.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }).toUpperCase();
-                            }
+                            if (msgDate.toDateString() === today.toDateString()) { dateLabel = 'HARI INI'; } 
+                            else if (msgDate.toDateString() === yesterday.toDateString()) { dateLabel = 'KEMARIN'; } 
+                            else { dateLabel = msgDate.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }).toUpperCase(); }
 
                             if (dateLabel !== lastDateString) {
                                 const dateDividerHtml = `
                                     <div class="flex justify-center my-3 message-anim">
-                                        <span class="bg-[#121b22] text-gray-400 text-[10px] font-bold px-2.5 py-1 rounded-lg border border-white/5 tracking-wide shadow-sm uppercase">
-                                            ${dateLabel}
-                                        </span>
+                                        <span class="bg-[#121b22] text-gray-400 text-[10px] font-bold px-2.5 py-1 rounded-lg border border-white/5 tracking-wide shadow-sm uppercase">${dateLabel}</span>
                                     </div>
                                 `;
                                 container.insertAdjacentHTML('beforeend', dateDividerHtml);
                                 lastDateString = dateLabel; 
                             }
-
                             appendMessageBubble(msg);
                         });
-                        
                         scrollToBottomChat();
                     }
                 } else {
@@ -3594,237 +3578,12 @@ async function feedToggleFollow(targetUserId, btnElement) {
         function mulaiLongPress(msgId, senderId) {
             clearTimeout(longPressTimer);
             longPressTimer = setTimeout(() => {
-                // Mainkan getar pendek di HP jika didukung (efek haptic ala WA)
                 if (navigator.vibrate) navigator.vibrate(40);
                 showMsgOptions(msgId, senderId);
-            }, 500); // Tahan selama 500ms (0.5 detik) untuk memicu menu opsi
+            }, 500); 
         }
 
-
-        // 2. FUNGSI UNTUK MENGGAMBAR BALON CHAT KE LAYAR (WHATSAPP STYLE REBORN)
-        function appendMessageBubble(msg) {
-            const container = document.getElementById('chat-messages-container');
-            if(container.innerHTML.includes('Belum ada pesan')) container.innerHTML = ''; 
-            
-            const isMe = msg.sender_id === currentUser.id;
-            const align = isMe ? 'justify-end' : 'justify-start';
-            
-            // Menggunakan palet warna WhatsApp Dark Mode asli
-            const bg = isMe ? 'bg-[#005c4b] text-white' : 'bg-[#202c33] text-gray-200';
-            
-            // Bentuk sudut gelembung chat (ada ekor kecil di ujung bawah sudut pesan)
-            const borderRadius = isMe 
-                ? 'rounded-tl-xl rounded-tr-xl rounded-bl-xl rounded-br-[2px]' 
-                : 'rounded-tl-xl rounded-tr-xl rounded-br-xl rounded-bl-[2px]';
-            
-            let content = msg.message || "";
-            let replyHtml = "";
-
-            // --- DETEKSI KODE QUOTE REPLY (ANTI-CRASH / BACKWARD COMPATIBLE) ---
-            // Cari pola [REPLY:...] di awal pesan
-            const replyHeaderMatch = content.match(/^\[REPLY:(.*?)\]\s*([\s\S]*)$/);
-            if (replyHeaderMatch) {
-                const parts = replyHeaderMatch[1].split('||');
-                let rId = '', rName = '', rText = '';
-                
-                if (parts.length === 3) {
-                    rId = parts[0];   // ID Pesan Asli (Format Baru)
-                    rName = parts[1]; // Nama
-                    rText = parts[2]; // Isi teks
-                } else {
-                    // Fallback otomatis jika membaca chat format lama di database
-                    rName = parts[0] || '';
-                    rText = parts[1] || '';
-                }
-                
-                content = replyHeaderMatch[2]; // Sisa pesan asli yang diketik
-                
-                // Pasang trigger klik jika ID Pesan Asli ditemukan
-                const onClickAttr = rId ? `onclick="event.stopPropagation(); jumpToMessage('${rId}')"` : '';
-                const cursorClass = rId ? 'cursor-pointer hover:bg-black/40 active:scale-[0.98]' : '';
-
-                // Buat UI Kotak Balasan di dalam bubble chat
-                replyHtml = `
-                    <div ${onClickAttr} class="bg-black/20 border-l-[3px] border-[#34b7f1] rounded px-2 py-1 mb-1.5 opacity-90 text-left shadow-sm mt-1 transition-all duration-200 ${cursorClass}">
-                        <div class="text-[10px] font-extrabold text-[#34b7f1] leading-tight mb-0.5">${rName}</div>
-                        <div class="text-[10px] text-gray-300 truncate max-w-[200px] leading-tight">${rText}</div>
-                    </div>
-                `;
-            }
-
-            // --- DETEKSI GAMBAR & PESAN SUARA ---
-            const isImage = content.startsWith('[IMG]');
-            const isAudio = content.startsWith('[AUDIO]'); 
-            
-            if (isImage) {
-                const imgUrl = content.replace('[IMG]', '');
-                content = `<img src="${imgUrl}" onclick="openLightbox('${imgUrl}')" class="max-w-[220px] rounded-lg cursor-pointer hover:opacity-90 transition-opacity">`;
-            } else if (isAudio) {
-                const audioUrl = content.replace('[AUDIO]', '');
-                // Bentuk pemutar audio bawaan browser
-                content = `<audio controls src="${audioUrl}" class="max-w-[220px] h-10 mt-1 opacity-90 rounded-full"></audio>`;
-            } else {
-                content = formatCaption(content); 
-            }
-
-            let senderName = '';
-            if (activeGroupId && !isMe) {
-                // Diubah warnanya agar senada dengan UI WhatsApp
-                senderName = `<div class="text-[11px] text-[#34b7f1] font-bold mb-0.5">${msg.profiles?.nickname || 'Anggota'}</div>`;
-            }
-
-            // Mengambil waktu format jam menit saja (misal: 13:45)
-            const timeFormatted = new Date(msg.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-
-            // Logika Status Centang WhatsApp
-            let readStatusHtml = '';
-            if (isMe) {
-                if (msg.is_read || msg.is_read === 'true') {
-                    // Centang Dua Biru (Sudah Dibaca)
-                    readStatusHtml = `<i class="fas fa-check-double text-[#53bdeb] text-[10px] ml-1"></i>`;
-                } else {
-                    // Centang Satu Abu (Terkirim ke Server)
-                    readStatusHtml = `<i class="fas fa-check text-gray-400 text-[10px] ml-1"></i>`;
-                }
-            }
-
-            // PERBAIKAN UTAMA: Menyuntikkan id="msg-chat-${msg.id}" ke div pembungkus paling luar
-            const html = `
-            <div class="flex w-full ${align} mb-1.5 message-anim select-none" id="msg-chat-${msg.id}">
-                <div class="max-w-[82%] relative group"
-                     oncontextmenu="event.preventDefault(); showMsgOptions('${msg.id}', '${msg.sender_id}')"
-                     ontouchstart="mulaiLongPress('${msg.id}', '${msg.sender_id}')"
-                     ontouchend="hancurkanLongPress()"
-                     ontouchcancel="hancurkanLongPress()"
-                     onmousedown="if(event.button === 0) mulaiLongPress('${msg.id}', '${msg.sender_id}')"
-                     onmouseup="hancurkanLongPress()"
-                     onmouseleave="hancurkanLongPress()">
-                    
-                    <div class="px-2.5 pt-1.5 pb-5 ${bg} ${borderRadius} shadow-sm text-[13.5px] border border-white/5 break-words min-w-[70px]">
-                        ${senderName}
-                        ${replyHtml} <div class="${(isImage || isAudio) ? 'p-0.5 pb-2' : 'pr-10 pl-0.5'}">
-                            ${content}
-                        </div>
-                        
-                        <div class="absolute bottom-1 right-2 flex items-center gap-0.5 text-[9px] text-white/50 pointer-events-none select-none bg-gradient-to-t from-black/10 to-transparent px-1 rounded">
-                            <span>${timeFormatted}</span>
-                            ${readStatusHtml}
-                        </div>
-                    </div>
-                    
-                </div>
-            </div>`;
-            
-            container.insertAdjacentHTML('beforeend', html);
-        }
-
-
-
-
-        // 3. FUNGSI SCROLL OTOMATIS KE BAWAH
-        function scrollToBottomChat() {
-            const container = document.getElementById('chat-messages-container');
-            if(container) container.scrollTop = container.scrollHeight;
-        }
-
-        // 4. FUNGSI MENGIRIM PESAN TEKS
-        async function sendMessageRoom() {
-            const input = document.getElementById('chat-room-input');
-            let msgText = input.value.trim(); 
-            if (!msgText || (!activeChatUserId && !activeGroupId)) return;
-            
-            const isGroup = !!activeGroupId;
-            const targetId = isGroup ? activeGroupId : activeChatUserId;
-
-            // 🔥 PENJAGA PINTU GRUP: Cek apakah user masih anggota grup sebelum kirim
-            if (isGroup) {
-                const { data: checkMember } = await supabaseClient
-                    .from('group_members')
-                    .select('user_id')
-                    .eq('group_id', targetId)
-                    .eq('user_id', currentUser.id)
-                    .single();
-                
-                if (!checkMember) {
-                    await customAlert("Anda tidak dapat mengirim pesan karena telah dikeluarkan dari grup ini.");
-                    closeChatRoom(); // Otomatis tutup layar chat
-                    return; // Batalkan pengiriman pesan
-                }
-            }
-            
-            // --- LOGIKA QUOTE REPLY (Sisipkan ID, Nama, & Teks ke dalam kode pesan) ---
-            if (replyingToMsgId) {
-                const safeName = replyingToMsgName.replace(/\|\|/g, "").replace(/\]/g, "");
-                const safeText = replyingToMsgText.replace(/\|\|/g, "").replace(/\]/g, "");
-                msgText = `[REPLY:${replyingToMsgId}||${safeName}||${safeText}]\n${msgText}`;
-            }
-
-            input.value = ''; // Kosongkan kolom ketik
-            cancelChatReply(); // Tutup preview balasan otomatis setelah tombol kirim ditekan
-
-            sendTypingStatus(); 
-
-            // Munculkan di layar kita dulu biar terasa instan (tanpa nunggu loading database)
-            const tempMsg = {
-                id: 'temp-' + Date.now(),
-                sender_id: currentUser.id,
-                message: msgText,
-                created_at: new Date().toISOString()
-            };
-            appendMessageBubble(tempMsg);
-            scrollToBottomChat();
-
-            // Kirim diam-diam ke Supabase
-            try {
-                const insertData = { sender_id: currentUser.id, message: msgText };
-                if (isGroup) insertData.group_id = targetId;
-                else insertData.receiver_id = targetId;
-
-                const { error } = await supabaseClient.from('messages').insert(insertData);
-                if (error) throw error;
-            } catch (err) {
-                showToast("Gagal mengirim pesan", "error");
-            }
-        }
-
-
-        
-
-        // ==========================================
-// FITUR TAB & STORY CHAT WIDGET
-// ==========================================
-
-// 1. Logika Pindah Tab (Personal, Grup, Status)
-function switchChatTab(tabName) {
-    const tabs = ['personal', 'group', 'status'];
-    tabs.forEach(t => {
-        const btn = document.getElementById(`tab-${t}`);
-        const container = document.getElementById(`chat-${t}-container`);
-        
-        if (t === tabName) {
-            btn.classList.replace('text-gray-500', 'text-brand-accent');
-            btn.classList.replace('border-transparent', 'border-brand-accent');
-            container.classList.remove('hidden');
-            container.classList.add('block');
-        } else {
-            btn.classList.replace('text-brand-accent', 'text-gray-500');
-            btn.classList.replace('border-brand-accent', 'border-transparent');
-            container.classList.remove('block');
-            container.classList.add('hidden');
-        }
-    });
-
-    // Sembunyikan kolom pencarian jika di tab Status
-    const searchContainer = document.getElementById('chat-search-container');
-    if (tabName === 'status') {
-        searchContainer.classList.add('hidden');
-        loadStories(); // Muat data status saat tab dibuka
-    } else {
-        searchContainer.classList.remove('hidden');
-    }
-}
-
-        // 2. FUNGSI MENGAMBIL DAFTAR CHAT INBOX (UPDATED REAL-TIME FILTER & TRASH ICON)
+        // 🔥 FUNGSI MENGAMBIL DAFTAR CHAT INBOX (DAFTAR OBROLAN LANGSUNG HILANG TOTAL JIKA DIHAPUS)
         async function loadChatList() {
             const cPersonal = document.getElementById('chat-personal-container');
             const cGroup = document.getElementById('chat-group-container');
@@ -3867,58 +3626,68 @@ function switchChatTab(tabName) {
 
                 let personalList = [], groupList = [];
                 const partnerIds = Object.keys(personalContacts), groupIds = Object.keys(groupContacts);
+                
+                let clearedChats = JSON.parse(localStorage.getItem('cleared_chats') || '{}');
+                let deletedForMe = JSON.parse(localStorage.getItem('deleted_msgs') || '[]');
 
-                let usersWithStory = [];
                 if (partnerIds.length > 0) {
                     const { data: profiles } = await supabaseClient.from('profiles').select('id, nickname, avatar_url').in('id', partnerIds);
                     const past24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
                     const { data: activeStories } = await supabaseClient.from('stories').select('user_id').gte('created_at', past24h);
-                    if (activeStories) usersWithStory = activeStories.map(s => s.user_id);
+                    let usersWithStory = activeStories ? activeStories.map(s => s.user_id) : [];
 
-                    if (profiles) profiles.forEach(p => personalList.push({ type: 'personal', id: p.id, name: p.nickname, avatar: p.avatar_url, latestMsg: personalContacts[p.id], unread: unreadCounts[p.id] || 0, hasStory: usersWithStory.includes(p.id) }));
+                    if (profiles) {
+                        profiles.forEach(p => {
+                            const msg = personalContacts[p.id];
+                            const clearTimeStr = clearedChats[p.id];
+                            
+                            // 🔥 KUNCI UTAMA 1: Saring dari sini agar kotaknya musnah total!
+                            if (clearTimeStr && new Date(msg.created_at) <= new Date(clearTimeStr)) {
+                                return; 
+                            }
+                            
+                            personalList.push({ type: 'personal', id: p.id, name: p.nickname, avatar: p.avatar_url, latestMsg: msg, unread: unreadCounts[p.id] || 0, hasStory: usersWithStory.includes(p.id) });
+                        });
+                    }
                 }
 
                 if (groupIds.length > 0) {
                     const { data: groups } = await supabaseClient.from('groups').select('id, name, avatar_url').in('id', groupIds);
-                    if (groups) groups.forEach(g => groupList.push({ type: 'group', id: g.id, name: g.name, avatar: g.avatar_url, latestMsg: groupContacts[g.id], unread: 0 }));
+                    if (groups) {
+                        groups.forEach(g => {
+                            const msg = groupContacts[g.id];
+                            const clearTimeStr = clearedChats[g.id];
+                            
+                            // 🔥 KUNCI UTAMA 2: Saring dari sini juga agar kotak grup musnah total!
+                            if (clearTimeStr && new Date(msg.created_at) <= new Date(clearTimeStr)) {
+                                return; 
+                            }
+
+                            groupList.push({ type: 'group', id: g.id, name: g.name, avatar: g.avatar_url, latestMsg: msg, unread: 0 });
+                        });
+                    }
                 }
 
                 personalList.sort((a, b) => new Date(b.latestMsg.created_at) - new Date(a.latestMsg.created_at));
                 groupList.sort((a, b) => new Date(b.latestMsg.created_at) - new Date(a.latestMsg.created_at));
-
-                let deletedForMe = JSON.parse(localStorage.getItem('deleted_msgs') || '[]');
                 
-                // 🔥 RENDER ROW MODERN: DENGAN FIX PRATINJAU AUDIO/SISTEM & TOMBOL HAPUS LIST
                 const renderRow = (item, isGroup) => {
                     const ava = item.avatar || `https://ui-avatars.com/api/?name=${item.name}&background=1A1133&color=fff`;
                     const msg = item.latestMsg;
                     let prefix = '', preview = msg.message;
 
-                    // Cek status Clear Chat berdasarkan local storage waktu hapus
-                    let clearedChats = JSON.parse(localStorage.getItem('cleared_chats') || '{}');
-                    let clearTimeStr = clearedChats[item.id];
-                    let isCleared = clearTimeStr && new Date(msg.created_at) <= new Date(clearTimeStr);
-
-                    if (isCleared) {
-                        preview = '<i class="fas fa-comment-slash mr-1"></i> Obrolan dibersihkan';
-                        prefix = '';
-                    } else {
-                        // Perbaikan tampilan cerdas pratinjau teks
-                        if (preview.startsWith('[SISTEM]')) {
-                            prefix = '<i class="fas fa-info-circle text-brand-info text-[10px] mr-1"></i> ';
-                            preview = preview.replace('[SISTEM] ', '');
-                        } else if (isGroup && !msg.is_empty) {
-                            prefix = msg.sender_id === currentUser.id ? 'Anda: ' : '<i class="fas fa-user text-[8px] mr-1"></i> ';
-                        } else if (!isGroup && msg.sender_id === currentUser.id) {
-                            prefix = (msg.is_read || msg.is_read === 'true') ? '<i class="fas fa-check-double text-brand-info mr-1 text-[10px]"></i>' : '<i class="fas fa-check text-white/60 mr-1 text-[10px]"></i>';
-                        }
-
-                        if (preview === '[DELETED]' || deletedForMe.includes(msg.id)) { 
-                            preview = '<i class="fas fa-ban mr-1"></i> Dihapus'; prefix = ''; 
-                        } 
-                        else if (preview.startsWith('[IMG]')) { preview = '<i class="fas fa-image mr-1"></i> Gambar'; }
-                        else if (preview.startsWith('[AUDIO]')) { preview = '<i class="fas fa-microphone mr-1"></i> Pesan Suara'; }
+                    if (preview.startsWith('[SISTEM]')) {
+                        prefix = '<i class="fas fa-info-circle text-brand-info text-[10px] mr-1"></i> ';
+                        preview = preview.replace('[SISTEM] ', '');
+                    } else if (isGroup && !msg.is_empty) {
+                        prefix = msg.sender_id === currentUser.id ? 'Anda: ' : '<i class="fas fa-user text-[8px] mr-1"></i> ';
+                    } else if (!isGroup && msg.sender_id === currentUser.id) {
+                        prefix = (msg.is_read || msg.is_read === 'true') ? '<i class="fas fa-check-double text-brand-info mr-1 text-[10px]"></i>' : '<i class="fas fa-check text-white/60 mr-1 text-[10px]"></i>';
                     }
+
+                    if (preview === '[DELETED]' || deletedForMe.includes(msg.id)) { preview = '<i class="fas fa-ban mr-1"></i> Dihapus'; prefix = ''; } 
+                    else if (preview.startsWith('[IMG]')) { preview = '<i class="fas fa-image mr-1"></i> Gambar'; }
+                    else if (preview.startsWith('[AUDIO]')) { preview = '<i class="fas fa-microphone mr-1"></i> Pesan Suara'; }
                     
                     const badge = item.unread > 0 ? `<div class="bg-brand-accent text-white text-[9px] font-bold w-4 h-4 flex items-center justify-center rounded-full ml-2">${item.unread}</div>` : '';
                     const icon = isGroup ? '<div class="absolute -bottom-1 -right-1 bg-brand-dark p-0.5 rounded-full"><i class="fas fa-users text-[10px] text-brand-info"></i></div>' : '';
@@ -3927,7 +3696,7 @@ function switchChatTab(tabName) {
                     const avatarClickCode = item.hasStory ? `event.stopPropagation(); viewStory('${item.id}', '${item.name}', '${ava}')` : `event.stopPropagation(); viewUserProfile('${item.id}')`;
 
                     return `
-                    <div class="flex items-center p-3 bg-brand-card/50 hover:bg-white/5 cursor-pointer rounded-2xl border border-white/5 transition-all mb-2 relative group" onclick="openChatRoom('${item.id}', '${item.name.replace(/'/g, "\\'")}', '${ava}', ${isGroup})">
+                    <div class="flex items-center p-3 bg-brand-card/50 hover:bg-white/5 cubic-pointer rounded-2xl border border-white/5 transition-all mb-2 relative group" onclick="openChatRoom('${item.id}', '${item.name.replace(/'/g, "\\'")}', '${ava}', ${isGroup})">
                         <div class="relative shrink-0" onclick="${isGroup ? '' : avatarClickCode}">
                             <div class="${isGroup ? 'border border-brand-accent/30 rounded-full' : ringClass}"><img src="${ava}" loading="lazy" class="w-11 h-11 rounded-full object-cover border-2 border-brand-card"></div>
                             ${icon}
@@ -3950,6 +3719,10 @@ function switchChatTab(tabName) {
                 cPersonal.innerHTML = '<div class="p-6 text-center text-xs text-red-500">Gagal memuat pesan.</div>'; 
             }
         }
+
+
+
+
 
 
 // 3. LOGIKA STORY / STATUS
