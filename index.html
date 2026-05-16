@@ -1169,17 +1169,6 @@
             { t: "Apakah akun aman tidak kena Banned?", j: "100% Aman. Joki dikerjakan murni manual oleh player profesional." },
             { t: "Apakah harga Pricelist sudah termasuk biaya admin?", j: "Ya, sudah Include biaya Rekber NIKKY." }
         ];
-
-        function formatCaption(text) {
-            if(!text) return '';
-            return text
-                .replace(/&/g, "&amp;")
-                .replace(/</g, "&lt;")
-                .replace(/>/g, "&gt;")
-                .replace(/"/g, "&quot;")
-                .replace(/'/g, "&#39;")
-                .replace(/\n/g, "<br>");
-        }
         
         async function fetchBlockedUsers() {
             if(!currentUser) return;
