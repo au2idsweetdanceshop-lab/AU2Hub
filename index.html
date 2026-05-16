@@ -696,7 +696,8 @@
                         <div class="flex-1 relative">
                             <input type="text" id="chat-room-input" oninput="sendTypingStatus()" placeholder="Ketik pesan..." class="w-full bg-white/5 border border-white/10 rounded-[1.5rem] py-3.5 px-6 text-sm text-white outline-none focus:border-brand-accent/50 focus:bg-white/10 transition-all pr-12">
                         </div>
-                        <button id="btn-send-room" onclick="sendMessageRoom()" class="w-12 h-12 rounded-2xl bg-brand-accent text-white flex items-center justify-center shadow-lg shadow-brand-accent/20 active:scale-90 transition-all hover:rotate-12"><i class="fas fa-paper-plane"></i></button>
+                        <button id="btn-send-room" class="w-12 h-12 rounded-2xl bg-brand-accent text-white flex items-center justify-center shadow-lg shadow-brand-accent/20 active:scale-90 transition-all hover:rotate-12"><i class="fas fa-paper-plane"></i></button>
+
                     </div>
                 </div>
             </div>
@@ -1394,7 +1395,8 @@
                 document.querySelectorAll('#profile-logged-in').forEach(el => el.classList.remove('hidden')); 
                 document.getElementById('profile-logged-out').classList.add('hidden'); 
                 updateUIForLoggedIn(); 
-                initPresence(); 
+                initPresence();
+                updateMyLastSeen();
                 initGlobalMessageListener(); 
             } else { 
                 if (presenceChannel) { supabaseClient.removeChannel(presenceChannel); presenceChannel = null; }
@@ -2162,25 +2164,23 @@ function closeUploadModal() {
             if (nextBatch.length === 0) return;
 
             const htmlString = nextBatch.map((vid) => `
-                <div class="snap-start w-full h-full flex-shrink-0 relative flex items-center justify-center overflow-hidden bg-black/95 px-0 sm:px-4 py-0 sm:py-6">
+                <div class="snap-start w-full h-full flex-shrink-0 relative flex items-center justify-center bg-black/95 px-0 sm:px-4 py-0 sm:py-6">
                     <div class="w-full max-w-sm aspect-[9/16] relative bg-brand-dark mx-auto h-full sm:h-auto sm:rounded-3xl overflow-hidden shadow-2xl">
                         <div class="absolute inset-0 flex items-center justify-center z-0"><div class="w-12 h-12 border-4 border-brand-accent/20 border-t-brand-accent rounded-full animate-spin"></div></div>
+                        
                         <video class="absolute inset-0 m-auto w-full h-full object-cover float-video-player transition-opacity duration-500 opacity-0 z-10" 
                                onloadeddata="this.classList.remove('opacity-0')" loop ${isGlobalMuted ? 'muted' : ''} playsinline preload="metadata"
                                ontimeupdate="updateVideoProgress(this)"
-                               onclick="handleFloatVideoClick(event, this, '${vid.id}')" onerror="handleVideoError(this)">
+                               onclick="toggleProfileVideoAudio(this)">
                             <source src="${vid.video_url}" type="video/mp4">
                         </video>
                         
-                        <div class="time-indicator absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-white font-extrabold text-4xl drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)] opacity-0 transition-opacity z-[60] pointer-events-none tracking-wider bg-black/40 px-6 py-2 rounded-2xl backdrop-blur-sm">
-                            <span class="time-current">00:00</span> <span class="text-white/50 text-2xl mx-1">/</span> <span class="time-total text-white/70">00:00</span> 
+                        <div class="volume-indicator absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-white bg-black/60 w-16 h-16 rounded-full flex items-center justify-center z-[60] pointer-events-none opacity-0 transition-all duration-300 scale-150">
+                            <i class="fas fa-volume-up text-2xl"></i>
                         </div>
 
                         <div class="absolute bottom-0 left-0 w-full h-3 z-50 cursor-pointer group touch-none flex flex-col justify-end pb-1"
-                             onpointerdown="startSeek(event, this)" 
-                             onpointermove="doSeek(event, this)" 
-                             onpointerup="endSeek(event, this)" 
-                             onpointercancel="endSeek(event, this)">
+                             onpointerdown="startSeek(event, this)" onpointermove="doSeek(event, this)" onpointerup="endSeek(event, this)" onpointercancel="endSeek(event, this)">
                             <div class="w-full h-1 bg-white/30 relative">
                                 <div class="progress-fill h-full bg-white w-0 relative pointer-events-none transition-all duration-75 ease-linear">
                                     <div class="absolute -right-2 top-1/2 -translate-y-1/2 w-4 h-4 bg-white rounded-full scale-0 group-hover:scale-100 transition-transform shadow-md"></div>
@@ -2190,8 +2190,7 @@ function closeUploadModal() {
 
                         <div class="absolute bottom-0 left-0 w-full p-6 flex justify-between items-end z-20 pointer-events-none bg-gradient-to-t from-black/80 to-transparent pb-10 sm:pb-6">
                             <div class="text-white drop-shadow-lg w-[75%] pointer-events-auto">
-                                <!-- 👇 PERBAIKAN 3: Kunci teks nama agar tidak tembus ke video -->
-                                <p onclick="event.stopPropagation(); viewUserProfile('${vid.user_id}')" class="font-bold text-[15px] cursor-pointer hover:text-brand-info shadow-black drop-shadow-md mb-1.5">@${vid.nickname || "Player"}</p>
+                                <p class="font-bold text-[15px] shadow-black drop-shadow-md mb-1.5">@${vid.nickname || "Player"}</p>
                                 <div onclick="this.classList.toggle('expanded')" class="caption-text text-[13px] opacity-90 shadow-black drop-shadow-md cursor-pointer pr-2 leading-relaxed">${formatCaption(vid.caption)}</div>
                             </div>
                             
@@ -2251,7 +2250,38 @@ function closeUploadModal() {
                 }
             });
         }
+        
+                // FUNGSI KHUSUS UNTUK MENGONTROL SUARA DI VIDEO PROFIL (KLIK 1 KALI)
+        function toggleProfileVideoAudio(video) {
+            // Ubah status suara
+            video.muted = !video.muted;
+            isGlobalMuted = video.muted; // Sinkronisasi dengan sistem suara global aplikasimu
 
+            // Sinkronkan video lain agar ikut mute/unmute jika ada yang menyala
+            document.querySelectorAll('.video-player, .float-video-player').forEach(v => {
+                v.muted = isGlobalMuted;
+            });
+            
+            // Tampilkan animasi pop-up ikon suara di tengah layar
+            const container = video.closest('.relative');
+            const indicator = container.querySelector('.volume-indicator');
+            
+            if(indicator) {
+                indicator.innerHTML = video.muted 
+                    ? '<i class="fas fa-volume-mute text-2xl text-gray-300"></i>' 
+                    : '<i class="fas fa-volume-up text-2xl text-brand-info"></i>';
+                
+                // Munculkan membesar
+                indicator.classList.remove('opacity-0', 'scale-150');
+                indicator.classList.add('opacity-100', 'scale-100');
+                
+                // Hilangkan lagi setelah 0.8 detik
+                setTimeout(() => {
+                    indicator.classList.remove('opacity-100', 'scale-100');
+                    indicator.classList.add('opacity-0', 'scale-150');
+                }, 800);
+            }
+        }
 
         function handleFloatVideoClick(event, videoElement, vidId) {
             const now = Date.now();
@@ -2993,22 +3023,41 @@ storyModal.addEventListener('touchend', (e) => {
 
 let lastTypingTime = 0; // Tambahkan variabel ini di luar fungsi
 
-// FUNGSI TYPING INDICATOR (DIOPTIMALKAN)
-function sendTypingStatus() {
-    // Jika belum terhubung ke channel atau tidak ada target, batalkan
-    if(!messageSubscription || (!activeChatUserId && !activeGroupId)) return;
-    
-    const now = Date.now();
-    // Hanya kirim sinyal ke server jika sudah lewat 2 detik (2000 ms) dari ketikan terakhir
-    if (now - lastTypingTime > 2000) {
-        messageSubscription.send({ 
-            type: 'broadcast', 
-            event: 'typing', 
-            payload: { userId: currentUser.id } 
-        });
-        lastTypingTime = now; // Update waktu terakhir mengetik
-    }
-}
+        // FUNGSI TYPING INDICATOR & TOGGLE MIC/SEND (DIOPTIMALKAN)
+        function sendTypingStatus() {
+            // --- 1. LOGIKA UBAH IKON MIC / PESAWAT KERTAS ---
+            const input = document.getElementById('chat-room-input');
+            const btnSend = document.getElementById('btn-send-room');
+            
+            // Jangan ubah ikon kalau sistem sedang sibuk merekam suara
+            if (!input.disabled) {
+                if (input.value.trim() !== '') {
+                    // Jika ada teks, ubah jadi pesawat kertas (Kirim Teks)
+                    btnSend.innerHTML = '<i class="fas fa-paper-plane"></i>';
+                    btnSend.onclick = sendMessageRoom;
+                } else {
+                    // Jika kosong, ubah jadi mikrofon (Kirim Voice Note)
+                    btnSend.innerHTML = '<i class="fas fa-microphone"></i>';
+                    btnSend.onclick = startRecordingVoice;
+                }
+            }
+
+            // --- 2. LOGIKA TYPING ASLI ---
+            // Jika belum terhubung ke channel atau tidak ada target, batalkan
+            if(!messageSubscription || (!activeChatUserId && !activeGroupId)) return;
+            
+            const now = Date.now();
+            // Hanya kirim sinyal ke server jika sudah lewat 2 detik (2000 ms) dari ketikan terakhir
+            if (now - lastTypingTime > 2000) {
+                messageSubscription.send({ 
+                    type: 'broadcast', 
+                    event: 'typing', 
+                    payload: { userId: currentUser.id } 
+                });
+                lastTypingTime = now; // Update waktu terakhir mengetik
+            }
+        }
+
 
 
         function openEditProfileModal() {
@@ -3177,18 +3226,27 @@ async function feedToggleFollow(targetUserId, btnElement) {
                 });
         }
 
-        function updatePresenceUI() {
+                async function updatePresenceUI() {
             if (activeChatUserId) {
                 const statusEl = document.getElementById('active-chat-status');
                 const dotEl = document.getElementById('active-chat-online-dot');
                 const isOnline = onlineUsersMap.has(activeChatUserId);
                 
-                if (statusEl) {
-                    statusEl.innerText = isOnline ? 'Online' : 'Offline';
-                    statusEl.className = isOnline ? 'text-[9px] text-brand-info font-bold' : 'text-[9px] text-gray-500';
-                }
-                if (dotEl) {
-                    isOnline ? dotEl.classList.remove('hidden') : dotEl.classList.add('hidden');
+                if (isOnline) {
+                    statusEl.innerText = 'Online';
+                    statusEl.className = 'text-[9px] text-brand-info font-bold';
+                    dotEl.classList.remove('hidden');
+                } else {
+                    dotEl.classList.add('hidden');
+                    statusEl.className = 'text-[9px] text-gray-500';
+                    
+                    // Tarik data last_seen dari Supabase
+                    const { data } = await supabaseClient.from('profiles').select('last_seen').eq('id', activeChatUserId).single();
+                    if (data && data.last_seen) {
+                        statusEl.innerText = 'Terakhir dilihat ' + timeAgo(data.last_seen);
+                    } else {
+                        statusEl.innerText = 'Offline';
+                    }
                 }
             }
             
@@ -3279,7 +3337,13 @@ async function feedToggleFollow(targetUserId, btnElement) {
 
             // 6. AKTIFKAN RADAR REAL-TIME & TYPING INDICATOR
             setupChatRoomListener();
+            
+            // --- 7. TAMBAHAN BARU: VOICE NOTE & LAST SEEN ---
+            document.getElementById('chat-room-input').value = ''; // Pastikan input bersih
+            sendTypingStatus(); // Munculkan ikon Mikrofon di awal
+            updatePresenceUI(); // Cek status Terakhir Dilihat secara instan
         }
+
 
         // Fungsi untuk menutup ruang obrolan dan kembali ke daftar
         function closeChatRoom(kembaliKeList = true, paksaTutupWidget = false) {
@@ -3435,11 +3499,17 @@ async function feedToggleFollow(targetUserId, btnElement) {
                 `;
             }
 
+            // --- DETEKSI GAMBAR & PESAN SUARA ---
             const isImage = content.startsWith('[IMG]');
+            const isAudio = content.startsWith('[AUDIO]'); 
             
             if (isImage) {
                 const imgUrl = content.replace('[IMG]', '');
                 content = `<img src="${imgUrl}" onclick="openLightbox('${imgUrl}')" class="max-w-[220px] rounded-lg cursor-pointer hover:opacity-90 transition-opacity">`;
+            } else if (isAudio) {
+                const audioUrl = content.replace('[AUDIO]', '');
+                // Bentuk pemutar audio bawaan browser
+                content = `<audio controls src="${audioUrl}" class="max-w-[220px] h-10 mt-1 opacity-90 rounded-full"></audio>`;
             } else {
                 content = formatCaption(content); 
             }
@@ -3467,7 +3537,6 @@ async function feedToggleFollow(targetUserId, btnElement) {
 
             const html = `
             <div class="flex w-full ${align} mb-1.5 message-anim select-none">
-                <!-- Wrapper Interaksi Tahan Lama (Long Press) / Klik Kanan PC -->
                 <div class="max-w-[82%] relative group"
                      oncontextmenu="event.preventDefault(); showMsgOptions('${msg.id}', '${msg.sender_id}')"
                      ontouchstart="mulaiLongPress('${msg.id}', '${msg.sender_id}')"
@@ -3477,15 +3546,12 @@ async function feedToggleFollow(targetUserId, btnElement) {
                      onmouseup="hancurkanLongPress()"
                      onmouseleave="hancurkanLongPress()">
                     
-                    <!-- Gelembung Pesan -->
                     <div class="px-2.5 pt-1.5 pb-5 ${bg} ${borderRadius} shadow-sm text-[13.5px] border border-white/5 break-words min-w-[70px]">
                         ${senderName}
-                        ${replyHtml} <!-- KOTAK BALASAN DIMUNCULKAN DI SINI -->
-                        <div class="${isImage ? 'p-0.5' : 'pr-10 pl-0.5'}">
+                        ${replyHtml} <div class="${(isImage || isAudio) ? 'p-0.5 pb-2' : 'pr-10 pl-0.5'}">
                             ${content}
                         </div>
                         
-                        <!-- Panel Indikator Waktu & Centang di Dalam Gelembung (Pojok Kanan Bawah) -->
                         <div class="absolute bottom-1 right-2 flex items-center gap-0.5 text-[9px] text-white/50 pointer-events-none select-none bg-gradient-to-t from-black/10 to-transparent px-1 rounded">
                             <span>${timeFormatted}</span>
                             ${readStatusHtml}
@@ -3497,6 +3563,7 @@ async function feedToggleFollow(targetUserId, btnElement) {
             
             container.insertAdjacentHTML('beforeend', html);
         }
+
 
 
         // 3. FUNGSI SCROLL OTOMATIS KE BAWAH
@@ -4701,6 +4768,115 @@ function updateSeek(e, containerElement, video) {
                 showToast("Gagal menarik pesan", "error");
             }
         }
+        
+                // ==========================================
+        // FITUR PESAN SUARA (VOICE NOTE)
+        // ==========================================
+        let mediaRecorder;
+        let audioChunks = [];
+
+        async function startRecordingVoice() {
+            try {
+                // Meminta izin mikrofon ke pengguna
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream);
+                audioChunks = [];
+
+                mediaRecorder.ondataavailable = e => {
+                    if (e.data.size > 0) audioChunks.push(e.data);
+                };
+
+                mediaRecorder.onstop = async () => {
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                    await uploadAndSendVoice(audioBlob);
+                };
+
+                mediaRecorder.start();
+                
+                // Ubah UI jadi mode merekam (Tombol Stop berdenyut merah)
+                const input = document.getElementById('chat-room-input');
+                input.placeholder = "Merekam suara... (Klik stop)";
+                input.disabled = true;
+                
+                const btnSend = document.getElementById('btn-send-room');
+                btnSend.innerHTML = '<i class="fas fa-stop text-white"></i>';
+                btnSend.classList.add('bg-red-500', 'animate-pulse');
+                btnSend.classList.remove('bg-brand-accent');
+                btnSend.onclick = stopRecordingVoice;
+                
+            } catch (err) {
+                showToast("Izin mikrofon ditolak / tidak didukung", "error");
+            }
+        }
+
+        function stopRecordingVoice() {
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                mediaRecorder.stop();
+                mediaRecorder.stream.getTracks().forEach(track => track.stop()); // matikan mikrofon
+            }
+            
+            // Kembalikan UI ke awal
+            const input = document.getElementById('chat-room-input');
+            input.placeholder = "Ketik pesan...";
+            input.disabled = false;
+            
+            const btnSend = document.getElementById('btn-send-room');
+            btnSend.innerHTML = '<i class="fas fa-microphone"></i>';
+            btnSend.classList.remove('bg-red-500', 'animate-pulse');
+            btnSend.classList.add('bg-brand-accent');
+            btnSend.onclick = startRecordingVoice;
+        }
+
+        async function uploadAndSendVoice(blob) {
+            if (!activeChatUserId && !activeGroupId) return;
+            const isGroup = !!activeGroupId; 
+            const targetId = isGroup ? activeGroupId : activeChatUserId;
+            
+            showToast("Mengirim pesan suara...", "info");
+
+            try {
+                // Bungkus audio jadi file siap kirim
+                const file = new File([blob], "vn_" + Date.now() + ".webm", { type: 'audio/webm' });
+                
+                // Numpang jalur upload API video kita (hemat dan praktis!)
+                const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent(file.name)}&filetype=${encodeURIComponent(file.type)}`);
+                const dataUrl = await resUrl.json();
+                
+                await fetch(dataUrl.uploadUrl, { method: 'PUT', body: file, headers: { 'Content-Type': file.type, 'x-amz-acl': 'public-read' } });
+                
+                const msgText = `[AUDIO]${dataUrl.finalVideoUrl}`;
+                
+                // Munculkan di layar secara instan
+                const tempMsg = { id: 't-'+Date.now(), sender_id: currentUser.id, message: msgText, created_at: new Date().toISOString() };
+                appendMessageBubble(tempMsg); 
+                scrollToBottomChat();
+
+                // Simpan diam-diam ke database
+                const insertData = { sender_id: currentUser.id, message: msgText };
+                if (isGroup) insertData.group_id = targetId; else insertData.receiver_id = targetId;
+                await supabaseClient.from('messages').insert(insertData);
+                
+            } catch (err) { 
+                showToast("Gagal mengirim suara", "error"); 
+            }
+        }
+
+        // ==========================================
+        // FITUR TERAKHIR DILIHAT (LAST SEEN SINKRONISASI)
+        // ==========================================
+        async function updateMyLastSeen() {
+            if (!currentUser) return;
+            try {
+                await supabaseClient.from('profiles').update({ last_seen: new Date().toISOString() }).eq('id', currentUser.id);
+            } catch (e) { console.log("Gagal update last seen"); }
+        }
+
+        // Jalankan update saat buka web dan tiap 1 menit sekali kalau aplikasinya sedang dibuka
+        setInterval(updateMyLastSeen, 60000);
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'hidden') updateMyLastSeen();
+        });
+
 
         // ==========================================
         // FITUR QUOTE REPLY (BALAS PESAN WA STYLE)
