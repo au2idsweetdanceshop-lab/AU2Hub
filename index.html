@@ -3463,7 +3463,7 @@ async function feedToggleFollow(targetUserId, btnElement) {
             }
         }
 
-        // 1. FUNGSI MENGAMBIL PESAN DARI DATABASE (DENGAN FILTER CLEAR CHAT)
+        // 1. FUNGSI MENGAMBIL PESAN DARI DATABASE (WHATSAPP STYLE WITH DATE DIVIDER)
         async function loadRoomMessages() {
             const container = document.getElementById('chat-messages-container');
             const isGroup = !!activeGroupId;
@@ -3539,7 +3539,7 @@ async function feedToggleFollow(targetUserId, btnElement) {
             }
         }
 
-        // 🔥 FUNGSI BERSIHKAN SEMUA OBROLAN (CLEAR CHAT DARI DALAM ROOM)
+        // FUNGSI BERSIHKAN SEMUA OBROLAN (CLEAR CHAT DARI DALAM ROOM)
         async function clearCurrentChat() {
             const isGroup = !!activeGroupId;
             const targetId = isGroup ? activeGroupId : activeChatUserId;
@@ -3557,7 +3557,7 @@ async function feedToggleFollow(targetUserId, btnElement) {
             }
         }
 
-        // 🔥 FUNGSI BERSIHKAN OBROLAN DARI DAFTAR INBOX (DARI LUAR)
+        // FUNGSI BERSIHKAN OBROLAN DARI DAFTAR INBOX (DARI LUAR)
         async function deleteConversation(targetId, chatName) {
             const confirmClear = await customConfirm(`Yakin ingin membersihkan riwayat obrolan dengan ${chatName}?`);
             if (confirmClear) {
@@ -3570,7 +3570,7 @@ async function feedToggleFollow(targetUserId, btnElement) {
             }
         }
 
-        // --- FUNGSI HELPER UNTUK LONG PRESS (TAHAN LAMA) ---
+        // --- FUNGSI HELPER UNTUK LONG PRESS ---
         let longPressTimer;
         function hancurkanLongPress() {
             clearTimeout(longPressTimer);
@@ -3583,7 +3583,7 @@ async function feedToggleFollow(targetUserId, btnElement) {
             }, 500); 
         }
 
-        // 🔥 FUNGSI MENGAMBIL DAFTAR CHAT INBOX (DAFTAR OBROLAN LANGSUNG HILANG TOTAL JIKA DIHAPUS)
+        // FUNGSI MENGAMBIL DAFTAR CHAT INBOX (PROTEKSI KEBAL CRASH & SINKRONISASI TOTAL)
         async function loadChatList() {
             const cPersonal = document.getElementById('chat-personal-container');
             const cGroup = document.getElementById('chat-group-container');
@@ -3601,8 +3601,18 @@ async function feedToggleFollow(targetUserId, btnElement) {
                 const { data: unreads } = await supabaseClient.from('messages').select('sender_id').is('group_id', null).eq('receiver_id', currentUser.id).eq('is_read', false);
                 if (unreads) unreads.forEach(u => { unreadCounts[u.sender_id] = (unreadCounts[u.sender_id] || 0) + 1; });
 
-                const { data: messages } = await supabaseClient.from('messages').select('*').or(`sender_id.eq.${currentUser.id},receiver_id.eq.${currentUser.id},group_id.not.is.null`).order('created_at', { ascending: false });
                 const { data: myGroups } = await supabaseClient.from('group_members').select('group_id').eq('user_id', currentUser.id);
+                let myGroupIds = myGroups ? myGroups.map(g => g.group_id) : [];
+
+                let query = supabaseClient.from('messages').select('*');
+                if (myGroupIds.length > 0) {
+                    query = query.or(`sender_id.eq.${currentUser.id},receiver_id.eq.${currentUser.id},group_id.in.(${myGroupIds.join(',')})`);
+                } else {
+                    query = query.or(`sender_id.eq.${currentUser.id},receiver_id.eq.${currentUser.id}`);
+                }
+                
+                const { data: messages, error: msgError } = await query.order('created_at', { ascending: false });
+                if (msgError) { console.error("Error messages query:", msgError); throw msgError; }
 
                 const personalContacts = {}, groupContacts = {};
                 if (messages) {
@@ -3640,13 +3650,8 @@ async function feedToggleFollow(targetUserId, btnElement) {
                         profiles.forEach(p => {
                             const msg = personalContacts[p.id];
                             const clearTimeStr = clearedChats[p.id];
-                            
-                            // 🔥 KUNCI UTAMA 1: Saring dari sini agar kotaknya musnah total!
-                            if (clearTimeStr && new Date(msg.created_at) <= new Date(clearTimeStr)) {
-                                return; 
-                            }
-                            
-                            personalList.push({ type: 'personal', id: p.id, name: p.nickname, avatar: p.avatar_url, latestMsg: msg, unread: unreadCounts[p.id] || 0, hasStory: usersWithStory.includes(p.id) });
+                            if (clearTimeStr && msg && new Date(msg.created_at) <= new Date(clearTimeStr)) return; 
+                            personalList.push({ type: 'personal', id: p.id, name: p.nickname || "Player", avatar: p.avatar_url, latestMsg: msg, unread: unreadCounts[p.id] || 0, hasStory: usersWithStory.includes(p.id) });
                         });
                     }
                 }
@@ -3657,46 +3662,50 @@ async function feedToggleFollow(targetUserId, btnElement) {
                         groups.forEach(g => {
                             const msg = groupContacts[g.id];
                             const clearTimeStr = clearedChats[g.id];
-                            
-                            // 🔥 KUNCI UTAMA 2: Saring dari sini juga agar kotak grup musnah total!
-                            if (clearTimeStr && new Date(msg.created_at) <= new Date(clearTimeStr)) {
-                                return; 
-                            }
-
-                            groupList.push({ type: 'group', id: g.id, name: g.name, avatar: g.avatar_url, latestMsg: msg, unread: 0 });
+                            if (clearTimeStr && msg && new Date(msg.created_at) <= new Date(clearTimeStr)) return; 
+                            groupList.push({ type: 'group', id: g.id, name: g.name || "Grup Obrolan", avatar: g.avatar_url, latestMsg: msg, unread: 0 });
                         });
                     }
                 }
 
-                personalList.sort((a, b) => new Date(b.latestMsg.created_at) - new Date(a.latestMsg.created_at));
-                groupList.sort((a, b) => new Date(b.latestMsg.created_at) - new Date(a.latestMsg.created_at));
+                personalList.sort((a, b) => new Date(b.latestMsg?.created_at || 0) - new Date(a.latestMsg?.created_at || 0));
+                groupList.sort((a, b) => new Date(b.latestMsg?.created_at || 0) - new Date(a.latestMsg?.created_at || 0));
                 
                 const renderRow = (item, isGroup) => {
-                    const ava = item.avatar || `https://ui-avatars.com/api/?name=${item.name}&background=1A1133&color=fff`;
+                    const ava = item.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(item.name)}&background=1A1133&color=fff`;
                     const msg = item.latestMsg;
-                    let prefix = '', preview = msg.message;
+                    let prefix = '', preview = msg ? (msg.message || "") : "";
 
-                    if (preview.startsWith('[SISTEM]')) {
-                        prefix = '<i class="fas fa-info-circle text-brand-info text-[10px] mr-1"></i> ';
-                        preview = preview.replace('[SISTEM] ', '');
-                    } else if (isGroup && !msg.is_empty) {
-                        prefix = msg.sender_id === currentUser.id ? 'Anda: ' : '<i class="fas fa-user text-[8px] mr-1"></i> ';
-                    } else if (!isGroup && msg.sender_id === currentUser.id) {
-                        prefix = (msg.is_read || msg.is_read === 'true') ? '<i class="fas fa-check-double text-brand-info mr-1 text-[10px]"></i>' : '<i class="fas fa-check text-white/60 mr-1 text-[10px]"></i>';
+                    let clearedChats = JSON.parse(localStorage.getItem('cleared_chats') || '{}');
+                    let clearTimeStr = clearedChats[item.id];
+                    let isCleared = msg && clearTimeStr && new Date(msg.created_at) <= new Date(clearTimeStr);
+
+                    if (isCleared || !msg) {
+                        preview = '<i class="fas fa-comment-slash mr-1"></i> Obrolan kosong';
+                        prefix = '';
+                    } else {
+                        if (preview.startsWith('[SISTEM]')) {
+                            prefix = '<i class="fas fa-info-circle text-brand-info text-[10px] mr-1"></i> ';
+                            preview = preview.replace('[SISTEM] ', '');
+                        } else if (isGroup && !msg.is_empty) {
+                            prefix = msg.sender_id === currentUser.id ? 'Anda: ' : '<i class="fas fa-user text-[8px] mr-1"></i> ';
+                        } else if (!isGroup && msg.sender_id === currentUser.id) {
+                            prefix = (msg.is_read || msg.is_read === 'true') ? '<i class="fas fa-check-double text-brand-info mr-1 text-[10px]"></i>' : '<i class="fas fa-check text-white/60 mr-1 text-[10px]"></i>';
+                        }
+
+                        if (preview === '[DELETED]' || deletedForMe.includes(msg.id)) { preview = '<i class="fas fa-ban mr-1"></i> Dihapus'; prefix = ''; } 
+                        else if (preview.startsWith('[IMG]')) { preview = '<i class="fas fa-image mr-1"></i> Gambar'; }
+                        else if (preview.startsWith('[AUDIO]')) { preview = '<i class="fas fa-microphone mr-1"></i> Pesan Suara'; }
                     }
-
-                    if (preview === '[DELETED]' || deletedForMe.includes(msg.id)) { preview = '<i class="fas fa-ban mr-1"></i> Dihapus'; prefix = ''; } 
-                    else if (preview.startsWith('[IMG]')) { preview = '<i class="fas fa-image mr-1"></i> Gambar'; }
-                    else if (preview.startsWith('[AUDIO]')) { preview = '<i class="fas fa-microphone mr-1"></i> Pesan Suara'; }
                     
                     const badge = item.unread > 0 ? `<div class="bg-brand-accent text-white text-[9px] font-bold w-4 h-4 flex items-center justify-center rounded-full ml-2">${item.unread}</div>` : '';
                     const icon = isGroup ? '<div class="absolute -bottom-1 -right-1 bg-brand-dark p-0.5 rounded-full"><i class="fas fa-users text-[10px] text-brand-info"></i></div>' : '';
                     
                     const ringClass = item.hasStory ? 'story-ring' : 'border border-white/10';
-                    const avatarClickCode = item.hasStory ? `event.stopPropagation(); viewStory('${item.id}', '${item.name}', '${ava}')` : `event.stopPropagation(); viewUserProfile('${item.id}')`;
+                    const avatarClickCode = item.hasStory ? `event.stopPropagation(); viewStory('${item.id}', '${item.name.replace(/'/g, "\\'")}', '${ava}')` : `event.stopPropagation(); viewUserProfile('${item.id}')`;
 
                     return `
-                    <div class="flex items-center p-3 bg-brand-card/50 hover:bg-white/5 cubic-pointer rounded-2xl border border-white/5 transition-all mb-2 relative group" onclick="openChatRoom('${item.id}', '${item.name.replace(/'/g, "\\'")}', '${ava}', ${isGroup})">
+                    <div class="flex items-center p-3 bg-brand-card/50 hover:bg-white/5 cursor-pointer rounded-2xl border border-white/5 transition-all mb-2 relative group" onclick="openChatRoom('${item.id}', '${item.name.replace(/'/g, "\\'")}', '${ava}', ${isGroup})">
                         <div class="relative shrink-0" onclick="${isGroup ? '' : avatarClickCode}">
                             <div class="${isGroup ? 'border border-brand-accent/30 rounded-full' : ringClass}"><img src="${ava}" loading="lazy" class="w-11 h-11 rounded-full object-cover border-2 border-brand-card"></div>
                             ${icon}
@@ -3716,9 +3725,12 @@ async function feedToggleFollow(targetUserId, btnElement) {
                 
                 checkGlobalUnreadMessages();
             } catch (e) { 
+                console.error("Crash loadChatList:", e);
                 cPersonal.innerHTML = '<div class="p-6 text-center text-xs text-red-500">Gagal memuat pesan.</div>'; 
             }
         }
+
+
 
 
 
@@ -5179,6 +5191,143 @@ async function uploadAndSendVoice(blob) {
                 }, 2000);
             }
         }
+        
+        function switchChatTab(tab) {
+    // Sembunyikan semua container
+    document.getElementById('chat-personal-container').classList.add('hidden');
+    document.getElementById('chat-group-container').classList.add('hidden');
+    document.getElementById('chat-status-container').classList.add('hidden');
+
+    // Reset warna teks & garis bawah tab ke abu-abu (tidak aktif)
+    document.getElementById('tab-personal').className = 'flex-1 py-3 text-[11px] font-bold text-gray-500 border-b-2 border-transparent transition-colors';
+    document.getElementById('tab-group').className = 'flex-1 py-3 text-[11px] font-bold text-gray-500 border-b-2 border-transparent transition-colors';
+    document.getElementById('tab-status').className = 'flex-1 py-3 text-[11px] font-bold text-gray-500 border-b-2 border-transparent transition-colors';
+
+    // Aktifkan tab yang dipilih
+    if (tab === 'personal') {
+        document.getElementById('chat-personal-container').classList.remove('hidden');
+        document.getElementById('chat-personal-container').classList.add('block');
+        document.getElementById('tab-personal').className = 'flex-1 py-3 text-[11px] font-bold text-brand-accent border-b-2 border-brand-accent transition-colors';
+    } else if (tab === 'group') {
+        document.getElementById('chat-group-container').classList.remove('hidden');
+        document.getElementById('chat-group-container').classList.add('block');
+        document.getElementById('tab-group').className = 'flex-1 py-3 text-[11px] font-bold text-brand-accent border-b-2 border-brand-accent transition-colors';
+    } else if (tab === 'status') {
+        document.getElementById('chat-status-container').classList.remove('hidden');
+        document.getElementById('chat-status-container').classList.add('block');
+        document.getElementById('tab-status').className = 'flex-1 py-3 text-[11px] font-bold text-brand-accent border-b-2 border-brand-accent transition-colors';
+        loadStories(); // Langsung muat story saat tab status dibuka
+    }
+}
+
+// 1. Fungsi Untuk Merender Gelembung Obrolan (Teks, Audio, Gambar)
+function appendMessageBubble(msg) {
+    const container = document.getElementById('chat-messages-container');
+    const isMe = msg.sender_id === currentUser.id;
+    
+    // Format waktu
+    const date = new Date(msg.created_at);
+    const time = date.getHours().toString().padStart(2, '0') + ':' + date.getMinutes().toString().padStart(2, '0');
+    
+    let bubbleColor = isMe ? 'bg-brand-accent text-white rounded-br-none' : 'bg-white/10 text-white border border-white/10 rounded-bl-none';
+    let align = isMe ? 'justify-end' : 'justify-start';
+    
+    // Tangani Teks / Gambar / Audio / Pesan Sistem
+    let contentHtml = msg.message ? formatCaption(msg.message) : ''; 
+    if (msg.message.startsWith('[IMG]')) {
+        const url = msg.message.replace('[IMG]', '');
+        contentHtml = `<img src="${url}" class="max-w-[200px] rounded-lg cursor-pointer mt-1" onclick="openLightbox('${url}')">`;
+    } else if (msg.message.startsWith('[AUDIO]')) {
+        const url = msg.message.replace('[AUDIO]', '');
+        contentHtml = `<audio controls class="w-[200px] mt-1 h-8"><source src="${url}" type="audio/webm"></audio>`;
+    } else if (msg.message.startsWith('[SISTEM]')) {
+        contentHtml = `<div class="text-center w-full my-2"><span class="bg-brand-info/20 text-brand-info font-bold text-[10px] px-4 py-1.5 rounded-full">${msg.message.replace('[SISTEM] ', '')}</span></div>`;
+        container.insertAdjacentHTML('beforeend', contentHtml);
+        return;
+    }
+
+    // Tangani Nama Pengirim (Khusus di Grup Chat)
+    let senderNameHtml = '';
+    if (!isMe && activeGroupId) {
+        senderNameHtml = `<div class="text-[10px] text-[#00F0FF] font-bold mb-0.5">${msg.profiles?.nickname || 'Anggota'}</div>`;
+    }
+
+    const html = `
+    <div class="flex ${align} w-full message-anim mb-2" id="msg-chat-${msg.id}">
+        <div class="max-w-[80%] flex flex-col relative" ontouchstart="mulaiLongPress('${msg.id}', '${msg.sender_id}')" ontouchend="hancurkanLongPress()" oncontextmenu="event.preventDefault();">
+            <div class="${bubbleColor} px-3 py-2 rounded-2xl shadow-lg relative group">
+                ${senderNameHtml}
+                <div class="text-[12px] leading-relaxed break-words">${contentHtml}</div>
+                <div class="text-[9px] text-white/50 text-right mt-1 ml-4 float-right flex items-center gap-1">
+                    ${time}
+                    ${isMe ? `<i class="fas fa-check${(msg.is_read || msg.is_read === 'true') ? '-double text-brand-info' : ''}"></i>` : ''}
+                </div>
+            </div>
+        </div>
+    </div>`;
+    
+    container.insertAdjacentHTML('beforeend', html);
+}
+
+// 2. Fungsi Untuk Scroll Otomatis ke Bawah
+function scrollToBottomChat() {
+    const container = document.getElementById('chat-messages-container');
+    if (container) {
+        container.scrollTop = container.scrollHeight;
+    }
+}
+
+// 3. Fungsi Untuk Mengirim Chat Teks
+async function sendMessageRoom() {
+    if (!activeChatUserId && !activeGroupId) return;
+    const input = document.getElementById('chat-room-input');
+    const message = input.value.trim();
+    if (!message) return;
+
+    const isGroup = !!activeGroupId;
+    const targetId = isGroup ? activeGroupId : activeChatUserId;
+
+    // Tangkap data reply jika sedang membalas pesan
+    const currentReplyId = replyingToMsgId;
+    const currentReplyName = replyingToMsgName;
+    const currentReplyText = replyingToMsgText;
+    cancelChatReply();
+
+    // Kosongkan input dan reset ikon ke mikrofon
+    input.value = '';
+    sendTypingStatus(); 
+
+    // Sisipkan format balasan
+    let finalMessage = message;
+    if (currentReplyId) {
+        const safeName = currentReplyName.replace(/\|\|/g, "").replace(/\]/g, "");
+        const safeText = currentReplyText.replace(/\|\|/g, "").replace(/\]/g, "");
+        finalMessage = `[REPLY:${currentReplyId}||${safeName}||${safeText}]\n${message}`;
+    }
+
+    // Tampilkan pesan sementara ke layar biar terasa responsif
+    const tempId = 'temp-' + Date.now();
+    const tempMsg = { id: tempId, sender_id: currentUser.id, message: finalMessage, created_at: new Date().toISOString() };
+    appendMessageBubble(tempMsg);
+    scrollToBottomChat();
+
+    // Kirim ke database Supabase
+    try {
+        const insertData = { sender_id: currentUser.id, message: finalMessage };
+        if (isGroup) insertData.group_id = targetId; 
+        else insertData.receiver_id = targetId;
+        
+        const { error } = await supabaseClient.from('messages').insert(insertData);
+        if (error) throw error;
+        
+    } catch (err) {
+        showToast("Gagal mengirim pesan", "error");
+        // Hapus gelembung sementara jika gagal
+        const bubble = document.getElementById(`msg-chat-${tempId}`);
+        if(bubble) bubble.remove();
+    }
+}
+
 
         // ==========================================
         // INISIALISASI HALAMAN (WAJIB ADA AGAR WEB BERJALAN)
