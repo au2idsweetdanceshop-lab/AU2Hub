@@ -4953,12 +4953,55 @@ function updateSeek(e, containerElement, video) {
                         showTypingIndicator();
                     }
                 })
-                // 2. Auto-muat pesan baru yang masuk di ruangan ini tanpa harus refresh
-                .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => {
-                    // Refresh pesan ke layar
-                    loadRoomMessages(); 
+                // 2. TANGKAP PESAN BARU DAN MUNCULKAN TANPA REFRESH
+                .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, async payload => {
+                    const msg = payload.new;
+
+                    // Cek apakah pesan ini milik ruangan yang sedang terbuka
+                    const isGroup = !!activeGroupId;
+                    const validRoom = isGroup
+                        ? msg.group_id === activeGroupId
+                        : ((msg.sender_id === activeChatUserId && msg.receiver_id === currentUser.id) ||
+                           (msg.sender_id === currentUser.id && msg.receiver_id === activeChatUserId));
+
+                    if (validRoom) {
+                        // Sembunyikan tulisan "Sedang mengetik..." begitu pesan masuk
+                        const indicator = document.getElementById('typing-indicator');
+                        if (indicator) indicator.classList.add('hidden');
+
+                        if (msg.sender_id !== currentUser.id) {
+                            // --- JIKA PESAN DARI ORANG LAIN ---
+                            // Ambil data nama & foto jika ini di dalam Grup
+                            if (isGroup) {
+                                const { data: p } = await supabaseClient.from('profiles').select('nickname, avatar_url').eq('id', msg.sender_id).single();
+                                msg.profiles = p;
+                            }
+                            
+                            // Suntikkan langsung ke layar bawah secara mulus!
+                            appendMessageBubble(msg);
+                            scrollToBottomChat();
+
+                            // Langsung tandai Centang Biru (Read) secara otomatis
+                            if (!isGroup) {
+                                supabaseClient.from('messages').update({ is_read: true }).eq('id', msg.id).then();
+                            }
+                        } else {
+                            // --- JIKA PESAN DARI KITA SENDIRI ---
+                            // Hapus balon sementara agar tidak dobel
+                            const tempBubble = document.querySelector('[ontouchstart*="temp-"]');
+                            if (tempBubble) {
+                                const wrapper = tempBubble.closest('.message-anim');
+                                if (wrapper) wrapper.remove(); 
+                            }
+                            
+                            // Pasang pesan asli dari database
+                            appendMessageBubble(msg);
+                            scrollToBottomChat();
+                        }
+                    }
                 })
                 .subscribe();
+
         }
 
 
