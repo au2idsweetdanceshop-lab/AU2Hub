@@ -2286,9 +2286,13 @@ function closeUploadModal() {
                         <video class="absolute inset-0 m-auto w-full h-full object-cover float-video-player transition-opacity duration-500 opacity-0 z-10" 
                                onloadeddata="this.classList.remove('opacity-0')" loop ${isGlobalMuted ? 'muted' : ''} playsinline preload="metadata"
                                ontimeupdate="updateVideoProgress(this)"
-                               onclick="toggleProfileVideoAudio(this)">
+                               onclick="handleFloatVideoClick(event, this, '${vid.id}')">
                             <source src="${vid.video_url}" type="video/mp4">
                         </video>
+
+                        <div class="play-pause-indicator absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-white/80 bg-black/40 w-20 h-20 rounded-full flex items-center justify-center z-[60] pointer-events-none opacity-0 transition-opacity duration-300 scale-150">
+                            <i class="fas fa-play text-3xl ml-1"></i>
+                        </div>
                         
                         <div class="volume-indicator absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-white bg-black/60 w-16 h-16 rounded-full flex items-center justify-center z-[60] pointer-events-none opacity-0 transition-all duration-300 scale-150">
                             <i class="fas fa-volume-up text-2xl"></i>
@@ -2365,6 +2369,7 @@ function closeUploadModal() {
                 }
             });
         }
+
         
                 // FUNGSI KHUSUS UNTUK MENGONTROL SUARA DI VIDEO PROFIL (KLIK 1 KALI)
         function toggleProfileVideoAudio(video) {
@@ -2958,7 +2963,6 @@ function closeUploadModal() {
         function renderVideoBatch() {
             const container = document.getElementById('feed-container');
             
-            // --- LOGIKA FEED TANPA UJUNG (INFINITE LOOP) ---
             if (currentVideoIndex >= allVideosData.length) {
                 currentVideoIndex = 0; 
             }
@@ -2968,7 +2972,6 @@ function closeUploadModal() {
 
             const htmlString = nextBatch.map((vid) => `
                 <div class="snap-start w-full h-full flex-shrink-0 relative flex items-center justify-center bg-black">
-                    
                     <div class="video-inner-wrap w-full h-full relative bg-brand-dark ${!isGlobalMuted ? 'floating-focus' : ''}">
                         
                         <div class="absolute inset-0 flex items-center justify-center z-0"><div class="w-12 h-12 border-4 border-brand-accent/20 border-t-brand-accent rounded-full animate-spin"></div></div>
@@ -2995,34 +2998,101 @@ function closeUploadModal() {
                                 </div>
                             </div>
                         </div>
+
+                        <div class="absolute bottom-6 left-4 z-40 w-[75%] pr-2 pointer-events-auto flex flex-col justify-end pb-2">
+                            <p onclick="event.stopPropagation(); viewUserProfile('${vid.user_id}')" class="font-bold text-[16px] text-white cursor-pointer hover:text-brand-info drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)] mb-1.5">
+                                @${vid.nickname || "Player"}
+                            </p>
+                            <div onclick="this.classList.toggle('expanded')" class="caption-text text-[14px] text-white/95 drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)] cursor-pointer leading-snug">
+                                ${formatCaption(vid.caption)}
+                            </div>
+                            
+                            <div class="flex items-center gap-2 mt-2.5 overflow-hidden w-3/4">
+                                <i class="fas fa-music text-[10px] text-white animate-pulse drop-shadow-md"></i>
+                                <div class="overflow-hidden whitespace-nowrap relative w-full mask-text">
+                                    <div class="inline-block text-[12px] text-white drop-shadow-md font-medium marquee-text">
+                                        Suara Asli - @${vid.nickname || "Player"} 🎵 Original Audio
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                         
-                        ```
+                        <div class="absolute bottom-6 right-4 z-40 flex flex-col items-center gap-5 pointer-events-auto pb-2">
+                            <div class="relative cursor-pointer hover:scale-105 transition-transform" onclick="event.stopPropagation(); viewUserProfile('${vid.user_id}')">
+                                <img src="${vid.avatar_url || 'https://ui-avatars.com/api/?name=User&background=1A1133&color=fff'}" loading="lazy" class="w-[46px] h-[46px] rounded-full object-cover border-[1.5px] border-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
+                                <button id="feed-follow-btn-${vid.user_id}" onclick="event.stopPropagation(); feedToggleFollow('${vid.user_id}', this)" class="absolute -bottom-2.5 left-1/2 -translate-x-1/2 bg-[#FF007A] text-white rounded-full w-[22px] h-[22px] flex items-center justify-center border-[1.5px] border-brand-dark drop-shadow-md active:scale-90 transition-transform z-30">
+                                    <i class="fas fa-plus text-[10px]"></i>
+                                </button>
+                            </div>
 
-*(Lakukan hal yang sama persis (copy-paste blok `play-pause-indicator`) ke dalam fungsi `renderProfileVideoBatch` ya, biar video di halaman profil juga punya animasi Play/Pause).*
+                            <div class="like-container flex flex-col items-center gap-1" data-vid="${vid.id}">
+                                <button onclick="likeVideo('${vid.id}', this)" class="hover:scale-110 transition-transform active:scale-90">
+                                    <i class="fas fa-heart text-[35px] text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]"></i>
+                                </button>
+                                <span class="like-count-display text-white text-[13px] font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">0</span>
+                            </div>
 
----
+                            <div class="comment-count-container flex flex-col items-center gap-1" data-vid="${vid.id}">
+                                <button onclick="openComments('${vid.id}')" class="hover:scale-110 transition-transform active:scale-90">
+                                    <i class="fas fa-comment-dots text-[35px] text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]" style="transform: scaleX(-1);"></i>
+                                </button>
+                                <span class="comment-count-display text-white text-[13px] font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">0</span>
+                            </div>
 
-### Jangan Lupa Ubah Logika Klik-nya!
-Karena HTML-nya sudah ditambah, kita harus bikin Ikon Play itu berfungsi saat layarnya disentuh. Cari 2 fungsi ini (`handleVideoClick` & `handleFloatVideoClick`) dan **GANTI KEDUANYA** dengan kode di bawah ini:
+                            <div class="flex flex-col items-center gap-1">
+                                <button onclick="shareVideo('${vid.id}', this)" class="hover:scale-110 transition-transform active:scale-90">
+                                    <i class="fas fa-share text-[35px] text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]"></i>
+                                </button>
+                                <span class="text-white text-[13px] font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">Share</span>
+                            </div>
 
-```javascript
+                            <div class="relative mt-2 flex items-center justify-center w-11 h-11 group cursor-pointer hover:scale-105 transition-transform" onclick="event.stopPropagation()">
+                                <i class="fas fa-music absolute -top-4 -left-2 text-[10px] text-white/70 animate-ping opacity-0 group-hover:opacity-100 transition-opacity"></i>
+                                <div class="w-10 h-10 rounded-full bg-[#1A1133] border-[3.5px] border-gray-800 flex items-center justify-center animate-[spin_4s_linear_infinite] shadow-[0_0_15px_rgba(0,0,0,0.8)]">
+                                    <img src="${vid.avatar_url || 'https://ui-avatars.com/api/?name=Music&background=1A1133&color=fff'}" class="w-4 h-4 rounded-full object-cover">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>\`).join('');
+
+            container.insertAdjacentHTML('beforeend', htmlString);
+            currentVideoIndex += BATCH_SIZE;
+
+            const videoActions = container.querySelectorAll('.snap-start:not(.data-loaded)');
+            videoActions.forEach((card) => {
+                card.classList.add('data-loaded');
+                const vidId = card.querySelector('.like-container').dataset.vid;
+                updateLikeCountUI(vidId, card.querySelector('.like-container'));
+                updateCommentCountUI(vidId, card.querySelector('.comment-count-container'));
+            });
+
+            const unobservedVideos = container.querySelectorAll('.video-player:not(.observed)');
+            unobservedVideos.forEach((v, i) => {
+                v.classList.add('observed'); if (obs) obs.observe(v);
+                if (i === unobservedVideos.length - 1) {
+                    const lastVideoObserver = new IntersectionObserver(entries => {
+                        if(entries[0].isIntersecting) { lastVideoObserver.disconnect(); renderVideoBatch(); }
+                    }, { threshold: 0.1 });
+                    lastVideoObserver.observe(v.closest('.snap-start'));
+                }
+            });
+        }
+
         function handleVideoClick(event, videoElement, vidId) {
             const now = Date.now();
             const TIMESLOT = 300; 
             
             if (now - lastTap < TIMESLOT) {
-                // DOUBLE TAP: Animasi Love ala TikTok
                 const card = videoElement.closest('.snap-start');
                 const likeBtn = card.querySelector('.like-container button');
                 likeVideo(vidId, likeBtn);
                 createHeartAt(event);
                 
-                // Pastikan video tetap main setelah dilove
                 videoElement.play();
                 const indicator = videoElement.parentElement.querySelector('.play-pause-indicator');
                 if(indicator) indicator.classList.remove('opacity-100', 'scale-100');
             } else {
-                // SINGLE TAP: Play / Pause Video
                 setTimeout(() => { 
                     if (Date.now() - lastTap >= TIMESLOT) {
                         const indicator = videoElement.parentElement.querySelector('.play-pause-indicator');
@@ -3051,18 +3121,15 @@ Karena HTML-nya sudah ditambah, kita harus bikin Ikon Play itu berfungsi saat la
             const TIMESLOT = 300; 
             
             if (now - lastTap < TIMESLOT) {
-                // DOUBLE TAP: Animasi Love ala TikTok
                 const card = videoElement.closest('.snap-start');
                 const likeBtn = card.querySelector('.like-container button');
                 likeVideo(vidId, likeBtn);
                 createHeartAt(event);
                 
-                // Pastikan video tetap main setelah dilove
                 videoElement.play();
                 const indicator = videoElement.parentElement.querySelector('.play-pause-indicator');
                 if(indicator) indicator.classList.remove('opacity-100', 'scale-100');
             } else {
-                // SINGLE TAP: Play / Pause Video
                 setTimeout(() => { 
                     if (Date.now() - lastTap >= TIMESLOT) {
                         const indicator = videoElement.parentElement.querySelector('.play-pause-indicator');
@@ -3085,6 +3152,7 @@ Karena HTML-nya sudah ditambah, kita harus bikin Ikon Play itu berfungsi saat la
             }
             lastTap = now;
         }
+
 
 
                         <!-- ============================================== -->
@@ -3267,56 +3335,6 @@ let lastTypingTime = 0; // Tambahkan variabel ini di luar fungsi
                 lastTypingTime = now; // Update waktu terakhir mengetik
             }
         }
-        
-                function switchTab(tabId, event = null, isPush = true) {
-            if (event) event.preventDefault();
-            
-            // RESET PROFIL KE MILIK SENDIRI JIKA KLIK MENU BAWAH NAVIGASI PROFIL
-            if (tabId === 'profile' && event !== null && currentUser) {
-                if (viewedUserId !== currentUser.id) {
-                    viewedUserId = currentUser.id;
-                    openUserProfile(currentUser.id);
-                    return; // hentikan karena openUserProfile akan mengeksekusi switchTab secara mandiri
-                }
-            }
-
-            if (tabId !== 'profile' && tabId !== 'pembayaran' && tabId !== 'upload') {tabSebelumnya = tabId;} 
-            if (tabId === 'layanan' && isPush && document.getElementById('pembayaran').classList.contains('active')) {
-                window.scrollTo({ top: 0, behavior: 'smooth' }); return; 
-            }
-
-            const targetSection = document.getElementById(tabId) || document.getElementById('home');
-            if (!targetSection) return;
-
-            localStorage.setItem('lastTab', tabId);
-            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-            document.querySelectorAll('.nav-item').forEach(n => {
-                n.classList.remove('active');
-                const icon = n.querySelector('i');
-                if (icon) icon.style.animation = 'none';
-            });
-
-            targetSection.classList.add('active');
-            
-            if (tabId === 'sosial') {
-                loadVideos();
-            }
-
-            const navMap = { 'home': 0, 'info': 1, 'layanan': 2, 'sosial': 3, 'rekber': 4, 'ripper': 5, 'profile': 6, 'pembayaran': 2 };
-            const activeIndex = navMap[tabId];
-            if (activeIndex !== undefined) {
-                const activeNav = document.querySelectorAll('.nav-item')[activeIndex];
-                if (activeNav) {
-                    activeNav.classList.add('active');
-                    const icon = activeNav.querySelector('i');
-                    if (icon) { void icon.offsetWidth; icon.style.animation = 'popBounce 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards'; }
-                }
-            }
-            
-            setTimeout(() => { window.scrollTo({ top: 0, behavior: 'smooth' }); }, 10);
-            if (isPush && window.location.hash !== `#${tabId}`) history.pushState(null, null, `#${tabId}`);
-        }
-
 
 
 
@@ -3501,7 +3519,7 @@ async function feedToggleFollow(targetUserId, btnElement) {
                     statusEl.className = 'text-[9px] text-gray-500';
                     
                     // Tarik data last_seen dari Supabase
-                    const { data } = await supabaseClient.from('profiles').select('last_seen').eq('id', activeChatUserId).single();
+                    const { data } = await supabaseClioent.from('profiles').select('last_seen').eq('id', activeChatUserId).single();
                     if (data && data.last_seen) {
                         statusEl.innerText = 'Terakhir dilihat ' + timeAgo(data.last_seen);
                     } else {
