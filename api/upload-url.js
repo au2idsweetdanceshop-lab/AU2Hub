@@ -32,7 +32,7 @@ export default async function handler(req, res) {
                 Key: `videos/${uniqueFileName}`,
                 Body: buffer,
                 ContentType: filetype || 'audio/webm',
-                ACL: 'public-read' // 🔥 PERBAIKAN DI SINI: Membuka akses agar file suara bisa langsung diputar di browser player
+                ACL: 'public-read'
             });
 
             await client.send(command);
@@ -52,7 +52,8 @@ export default async function handler(req, res) {
         const command = new PutObjectCommand({
             Bucket: bucketName,
             Key: `videos/${uniqueFileName}`,
-            ContentType: filetype
+            ContentType: filetype,
+            ACL: 'public-read' // 🔥 KUNCI PERBAIKAN DI SINI: Membuka gembok video feed biasa agar otomatis berstatus publik saat di-upload!
         });
 
         const uploadUrl = await getSignedUrl(client, command, { expiresIn: 3600 });
