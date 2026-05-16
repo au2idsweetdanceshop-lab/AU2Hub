@@ -696,7 +696,7 @@
                         <div class="flex-1 relative">
                             <input type="text" id="chat-room-input" oninput="sendTypingStatus()" placeholder="Ketik pesan..." class="w-full bg-white/5 border border-white/10 rounded-[1.5rem] py-3.5 px-6 text-sm text-white outline-none focus:border-brand-accent/50 focus:bg-white/10 transition-all pr-12">
                         </div>
-                        <button id="btn-send-room" class="w-12 h-12 rounded-2xl bg-brand-accent text-white flex items-center justify-center shadow-lg shadow-brand-accent/20 active:scale-90 transition-all hover:rotate-12"><i class="fas fa-paper-plane"></i></button>
+                        <button id="btn-send-room" onclick="sendMessageRoom()" class="w-12 h-12 rounded-2xl bg-brand-accent text-white flex items-center justify-center shadow-lg shadow-brand-accent/20 active:scale-90 transition-all hover:rotate-12"><i class="fas fa-paper-plane"></i></button>
                     </div>
                 </div>
             </div>
@@ -807,8 +807,8 @@
             <button id="btn-reply-msg" class="w-full text-white py-4 font-bold active:bg-white/5 transition-colors text-sm hover:text-brand-info"><i class="fas fa-reply mr-2"></i> Balas Pesan</button>
             
             <!-- Tombol Hapus (Diberi border-t agar ada pemisah dengan tombol balas) -->
-            <button id="btn-del-msg-me" class="w-full text-white py-4 font-bold border-t border-white/5 active:bg-white/5 transition-colors text-sm hover:text-brand-info"><i class="fas fa-trash-alt mr-2"></i> Hapus untuk Saya</button>
-            <button id="btn-del-msg-all" class="w-full text-red-500 py-4 font-bold border-t border-white/5 active:bg-white/5 transition-colors text-sm hover:text-red-400"><i class="fas fa-globe mr-2"></i> Hapus untuk Semua</button>
+            <button id="btn-del-msg-me" onclick="deleteMsgForMe()" class="w-full text-white py-4 font-bold border-t border-white/5 active:bg-white/5 transition-colors text-sm hover:text-brand-info"><i class="fas fa-trash-alt mr-2"></i> Hapus untuk Saya</button>
+            <button id="btn-del-msg-all" onclick="deleteMsgForAll()" class="w-full text-red-500 py-4 font-bold border-t border-white/5 active:bg-white/5 transition-colors text-sm hover:text-red-400"><i class="fas fa-globe mr-2"></i> Hapus untuk Semua</button>
             <button onclick="document.getElementById('modal-msg-option').classList.replace('flex', 'hidden')" class="w-full text-gray-500 py-4 font-bold border-t border-white/5 active:bg-white/5 transition-colors text-sm">Batal</button>
         </div>
     </div>
@@ -4799,8 +4799,52 @@ function updateSeek(e, containerElement, video) {
             }
         }
 
+        // ==========================================
+        // INISIALISASI HALAMAN (WAJIB ADA AGAR WEB BERJALAN)
+        // ==========================================
+        document.addEventListener('DOMContentLoaded', () => {
+            
+            // Logika Routing Halaman Utama
+            let tabAwal = window.location.hash.substring(1);
+            if (!tabAwal) {
+                tabAwal = localStorage.getItem('lastTab') || 'home';
+            }
+            switchTab(tabAwal, null, false);
+            
+            checkSession();
+            muatDataRipper();
+            renderFaqs();
+            renderServices();
+
+            // Mendaftarkan Service Worker PWA
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('/sw.js')
+                .then(() => console.log("Service Worker AU2Hub Aktif!"))
+                .catch(err => console.error("Service Worker Gagal:", err));
+            }
+
+            // Logika Klik Tombol Instal PWA
+            const btnInstallManual = document.getElementById('btn-install-manual');
+            const btnInstallContainer = document.getElementById('install-container');
+
+            if (btnInstallManual) {
+                btnInstallManual.addEventListener('click', async () => {
+                    if (!deferredPrompt) return;
+                    
+                    deferredPrompt.prompt();
+                    const { outcome } = await deferredPrompt.userChoice;
+                    console.log(`User memilih: ${outcome}`);
+                    
+                    deferredPrompt = null;
+                    if (btnInstallContainer) {
+                        btnInstallContainer.classList.add('hidden');
+                    }
+                });
+            }
+        });
+
     </script>
 
-         <script>eruda.init();</script>
+    <script>eruda.init();</script>
 </body>
 </html>
