@@ -4832,32 +4832,48 @@ function updateSeek(e, containerElement, video) {
             const isGroup = !!activeGroupId; 
             const targetId = isGroup ? activeGroupId : activeChatUserId;
             
-            showToast("Mengirim pesan suara...", "info");
+            // 1. BUAT GELEMBUNG CHAT PALSU DI AWAL (Biar kerasa instan!)
+            const tempId = 'temp-vn-' + Date.now();
+            const tempMsg = { 
+                id: tempId, 
+                sender_id: currentUser.id, 
+                message: "🎙️ Memutar pesan suara...", // Placeholder sementara
+                created_at: new Date().toISOString() 
+            };
+            appendMessageBubble(tempMsg); 
+            scrollToBottomChat();
 
             try {
-                // Bungkus audio jadi file siap kirim
                 const file = new File([blob], "vn_" + Date.now() + ".webm", { type: 'audio/webm' });
                 
-                // Numpang jalur upload API video kita (hemat dan praktis!)
+                // 2. Mulai proses upload yang berat di background
                 const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent(file.name)}&filetype=${encodeURIComponent(file.type)}`);
                 const dataUrl = await resUrl.json();
                 
                 await fetch(dataUrl.uploadUrl, { method: 'PUT', body: file, headers: { 'Content-Type': file.type, 'x-amz-acl': 'public-read' } });
                 
                 const msgText = `[AUDIO]${dataUrl.finalVideoUrl}`;
-                
-                // Munculkan di layar secara instan
-                const tempMsg = { id: 't-'+Date.now(), sender_id: currentUser.id, message: msgText, created_at: new Date().toISOString() };
-                appendMessageBubble(tempMsg); 
-                scrollToBottomChat();
 
-                // Simpan diam-diam ke database
+                // 3. Hapus gelembung palsu tadi karena upload sudah selesai
+                const oldBubble = document.querySelector(`[ontouchstart*="${tempId}"]`);
+                if (oldBubble) {
+                    const wrapper = oldBubble.closest('.message-anim');
+                    if (wrapper) wrapper.remove();
+                }
+
+                // 4. Kirim data asli ke database Supabase
                 const insertData = { sender_id: currentUser.id, message: msgText };
                 if (isGroup) insertData.group_id = targetId; else insertData.receiver_id = targetId;
                 await supabaseClient.from('messages').insert(insertData);
                 
             } catch (err) { 
-                showToast("Gagal mengirim suara", "error"); 
+                // Jika gagal, hapus gelembung palsu dan beri tahu user
+                const oldBubble = document.querySelector(`[ontouchstart*="${tempId}"]`);
+                if (oldBubble) {
+                    const wrapper = oldBubble.closest('.message-anim');
+                    if (wrapper) wrapper.remove();
+                }
+                showToast("Gagal mengirim pesan suara", "error"); 
             }
         }
 
