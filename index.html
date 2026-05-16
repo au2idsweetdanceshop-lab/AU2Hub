@@ -4111,9 +4111,17 @@ function prevStory() {
                 const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent(file.name)}&filetype=${file.type}`);
                 const dataUrl = await resUrl.json();
 
-                await fetch(dataUrl.uploadUrl, { method: 'PUT', body: file, headers: { 'Content-Type': file.type } });
+                // 🔥 PERBAIKAN 1: Menambahkan header x-amz-acl agar Biznet membuka izin baca publik untuk file video ini
+                await fetch(dataUrl.uploadUrl, { 
+                    method: 'PUT', 
+                    body: file, 
+                    headers: { 
+                        'Content-Type': file.type,
+                        'x-amz-acl': 'public-read'
+                    } 
+                });
 
-                                const spreadsheetPayload = {
+                const spreadsheetPayload = {
                     // --- DUA BARIS INI TAMBAHAN BARU UNTUK GOOGLE SHEETS ---
                     ID_Video: 'vid_' + Date.now(),
                     URL_Video: dataUrl.finalVideoUrl,
@@ -4127,6 +4135,9 @@ function prevStory() {
                     user_id: currentUser.id,
                     created_at: new Date().toISOString()
                 };
+
+                // 🔥 PERBAIKAN 2: Masukkan data video baru ke antrean lokal aplikasi biar langsung tayang di feed tanpa nunggu Google Sheets yang lelet
+                newUploads.push(spreadsheetPayload);
 
                 await fetch(config.gasUrl, {
                     method: 'POST',
@@ -4156,6 +4167,7 @@ function prevStory() {
                 isUploading = false; // Buka kunci window unload
             }
         }
+
 
         
         async function uploadChatImage(event) {
