@@ -3,8 +3,8 @@ const assets = [
   '/',
   '/index.html',
   '/manifest-v2.json',
-  '/icon-192.png',
-  '/icon-512.png'
+  '/app-icon-192.png',
+  '/app-icon-512.png'
 ];
 
 // Tahap Install - Simpan file ke HP
