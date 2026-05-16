@@ -264,6 +264,20 @@
             -webkit-overflow-scrolling: touch !important; 
             touch-action: pan-y !important;
         }
+        
+                /* Animasi Teks Berjalan (Marquee) ala TikTok */
+        @keyframes marquee {
+            0% { transform: translateX(100%); }
+            100% { transform: translateX(-100%); }
+        }
+        .marquee-text {
+            animation: marquee 6s linear infinite;
+        }
+        /* Efek fade (memudar) di ujung kanan teks agar rapi */
+        .mask-text {
+            -webkit-mask-image: linear-gradient(to right, black 80%, transparent 100%);
+            mask-image: linear-gradient(to right, black 80%, transparent 100%);
+        }
 
     </style> </head>
 <body class="pb-24">
@@ -657,9 +671,24 @@
                 <div id="chat-messages-container" class="flex-1 overflow-y-auto hide-scroll p-4 flex flex-col gap-1 relative bg-black/40"></div>
                 <div id="typing-indicator" class="hidden px-4 pb-2 bg-black/40 text-[10px] text-brand-info italic transition-all">User sedang mengetik...</div>
                 
-                <!-- INPUT CHAT MODERN -->
-                <div class="p-4 border-t border-white/5 bg-brand-card/80 backdrop-blur-lg shrink-0">
-                    <div class="flex items-end gap-3 max-w-md mx-auto">
+                <!-- INPUT CHAT MODERN (WHATSAPP STYLE) -->
+                <div class="p-4 border-t border-white/5 bg-brand-card/80 backdrop-blur-lg shrink-0 flex flex-col relative">
+                    
+                    <!-- KOTAK PREVIEW BALASAN (Hidden by default) -->
+                    <div id="chat-reply-preview" class="hidden w-full max-w-md mx-auto mb-2 bg-black/40 border-l-4 border-brand-info rounded-r-xl p-2 relative transition-all">
+                        <div class="flex justify-between items-start pr-6">
+                            <div>
+                                <div class="text-[11px] font-bold text-brand-info" id="chat-reply-name">Nama</div>
+                                <div class="text-[11px] text-gray-400 truncate max-w-[250px]" id="chat-reply-text">Isi pesan...</div>
+                            </div>
+                        </div>
+                        <button onclick="cancelChatReply()" class="absolute top-2 right-2 text-gray-500 hover:text-white transition-colors active:scale-90">
+                            <i class="fas fa-times text-xs"></i>
+                        </button>
+                    </div>
+
+                    <!-- AREA KETIK -->
+                    <div class="flex items-end gap-3 max-w-md mx-auto w-full">
                         <div class="relative pb-1">
                             <input type="file" id="chat-image-input" accept="image/*" class="hidden" onchange="uploadChatImage(event)">
                             <label for="chat-image-input" class="w-12 h-12 rounded-2xl bg-white/5 hover:bg-brand-info/20 hover:text-brand-info flex items-center justify-center text-gray-400 cursor-pointer transition-all border border-white/10 active:scale-90"><i class="fas fa-paperclip text-lg"></i></label>
@@ -773,11 +802,17 @@
     <div id="modal-msg-option" class="fixed inset-0 z-[300] hidden items-end sm:items-center justify-center bg-black/90 backdrop-blur-md px-4 pb-6 transition-all">
         <div class="bg-brand-card w-full max-w-sm rounded-3xl border border-white/10 p-2 shadow-2xl relative modal-anim flex flex-col gap-1 overflow-hidden">
             <div class="p-4 border-b border-white/5 text-center"><h3 class="text-sm font-bold text-gray-300">Opsi Pesan</h3></div>
-            <button id="btn-del-msg-me" class="w-full text-white py-4 font-bold active:bg-white/5 transition-colors text-sm hover:text-brand-info"><i class="fas fa-trash-alt mr-2"></i> Hapus untuk Saya</button>
+            
+            <!-- [BARU] Tombol Balas Pesan -->
+            <button id="btn-reply-msg" class="w-full text-white py-4 font-bold active:bg-white/5 transition-colors text-sm hover:text-brand-info"><i class="fas fa-reply mr-2"></i> Balas Pesan</button>
+            
+            <!-- Tombol Hapus (Diberi border-t agar ada pemisah dengan tombol balas) -->
+            <button id="btn-del-msg-me" class="w-full text-white py-4 font-bold border-t border-white/5 active:bg-white/5 transition-colors text-sm hover:text-brand-info"><i class="fas fa-trash-alt mr-2"></i> Hapus untuk Saya</button>
             <button id="btn-del-msg-all" class="w-full text-red-500 py-4 font-bold border-t border-white/5 active:bg-white/5 transition-colors text-sm hover:text-red-400"><i class="fas fa-globe mr-2"></i> Hapus untuk Semua</button>
             <button onclick="document.getElementById('modal-msg-option').classList.replace('flex', 'hidden')" class="w-full text-gray-500 py-4 font-bold border-t border-white/5 active:bg-white/5 transition-colors text-sm">Batal</button>
         </div>
     </div>
+
 
     <div id="modal-edit-profile" class="fixed inset-0 z-[200] hidden items-center justify-center bg-black/90 backdrop-blur-md px-6">
         <div class="bg-brand-card w-full max-w-sm rounded-3xl border border-white/10 p-6 shadow-2xl relative modal-anim">
@@ -2774,7 +2809,7 @@ function closeUploadModal() {
             } catch (e) { container.innerHTML = '<p class="text-center py-20 text-gray-500">Gagal memuat video.</p>'; }
         }
 
-        function renderVideoBatch() {
+                function renderVideoBatch() {
             const container = document.getElementById('feed-container');
             
             // --- LOGIKA FEED TANPA UJUNG (INFINITE LOOP) ---
@@ -2786,7 +2821,7 @@ function closeUploadModal() {
             if (nextBatch.length === 0) return;
 
             const htmlString = nextBatch.map((vid) => `
-                <div class="snap-start w-full h-full flex-shrink-0 relative flex items-center justify-center bg-[#0A0614]">
+                <div class="snap-start w-full h-full flex-shrink-0 relative flex items-center justify-center bg-black">
                     
                     <div class="video-inner-wrap w-full h-full relative bg-brand-dark ${!isGlobalMuted ? 'floating-focus' : ''}">
                         
@@ -2799,8 +2834,10 @@ function closeUploadModal() {
                         </video>
                         
                         <div class="time-indicator absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-white font-extrabold text-4xl drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)] opacity-0 transition-opacity z-[60] pointer-events-none tracking-wider bg-black/40 px-6 py-2 rounded-2xl">
-                            <span class="time-current">00:00</span> <span class="text-white/50 text-2xl mx-1">/</span> <span class="time-total text-white/70">00:00</span> </div>
+                            <span class="time-current">00:00</span> <span class="text-white/50 text-2xl mx-1">/</span> <span class="time-total text-white/70">00:00</span> 
+                        </div>
 
+                        <!-- Progress Bar Tetap di Dasar Layar -->
                         <div class="absolute bottom-0 left-0 w-full h-3 z-50 cursor-pointer group touch-none flex flex-col justify-end pb-1"
                              onpointerdown="startSeek(event, this)" onpointermove="doSeek(event, this)" onpointerup="endSeek(event, this)" onpointercancel="endSeek(event, this)">
                             <div class="w-full h-1 bg-white/30 relative">
@@ -2810,48 +2847,74 @@ function closeUploadModal() {
                             </div>
                         </div>
 
-                        <div class="absolute bottom-0 left-0 w-full px-5 pb-8 flex justify-between items-end z-20 pointer-events-none bg-gradient-to-t from-black/80 to-transparent pt-10">
-                            <div class="text-white drop-shadow-lg w-[75%] pointer-events-auto">
-                                <!-- 👇 PERBAIKAN 1: Tambah event.stopPropagation() agar klik teks tidak tembus ke video -->
-                                <p onclick="event.stopPropagation(); viewUserProfile('${vid.user_id}')" class="font-bold text-[15px] cursor-pointer hover:text-brand-info drop-shadow-md mb-1.5">
-                                    @${vid.nickname || "Player"}
-                                </p>
-                                <div onclick="this.classList.toggle('expanded')" class="caption-text text-[13px] opacity-90 drop-shadow-md cursor-pointer pr-2 leading-relaxed">
-                                    ${formatCaption(vid.caption)}
-                                </div>
+                        <!-- ============================================== -->
+                        <!-- TATA LETAK BARU (TIKTOK STYLE)                 -->
+                        <!-- ============================================== -->
+
+                        <!-- 1. Area Teks Kiri Bawah -->
+                        <div class="absolute bottom-6 left-4 z-40 w-[75%] pr-2 pointer-events-auto flex flex-col justify-end pb-2">
+                            <p onclick="event.stopPropagation(); viewUserProfile('${vid.user_id}')" class="font-bold text-[16px] text-white cursor-pointer hover:text-brand-info drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)] mb-1.5">
+                                @${vid.nickname || "Player"}
+                            </p>
+                            <div onclick="this.classList.toggle('expanded')" class="caption-text text-[14px] text-white/95 drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)] cursor-pointer leading-snug">
+                                ${formatCaption(vid.caption)}
                             </div>
                             
-                            <div class="flex flex-col gap-4 items-center pointer-events-auto mb-6 sm:mb-10 mr-1">
-                                <!-- 👇 PERBAIKAN 2: Tambah event.stopPropagation() agar klik foto tidak tembus ke video -->
-                                <div class="relative mb-2 cursor-pointer hover:scale-105 transition-transform" onclick="event.stopPropagation(); viewUserProfile('${vid.user_id}')">
-                                    <img src="${vid.avatar_url || 'https://ui-avatars.com/api/?name=User&background=1A1133&color=fff'}" loading="lazy" class="w-11 h-11 rounded-full object-cover border-[1.5px] border-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
-                                    <button id="feed-follow-btn-${vid.user_id}" onclick="event.stopPropagation(); feedToggleFollow('${vid.user_id}', this)" class="absolute -bottom-2.5 left-1/2 -translate-x-1/2 bg-[#FF007A] text-white rounded-full w-[22px] h-[22px] flex items-center justify-center border-[1.5px] border-brand-dark drop-shadow-md active:scale-90 transition-transform z-30">
-                                        <i class="fas fa-plus text-[10px]"></i>
-                                    </button>
-                                </div>
-
-                                <div class="like-container flex flex-col items-center gap-0.5" data-vid="${vid.id}">
-                                    <button onclick="likeVideo('${vid.id}', this)" class="hover:scale-110 transition-transform active:scale-90">
-                                        <i class="fas fa-heart text-[32px] text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]"></i>
-                                    </button>
-                                    <span class="like-count-display text-white text-[12px] font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">0</span>
-                                </div>
-
-                                <div class="comment-count-container flex flex-col items-center gap-0.5" data-vid="${vid.id}">
-                                    <button onclick="openComments('${vid.id}')" class="hover:scale-110 transition-transform active:scale-90">
-                                        <i class="fas fa-comment-dots text-[32px] text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]" style="transform: scaleX(-1);"></i>
-                                    </button>
-                                    <span class="comment-count-display text-white text-[12px] font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">0</span>
-                                </div>
-
-                                <div class="flex flex-col items-center gap-0.5 mt-1">
-                                    <button onclick="shareVideo('${vid.id}', this)" class="hover:scale-110 transition-transform active:scale-90">
-                                        <i class="fas fa-share text-[30px] text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]"></i>
-                                    </button>
-                                    <span class="text-white text-[11px] font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">Share</span>
+                            <!-- [BARU] Teks Berjalan "Suara Asli / Lagu" -->
+                            <div class="flex items-center gap-2 mt-2.5 overflow-hidden w-3/4">
+                                <i class="fas fa-music text-[10px] text-white animate-pulse drop-shadow-md"></i>
+                                <div class="overflow-hidden whitespace-nowrap relative w-full mask-text">
+                                    <div class="inline-block text-[12px] text-white drop-shadow-md font-medium marquee-text">
+                                        Suara Asli - @${vid.nickname || "Player"} 🎵 Original Audio
+                                    </div>
                                 </div>
                             </div>
                         </div>
+                        
+                        <!-- 2. Tombol Aksi Kanan Bawah -->
+                        <div class="absolute bottom-6 right-4 z-40 flex flex-col items-center gap-5 pointer-events-auto pb-2">
+                            
+                            <!-- Foto Profil & Tombol Plus -->
+                            <div class="relative cursor-pointer hover:scale-105 transition-transform" onclick="event.stopPropagation(); viewUserProfile('${vid.user_id}')">
+                                <img src="${vid.avatar_url || 'https://ui-avatars.com/api/?name=User&background=1A1133&color=fff'}" loading="lazy" class="w-[46px] h-[46px] rounded-full object-cover border-[1.5px] border-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
+                                <button id="feed-follow-btn-${vid.user_id}" onclick="event.stopPropagation(); feedToggleFollow('${vid.user_id}', this)" class="absolute -bottom-2.5 left-1/2 -translate-x-1/2 bg-[#FF007A] text-white rounded-full w-[22px] h-[22px] flex items-center justify-center border-[1.5px] border-brand-dark drop-shadow-md active:scale-90 transition-transform z-30">
+                                    <i class="fas fa-plus text-[10px]"></i>
+                                </button>
+                            </div>
+
+                            <!-- Like -->
+                            <div class="like-container flex flex-col items-center gap-1" data-vid="${vid.id}">
+                                <button onclick="likeVideo('${vid.id}', this)" class="hover:scale-110 transition-transform active:scale-90">
+                                    <i class="fas fa-heart text-[35px] text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]"></i>
+                                </button>
+                                <span class="like-count-display text-white text-[13px] font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">0</span>
+                            </div>
+
+                            <!-- Comment -->
+                            <div class="comment-count-container flex flex-col items-center gap-1" data-vid="${vid.id}">
+                                <button onclick="openComments('${vid.id}')" class="hover:scale-110 transition-transform active:scale-90">
+                                    <i class="fas fa-comment-dots text-[35px] text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]" style="transform: scaleX(-1);"></i>
+                                </button>
+                                <span class="comment-count-display text-white text-[13px] font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">0</span>
+                            </div>
+
+                            <!-- Share -->
+                            <div class="flex flex-col items-center gap-1">
+                                <button onclick="shareVideo('${vid.id}', this)" class="hover:scale-110 transition-transform active:scale-90">
+                                    <i class="fas fa-share text-[35px] text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]"></i>
+                                </button>
+                                <span class="text-white text-[13px] font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">Share</span>
+                            </div>
+
+                            <!-- [BARU] Piringan Musik Berputar -->
+                            <div class="relative mt-2 flex items-center justify-center w-11 h-11 group cursor-pointer hover:scale-105 transition-transform" onclick="event.stopPropagation()">
+                                <i class="fas fa-music absolute -top-4 -left-2 text-[10px] text-white/70 animate-ping opacity-0 group-hover:opacity-100 transition-opacity"></i>
+                                <div class="w-10 h-10 rounded-full bg-[#1A1133] border-[3.5px] border-gray-800 flex items-center justify-center animate-[spin_4s_linear_infinite] shadow-[0_0_15px_rgba(0,0,0,0.8)]">
+                                    <img src="${vid.avatar_url || 'https://ui-avatars.com/api/?name=Music&background=1A1133&color=fff'}" class="w-4 h-4 rounded-full object-cover">
+                                </div>
+                            </div>
+                        </div>
+                        
                     </div>
                 </div>`).join('');
 
@@ -2877,6 +2940,7 @@ function closeUploadModal() {
                 }
             });
         }
+
 
 // ==========================================
 // FITUR SWIPE DOWN (USAP KE BAWAH) UNTUK TUTUP STORY
@@ -3239,8 +3303,8 @@ async function feedToggleFollow(targetUserId, btnElement) {
             }
         }
 
-        // 1. FUNGSI MENGAMBIL PESAN DARI DATABASE
-                async function loadRoomMessages() {
+        // 1. FUNGSI MENGAMBIL PESAN DARI DATABASE (WHATSAPP STYLE WITH DATE DIVIDER)
+        async function loadRoomMessages() {
             const container = document.getElementById('chat-messages-container');
             const isGroup = !!activeGroupId;
             const targetId = isGroup ? activeGroupId : activeChatUserId;
@@ -3248,19 +3312,16 @@ async function feedToggleFollow(targetUserId, btnElement) {
             if(!targetId) return;
 
             try {
-                // SEMENTARA KITA GANTI MENJADI .select('*') UNTUK MENGHINDARI ERROR JOIN
                 let query = supabaseClient.from('messages').select('*, profiles!messages_sender_id_fkey(nickname, avatar_url)').order('created_at', { ascending: true }).limit(50);
                 
                 if (isGroup) {
                     query = query.eq('group_id', targetId);
                 } else {
-                    // Logika ambil chat pribadi antara Saya dan Dia
                     query = query.or(`and(sender_id.eq.${currentUser.id},receiver_id.eq.${targetId}),and(sender_id.eq.${targetId},receiver_id.eq.${currentUser.id})`);
                 }
 
                 const { data, error } = await query;
                 
-                // JIKA SUPABASE MASIH MENOLAK, ALASANNYA AKAN MUNCUL SEBAGAI POP-UP DI LAYAR
                 if (error) {
                     alert("INFO ERROR SUPABASE:\n" + error.message);
                     throw error;
@@ -3269,7 +3330,44 @@ async function feedToggleFollow(targetUserId, btnElement) {
                 container.innerHTML = ''; // Bersihkan animasi loading
                 
                 if (data && data.length > 0) {
-                    data.forEach(msg => appendMessageBubble(msg));
+                    let lastDateString = ''; // Melacak tanggal pesan sebelumnya
+
+                    data.forEach(msg => {
+                        // Kunci format tanggal ala WhatsApp (Hari ini, Kemarin, atau Tanggal Lengkap)
+                        const msgDate = new Date(msg.created_at);
+                        const today = new Date();
+                        const yesterday = new Date(today);
+                        yesterday.setDate(yesterday.getDate() - 1);
+
+                        let dateLabel = '';
+                        
+                        // Cek kecocokan tanggal untuk menentukan Label
+                        if (msgDate.toDateString() === today.toDateString()) {
+                            dateLabel = 'HARI INI';
+                        } else if (msgDate.toDateString() === yesterday.toDateString()) {
+                            dateLabel = 'KEMARIN';
+                        } else {
+                            // Jika lewat 2 hari yang lalu, tampilkan format: 16 Mei 2026
+                            dateLabel = msgDate.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }).toUpperCase();
+                        }
+
+                        // Jika tanggal pesan berbeda dengan tanggal pesan sebelumnya, sisipkan pembatas tanggal
+                        if (dateLabel !== lastDateString) {
+                            const dateDividerHtml = `
+                                <div class="flex justify-center my-3 message-anim">
+                                    <span class="bg-[#121b22] text-gray-400 text-[10px] font-bold px-2.5 py-1 rounded-lg border border-white/5 tracking-wide shadow-sm uppercase">
+                                        ${dateLabel}
+                                    </span>
+                                </div>
+                            `;
+                            container.insertAdjacentHTML('beforeend', dateDividerHtml);
+                            lastDateString = dateLabel; // Perbarui pelacak tanggal
+                        }
+
+                        // Render balon chat
+                        appendMessageBubble(msg);
+                    });
+                    
                     scrollToBottomChat();
                 } else {
                     container.innerHTML = '<div class="text-center text-xs text-gray-500 mt-10">Belum ada pesan. Mulai obrolan!</div>';
@@ -3286,45 +3384,120 @@ async function feedToggleFollow(targetUserId, btnElement) {
         }
 
 
-        // 2. FUNGSI UNTUK MENGGAMBAR BALON CHAT KE LAYAR
+
+        // --- FUNGSI HELPER UNTUK LONG PRESS (TAHAN LAMA) ---
+        let longPressTimer;
+        function hancurkanLongPress() {
+            clearTimeout(longPressTimer);
+        }
+        function mulaiLongPress(msgId, senderId) {
+            clearTimeout(longPressTimer);
+            longPressTimer = setTimeout(() => {
+                // Mainkan getar pendek di HP jika didukung (efek haptic ala WA)
+                if (navigator.vibrate) navigator.vibrate(40);
+                showMsgOptions(msgId, senderId);
+            }, 500); // Tahan selama 500ms (0.5 detik) untuk memicu menu opsi
+        }
+
+        // 2. FUNGSI UNTUK MENGGAMBAR BALON CHAT KE LAYAR (WHATSAPP STYLE REBORN)
         function appendMessageBubble(msg) {
             const container = document.getElementById('chat-messages-container');
-            if(container.innerHTML.includes('Belum ada pesan')) container.innerHTML = ''; // Hapus teks kosong
+            if(container.innerHTML.includes('Belum ada pesan')) container.innerHTML = ''; 
             
             const isMe = msg.sender_id === currentUser.id;
             const align = isMe ? 'justify-end' : 'justify-start';
-            const bg = isMe ? 'bg-brand-accent text-white' : 'bg-white/10 text-gray-200';
-            const borderRadius = isMe ? 'rounded-tl-2xl rounded-tr-2xl rounded-bl-2xl rounded-br-sm' : 'rounded-tl-2xl rounded-tr-2xl rounded-br-2xl rounded-bl-sm';
             
-            let content = msg.message;
+            // Menggunakan palet warna WhatsApp Dark Mode asli
+            const bg = isMe ? 'bg-[#005c4b] text-white' : 'bg-[#202c33] text-gray-200';
             
-            // Deteksi jika pesan adalah gambar
-            if (content.startsWith('[IMG]')) {
-                const imgUrl = content.replace('[IMG]', '');
-                content = `<img src="${imgUrl}" onclick="openLightbox('${imgUrl}')" class="max-w-[200px] rounded-xl cursor-pointer hover:opacity-80">`;
-            } else {
-                content = formatCaption(content); // Amankan teks
+            // Bentuk sudut gelembung chat (ada ekor kecil di ujung bawah sudut pesan)
+            const borderRadius = isMe 
+                ? 'rounded-tl-xl rounded-tr-xl rounded-bl-xl rounded-br-[2px]' 
+                : 'rounded-tl-xl rounded-tr-xl rounded-br-xl rounded-bl-[2px]';
+            
+            let content = msg.message || "";
+            let replyHtml = "";
+
+            // --- DETEKSI KODE QUOTE REPLY ---
+            // Cari pola [REPLY:Nama||Teks] di awal pesan
+            const replyMatch = content.match(/^\[REPLY:(.*?)\|\|(.*?)\]\s*([\s\S]*)$/);
+            if (replyMatch) {
+                const rName = replyMatch[1];
+                const rText = replyMatch[2];
+                content = replyMatch[3]; // Sisa pesan asli yang diketik
+                
+                // Buat UI Kotak Balasan di dalam bubble chat
+                replyHtml = `
+                    <div class="bg-black/20 border-l-[3px] border-[#34b7f1] rounded px-2 py-1 mb-1.5 opacity-90 text-left shadow-sm mt-1">
+                        <div class="text-[10px] font-extrabold text-[#34b7f1] leading-tight mb-0.5">${rName}</div>
+                        <div class="text-[10px] text-gray-300 truncate max-w-[200px] leading-tight">${rText}</div>
+                    </div>
+                `;
             }
 
-            // Tampilkan nama pengirim jika di dalam Grup
+            const isImage = content.startsWith('[IMG]');
+            
+            if (isImage) {
+                const imgUrl = content.replace('[IMG]', '');
+                content = `<img src="${imgUrl}" onclick="openLightbox('${imgUrl}')" class="max-w-[220px] rounded-lg cursor-pointer hover:opacity-90 transition-opacity">`;
+            } else {
+                content = formatCaption(content); 
+            }
+
             let senderName = '';
             if (activeGroupId && !isMe) {
-                senderName = `<div class="text-[9px] text-brand-info font-bold mb-1">${msg.profiles?.nickname || 'Anggota'}</div>`;
+                // Diubah warnanya agar senada dengan UI WhatsApp
+                senderName = `<div class="text-[11px] text-[#34b7f1] font-bold mb-0.5">${msg.profiles?.nickname || 'Anggota'}</div>`;
+            }
+
+            // Mengambil waktu format jam menit saja (misal: 13:45)
+            const timeFormatted = new Date(msg.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+
+            // Logika Status Centang WhatsApp
+            let readStatusHtml = '';
+            if (isMe) {
+                if (msg.is_read || msg.is_read === 'true') {
+                    // Centang Dua Biru (Sudah Dibaca)
+                    readStatusHtml = `<i class="fas fa-check-double text-[#53bdeb] text-[10px] ml-1"></i>`;
+                } else {
+                    // Centang Satu Abu (Terkirim ke Server)
+                    readStatusHtml = `<i class="fas fa-check text-gray-400 text-[10px] ml-1"></i>`;
+                }
             }
 
             const html = `
-            <div class="flex w-full ${align} mb-2 message-anim">
-                <div class="max-w-[75%] cursor-pointer active:scale-95 transition-transform" onclick="showMsgOptions('${msg.id}', '${msg.sender_id}')">
-                    <div class="px-4 py-2.5 ${bg} ${borderRadius} shadow-md text-sm border border-white/5 break-words">
+            <div class="flex w-full ${align} mb-1.5 message-anim select-none">
+                <!-- Wrapper Interaksi Tahan Lama (Long Press) / Klik Kanan PC -->
+                <div class="max-w-[82%] relative group"
+                     oncontextmenu="event.preventDefault(); showMsgOptions('${msg.id}', '${msg.sender_id}')"
+                     ontouchstart="mulaiLongPress('${msg.id}', '${msg.sender_id}')"
+                     ontouchend="hancurkanLongPress()"
+                     ontouchcancel="hancurkanLongPress()"
+                     onmousedown="if(event.button === 0) mulaiLongPress('${msg.id}', '${msg.sender_id}')"
+                     onmouseup="hancurkanLongPress()"
+                     onmouseleave="hancurkanLongPress()">
+                    
+                    <!-- Gelembung Pesan -->
+                    <div class="px-2.5 pt-1.5 pb-5 ${bg} ${borderRadius} shadow-sm text-[13.5px] border border-white/5 break-words min-w-[70px]">
                         ${senderName}
-                        ${content}
+                        ${replyHtml} <!-- KOTAK BALASAN DIMUNCULKAN DI SINI -->
+                        <div class="${isImage ? 'p-0.5' : 'pr-10 pl-0.5'}">
+                            ${content}
+                        </div>
+                        
+                        <!-- Panel Indikator Waktu & Centang di Dalam Gelembung (Pojok Kanan Bawah) -->
+                        <div class="absolute bottom-1 right-2 flex items-center gap-0.5 text-[9px] text-white/50 pointer-events-none select-none bg-gradient-to-t from-black/10 to-transparent px-1 rounded">
+                            <span>${timeFormatted}</span>
+                            ${readStatusHtml}
+                        </div>
                     </div>
-                    <div class="text-[9px] text-gray-500 mt-1 ${isMe ? 'text-right' : 'text-left'}">${timeAgo(msg.created_at)}</div>
+                    
                 </div>
             </div>`;
             
             container.insertAdjacentHTML('beforeend', html);
         }
+
 
         // 3. FUNGSI SCROLL OTOMATIS KE BAWAH
         function scrollToBottomChat() {
@@ -3335,13 +3508,23 @@ async function feedToggleFollow(targetUserId, btnElement) {
         // 4. FUNGSI MENGIRIM PESAN TEKS
         async function sendMessageRoom() {
             const input = document.getElementById('chat-room-input');
-            const msgText = input.value.trim();
+            let msgText = input.value.trim(); // Gunakan 'let' karena teksnya akan kita modifikasi
             if (!msgText || (!activeChatUserId && !activeGroupId)) return;
             
             const isGroup = !!activeGroupId;
             const targetId = isGroup ? activeGroupId : activeChatUserId;
             
+            // --- LOGIKA QUOTE REPLY (Sisipkan data ke dalam teks) ---
+            if (replyingToMsgId) {
+                // Bersihkan karakter khusus agar tidak merusak kode rahasia kita
+                const safeName = replyingToMsgName.replace(/\|\|/g, "").replace(/\]/g, "");
+                const safeText = replyingToMsgText.replace(/\|\|/g, "").replace(/\]/g, "");
+                // Sisipkan kode rahasia di baris paling atas pesan
+                msgText = `[REPLY:${safeName}||${safeText}]\n${msgText}`;
+            }
+
             input.value = ''; // Kosongkan kolom ketik
+            cancelChatReply(); // Tutup preview balasan otomatis setelah tombol kirim ditekan
 
             // Munculkan di layar kita dulu biar terasa instan (tanpa nunggu loading database)
             const tempMsg = {
@@ -3365,6 +3548,7 @@ async function feedToggleFollow(targetUserId, btnElement) {
                 showToast("Gagal mengirim pesan", "error");
             }
         }
+
 
         
 
@@ -4163,7 +4347,7 @@ async function loadGroupInfo(groupId) {
     renderGroupMembers(members);
 }
 
-// 6. Render Daftar Member di Modal
+// 6. Render Daftar Member di Modal (Updated: Admin Management)
 async function renderGroupMembers(membersData) {
     const list = document.getElementById('group-member-list');
     document.getElementById('info-group-count').innerText = membersData.length;
@@ -4175,20 +4359,52 @@ async function renderGroupMembers(membersData) {
     let html = '';
     profiles.forEach(p => {
         const m = membersData.find(x => x.user_id === p.id);
-        const badge = m.role === 'admin' ? '<span class="bg-brand-accent/20 text-brand-accent text-[8px] px-2 py-0.5 rounded border border-brand-accent/30 font-bold ml-2">ADMIN</span>' : '';
+        const isAdmin = m.role === 'admin';
+        const badge = isAdmin ? '<span class="bg-brand-accent/20 text-brand-accent text-[8px] px-2 py-0.5 rounded border border-brand-accent/30 font-bold ml-2">ADMIN</span>' : '';
         const ava = p.avatar_url || `https://ui-avatars.com/api/?name=${p.nickname}&background=1A1133&color=fff`;
         
+        // --- LOGIKA TOMBOL MANAJEMEN ---
+        let adminButtons = '';
+        
+        // Tombol HANYA muncul jika: 
+        // 1. Saya adalah Admin grup (activeGroupRole === 'admin')
+        // 2. Baris yang sedang di-render BUKAN diri saya sendiri
+        if (activeGroupRole === 'admin' && p.id !== currentUser.id) {
+            adminButtons = `
+            <div class="flex gap-2 ml-2">
+                <!-- Tombol Jadikan/Batalkan Admin -->
+                <button onclick="toggleAdminStatus('${p.id}', '${m.role}', '${p.nickname}')" 
+                    class="w-8 h-8 rounded-lg flex items-center justify-center transition-all ${isAdmin ? 'bg-orange-500/20 text-orange-500' : 'bg-brand-info/20 text-brand-info'}" 
+                    title="${isAdmin ? 'Turunkan dari Admin' : 'Jadikan Admin'}">
+                    <i class="fas ${isAdmin ? 'fa-user-minus' : 'fa-user-shield'} text-xs"></i>
+                </button>
+                
+                <!-- Tombol Kick Member -->
+                <button onclick="kickMember('${p.id}', '${p.nickname}')" 
+                    class="w-8 h-8 rounded-lg bg-red-500/20 text-red-500 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all" 
+                    title="Keluarkan Anggota">
+                    <i class="fas fa-user-times text-xs"></i>
+                </button>
+            </div>`;
+        }
+
         html += `
-        <div class="flex items-center p-2 bg-black/30 rounded-xl border border-white/5">
-            <img src="${ava}" class="w-8 h-8 rounded-full object-cover border border-white/10 shrink-0">
-            <div class="ml-3 flex-1 flex items-center">
-                <h4 class="font-bold text-white text-xs">${p.nickname}</h4>
-                ${badge}
+        <div class="flex items-center justify-between p-2 bg-black/30 rounded-xl border border-white/5 mb-2">
+            <div class="flex items-center flex-1 min-w-0">
+                <img src="${ava}" class="w-9 h-9 rounded-full object-cover border border-white/10 shrink-0">
+                <div class="ml-3 truncate">
+                    <div class="flex items-center">
+                        <h4 class="font-bold text-white text-xs truncate">${p.nickname}</h4>
+                        ${badge}
+                    </div>
+                </div>
             </div>
+            ${adminButtons}
         </div>`;
     });
     list.innerHTML = html;
 }
+
 
 // 7. Buka Tutup Form Edit Info Grup
 function toggleEditGroupInfo() {
@@ -4290,6 +4506,67 @@ function updateVideoProgress(video) {
         });
     }
 }
+
+// 11. FUNGSI UBAH STATUS ADMIN (Hanya Admin)
+async function toggleAdminStatus(userId, currentRole, nickname) {
+    // GEMBOK KEAMANAN: Cegah bypass eksekusi ilegal via console / Eruda
+    if (activeGroupRole !== 'admin') return showToast("Hanya admin yang diizinkan melakukan ini!", "error");
+
+    const nextRole = (currentRole === 'admin') ? 'member' : 'admin';
+    const confirmMsg = (currentRole === 'admin') 
+        ? `Yakin ingin mencopot jabatan Admin dari ${nickname}?` 
+        : `Jadikan ${nickname} sebagai Admin grup?`;
+
+    if (!confirm(confirmMsg)) return;
+
+    try {
+        const { error } = await supabaseClient
+            .from('group_members')
+            .update({ role: nextRole })
+            .eq('group_id', activeGroupId)
+            .eq('user_id', userId);
+
+        if (error) throw error;
+
+        showToast(`Status ${nickname} diperbarui`, "success");
+        loadGroupInfo(activeGroupId); // Refresh modal anggota
+    } catch (err) {
+        showToast("Gagal memperbarui status: " + err.message, "error");
+    }
+}
+
+// 12. FUNGSI KICK ANGGOTA (Hanya Admin)
+async function kickMember(userId, nickname) {
+    // GEMBOK KEAMANAN: Cegah bypass eksekusi ilegal via console / Eruda
+    if (activeGroupRole !== 'admin') return showToast("Hanya admin yang diizinkan mengeluarkan anggota!", "error");
+
+    if (!confirm(`Yakin ingin mengeluarkan ${nickname} dari grup ini?`)) return;
+
+    try {
+        // 1. Hapus dari tabel group_members
+        const { error } = await supabaseClient
+            .from('group_members')
+            .delete()
+            .eq('group_id', activeGroupId)
+            .eq('user_id', userId);
+
+        if (error) throw error;
+
+        // 2. Kirim pesan sistem bahwa user telah dikeluarkan
+        await supabaseClient.from('messages').insert({
+            sender_id: currentUser.id,
+            group_id: activeGroupId,
+            message: `[SISTEM] ${nickname} telah dikeluarkan dari grup oleh Admin.`
+        });
+
+        showToast(nickname + " telah dikeluarkan", "info");
+        loadGroupInfo(activeGroupId); // Refresh modal anggota
+    } catch (err) {
+        showToast("Gagal mengeluarkan: " + err.message, "error");
+    }
+}
+
+
 
 // ==========================================
 // LOGIKA DRAG / GESER PROGRESS BAR
@@ -4426,6 +4703,54 @@ function updateSeek(e, containerElement, video) {
         }
 
         // ==========================================
+        // FITUR QUOTE REPLY (BALAS PESAN WA STYLE)
+        // ==========================================
+        let replyingToMsgId = null;
+        let replyingToMsgText = "";
+        let replyingToMsgName = "";
+
+        // Fungsi saat tombol "Balas" di menu opsi di-klik
+        document.getElementById('btn-reply-msg').addEventListener('click', () => {
+            if (!selectedMessageId) return;
+            
+            // Ambil nama dari Header (karena sementara kita pakai nama lawan chat/grup)
+            const name = document.getElementById('active-chat-name').innerText; 
+            
+            // Mengakali pengambilan teks pesan (karena struktur innerHTML bisa ada image/dsb)
+            const msgBubble = document.querySelector(`[ontouchstart*="${selectedMessageId}"]`);
+            let text = "Pesan foto/media";
+            if (msgBubble) {
+                // Ekstrak teks murni jika memungkinkan
+                const textDiv = msgBubble.querySelector('.pr-10') || msgBubble.querySelector('.p-0.5');
+                if (textDiv && !textDiv.innerHTML.includes('<img')) {
+                    text = textDiv.innerText.replace(/\n/g, ' ').substring(0, 50) + "...";
+                }
+            }
+            
+            setChatReply(selectedMessageId, name, text);
+            closeMsgOptions();
+        });
+
+        function setChatReply(msgId, name, text) {
+            replyingToMsgId = msgId;
+            replyingToMsgName = name;
+            replyingToMsgText = text;
+            
+            document.getElementById('chat-reply-preview').classList.remove('hidden');
+            document.getElementById('chat-reply-name').innerText = name;
+            document.getElementById('chat-reply-text').innerText = text;
+            
+            document.getElementById('chat-room-input').focus();
+        }
+
+        function cancelChatReply() {
+            replyingToMsgId = null;
+            replyingToMsgName = "";
+            replyingToMsgText = "";
+            document.getElementById('chat-reply-preview').classList.add('hidden');
+        }
+
+        // ==========================================
         // FITUR TYPING INDICATOR & REAL-TIME CHAT
         // ==========================================
         
@@ -4460,17 +4785,6 @@ function updateSeek(e, containerElement, video) {
                 .subscribe();
         }
 
-        function sendTypingStatus() {
-            // Jika belum terhubung ke channel atau tidak ada target, batalkan
-            if(!messageSubscription || (!activeChatUserId && !activeGroupId)) return;
-            
-            // Kirim sinyal bahwa kita sedang mengetik ke dalam channel tersebut
-            messageSubscription.send({ 
-                type: 'broadcast', 
-                event: 'typing', 
-                payload: { userId: currentUser.id } 
-            });
-        }
 
         function showTypingIndicator() {
             const indicator = document.getElementById('typing-indicator');
@@ -4485,61 +4799,8 @@ function updateSeek(e, containerElement, video) {
             }
         }
 
-
-        // ==========================================
-        // INISIALISASI UTAMA SAAT HALAMAN DIMUAT
-        // ==========================================
-        document.addEventListener('DOMContentLoaded', () => {
-            
-            // Logika Routing Halaman
-            let tabAwal = window.location.hash.substring(1);
-            if (!tabAwal) {
-                tabAwal = localStorage.getItem('lastTab') || 'home';
-            }
-            switchTab(tabAwal, null, false);
-            
-            checkSession();
-            muatDataRipper();
-            renderFaqs();
-            renderServices();
-
-            // Mendaftarkan Service Worker
-            if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.register('/sw.js')
-                .then(() => console.log("Service Worker AU2Hub Aktif!"))
-                .catch(err => console.error("Service Worker Gagal:", err));
-            }
-
-            // Logika Klik Tombol Instal
-            const btnInstallManual = document.getElementById('btn-install-manual');
-            const btnInstallContainer = document.getElementById('install-container');
-
-            if (btnInstallManual) {
-                btnInstallManual.addEventListener('click', async () => {
-                    if (!deferredPrompt) return;
-                    deferredPrompt.prompt();
-                    const { outcome } = await deferredPrompt.userChoice;
-                    console.log(`User memilih: ${outcome}`);
-                    deferredPrompt = null;
-                    if (btnInstallContainer) {
-                        btnInstallContainer.classList.add('hidden');
-                    }
-                });
-            }
-
-            // Pasang fungsi kirim ke Tombol Pesawat Kertas
-            const btnSend = document.getElementById('btn-send-room');
-            if (btnSend) {
-                btnSend.addEventListener('click', sendMessageRoom);
-            }
-
-            // ---> TAMBAHKAN 2 BARIS INI AGAR TOMBOL HAPUS BEKERJA <---
-            document.getElementById('btn-del-msg-me').addEventListener('click', deleteMsgForMe);
-            document.getElementById('btn-del-msg-all').addEventListener('click', deleteMsgForAll);
-
-        });
-        
     </script>
+
          <script>eruda.init();</script>
 </body>
 </html>
