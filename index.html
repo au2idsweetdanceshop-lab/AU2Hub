@@ -4832,12 +4832,12 @@ function updateSeek(e, containerElement, video) {
             const isGroup = !!activeGroupId; 
             const targetId = isGroup ? activeGroupId : activeChatUserId;
             
-            // 1. BUAT GELEMBUNG CHAT PALSU DI AWAL (Biar kerasa instan!)
+            // 1. Buat gelembung chat palsu di awal biar instan di layar
             const tempId = 'temp-vn-' + Date.now();
             const tempMsg = { 
                 id: tempId, 
                 sender_id: currentUser.id, 
-                message: "🎙️ Memutar pesan suara...", // Placeholder sementara
+                message: "🎙️ Mengirim pesan suara...", 
                 created_at: new Date().toISOString() 
             };
             appendMessageBubble(tempMsg); 
@@ -4846,7 +4846,7 @@ function updateSeek(e, containerElement, video) {
             try {
                 const file = new File([blob], "vn_" + Date.now() + ".webm", { type: 'audio/webm' });
                 
-                // 2. Mulai proses upload yang berat di background
+                // 2. Proses upload berjalan di background (tidak menghalangi gelembung chat)
                 const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent(file.name)}&filetype=${encodeURIComponent(file.type)}`);
                 const dataUrl = await resUrl.json();
                 
@@ -4854,28 +4854,29 @@ function updateSeek(e, containerElement, video) {
                 
                 const msgText = `[AUDIO]${dataUrl.finalVideoUrl}`;
 
-                // 3. Hapus gelembung palsu tadi karena upload sudah selesai
+                // 3. Hapus gelembung palsu sebelum menyuntikkan data asli dari Supabase
                 const oldBubble = document.querySelector(`[ontouchstart*="${tempId}"]`);
                 if (oldBubble) {
                     const wrapper = oldBubble.closest('.message-anim');
                     if (wrapper) wrapper.remove();
                 }
 
-                // 4. Kirim data asli ke database Supabase
+                // 4. Simpan ke database Supabase
                 const insertData = { sender_id: currentUser.id, message: msgText };
                 if (isGroup) insertData.group_id = targetId; else insertData.receiver_id = targetId;
                 await supabaseClient.from('messages').insert(insertData);
                 
             } catch (err) { 
-                // Jika gagal, hapus gelembung palsu dan beri tahu user
+                // Jika internet putus/gagal upload, hapus gelembung palsu agar tidak macet
                 const oldBubble = document.querySelector(`[ontouchstart*="${tempId}"]`);
                 if (oldBubble) {
                     const wrapper = oldBubble.closest('.message-anim');
                     if (wrapper) wrapper.remove();
                 }
-                showToast("Gagal mengirim pesan suara", "error"); 
+                showToast("Gagal mengirim suara", "error"); 
             }
         }
+
 
         // ==========================================
         // FITUR TERAKHIR DILIHAT (LAST SEEN SINKRONISASI)
