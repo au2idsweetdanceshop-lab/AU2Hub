@@ -792,7 +792,7 @@
         <img id="lightbox-img" src="" class="max-w-[90%] max-h-[80vh] object-contain rounded-lg shadow-2xl scale-95 transition-transform duration-300">
     </div>
 
-    <div id="modal-prompt" class="fixed inset-0 z-[200] hidden items-center justify-center bg-black/90 backdrop-blur-md px-6">
+    <div id="modal-prompt" class="fixed inset-0 z-[9999] hidden items-center justify-center bg-black/90 backdrop-blur-md px-6">
         <div class="bg-brand-card w-full max-w-sm rounded-3xl border border-white/10 p-6 shadow-2xl relative modal-anim">
             <h3 id="prompt-title" class="text-lg font-extrabold mb-2 text-white">Judul</h3>
             <input type="text" id="prompt-input" class="w-full bg-black/30 border border-brand-accent/30 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-brand-accent mb-4">
@@ -803,7 +803,7 @@
         </div>
     </div>
 
-    <div id="modal-confirm" class="fixed inset-0 z-[300] hidden items-center justify-center bg-black/90 backdrop-blur-md px-6">
+    <div id="modal-confirm" class="fixed inset-0 z-[9999] hidden items-center justify-center bg-black/90 backdrop-blur-md px-6">
         <div class="bg-brand-card w-full max-w-sm rounded-3xl border border-white/10 p-6 shadow-2xl relative modal-anim text-center">
             <div class="mx-auto mb-4 bg-brand-accent/10 w-12 h-12 rounded-full flex items-center justify-center border border-brand-accent/20">
                 <i class="fas fa-question-circle text-brand-accent text-xl"></i>
@@ -816,7 +816,7 @@
         </div>
     </div>
 
-    <div id="modal-alert" class="fixed inset-0 z-[300] hidden items-center justify-center bg-black/90 backdrop-blur-md px-6">
+    <div id="modal-alert" class="fixed inset-0 z-[9999] hidden items-center justify-center bg-black/90 backdrop-blur-md px-6">
         <div class="bg-brand-card w-full max-w-sm rounded-3xl border border-white/10 p-6 shadow-2xl relative modal-anim text-center">
             <div class="mx-auto mb-4 bg-brand-info/10 w-12 h-12 rounded-full flex items-center justify-center border border-brand-info/20">
                 <i class="fas fa-info-circle text-brand-info text-xl"></i>
@@ -825,6 +825,7 @@
             <button id="alert-ok" class="w-full bg-brand-info text-brand-dark py-3 rounded-xl font-extrabold active:scale-95 transition-transform text-xs uppercase tracking-wider">Dimengerti</button>
         </div>
     </div>
+
 
     <div id="modal-msg-option" class="fixed inset-0 z-[300] hidden items-end sm:items-center justify-center bg-black/90 backdrop-blur-md px-4 pb-6 transition-all">
         <div class="bg-brand-card w-full max-w-sm rounded-3xl border border-white/10 p-2 shadow-2xl relative modal-anim flex flex-col gap-1 overflow-hidden">
@@ -1404,7 +1405,8 @@
             
             try {
                 if(blockedUsersList.includes(userId)) {
-                    const hapus = confirm("Buka blokir pengguna ini?");
+                    // 🔥 PERBAIKAN: Menggunakan modal kustom
+                    const hapus = await customConfirm("Buka blokir pengguna ini?");
                     if(hapus) {
                         btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memproses...';
                         await supabaseClient.from('blocks').delete().eq('blocker_id', currentUser.id).eq('blocked_id', userId);
@@ -1413,7 +1415,8 @@
                         checkBlockStatusUI();
                     }
                 } else {
-                    const blokir = confirm("Blokir pengguna ini? Anda tidak akan melihat video dan pesannya.");
+                    // 🔥 PERBAIKAN: Menggunakan modal kustom
+                    const blokir = await customConfirm("Blokir pengguna ini? Anda tidak akan melihat video dan pesannya.");
                     if(blokir) {
                         btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memproses...';
                         await supabaseClient.from('blocks').insert({ blocker_id: currentUser.id, blocked_id: userId });
@@ -1429,6 +1432,7 @@
                 checkBlockStatusUI();
             }
         }
+
 
         function checkBlockStatusUI() {
             const btn = document.getElementById('btn-block-user');
@@ -2648,22 +2652,24 @@ function closeUploadModal() {
         }
 
         async function deleteComment(cid) {
-            const hapus = confirm("Hapus komentar ini?");
+            // 🔥 PERBAIKAN: Menggunakan modal kustom
+            const hapus = await customConfirm("Hapus komentar ini?");
             if (hapus) {
                 const cBox = document.getElementById('comment-box-' + cid);
                 if(cBox) cBox.style.display = 'none';
 
                 try {
                     const { error } = await supabaseClient.from('comments').delete().eq('id', cid);
-            if(error) throw error;
-            
-            showToast("Komentar dihapus.", "success");
-        } catch(e) {
-            showToast("Gagal menghapus komentar dari database.", "error");
-            if(cBox) cBox.style.display = 'flex'; // Kembalikan ke layar jika gagal
+                    if(error) throw error;
+                    
+                    showToast("Komentar dihapus.", "success");
+                } catch(e) {
+                    showToast("Gagal menghapus komentar dari database.", "error");
+                    if(cBox) cBox.style.display = 'flex'; // Kembalikan ke layar jika gagal
+                }
+            }
         }
-    }
-}
+
 
         function toggleReplies(id) {
             const div = document.getElementById('replies-'+id); const icon = document.getElementById('icon-reply-'+id);
@@ -3479,9 +3485,11 @@ async function feedToggleFollow(targetUserId, btnElement) {
                 const { data, error } = await query;
                 
                 if (error) {
-                    alert("INFO ERROR SUPABASE:\n" + error.message);
+                    // 🔥 PERBAIKAN: Menggunakan modal alert kustom
+                    await customAlert("INFO ERROR SUPABASE:\n" + error.message);
                     throw error;
                 }
+
 
                 container.innerHTML = ''; // Bersihkan animasi loading
                 
@@ -4208,7 +4216,8 @@ async function viewStory(userId, name, avatar) {
 
         async function hapusStoryAktif() {
             const story = currentActiveStories[currentActiveStories.currentIndex];
-            const konfirmasi = confirm("Yakin ingin menghapus status ini?");
+            // 🔥 PERBAIKAN: Menggunakan modal kustom
+            const konfirmasi = await customConfirm("Yakin ingin menghapus status ini?");
             
             if (konfirmasi) {
                 try {
@@ -4223,6 +4232,7 @@ async function viewStory(userId, name, avatar) {
                 }
             }
         }
+
 
         function prevStory() {
             if (!currentActiveStories || currentActiveStories.length === 0) return;
@@ -4793,7 +4803,8 @@ async function kickMember(userId, nickname) {
     // GEMBOK KEAMANAN: Cegah bypass eksekusi ilegal via console / Eruda
     if (activeGroupRole !== 'admin') return showToast("Hanya admin yang diizinkan mengeluarkan anggota!", "error");
 
-    if (!confirm(`Yakin ingin mengeluarkan ${nickname} dari grup ini?`)) return;
+    // 🔥 PERBAIKAN: Mengganti ke notifikasi modern kustom kita
+    if (!await customConfirm(`Yakin ingin mengeluarkan ${nickname} dari grup ini?`)) return;
 
     try {
         // 1. Hapus dari tabel group_members
@@ -4818,6 +4829,7 @@ async function kickMember(userId, nickname) {
         showToast("Gagal mengeluarkan: " + err.message, "error");
     }
 }
+
 
 
 
