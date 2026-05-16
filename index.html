@@ -2319,19 +2319,42 @@ function closeUploadModal() {
             lastTap = now;
         }
 
+        // FITUR HAPUS VIDEO PERMANEN (SINKRON KE GOOGLE SHEETS)
         async function deleteVideo(vidId) {
-            const hapus = await customPrompt("Ketik 'HAPUS' jika ingin menghapus video ini:");
+            const hapus = await customPrompt("Ketik 'HAPUS' jika ingin menghapus video ini secara PERMANEN:");
             if(hapus === 'HAPUS') {
-                allVideosData = allVideosData.filter(v => v.id !== vidId);
-                closeFloatingVideo();
-                renderProfileVideos();
-                showToast("Video berhasil dihapus", "success");
+                try {
+                    // 1. Ambil config untuk mendapatkan link Google Apps Script (GAS)
+                    const configRes = await fetch('/api/get-config');
+                    const config = await configRes.json();
+                    
+                    if (config.gasUrl) {
+                        // 2. Kirim perintah hapus ke Google Sheets via Webhook POST
+                        await fetch(config.gasUrl, {
+                            method: 'POST',
+                            mode: 'no-cors',
+                            headers: { 'Content-Type': 'text/plain' },
+                            body: JSON.stringify({ action: 'DELETE', id: vidId })
+                        });
+                    }
+
+                    // 3. Bersihkan data dari memori RAM lokal HP (Feed Sosial & Profil)
+                    allVideosData = allVideosData.filter(v => v.id !== vidId);
+                    newUploads = newUploads.filter(v => v.id !== vidId); // Bersihkan juga dari antrean lokal
+
+                    // 4. Perbarui tampilan layar secara instan
+                    closeFloatingVideo();
+                    renderProfileVideos();
+                    showToast("Video berhasil dihapus permanen!", "success");
+
+                } catch (err) {
+                    showToast("Gagal menghapus ke server: " + err.message, "error");
+                }
             }
         }
         
-                // FITUR SHARE VIDEO (DIPERBAIKI)
+        // FITUR SHARE VIDEO (DIPERBAIKI)
         function shareVideo(vidId, btn) {
-            // Jika vidId tidak ada, coba ambil dari atribut data atau fallback
             const finalId = vidId && vidId !== 'undefined' ? vidId : '';
             
             if (!finalId) {
@@ -2354,6 +2377,7 @@ function closeUploadModal() {
                 showToast("Gagal menyalin link otomatis", "error");
             });
         }
+
 
 
         function renderFaqs(data = faqs) {
