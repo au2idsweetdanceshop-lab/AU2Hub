@@ -2927,11 +2927,25 @@ storyModal.addEventListener('touchend', (e) => {
 });
 
 
-        // FUNGSI TYPING INDICATOR
-        function sendTypingStatus() {
-            if(!messageSubscription || !activeChatUserId) return;
-            messageSubscription.send({ type: 'broadcast', event: 'typing', payload: { userId: currentUser.id } });
-        }
+let lastTypingTime = 0; // Tambahkan variabel ini di luar fungsi
+
+// FUNGSI TYPING INDICATOR (DIOPTIMALKAN)
+function sendTypingStatus() {
+    // Jika belum terhubung ke channel atau tidak ada target, batalkan
+    if(!messageSubscription || (!activeChatUserId && !activeGroupId)) return;
+    
+    const now = Date.now();
+    // Hanya kirim sinyal ke server jika sudah lewat 2 detik (2000 ms) dari ketikan terakhir
+    if (now - lastTypingTime > 2000) {
+        messageSubscription.send({ 
+            type: 'broadcast', 
+            event: 'typing', 
+            payload: { userId: currentUser.id } 
+        });
+        lastTypingTime = now; // Update waktu terakhir mengetik
+    }
+}
+
 
         function openEditProfileModal() {
             if(!currentUser) return;
