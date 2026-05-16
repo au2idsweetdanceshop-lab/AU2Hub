@@ -3235,7 +3235,7 @@ async function feedToggleFollow(targetUserId, btnElement) {
 
             try {
                 // SEMENTARA KITA GANTI MENJADI .select('*') UNTUK MENGHINDARI ERROR JOIN
-                let query = supabaseClient.from('messages').select('*').order('created_at', { ascending: true }).limit(50);
+                let query = supabaseClient.from('messages').select('*, profiles!messages_sender_id_fkey(nickname, avatar_url)').order('created_at', { ascending: true }).limit(50);
                 
                 if (isGroup) {
                     query = query.eq('group_id', targetId);
