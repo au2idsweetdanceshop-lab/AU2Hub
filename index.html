@@ -3235,7 +3235,7 @@ async function feedToggleFollow(targetUserId, btnElement) {
 
             try {
                 // Ambil maksimal 50 pesan terakhir
-                let query = supabaseClient.from('messages').select('*, profiles(nickname, avatar_url)').order('created_at', { ascending: true }).limit(50);
+               let query = supabaseClient.from('messages').select('*, profiles!sender_id(nickname, avatar_url)').order('created_at', { ascending: true }).limit(50);
                 
                 if (isGroup) {
                     query = query.eq('group_id', targetId);
