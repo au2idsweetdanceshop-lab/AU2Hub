@@ -694,7 +694,8 @@
                             <label for="chat-image-input" class="w-12 h-12 rounded-2xl bg-white/5 hover:bg-brand-info/20 hover:text-brand-info flex items-center justify-center text-gray-400 cursor-pointer transition-all border border-white/10 active:scale-90"><i class="fas fa-paperclip text-lg"></i></label>
                         </div>
                         <div class="flex-1 relative">
-                            <input type="text" id="chat-room-input" oninput="sendTypingStatus()" placeholder="Ketik pesan..." class="w-full bg-white/5 border border-white/10 rounded-[1.5rem] py-3.5 px-6 text-sm text-white outline-none focus:border-brand-accent/50 focus:bg-white/10 transition-all pr-12">
+<textarea id="chat-room-input" rows="1" oninput="sendTypingStatus(); this.style.height = ''; this.style.height = this.scrollHeight + 'px'" placeholder="Ketik pesan..." class="w-full bg-white/5 border border-white/10 rounded-[1.5rem] py-3.5 px-6 text-sm text-white outline-none focus:border-brand-accent/50 focus:bg-white/10 transition-all pr-12 resize-none overflow-hidden max-h-32"></textarea>
+
                         </div>
                         <button id="btn-send-room" class="w-12 h-12 rounded-2xl bg-brand-accent text-white flex items-center justify-center shadow-lg shadow-brand-accent/20 active:scale-90 transition-all hover:rotate-12"><i class="fas fa-paper-plane"></i></button>
 
@@ -750,6 +751,26 @@
             </div>
         </div>
         
+        <div id="modal-custom-dialog" class="fixed inset-0 z-[9999] hidden items-center justify-center bg-black/90 backdrop-blur-md px-6 transition-opacity duration-300 opacity-0">
+    <div class="bg-brand-card w-full max-w-sm rounded-3xl border border-white/10 p-6 shadow-2xl relative transform scale-95 transition-transform duration-300" id="custom-dialog-box">
+        
+        <div class="flex justify-center mb-5" id="dialog-icon-container">
+            <div class="w-20 h-20 rounded-full flex items-center justify-center border-4 relative" id="dialog-icon-bg">
+                <div class="absolute inset-0 rounded-full animate-ping opacity-20" id="dialog-icon-ping"></div>
+                <i class="fas text-3xl z-10" id="dialog-icon"></i>
+            </div>
+        </div>
+
+        <h3 id="dialog-title" class="text-xl font-extrabold mb-2 text-white text-center">Judul</h3>
+        <p id="dialog-message" class="text-sm text-gray-400 text-center mb-8 leading-relaxed">Pesan notifikasi di sini.</p>
+        
+        <div class="flex gap-3 w-full" id="dialog-buttons">
+            <button id="dialog-btn-cancel" class="flex-1 bg-white/10 text-white py-3.5 rounded-xl font-bold active:scale-95 transition-transform text-sm hover:bg-white/20 hidden">Batal</button>
+            <button id="dialog-btn-ok" class="flex-1 text-white py-3.5 rounded-xl font-bold active:scale-95 transition-transform text-sm shadow-lg">Oke</button>
+        </div>
+    </div>
+</div>
+
 
     </main>
     
@@ -1088,6 +1109,92 @@
                 e.returnValue = 'Upload sedang berlangsung. Yakin ingin meninggalkan halaman?';
             }
         });
+        
+        function showCustomDialog(message, title, type, showCancel) {
+    return new Promise((resolve) => {
+        const modal = document.getElementById('modal-custom-dialog');
+        const box = document.getElementById('custom-dialog-box');
+        const titleEl = document.getElementById('dialog-title');
+        const messageEl = document.getElementById('dialog-message');
+        const btnOk = document.getElementById('dialog-btn-ok');
+        const btnCancel = document.getElementById('dialog-btn-cancel');
+        const icon = document.getElementById('dialog-icon');
+        const iconBg = document.getElementById('dialog-icon-bg');
+        const iconPing = document.getElementById('dialog-icon-ping');
+
+        titleEl.innerText = title;
+        messageEl.innerHTML = message;
+
+        // Reset class bawaan
+        icon.className = 'fas text-3xl z-10';
+        iconBg.className = 'w-20 h-20 rounded-full flex items-center justify-center border-4 relative';
+        iconPing.className = 'absolute inset-0 rounded-full animate-ping opacity-20';
+        
+        // Pewarnaan dinamis berdasarkan tipe peringatan
+        if (type === 'danger' || type === 'warning') {
+            icon.classList.add(type === 'danger' ? 'fa-exclamation-triangle' : 'fa-question', 'text-brand-accent');
+            iconBg.classList.add('bg-brand-accent/10', 'border-brand-accent/30');
+            iconPing.classList.add('bg-brand-accent');
+            btnOk.className = 'flex-1 bg-gradient-to-r from-brand-accent to-red-600 text-white py-3.5 rounded-xl font-bold active:scale-95 transition-transform text-sm shadow-[0_0_15px_rgba(255,0,122,0.4)]';
+            btnOk.innerText = type === 'danger' ? 'Hapus' : 'Yakin';
+        } else if (type === 'success') {
+            icon.classList.add('fa-check', 'text-brand-success');
+            iconBg.classList.add('bg-brand-success/10', 'border-brand-success/30');
+            iconPing.classList.add('bg-brand-success');
+            btnOk.className = 'flex-1 bg-gradient-to-r from-[#25D366] to-[#128C7E] text-white py-3.5 rounded-xl font-bold active:scale-95 transition-transform text-sm shadow-[0_0_15px_rgba(37,211,102,0.4)]';
+            btnOk.innerText = 'Oke';
+        } else {
+            icon.classList.add('fa-info', 'text-brand-info');
+            iconBg.classList.add('bg-brand-info/10', 'border-brand-info/30');
+            iconPing.classList.add('bg-brand-info');
+            btnOk.className = 'flex-1 bg-gradient-to-r from-brand-info to-blue-500 text-white py-3.5 rounded-xl font-bold active:scale-95 transition-transform text-sm shadow-[0_0_15px_rgba(0,240,255,0.4)]';
+            btnOk.innerText = 'Mengerti';
+        }
+
+        if (showCancel) {
+            btnCancel.classList.remove('hidden');
+            btnCancel.classList.add('block');
+        } else {
+            btnCancel.classList.add('hidden');
+            btnCancel.classList.remove('block');
+        }
+
+        // Munculkan Modal dengan animasi mulus
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        
+        setTimeout(() => {
+            modal.classList.remove('opacity-0');
+            box.classList.remove('scale-95');
+            box.classList.add('scale-100');
+        }, 10);
+
+        const cleanup = () => {
+            modal.classList.add('opacity-0');
+            box.classList.remove('scale-100');
+            box.classList.add('scale-95');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+                btnOk.onclick = null;
+                btnCancel.onclick = null;
+            }, 300);
+        };
+
+        btnOk.onclick = () => { cleanup(); resolve(true); };
+        btnCancel.onclick = () => { cleanup(); resolve(false); };
+    });
+}
+
+// Shortcut function biar lebih gampang dipanggil
+function customConfirm(message, title = "Konfirmasi", type = "warning") {
+    return showCustomDialog(message, title, type, true);
+}
+
+function customAlert(message, title = "Informasi", type = "info") {
+    return showCustomDialog(message, title, type, false);
+}
+
 
         function showToast(message, type = 'info') {
             const container = document.getElementById('toast-container');
@@ -1330,13 +1437,16 @@
             modal.classList.remove('flex');
         }
 
-        async function toggleBlockUser(userId) {
+                async function toggleBlockUser(userId) {
             if(!currentUser) return openAuthModal();
             const btn = document.getElementById('btn-block-user');
             
             try {
                 if(blockedUsersList.includes(userId)) {
-                    const hapus = confirm("Buka blokir pengguna ini?");
+                    
+                    // --- BARIS INI YANG KITA UBAH ---
+                    const hapus = await customConfirm("Buka blokir pengguna ini?", "Buka Blokir", "info");
+                    
                     if(hapus) {
                         btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memproses...';
                         await supabaseClient.from('blocks').delete().eq('blocker_id', currentUser.id).eq('blocked_id', userId);
@@ -1345,7 +1455,10 @@
                         checkBlockStatusUI();
                     }
                 } else {
-                    const blokir = confirm("Blokir pengguna ini? Anda tidak akan melihat video dan pesannya.");
+                    
+                    // --- DAN BARIS INI YANG KITA UBAH ---
+                    const blokir = await customConfirm("Blokir pengguna ini? Anda tidak akan melihat video dan pesannya.", "Blokir Pengguna", "danger");
+                    
                     if(blokir) {
                         btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memproses...';
                         await supabaseClient.from('blocks').insert({ blocker_id: currentUser.id, blocked_id: userId });
@@ -1362,6 +1475,7 @@
             }
         }
 
+        // BIARKAN FUNGSI INI TETAP SEPERTI SEMULA
         function checkBlockStatusUI() {
             const btn = document.getElementById('btn-block-user');
             if(!btn || !viewedUserId) return;
@@ -1374,6 +1488,7 @@
                 btn.className = 'w-full bg-red-500/10 border border-red-500/20 py-2 rounded-xl text-[10px] font-bold text-red-500 hover:bg-red-500/20 transition-colors mt-1';
             }
         }
+
 
         async function checkSession() {
             document.getElementById('profile-loading').classList.remove('hidden');
@@ -2555,23 +2670,24 @@ function closeUploadModal() {
             html += `</div></div>`; return html;
         }
 
-        async function deleteComment(cid) {
-            const hapus = confirm("Hapus komentar ini?");
+                async function deleteComment(cid) {
+            const hapus = await customConfirm("Hapus komentar ini?", "Hapus Komentar", "danger");
             if (hapus) {
                 const cBox = document.getElementById('comment-box-' + cid);
                 if(cBox) cBox.style.display = 'none';
 
                 try {
                     const { error } = await supabaseClient.from('comments').delete().eq('id', cid);
-            if(error) throw error;
-            
-            showToast("Komentar dihapus.", "success");
-        } catch(e) {
-            showToast("Gagal menghapus komentar dari database.", "error");
-            if(cBox) cBox.style.display = 'flex'; // Kembalikan ke layar jika gagal
+                    if(error) throw error;
+                    
+                    showToast("Komentar dihapus.", "success");
+                } catch(e) {
+                    showToast("Gagal menghapus komentar dari database.", "error");
+                    if(cBox) cBox.style.display = 'flex'; 
+                }
+            }
         }
-    }
-}
+
 
         function toggleReplies(id) {
             const div = document.getElementById('replies-'+id); const icon = document.getElementById('icon-reply-'+id);
@@ -2839,7 +2955,7 @@ function closeUploadModal() {
             } catch (e) { container.innerHTML = '<p class="text-center py-20 text-gray-500">Gagal memuat video.</p>'; }
         }
 
-                function renderVideoBatch() {
+        function renderVideoBatch() {
             const container = document.getElementById('feed-container');
             
             // --- LOGIKA FEED TANPA UJUNG (INFINITE LOOP) ---
@@ -2863,11 +2979,14 @@ function closeUploadModal() {
                             <source src="${vid.video_url}" type="video/mp4">
                         </video>
                         
+                        <div class="play-pause-indicator absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-white/80 bg-black/40 w-20 h-20 rounded-full flex items-center justify-center z-[60] pointer-events-none opacity-0 transition-opacity duration-300 scale-150">
+                            <i class="fas fa-play text-3xl ml-1"></i>
+                        </div>
+                        
                         <div class="time-indicator absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-white font-extrabold text-4xl drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)] opacity-0 transition-opacity z-[60] pointer-events-none tracking-wider bg-black/40 px-6 py-2 rounded-2xl">
                             <span class="time-current">00:00</span> <span class="text-white/50 text-2xl mx-1">/</span> <span class="time-total text-white/70">00:00</span> 
                         </div>
 
-                        <!-- Progress Bar Tetap di Dasar Layar -->
                         <div class="absolute bottom-0 left-0 w-full h-3 z-50 cursor-pointer group touch-none flex flex-col justify-end pb-1"
                              onpointerdown="startSeek(event, this)" onpointermove="doSeek(event, this)" onpointerup="endSeek(event, this)" onpointercancel="endSeek(event, this)">
                             <div class="w-full h-1 bg-white/30 relative">
@@ -2876,6 +2995,97 @@ function closeUploadModal() {
                                 </div>
                             </div>
                         </div>
+                        
+                        ```
+
+*(Lakukan hal yang sama persis (copy-paste blok `play-pause-indicator`) ke dalam fungsi `renderProfileVideoBatch` ya, biar video di halaman profil juga punya animasi Play/Pause).*
+
+---
+
+### Jangan Lupa Ubah Logika Klik-nya!
+Karena HTML-nya sudah ditambah, kita harus bikin Ikon Play itu berfungsi saat layarnya disentuh. Cari 2 fungsi ini (`handleVideoClick` & `handleFloatVideoClick`) dan **GANTI KEDUANYA** dengan kode di bawah ini:
+
+```javascript
+        function handleVideoClick(event, videoElement, vidId) {
+            const now = Date.now();
+            const TIMESLOT = 300; 
+            
+            if (now - lastTap < TIMESLOT) {
+                // DOUBLE TAP: Animasi Love ala TikTok
+                const card = videoElement.closest('.snap-start');
+                const likeBtn = card.querySelector('.like-container button');
+                likeVideo(vidId, likeBtn);
+                createHeartAt(event);
+                
+                // Pastikan video tetap main setelah dilove
+                videoElement.play();
+                const indicator = videoElement.parentElement.querySelector('.play-pause-indicator');
+                if(indicator) indicator.classList.remove('opacity-100', 'scale-100');
+            } else {
+                // SINGLE TAP: Play / Pause Video
+                setTimeout(() => { 
+                    if (Date.now() - lastTap >= TIMESLOT) {
+                        const indicator = videoElement.parentElement.querySelector('.play-pause-indicator');
+                        if (videoElement.paused) {
+                            videoElement.play();
+                            if(indicator) {
+                                indicator.classList.remove('opacity-100', 'scale-100');
+                                indicator.classList.add('opacity-0', 'scale-150');
+                            }
+                        } else {
+                            videoElement.pause();
+                            if(indicator) {
+                                indicator.innerHTML = '<i class="fas fa-play text-3xl ml-1"></i>';
+                                indicator.classList.remove('opacity-0', 'scale-150');
+                                indicator.classList.add('opacity-100', 'scale-100');
+                            }
+                        }
+                    }
+                }, TIMESLOT);
+            }
+            lastTap = now;
+        }
+
+        function handleFloatVideoClick(event, videoElement, vidId) {
+            const now = Date.now();
+            const TIMESLOT = 300; 
+            
+            if (now - lastTap < TIMESLOT) {
+                // DOUBLE TAP: Animasi Love ala TikTok
+                const card = videoElement.closest('.snap-start');
+                const likeBtn = card.querySelector('.like-container button');
+                likeVideo(vidId, likeBtn);
+                createHeartAt(event);
+                
+                // Pastikan video tetap main setelah dilove
+                videoElement.play();
+                const indicator = videoElement.parentElement.querySelector('.play-pause-indicator');
+                if(indicator) indicator.classList.remove('opacity-100', 'scale-100');
+            } else {
+                // SINGLE TAP: Play / Pause Video
+                setTimeout(() => { 
+                    if (Date.now() - lastTap >= TIMESLOT) {
+                        const indicator = videoElement.parentElement.querySelector('.play-pause-indicator');
+                        if (videoElement.paused) {
+                            videoElement.play();
+                            if(indicator) {
+                                indicator.classList.remove('opacity-100', 'scale-100');
+                                indicator.classList.add('opacity-0', 'scale-150');
+                            }
+                        } else {
+                            videoElement.pause();
+                            if(indicator) {
+                                indicator.innerHTML = '<i class="fas fa-play text-3xl ml-1"></i>';
+                                indicator.classList.remove('opacity-0', 'scale-150');
+                                indicator.classList.add('opacity-100', 'scale-100');
+                            }
+                        }
+                    }
+                }, TIMESLOT);
+            }
+            lastTap = now;
+        }
+
 
                         <!-- ============================================== -->
                         <!-- TATA LETAK BARU (TIKTOK STYLE)                 -->
@@ -3387,9 +3597,10 @@ async function feedToggleFollow(targetUserId, btnElement) {
                 const { data, error } = await query;
                 
                 if (error) {
-                    alert("INFO ERROR SUPABASE:\n" + error.message);
+                    await customAlert("INFO ERROR SUPABASE:\n" + error.message, "Database Error", "danger");
                     throw error;
                 }
+
 
                 container.innerHTML = ''; // Bersihkan animasi loading
                 
@@ -3562,7 +3773,31 @@ async function feedToggleFollow(targetUserId, btnElement) {
             </div>`;
             
             container.insertAdjacentHTML('beforeend', html);
+
+            // ==========================================
+            // TAMBAHAN BARU: EFEK SUARA & SMOOTH SCROLL
+            // ==========================================
+            try {
+                // Hanya putar suara jika ini BUKAN balon "sementara" (temp)
+                if (!msg.id.toString().startsWith('temp-')) {
+                    if (!isMe) {
+                        // Suara pesan masuk
+                        new Audio('https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3').play().catch(()=>{});
+                    } else {
+                        // Suara pesan terkirim
+                        new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3').play().catch(()=>{});
+                    }
+                }
+            } catch(e) {}
+
+            // Smooth Scroll ke Bawah
+            setTimeout(() => {
+                if (container) {
+                    container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
+                }
+            }, 50);
         }
+
 
 
 
@@ -4035,22 +4270,22 @@ function nextStory() {
 
 async function hapusStoryAktif() {
     const story = currentActiveStories[currentActiveStories.currentIndex];
-    const konfirmasi = confirm("Yakin ingin menghapus status ini?");
+    const konfirmasi = await customConfirm("Yakin ingin menghapus status ini?", "Hapus Status", "danger");
     
     if (konfirmasi) {
         try {
-            // Hapus dari database Supabase
             const { error } = await supabaseClient.from('stories').delete().eq('id', story.id);
             if (error) throw error;
             
             showToast("Status berhasil dihapus", "success");
             closeStoryViewer();
-            loadStories(); // Refresh daftar status di latar belakang
+            loadStories(); 
         } catch (err) {
             showToast("Gagal menghapus status", "error");
         }
     }
 }
+
 
 
 function prevStory() {
@@ -4540,7 +4775,7 @@ async function inviteToGroup() {
 
 // 10. Keluar dari Grup
 async function keluarDariGrup() {
-    const yakin = confirm("Yakin ingin keluar dari grup ini?");
+    const yakin = await customConfirm("Yakin ingin keluar dari grup ini?", "Keluar Grup", "warning");
     if(!yakin) return;
 
     await supabaseClient.from('group_members').delete().eq('group_id', activeGroupId).eq('user_id', currentUser.id);
@@ -4548,6 +4783,7 @@ async function keluarDariGrup() {
     closeGroupInfoModal();
     closeChatRoom(); 
 }
+
 // ==========================================
 // LOGIKA VIDEO PROGRESS BAR (SUPER SMOOTH FIX)
 // ==========================================
@@ -4576,7 +4812,6 @@ function updateVideoProgress(video) {
 
 // 11. FUNGSI UBAH STATUS ADMIN (Hanya Admin)
 async function toggleAdminStatus(userId, currentRole, nickname) {
-    // GEMBOK KEAMANAN: Cegah bypass eksekusi ilegal via console / Eruda
     if (activeGroupRole !== 'admin') return showToast("Hanya admin yang diizinkan melakukan ini!", "error");
 
     const nextRole = (currentRole === 'admin') ? 'member' : 'admin';
@@ -4584,7 +4819,8 @@ async function toggleAdminStatus(userId, currentRole, nickname) {
         ? `Yakin ingin mencopot jabatan Admin dari ${nickname}?` 
         : `Jadikan ${nickname} sebagai Admin grup?`;
 
-    if (!confirm(confirmMsg)) return;
+    const isConfirmed = await customConfirm(confirmMsg, "Ubah Status Admin", "warning");
+    if (!isConfirmed) return;
 
     try {
         const { error } = await supabaseClient
@@ -4596,21 +4832,21 @@ async function toggleAdminStatus(userId, currentRole, nickname) {
         if (error) throw error;
 
         showToast(`Status ${nickname} diperbarui`, "success");
-        loadGroupInfo(activeGroupId); // Refresh modal anggota
+        loadGroupInfo(activeGroupId); 
     } catch (err) {
         showToast("Gagal memperbarui status: " + err.message, "error");
     }
 }
 
+
 // 12. FUNGSI KICK ANGGOTA (Hanya Admin)
 async function kickMember(userId, nickname) {
-    // GEMBOK KEAMANAN: Cegah bypass eksekusi ilegal via console / Eruda
     if (activeGroupRole !== 'admin') return showToast("Hanya admin yang diizinkan mengeluarkan anggota!", "error");
 
-    if (!confirm(`Yakin ingin mengeluarkan ${nickname} dari grup ini?`)) return;
+    const isConfirmed = await customConfirm(`Yakin ingin mengeluarkan ${nickname} dari grup ini?`, "Keluarkan Anggota", "danger");
+    if (!isConfirmed) return;
 
     try {
-        // 1. Hapus dari tabel group_members
         const { error } = await supabaseClient
             .from('group_members')
             .delete()
@@ -4619,7 +4855,6 @@ async function kickMember(userId, nickname) {
 
         if (error) throw error;
 
-        // 2. Kirim pesan sistem bahwa user telah dikeluarkan
         await supabaseClient.from('messages').insert({
             sender_id: currentUser.id,
             group_id: activeGroupId,
@@ -4627,11 +4862,12 @@ async function kickMember(userId, nickname) {
         });
 
         showToast(nickname + " telah dikeluarkan", "info");
-        loadGroupInfo(activeGroupId); // Refresh modal anggota
+        loadGroupInfo(activeGroupId); 
     } catch (err) {
         showToast("Gagal mengeluarkan: " + err.message, "error");
     }
 }
+
 
 
 
@@ -4940,26 +5176,69 @@ function updateSeek(e, containerElement, video) {
             const targetId = activeGroupId ? activeGroupId : activeChatUserId;
             if (!targetId) return;
 
-            // Buat nama ruangan khusus. Untuk personal, urutkan ID agar selalu sama terlepas dari siapa yang memulai
+            // Buat nama ruangan khusus
             const roomName = activeGroupId 
                 ? `room_group_${targetId}` 
                 : `room_personal_${[currentUser.id, targetId].sort().join('_')}`;
 
             messageSubscription = supabaseClient.channel(roomName)
-                // 1. Tangkap sinyal saat lawan bicara mengetik
+                // 1. Tangkap sinyal saat lawan bicara mengetik (JEDA 2 DETIK TETAP AMAN)
                 .on('broadcast', { event: 'typing' }, payload => {
-                    // Pastikan sinyal yang ditangkap bukan dari diri kita sendiri
                     if (payload.payload.userId !== currentUser.id) {
                         showTypingIndicator();
                     }
                 })
-                // 2. Auto-muat pesan baru yang masuk di ruangan ini tanpa harus refresh
-                .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => {
-                    // Refresh pesan ke layar
-                    loadRoomMessages(); 
+                // 2. TANGKAP PESAN BARU DAN MUNCULKAN TANPA REFRESH
+                .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, async payload => {
+                    const msg = payload.new;
+
+                    // Cek apakah pesan ini milik ruangan yang sedang terbuka
+                    const isGroup = !!activeGroupId;
+                    const validRoom = isGroup
+                        ? msg.group_id === activeGroupId
+                        : ((msg.sender_id === activeChatUserId && msg.receiver_id === currentUser.id) ||
+                           (msg.sender_id === currentUser.id && msg.receiver_id === activeChatUserId));
+
+                    if (validRoom) {
+                        // Sembunyikan tulisan "Sedang mengetik..." begitu pesan masuk
+                        const indicator = document.getElementById('typing-indicator');
+                        if (indicator) indicator.classList.add('hidden');
+
+                        if (msg.sender_id !== currentUser.id) {
+                            // --- JIKA PESAN DARI ORANG LAIN ---
+                            // Ambil data nama & foto jika ini di dalam Grup
+                            if (isGroup) {
+                                const { data: p } = await supabaseClient.from('profiles').select('nickname, avatar_url').eq('id', msg.sender_id).single();
+                                msg.profiles = p;
+                            }
+                            
+                            // Suntikkan langsung ke layar bawah!
+                            appendMessageBubble(msg);
+                            scrollToBottomChat();
+
+                            // Langsung tandai Centang Biru (Read) secara otomatis di database
+                            if (!isGroup) {
+                                supabaseClient.from('messages').update({ is_read: true }).eq('id', msg.id).then();
+                            }
+                        } else {
+                            // --- JIKA PESAN DARI KITA SENDIRI ---
+                            // Sistem akan mencari gelembung chat "sementara" yang kita kirim (temp)
+                            // Lalu menghapusnya secara instan untuk diganti dengan pesan asli dari server (menghindari chat dobel)
+                            const tempBubble = document.querySelector('[ontouchstart*="temp-"]');
+                            if (tempBubble) {
+                                const wrapper = tempBubble.closest('.message-anim');
+                                if (wrapper) wrapper.remove(); 
+                            }
+                            
+                            // Pasang pesan yang sudah sah dari database (ada jam dan status centangnya)
+                            appendMessageBubble(msg);
+                            scrollToBottomChat();
+                        }
+                    }
                 })
                 .subscribe();
         }
+
 
 
         function showTypingIndicator() {
