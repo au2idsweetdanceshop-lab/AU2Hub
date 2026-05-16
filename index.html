@@ -782,56 +782,56 @@
     </div>
 
     <!-- MENGAMBANG LIGHTBOX FOTO DI CHAT -->
-    <div id="lightbox-modal" class="fixed inset-0 z-[400] hidden items-center justify-center bg-black/95 backdrop-blur-md opacity-0 transition-opacity duration-300" onclick="closeLightbox()">
-        <button onclick="closeLightbox()" class="absolute top-6 right-6 text-white bg-white/10 w-12 h-12 rounded-full flex items-center justify-center active:scale-90 z-[410]"><i class="fas fa-times textxl"></i></button>
-        <img id="lightbox-img" src="" class="max-w-[90%] max-h-[80vh] object-contain rounded-lg shadow-2xl scale-95 transition-transform duration-300">
-    </div>
+<div id="lightbox-modal" class="fixed inset-0 z-[400] hidden items-center justify-center bg-black/95 backdrop-blur-md opacity-0 transition-opacity duration-300" onclick="closeLightbox()">
+    <button onclick="closeLightbox()" class="absolute top-6 right-6 text-white bg-white/10 w-12 h-12 rounded-full flex items-center justify-center active:scale-90 z-[410]"><i class="fas fa-times text-xl"></i></button>
+    <img id="lightbox-img" src="" class="max-w-[90%] max-h-[80vh] object-contain rounded-lg shadow-2xl scale-95 transition-transform duration-300">
+</div>
 
-    <div id="modal-prompt" class="fixed inset-0 z-[9999] hidden items-center justify-center bg-black/90 backdrop-blur-md px-6">
-        <div class="bg-brand-card w-full max-w-sm rounded-3xl border border-white/10 p-6 shadow-2xl relative modal-anim">
-            <h3 id="prompt-title" class="text-lg font-extrabold mb-2 text-white">Judul</h3>
-            <input type="text" id="prompt-input" class="w-full bg-black/30 border border-brand-accent/30 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-brand-accent mb-4">
-            <div class="flex gap-3">
-                <button id="prompt-cancel" class="flex-1 bg-white/10 text-white py-3 rounded-xl font-bold active:scale-95 transition-transform text-sm">Batal</button>
-                <button id="prompt-ok" class="flex-1 bg-brand-accent text-white py-3 rounded-xl font-bold active:scale-95 transition-transform text-sm">Simpan</button>
-            </div>
+<div id="modal-prompt" class="fixed inset-0 z-[9999] hidden items-center justify-center bg-black/90 backdrop-blur-md px-6">
+    <div class="bg-brand-card w-full max-w-sm rounded-3xl border border-white/10 p-6 shadow-2xl relative modal-anim">
+        <h3 id="prompt-title" class="text-lg font-extrabold mb-2 text-white">Judul</h3>
+        <input type="text" id="prompt-input" class="w-full bg-black/30 border border-brand-accent/30 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-brand-accent mb-4">
+        <div class="flex gap-3">
+            <button id="prompt-cancel" class="flex-1 bg-white/10 text-white py-3 rounded-xl font-bold active:scale-95 transition-transform text-sm">Batal</button>
+            <button id="prompt-ok" class="flex-1 bg-brand-accent text-white py-3 rounded-xl font-bold active:scale-95 transition-transform text-sm">Simpan</button>
         </div>
     </div>
+</div>
 
-    <div id="modal-confirm" class="fixed inset-0 z-[9999] hidden items-center justify-center bg-black/90 backdrop-blur-md px-6">
-        <div class="bg-brand-card w-full max-w-sm rounded-3xl border border-white/10 p-6 shadow-2xl relative modal-anim text-center">
-            <div class="mx-auto mb-4 bg-brand-accent/10 w-12 h-12 rounded-full flex items-center justify-center border border-brand-accent/20">
-                <i class="fas fa-question-circle text-brand-accent text-xl"></i>
-            </div>
-            <h3 id="confirm-title" class="text-sm font-bold text-gray-200 mb-6 leading-relaxed">Pertanyaan konfirmasi...</h3>
-            <div class="flex gap-3">
-                <button id="confirm-cancel" class="flex-1 bg-white/10 text-white py-3 rounded-xl font-bold active:scale-95 transition-transform text-xs uppercase tracking-wider">Batal</button>
-                <button id="confirm-ok" class="flex-1 bg-brand-accent text-white py-3 rounded-xl font-bold active:scale-95 transition-transform text-xs uppercase tracking-wider">Oke</button>
-            </div>
+<div id="modal-confirm" class="fixed inset-0 z-[9999] hidden items-center justify-center bg-black/90 backdrop-blur-md px-6">
+    <div class="bg-brand-card w-full max-w-sm rounded-3xl border border-white/10 p-6 shadow-2xl relative modal-anim text-center">
+        <div class="mx-auto mb-4 bg-brand-accent/10 w-12 h-12 rounded-full flex items-center justify-center border border-brand-accent/20">
+            <i class="fas fa-question-circle text-brand-accent text-xl"></i>
+        </div>
+        <h3 id="confirm-title" class="text-sm font-bold text-gray-200 mb-6 leading-relaxed">Pertanyaan konfirmasi...</h3>
+        <div class="flex gap-3">
+            <button id="confirm-cancel" class="flex-1 bg-white/10 text-white py-3 rounded-xl font-bold active:scale-95 transition-transform text-xs uppercase tracking-wider">Batal</button>
+            <button id="confirm-ok" class="flex-1 bg-brand-accent text-white py-3 rounded-xl font-bold active:scale-95 transition-transform text-xs uppercase tracking-wider">Oke</button>
         </div>
     </div>
+</div>
 
-    <div id="modal-alert" class="fixed inset-0 z-[9999] hidden items-center justify-center bg-black/90 backdrop-blur-md px-6">
-        <div class="bg-brand-card w-full max-w-sm rounded-3xl border border-white/10 p-6 shadow-2xl relative modal-anim text-center">
-            <div class="mx-auto mb-4 bg-brand-info/10 w-12 h-12 rounded-full flex items-center justify-center border border-brand-info/20">
-                <i class="fas fa-info-circle text-brand-info text-xl"></i>
-            </div>
-            <h3 id="alert-title" class="text-sm font-bold text-gray-200 mb-6 leading-relaxed">Pemberitahuan penting...</h3>
-            <button id="alert-ok" class="w-full bg-brand-info text-brand-dark py-3 rounded-xl font-extrabold active:scale-95 transition-transform text-xs uppercase tracking-wider">Dimengerti</button>
+<div id="modal-alert" class="fixed inset-0 z-[9999] hidden items-center justify-center bg-black/90 backdrop-blur-md px-6">
+    <div class="bg-brand-card w-full max-w-sm rounded-3xl border border-white/10 p-6 shadow-2xl relative modal-anim text-center">
+        <div class="mx-auto mb-4 bg-brand-info/10 w-12 h-12 rounded-full flex items-center justify-center border border-brand-info/20">
+            <i class="fas fa-info-circle text-brand-info text-xl"></i>
         </div>
+        <h3 id="alert-title" class="text-sm font-bold text-gray-200 mb-6 leading-relaxed">Pemberitahuan penting...</h3>
+        <button id="alert-ok" class="w-full bg-brand-info text-brand-dark py-3 rounded-xl font-extrabold active:scale-95 transition-transform text-xs uppercase tracking-wider">Dimengerti</button>
     </div>
+</div>
 
-
-    <div id="modal-msg-option" class="fixed inset-0 z-[300] hidden items-end sm:items-center justify-center bg-black/90 backdrop-blur-md px-4 pb-6 transition-all">
-        <div class="bg-brand-card w-full max-w-sm rounded-3xl border border-white/10 p-2 shadow-2xl relative modal-anim flex flex-col gap-1 overflow-hidden">
-            <div class="p-4 border-b border-white/5 text-center"><h3 class="text-sm font-bold text-gray-300">Opsi Pesan</h3></div>
-            
-            <button id="btn-reply-msg" class="w-full text-white py-4 font-bold active:bg-white/5 transition-colors text-sm hover:text-brand-info"><i class="fas fa-reply mr-2"></i> Balas Pesan</button>
-            <button id="btn-del-msg-me" onclick="deleteMsgForMe()" class="w-full text-white py-4 font-bold border-t border-white/5 active:bg-white/5 transition-colors text-sm hover:text-brand-info"><i class="fas fa-trash-alt mr-2"></i> Hapus untuk Saya</button>
-            <button id="btn-del-msg-all" onclick="deleteMsgForAll()" class="w-full text-red-500 py-4 font-bold border-t border-white/5 active:bg-white/5 transition-colors text-sm hover:text-red-400"><i class="fas fa-globe mr-2"></i> Hapus untuk Semua</button>
-            <button onclick="document.getElementById('modal-msg-option').classList.replace('flex', 'hidden')" class="w-full text-gray-500 py-4 font-bold border-t border-white/5 active:bg-white/5 transition-colors text-sm">Batal</button>
-        </div>
+<div id="modal-msg-option" class="fixed inset-0 z-[300] hidden items-end sm:items-center justify-center bg-black/90 backdrop-blur-md px-4 pb-6 transition-all">
+    <div class="bg-brand-card w-full max-w-sm rounded-3xl border border-white/10 p-2 shadow-2xl relative modal-anim flex flex-col gap-1 overflow-hidden">
+        <div class="p-4 border-b border-white/5 text-center"><h3 class="text-sm font-bold text-gray-300">Opsi Pesan</h3></div>
+        
+        <button id="btn-reply-msg" class="w-full text-white py-4 font-bold active:bg-white/5 transition-colors text-sm hover:text-brand-info"><i class="fas fa-reply mr-2"></i> Balas Pesan</button>
+        <button id="btn-del-msg-me" onclick="deleteMsgForMe()" class="w-full text-white py-4 font-bold border-t border-white/5 active:bg-white/5 transition-colors text-sm hover:text-brand-info"><i class="fas fa-trash-alt mr-2"></i> Hapus untuk Saya</button>
+        <button id="btn-del-msg-all" onclick="deleteMsgForAll()" class="w-full text-red-500 py-4 font-bold border-t border-white/5 active:bg-white/5 transition-colors text-sm hover:text-red-400"><i class="fas fa-globe mr-2"></i> Hapus untuk Semua</button>
+        <button onclick="document.getElementById('modal-msg-option').classList.replace('flex', 'hidden')" class="w-full text-gray-500 py-4 font-bold border-t border-white/5 active:bg-white/5 transition-colors text-sm">Batal</button>
     </div>
+</div>
+
 
 
 
@@ -3687,24 +3687,38 @@ async function feedToggleFollow(targetUserId, btnElement) {
         // 4. FUNGSI MENGIRIM PESAN TEKS
         async function sendMessageRoom() {
             const input = document.getElementById('chat-room-input');
-            let msgText = input.value.trim(); // Gunakan 'let' karena teksnya akan kita modifikasi
+            let msgText = input.value.trim(); 
             if (!msgText || (!activeChatUserId && !activeGroupId)) return;
             
             const isGroup = !!activeGroupId;
             const targetId = isGroup ? activeGroupId : activeChatUserId;
+
+            // 🔥 PENJAGA PINTU GRUP: Cek apakah user masih anggota grup sebelum kirim
+            if (isGroup) {
+                const { data: checkMember } = await supabaseClient
+                    .from('group_members')
+                    .select('user_id')
+                    .eq('group_id', targetId)
+                    .eq('user_id', currentUser.id)
+                    .single();
+                
+                if (!checkMember) {
+                    await customAlert("Anda tidak dapat mengirim pesan karena telah dikeluarkan dari grup ini.");
+                    closeChatRoom(); // Otomatis tutup layar chat
+                    return; // Batalkan pengiriman pesan
+                }
+            }
             
             // --- LOGIKA QUOTE REPLY (Sisipkan ID, Nama, & Teks ke dalam kode pesan) ---
             if (replyingToMsgId) {
                 const safeName = replyingToMsgName.replace(/\|\|/g, "").replace(/\]/g, "");
                 const safeText = replyingToMsgText.replace(/\|\|/g, "").replace(/\]/g, "");
-                // Ditambahkan replyingToMsgId di depan nama agar bisa dilacak saat di-klik
                 msgText = `[REPLY:${replyingToMsgId}||${safeName}||${safeText}]\n${msgText}`;
             }
 
             input.value = ''; // Kosongkan kolom ketik
             cancelChatReply(); // Tutup preview balasan otomatis setelah tombol kirim ditekan
 
-            // 🔥 PERBAIKAN TOMBOL: Paksa UI mendeteksi bahwa kolom input sudah kosong agar kembali jadi MIC
             sendTypingStatus(); 
 
             // Munculkan di layar kita dulu biar terasa instan (tanpa nunggu loading database)
@@ -3729,6 +3743,7 @@ async function feedToggleFollow(targetUserId, btnElement) {
                 showToast("Gagal mengirim pesan", "error");
             }
         }
+
 
         
 
@@ -4330,8 +4345,28 @@ async function viewStory(userId, name, avatar) {
         async function uploadChatImage(event) {
             const file = event.target.files[0];
             if (!file || (!activeChatUserId && !activeGroupId)) return;
-            const isGroup = !!activeGroupId; const targetId = isGroup ? activeGroupId : activeChatUserId;
-            event.target.value = ''; showToast("Mengirim gambar...", "info");
+            const isGroup = !!activeGroupId; 
+            const targetId = isGroup ? activeGroupId : activeChatUserId;
+            
+            // 🔥 PENJAGA PINTU GRUP: Cek apakah user masih anggota grup sebelum kirim foto
+            if (isGroup) {
+                const { data: checkMember } = await supabaseClient
+                    .from('group_members')
+                    .select('user_id')
+                    .eq('group_id', targetId)
+                    .eq('user_id', currentUser.id)
+                    .single();
+                
+                if (!checkMember) {
+                    await customAlert("Anda tidak dapat mengirim foto karena telah dikeluarkan dari grup ini.");
+                    event.target.value = ''; // Reset input file
+                    closeChatRoom(); // Otomatis tutup layar chat
+                    return; // Batalkan pengiriman
+                }
+            }
+
+            event.target.value = ''; 
+            showToast("Mengirim gambar...", "info");
 
             try {
                 const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent('img_'+Date.now())}&filetype=${encodeURIComponent(file.type)}`);
@@ -4345,12 +4380,11 @@ async function viewStory(userId, name, avatar) {
                 const insertData = { sender_id: currentUser.id, message: `[IMG]${dataUrl.finalVideoUrl}` };
                 if (isGroup) insertData.group_id = targetId; else insertData.receiver_id = targetId;
                 await supabaseClient.from('messages').insert(insertData);
-            } catch (err) { showToast("Gagal gambar", "error"); }
+            } catch (err) { 
+                showToast("Gagal gambar", "error"); 
+            }
         }
 
-        document.getElementById('chat-room-input').addEventListener('keypress', function (e) {
-            if (e.key === 'Enter') document.getElementById('btn-send-room').click();
-        });
 
         
         // ==========================================
@@ -5038,6 +5072,22 @@ async function uploadAndSendVoice(blob) {
     const isGroup = !!activeGroupId; 
     const targetId = isGroup ? activeGroupId : activeChatUserId;
     
+    // 🔥 PENJAGA PINTU GRUP: Cek apakah user masih anggota grup sebelum kirim Voice Note
+    if (isGroup) {
+        const { data: checkMember } = await supabaseClient
+            .from('group_members')
+            .select('user_id')
+            .eq('group_id', targetId)
+            .eq('user_id', currentUser.id)
+            .single();
+        
+        if (!checkMember) {
+            await customAlert("Anda tidak dapat mengirim Voice Note karena telah dikeluarkan dari grup ini.");
+            closeChatRoom(); // Otomatis tutup layar chat
+            return; // Batalkan pengiriman
+        }
+    }
+
     const tempId = 'temp-vn-' + Date.now();
     const tempMsg = { id: tempId, sender_id: currentUser.id, message: "🎙️ Mengirim pesan suara...", created_at: new Date().toISOString() };
     appendMessageBubble(tempMsg); 
@@ -5050,7 +5100,6 @@ async function uploadAndSendVoice(blob) {
             try {
                 const base64data = reader.result.split(',')[1];
 
-                // Diarahkan ke upload-url lewat metode POST (Bypass CORS)
                 const response = await fetch('/api/upload-url', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -5080,6 +5129,7 @@ async function uploadAndSendVoice(blob) {
         showToast("Error Sistem: " + err.message, "error"); 
     }
 }
+
 
 
 
