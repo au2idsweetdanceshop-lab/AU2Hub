@@ -4778,10 +4778,11 @@ async function toggleAdminStatus(userId, currentRole, nickname) {
         ? `Yakin ingin mencopot jabatan Admin dari ${nickname}?` 
         : `Jadikan ${nickname} sebagai Admin grup?`;
 
-    // 🔥 PERBAIKAN: Mengganti confirm() bawaan browser dengan customConfirm() kustom yang lebih modern
     if (!await customConfirm(confirmMsg)) return;
 
     try {
+        showToast("Memproses status...", "info"); // Notif biar user tahu sistem sedang bekerja
+
         const { error } = await supabaseClient
             .from('group_members')
             .update({ role: nextRole })
@@ -4790,23 +4791,29 @@ async function toggleAdminStatus(userId, currentRole, nickname) {
 
         if (error) throw error;
 
-        showToast(`Status ${nickname} diperbarui`, "success");
-        loadGroupInfo(activeGroupId); // Refresh modal anggota
+        showToast(`Status ${nickname} berhasil diperbarui!`, "success");
+        
+        // 🔥 KUNCI PERBAIKAN: Beri jeda 300 milidetik agar database 
+        // punya waktu memproses sebelum layar direfresh otomatis.
+        setTimeout(() => {
+            loadGroupInfo(activeGroupId); 
+        }, 300);
+
     } catch (err) {
         showToast("Gagal memperbarui status: " + err.message, "error");
     }
 }
-
 
 // 12. FUNGSI KICK ANGGOTA (Hanya Admin)
 async function kickMember(userId, nickname) {
     // GEMBOK KEAMANAN: Cegah bypass eksekusi ilegal via console / Eruda
     if (activeGroupRole !== 'admin') return showToast("Hanya admin yang diizinkan mengeluarkan anggota!", "error");
 
-    // 🔥 PERBAIKAN: Mengganti ke notifikasi modern kustom kita
     if (!await customConfirm(`Yakin ingin mengeluarkan ${nickname} dari grup ini?`)) return;
 
     try {
+        showToast("Sedang mengeluarkan...", "info");
+
         // 1. Hapus dari tabel group_members
         const { error } = await supabaseClient
             .from('group_members')
@@ -4823,12 +4830,18 @@ async function kickMember(userId, nickname) {
             message: `[SISTEM] ${nickname} telah dikeluarkan dari grup oleh Admin.`
         });
 
-        showToast(nickname + " telah dikeluarkan", "info");
-        loadGroupInfo(activeGroupId); // Refresh modal anggota
+        showToast(nickname + " telah dikeluarkan", "success");
+        
+        // 🔥 KUNCI PERBAIKAN: Beri jeda 300 milidetik
+        setTimeout(() => {
+            loadGroupInfo(activeGroupId); 
+        }, 300);
+
     } catch (err) {
         showToast("Gagal mengeluarkan: " + err.message, "error");
     }
 }
+
 
 
 
