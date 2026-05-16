@@ -1,4 +1,4 @@
-import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import { S3Client, PutObjectCommand, PutBucketCorsCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 export default async function handler(req, res) {
@@ -16,19 +16,38 @@ export default async function handler(req, res) {
     });
 
     try {
+        // === JURUS PAMUNGKAS: BUKA PINTU CORS BIZNET OTOMATIS ===
+        try {
+            const corsCommand = new PutBucketCorsCommand({
+                Bucket: bucketName,
+                CORSConfiguration: {
+                    CORSRules: [
+                        {
+                            AllowedHeaders: ["*"],
+                            AllowedMethods: ["GET", "PUT", "POST", "DELETE", "HEAD"],
+                            AllowedOrigins: ["*"],
+                            ExposeHeaders: [],
+                            MaxAgeSeconds: 3600
+                        }
+                    ]
+                }
+            });
+            await client.send(corsCommand);
+        } catch (corsErr) {
+            console.log("Abaikan jika gagal:", corsErr);
+        }
+        // =========================================================
+
         const uniqueFileName = `${Date.now()}-${filename.replace(/\s+/g, '-')}`;
         
-        // 1. TAMBAHKAN ACL PUBLIC-READ DI SINI
         const command = new PutObjectCommand({
             Bucket: bucketName,
             Key: `videos/${uniqueFileName}`,
-            ContentType: filetype,
-            ACL: "public-read" 
+            ContentType: filetype
         });
 
         const uploadUrl = await getSignedUrl(client, command, { expiresIn: 3600 });
 
-        // 2. SESUAIKAN FORMAT URL AGAR SAMA DENGAN SCREENSHOT SPREADSHEET ANDA
         res.status(200).json({
             uploadUrl: uploadUrl,
             finalVideoUrl: `https://${bucketName}.nos.wjv-1.neo.id/videos/${uniqueFileName}`
