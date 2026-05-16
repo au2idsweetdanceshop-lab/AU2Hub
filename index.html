@@ -3267,6 +3267,56 @@ let lastTypingTime = 0; // Tambahkan variabel ini di luar fungsi
                 lastTypingTime = now; // Update waktu terakhir mengetik
             }
         }
+        
+                function switchTab(tabId, event = null, isPush = true) {
+            if (event) event.preventDefault();
+            
+            // RESET PROFIL KE MILIK SENDIRI JIKA KLIK MENU BAWAH NAVIGASI PROFIL
+            if (tabId === 'profile' && event !== null && currentUser) {
+                if (viewedUserId !== currentUser.id) {
+                    viewedUserId = currentUser.id;
+                    openUserProfile(currentUser.id);
+                    return; // hentikan karena openUserProfile akan mengeksekusi switchTab secara mandiri
+                }
+            }
+
+            if (tabId !== 'profile' && tabId !== 'pembayaran' && tabId !== 'upload') {tabSebelumnya = tabId;} 
+            if (tabId === 'layanan' && isPush && document.getElementById('pembayaran').classList.contains('active')) {
+                window.scrollTo({ top: 0, behavior: 'smooth' }); return; 
+            }
+
+            const targetSection = document.getElementById(tabId) || document.getElementById('home');
+            if (!targetSection) return;
+
+            localStorage.setItem('lastTab', tabId);
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(n => {
+                n.classList.remove('active');
+                const icon = n.querySelector('i');
+                if (icon) icon.style.animation = 'none';
+            });
+
+            targetSection.classList.add('active');
+            
+            if (tabId === 'sosial') {
+                loadVideos();
+            }
+
+            const navMap = { 'home': 0, 'info': 1, 'layanan': 2, 'sosial': 3, 'rekber': 4, 'ripper': 5, 'profile': 6, 'pembayaran': 2 };
+            const activeIndex = navMap[tabId];
+            if (activeIndex !== undefined) {
+                const activeNav = document.querySelectorAll('.nav-item')[activeIndex];
+                if (activeNav) {
+                    activeNav.classList.add('active');
+                    const icon = activeNav.querySelector('i');
+                    if (icon) { void icon.offsetWidth; icon.style.animation = 'popBounce 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards'; }
+                }
+            }
+            
+            setTimeout(() => { window.scrollTo({ top: 0, behavior: 'smooth' }); }, 10);
+            if (isPush && window.location.hash !== `#${tabId}`) history.pushState(null, null, `#${tabId}`);
+        }
+
 
 
 
