@@ -4832,53 +4832,41 @@ async function uploadAndSendVoice(blob) {
     const isGroup = !!activeGroupId; 
     const targetId = isGroup ? activeGroupId : activeChatUserId;
     
-    // Buat gelembung loading palsu
     const tempId = 'temp-vn-' + Date.now();
     const tempMsg = { id: tempId, sender_id: currentUser.id, message: "🎙️ Mengirim pesan suara...", created_at: new Date().toISOString() };
     appendMessageBubble(tempMsg); 
     scrollToBottomChat();
 
     try {
-        // JALUR BYPASS: Ubah file suara menjadi teks (Base64) agar mudah dikirim
         const reader = new FileReader();
         reader.readAsDataURL(blob);
         reader.onloadend = async () => {
             try {
-                // Ambil data murninya saja
                 const base64data = reader.result.split(',')[1];
 
-                // Tembak langsung ke Vercel kita (Anti-CORS)
-                const response = await fetch('/api/upload-vn', {
+                // Diarahkan ke upload-url lewat metode POST (Bypass CORS)
+                const response = await fetch('/api/upload-url', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ fileBase64: base64data, filetype: 'audio/webm' })
                 });
 
                 const data = await response.json();
-                if (!data.success) throw new Error(data.error || "Gagal upload ke server");
+                if (data.error) throw new Error(data.error);
 
                 const msgText = `[AUDIO]${data.url}`;
-
-                // Simpan URL ke Supabase
                 const insertData = { sender_id: currentUser.id, message: msgText };
                 if (isGroup) insertData.group_id = targetId; else insertData.receiver_id = targetId;
                 
                 const { error: dbErr } = await supabaseClient.from('messages').insert(insertData);
-                if (dbErr) throw new Error("Gagal menyimpan ke database");
+                if (dbErr) throw new Error("Gagal simpan DB");
 
-                // Bersihkan gelembung palsu
                 const oldBubble = document.querySelector(`[ontouchstart*="${tempId}"]`);
-                if (oldBubble) {
-                    const wrapper = oldBubble.closest('.message-anim');
-                    if (wrapper) wrapper.remove();
-                }
+                if (oldBubble) oldBubble.closest('.message-anim')?.remove();
 
             } catch(err) {
                 const oldBubble = document.querySelector(`[ontouchstart*="${tempId}"]`);
-                if (oldBubble) {
-                    const wrapper = oldBubble.closest('.message-anim');
-                    if (wrapper) wrapper.remove();
-                }
+                if (oldBubble) oldBubble.closest('.message-anim')?.remove();
                 showToast("Error VN: " + err.message, "error");
             }
         };
@@ -4886,6 +4874,7 @@ async function uploadAndSendVoice(blob) {
         showToast("Error Sistem: " + err.message, "error"); 
     }
 }
+
 
 
 
