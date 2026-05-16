@@ -2972,7 +2972,7 @@ function closeUploadModal() {
 
             const htmlString = nextBatch.map((vid) => `
                 <div class="snap-start w-full h-full flex-shrink-0 relative flex items-center justify-center bg-black">
-                    <div class="video-inner-wrap w-full h-full relative bg-brand-dark ${!isGlobalMuted ? 'floating-focus' : ''}">
+                    <div class="w-full h-full relative bg-brand-dark">
                         
                         <div class="absolute inset-0 flex items-center justify-center z-0"><div class="w-12 h-12 border-4 border-brand-accent/20 border-t-brand-accent rounded-full animate-spin"></div></div>
                         <video class="absolute inset-0 m-auto w-full h-full object-cover video-player transition-opacity duration-500 opacity-0 z-10" 
@@ -3054,7 +3054,7 @@ function closeUploadModal() {
                             </div>
                         </div>
                     </div>
-                </div>\`).join('');
+                </div>`).join('');
 
             container.insertAdjacentHTML('beforeend', htmlString);
             currentVideoIndex += BATCH_SIZE;
