@@ -736,7 +736,9 @@
             </div>
 
             <!-- Media Story -->
-            <img id="viewer-story-img" src="" class="w-full h-full object-contain">
+            <img id="viewer-story-img" src="" class="w-full h-full object-contain hidden">
+            <video id="viewer-story-vid" class="w-full h-full object-contain hidden" playsinline></video>
+
             
             <!-- WADAH CAPTION STORY -->
             <div class="absolute bottom-12 left-4 right-4 z-50 flex justify-center pointer-events-none">
@@ -3979,137 +3981,173 @@ async function viewStory(userId, name, avatar) {
     playStory(0);
 }
 
-function playStory(index) {
-    if (index >= currentActiveStories.length) {
-        return closeStoryViewer();
-    }
-    currentActiveStories.currentIndex = index;
-    const story = currentActiveStories[index];
-    
-    document.getElementById('viewer-story-time').innerText = timeAgo(story.created_at);
-    document.getElementById('viewer-story-img').src = story.media_url;
-    
-    const captionEl = document.getElementById('viewer-story-caption');
-    if (captionEl) {
-        if (story.caption && story.caption.trim() !== '') {
-            captionEl.innerText = story.caption;
-            captionEl.classList.remove('hidden');
-        } else {
-            captionEl.classList.add('hidden');
-            captionEl.innerText = '';
-        }
-    }
-    
-        const btnDelete = document.getElementById('btn-delete-story');
-    if (btnDelete) { // Pastikan elemen tombolnya ada di HTML
-        if (currentUser && story.user_id === currentUser.id) {
-            btnDelete.classList.remove('hidden'); // Munculkan jika milik sendiri
-        } else {
-            btnDelete.classList.add('hidden'); // Sembunyikan jika milik orang lain
-        }
-    }
-    
-    // -- UPDATE PROGRESS BAR ALA WHATSAPP --
-    for (let i = 0; i < currentActiveStories.length; i++) {
-        const bar = document.getElementById(`story-progress-${i}`);
-        if (!bar) continue;
-        
-        bar.style.transition = 'none'; 
-        if (i < index) {
-            bar.style.width = '100%'; // Garis sebelumnya FULL
-        } else if (i > index) {
-            bar.style.width = '0%';   // Garis selanjutnya KOSONG
-        } else {
-            bar.style.width = '0%';   // Garis saat ini reset ke 0 dulu
-        }
-    }
-    
-    clearTimeout(currentStoryTimer);
-    
-    // Jalankan garis saat ini selama 5 detik
-    setTimeout(() => {
-        const activeBar = document.getElementById(`story-progress-${index}`);
-        if (activeBar) {
-            activeBar.style.transition = 'width 5s linear';
-            activeBar.style.width = '100%';
-        }
-        currentStoryTimer = setTimeout(() => {
-            nextStory();
-        }, 5000);
-    }, 50);
-}
-
-function closeStoryViewer() {
-    clearTimeout(currentStoryTimer);
-    const modal = document.getElementById('story-viewer-modal');
-    
-    modal.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
-    modal.classList.add('opacity-0');
-    modal.style.transform = 'translateY(50px)'; // Efek turun sedikit saat ditutup
-    
-    setTimeout(() => {
-        modal.classList.remove('flex');
-        modal.classList.add('hidden');
-        // Reset posisi kembali normal
-        modal.style.transform = 'translateY(0)';
-    }, 300);
-}
-
-// ==========================================
-// FUNGSI NAVIGASI STORY (KIRI / KANAN)
-// ==========================================
-
-function nextStory() {
-    // Pastikan ada story yang sedang aktif
-    if (!currentActiveStories || currentActiveStories.length === 0) return;
-    
-    // Tambah index ke story selanjutnya
-    let nextIndex = currentActiveStories.currentIndex + 1;
-    
-    // Jika sudah mencapai story terakhir, tutup viewer
-    if (nextIndex >= currentActiveStories.length) {
-        closeStoryViewer();
-    } else {
-        // Jika masih ada, mainkan story selanjutnya
-        playStory(nextIndex);
-    }
-}
-
-async function hapusStoryAktif() {
-    const story = currentActiveStories[currentActiveStories.currentIndex];
-    const konfirmasi = confirm("Yakin ingin menghapus status ini?");
-    
-    if (konfirmasi) {
-        try {
-            // Hapus dari database Supabase
-            const { error } = await supabaseClient.from('stories').delete().eq('id', story.id);
-            if (error) throw error;
+        // ==========================================
+        // FUNGSI MANAJEMEN DAN NAVIGASI STORY (BISA FOTO & VIDEO)
+        // ==========================================
+        function playStory(index) {
+            if (index >= currentActiveStories.length) {
+                return closeStoryViewer();
+            }
+            currentActiveStories.currentIndex = index;
+            const story = currentActiveStories[index];
             
-            showToast("Status berhasil dihapus", "success");
-            closeStoryViewer();
-            loadStories(); // Refresh daftar status di latar belakang
-        } catch (err) {
-            showToast("Gagal menghapus status", "error");
+            document.getElementById('viewer-story-time').innerText = timeAgo(story.created_at);
+            
+            const imgEl = document.getElementById('viewer-story-img');
+            const vidEl = document.getElementById('viewer-story-vid');
+            
+            // Bersihkan media sebelumnya & hentikan pemutar video jika sedang berjalan
+            imgEl.classList.add('hidden');
+            vidEl.classList.add('hidden');
+            vidEl.pause();
+            vidEl.src = '';
+            vidEl.onended = null;
+            vidEl.onloadedmetadata = null;
+
+            // --- DETEKSI TIPE MEDIA STATUS ---
+            if (story.media_type === 'video') {
+                vidEl.src = story.media_url;
+                vidEl.classList.remove('hidden');
+                vidEl.muted = isGlobalMuted; // Mengikuti pengaturan suara global aplikasi
+                vidEl.play().catch(() => {});
+            } else {
+                imgEl.src = story.media_url;
+                imgEl.classList.remove('hidden');
+            }
+            
+            const captionEl = document.getElementById('viewer-story-caption');
+            if (captionEl) {
+                if (story.caption && story.caption.trim() !== '') {
+                    captionEl.innerText = story.caption;
+                    captionEl.classList.remove('hidden');
+                } else {
+                    captionEl.classList.add('hidden');
+                    captionEl.innerText = '';
+                }
+            }
+            
+            const btnDelete = document.getElementById('btn-delete-story');
+            if (btnDelete) {
+                if (currentUser && story.user_id === currentUser.id) {
+                    btnDelete.classList.remove('hidden'); // Munculkan jika milik sendiri
+                } else {
+                    btnDelete.classList.add('hidden'); // Sembunyikan jika milik orang lain
+                }
+            }
+            
+            // -- RESET ANIMASI PROGRESS BAR SINKRON ALA WHATSAPP --
+            for (let i = 0; i < currentActiveStories.length; i++) {
+                const bar = document.getElementById(`story-progress-${i}`);
+                if (!bar) continue;
+                
+                bar.style.transition = 'none'; 
+                if (i < index) {
+                    bar.style.width = '100%'; // Garis sebelumnya FULL
+                } else if (i > index) {
+                    bar.style.width = '0%';   // Garis selanjutnya KOSONG
+                } else {
+                    bar.style.width = '0%';   // Garis saat ini reset ke 0 dulu
+                }
+            }
+            
+            clearTimeout(currentStoryTimer);
+            
+            // --- JALANKAN TIMING PROGRESS BAR ---
+            if (story.media_type === 'video') {
+                // Jika video, bar berjalan mengikuti durasi asli video
+                vidEl.onloadedmetadata = () => {
+                    const duration = vidEl.duration || 5;
+                    setTimeout(() => {
+                        const activeBar = document.getElementById(`story-progress-${index}`);
+                        if (activeBar) {
+                            activeBar.style.transition = `width ${duration}s linear`;
+                            activeBar.style.width = '100%';
+                        }
+                    }, 50);
+                };
+                // Saat durasi video berakhir, otomatis lompat ke status berikutnya
+                vidEl.onended = () => {
+                    nextStory();
+                };
+            } else {
+                // Jika foto, jalankan bar default selama 5 detik seperti biasa
+                setTimeout(() => {
+                    const activeBar = document.getElementById(`story-progress-${index}`);
+                    if (activeBar) {
+                        activeBar.style.transition = 'width 5s linear';
+                        activeBar.style.width = '100%';
+                    }
+                    currentStoryTimer = setTimeout(() => {
+                        nextStory();
+                    }, 5000);
+                }, 50);
+            }
         }
-    }
-}
 
+        function closeStoryViewer() {
+            clearTimeout(currentStoryTimer);
+            
+            // Paksa matikan video agar suaranya tidak bocor keluar setelah ditutup
+            const vidEl = document.getElementById('viewer-story-vid');
+            if (vidEl) {
+                vidEl.pause();
+                vidEl.src = '';
+            }
 
-function prevStory() {
-    // Pastikan ada story yang sedang aktif
-    if (!currentActiveStories || currentActiveStories.length === 0) return;
-    
-    // Kurangi index ke story sebelumnya
-    let prevIndex = currentActiveStories.currentIndex - 1;
-    
-    // Jika sedang di story pertama dan ditekan mundur, ulang dari awal story tersebut
-    if (prevIndex < 0) {
-        playStory(0);
-    } else {
-        // Mainkan story sebelumnya
-        playStory(prevIndex);
-    }
-}
+            const modal = document.getElementById('story-viewer-modal');
+            modal.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+            modal.classList.add('opacity-0');
+            modal.style.transform = 'translateY(50px)'; // Efek turun sedikit saat ditutup
+            
+            setTimeout(() => {
+                modal.classList.remove('flex');
+                modal.classList.add('hidden');
+                modal.style.transform = 'translateY(0)'; // Reset posisi kembali normal
+            }, 300);
+        }
+
+        function nextStory() {
+            if (!currentActiveStories || currentActiveStories.length === 0) return;
+            
+            let nextIndex = currentActiveStories.currentIndex + 1;
+            
+            if (nextIndex >= currentActiveStories.length) {
+                closeStoryViewer();
+            } else {
+                playStory(nextIndex);
+            }
+        }
+
+        async function hapusStoryAktif() {
+            const story = currentActiveStories[currentActiveStories.currentIndex];
+            const konfirmasi = confirm("Yakin ingin menghapus status ini?");
+            
+            if (konfirmasi) {
+                try {
+                    const { error } = await supabaseClient.from('stories').delete().eq('id', story.id);
+                    if (error) throw error;
+                    
+                    showToast("Status berhasil deleted", "success");
+                    closeStoryViewer();
+                    loadStories(); // Refresh daftar status di latar belakang
+                } catch (err) {
+                    showToast("Gagal menghapus status", "error");
+                }
+            }
+        }
+
+        function prevStory() {
+            if (!currentActiveStories || currentActiveStories.length === 0) return;
+            
+            let prevIndex = currentActiveStories.currentIndex - 1;
+            
+            if (prevIndex < 0) {
+                playStory(0);
+            } else {
+                playStory(prevIndex);
+            }
+        }
+
 
         
         async function prosesUploadVideo() {
