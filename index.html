@@ -673,14 +673,17 @@
         </div>
 
 
-                <!-- FULLSCREEN STORY VIEWER -->
+        <!-- FULLSCREEN STORY VIEWER -->
         <div id="story-viewer-modal" class="fixed inset-0 z-[600] hidden items-center justify-center bg-black/95 backdrop-blur-md opacity-0 transition-opacity duration-300">
             <!-- PROGRESS BAR STORY -->
-<div id="story-progress-container" class="absolute top-4 left-4 right-4 flex gap-1 z-50">
-    <!-- Segmen garis akan digenerate otomatis oleh Javascript di sini -->
+            <div id="story-progress-container" class="absolute top-4 left-4 right-4 flex gap-1 z-50">
+                <!-- Segmen garis akan digenerate otomatis oleh Javascript di sini -->
             </div>
+            
             <!-- Header Story -->
             <div class="absolute top-8 left-4 right-4 flex justify-between items-center z-50">
+                
+                <!-- Kiri: Foto dan Nama -->
                 <div class="flex items-center gap-3">
                     <img id="viewer-story-avatar" src="" class="w-10 h-10 rounded-full border border-white/20 object-cover">
                     <div>
@@ -688,8 +691,19 @@
                         <p id="viewer-story-time" class="text-white/70 text-[10px] shadow-black drop-shadow-md">Baru saja</p>
                     </div>
                 </div>
-                <button onclick="closeStoryViewer()" class="text-white text-2xl drop-shadow-md active:scale-90"><i class="fas fa-times"></i></button>
+
+                <!-- Kanan: Tombol Hapus & Close -->
+                <div class="flex items-center gap-4">
+                    <button id="btn-delete-story" onclick="hapusStoryAktif()" class="hidden text-red-500 text-xl drop-shadow-md active:scale-90 transition-transform">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                    <button onclick="closeStoryViewer()" class="text-white text-2xl drop-shadow-md active:scale-90 transition-transform">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+
             </div>
+
             <!-- Media Story -->
             <img id="viewer-story-img" src="" class="w-full h-full object-contain">
             
@@ -3147,6 +3161,233 @@ async function feedToggleFollow(targetUserId, btnElement) {
                 }
             }
         }
+        // Fungsi untuk membuka ruang obrolan (Grup atau Personal)
+        // ==========================================
+        // FITUR RUANG OBROLAN (CHAT ROOM)
+        // ==========================================
+
+        // Fungsi untuk membuka ruang obrolan (Grup atau Personal)
+        function openChatRoom(id, name, avatar, isGroup = false) {
+            // 1. Sembunyikan daftar chat, tampilkan ruang chat
+            document.getElementById('chat-list-view').classList.add('hidden');
+            document.getElementById('chat-list-view').classList.remove('flex');
+            
+            document.getElementById('chat-room-view').classList.remove('hidden');
+            document.getElementById('chat-room-view').classList.add('flex');
+
+            // 2. Ubah profil di header (Atas ruang chat)
+            document.getElementById('active-chat-name').innerText = name;
+            document.getElementById('active-chat-avatar').src = avatar;
+
+            // 3. Set ID yang sedang aktif agar fungsi kirim pesan tahu mau dikirim ke mana
+            if (isGroup) {
+                activeGroupId = id;
+                activeChatUserId = null;
+                document.getElementById('active-chat-status').innerText = 'Grup Obrolan';
+                document.getElementById('active-chat-online-dot').classList.add('hidden');
+            } else {
+                activeChatUserId = id;
+                activeGroupId = null;
+                // Status online/offline diurus oleh initPresence()
+            }
+
+            // 4. Bersihkan kontainer chat lama sebelum memuat yang baru
+            document.getElementById('chat-messages-container').innerHTML = '<div class="flex justify-center mt-10"><i class="fas fa-spinner fa-spin text-brand-accent text-2xl"></i></div>';
+
+            // 5. Panggil fungsi untuk memuat pesan dari Supabase
+            loadRoomMessages();
+
+            // 6. AKTIFKAN RADAR REAL-TIME & TYPING INDICATOR
+            setupChatRoomListener();
+        }
+
+        // Fungsi untuk menutup ruang obrolan dan kembali ke daftar
+        function closeChatRoom(kembaliKeList = true, paksaTutupWidget = false) {
+            // Reset ID Aktif
+            activeGroupId = null;
+            activeChatUserId = null;
+            
+            // Bersihkan layar chat
+            document.getElementById('chat-messages-container').innerHTML = '';
+
+            if (kembaliKeList && !paksaTutupWidget) {
+                // Kembali ke daftar chat
+                document.getElementById('chat-room-view').classList.add('hidden');
+                document.getElementById('chat-room-view').classList.remove('flex');
+                
+                document.getElementById('chat-list-view').classList.remove('hidden');
+                document.getElementById('chat-list-view').classList.add('flex');
+                
+                // Refresh daftar chat terbaru
+                loadChatList();
+            }
+        }
+
+        // 1. FUNGSI MENGAMBIL PESAN DARI DATABASE
+        async function loadRoomMessages() {
+            const container = document.getElementById('chat-messages-container');
+            const isGroup = !!activeGroupId;
+            const targetId = isGroup ? activeGroupId : activeChatUserId;
+            
+            if(!targetId) return;
+
+            try {
+                // Ambil maksimal 50 pesan terakhir
+                let query = supabaseClient.from('messages').select('*, profiles(nickname, avatar_url)').order('created_at', { ascending: true }).limit(50);
+                
+                if (isGroup) {
+                    query = query.eq('group_id', targetId);
+                } else {
+                    // Logika ambil chat pribadi antara Saya dan Dia
+                    query = query.or(`and(sender_id.eq.${currentUser.id},receiver_id.eq.${targetId}),and(sender_id.eq.${targetId},receiver_id.eq.${currentUser.id})`);
+                }
+
+                const { data, error } = await query;
+                if (error) throw error;
+
+                container.innerHTML = ''; // Bersihkan animasi loading
+                
+                if (data && data.length > 0) {
+                    data.forEach(msg => appendMessageBubble(msg));
+                    scrollToBottomChat();
+                } else {
+                    container.innerHTML = '<div class="text-center text-xs text-gray-500 mt-10">Belum ada pesan. Mulai obrolan!</div>';
+                }
+
+                // Tandai pesan sudah dibaca jika ini chat pribadi
+                if (!isGroup) {
+                    await supabaseClient.from('messages').update({ is_read: true }).eq('sender_id', targetId).eq('receiver_id', currentUser.id).eq('is_read', false);
+                    checkGlobalUnreadMessages();
+                }
+            } catch (err) {
+                container.innerHTML = '<div class="text-center text-xs text-red-500 mt-10">Gagal memuat pesan.</div>';
+            }
+        }
+
+        // 2. FUNGSI UNTUK MENGGAMBAR BALON CHAT KE LAYAR
+        function appendMessageBubble(msg) {
+            const container = document.getElementById('chat-messages-container');
+            if(container.innerHTML.includes('Belum ada pesan')) container.innerHTML = ''; // Hapus teks kosong
+            
+            const isMe = msg.sender_id === currentUser.id;
+            const align = isMe ? 'justify-end' : 'justify-start';
+            const bg = isMe ? 'bg-brand-accent text-white' : 'bg-white/10 text-gray-200';
+            const borderRadius = isMe ? 'rounded-tl-2xl rounded-tr-2xl rounded-bl-2xl rounded-br-sm' : 'rounded-tl-2xl rounded-tr-2xl rounded-br-2xl rounded-bl-sm';
+            
+            let content = msg.message;
+            
+            // Deteksi jika pesan adalah gambar
+            if (content.startsWith('[IMG]')) {
+                const imgUrl = content.replace('[IMG]', '');
+                content = `<img src="${imgUrl}" onclick="openLightbox('${imgUrl}')" class="max-w-[200px] rounded-xl cursor-pointer hover:opacity-80">`;
+            } else {
+                content = formatCaption(content); // Amankan teks
+            }
+
+            // Tampilkan nama pengirim jika di dalam Grup
+            let senderName = '';
+            if (activeGroupId && !isMe) {
+                senderName = `<div class="text-[9px] text-brand-info font-bold mb-1">${msg.profiles?.nickname || 'Anggota'}</div>`;
+            }
+
+            const html = `
+            <div class="flex w-full ${align} mb-2 message-anim">
+                <div class="max-w-[75%] cursor-pointer active:scale-95 transition-transform" onclick="showMsgOptions('${msg.id}', '${msg.sender_id}')">
+                    <div class="px-4 py-2.5 ${bg} ${borderRadius} shadow-md text-sm border border-white/5 break-words">
+                        ${senderName}
+                        ${content}
+                    </div>
+                    <div class="text-[9px] text-gray-500 mt-1 ${isMe ? 'text-right' : 'text-left'}">${timeAgo(msg.created_at)}</div>
+                </div>
+            </div>`;
+            
+            container.insertAdjacentHTML('beforeend', html);
+        }
+
+        // 3. FUNGSI SCROLL OTOMATIS KE BAWAH
+        function scrollToBottomChat() {
+            const container = document.getElementById('chat-messages-container');
+            if(container) container.scrollTop = container.scrollHeight;
+        }
+
+        // 4. FUNGSI MENGIRIM PESAN TEKS
+        async function sendMessageRoom() {
+            const input = document.getElementById('chat-room-input');
+            const msgText = input.value.trim();
+            if (!msgText || (!activeChatUserId && !activeGroupId)) return;
+            
+            const isGroup = !!activeGroupId;
+            const targetId = isGroup ? activeGroupId : activeChatUserId;
+            
+            input.value = ''; // Kosongkan kolom ketik
+
+            // Munculkan di layar kita dulu biar terasa instan (tanpa nunggu loading database)
+            const tempMsg = {
+                id: 'temp-' + Date.now(),
+                sender_id: currentUser.id,
+                message: msgText,
+                created_at: new Date().toISOString()
+            };
+            appendMessageBubble(tempMsg);
+            scrollToBottomChat();
+
+            // Kirim diam-diam ke Supabase
+            try {
+                const insertData = { sender_id: currentUser.id, message: msgText };
+                if (isGroup) insertData.group_id = targetId;
+                else insertData.receiver_id = targetId;
+
+                const { error } = await supabaseClient.from('messages').insert(insertData);
+                if (error) throw error;
+            } catch (err) {
+                showToast("Gagal mengirim pesan", "error");
+            }
+        }
+
+
+        // ==========================================
+        // 2. INISIALISASI HALAMAN (TETAP DI DALAM DOMContentLoaded)
+        // ==========================================
+        document.addEventListener('DOMContentLoaded', () => {
+            
+            // Logika Routing Halaman
+            let tabAwal = window.location.hash.substring(1);
+            if (!tabAwal) {
+                tabAwal = localStorage.getItem('lastTab') || 'home';
+            }
+            switchTab(tabAwal, null, false);
+            checkSession();
+            muatDataRipper();
+            renderFaqs();
+            renderServices();
+
+            // Mendaftarkan Service Worker
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('/sw.js')
+                .then(() => console.log("Service Worker AU2Hub Aktif!"))
+                .catch(err => console.error("Service Worker Gagal:", err));
+            }
+
+            // Logika Klik Tombol Instal
+            const btnInstallManual = document.getElementById('btn-install-manual');
+            const btnInstallContainer = document.getElementById('install-container');
+
+            if (btnInstallManual) {
+                btnInstallManual.addEventListener('click', async () => {
+                    if (!deferredPrompt) return;
+                    
+                    deferredPrompt.prompt();
+                    const { outcome } = await deferredPrompt.userChoice;
+                    console.log(`User memilih: ${outcome}`);
+                    
+                    deferredPrompt = null;
+                    if (btnInstallContainer) {
+                        btnInstallContainer.classList.add('hidden');
+                    }
+                });
+            }
+
+        
 
         // ==========================================
 // FITUR TAB & STORY CHAT WIDGET
@@ -3487,6 +3728,15 @@ function playStory(index) {
         }
     }
     
+        const btnDelete = document.getElementById('btn-delete-story');
+    if (btnDelete) { // Pastikan elemen tombolnya ada di HTML
+        if (currentUser && story.user_id === currentUser.id) {
+            btnDelete.classList.remove('hidden'); // Munculkan jika milik sendiri
+        } else {
+            btnDelete.classList.add('hidden'); // Sembunyikan jika milik orang lain
+        }
+    }
+    
     // -- UPDATE PROGRESS BAR ALA WHATSAPP --
     for (let i = 0; i < currentActiveStories.length; i++) {
         const bar = document.getElementById(`story-progress-${i}`);
@@ -3532,6 +3782,63 @@ function closeStoryViewer() {
         modal.style.transform = 'translateY(0)';
     }, 300);
 }
+
+// ==========================================
+// FUNGSI NAVIGASI STORY (KIRI / KANAN)
+// ==========================================
+
+function nextStory() {
+    // Pastikan ada story yang sedang aktif
+    if (!currentActiveStories || currentActiveStories.length === 0) return;
+    
+    // Tambah index ke story selanjutnya
+    let nextIndex = currentActiveStories.currentIndex + 1;
+    
+    // Jika sudah mencapai story terakhir, tutup viewer
+    if (nextIndex >= currentActiveStories.length) {
+        closeStoryViewer();
+    } else {
+        // Jika masih ada, mainkan story selanjutnya
+        playStory(nextIndex);
+    }
+}
+
+async function hapusStoryAktif() {
+    const story = currentActiveStories[currentActiveStories.currentIndex];
+    const konfirmasi = confirm("Yakin ingin menghapus status ini?");
+    
+    if (konfirmasi) {
+        try {
+            // Hapus dari database Supabase
+            const { error } = await supabaseClient.from('stories').delete().eq('id', story.id);
+            if (error) throw error;
+            
+            showToast("Status berhasil dihapus", "success");
+            closeStoryViewer();
+            loadStories(); // Refresh daftar status di latar belakang
+        } catch (err) {
+            showToast("Gagal menghapus status", "error");
+        }
+    }
+}
+
+
+function prevStory() {
+    // Pastikan ada story yang sedang aktif
+    if (!currentActiveStories || currentActiveStories.length === 0) return;
+    
+    // Kurangi index ke story sebelumnya
+    let prevIndex = currentActiveStories.currentIndex - 1;
+    
+    // Jika sedang di story pertama dan ditekan mundur, ulang dari awal story tersebut
+    if (prevIndex < 0) {
+        playStory(0);
+    } else {
+        // Mainkan story sebelumnya
+        playStory(prevIndex);
+    }
+}
+
         
         async function prosesUploadVideo() {
             if (!currentUser) return openAuthModal();
@@ -4061,74 +4368,197 @@ function updateSeek(e, containerElement, video) {
     }
 }
     
-// ==========================================
-// 1. EVENT BROWSER PWA (TARUH DI LUAR DOMContentLoaded)
-// ==========================================
-let deferredPrompt;
+        // ==========================================
+        // EVENT BROWSER PWA & INISIALISASI HALAMAN
+        // ==========================================
+        let deferredPrompt;
 
-// Menangkap sinyal PWA dari browser
-window.addEventListener('beforeinstallprompt', (e) => {
-    e.preventDefault();
-    deferredPrompt = e;
-    
-    const btnInstallContainer = document.getElementById('install-container');
-    if (btnInstallContainer) {
-        btnInstallContainer.classList.remove('hidden');
-    }
-});
+        // Menangkap sinyal PWA dari browser
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            const btnInstallContainer = document.getElementById('install-container');
+            if (btnInstallContainer) {
+                btnInstallContainer.classList.remove('hidden');
+            }
+        });
 
-// Deteksi jika sudah berhasil diinstal
-window.addEventListener('appinstalled', () => {
-    console.log('AU2Hub sukses terpasang di perangkat!');
-    deferredPrompt = null;
-    const btnInstallContainer = document.getElementById('install-container');
-    if (btnInstallContainer) {
-        btnInstallContainer.classList.add('hidden');
-    }
-});
-
-// ==========================================
-// 2. INISIALISASI HALAMAN (TETAP DI DALAM DOMContentLoaded)
-// ==========================================
-document.addEventListener('DOMContentLoaded', () => {
-    
-    // Logika Routing Halaman
-    let tabAwal = window.location.hash.substring(1);
-    if (!tabAwal) {
-        tabAwal = localStorage.getItem('lastTab') || 'home';
-    }
-    switchTab(tabAwal, null, false);
-    checkSession();
-    muatDataRipper();
-    renderFaqs();
-    renderServices();
-
-    // Mendaftarkan Service Worker
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('/sw.js')
-        .then(() => console.log("Service Worker AU2Hub Aktif!"))
-        .catch(err => console.error("Service Worker Gagal:", err));
-    }
-
-    // Logika Klik Tombol Instal
-    const btnInstallManual = document.getElementById('btn-install-manual');
-    const btnInstallContainer = document.getElementById('install-container');
-
-    if (btnInstallManual) {
-        btnInstallManual.addEventListener('click', async () => {
-            if (!deferredPrompt) return;
-            
-            deferredPrompt.prompt();
-            const { outcome } = await deferredPrompt.userChoice;
-            console.log(`User memilih: ${outcome}`);
-            
+        // Deteksi jika sudah berhasil diinstal
+        window.addEventListener('appinstalled', () => {
+            console.log('AU2Hub sukses terpasang di perangkat!');
             deferredPrompt = null;
+            const btnInstallContainer = document.getElementById('install-container');
             if (btnInstallContainer) {
                 btnInstallContainer.classList.add('hidden');
             }
         });
-    }
-});
-</script>
+        
+                // ==========================================
+        // FITUR HAPUS PESAN (Hapus Untukku & Semua)
+        // ==========================================
+        function showMsgOptions(msgId, senderId) {
+            selectedMessageId = msgId;
+            const modal = document.getElementById('modal-msg-option');
+            const btnDelAll = document.getElementById('btn-del-msg-all');
+            
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            
+            // Jika pesan ini bukan milik kita, sembunyikan tombol "Hapus untuk Semua"
+            if (senderId !== currentUser.id) {
+                btnDelAll.style.display = 'none';
+            } else {
+                btnDelAll.style.display = 'block';
+            }
+        }
+
+        function closeMsgOptions() {
+            const modal = document.getElementById('modal-msg-option');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        function deleteMsgForMe() {
+            if (!selectedMessageId) return;
+            // Simpan ID ke memori lokal HP agar disembunyikan
+            let deletedForMe = JSON.parse(localStorage.getItem('deleted_msgs') || '[]');
+            if (!deletedForMe.includes(selectedMessageId)) {
+                deletedForMe.push(selectedMessageId);
+                localStorage.setItem('deleted_msgs', JSON.stringify(deletedForMe));
+            }
+            closeMsgOptions();
+            loadRoomMessages(); // Muat ulang layar chat
+            showToast("Pesan dihapus untuk Anda", "success");
+        }
+
+        async function deleteMsgForAll() {
+            if (!selectedMessageId) return;
+            try {
+                // Ubah teks pesan di Supabase menjadi ditarik
+                const { error } = await supabaseClient.from('messages').update({ message: '[DELETED]' }).eq('id', selectedMessageId);
+                if (error) throw error;
+                
+                closeMsgOptions();
+                loadRoomMessages(); 
+                showToast("Pesan berhasil ditarik", "success");
+            } catch (err) {
+                showToast("Gagal menarik pesan", "error");
+            }
+        }
+
+        // ==========================================
+        // FITUR TYPING INDICATOR & REAL-TIME CHAT
+        // ==========================================
+        
+        function setupChatRoomListener() {
+            // Bersihkan langganan (subscription) lama jika ada, agar tidak double
+            if (messageSubscription) {
+                supabaseClient.removeChannel(messageSubscription);
+            }
+            
+            // Tentukan target chat (Grup atau Personal)
+            const targetId = activeGroupId ? activeGroupId : activeChatUserId;
+            if (!targetId) return;
+
+            // Buat nama ruangan khusus. Untuk personal, urutkan ID agar selalu sama terlepas dari siapa yang memulai
+            const roomName = activeGroupId 
+                ? `room_group_${targetId}` 
+                : `room_personal_${[currentUser.id, targetId].sort().join('_')}`;
+
+            messageSubscription = supabaseClient.channel(roomName)
+                // 1. Tangkap sinyal saat lawan bicara mengetik
+                .on('broadcast', { event: 'typing' }, payload => {
+                    // Pastikan sinyal yang ditangkap bukan dari diri kita sendiri
+                    if (payload.payload.userId !== currentUser.id) {
+                        showTypingIndicator();
+                    }
+                })
+                // 2. Auto-muat pesan baru yang masuk di ruangan ini tanpa harus refresh
+                .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => {
+                    // Refresh pesan ke layar
+                    loadRoomMessages(); 
+                })
+                .subscribe();
+        }
+
+        function sendTypingStatus() {
+            // Jika belum terhubung ke channel atau tidak ada target, batalkan
+            if(!messageSubscription || (!activeChatUserId && !activeGroupId)) return;
+            
+            // Kirim sinyal bahwa kita sedang mengetik ke dalam channel tersebut
+            messageSubscription.send({ 
+                type: 'broadcast', 
+                event: 'typing', 
+                payload: { userId: currentUser.id } 
+            });
+        }
+
+        function showTypingIndicator() {
+            const indicator = document.getElementById('typing-indicator');
+            if (indicator) {
+                indicator.classList.remove('hidden');
+                
+                // Hilangkan tulisan "Mengetik..." secara otomatis setelah 2 detik
+                clearTimeout(typingTimer);
+                typingTimer = setTimeout(() => {
+                    indicator.classList.add('hidden');
+                }, 2000);
+            }
+        }
+
+
+        // ==========================================
+        // INISIALISASI UTAMA SAAT HALAMAN DIMUAT
+        // ==========================================
+        document.addEventListener('DOMContentLoaded', () => {
+            
+            // Logika Routing Halaman
+            let tabAwal = window.location.hash.substring(1);
+            if (!tabAwal) {
+                tabAwal = localStorage.getItem('lastTab') || 'home';
+            }
+            switchTab(tabAwal, null, false);
+            
+            checkSession();
+            muatDataRipper();
+            renderFaqs();
+            renderServices();
+
+            // Mendaftarkan Service Worker
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('/sw.js')
+                .then(() => console.log("Service Worker AU2Hub Aktif!"))
+                .catch(err => console.error("Service Worker Gagal:", err));
+            }
+
+            // Logika Klik Tombol Instal
+            const btnInstallManual = document.getElementById('btn-install-manual');
+            const btnInstallContainer = document.getElementById('install-container');
+
+            if (btnInstallManual) {
+                btnInstallManual.addEventListener('click', async () => {
+                    if (!deferredPrompt) return;
+                    deferredPrompt.prompt();
+                    const { outcome } = await deferredPrompt.userChoice;
+                    console.log(`User memilih: ${outcome}`);
+                    deferredPrompt = null;
+                    if (btnInstallContainer) {
+                        btnInstallContainer.classList.add('hidden');
+                    }
+                });
+            }
+
+            // Pasang fungsi kirim ke Tombol Pesawat Kertas
+            const btnSend = document.getElementById('btn-send-room');
+            if (btnSend) {
+                btnSend.addEventListener('click', sendMessageRoom);
+            }
+
+            // ---> TAMBAHKAN 2 BARIS INI AGAR TOMBOL HAPUS BEKERJA <---
+            document.getElementById('btn-del-msg-me').addEventListener('click', deleteMsgForMe);
+            document.getElementById('btn-del-msg-all').addEventListener('click', deleteMsgForAll);
+
+        });
+    </script>
 </body>
 </html>
