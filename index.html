@@ -706,15 +706,11 @@
 
         <!-- FULLSCREEN STORY VIEWER -->
         <div id="story-viewer-modal" class="fixed inset-0 z-[600] hidden items-center justify-center bg-black/95 backdrop-blur-md opacity-0 transition-opacity duration-300">
-            <!-- PROGRESS BAR STORY -->
             <div id="story-progress-container" class="absolute top-4 left-4 right-4 flex gap-1 z-50">
-                <!-- Segmen garis akan digenerate otomatis oleh Javascript di sini -->
-            </div>
+                </div>
             
-            <!-- Header Story -->
             <div class="absolute top-8 left-4 right-4 flex justify-between items-center z-50">
                 
-                <!-- Kiri: Foto dan Nama -->
                 <div class="flex items-center gap-3">
                     <img id="viewer-story-avatar" src="" class="w-10 h-10 rounded-full border border-white/20 object-cover">
                     <div>
@@ -723,8 +719,10 @@
                     </div>
                 </div>
 
-                <!-- Kanan: Tombol Hapus & Close -->
                 <div class="flex items-center gap-4">
+                    <button id="btn-story-volume" onclick="event.stopPropagation(); toggleStoryVolume();" class="text-white text-xl drop-shadow-md active:scale-90 transition-transform hidden">
+                        <i class="fas fa-volume-mute"></i>
+                    </button>
                     <button id="btn-delete-story" onclick="hapusStoryAktif()" class="hidden text-red-500 text-xl drop-shadow-md active:scale-90 transition-transform">
                         <i class="fas fa-trash"></i>
                     </button>
@@ -735,22 +733,20 @@
 
             </div>
 
-            <!-- Media Story -->
             <img id="viewer-story-img" src="" class="w-full h-full object-contain hidden">
             <video id="viewer-story-vid" class="w-full h-full object-contain hidden" playsinline></video>
 
             
-            <!-- WADAH CAPTION STORY -->
             <div class="absolute bottom-12 left-4 right-4 z-50 flex justify-center pointer-events-none">
                 <div id="viewer-story-caption" class="bg-black/60 backdrop-blur-md text-white text-sm px-5 py-3 rounded-2xl shadow-lg text-center max-w-[85%] hidden break-words leading-relaxed border border-white/10"></div>
             </div>
 
-            <!-- Area Ketuk Kiri/Kanan -->
             <div class="absolute inset-0 flex">
                 <div class="w-1/2 h-full" onclick="prevStory()"></div>
                 <div class="w-1/2 h-full" onclick="nextStory()"></div>
             </div>
         </div>
+
         
 
     </main>
@@ -3995,6 +3991,7 @@ async function viewStory(userId, name, avatar) {
             
             const imgEl = document.getElementById('viewer-story-img');
             const vidEl = document.getElementById('viewer-story-vid');
+            const volBtn = document.getElementById('btn-story-volume');
             
             // Bersihkan media sebelumnya & hentikan pemutar video jika sedang berjalan
             imgEl.classList.add('hidden');
@@ -4008,11 +4005,19 @@ async function viewStory(userId, name, avatar) {
             if (story.media_type === 'video') {
                 vidEl.src = story.media_url;
                 vidEl.classList.remove('hidden');
-                vidEl.muted = isGlobalMuted; // Mengikuti pengaturan suara global aplikasi
+                
+                // 🔥 PERBAIKAN: Dipaksa langsung false agar video status langsung otomatis bersuara kencang saat dibuka
+                vidEl.muted = false; 
                 vidEl.play().catch(() => {});
+                
+                if (volBtn) {
+                    volBtn.classList.remove('hidden');
+                    volBtn.innerHTML = '<i class="fas fa-volume-up"></i>'; // Set default ikon ke speaker menyala
+                }
             } else {
                 imgEl.src = story.media_url;
                 imgEl.classList.remove('hidden');
+                if (volBtn) volBtn.classList.add('hidden');
             }
             
             const captionEl = document.getElementById('viewer-story-caption');
@@ -4084,6 +4089,18 @@ async function viewStory(userId, name, avatar) {
             }
         }
 
+        // FUNGSI UTAMAKAN SAKLAR MUTED / UNMUTED VIDEO STORY
+        function toggleStoryVolume() {
+            const vidEl = document.getElementById('viewer-story-vid');
+            const volBtn = document.getElementById('btn-story-volume');
+            if (vidEl && volBtn) {
+                vidEl.muted = !vidEl.muted;
+                isGlobalMuted = vidEl.muted; // Sinkronkan ke audio global aplikasi
+                volBtn.innerHTML = vidEl.muted ? '<i class="fas fa-volume-mute"></i>' : '<i class="fas fa-volume-up"></i>';
+                showToast(vidEl.muted ? "Suara Status Dimatikan" : "Suara Status Dinyalakan", vidEl.muted ? "info" : "success");
+            }
+        }
+
         function closeStoryViewer() {
             clearTimeout(currentStoryTimer);
             
@@ -4105,6 +4122,7 @@ async function viewStory(userId, name, avatar) {
                 modal.style.transform = 'translateY(0)'; // Reset posisi kembali normal
             }, 300);
         }
+
 
         function nextStory() {
             if (!currentActiveStories || currentActiveStories.length === 0) return;
@@ -4147,6 +4165,8 @@ async function viewStory(userId, name, avatar) {
                 playStory(prevIndex);
             }
         }
+
+
 
 
         
@@ -4233,28 +4253,30 @@ async function viewStory(userId, name, avatar) {
 
         
         async function uploadChatImage(event) {
-    const file = event.target.files[0];
-    if (!file || (!activeChatUserId && !activeGroupId)) return;
-    const isGroup = !!activeGroupId; const targetId = isGroup ? activeGroupId : activeChatUserId;
-    event.target.value = ''; showToast("Mengirim gambar...", "info");
+            const file = event.target.files[0];
+            if (!file || (!activeChatUserId && !activeGroupId)) return;
+            const isGroup = !!activeGroupId; const targetId = isGroup ? activeGroupId : activeChatUserId;
+            event.target.value = ''; showToast("Mengirim gambar...", "info");
 
-    try {
-        const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent('img_'+Date.now())}&filetype=${encodeURIComponent(file.type)}`);
-        const dataUrl = await resUrl.json();
-        await fetch(dataUrl.uploadUrl, { method: 'PUT', body: file, headers: { 'Content-Type': file.type, 'x-amz-acl': 'public-read' } });
-        
-        const tempMsg = { id: 't-'+Date.now(), sender_id: currentUser.id, message: `[IMG]${dataUrl.finalVideoUrl}`, created_at: new Date().toISOString() };
-        appendMessageBubble(tempMsg); scrollToBottomChat();
+            try {
+                const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent('img_'+Date.now())}&filetype=${encodeURIComponent(file.type)}`);
+                const dataUrl = await resUrl.json();
+                await fetch(dataUrl.uploadUrl, { method: 'PUT', body: file, headers: { 'Content-Type': file.type, 'x-amz-acl': 'public-read' } });
+                
+                // 🔥 PERBAIKAN DI SINI: Mengubah 't-' menjadi 'temp-' agar dikenali dan dihapus oleh radar Supabase saat data asli masuk
+                const tempMsg = { id: 'temp-'+Date.now(), sender_id: currentUser.id, message: `[IMG]${dataUrl.finalVideoUrl}`, created_at: new Date().toISOString() };
+                appendMessageBubble(tempMsg); scrollToBottomChat();
 
-        const insertData = { sender_id: currentUser.id, message: `[IMG]${dataUrl.finalVideoUrl}` };
-        if (isGroup) insertData.group_id = targetId; else insertData.receiver_id = targetId;
-        await supabaseClient.from('messages').insert(insertData);
-    } catch (err) { showToast("Gagal gambar", "error"); }
-}
+                const insertData = { sender_id: currentUser.id, message: `[IMG]${dataUrl.finalVideoUrl}` };
+                if (isGroup) insertData.group_id = targetId; else insertData.receiver_id = targetId;
+                await supabaseClient.from('messages').insert(insertData);
+            } catch (err) { showToast("Gagal gambar", "error"); }
+        }
 
         document.getElementById('chat-room-input').addEventListener('keypress', function (e) {
             if (e.key === 'Enter') document.getElementById('btn-send-room').click();
         });
+
         
         // ==========================================
 // OPTIMASI V6 (ANTI-STUTTER & MEMORY LEAK)
