@@ -4348,22 +4348,20 @@ async function viewStory(userId, name, avatar) {
             const isGroup = !!activeGroupId; 
             const targetId = isGroup ? activeGroupId : activeChatUserId;
             
-            // 🔥 PENJAGA PINTU GRUP: Cek apakah user masih anggota grup sebelum kirim foto
+            // PENJAGA PINTU GRUP
             if (isGroup) {
-                const { data: checkMember } = await supabaseClient
-                    .from('group_members')
-                    .select('user_id')
-                    .eq('group_id', targetId)
-                    .eq('user_id', currentUser.id)
-                    .single();
-                
+                const { data: checkMember } = await supabaseClient.from('group_members').select('user_id').eq('group_id', targetId).eq('user_id', currentUser.id).single();
                 if (!checkMember) {
                     await customAlert("Anda tidak dapat mengirim foto karena telah dikeluarkan dari grup ini.");
-                    event.target.value = ''; // Reset input file
-                    closeChatRoom(); // Otomatis tutup layar chat
-                    return; // Batalkan pengiriman
+                    event.target.value = ''; closeChatRoom(); return;
                 }
             }
+
+            // Tangkap data balasan
+            const currentReplyId = replyingToMsgId;
+            const currentReplyName = replyingToMsgName;
+            const currentReplyText = replyingToMsgText;
+            cancelChatReply();
 
             event.target.value = ''; 
             showToast("Mengirim gambar...", "info");
@@ -4373,17 +4371,24 @@ async function viewStory(userId, name, avatar) {
                 const dataUrl = await resUrl.json();
                 await fetch(dataUrl.uploadUrl, { method: 'PUT', body: file, headers: { 'Content-Type': file.type, 'x-amz-acl': 'public-read' } });
                 
-                // 🔥 PERBAIKAN DI SINI: Mengubah 't-' menjadi 'temp-' agar dikenali dan dihapus oleh radar Supabase saat data asli masuk
-                const tempMsg = { id: 'temp-'+Date.now(), sender_id: currentUser.id, message: `[IMG]${dataUrl.finalVideoUrl}`, created_at: new Date().toISOString() };
+                let msgText = `[IMG]${dataUrl.finalVideoUrl}`;
+                
+                // SISIPKAN KODE BALASAN JIKA ADA
+                if (currentReplyId) {
+                    const safeName = currentReplyName.replace(/\|\|/g, "").replace(/\]/g, "");
+                    const safeText = currentReplyText.replace(/\|\|/g, "").replace(/\]/g, "");
+                    msgText = `[REPLY:${currentReplyId}||${safeName}||${safeText}]\n${msgText}`;
+                }
+
+                const tempMsg = { id: 'temp-'+Date.now(), sender_id: currentUser.id, message: msgText, created_at: new Date().toISOString() };
                 appendMessageBubble(tempMsg); scrollToBottomChat();
 
-                const insertData = { sender_id: currentUser.id, message: `[IMG]${dataUrl.finalVideoUrl}` };
+                const insertData = { sender_id: currentUser.id, message: msgText };
                 if (isGroup) insertData.group_id = targetId; else insertData.receiver_id = targetId;
                 await supabaseClient.from('messages').insert(insertData);
-            } catch (err) { 
-                showToast("Gagal gambar", "error"); 
-            }
+            } catch (err) { showToast("Gagal gambar", "error"); }
         }
+
 
 
         
@@ -4750,6 +4755,13 @@ async function inviteToGroup() {
             throw error;
         }
 
+        // 🔥 TAMBAHAN NOTIFIKASI SISTEM
+        await supabaseClient.from('messages').insert({
+            sender_id: currentUser.id,
+            group_id: activeGroupId,
+            message: `[SISTEM] ${nick} telah ditambahkan ke dalam grup oleh Admin.`
+        });
+
         showToast(nick + " berhasil ditambahkan!", "success");
         document.getElementById('invite-user-nickname').value = '';
         loadGroupInfo(activeGroupId); // Refresh anggota
@@ -4760,6 +4772,7 @@ async function inviteToGroup() {
         btn.innerHTML = 'Undang';
     }
 }
+
 
 // 10. Keluar dari Grup
 async function keluarDariGrup() {
@@ -5072,21 +5085,20 @@ async function uploadAndSendVoice(blob) {
     const isGroup = !!activeGroupId; 
     const targetId = isGroup ? activeGroupId : activeChatUserId;
     
-    // 🔥 PENJAGA PINTU GRUP: Cek apakah user masih anggota grup sebelum kirim Voice Note
+    // PENJAGA PINTU GRUP
     if (isGroup) {
-        const { data: checkMember } = await supabaseClient
-            .from('group_members')
-            .select('user_id')
-            .eq('group_id', targetId)
-            .eq('user_id', currentUser.id)
-            .single();
-        
+        const { data: checkMember } = await supabaseClient.from('group_members').select('user_id').eq('group_id', targetId).eq('user_id', currentUser.id).single();
         if (!checkMember) {
             await customAlert("Anda tidak dapat mengirim Voice Note karena telah dikeluarkan dari grup ini.");
-            closeChatRoom(); // Otomatis tutup layar chat
-            return; // Batalkan pengiriman
+            closeChatRoom(); return;
         }
     }
+
+    // Tangkap data balasan (jika sedang me-reply pesan)
+    const currentReplyId = replyingToMsgId;
+    const currentReplyName = replyingToMsgName;
+    const currentReplyText = replyingToMsgText;
+    cancelChatReply(); // Tutup UI balasan seketika
 
     const tempId = 'temp-vn-' + Date.now();
     const tempMsg = { id: tempId, sender_id: currentUser.id, message: "🎙️ Mengirim pesan suara...", created_at: new Date().toISOString() };
@@ -5099,17 +5111,23 @@ async function uploadAndSendVoice(blob) {
         reader.onloadend = async () => {
             try {
                 const base64data = reader.result.split(',')[1];
-
                 const response = await fetch('/api/upload-url', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ fileBase64: base64data, filetype: 'audio/webm' })
                 });
 
                 const data = await response.json();
                 if (data.error) throw new Error(data.error);
 
-                const msgText = `[AUDIO]${data.url}`;
+                let msgText = `[AUDIO]${data.url}`;
+                
+                // SISIPKAN KODE BALASAN JIKA ADA
+                if (currentReplyId) {
+                    const safeName = currentReplyName.replace(/\|\|/g, "").replace(/\]/g, "");
+                    const safeText = currentReplyText.replace(/\|\|/g, "").replace(/\]/g, "");
+                    msgText = `[REPLY:${currentReplyId}||${safeName}||${safeText}]\n${msgText}`;
+                }
+
                 const insertData = { sender_id: currentUser.id, message: msgText };
                 if (isGroup) insertData.group_id = targetId; else insertData.receiver_id = targetId;
                 
@@ -5125,10 +5143,9 @@ async function uploadAndSendVoice(blob) {
                 showToast("Error VN: " + err.message, "error");
             }
         };
-    } catch (err) { 
-        showToast("Error Sistem: " + err.message, "error"); 
-    }
+    } catch (err) { showToast("Error Sistem: " + err.message, "error"); }
 }
+
 
 
 
