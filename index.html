@@ -3226,7 +3226,7 @@ async function feedToggleFollow(targetUserId, btnElement) {
         }
 
         // 1. FUNGSI MENGAMBIL PESAN DARI DATABASE
-        async function loadRoomMessages() {
+                async function loadRoomMessages() {
             const container = document.getElementById('chat-messages-container');
             const isGroup = !!activeGroupId;
             const targetId = isGroup ? activeGroupId : activeChatUserId;
@@ -3234,8 +3234,8 @@ async function feedToggleFollow(targetUserId, btnElement) {
             if(!targetId) return;
 
             try {
-                // Ambil maksimal 50 pesan terakhir
-               let query = supabaseClient.from('messages').select('*, profiles!sender_id(nickname, avatar_url)').order('created_at', { ascending: true }).limit(50);
+                // SEMENTARA KITA GANTI MENJADI .select('*') UNTUK MENGHINDARI ERROR JOIN
+                let query = supabaseClient.from('messages').select('*').order('created_at', { ascending: true }).limit(50);
                 
                 if (isGroup) {
                     query = query.eq('group_id', targetId);
@@ -3245,7 +3245,12 @@ async function feedToggleFollow(targetUserId, btnElement) {
                 }
 
                 const { data, error } = await query;
-                if (error) throw error;
+                
+                // JIKA SUPABASE MASIH MENOLAK, ALASANNYA AKAN MUNCUL SEBAGAI POP-UP DI LAYAR
+                if (error) {
+                    alert("INFO ERROR SUPABASE:\n" + error.message);
+                    throw error;
+                }
 
                 container.innerHTML = ''; // Bersihkan animasi loading
                 
@@ -3265,6 +3270,7 @@ async function feedToggleFollow(targetUserId, btnElement) {
                 container.innerHTML = '<div class="text-center text-xs text-red-500 mt-10">Gagal memuat pesan.</div>';
             }
         }
+
 
         // 2. FUNGSI UNTUK MENGGAMBAR BALON CHAT KE LAYAR
         function appendMessageBubble(msg) {
