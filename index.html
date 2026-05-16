@@ -1169,6 +1169,18 @@
             { t: "Apakah harga Pricelist sudah termasuk biaya admin?", j: "Ya, sudah Include biaya Rekber NIKKY." }
         ];
         
+                function formatCaption(text) {
+            if(!text) return '';
+            return text
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#39;")
+                .replace(/\n/g, "<br>");
+        }
+
+        
         async function fetchBlockedUsers() {
             if(!currentUser) return;
             try {
@@ -3333,49 +3345,6 @@ async function feedToggleFollow(targetUserId, btnElement) {
                 showToast("Gagal mengirim pesan", "error");
             }
         }
-
-
-        // ==========================================
-        // 2. INISIALISASI HALAMAN (TETAP DI DALAM DOMContentLoaded)
-        // ==========================================
-        document.addEventListener('DOMContentLoaded', () => {
-            
-            // Logika Routing Halaman
-            let tabAwal = window.location.hash.substring(1);
-            if (!tabAwal) {
-                tabAwal = localStorage.getItem('lastTab') || 'home';
-            }
-            switchTab(tabAwal, null, false);
-            checkSession();
-            muatDataRipper();
-            renderFaqs();
-            renderServices();
-
-            // Mendaftarkan Service Worker
-            if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.register('/sw.js')
-                .then(() => console.log("Service Worker AU2Hub Aktif!"))
-                .catch(err => console.error("Service Worker Gagal:", err));
-            }
-
-            // Logika Klik Tombol Instal
-            const btnInstallManual = document.getElementById('btn-install-manual');
-            const btnInstallContainer = document.getElementById('install-container');
-
-            if (btnInstallManual) {
-                btnInstallManual.addEventListener('click', async () => {
-                    if (!deferredPrompt) return;
-                    
-                    deferredPrompt.prompt();
-                    const { outcome } = await deferredPrompt.userChoice;
-                    console.log(`User memilih: ${outcome}`);
-                    
-                    deferredPrompt = null;
-                    if (btnInstallContainer) {
-                        btnInstallContainer.classList.add('hidden');
-                    }
-                });
-            }
 
         
 
