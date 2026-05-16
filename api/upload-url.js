@@ -31,7 +31,8 @@ export default async function handler(req, res) {
                 Bucket: bucketName,
                 Key: `videos/${uniqueFileName}`,
                 Body: buffer,
-                ContentType: filetype || 'audio/webm'
+                ContentType: filetype || 'audio/webm',
+                ACL: 'public-read' // 🔥 PERBAIKAN DI SINI: Membuka akses agar file suara bisa langsung diputar di browser player
             });
 
             await client.send(command);
