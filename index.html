@@ -96,9 +96,16 @@
         .caption-text::-webkit-scrollbar { width: 2px; }
         .caption-text::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.5); border-radius: 10px; }
 
-        /* Animasi Pesan Baru */
-        @keyframes msgAnim { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .message-anim { animation: msgAnim 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+/* Animasi Pesan Baru Diperhalus */
+@keyframes msgAnim { 
+    0% { opacity: 0; transform: translateY(20px) scale(0.95); } 
+    100% { opacity: 1; transform: translateY(0) scale(1); } 
+}
+.message-anim { 
+    animation: msgAnim 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; 
+    will-change: transform, opacity; 
+}
+
         
         /* ========================================================= */
         /* SOLUSI FINAL V2: MENGAMBANG, SCROLL LANCAR, NO BLUR BUG   */
@@ -5118,21 +5125,33 @@ async function uploadAndSendVoice(blob) {
                 // Gulirkan layar obrolan secara halus tepat ke tengah-tengah gelembung asli
                 targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 
-                // Beri efek animasi kilatan warna (Highlight Flash) biar user tahu gelembung mana yang dimaksud
-                const innerBubble = targetEl.querySelector('.rounded-tl-xl') || targetEl.querySelector('.px-2\\.5');
+                // Mengambil gelembung pesan yang sebenarnya (menggunakan class .rounded-2xl)
+                const innerBubble = targetEl.querySelector('.rounded-2xl');
+                
                 if (innerBubble) {
-                    innerBubble.classList.add('ring-2', 'ring-brand-info', 'scale-[1.02]', 'shadow-[0_0_20px_rgba(0,240,255,0.5)]');
-                    innerBubble.style.transition = 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)';
+                    innerBubble.style.transition = 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)';
+                    
+                    // Beri efek animasi kilatan warna khas website (Pink/Purple)
+                    innerBubble.classList.add(
+                        'ring-[3px]', 'ring-brand-accent', 
+                        'scale-[1.04]', 
+                        'shadow-[0_0_30px_rgba(255,0,122,0.6),_0_0_45px_rgba(138,43,226,0.4)]'
+                    );
                     
                     // Hilangkan efek kilatan secara mulus setelah 1.5 detik
                     setTimeout(() => {
-                        innerBubble.classList.remove('ring-2', 'ring-brand-info', 'scale-[1.02]', 'shadow-[0_0_20px_rgba(0,240,255,0.5)]');
+                        innerBubble.classList.remove(
+                            'ring-[3px]', 'ring-brand-accent', 
+                            'scale-[1.04]', 
+                            'shadow-[0_0_30px_rgba(255,0,122,0.6),_0_0_45px_rgba(138,43,226,0.4)]'
+                        );
                     }, 1500);
                 }
             } else {
                 showToast("Pesan asli tidak ditemukan atau sudah terlalu lama dibersihkan.", "info");
             }
         }
+
 
 
         // ==========================================
