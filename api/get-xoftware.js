@@ -9,7 +9,7 @@ export default async function handler(req, res) {
     const baseUrl = 'https://backend.xoftware.id/v1';
 
     // ⚠️ GANTI DENGAN NOMOR WA YANG TERDAFTAR DI AKUN XOFTWARE KAMU ⚠️
-    const defaultSender = '9647808097471'; 
+    const defaultSender = '6282297652028'; 
 
     let options = {
         headers: {
