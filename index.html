@@ -1353,11 +1353,6 @@
         let blockedUsersList = [];
         let typingTimer; // VARIABEL TYPING INDICATOR
 
-        const services = [
-            { id: 1, name: 'Joki Ballroom', price: 7500, label: '', desc: 'Estimasi pengerjaan 2 jam.' },
-            { id: 2, name: 'Paket Joki AFK (Island/Japan/Hawai)', price: 65000, label: '', desc: 'Sesuai spek dan pesanan.' },
-            { id: 3, name: 'Joki War Tari', price: 7500, label: '/hari', desc: '4x-5x play score max. Sesuai req lagu.' }
-        ];
 
         const faqs = [
             { t: "Berapa lama proses joki?", j: "Joki Ballroom memakan waktu sekitar 2 jam. Admin akan menginfokan detailnya di WA." },
@@ -2565,16 +2560,20 @@ function closeUploadModal() {
             renderFaqs(faqs.filter(f => f.t.toLowerCase().includes(val) || f.j.toLowerCase().includes(val)));
         });
 
-        function renderServices(data = services) {
-            const container = document.getElementById('service-list');
-            if (data.length === 0) { container.innerHTML = `<div class="text-center text-xs text-gray-400 py-6 border border-white/5 bg-brand-card rounded-2xl"><i class="fas fa-search-minus mb-2 text-lg"></i><br>Layanan tidak ditemukan.</div>`; return; }
-            container.innerHTML = data.map(s => `<div class="bg-brand-card p-4 rounded-2xl border border-white/5 flex justify-between items-center hover:border-brand-accent/30 transition-all"><div class="w-[60%]"><div class="font-bold text-sm text-white mb-1">${s.name}</div><div class="text-[10px] text-gray-400 leading-tight">${s.desc}</div><div class="text-[9px] text-brand-info mt-1"><i class="fas fa-check-circle mr-1"></i> Include Rekber NIKKY</div></div><div class="text-right flex flex-col items-end"><div class="text-brand-accent font-extrabold text-[15px] mb-2">Rp ${s.price.toLocaleString('id-ID')} <span class="text-[9px] font-normal text-gray-500">${s.label}</span></div><button onclick="checkout('${s.name}', ${s.price})" class="bg-brand-accent/10 text-brand-accent text-[10px] font-bold px-5 py-2 rounded-full border border-brand-accent/30 active:scale-90 transition-transform">BELI</button></div></div>`).join('');
-        }
+
         
-        document.getElementById('serviceSearch').addEventListener('input', (e) => {
-            const val = e.target.value.toLowerCase();
-            renderServices(services.filter(s => s.name.toLowerCase().includes(val) || s.desc.toLowerCase().includes(val)));
-        });
+document.getElementById('serviceSearch').addEventListener('input', (e) => {
+    const val = e.target.value.toLowerCase();
+    
+    // Memfilter data berdasarkan Judul atau Deskripsi produk Xoftware
+    const hasilFilter = xoftwareProdukGlobal.filter(p => 
+        p.title.toLowerCase().includes(val) || 
+        (p.description && p.description.toLowerCase().includes(val))
+    );
+    
+    // Render ulang layar dengan hasil filter Xoftware yang baru
+    renderProdukXoftware(hasilFilter);
+});
 
         function checkout(name, price) {
             const hargaRupiah = price.toLocaleString('id-ID');
@@ -5876,6 +5875,42 @@ async function sendMessageRoom() {
             container.innerHTML = html;
         }
         
+                // ==========================================
+        // DATABASE DATABASE RIPPER (ANTI PENIPU)
+        // ==========================================
+        async function muatDataRipper() {
+            const linkAPI = "/api/ripper";
+            const container = document.getElementById('ripper-container');
+            const dataTersimpan = localStorage.getItem('ripperCache');
+            if (dataTersimpan) { dataRipperGlobal = JSON.parse(dataTersimpan); renderRippers(dataRipperGlobal, false); } 
+            else { container.innerHTML = '<div class="text-center py-10 text-xs text-brand-info animate-pulse"><i class="fas fa-sync fa-spin mb-2 text-2xl"></i><br>Menyiapkan Database Pertama Kali...</div>'; }
+            try { const respon = await fetch(linkAPI); const dataBaru = await respon.json(); localStorage.setItem('ripperCache', JSON.stringify(dataBaru)); dataRipperGlobal = dataBaru; renderRippers(dataRipperGlobal, false); } 
+            catch (error) { if (!dataTersimpan) { container.innerHTML = '<div class="text-center py-10 text-xs text-red-500"><i class="fas fa-exclamation-triangle mb-2 text-2xl"></i><br>Gagal terhubung ke database.</div>'; } }
+        }
+
+        function renderRippers(data, isSearch = false) {
+            const container = document.getElementById('ripper-container');
+            document.getElementById('ripper-count').innerText = `${dataRipperGlobal.length} Total Data`;
+            if(data.length === 0) { container.innerHTML = `<div class="text-center py-10 px-4"><i class="fas fa-check-circle text-brand-success text-3xl mb-2"></i><div class="text-xs text-gray-400">Pencarian aman.<br>(Tetap waspada & gunakan Rekber)</div></div>`; return; }
+            const limitBatas = (!isSearch && !isRipperExpanded) ? 5 : data.length;
+            const dataYangDitampilkan = data.slice(0, limitBatas);
+            let htmlString = dataYangDitampilkan.map(r => `<div class="p-4 border-b border-white/5 last:border-0 hover:bg-white/5 transition-colors"><div class="flex justify-between items-start mb-1"><div class="font-bold text-xs text-white">${r["Nama / Keterangan"] || r.nama || r.Nama || "Tanpa Nama"}</div><div class="text-[9px] text-red-500 font-bold bg-red-500/10 px-2 py-0.5 rounded border border-red-500/20 whitespace-nowrap ml-2"><i class="fas fa-ban mr-1"></i> RIPPER</div></div><div class="text-[10px] text-brand-info font-mono mb-1">ID: ${r["ID"] || r.id || "-"}</div><div class="text-[10px] text-gray-400"><i class="fas fa-credit-card mr-1"></i> ${r["Rekening / Kontak (WA/Dana)"] || r.rekening || r.Rekening || "-"}</div></div>`).join('');
+            container.innerHTML = htmlString;
+            if (!isSearch && !isRipperExpanded && data.length > 5) { container.innerHTML += `<div id="wadah-tombol-semua" class="p-5 text-center bg-black/20 mt-1 border-t border-white/5"><button onclick="tampilkanSemuaRipper(this)" class="bg-brand-accent/20 border border-brand-accent/40 text-brand-accent text-xs font-bold py-2.5 px-6 rounded-full active:scale-95 transition-all w-full flex items-center justify-center"><i class="fas fa-list-ul mr-2"></i> Tampilkan Semua Laporan</button></div>`; }
+        }
+
+        function tampilkanSemuaRipper(tombol) {
+            isRipperExpanded = true; localStorage.setItem('statusLihatSemua', 'true'); 
+            tombol.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Membuka Data...'; tombol.classList.add('opacity-70', 'scale-95');
+            setTimeout(() => {
+                const wadahTombol = document.getElementById('wadah-tombol-semua'); if (wadahTombol) wadahTombol.remove();
+                const sisaData = dataRipperGlobal.slice(5);
+                let htmlSisa = sisaData.map((r, index) => `<div class="p-4 border-b border-white/5 last:border-0 hover:bg-white/5 transition-colors smooth-reveal" style="animation-delay: ${index < 5 ? (index * 0.05) : 0}s; opacity: 0;"><div class="flex justify-between items-start mb-1"><div class="font-bold text-xs text-white">${r["Nama / Keterangan"] || r.nama || r.Nama || "Tanpa Nama"}</div><div class="text-[9px] text-red-500 font-bold bg-red-500/10 px-2 py-0.5 rounded border border-red-500/20 whitespace-nowrap ml-2"><i class="fas fa-ban mr-1"></i> RIPPER</div></div><div class="text-[10px] text-brand-info font-mono mb-1">ID: ${r["ID"] || r.id || "-"}</div><div class="text-[10px] text-gray-400"><i class="fas fa-credit-card mr-1"></i> ${r["Rekening / Kontak (WA/Dana)"] || r.rekening || r.Rekening || "-"}</div></div>`).join('');
+                document.getElementById('ripper-container').insertAdjacentHTML('beforeend', htmlSisa);
+            }, 150); 
+        }
+
+        
 
 
 
@@ -5902,41 +5937,67 @@ async function sendMessageRoom() {
             }
         }
 
-        // 2. Fungsi Mengambil Produk & Menampilkan di Toko WarungPutri
-        async function loadProdukXoftware() {
-            const container = document.getElementById('service-list');
-            if (!container) return;
+// Wadah baru untuk menyimpan data produk Xoftware agar bisa dicari/difilter
+let xoftwareProdukGlobal = []; 
 
-            container.innerHTML = `
-                <div class="text-center py-10 text-xs text-brand-info animate-pulse">
-                    <i class="fas fa-sync fa-spin mb-2 text-2xl"></i>
-                    <br>Sinkronisasi Produk WarungPutri...
-                </div>`;
+async function loadProdukXoftware() {
+    const container = document.getElementById('service-list');
+    if (!container) return;
 
-            try {
-                const response = await fetch('/api/get-xoftware?action=produk');
-                const result = await response.json();
+    container.innerHTML = `
+        <div class="text-center py-10 text-xs text-brand-info animate-pulse">
+            <i class="fas fa-sync fa-spin mb-2 text-2xl"></i>
+            <br>Sinkronisasi Produk WarungPutri...
+        </div>`;
 
-                if (result.status === true && Array.isArray(result.data)) {
-                    if (result.data.length === 0) {
-                        container.innerHTML = '<div class="text-center py-10 text-xs text-gray-500">WarungPutri belum mengupload produk.</div>';
-                        return;
-                    }
+    try {
+        const response = await fetch('/api/get-xoftware?action=produk');
+        const result = await response.json();
 
-                    container.innerHTML = result.data.map(p => `
-                        <div class="bg-brand-card p-4 rounded-2xl border border-white/5 flex justify-between items-center hover:border-brand-accent/30 transition-all smooth-reveal">
-                            <div class="w-[60%]">
-                                <div class="font-bold text-sm text-white mb-1">${p.title}</div>
-                                <div class="text-[10px] text-gray-400 leading-tight">${p.description || 'Sistem Pengiriman Otomatis 24 Jam.'}</div>
-                                <div class="text-[9px] text-brand-info mt-1.5"><i class="fas fa-layer-group mr-1"></i> Stok: ${p.stock} item</div>
-                            </div>
-                            <div class="text-right flex flex-col items-end">
-                                <div class="text-brand-accent font-extrabold text-[14px] mb-2">Rp ${p.price.toLocaleString('id-ID')}</div>
-                                <button onclick="checkoutXoftware('${p.code}', ${p.price}, '${p.title.replace(/'/g, "\\'")}')" class="bg-brand-accent/10 text-brand-accent text-[10px] font-bold px-4 py-2 rounded-full border border-brand-accent/30 active:scale-90 transition-transform">BELI</button>
-                            </div>
-                        </div>
-                    `).join('');
-                } else {
+        if (result.status === true && Array.isArray(result.data)) {
+            if (result.data.length === 0) {
+                container.innerHTML = '<div class="text-center py-10 text-xs text-gray-500">WarungPutri belum mengupload produk.</div>';
+                return;
+            }
+
+            // Simpan data ke memori global
+            xoftwareProdukGlobal = result.data; 
+            
+            // Panggil fungsi untuk menampilkan produk
+            renderProdukXoftware(xoftwareProdukGlobal);
+        } else {
+            container.innerHTML = '<div class="text-center py-10 text-xs text-red-500">Gagal memuat katalog produk.</div>';
+        }
+    } catch (error) {
+        container.innerHTML = '<div class="text-center py-10 text-xs text-red-500">Gangguan jaringan katalog.</div>';
+    }
+}
+
+// Fungsi pembantu baru untuk merender HTML produk Xoftware
+function renderProdukXoftware(data) {
+    const container = document.getElementById('service-list');
+    if (!container) return;
+
+    if (data.length === 0) {
+        container.innerHTML = '<div class="text-center py-10 text-xs text-gray-400"><i class="fas fa-search-minus mb-2 text-lg"></i><br>Produk tidak ditemukan.</div>';
+        return;
+    }
+
+    container.innerHTML = data.map(p => `
+        <div class="bg-brand-card p-4 rounded-2xl border border-white/5 flex justify-between items-center hover:border-brand-accent/30 transition-all smooth-reveal">
+            <div class="w-[60%]">
+                <div class="font-bold text-sm text-white mb-1">${p.title}</div>
+                <div class="text-[10px] text-gray-400 leading-tight">${p.description || 'Sistem Pengiriman Otomatis 24 Jam.'}</div>
+                <div class="text-[9px] text-brand-info mt-1.5"><i class="fas fa-layer-group mr-1"></i> Stok: ${p.stock} item</div>
+            </div>
+            <div class="text-right flex flex-col items-end">
+                <div class="text-brand-accent font-extrabold text-[14px] mb-2">Rp ${p.price.toLocaleString('id-ID')}</div>
+                <button onclick="checkoutXoftware('${p.code}', ${p.price}, '${p.title.replace(/'/g, "\\'")}')" class="bg-brand-accent/10 text-brand-accent text-[10px] font-bold px-4 py-2 rounded-full border border-brand-accent/30 active:scale-90 transition-transform">BELI</button>
+            </div>
+        </div>
+    `).join('');
+}
+ else {
                     container.innerHTML = '<div class="text-center py-10 text-xs text-red-500">Gagal memuat katalog produk.</div>';
                 }
             } catch (error) {
@@ -6048,9 +6109,9 @@ async function sendMessageRoom() {
             checkSession();
             muatDataRipper();
             renderFaqs();
-            renderServices();
+            // renderServices(); <-- Sudah dihapus agar tidak bentrok dengan data Xoftware
             
-            // --- BARIS BARU: Memanggil API Akun & Produk WarungPutri saat halaman dimuat ---
+            // Memanggil API Akun & Produk WarungPutri (Xoftware) saat halaman dimuat
             loadDataXoftware();
             loadProdukXoftware();
 
@@ -6080,6 +6141,7 @@ async function sendMessageRoom() {
                 });
             }
         });
+
 
 
 
