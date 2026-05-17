@@ -3484,7 +3484,7 @@ function scrollToBottomChat() {
             if(!targetId) return;
 
             try {
-                let query = supabaseClient.from('messages').select('*, profiles!messages_sender_id_fkey(nickname, avatar_url)').order('created_at', { ascending: true }).limit(50);
+                let query = supabaseClient.from('messages').select('*, profiles!messages_sender_id_fkey(nickname, avatar_url)').order('created_at', { ascending: false }).limit(50);
                 
                 if (isGroup) {
                     query = query.eq('group_id', targetId);
@@ -3510,7 +3510,8 @@ function scrollToBottomChat() {
                         if (deletedForMe.includes(msg.id)) return false;
                         return true;
                     });
-
+                    
+                    validMessages.reverse();
                     if(validMessages.length === 0) {
                         container.innerHTML = '<div class="text-center text-xs text-gray-500 mt-10">Belum ada pesan. Mulai obrolan!</div>';
                     } else {
@@ -4899,6 +4900,9 @@ function updateSeek(e, containerElement, video) {
                 };
 
                 mediaRecorder.onstop = async () => {
+                    // 👉 PINDAHAN DARI BAWAH: Matikan mikrofon di sini
+                    mediaRecorder.stream.getTracks().forEach(track => track.stop()); 
+                    
                     const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
                     await uploadAndSendVoice(audioBlob);
                 };
@@ -4921,23 +4925,8 @@ function updateSeek(e, containerElement, video) {
             }
         }
 
-        function stopRecordingVoice() {
-            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-                mediaRecorder.stop();
-                mediaRecorder.stream.getTracks().forEach(track => track.stop()); // matikan mikrofon
-            }
-            
-            // Kembalikan UI ke awal
-            const input = document.getElementById('chat-room-input');
-            input.placeholder = "Ketik pesan...";
-            input.disabled = false;
-            
-            const btnSend = document.getElementById('btn-send-room');
-            btnSend.innerHTML = '<i class="fas fa-microphone"></i>';
-            btnSend.classList.remove('bg-red-500', 'animate-pulse');
-            btnSend.classList.add('bg-brand-accent');
-            btnSend.onclick = startRecordingVoice;
-        }
+
+
 
 async function uploadAndSendVoice(blob) {
     if (!activeChatUserId && !activeGroupId) return;
