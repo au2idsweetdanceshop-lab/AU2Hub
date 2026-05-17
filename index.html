@@ -394,7 +394,7 @@
                 <span class="text-[10px] bg-brand-info/20 text-brand-info px-2 py-1.5 rounded-lg font-bold border border-brand-info/30 tracking-wider">AUTO DANA</span>
             </div>
             
-            <div id="service-list" class="space-y-3 mb-6"></div>
+            <div id="service-list" class="grid grid-cols-2 gap-3 mb-6"></div>
             
             <div class="bg-brand-info/5 rounded-2xl p-4 border border-brand-info/20 mb-8">
                 <h3 class="font-bold text-sm text-brand-info mb-2 flex items-center"><i class="fas fa-info-circle mr-2"></i> Cara Memesan:</h3>
@@ -1879,6 +1879,11 @@
 
         window.addEventListener('popstate', () => {
             let isPopupClosed = false;
+                const laciShopee = document.getElementById('modal-detail-produk');
+    if (laciShopee && !laciShopee.classList.contains('translate-y-full')) {
+        closeDetailProduk();
+        return;
+    }
 
             // 1. TANGKAP SEMUA POP-UP DULU (Biar menutup duluan kalau tombol Back ditekan)
             const lightbox = document.getElementById('lightbox-modal');
@@ -5893,24 +5898,48 @@ async function loadProdukXoftware() {
 function renderProdukXoftware(data) {
     const container = document.getElementById('service-list');
     if (data.length === 0) {
-        container.innerHTML = '<div class="text-center py-10 text-xs text-gray-400"><i class="fas fa-search-minus mb-2 text-lg"></i><br>Produk tidak ditemukan.</div>';
+        container.innerHTML = '<div class="col-span-2 text-center py-10 text-gray-400"><i class="fas fa-search-minus mb-2 text-lg"></i><br>Produk tidak ditemukan.</div>';
         return;
     }
 
-    container.innerHTML = data.map(p => `
-        <div class="bg-brand-card p-4 rounded-2xl border border-white/5 flex justify-between items-center hover:border-brand-accent/30 transition-all smooth-reveal">
-            <div class="w-[60%]">
-                <div class="font-bold text-sm text-white mb-1">${p.title}</div>
-                <div class="text-[10px] text-gray-400 leading-tight">${p.description || 'Pengiriman Manual via WA.'}</div>
-                <div class="text-[9px] text-brand-info mt-1.5"><i class="fas fa-layer-group mr-1"></i> Stok: ${p.stock} item</div>
+    container.innerHTML = data.map((p, index) => {
+        const fotoProduk = p.image || p.image_url || 'https://images.unsplash.com/photo-1614680376593-902f74fa0d41?w=400';
+        
+        return `
+        <div onclick="openDetailProduk(${index})" class="bg-brand-card rounded-2xl border border-white/5 overflow-hidden flex flex-col hover:border-brand-accent/30 transition-all smooth-reveal shadow-lg cursor-pointer">
+            
+            <div class="relative w-full aspect-square bg-black/40 overflow-hidden group">
+                <img src="${fotoProduk}" alt="${p.title}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+                <span class="absolute top-2 left-2 bg-brand-accent/90 text-white text-[8px] font-extrabold px-2 py-0.5 rounded-md backdrop-blur-sm border border-white/10 shadow-md">
+                    ${p.stock > 0 ? 'READY' : 'LIMIT'}
+                </span>
             </div>
-            <div class="text-right flex flex-col items-end">
-                <div class="text-brand-accent font-extrabold text-[14px] mb-2">Rp ${p.price.toLocaleString('id-ID')}</div>
-                <button onclick="checkoutRobotDANA('${p.title.replace(/'/g, "\\'")}', ${p.price})" class="bg-[#118EEA]/20 text-[#118EEA] text-[10px] font-extrabold px-4 py-2 rounded-full border border-[#118EEA]/40 active:scale-90 transition-transform"><i class="fas fa-wallet mr-1"></i> BELI VIA DANA</button>
+            
+            <div class="p-3 flex-1 flex flex-col justify-between gap-1">
+                <div>
+                    <div class="font-extrabold text-xs text-white leading-snug line-clamp-2 mb-1 min-h-[2.4rem]">
+                        ${p.title}
+                    </div>
+                    <div class="text-[10px] text-gray-400 truncate mb-1">
+                        ${p.description || 'Proses cepat via WA.'}
+                    </div>
+                </div>
+                
+                <div class="mt-auto">
+                    <div class="text-[9px] text-brand-info font-bold mb-1.5 flex items-center gap-1">
+                        <i class="fas fa-boxes text-[8px]"></i> Stok: ${p.stock}
+                    </div>
+                    <div class="text-brand-accent font-extrabold text-sm tracking-tight">
+                        Rp ${p.price.toLocaleString('id-ID')}
+                    </div>
+                </div>
             </div>
+            
         </div>
-    `).join('');
+        `;
+    }).join('');
 }
+
 
 // 3. Fungsi Fitur Pencarian
 document.getElementById('serviceSearch').addEventListener('input', (e) => {
@@ -5952,6 +5981,82 @@ function makeDynamicQRIS(amount) {
     let crcString = crc.toString(16).toUpperCase().padStart(4, '0');
     return fullPayload + crcString;
 }
+
+// 🔥 LOGIKA BUKA DETAIL PRODUK ALA SHOPEE WITH SLIDER SWIPE
+function openDetailProduk(index) {
+    const p = xoftwareProdukGlobal[index];
+    if (!p) return;
+
+    // Isikan teks detail produk
+    document.getElementById('detail-product-title').innerText = p.title;
+    document.getElementById('detail-product-price').innerText = `Rp ${p.price.toLocaleString('id-ID')}`;
+    document.getElementById('detail-product-stock').innerText = p.stock;
+    document.getElementById('detail-product-desc').innerText = p.description || "Tidak ada deskripsi tambahan.";
+
+    // Pasang fungsi beli ke tombol final di bawah laci
+    const btnBeli = document.getElementById('btn-beli-detail');
+    btnBeli.onclick = () => {
+        closeDetailProduk(); // Tutup lacinya dulu
+        checkoutRobotDANA(p.title, p.price); // Jalankan pembayaran otomatis
+    };
+
+    // --- LOGIKA MULTIPLE IMAGE SLIDER (BISA DIGESER) ---
+    const carousel = document.getElementById('detail-image-carousel');
+    carousel.innerHTML = ''; // Bersihkan sisa gambar sebelumnya
+
+    // Ambil gambar utama dari Xoftware
+    let daftarGambar = [];
+    if (p.image || p.image_url) daftarGambar.push(p.image || p.image_url);
+    
+    // BACKUP/CADANGAN: Jika di Xoftware lu masukin banyak gambar dipisah tanda koma (,), kodingan ini otomatis membagi gambarnya jadi slide berbeda
+    if (p.images && typeof p.images === 'string') {
+        daftarGambar = p.images.split(',');
+    }
+
+    // Jika kosong, kasih gambar default cyberpunk
+    if (daftarGambar.length === 0) {
+        daftarGambar.push('https://images.unsplash.com/photo-1614680376593-902f74fa0d41?w=400');
+    }
+
+    // Masukkan semua daftar gambar ke dalam carousel HTML
+    carousel.innerHTML = daftarGambar.map(imgUrl => `
+        <div class="w-full h-full flex-shrink-0 snap-center">
+            <img src="${imgUrl.trim()}" class="w-full h-full object-cover">
+        </div>
+    `).join('');
+
+    // Atur angka indikator halaman foto (Misal: 1/3)
+    const currentTxt = document.getElementById('carousel-current-index');
+    const totalTxt = document.getElementById('carousel-total-index');
+    
+    currentTxt.innerText = "1";
+    totalTxt.innerText = daftarGambar.length;
+
+    // Efek ketika digeser pakai jari (Update angka halaman foto secara live)
+    carousel.onscroll = () => {
+        let page = Math.round(carousel.scrollLeft / carousel.clientWidth) + 1;
+        currentTxt.innerText = page;
+    };
+
+    // Luncurkan lacinya naik ke atas layar HP
+    const laci = document.getElementById('modal-detail-produk');
+    laci.classList.remove('translate-y-full');
+    laci.classList.add('translate-y-0');
+
+    // Daftarkan ke history browser agar jika tombol back HP dipencet, lacinya otomatis menutup
+    history.pushState({ popup: 'detail_produk' }, null, '#detail');
+}
+
+function closeDetailProduk() {
+    const laci = document.getElementById('modal-detail-produk');
+    laci.classList.remove('translate-y-0');
+    laci.classList.add('translate-y-full');
+    
+    if (window.location.hash === '#detail') {
+        history.back();
+    }
+}
+
 
 
 // 4. Logika Checkout Pembayaran Robot DANA (VERSI OTOMATIS NOMINAL)
@@ -6060,5 +6165,43 @@ async function checkoutRobotDANA(namaProduk, harga) {
     </script>
 
     <script>eruda.init();</script>
+            <div id="modal-detail-produk" class="fixed inset-x-0 bottom-0 z-[180] h-[85vh] glass border-t border-white/10 rounded-t-[2.5rem] flex flex-col max-w-md mx-auto transition-transform duration-300 translate-y-full">
+    <div class="flex justify-center p-3 shrink-0 bg-brand-dark/40 rounded-t-[2.5rem]" onclick="closeDetailProduk()">
+        <div class="w-12 h-1.5 bg-white/20 rounded-full cursor-pointer hover:bg-white/40"></div>
+    </div>
+    
+    <div class="overflow-y-auto hide-scroll flex-1 pb-24">
+        <div class="relative w-full aspect-square bg-black/50 border-b border-white/5">
+            <div id="detail-image-carousel" class="flex overflow-x-auto hide-scroll snap-x snap-mandatory h-full w-full">
+                </div>
+            <div class="absolute bottom-4 right-4 bg-black/60 backdrop-blur-md text-white text-[10px] font-bold px-3 py-1 rounded-full border border-white/10 shadow-md">
+                <span id="carousel-current-index">1</span>/<span id="carousel-total-index">1</span>
+            </div>
+        </div>
+
+        <div class="p-5 space-y-4">
+            <div>
+                <div class="text-brand-accent font-extrabold text-2xl tracking-tight mb-2" id="detail-product-price">Rp 0</div>
+                <h3 class="text-lg font-extrabold text-white leading-snug" id="detail-product-title">Nama Produk</h3>
+            </div>
+            
+            <div class="flex gap-4 border-y border-white/5 py-3 text-[11px] font-bold uppercase tracking-wider text-gray-400">
+                <span class="text-brand-info"><i class="fas fa-boxes mr-1"></i> Stok: <span id="detail-product-stock">0</span></span>
+                <span><i class="fas fa-shipping-fast mr-1"></i> Instan 1 Detik</span>
+            </div>
+
+            <div>
+                <h4 class="text-xs font-extrabold text-gray-300 uppercase tracking-widest mb-2">Deskripsi Produk</h4>
+                <p class="text-xs text-gray-400 leading-relaxed whitespace-pre-line" id="detail-product-desc">Detail deskripsi...</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="absolute bottom-0 w-full glass border-t border-white/5 p-4 shrink-0 pb-6 rounded-t-2xl z-10">
+        <button id="btn-beli-detail" onclick="" class="w-full bg-gradient-to-r from-[#00F0FF] via-[#8A2BE2] to-[#FF007A] text-white py-4 rounded-xl font-extrabold text-sm active:scale-95 transition-transform shadow-lg shadow-brand-purple/20 flex justify-center items-center gap-2">
+            <i class="fas fa-shopping-bag"></i> BELI SEKARANG VIA DANA
+        </button>
+    </div>
+</div>
 </body>
 </html>
