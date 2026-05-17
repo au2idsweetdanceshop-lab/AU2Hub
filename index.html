@@ -704,7 +704,7 @@
                             <label for="chat-image-input" class="w-12 h-12 rounded-2xl bg-white/5 hover:bg-brand-info/20 hover:text-brand-info flex items-center justify-center text-gray-400 cursor-pointer transition-all border border-white/10 active:scale-90"><i class="fas fa-paperclip text-lg"></i></label>
                         </div>
                         <div class="flex-1 relative">
-                            <input type="text" id="chat-room-input" oninput="sendTypingStatus()" placeholder="Ketik pesan..." class="w-full bg-white/5 border border-white/10 rounded-[1.5rem] py-3.5 px-6 text-sm text-white outline-none focus:border-brand-accent/50 focus:bg-white/10 transition-all pr-12">
+                            <textarea id="chat-room-input" rows="1" oninput="handleTyping(this)" onkeydown="handleEnter(event)" placeholder="Ketik pesan..." class="w-full bg-white/5 border border-white/10 rounded-[1.5rem] py-3 px-6 text-sm text-white outline-none focus:border-brand-accent/50 focus:bg-white/10 transition-all pr-12 resize-none overflow-hidden max-h-[120px] block leading-snug" style="min-height: 48px;"></textarea>
                         </div>
                         <button id="btn-send-room" class="w-12 h-12 rounded-2xl bg-brand-accent text-white flex items-center justify-center shadow-lg shadow-brand-accent/20 active:scale-90 transition-all hover:rotate-12"><i class="fas fa-paper-plane"></i></button>
 
@@ -3123,6 +3123,32 @@ storyModal.addEventListener('touchend', (e) => {
     storyCurrentY = 0;
 });
 
+        // ==========================================
+        // FITUR WHATSAPP STYLE (ENTER & AUTO RESIZE)
+        // ==========================================
+        
+        function handleEnter(e) {
+            // Jika user menekan tombol Enter TANPA menekan tombol Shift
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault(); // Mencegah spasi kosong / enter berantakan
+                
+                const input = document.getElementById('chat-room-input');
+                if (input.value.trim() !== '') {
+                    sendMessageRoom();
+                }
+            }
+        }
+
+        function handleTyping(el) {
+            // 1. Auto-resize tinggi kotak sesuai dengan teks (Maksimal 120px dari HTML)
+            el.style.height = 'auto';
+            el.style.height = el.scrollHeight + 'px';
+            
+            // 2. Panggil fungsi asli milik Anda untuk urus Ikon Mic & Sinyal Typing
+            sendTypingStatus();
+        }
+
+
 
 let lastTypingTime = 0; // Tambahkan variabel ini di luar fungsi
 
@@ -3471,15 +3497,19 @@ async function feedToggleFollow(targetUserId, btnElement) {
         }
         
         // FUNGSI UNTUK SCROLL CHAT KE PALING BAWAH OTOMATIS
-function scrollToBottomChat() {
-    const container = document.getElementById('chat-messages-container');
-    if (container) {
-        // Beri sedikit delay agar browser selesai merender HTML-nya dulu
-        setTimeout(() => {
-            container.scrollTop = container.scrollHeight;
-        }, 50);
-    }
-}
+        function scrollToBottomChat() {
+            const container = document.getElementById('chat-messages-container');
+            if (container) {
+                // Beri sedikit delay agar browser selesai merender HTML-nya dulu
+                setTimeout(() => {
+                    container.scrollTo({
+                        top: container.scrollHeight,
+                        behavior: 'smooth' // <--- INI KUNCI EFEK WHATSAPP
+                    });
+                }, 50);
+            }
+        }
+
 
 
         // 1. FUNGSI MENGAMBIL PESAN DARI DATABASE (WHATSAPP STYLE WITH DATE DIVIDER)
@@ -5383,6 +5413,7 @@ async function sendMessageRoom() {
 
     // Kosongkan input dan reset ikon ke mikrofon
     input.value = '';
+    input.style.height = 'auto';
     sendTypingStatus(); 
 
     // Sisipkan format balasan
