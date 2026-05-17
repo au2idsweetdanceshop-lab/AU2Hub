@@ -8,14 +8,14 @@ export default async function handler(req, res) {
     const { action } = req.query;
     const baseUrl = 'https://backend.xoftware.id/v1';
 
-    // ⚠️ GANTI DENGAN NOMOR WA YANG TERDAFTAR DI AKUN XOFTWARE KAMU ⚠️
-    const defaultSender = '082297652028'; 
+    // Kunci nomor utama format 62 yang sudah terbukti terdaftar di dashboard kamu
+    const defaultSender = '6282297652028'; 
 
+    // SAKTI: Sesuai Foto 52059.jpg, HAPUS 'Authorization Bearer' agar server tidak bingung dan memicu "User not found"
     let options = {
         headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${apiKey}`,
-            'x-api-key': apiKey
+            'X-API-Key': apiKey
         }
     };
 
@@ -23,13 +23,11 @@ export default async function handler(req, res) {
         let targetUrl = '';
         let bodyData = {};
 
-        // Parse data body dari frontend jika ada
         if (req.method === 'POST' && req.body) {
             bodyData = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
         }
 
         if (action === 'saldo') {
-            // Cek saldo berdasarkan Nomor WA (Sender)
             targetUrl = `${baseUrl}/user?sender=${defaultSender}`;
             options.method = 'GET';
         } 
@@ -44,7 +42,6 @@ export default async function handler(req, res) {
             targetUrl = `${baseUrl}/order/balance`;
             options.method = 'POST';
             
-            // Format wajib: sender, code, quantity
             options.body = JSON.stringify({
                 sender: bodyData.sender || defaultSender,
                 code: bodyData.product_code || bodyData.code,
@@ -52,16 +49,29 @@ export default async function handler(req, res) {
             });
         } 
         else if (action === 'qris') {
-            // Sesuai Dokumentasi Foto 52065.jpg (Request Deposit QRIS)
             if (req.method !== 'POST') return res.status(405).json({ status: false, message: 'Method must be POST' });
-            targetUrl = `${baseUrl}/deposit`;
-            options.method = 'POST';
             
-            // Format wajib: sender, amount
-            options.body = JSON.stringify({
-                sender: bodyData.sender || defaultSender,
-                amount: parseInt(bodyData.amount || bodyData.nominal || 0)
-            });
+            const produkCode = bodyData.product_code || bodyData.code;
+            
+            // JALUR A: Jika frontend mengirim kode produk, pakai rute PEMBELIAN PRODUK VIA QRIS (Foto 52064.jpg)
+            if (produkCode) {
+                targetUrl = `${baseUrl}/order/qris`;
+                options.method = 'POST';
+                options.body = JSON.stringify({
+                    sender: bodyData.sender || defaultSender,
+                    code: produkCode,
+                    quantity: parseInt(bodyData.quantity || 1)
+                });
+            } 
+            // JALUR B: Jika hanya mengirim uang/nominal, pakai rute REQUEST DEPOSIT SALDO (Foto 52065.jpg)
+            else {
+                targetUrl = `${baseUrl}/deposit`;
+                options.method = 'POST';
+                options.body = JSON.stringify({
+                    sender: bodyData.sender || defaultSender,
+                    amount: parseInt(bodyData.amount || bodyData.nominal || 0)
+                });
+            }
         } 
         else {
             return res.status(400).json({ status: false, message: 'Action request tidak dikenali' });
