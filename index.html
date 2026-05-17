@@ -715,47 +715,58 @@
 
 
         <!-- FULLSCREEN STORY VIEWER -->
-        <div id="story-viewer-modal" class="fixed inset-0 z-[600] hidden items-center justify-center bg-black/95 backdrop-blur-md opacity-0 transition-opacity duration-300">
-            <div id="story-progress-container" class="absolute top-4 left-4 right-4 flex gap-1 z-50">
-                </div>
-            
-            <div class="absolute top-8 left-4 right-4 flex justify-between items-center z-50">
-                
-                <div class="flex items-center gap-3">
-                    <img id="viewer-story-avatar" src="" class="w-10 h-10 rounded-full border border-white/20 object-cover">
-                    <div>
-                        <h4 id="viewer-story-name" class="text-white font-bold text-sm shadow-black drop-shadow-md">User</h4>
-                        <p id="viewer-story-time" class="text-white/70 text-[10px] shadow-black drop-shadow-md">Baru saja</p>
-                    </div>
-                </div>
-
-                <div class="flex items-center gap-4">
-                    <button id="btn-story-volume" onclick="event.stopPropagation(); toggleStoryVolume();" class="text-white text-xl drop-shadow-md active:scale-90 transition-transform hidden">
-                        <i class="fas fa-volume-mute"></i>
-                    </button>
-                    <button id="btn-delete-story" onclick="hapusStoryAktif()" class="hidden text-red-500 text-xl drop-shadow-md active:scale-90 transition-transform">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                    <button onclick="closeStoryViewer()" class="text-white text-2xl drop-shadow-md active:scale-90 transition-transform">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-
-            </div>
-
-            <img id="viewer-story-img" src="" class="w-full h-full object-contain hidden">
-            <video id="viewer-story-vid" class="w-full h-full object-contain hidden" playsinline></video>
-
-            
-            <div class="absolute bottom-12 left-4 right-4 z-50 flex justify-center pointer-events-none">
-                <div id="viewer-story-caption" class="bg-black/60 backdrop-blur-md text-white text-sm px-5 py-3 rounded-2xl shadow-lg text-center max-w-[85%] hidden break-words leading-relaxed border border-white/10"></div>
-            </div>
-
-            <div class="absolute inset-0 flex">
-                <div class="w-1/2 h-full" onclick="prevStory()"></div>
-                <div class="w-1/2 h-full" onclick="nextStory()"></div>
+<div id="story-viewer-modal" class="fixed inset-0 z-[600] hidden items-center justify-center bg-black/95 backdrop-blur-md opacity-0 transition-opacity duration-300">
+    <div id="story-progress-container" class="absolute top-4 left-4 right-4 flex gap-1 z-50"></div>
+    
+    <div class="absolute top-8 left-4 right-4 flex justify-between items-center z-50">
+        <div class="flex items-center gap-3">
+            <img id="viewer-story-avatar" src="" class="w-10 h-10 rounded-full border border-white/20 object-cover">
+            <div>
+                <h4 id="viewer-story-name" class="text-white font-bold text-sm shadow-black drop-shadow-md">User</h4>
+                <p id="viewer-story-time" class="text-white/70 text-[10px] shadow-black drop-shadow-md">Baru saja</p>
             </div>
         </div>
+
+        <div class="flex items-center gap-4">
+            <button id="btn-story-volume" onclick="event.stopPropagation(); toggleStoryVolume();" class="text-white text-xl drop-shadow-md active:scale-90 transition-transform hidden">
+                <i class="fas fa-volume-mute"></i>
+            </button>
+            <button id="btn-delete-story" onclick="hapusStoryAktif()" class="hidden text-red-500 text-xl drop-shadow-md active:scale-90 transition-transform">
+                <i class="fas fa-trash"></i>
+            </button>
+            <button onclick="closeStoryViewer()" class="text-white text-2xl drop-shadow-md active:scale-90 transition-transform">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    </div>
+
+    <img id="viewer-story-img" src="" class="w-full h-full object-contain hidden">
+    <video id="viewer-story-vid" class="w-full h-full object-contain hidden" playsinline></video>
+
+    <div class="absolute inset-0 flex z-40">
+        <div class="w-1/2 h-full" onclick="prevStory()"></div>
+        <div class="w-1/2 h-full" onclick="nextStory()"></div>
+    </div>
+
+    <div class="absolute bottom-24 left-4 right-4 z-50 flex justify-center pointer-events-none">
+        <div id="viewer-story-caption" class="bg-black/60 backdrop-blur-md text-white text-sm px-5 py-3 rounded-2xl shadow-lg text-center max-w-[85%] hidden break-words leading-relaxed border border-white/10"></div>
+    </div>
+
+    <div id="story-reply-container" class="absolute bottom-6 left-4 right-4 z-[60] flex items-center gap-3">
+        <div class="flex-1 bg-[#1A1A1A]/80 backdrop-blur-md rounded-full px-5 py-3.5 flex items-center border border-white/10 shadow-lg">
+            <input type="text" id="story-reply-input" placeholder="Balas" 
+                   class="bg-transparent w-full text-white text-sm outline-none placeholder:text-gray-300"
+                   onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handleStoryReplyEnter(event)">
+            <button onclick="sendStoryReply()" class="text-gray-400 hover:text-white ml-2 active:scale-90 transition-colors">
+                <i class="fas fa-paper-plane"></i>
+            </button>
+        </div>
+        <button onclick="likeStoryAktif(this)" class="w-[50px] h-[50px] shrink-0 bg-[#1A1A1A]/80 backdrop-blur-md rounded-full flex items-center justify-center border border-white/10 shadow-lg active:scale-90 transition-transform">
+            <i class="far fa-heart text-white text-xl"></i>
+        </button>
+    </div>
+</div>
+
 
         
 
@@ -4072,7 +4083,31 @@ async function viewStory(userId, name, avatar) {
                     }, 5000);
                 }, 50);
             }
+
+            // ==========================================
+            // --- LOGIKA BARU: TAMPILKAN/SEMBUNYIKAN BAR BALASAN ---
+            // ==========================================
+            const replyContainer = document.getElementById('story-reply-container');
+            const replyInput = document.getElementById('story-reply-input');
+            if (replyContainer) {
+                if (currentUser && story.user_id === currentUser.id) {
+                    // Sembunyikan bar balasan jika ini story milik sendiri
+                    replyContainer.classList.add('hidden'); 
+                } else {
+                    // Tampilkan bar balasan jika ini story milik teman
+                    replyContainer.classList.remove('hidden');
+                    if(replyInput) replyInput.value = ''; // Kosongkan inputan sebelumnya
+                    
+                    // Reset ikon heart (like) ke warna aslinya (belum di-like)
+                    const heartIcon = replyContainer.querySelector('.fa-heart');
+                    if (heartIcon) {
+                        heartIcon.classList.replace('fas', 'far');
+                        heartIcon.classList.remove('text-brand-accent', 'animate-ping');
+                    }
+                }
+            }
         }
+
 
         // FUNGSI UTAMAKAN SAKLAR MUTED / UNMUTED VIDEO STORY
         function toggleStoryVolume() {
@@ -4285,6 +4320,104 @@ async function viewStory(userId, name, avatar) {
                 await supabaseClient.from('messages').insert(insertData);
             } catch (err) { showToast("Gagal gambar", "error"); }
         }
+        
+        // ==========================================
+// FITUR BALAS & LIKE STORY (WHATSAPP STYLE)
+// ==========================================
+
+// Fungsi Jeda Story Saat Mengetik Balasan
+function pauseStoryForReply() {
+    const vidEl = document.getElementById('viewer-story-vid');
+    if (vidEl && !vidEl.classList.contains('hidden')) {
+        vidEl.pause(); // Jeda video
+    } else {
+        clearTimeout(currentStoryTimer); // Jeda timer foto
+    }
+}
+
+// Fungsi Lanjutkan Story Setelah Selesai Mengetik
+function resumeStoryAfterReply() {
+    const vidEl = document.getElementById('viewer-story-vid');
+    if (vidEl && !vidEl.classList.contains('hidden')) {
+        vidEl.play(); 
+    } else {
+        currentStoryTimer = setTimeout(() => { nextStory(); }, 3000); 
+    }
+}
+
+// Fitur Tekan Enter Untuk Kirim
+function handleStoryReplyEnter(e) {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        sendStoryReply();
+    }
+}
+
+// Fungsi Mengirim Balasan ke Chat
+async function sendStoryReply() {
+    if (!currentUser) return showToast("Silakan login untuk membalas!", "error");
+    
+    const input = document.getElementById('story-reply-input');
+    const message = input.value.trim();
+    if (!message) return;
+
+    const story = currentActiveStories[currentActiveStories.currentIndex];
+    const targetId = story.user_id;
+
+    // Menghindari error balas diri sendiri
+    if (targetId === currentUser.id) return;
+
+    input.value = '';
+    showToast("Mengirim balasan...", "info");
+
+    try {
+        // Ekstrak info story (apakah dia membalas gambar atau video)
+        const storyTipe = story.media_type === 'video' ? 'Video' : 'Foto';
+        
+        // Format Teks Balasan (Khas seperti mengutip pesan)
+        const finalMessage = `[SISTEM] Membalas Status ${storyTipe}:\n"${message}"`;
+
+        const { error } = await supabaseClient.from('messages').insert({
+            sender_id: currentUser.id,
+            receiver_id: targetId,
+            message: finalMessage
+        });
+
+        if (error) throw error;
+        
+        showToast("Balasan terkirim!", "success");
+        input.blur(); // Tutup keyboard hp
+        resumeStoryAfterReply(); // Lanjutkan story
+        
+    } catch (e) {
+        showToast("Gagal mengirim balasan.", "error");
+    }
+}
+
+// Fungsi Like Story (Animasi Hati)
+function likeStoryAktif(btn) {
+    if (!currentUser) return showToast("Silakan login untuk menyukai!", "error");
+    
+    const icon = btn.querySelector('i');
+    
+    // Toggle animasi Hati
+    if (icon.classList.contains('far')) {
+        icon.classList.replace('far', 'fas');
+        icon.classList.add('text-brand-accent', 'animate-ping'); // Berwarna pink & berdetak
+        
+        setTimeout(() => icon.classList.remove('animate-ping'), 500);
+        
+        const nama = document.getElementById('viewer-story-name').innerText;
+        showToast(`Anda menyukai status ${nama}`, "success");
+        
+        // Opsional: Jika Anda punya tabel 'story_likes' di DB, kirim datanya ke Supabase di sini
+    } else {
+        // Batal Like
+        icon.classList.replace('fas', 'far');
+        icon.classList.remove('text-brand-accent');
+    }
+}
+
 
 
 
