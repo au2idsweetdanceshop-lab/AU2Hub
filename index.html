@@ -4179,39 +4179,6 @@ async function viewStory(userId, name, avatar) {
         }
 
 
-            // ==========================================
-            // --- LOGIKA BARU: TAMPILKAN/SEMBUNYIKAN BAR BALASAN ---
-            // ==========================================
-            const replyContainer = document.getElementById('story-reply-container');
-            const replyInput = document.getElementById('story-reply-input');
-            if (replyContainer) {
-                if (currentUser && story.user_id === currentUser.id) {
-                    // Sembunyikan bar balasan jika ini story milik sendiri
-                    replyContainer.classList.add('hidden'); 
-                } else {
-                    // Tampilkan bar balasan jika ini story milik teman
-                    replyContainer.classList.remove('hidden');
-                    if(replyInput) replyInput.value = ''; // Kosongkan inputan sebelumnya
-                    
-                    // --- 🔥 PERBAIKAN: MEMORI IKON LIKE STORY ---
-                    const heartIcon = replyContainer.querySelector('.fa-heart');
-                    if (heartIcon) {
-                        if (localStorage.getItem('story_liked_' + story.id)) {
-                            // JIKA SUDAH DI-LIKE: Jadikan love merah penuh
-                            heartIcon.classList.replace('far', 'fas');
-                            heartIcon.classList.add('text-brand-accent');
-                            heartIcon.classList.remove('animate-ping'); 
-                        } else {
-                            // JIKA BELUM DI-LIKE: Kembalikan ke garis luar (empty)
-                            heartIcon.classList.replace('fas', 'far');
-                            heartIcon.classList.remove('text-brand-accent', 'animate-ping');
-                        }
-                    }
-                }
-            }
-        }
-
-
 
         // FUNGSI UTAMAKAN SAKLAR MUTED / UNMUTED VIDEO STORY
         function toggleStoryVolume() {
