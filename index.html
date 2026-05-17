@@ -5022,39 +5022,52 @@ async function uploadAndSendVoice(blob) {
         let replyingToMsgText = "";
         let replyingToMsgName = "";
 
-        // Fungsi saat tombol "Balas" di menu opsi di-klik
+        // Fungsi saat tombol "Balas" di menu opsi di-klik (VERSI DISEMPURNAKAN UNTUK FOTO & AUDIO)
         document.getElementById('btn-reply-msg').addEventListener('click', () => {
             if (!selectedMessageId) return;
             
             // Nama default diambil dari Header Chat (untuk chat pribadi)
             let name = document.getElementById('active-chat-name').innerText; 
             
-            // PERBAIKAN: Cari gelembung chat berdasarkan ID unik barunya
+            // Cari gelembung chat berdasarkan ID
             const msgBubble = document.getElementById(`msg-chat-${selectedMessageId}`);
-            let text = "Pesan foto/media";
+            let text = "Membalas pesan...";
             
             if (msgBubble) {
-                // FITUR CERDAS: Jika di dalam Grup, ambil nama asli pengirim dari dalam gelembung chatnya, bukan nama grup di header
-                const groupSenderEl = msgBubble.querySelector('.text-\\[\\#34b7f1\\]');
+                // FITUR CERDAS: Jika di dalam Grup, ambil nama asli pengirim dari dalam gelembung chatnya
+                // Menyesuaikan dengan class warna biru "#00F0FF" yang baru
+                const groupSenderEl = msgBubble.querySelector('.text-\\[\\#00F0FF\\]');
                 if (groupSenderEl) {
                     name = groupSenderEl.innerText;
                 }
 
-                // Ekstrak teks murni dari gelembung chat untuk dijadikan cuplikan preview
-                const textDiv = msgBubble.querySelector('.pr-10') || msgBubble.querySelector('.p-0.5');
-                if (textDiv && !textDiv.innerHTML.includes('<img') && !textDiv.innerHTML.includes('<audio')) {
-                    text = textDiv.innerText.replace(/\n/g, ' ').substring(0, 50);
-                    if (textDiv.innerText.length > 50) text += "...";
-                } else if (textDiv && textDiv.innerHTML.includes('<audio')) {
-                    text = "🎙️ Pesan Suara";
-                } else if (textDiv && textDiv.innerHTML.includes('<img')) {
-                    text = "📷 Foto/Gambar";
+                // Ekstrak teks/media murni dari gelembung chat (mencari pembungkus kontennya)
+                const textDiv = msgBubble.querySelector('.text-\\[12px\\]');
+                if (textDiv) {
+                    if (textDiv.innerHTML.includes('<audio')) {
+                        text = "🎙️ Pesan Suara";
+                    } else if (textDiv.innerHTML.includes('<img')) {
+                        text = "📷 Foto/Gambar";
+                    } else {
+                        // Jika pesan teks biasa, hilangkan kode [REPLY:...] yang ada di dalamnya agar rapi
+                        let cleanText = textDiv.innerText;
+                        
+                        // Menghapus elemen cuplikan kotak balasan jika membalas pesan yang sudah merupakan balasan
+                        const innerReplyBox = textDiv.querySelector('div[onclick^="jumpToMessage"]');
+                        if (innerReplyBox) {
+                            cleanText = cleanText.replace(innerReplyBox.innerText, '').trim();
+                        }
+                        
+                        text = cleanText.replace(/\n/g, ' ').substring(0, 50);
+                        if (cleanText.length > 50) text += "...";
+                    }
                 }
             }
             
             setChatReply(selectedMessageId, name, text);
             closeMsgOptions();
         });
+
 
         function setChatReply(msgId, name, text) {
             replyingToMsgId = msgId;
@@ -5220,7 +5233,9 @@ async function uploadAndSendVoice(blob) {
     }
 }
 
-// 1. Fungsi Untuk Merender Gelembung Obrolan (Teks, Audio, Gambar)
+// ==========================================
+// 1. FUNGSI RENDER GELEMBUNG CHAT (BISA KLIK BALASAN)
+// ==========================================
 function appendMessageBubble(msg) {
     const container = document.getElementById('chat-messages-container');
     const isMe = msg.sender_id === currentUser.id;
@@ -5232,24 +5247,50 @@ function appendMessageBubble(msg) {
     let bubbleColor = isMe ? 'bg-brand-accent text-white rounded-br-none' : 'bg-white/10 text-white border border-white/10 rounded-bl-none';
     let align = isMe ? 'justify-end' : 'justify-start';
     
-    // Tangani Teks / Gambar / Audio / Pesan Sistem
-    let contentHtml = msg.message ? formatCaption(msg.message) : ''; 
-    if (msg.message.startsWith('[IMG]')) {
-        const url = msg.message.replace('[IMG]', '');
-        contentHtml = `<img src="${url}" class="max-w-[200px] rounded-lg cursor-pointer mt-1" onclick="openLightbox('${url}')">`;
-    } else if (msg.message.startsWith('[AUDIO]')) {
-        const url = msg.message.replace('[AUDIO]', '');
-        contentHtml = `<audio controls class="w-[200px] mt-1 h-8"><source src="${url}" type="audio/webm"></audio>`;
-    } else if (msg.message.startsWith('[SISTEM]')) {
-        contentHtml = `<div class="text-center w-full my-2"><span class="bg-brand-info/20 text-brand-info font-bold text-[10px] px-4 py-1.5 rounded-full">${msg.message.replace('[SISTEM] ', '')}</span></div>`;
-        container.insertAdjacentHTML('beforeend', contentHtml);
-        return;
+    // --- BACA FORMAT BALASAN (QUOTE REPLY) ---
+    let rawMessage = msg.message || '';
+    let replyHtml = '';
+
+    const replyRegex = /^\[REPLY:(.*?)\|\|(.*?)\|\|(.*?)\]\n([\s\S]*)$/;
+    const match = rawMessage.match(replyRegex);
+
+    if (match) {
+        const replyId = match[1];
+        const replyName = match[2];
+        const replyText = match[3];
+        rawMessage = match[4]; // Sisa pesan setelah dipotong format reply
+
+        // Buat kotak balasan yang bisa diklik
+        replyHtml = `
+        <div onclick="jumpToMessage('${replyId}')" class="bg-black/30 border-l-[3px] border-brand-info p-2 mb-1.5 rounded-md cursor-pointer hover:bg-black/50 transition-colors active:scale-95">
+            <div class="text-[10px] font-bold text-brand-info mb-0.5">${replyName}</div>
+            <div class="text-[10px] text-gray-300 truncate max-w-[200px] line-clamp-1">${replyText}</div>
+        </div>`;
     }
 
-    // Tangani Nama Pengirim (Khusus di Grup Chat)
+    // --- TANGANI TEKS, GAMBAR, ATAU AUDIO ---
+    let contentHtml = ''; 
+    if (rawMessage.startsWith('[IMG]')) {
+        const url = rawMessage.replace('[IMG]', '');
+        contentHtml = `<img src="${url}" class="max-w-[200px] rounded-lg cursor-pointer mt-1" onclick="openLightbox('${url}')">`;
+    } else if (rawMessage.startsWith('[AUDIO]')) {
+        const url = rawMessage.replace('[AUDIO]', '');
+        contentHtml = `<audio controls class="w-[200px] mt-1 h-8"><source src="${url}" type="audio/webm"></audio>`;
+    } else if (rawMessage.startsWith('[SISTEM]')) {
+        contentHtml = `<div class="text-center w-full my-2"><span class="bg-brand-info/20 text-brand-info font-bold text-[10px] px-4 py-1.5 rounded-full">${rawMessage.replace('[SISTEM] ', '')}</span></div>`;
+        container.insertAdjacentHTML('beforeend', contentHtml);
+        return; // Hentikan di sini karena pesan sistem posisinya di tengah
+    } else {
+        contentHtml = formatCaption(rawMessage);
+    }
+
+    // Gabungkan kotak balasan dengan isi pesan utama
+    contentHtml = replyHtml + contentHtml;
+
+    // --- TANGANI NAMA PENGIRIM (Khusus di Grup) ---
     let senderNameHtml = '';
     if (!isMe && activeGroupId) {
-        senderNameHtml = `<div class="text-[10px] text-[#00F0FF] font-bold mb-0.5">${msg.profiles?.nickname || 'Anggota'}</div>`;
+        senderNameHtml = `<div class="text-[10px] text-[#00F0FF] font-bold mb-1">${msg.profiles?.nickname || 'Anggota'}</div>`;
     }
 
     const html = `
@@ -5258,7 +5299,7 @@ function appendMessageBubble(msg) {
             <div class="${bubbleColor} px-3 py-2 rounded-2xl shadow-lg relative group">
                 ${senderNameHtml}
                 <div class="text-[12px] leading-relaxed break-words">${contentHtml}</div>
-                <div class="text-[9px] text-white/50 text-right mt-1 ml-4 float-right flex items-center gap-1">
+                <div class="text-[9px] text-white/50 text-right mt-1.5 float-right flex items-center gap-1">
                     ${time}
                     ${isMe ? `<i class="fas fa-check${(msg.is_read || msg.is_read === 'true') ? '-double text-brand-info' : ''}"></i>` : ''}
                 </div>
@@ -5269,15 +5310,10 @@ function appendMessageBubble(msg) {
     container.insertAdjacentHTML('beforeend', html);
 }
 
-// 2. Fungsi Untuk Scroll Otomatis ke Bawah
-function scrollToBottomChat() {
-    const container = document.getElementById('chat-messages-container');
-    if (container) {
-        container.scrollTop = container.scrollHeight;
-    }
-}
 
-// 3. Fungsi Untuk Mengirim Chat Teks
+// ==========================================
+// 2. FUNGSI KIRIM PESAN (DENGAN PENJAGA PINTU GRUP)
+// ==========================================
 async function sendMessageRoom() {
     if (!activeChatUserId && !activeGroupId) return;
     const input = document.getElementById('chat-room-input');
@@ -5286,6 +5322,17 @@ async function sendMessageRoom() {
 
     const isGroup = !!activeGroupId;
     const targetId = isGroup ? activeGroupId : activeChatUserId;
+
+    // --- PENJAGA PINTU GRUP ANTI-KICK ---
+    if (isGroup) {
+        const { data: checkMember } = await supabaseClient.from('group_members').select('user_id').eq('group_id', targetId).eq('user_id', currentUser.id).single();
+        if (!checkMember) {
+            await customAlert("Anda tidak dapat mengirim pesan karena telah dikeluarkan dari grup ini.");
+            input.value = ''; // Kosongkan inputan
+            closeChatRoom(); // Usir paksa dari layar chat
+            return;
+        }
+    }
 
     // Tangkap data reply jika sedang membalas pesan
     const currentReplyId = replyingToMsgId;
@@ -5327,6 +5374,7 @@ async function sendMessageRoom() {
         if(bubble) bubble.remove();
     }
 }
+
 
 
         // ==========================================
