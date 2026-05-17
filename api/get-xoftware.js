@@ -7,9 +7,16 @@ export default async function handler(req, res) {
 
     const { action } = req.query;
     const baseUrl = 'https://backend.xoftware.id/v1';
+    
+    // Identitas slug unik toko kamu sesuai link web.xoftware.id/warungputri
     const storeSlug = 'warungputri'; 
 
-    // Konfigurasi Header Resmi
+    // --- FITUR OTOMATIS: Meneruskan nomor HP (&sender=...) dari luar ke server pusat ---
+    const urlParams = new URLSearchParams(req.query);
+    urlParams.delete('action');
+    const sisaQuery = urlParams.toString() ? `?${urlParams.toString()}` : '';
+
+    // Konfigurasi Header Resmi sesuai dokumentasi Xoftware
     let options = {
         headers: {
             'Content-Type': 'application/json',
@@ -21,18 +28,13 @@ export default async function handler(req, res) {
     try {
         let targetUrl = '';
 
-        // Otomatis salin dan teruskan parameter tambahan dari frontend (seperti sender, id, dll)
-        const queryParams = new URLSearchParams(req.query);
-        queryParams.delete('action'); // Hapus keyword action agar tidak ikut terkirim ke pusat
-        const extraParams = queryParams.toString() ? `?${queryParams.toString()}` : '';
-
         if (action === 'saldo') {
-            // Rute cek saldo otomatis ditempel dengan parameter tambahan (?sender=xxx)
-            targetUrl = `${baseUrl}/balance${extraParams}`; 
+            // Alamat otomatis ditempeli nomor hp pengirim jika ada
+            targetUrl = `${baseUrl}/store/profile${sisaQuery}`; 
             options.method = 'GET';
         } 
         else if (action === 'produk') {
-            targetUrl = `${baseUrl}/services${extraParams}`; 
+            targetUrl = `${baseUrl}/store/${storeSlug}/products${sisaQuery}`; 
             options.method = 'GET';
         } 
         else if (action === 'order') {
