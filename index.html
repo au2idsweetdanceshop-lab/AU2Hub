@@ -5922,7 +5922,39 @@ document.getElementById('serviceSearch').addEventListener('input', (e) => {
     renderProdukXoftware(hasilFilter);
 });
 
-// 4. Logika Checkout Pembayaran Robot DANA
+
+// 🔥 FUNGSI SAKTI GENERATOR QRIS OTOMATIS NOMINAL
+function makeDynamicQRIS(amount) {
+    // Base QRIS ADT STORE yang sudah diubah ke mode Dinamis (010212)
+    let baseQRIS = "00020101021226570011ID.DANA.WWW011893600915327189834802092718983480303UMI51440014ID.CO.QRIS.WWW0215ID10221770015860303UMI5204549953033605802ID5909ADT STORE6011Kab. Kediri610564152";
+    
+    let strAmount = amount.toString();
+    let padAmountLength = strAmount.length.toString().padStart(2, '0');
+    
+    // Tag 54 adalah kode standar EMVCo untuk menyimpan nominal uang
+    let tag54 = "54" + padAmountLength + strAmount;
+    
+    let fullPayload = baseQRIS + tag54 + "6304";
+    
+    // Hitung Checksum CRC16 agar QRIS valid dan bisa dibaca mesin e-wallet
+    let crc = 0xFFFF;
+    for (let i = 0; i < fullPayload.length; i++) {
+        crc ^= fullPayload.charCodeAt(i) << 8;
+        for (let j = 0; j < 8; j++) {
+            if (crc & 0x8000) {
+                crc = (crc << 1) ^ 0x1021;
+            } else {
+                crc <<= 1;
+            }
+            crc &= 0xFFFF;
+        }
+    }
+    let crcString = crc.toString(16).toUpperCase().padStart(4, '0');
+    return fullPayload + crcString;
+}
+
+
+// 4. Logika Checkout Pembayaran Robot DANA (VERSI OTOMATIS NOMINAL)
 async function checkoutRobotDANA(namaProduk, harga) {
     if (!currentUser) return showToast("Silakan login dulu untuk membeli!", "error");
 
@@ -5932,7 +5964,6 @@ async function checkoutRobotDANA(namaProduk, harga) {
     showToast("Menyiapkan antrean pembayaran...", "info");
 
     try {
-        // Tembak API yang nyambung ke Google Sheets kamu
         const response = await fetch('/api/create-deposit', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -5945,25 +5976,25 @@ async function checkoutRobotDANA(namaProduk, harga) {
         const result = await response.json();
 
         if (result.status === "success") {
-            // Setup halaman layar pembayaran
             document.getElementById('pay-total').innerText = `Rp ${harga.toLocaleString('id-ID')}`;
             document.getElementById('pay-product').innerText = namaProduk;
             document.getElementById('nominal-asli').value = harga;
 
-            // ⚠️ GANTI LINK DI BAWAH INI DENGAN LINK GAMBAR QRIS DANA BISNISMU
-            const qrImgUrl = `https://drive.google.com/uc?export=view&id=1TbGGJpXDTarVbZspPd3YCANMZ_XQNNIE`;
+            // KUNCI PERBAIKAN: Generate teks QRIS baru sesuai harga, lalu ubah jadi gambar secara real-time
+            const teksQRISDinamis = makeDynamicQRIS(harga);
+            const qrImgUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(teksQRISDinamis)}`;
+
             const qrContainerElement = document.querySelector('#pembayaran img');
             if (qrContainerElement) {
                 qrContainerElement.src = qrImgUrl;
             }
 
-            // Siapkan tombol konfirmasi WhatsApp ke kamu
-            const noWA = "6283815584661"; // ⚠️ Ganti nomor WA mu jika perlu
+            const noWA = "6283815584661"; 
             const teksWA = encodeURIComponent(`Halo Admin, saya pesan produk:\n\n*${namaProduk}*\nTotal Bayar : Rp ${harga.toLocaleString('id-ID')}\n\nPembayaran via DANA sudah saya transfer. Tolong dicek!`);
             document.getElementById('wa-confirm').setAttribute('href', `https://wa.me/${noWA}?text=${teksWA}`);
 
             switchTab('pembayaran');
-            showToast("Silakan scan QRIS & pastikan nominal sesuai!", "success");
+            showToast("Silakan scan! Nominal sudah otomatis terisi.", "success");
         } else {
             await customAlert(`Gagal membuat pesanan: Server Google Sheets lambat.`);
         }
@@ -5971,6 +6002,7 @@ async function checkoutRobotDANA(namaProduk, harga) {
         showToast("Gangguan jaringan saat konek ke server.", "error");
     }
 }
+
 
 
 
