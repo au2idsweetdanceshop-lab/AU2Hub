@@ -382,63 +382,65 @@
         </section>
 
         <section id="layanan" class="tab-content py-2">
-            <div class="bg-white rounded-2xl p-5 shadow-xl w-full text-gray-800 mb-8 mt-2">
+                <div class="bg-brand-card rounded-2xl p-5 shadow-[0_0_20px_rgba(0,240,255,0.05)] w-full text-white mb-8 mt-2 border border-white/5 relative overflow-hidden">
+        <div class="absolute -right-6 -top-6 w-24 h-24 bg-brand-info/10 rounded-full blur-2xl"></div>
         
-        <div class="flex items-stretch justify-between mb-6">
+        <div class="flex items-stretch justify-between mb-6 relative z-10">
             <div class="flex flex-1 justify-around items-center pr-3">
                 <div class="text-center">
-                    <p class="text-[10px] text-gray-500 font-bold mb-1 uppercase tracking-wider">Saldo Akun</p>
-                    <h3 id="ui-saldo-xoftware" class="text-lg font-extrabold text-black">Rp 0</h3>
+                    <p class="text-[10px] text-gray-400 font-bold mb-1 uppercase tracking-wider">Saldo Akun</p>
+                    <h3 id="ui-saldo-xoftware" class="text-lg font-extrabold text-brand-info shadow-sm drop-shadow-md">Rp 0</h3>
                 </div>
                 
-                <div class="w-px h-8 bg-gray-200 mx-2"></div> 
+                <div class="w-px h-8 bg-white/10 mx-2"></div> 
                 
                 <div class="text-center">
-                    <p class="text-[10px] text-gray-500 font-bold mb-1 uppercase tracking-wider">Point Akun</p>
-                    <h3 id="ui-point-xoftware" class="text-lg font-extrabold text-black">0</h3>
+                    <p class="text-[10px] text-gray-400 font-bold mb-1 uppercase tracking-wider">Point Akun</p>
+                    <h3 id="ui-point-xoftware" class="text-lg font-extrabold text-white">0</h3>
                 </div>
             </div>
             
-            <button onclick="requestDepositQRIS()" class="bg-[#0b7a82] hover:bg-[#085e64] text-white rounded-xl w-24 flex flex-col items-center justify-center py-3 transition-colors shadow-md active:scale-95">
-                <i class="fas fa-qrcode text-xl mb-1.5"></i>
+            <button onclick="requestDepositQRIS()" class="bg-gradient-to-r from-brand-info to-brand-purple text-white rounded-xl w-24 flex flex-col items-center justify-center py-3 transition-all shadow-[0_0_15px_rgba(0,240,255,0.25)] hover:brightness-110 active:scale-95">
+                <i class="fas fa-qrcode text-xl mb-1.5 animate-pulse"></i>
                 <span class="text-[10px] font-extrabold tracking-wide">DEPOSIT</span>
             </button>
         </div>
 
-        <div class="grid grid-cols-4 gap-2 border-t border-gray-100 pt-4">
-            <button class="flex flex-col items-center justify-center hover:opacity-70 active:scale-95 transition-transform">
-                <div class="bg-gray-50 w-10 h-10 rounded-full flex items-center justify-center mb-2">
-                    <i class="fas fa-shopping-cart text-gray-700 text-lg"></i>
+        <div class="grid grid-cols-4 gap-2 border-t border-white/5 pt-4 relative z-10">
+            <button class="flex flex-col items-center justify-center hover:opacity-80 active:scale-95 transition-transform group">
+                <div class="bg-white/5 w-10 h-10 rounded-full flex items-center justify-center mb-2 border border-white/5 group-hover:border-brand-info/30 group-hover:bg-brand-info/5 transition-all">
+                    <i class="fas fa-shopping-cart text-gray-300 group-hover:text-brand-info text-lg transition-colors"></i>
                 </div>
-                <span class="text-[9px] font-bold text-gray-600 uppercase tracking-wide">Keranjang</span>
+                <span class="text-[9px] font-bold text-gray-400 uppercase tracking-wide">Keranjang</span>
             </button>
-            <button class="flex flex-col items-center justify-center hover:opacity-70 active:scale-95 transition-transform">
-                <div class="bg-gray-50 w-10 h-10 rounded-full flex items-center justify-center mb-2">
-                    <i class="fas fa-ticket-alt text-gray-700 text-lg"></i>
+            <button class="flex flex-col items-center justify-center hover:opacity-80 active:scale-95 transition-transform group">
+                <div class="bg-white/5 w-10 h-10 rounded-full flex items-center justify-center mb-2 border border-white/5 group-hover:border-brand-info/30 group-hover:bg-brand-info/5 transition-all">
+                    <i class="fas fa-ticket-alt text-gray-300 group-hover:text-brand-info text-lg transition-colors"></i>
                 </div>
-                <span class="text-[9px] font-bold text-gray-600 uppercase tracking-wide">Voucher</span>
+                <span class="text-[9px] font-bold text-gray-400 uppercase tracking-wide">Voucher</span>
             </button>
-            <button class="flex flex-col items-center justify-center hover:opacity-70 active:scale-95 transition-transform">
-                <div class="bg-gray-50 w-10 h-10 rounded-full flex items-center justify-center mb-2">
-                    <i class="fas fa-star text-gray-700 text-lg"></i>
+            <button class="flex flex-col items-center justify-center hover:opacity-80 active:scale-95 transition-transform group">
+                <div class="bg-white/5 w-10 h-10 rounded-full flex items-center justify-center mb-2 border border-white/5 group-hover:border-brand-info/30 group-hover:bg-brand-info/5 transition-all">
+                    <i class="fas fa-star text-gray-300 group-hover:text-brand-info text-lg transition-colors"></i>
                 </div>
-                <span class="text-[9px] font-bold text-gray-600 uppercase tracking-wide">Peringkat</span>
+                <span class="text-[9px] font-bold text-gray-400 uppercase tracking-wide">Peringkat</span>
             </button>
-            <button class="flex flex-col items-center justify-center hover:opacity-70 active:scale-95 transition-transform">
-                <div class="bg-gray-50 w-10 h-10 rounded-full flex items-center justify-center mb-2">
-                    <i class="fab fa-whatsapp text-gray-700 text-lg"></i>
+            <button class="flex flex-col items-center justify-center hover:opacity-80 active:scale-95 transition-transform group">
+                <div class="bg-white/5 w-10 h-10 rounded-full flex items-center justify-center mb-2 border border-white/5 group-hover:border-brand-success/30 group-hover:bg-brand-success/5 transition-all">
+                    <i class="fab fa-whatsapp text-gray-300 group-hover:text-brand-success text-lg transition-colors"></i>
                 </div>
-                <span class="text-[9px] font-bold text-gray-600 uppercase tracking-wide">Chat Owner</span>
+                <span class="text-[9px] font-bold text-gray-400 uppercase tracking-wide">Chat Owner</span>
             </button>
         </div>
     </div>
+
             <div class="relative mb-5">
                 <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-brand-accent/70"></i>
                 <input type="text" id="serviceSearch" placeholder="Cari layanan..." class="w-full bg-brand-card border border-brand-accent/30 rounded-2xl py-3.5 pl-12 pr-4 text-sm text-white focus:outline-none focus:border-brand-accent transition-all shadow-[0_0_10px_rgba(255,0,122,0.1)]">
             </div>
             <div class="flex justify-between items-center mb-5">
                 <h3 class="text-xl font-extrabold flex items-center gap-2">
-                    <div class="w-1.5 h-6 bg-brand-accent rounded-full"></div> Layanan Joki
+                    <div class="w-1.5 h-6 bg-brand-accent rounded-full"></div> Layanan
                 </h3>
                 <span class="text-[10px] bg-brand-accent/20 text-brand-accent px-2 py-1.5 rounded-lg font-bold border border-brand-accent/30 tracking-wider">100% AMAN</span>
             </div>
@@ -5998,42 +6000,92 @@ function renderProdukXoftware(data) {
     `).join('');
 }
 
-        // 3. Fungsi Eksekusi Pembelian Instan (Potong Saldo & Drop Akun)
+        // 3. Fungsi Eksekusi Pembelian Instan (Pilihan: Potong Saldo / Auto QRIS)
         async function checkoutXoftware(productCode, price, productTitle) {
-            const konfirmasi = await customConfirm(`Konfirmasi Pembelian:\nApakah Anda yakin ingin membeli "${productTitle}" seharga Rp ${price.toLocaleString('id-ID')}? Saldo Anda akan langsung dipotong.`);
-            if (!konfirmasi) return;
+            // 1. Manfaatkan modal konfirmasi bawaan kamu untuk memberikan opsi pembayaran
+            const pakaiSaldo = await customConfirm(`[PILIHAN PEMBAYARAN]\n\nApakah Anda ingin membeli "${productTitle}" menggunakan Saldo Akun?\n\n(Klik OKE untuk potong saldo akun, atau klik BATAL untuk bayar langsung pakai Auto QRIS)`);
+            
+            if (pakaiSaldo) {
+                // ==========================================
+                // JALUR 1: PEMBAYARAN POTONG SALDO AKUN
+                // ==========================================
+                showToast("Memproses transaksi saldo...", "info");
 
-            showToast("Memproses transaksi instan...", "info");
+                try {
+                    const response = await fetch('/api/get-xoftware?action=order', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ product_code: productCode, quantity: 1 })
+                    });
 
-            try {
-                const response = await fetch('/api/get-xoftware?action=order', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ product_code: productCode, quantity: 1 })
-                });
+                    const result = await response.json();
 
-                const result = await response.json();
+                    if (result.status === true) {
+                        showToast("Transaksi Berhasil!", "success");
+                        loadDataXoftware(); // Refresh saldo seketika
 
-                if (result.status === true) {
-                    showToast("Transaksi Berhasil!", "success");
-                    loadDataXoftware(); // Refresh saldo seketika
+                        let strukAkun = "";
+                        if (result.data && Array.isArray(result.data.accounts)) {
+                            result.data.accounts.forEach((acc, i) => {
+                                strukAkun += `\n[DATA LIVE AKUN ${i+1}]\nEmail/User : ${acc.email}\nPassword   : ${acc.pass}\n`;
+                            });
+                        }
 
-                    // Susun data rahasia pesanan (Email & Password dari data No. 5)
-                    let strukAkun = "";
-                    if (result.data && Array.isArray(result.data.accounts)) {
-                        result.data.accounts.forEach((acc, i) => {
-                            strukAkun += `\n[DATA LIVE AKUN ${i+1}]\nEmail/User : ${acc.email}\nPassword   : ${acc.pass}\n`;
-                        });
+                        await customAlert(`PROSES SUKSES! 🎉\n\nID Transaksi: #${result.data.transaction_id}\nTotal Potong Saldo: Rp ${result.data.total_price.toLocaleString('id-ID')}\n${strukAkun}\n⚠️ PERINGATAN: Harap catat atau screenshot data akun di atas sekarang. Interaksi ini akan dibersihkan.`);
+                    } else {
+                        await customAlert(`Transaksi Gagal:\n${result.message || 'Saldo tidak mencukupi atau stok produk sedang habis.'}`);
                     }
-
-                    await customAlert(`PROSES SUKSES! 🎉\n\nID Transaksi: #${result.data.transaction_id}\nTotal Potong Saldo: Rp ${result.data.total_price.toLocaleString('id-ID')}\n${strukAkun}\n⚠️ PERINGATAN: Harap catat atau screenshot data akun di atas sekarang. Interaksi ini akan dibersihkan.`);
-                } else {
-                    await customAlert(`Transaksi Gagal:\n${result.message || 'Saldo tidak mencukupi atau stok produk sedang habis.'}`);
+                } catch (error) {
+                    showToast("Terjadi gangguan komunikasi dengan server pusat.", "error");
                 }
-            } catch (error) {
-                showToast("Terjadi gangguan komunikasi dengan server pusat.", "error");
+            } else {
+                // ==========================================
+                // JALUR 2: PEMBAYARAN INSTAN PAKAI AUTO QRIS
+                // ==========================================
+                const konfirmasiQris = await customConfirm(`[AUTO QRIS INSTAN]\n\nApakah Anda ingin membuat Barcode QRIS otomatis seharga Rp ${price.toLocaleString('id-ID')} untuk membeli "${productTitle}"?`);
+                if (!konfirmasiQris) return;
+
+                showToast("Sedang membuat barcode QRIS instan...", "info");
+
+                try {
+                    const response = await fetch('/api/get-xoftware?action=qris', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ amount: price }) // Tembak nominal sesuai harga produk
+                    });
+
+                    const result = await response.json();
+
+                    if (result.status === true && result.data) {
+                        // Suntikkan data transaksi langsung ke nota pembayaran bawaan HTML kamu
+                        document.getElementById('pay-total').innerText = `Rp ${result.data.total_to_pay.toLocaleString('id-ID')}`;
+                        document.getElementById('pay-product').innerText = `Bayar Instan: ${productTitle}`;
+                        document.getElementById('nominal-asli').value = result.data.total_to_pay;
+
+                        // Generate Payload QR String dari WarungPutri menjadi gambar barcode QRIS real-time
+                        const qrImgUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(result.data.qr_string)}`;
+                        const qrContainerElement = document.querySelector('#pembayaran img');
+                        if (qrContainerElement) {
+                            qrContainerElement.src = qrImgUrl;
+                        }
+
+                        // Set tombol konfirmasi WA otomatis untuk cadangan kirim nota ke admin
+                        const noWA = "6283815584661";
+                        const teksWA = encodeURIComponent(`Halo Admin, saya sudah melakukan scan Auto QRIS Instan untuk pembelian produk:\n\nProduk : *${productTitle}*\nTotal Bayar : *Rp ${result.data.total_to_pay.toLocaleString('id-ID')}*\nID Transaksi: ${result.data.transaction_id}`);
+                        document.getElementById('wa-confirm').setAttribute('href', `https://wa.me/${noWA}?text=${teksWA}`);
+
+                        // Buka tab lembar nota pembayaran secara otomatis
+                        switchTab('pembayaran');
+                        showToast("Barcode QRIS Instan Berhasil Dibuat!", "success");
+                    } else {
+                        await customAlert(`Gagal membuat QRIS: ${result.message || 'Metode pembayaran sedang maintenance.'}`);
+                    }
+                } catch (error) {
+                    showToast("Gagal memproses request barcode QRIS.", "error");
+                }
             }
         }
+
 
         // 4. Fitur Baru: Request Pembuatan QRIS Otomatis (Deposit Saldo)
         async function requestDepositQRIS() {
