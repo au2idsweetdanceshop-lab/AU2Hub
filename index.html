@@ -4926,6 +4926,24 @@ function updateSeek(e, containerElement, video) {
                 console.error("Detail Error Mic:", err);
             }
         }
+        
+                function stopRecordingVoice() {
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                mediaRecorder.stop();
+            }
+            
+            // Kembalikan UI ke awal
+            const input = document.getElementById('chat-room-input');
+            input.placeholder = "Ketik pesan...";
+            input.disabled = false;
+            
+            const btnSend = document.getElementById('btn-send-room');
+            btnSend.innerHTML = '<i class="fas fa-microphone"></i>';
+            btnSend.classList.remove('bg-red-500', 'animate-pulse');
+            btnSend.classList.add('bg-brand-accent');
+            btnSend.onclick = startRecordingVoice;
+        }
+
 
 
 
