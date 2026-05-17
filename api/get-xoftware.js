@@ -7,11 +7,9 @@ export default async function handler(req, res) {
 
     const { action } = req.query;
     const baseUrl = 'https://backend.xoftware.id/v1';
-    
-    // Identitas slug unik toko kamu sesuai link web.xoftware.id/warungputri
     const storeSlug = 'warungputri'; 
 
-    // Konfigurasi Header Resmi sesuai dokumentasi Xoftware
+    // Konfigurasi Header Resmi
     let options = {
         headers: {
             'Content-Type': 'application/json',
@@ -23,25 +21,27 @@ export default async function handler(req, res) {
     try {
         let targetUrl = '';
 
+        // Otomatis salin dan teruskan parameter tambahan dari frontend (seperti sender, id, dll)
+        const queryParams = new URLSearchParams(req.query);
+        queryParams.delete('action'); // Hapus keyword action agar tidak ikut terkirim ke pusat
+        const extraParams = queryParams.toString() ? `?${queryParams.toString()}` : '';
+
         if (action === 'saldo') {
-            // SULAM RUTE: Diubah dari /store/profile menjadi /balance (Rute umum cek saldo)
-            targetUrl = `${baseUrl}/balance`; 
+            // Rute cek saldo otomatis ditempel dengan parameter tambahan (?sender=xxx)
+            targetUrl = `${baseUrl}/balance${extraParams}`; 
             options.method = 'GET';
         } 
         else if (action === 'produk') {
-            // SULAM RUTE: Diubah menjadi /services (Rute umum penarikan daftar produk H2H)
-            targetUrl = `${baseUrl}/services`; 
+            targetUrl = `${baseUrl}/services${extraParams}`; 
             options.method = 'GET';
         } 
         else if (action === 'order') {
-            // Transaksi Pembelian Langsung Potong Saldo (Data No. 5)
             if (req.method !== 'POST') return res.status(405).json({ status: false, message: 'Method must be POST' });
             targetUrl = `${baseUrl}/order`;
             options.method = 'POST';
             options.body = JSON.stringify(req.body);
         } 
         else if (action === 'qris') {
-            // Request Pembuatan Barcode QRIS Otomatis (Data No. 6)
             if (req.method !== 'POST') return res.status(405).json({ status: false, message: 'Method must be POST' });
             targetUrl = `${baseUrl}/deposit/qris`;
             options.method = 'POST';
