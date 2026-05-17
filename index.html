@@ -399,7 +399,7 @@
                 </div>
             </div>
             
-            <button class="bg-[#0b7a82] hover:bg-[#085e64] text-white rounded-xl w-24 flex flex-col items-center justify-center py-3 transition-colors shadow-md active:scale-95">
+            <button onclick="requestDepositQRIS()" class="bg-[#0b7a82] hover:bg-[#085e64] text-white rounded-xl w-24 flex flex-col items-center justify-center py-3 transition-colors shadow-md active:scale-95">
                 <i class="fas fa-qrcode text-xl mb-1.5"></i>
                 <span class="text-[10px] font-extrabold tracking-wide">DEPOSIT</span>
             </button>
@@ -2597,16 +2597,11 @@ function closeUploadModal() {
             btnSalin.classList.replace('text-brand-info', 'text-brand-success'); btnSalin.classList.replace('bg-brand-info/10', 'bg-brand-success/10'); btnSalin.classList.replace('border-brand-info/30', 'border-brand-success/30');
             setTimeout(() => { btnSalin.innerHTML = teksAsli; btnSalin.classList.replace('text-brand-success', 'text-brand-info'); btnSalin.classList.replace('bg-brand-success/10', 'bg-brand-info/10'); btnSalin.classList.replace('border-brand-success/30', 'border-brand-info/30'); }, 2000);
         }
+        
 
-        async function muatDataRipper() {
-            const linkAPI = "/api/ripper";
-            const container = document.getElementById('ripper-container');
-            const dataTersimpan = localStorage.getItem('ripperCache');
-            if (dataTersimpan) { dataRipperGlobal = JSON.parse(dataTersimpan); renderRippers(dataRipperGlobal, false); } 
-            else { container.innerHTML = '<div class="text-center py-10 text-xs text-brand-info animate-pulse"><i class="fas fa-sync fa-spin mb-2 text-2xl"></i><br>Menyiapkan Database Pertama Kali...</div>'; }
-            try { const respon = await fetch(linkAPI); const dataBaru = await respon.json(); localStorage.setItem('ripperCache', JSON.stringify(dataBaru)); dataRipperGlobal = dataBaru; renderRippers(dataRipperGlobal, false); } 
-            catch (error) { if (!dataTersimpan) { container.innerHTML = '<div class="text-center py-10 text-xs text-red-500"><i class="fas fa-exclamation-triangle mb-2 text-2xl"></i><br>Gagal terhubung ke database.</div>'; } }
-        }
+
+        
+
 
         function renderRippers(data, isSearch = false) {
             const container = document.getElementById('ripper-container');
@@ -5880,7 +5875,161 @@ async function sendMessageRoom() {
             });
             container.innerHTML = html;
         }
+        
 
+
+
+        // ==========================================
+        // SISTEM INTEGRASI TOTAL FITUR XOFTWARE PPOB
+        // ==========================================
+
+        // 1. Fungsi Mengambil & Menampilkan Saldo + Point
+        async function loadDataXoftware() {
+            try {
+                const response = await fetch('/api/get-xoftware?action=saldo');
+                const result = await response.json();
+
+                if (result.status === true && result.data) {
+                    const saldoXoftware = result.data.saldo || 0;
+                    const pointXoftware = result.data.point || 0;
+
+                    // Suntikkan data asli ke komponen UI Card
+                    document.getElementById('ui-saldo-xoftware').innerText = `Rp ${saldoXoftware.toLocaleString('id-ID')}`;
+                    document.getElementById('ui-point-xoftware').innerText = pointXoftware.toLocaleString('id-ID');
+                }
+            } catch (error) {
+                console.error("Gagal memuat saldo Xoftware:", error);
+            }
+        }
+
+        // 2. Fungsi Mengambil Produk & Menampilkan di Toko WarungPutri
+        async function loadProdukXoftware() {
+            const container = document.getElementById('service-list');
+            if (!container) return;
+
+            container.innerHTML = `
+                <div class="text-center py-10 text-xs text-brand-info animate-pulse">
+                    <i class="fas fa-sync fa-spin mb-2 text-2xl"></i>
+                    <br>Sinkronisasi Produk WarungPutri...
+                </div>`;
+
+            try {
+                const response = await fetch('/api/get-xoftware?action=produk');
+                const result = await response.json();
+
+                if (result.status === true && Array.isArray(result.data)) {
+                    if (result.data.length === 0) {
+                        container.innerHTML = '<div class="text-center py-10 text-xs text-gray-500">WarungPutri belum mengupload produk.</div>';
+                        return;
+                    }
+
+                    container.innerHTML = result.data.map(p => `
+                        <div class="bg-brand-card p-4 rounded-2xl border border-white/5 flex justify-between items-center hover:border-brand-accent/30 transition-all smooth-reveal">
+                            <div class="w-[60%]">
+                                <div class="font-bold text-sm text-white mb-1">${p.title}</div>
+                                <div class="text-[10px] text-gray-400 leading-tight">${p.description || 'Sistem Pengiriman Otomatis 24 Jam.'}</div>
+                                <div class="text-[9px] text-brand-info mt-1.5"><i class="fas fa-layer-group mr-1"></i> Stok: ${p.stock} item</div>
+                            </div>
+                            <div class="text-right flex flex-col items-end">
+                                <div class="text-brand-accent font-extrabold text-[14px] mb-2">Rp ${p.price.toLocaleString('id-ID')}</div>
+                                <button onclick="checkoutXoftware('${p.code}', ${p.price}, '${p.title.replace(/'/g, "\\'")}')" class="bg-brand-accent/10 text-brand-accent text-[10px] font-bold px-4 py-2 rounded-full border border-brand-accent/30 active:scale-90 transition-transform">BELI</button>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    container.innerHTML = '<div class="text-center py-10 text-xs text-red-500">Gagal memuat katalog produk.</div>';
+                }
+            } catch (error) {
+                container.innerHTML = '<div class="text-center py-10 text-xs text-red-500">Gangguan jaringan katalog.</div>';
+            }
+        }
+
+        // 3. Fungsi Eksekusi Pembelian Instan (Potong Saldo & Drop Akun)
+        async function checkoutXoftware(productCode, price, productTitle) {
+            const konfirmasi = await customConfirm(`Konfirmasi Pembelian:\nApakah Anda yakin ingin membeli "${productTitle}" seharga Rp ${price.toLocaleString('id-ID')}? Saldo Anda akan langsung dipotong.`);
+            if (!konfirmasi) return;
+
+            showToast("Memproses transaksi instan...", "info");
+
+            try {
+                const response = await fetch('/api/get-xoftware?action=order', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ product_code: productCode, quantity: 1 })
+                });
+
+                const result = await response.json();
+
+                if (result.status === true) {
+                    showToast("Transaksi Berhasil!", "success");
+                    loadDataXoftware(); // Refresh saldo seketika
+
+                    // Susun data rahasia pesanan (Email & Password dari data No. 5)
+                    let strukAkun = "";
+                    if (result.data && Array.isArray(result.data.accounts)) {
+                        result.data.accounts.forEach((acc, i) => {
+                            strukAkun += `\n[DATA LIVE AKUN ${i+1}]\nEmail/User : ${acc.email}\nPassword   : ${acc.pass}\n`;
+                        });
+                    }
+
+                    await customAlert(`PROSES SUKSES! 🎉\n\nID Transaksi: #${result.data.transaction_id}\nTotal Potong Saldo: Rp ${result.data.total_price.toLocaleString('id-ID')}\n${strukAkun}\n⚠️ PERINGATAN: Harap catat atau screenshot data akun di atas sekarang. Interaksi ini akan dibersihkan.`);
+                } else {
+                    await customAlert(`Transaksi Gagal:\n${result.message || 'Saldo tidak mencukupi atau stok produk sedang habis.'}`);
+                }
+            } catch (error) {
+                showToast("Terjadi gangguan komunikasi dengan server pusat.", "error");
+            }
+        }
+
+        // 4. Fitur Baru: Request Pembuatan QRIS Otomatis (Deposit Saldo)
+        async function requestDepositQRIS() {
+            const inputNominal = await customPrompt("Masukkan nominal top up saldo (Rp):", "10000");
+            if (!inputNominal) return;
+
+            const nominalmurni = parseInt(inputNominal.replace(/\D/g, ""));
+            if (isNaN(nominalmurni) || nominalmurni < 1000) {
+                return showToast("Minimal deposit adalah Rp 1.000", "error");
+            }
+
+            showToast("Sedang membuat barcode QRIS...", "info");
+
+            try {
+                const response = await fetch('/api/get-xoftware?action=qris', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ amount: nominalmurni })
+                });
+
+                const result = await response.json();
+
+                if (result.status === true && result.data) {
+                    // Siapkan layar lembar pembayaran menggunakan nota QRIS otomatis bawaan websitemu
+                    document.getElementById('pay-total').innerText = `Rp ${result.data.total_to_pay.toLocaleString('id-ID')}`;
+                    document.getElementById('pay-product').innerText = `Deposit Saldo #${result.data.transaction_id}`;
+                    document.getElementById('nominal-asli').value = result.data.total_to_pay;
+
+                    // Generate Payload QR String langsung jadi gambar barcode QRIS real-time
+                    const qrImgUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(result.data.qr_string)}`;
+                    const qrContainerElement = document.querySelector('#pembayaran img');
+                    if (qrContainerElement) {
+                        qrContainerElement.src = qrImgUrl;
+                    }
+
+                    // Set tombol konfirmasi WA untuk cadangan kirim bukti ke owner
+                    const noWA = "6283815584661";
+                    const teksWA = encodeURIComponent(`Halo Admin, saya sudah melakukan Open Deposit via QRIS otomatis di website AU2Hub sebesar Rp ${result.data.total_to_pay.toLocaleString('id-ID')}.\n\nID Transaksi: ${result.data.transaction_id}`);
+                    document.getElementById('wa-confirm').setAttribute('href', `https://wa.me/${noWA}?text=${teksWA}`);
+
+                    // Buka tab pembayaran secara visual
+                    switchTab('pembayaran');
+                    showToast("Barcode QRIS WarungPutri Berhasil Dibuat!", "success");
+                } else {
+                    await customAlert(`Gagal membuat QRIS: ${result.message || 'Metode pembayaran sedang maintenance.'}`);
+                }
+            } catch (error) {
+                showToast("Gagal memproses request barcode QRIS.", "error");
+            }
+        }
 
 
 
@@ -5900,6 +6049,10 @@ async function sendMessageRoom() {
             muatDataRipper();
             renderFaqs();
             renderServices();
+            
+            // --- BARIS BARU: Memanggil API Akun & Produk WarungPutri saat halaman dimuat ---
+            loadDataXoftware();
+            loadProdukXoftware();
 
             // Mendaftarkan Service Worker PWA
             if ('serviceWorker' in navigator) {
@@ -5927,6 +6080,8 @@ async function sendMessageRoom() {
                 });
             }
         });
+
+
 
     </script>
 
