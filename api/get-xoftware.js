@@ -8,6 +8,9 @@ export default async function handler(req, res) {
     const { action } = req.query;
     const baseUrl = 'https://backend.xoftware.id/v1';
 
+    // ⚠️ GANTI DENGAN NOMOR WA YANG TERDAFTAR DI AKUN XOFTWARE KAMU ⚠️
+    const defaultSender = '9647808097471'; 
+
     let options = {
         headers: {
             'Content-Type': 'application/json',
@@ -17,72 +20,60 @@ export default async function handler(req, res) {
     };
 
     try {
-        let ruteYangDicoba = [];
-        let method = 'GET';
-        let requestBody = null;
+        let targetUrl = '';
+        let bodyData = {};
 
-        // ⚠️ NOMOR WA TERDAFTAR DI XOFTWARE (WAJIB BENAR) ⚠️
-        const nomorTerdaftar = '9647808097471'; 
-
-        // Amankan data yang dikirim dan paksa nominal jadi "Angka"
+        // Parse data body dari frontend jika ada
         if (req.method === 'POST' && req.body) {
-            let bodyData = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
-            let uangMurni = parseInt(bodyData.amount || bodyData.nominal || bodyData.price || 0);
-            
-            requestBody = JSON.stringify({
-                ...bodyData,
-                amount: uangMurni,
-                sender: bodyData.sender || nomorTerdaftar
-            });
+            bodyData = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
         }
 
-        // Tentukan daftar rute rahasia yang akan ditembak otomatis
         if (action === 'saldo') {
-            ruteYangDicoba = [`/balance?sender=${nomorTerdaftar}`, '/balance', `/user?sender=${nomorTerdaftar}`];
-        } else if (action === 'produk') {
-            // Rute ini yang terbukti sukses narik semua katalog produkmu kemarin!
-            ruteYangDicoba = ['/services', '/products', '/product', '/pricelist'];
-        } else if (action === 'order') {
+            // Cek saldo berdasarkan Nomor WA (Sender)
+            targetUrl = `${baseUrl}/user?sender=${defaultSender}`;
+            options.method = 'GET';
+        } 
+        else if (action === 'produk') {
+            // Sesuai Dokumentasi Foto 52060.jpg
+            targetUrl = `${baseUrl}/product`;
+            options.method = 'GET';
+        } 
+        else if (action === 'order') {
+            // Sesuai Dokumentasi Foto 52063.jpg (Pembelian Potong Saldo)
             if (req.method !== 'POST') return res.status(405).json({ status: false, message: 'Method must be POST' });
-            ruteYangDicoba = ['/order', '/transaction'];
-            method = 'POST';
-        } else if (action === 'qris') {
+            targetUrl = `${baseUrl}/order/balance`;
+            options.method = 'POST';
+            
+            // Format wajib: sender, code, quantity
+            options.body = JSON.stringify({
+                sender: bodyData.sender || defaultSender,
+                code: bodyData.product_code || bodyData.code,
+                quantity: parseInt(bodyData.quantity || 1)
+            });
+        } 
+        else if (action === 'qris') {
+            // Sesuai Dokumentasi Foto 52065.jpg (Request Deposit QRIS)
             if (req.method !== 'POST') return res.status(405).json({ status: false, message: 'Method must be POST' });
-            // Rute ini yang tadi sukses di screenshot kamu! (/deposit)
-            ruteYangDicoba = ['/deposit', '/qris', '/payment/qris'];
-            method = 'POST';
-        } else {
+            targetUrl = `${baseUrl}/deposit`;
+            options.method = 'POST';
+            
+            // Format wajib: sender, amount
+            options.body = JSON.stringify({
+                sender: bodyData.sender || defaultSender,
+                amount: parseInt(bodyData.amount || bodyData.nominal || 0)
+            });
+        } 
+        else {
             return res.status(400).json({ status: false, message: 'Action request tidak dikenali' });
         }
 
-        let dataAkhir = null;
-
-        // Mesin penembak otomatis
-        for (const path of ruteYangDicoba) {
-            const targetUrl = `${baseUrl}${path}`;
-            try {
-                let fetchOptions = { ...options, method: method };
-                if (requestBody) fetchOptions.body = requestBody;
-
-                const response = await fetch(targetUrl, fetchOptions);
-                const resData = await response.json();
-                
-                let errStr = (resData.error || resData.message || "").toLowerCase();
-
-                // Jika sukses ATAU errornya BUKAN "not found" (Artinya alamat aslinya ketemu)
-                if (resData.status === true || (errStr && !errStr.includes('not found'))) {
-                    dataAkhir = resData; 
-                    break; 
-                }
-                dataAkhir = resData;
-            } catch (e) {
-                // Abaikan kalau error jaringan, lanjut coba rute sebelah
-            }
-        }
-
-        return res.status(200).json(dataAkhir || { status: false, message: "Gagal menemukan rute API yang valid." });
+        const response = await fetch(targetUrl, options);
+        const data = await response.json();
+        
+        return res.status(200).json(data);
 
     } catch (error) {
+        console.error(`Xoftware API Error [${action}]:`, error);
         return res.status(500).json({ status: false, message: 'Gagal terhubung dengan server pusat Xoftware' });
     }
 }
