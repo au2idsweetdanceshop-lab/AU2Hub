@@ -3463,7 +3463,9 @@ async function feedToggleFollow(targetUserId, btnElement) {
             }
         }
 
-        // 1. FUNGSI MENGAMBIL PESAN DARI DATABASE (WHATSAPP STYLE WITH DATE DIVIDER)
+        // ==========================================
+        // FUNGSI MUAT PESAN (DENGAN PELINDUNG ERROR & FIX SUPABASE)
+        // ==========================================
         async function loadRoomMessages() {
             const container = document.getElementById('chat-messages-container');
             const isGroup = !!activeGroupId;
@@ -3472,7 +3474,11 @@ async function feedToggleFollow(targetUserId, btnElement) {
             if(!targetId) return;
 
             try {
-                let query = supabaseClient.from('messages').select('*, profiles!messages_sender_id_fkey(nickname, avatar_url)').order('created_at', { ascending: true }).limit(50);
+                // PERBAIKAN 1: Format pemanggilan relasi diubah menjadi lebih standar (sender_id)
+                let query = supabaseClient.from('messages')
+                    .select('*, profiles!sender_id(nickname, avatar_url)') 
+                    .order('created_at', { ascending: true })
+                    .limit(50);
                 
                 if (isGroup) {
                     query = query.eq('group_id', targetId);
@@ -3481,16 +3487,31 @@ async function feedToggleFollow(targetUserId, btnElement) {
                 }
 
                 const { data, error } = await query;
-                if (error) { await customAlert("INFO ERROR SUPABASE:\n" + error.message); throw error; }
+                
+                // JIKA SUPABASE MENOLAK / ERROR
+                if (error) { 
+                    console.error("ERROR DATABASE SUPABASE:", error);
+                    throw error; 
+                }
 
                 container.innerHTML = ''; 
                 
                 if (data && data.length > 0) {
                     let lastDateString = ''; 
                     
-                    let clearedChats = JSON.parse(localStorage.getItem('cleared_chats') || '{}');
+                    // PERBAIKAN 2: Pelindung dari memory leak (cache HP korup)
+                    let clearedChats = {};
+                    let deletedForMe = [];
+                    try {
+                        clearedChats = JSON.parse(localStorage.getItem('cleared_chats') || '{}');
+                        deletedForMe = JSON.parse(localStorage.getItem('deleted_msgs') || '[]');
+                    } catch (e) {
+                        console.log("Memory lokal direset karena korup");
+                        localStorage.removeItem('cleared_chats');
+                        localStorage.removeItem('deleted_msgs');
+                    }
+
                     let clearTime = clearedChats[targetId] ? new Date(clearedChats[targetId]) : new Date(0);
-                    let deletedForMe = JSON.parse(localStorage.getItem('deleted_msgs') || '[]');
 
                     let validMessages = data.filter(msg => {
                         const msgDate = new Date(msg.created_at);
@@ -3530,14 +3551,18 @@ async function feedToggleFollow(targetUserId, btnElement) {
                     container.innerHTML = '<div class="text-center text-xs text-gray-500 mt-10">Belum ada pesan. Mulai obrolan!</div>';
                 }
 
+                // Centang Biru otomatis
                 if (!isGroup) {
                     await supabaseClient.from('messages').update({ is_read: true }).eq('sender_id', targetId).eq('receiver_id', currentUser.id).eq('is_read', false);
                     checkGlobalUnreadMessages();
                 }
             } catch (err) {
-                container.innerHTML = '<div class="text-center text-xs text-red-500 mt-10">Gagal memuat pesan.</div>';
+                // JIKA TERJADI ERROR, TULISAN MERAH AKAN MEMBERIKAN PETUNJUK
+                console.error("CRASH SISTEM PESAN:", err);
+                container.innerHTML = `<div class="text-center text-xs text-red-500 mt-10">Gagal memuat pesan.<br><span class="text-[9px] text-gray-500 mt-2 block">Buka ikon Gerigi (Eruda) lalu klik 'Console' untuk melihat detail masalahnya.</span></div>`;
             }
         }
+
 
         // FUNGSI BERSIHKAN SEMUA OBROLAN (CLEAR CHAT DARI DALAM ROOM)
         async function clearCurrentChat() {
