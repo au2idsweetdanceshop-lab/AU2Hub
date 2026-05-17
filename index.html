@@ -4882,7 +4882,7 @@ function updateSeek(e, containerElement, video) {
             }
         }
         
-                // ==========================================
+        // ==========================================
         // FITUR PESAN SUARA (VOICE NOTE)
         // ==========================================
         let mediaRecorder;
@@ -4921,9 +4921,12 @@ function updateSeek(e, containerElement, video) {
                 btnSend.onclick = stopRecordingVoice;
                 
             } catch (err) {
-                showToast("Izin mikrofon ditolak / tidak didukung", "error");
+                // 👇 KODE BARU: Memunculkan error ASLI dari sistem 👇
+                showToast("Error Mic: " + err.name + " - " + err.message, "error");
+                console.error("Detail Error Mic:", err);
             }
         }
+
 
 
 
