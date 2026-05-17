@@ -5903,7 +5903,23 @@ function renderProdukXoftware(data) {
     }
 
     container.innerHTML = data.map((p, index) => {
-        const fotoProduk = p.image || p.image_url || 'https://images.unsplash.com/photo-1614680376593-902f74fa0d41?w=400';
+        // ⚠️ MASUKKAN DOMAIN PANEL XOFTWARE LU DI SINI (Contoh: https://panel.xoftware-kamu.com/)
+        // Pastikan ada tanda miring (/) di paling ujungnya ya Bang!
+        const domainXoftware = "https://alamat-panel-xoftware-lu.com/"; 
+
+        let fotoProduk = p.image || p.image_url || '';
+
+        // JIKA LINKNYA KOSONG: Pakai gambar default keyboard neon cyberpunk
+        if (!fotoProduk) {
+            fotoProduk = 'https://images.unsplash.com/photo-1614680376593-902f74fa0d41?w=400';
+        } 
+        // JIKA LINKNYA RELATIF (Kagak diawali http): Otomatis kita sambungin pake domain panel lu
+        else if (!fotoProduk.startsWith('http')) {
+            if (fotoProduk.startsWith('/')) {
+                fotoProduk = fotoProduk.substring(1); // Buang garis miring di awal biar gak double
+            }
+            fotoProduk = domainXoftware + fotoProduk;
+        }
         
         return `
         <div onclick="openDetailProduk(${index})" class="bg-brand-card rounded-2xl border border-white/5 overflow-hidden flex flex-col hover:border-brand-accent/30 transition-all smooth-reveal shadow-lg cursor-pointer">
@@ -5939,6 +5955,7 @@ function renderProdukXoftware(data) {
         `;
     }).join('');
 }
+
 
 
 // 3. Fungsi Fitur Pencarian
