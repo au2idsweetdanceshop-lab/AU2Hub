@@ -5903,20 +5903,19 @@ function renderProdukXoftware(data) {
     }
 
     container.innerHTML = data.map((p, index) => {
-        // ⚠️ MASUKKAN DOMAIN PANEL XOFTWARE LU DI SINI (Contoh: https://panel.xoftware-kamu.com/)
-        // Pastikan ada tanda miring (/) di paling ujungnya ya Bang!
-        const domainXoftware = "https://alamat-panel-xoftware-lu.com/"; 
+        // Domain utama server Xoftware milikmu
+        const domainXoftware = "https://web.xoftware.id/"; 
 
         let fotoProduk = p.image || p.image_url || '';
 
-        // JIKA LINKNYA KOSONG: Pakai gambar default keyboard neon cyberpunk
+        // JIKA LINKNYA KOSONG: Pakai gambar cadangan cyberpunk
         if (!fotoProduk) {
             fotoProduk = 'https://images.unsplash.com/photo-1614680376593-902f74fa0d41?w=400';
         } 
-        // JIKA LINKNYA RELATIF (Kagak diawali http): Otomatis kita sambungin pake domain panel lu
+        // JIKA LINKNYA RELATIF: Otomatis disambung ke domain xoftware.id
         else if (!fotoProduk.startsWith('http')) {
             if (fotoProduk.startsWith('/')) {
-                fotoProduk = fotoProduk.substring(1); // Buang garis miring di awal biar gak double
+                fotoProduk = fotoProduk.substring(1); 
             }
             fotoProduk = domainXoftware + fotoProduk;
         }
@@ -5955,6 +5954,7 @@ function renderProdukXoftware(data) {
         `;
     }).join('');
 }
+
 
 
 
@@ -5999,7 +5999,7 @@ function makeDynamicQRIS(amount) {
     return fullPayload + crcString;
 }
 
-// 🔥 LOGIKA BUKA DETAIL PRODUK ALA SHOPEE WITH SLIDER SWIPE
+// 🔥 LOGIKA BUKA DETAIL PRODUK ALA SHOPEE WITH SLIDER SWIPE (FIX IMAGES)
 function openDetailProduk(index) {
     const p = xoftwareProdukGlobal[index];
     if (!p) return;
@@ -6021,16 +6021,30 @@ function openDetailProduk(index) {
     const carousel = document.getElementById('detail-image-carousel');
     carousel.innerHTML = ''; // Bersihkan sisa gambar sebelumnya
 
-    // Ambil gambar utama dari Xoftware
+    const domainXoftware = "https://web.xoftware.id/";
     let daftarGambar = [];
-    if (p.image || p.image_url) daftarGambar.push(p.image || p.image_url);
-    
-    // BACKUP/CADANGAN: Jika di Xoftware lu masukin banyak gambar dipisah tanda koma (,), kodingan ini otomatis membagi gambarnya jadi slide berbeda
-    if (p.images && typeof p.images === 'string') {
-        daftarGambar = p.images.split(',');
+    let imgMentah = p.image || p.image_url || '';
+
+    if (imgMentah) {
+        // Jika jalurnya lokal/relatif, kita paksa sambung ke domain utama
+        if (!imgMentah.startsWith('http')) {
+            if (imgMentah.startsWith('/')) imgMentah = imgMentah.substring(1);
+            imgMentah = domainXoftware + imgMentah;
+        }
+        daftarGambar.push(imgMentah);
     }
 
-    // Jika kosong, kasih gambar default cyberpunk
+    if (p.images && typeof p.images === 'string') {
+        daftarGambar = p.images.split(',').map(img => {
+            let cleanImg = img.trim();
+            if (cleanImg && !cleanImg.startsWith('http')) {
+                if (cleanImg.startsWith('/')) cleanImg = cleanImg.substring(1);
+                return domainXoftware + cleanImg;
+            }
+            return cleanImg;
+        });
+    }
+
     if (daftarGambar.length === 0) {
         daftarGambar.push('https://images.unsplash.com/photo-1614680376593-902f74fa0d41?w=400');
     }
@@ -6063,6 +6077,7 @@ function openDetailProduk(index) {
     // Daftarkan ke history browser agar jika tombol back HP dipencet, lacinya otomatis menutup
     history.pushState({ popup: 'detail_produk' }, null, '#detail');
 }
+
 
 function closeDetailProduk() {
     const laci = document.getElementById('modal-detail-produk');
