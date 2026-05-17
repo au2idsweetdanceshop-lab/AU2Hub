@@ -7,8 +7,11 @@ export default async function handler(req, res) {
 
     const { action } = req.query;
     const baseUrl = 'https://backend.xoftware.id/v1';
+    
+    // KUNCI UTAMA: Slug identitas unik toko kamu berdasarkan link WarungPutri
+    const storeSlug = 'warungputri'; 
 
-    // Konfigurasi Header Standar sesuai dokumentasi Xoftware kamu
+    // Konfigurasi Header Standar sesuai dokumentasi Xoftware
     let options = {
         headers: {
             'Content-Type': 'application/json',
@@ -21,13 +24,24 @@ export default async function handler(req, res) {
         let targetUrl = '';
 
         if (action === 'saldo') {
-            // 1. Cek Saldo & Informasi Pengguna (Data No. 4)
-            targetUrl = `${baseUrl}/profile`;
+            // -----------------------------------------------------------------
+            // TEBAKAN RUTE 1: Informasi Pengguna & Saldo Toko
+            // Jika rute ini masih memunculkan "not found", ganti bagian ujungnya menjadi:
+            // Alternatif A: `${baseUrl}/balance`
+            // Alternatif B: `${baseUrl}/user`
+            // -----------------------------------------------------------------
+            targetUrl = `${baseUrl}/store/profile`; 
             options.method = 'GET';
         } 
         else if (action === 'produk') {
-            // 2. Tarik Seluruh Produk Tokomu / WarungPutri (Data No. 2)
-            targetUrl = `${baseUrl}/products`;
+            // -----------------------------------------------------------------
+            // TEBAKAN RUTE 2: Katalog Produk Toko (Endpoint Khusus)
+            // Karena ini "endpoint khusus" toko kamu, jalurnya kemungkinan besar:
+            // Alternatif A: `${baseUrl}/store/${storeSlug}/products`
+            // Alternatif B: `${baseUrl}/products/${storeSlug}`
+            // Alternatif C: `${baseUrl}/store/products`
+            // -----------------------------------------------------------------
+            targetUrl = `${baseUrl}/store/${storeSlug}/products`; 
             options.method = 'GET';
         } 
         else if (action === 'order') {
@@ -39,7 +53,7 @@ export default async function handler(req, res) {
         } 
         else if (action === 'qris') {
             // 4. Request Pembuatan Invoice Deposit QRIS Otomatis (Data No. 6)
-            if (req.method !== 'POST') return res.status(405).json({ status: false, message: 'Method must be POST' });
+            if (req.method !== 'POST') return res.status(405).json5({ status: false, message: 'Method must be POST' });
             targetUrl = `${baseUrl}/deposit/qris`;
             options.method = 'POST';
             options.body = JSON.stringify(req.body);
