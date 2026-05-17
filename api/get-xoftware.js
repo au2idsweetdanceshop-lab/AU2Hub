@@ -9,7 +9,7 @@ export default async function handler(req, res) {
     const baseUrl = 'https://backend.xoftware.id/v1';
 
     // Kunci nomor utama format 62 yang sudah terbukti terdaftar di dashboard kamu
-    const defaultSender = '6282297652028'; 
+    const defaultSender = '7622743622'; 
 
     // SAKTI: Sesuai Foto 52059.jpg, HAPUS 'Authorization Bearer' agar server tidak bingung dan memicu "User not found"
     let options = {
