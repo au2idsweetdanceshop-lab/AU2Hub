@@ -8,10 +8,9 @@ export default async function handler(req, res) {
     const { action } = req.query;
     const baseUrl = 'https://backend.xoftware.id/v1';
 
-    // Kunci nomor utama format 62 yang sudah terbukti terdaftar di dashboard kamu
-    const defaultSender = '7622743622'; 
+    // Nomor utama kamu yang tertera di dashboard
+    const defaultSender = '6282297652028'; 
 
-    // SAKTI: Sesuai Foto 52059.jpg, HAPUS 'Authorization Bearer' agar server tidak bingung dan memicu "User not found"
     let options = {
         headers: {
             'Content-Type': 'application/json',
@@ -28,20 +27,27 @@ export default async function handler(req, res) {
         }
 
         if (action === 'saldo') {
-            targetUrl = `${baseUrl}/user?sender=${defaultSender}`;
+            targetUrl = `${baseUrl}/user?sender=${bodyData.sender || defaultSender}`;
             options.method = 'GET';
         } 
         else if (action === 'produk') {
-            // Sesuai Dokumentasi Foto 52060.jpg
             targetUrl = `${baseUrl}/product`;
             options.method = 'GET';
         } 
+        else if (action === 'register') {
+            // SENJATA RAHASIA (Foto 52061.jpg): Daftarkan user baru langsung lewat API
+            if (req.method !== 'POST') return res.status(405).json({ status: false, message: 'Method must be POST' });
+            targetUrl = `${baseUrl}/register`;
+            options.method = 'POST';
+            options.body = JSON.stringify({
+                sender: bodyData.sender || defaultSender,
+                name: bodyData.name || 'Pelanggan AU2Hub'
+            });
+        }
         else if (action === 'order') {
-            // Sesuai Dokumentasi Foto 52063.jpg (Pembelian Potong Saldo)
             if (req.method !== 'POST') return res.status(405).json({ status: false, message: 'Method must be POST' });
             targetUrl = `${baseUrl}/order/balance`;
             options.method = 'POST';
-            
             options.body = JSON.stringify({
                 sender: bodyData.sender || defaultSender,
                 code: bodyData.product_code || bodyData.code,
@@ -53,7 +59,6 @@ export default async function handler(req, res) {
             
             const produkCode = bodyData.product_code || bodyData.code;
             
-            // JALUR A: Jika frontend mengirim kode produk, pakai rute PEMBELIAN PRODUK VIA QRIS (Foto 52064.jpg)
             if (produkCode) {
                 targetUrl = `${baseUrl}/order/qris`;
                 options.method = 'POST';
@@ -62,9 +67,7 @@ export default async function handler(req, res) {
                     code: produkCode,
                     quantity: parseInt(bodyData.quantity || 1)
                 });
-            } 
-            // JALUR B: Jika hanya mengirim uang/nominal, pakai rute REQUEST DEPOSIT SALDO (Foto 52065.jpg)
-            else {
+            } else {
                 targetUrl = `${baseUrl}/deposit`;
                 options.method = 'POST';
                 options.body = JSON.stringify({
