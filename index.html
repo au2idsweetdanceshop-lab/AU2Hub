@@ -5997,13 +5997,6 @@ function renderProdukXoftware(data) {
         </div>
     `).join('');
 }
- else {
-                    container.innerHTML = '<div class="text-center py-10 text-xs text-red-500">Gagal memuat katalog produk.</div>';
-                }
-            } catch (error) {
-                container.innerHTML = '<div class="text-center py-10 text-xs text-red-500">Gangguan jaringan katalog.</div>';
-            }
-        }
 
         // 3. Fungsi Eksekusi Pembelian Instan (Potong Saldo & Drop Akun)
         async function checkoutXoftware(productCode, price, productTitle) {
