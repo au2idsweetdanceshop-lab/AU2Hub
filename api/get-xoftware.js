@@ -8,10 +8,10 @@ export default async function handler(req, res) {
     const { action } = req.query;
     const baseUrl = 'https://backend.xoftware.id/v1';
     
-    // KUNCI UTAMA: Slug identitas unik toko kamu berdasarkan link WarungPutri
+    // Identitas slug unik toko kamu sesuai link web.xoftware.id/warungputri
     const storeSlug = 'warungputri'; 
 
-    // Konfigurasi Header Standar sesuai dokumentasi Xoftware
+    // Konfigurasi Header Resmi sesuai dokumentasi Xoftware
     let options = {
         headers: {
             'Content-Type': 'application/json',
@@ -24,36 +24,25 @@ export default async function handler(req, res) {
         let targetUrl = '';
 
         if (action === 'saldo') {
-            // -----------------------------------------------------------------
-            // TEBAKAN RUTE 1: Informasi Pengguna & Saldo Toko
-            // Jika rute ini masih memunculkan "not found", ganti bagian ujungnya menjadi:
-            // Alternatif A: `${baseUrl}/balance`
-            // Alternatif B: `${baseUrl}/user`
-            // -----------------------------------------------------------------
-            targetUrl = `${baseUrl}/store/profile`; 
+            // SULAM RUTE: Diubah dari /store/profile menjadi /balance (Rute umum cek saldo)
+            targetUrl = `${baseUrl}/balance`; 
             options.method = 'GET';
         } 
         else if (action === 'produk') {
-            // -----------------------------------------------------------------
-            // TEBAKAN RUTE 2: Katalog Produk Toko (Endpoint Khusus)
-            // Karena ini "endpoint khusus" toko kamu, jalurnya kemungkinan besar:
-            // Alternatif A: `${baseUrl}/store/${storeSlug}/products`
-            // Alternatif B: `${baseUrl}/products/${storeSlug}`
-            // Alternatif C: `${baseUrl}/store/products`
-            // -----------------------------------------------------------------
-            targetUrl = `${baseUrl}/store/${storeSlug}/products`; 
+            // SULAM RUTE: Diubah menjadi /services (Rute umum penarikan daftar produk H2H)
+            targetUrl = `${baseUrl}/services`; 
             options.method = 'GET';
         } 
         else if (action === 'order') {
-            // 3. Transaksi Pembelian Langsung Potong Saldo (Data No. 5)
+            // Transaksi Pembelian Langsung Potong Saldo (Data No. 5)
             if (req.method !== 'POST') return res.status(405).json({ status: false, message: 'Method must be POST' });
             targetUrl = `${baseUrl}/order`;
             options.method = 'POST';
             options.body = JSON.stringify(req.body);
         } 
         else if (action === 'qris') {
-            // 4. Request Pembuatan Invoice Deposit QRIS Otomatis (Data No. 6)
-            if (req.method !== 'POST') return res.status(405).json5({ status: false, message: 'Method must be POST' });
+            // Request Pembuatan Barcode QRIS Otomatis (Data No. 6)
+            if (req.method !== 'POST') return res.status(405).json({ status: false, message: 'Method must be POST' });
             targetUrl = `${baseUrl}/deposit/qris`;
             options.method = 'POST';
             options.body = JSON.stringify(req.body);
