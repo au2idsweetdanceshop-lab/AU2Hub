@@ -22,82 +22,51 @@ export default async function handler(req, res) {
     const sisaQuery = urlParams.toString() ? `?${urlParams.toString()}` : '';
 
     try {
-        let ruteYangDicoba = [];
-        let method = 'GET';
-        let requestBody = null;
-        let payloadSuper = null;
-
-        // BOM PARAMETER: Kirim semua variasi nama uang biar server Xoftware gak bisa ngeles!
-        if (req.method === 'POST' && req.body) {
-            let bodyData = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
-            let uangMurni = parseInt(bodyData.amount || bodyData.nominal || bodyData.price || 0);
-            
-            payloadSuper = {
-                ...bodyData,
-                amount: uangMurni,
-                nominal: uangMurni,
-                price: uangMurni,
-                total_price: uangMurni,
-                sender: bodyData.sender || '6283815584661'
-            };
-            requestBody = JSON.stringify(payloadSuper);
-        }
+        let targetUrl = '';
 
         if (action === 'saldo') {
-            ruteYangDicoba = ['/store/profile', '/balance', '/user', '/merchant/profile'];
-        } else if (action === 'produk') {
-            ruteYangDicoba = [`/store/${storeSlug}/products`, '/services', '/product', '/products'];
-        } else if (action === 'order') {
+            targetUrl = `${baseUrl}/store/profile${sisaQuery}`;
+            options.method = 'GET';
+        } 
+        else if (action === 'produk') {
+            targetUrl = `${baseUrl}/store/${storeSlug}/products${sisaQuery}`;
+            options.method = 'GET';
+        } 
+        else if (action === 'order') {
             if (req.method !== 'POST') return res.status(405).json({ status: false, message: 'Method must be POST' });
-            ruteYangDicoba = ['/order', '/transaction', '/buy', '/checkout'];
-            method = 'POST';
-        } else if (action === 'qris') {
+            targetUrl = `${baseUrl}/order`;
+            options.method = 'POST';
+            options.body = JSON.stringify(req.body);
+        } 
+        else if (action === 'qris') {
             if (req.method !== 'POST') return res.status(405).json({ status: false, message: 'Method must be POST' });
-            // Rute pencarian QRIS diperluas ke semua kemungkinan
-            ruteYangDicoba = ['/deposit', '/deposit/request', '/qris', '/qris/request', '/payment/qris', '/deposit/qris'];
-            method = 'POST';
-        } else {
+            
+            // ALAMAT ASLI KETEMU: /deposit
+            targetUrl = `${baseUrl}/deposit`;
+            options.method = 'POST';
+            
+            let bodyData = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+            let uangMurni = parseInt(bodyData.amount || 0);
+
+            // ⚠️ GANTI NOMOR INI DENGAN NOMOR WA YANG TERDAFTAR DI XOFTWARE KAMU ⚠️
+            let nomorTerdaftar = '9647808097471'; 
+
+            options.body = JSON.stringify({
+                amount: uangMurni,
+                sender: bodyData.sender || nomorTerdaftar
+            });
+        } 
+        else {
             return res.status(400).json({ status: false, message: 'Action request tidak dikenali' });
         }
 
-        let riwayatDebug = {}; 
-
-        for (const path of ruteYangDicoba) {
-            const targetUrl = `${baseUrl}${path}${method === 'GET' ? sisaQuery : ''}`;
-            try {
-                let fetchOptions = { ...options, method: method };
-                if (requestBody) fetchOptions.body = requestBody;
-
-                const response = await fetch(targetUrl, fetchOptions);
-                const resData = await response.json();
-                
-                // Jika SUKSES (Barcode tercipta atau Produk Muncul)
-                if (resData.status === true) {
-                    return res.status(200).json(resData); 
-                }
-                
-                let errStr = (resData.error || resData.message || "").toLowerCase();
-
-                // Jika server merespon Gagal BUKAN karena salah alamat (Berarti ini Endpoint Aslinya!)
-                if (errStr && !errStr.includes('not found')) {
-                    return res.status(200).json(resData); 
-                }
-                
-                riwayatDebug[path] = resData; 
-            } catch (e) {
-                riwayatDebug[path] = "Fetch Error/Jaringan";
-            }
-        }
-
-        // Kalau mentok "Not Found" semua, munculkan hasil investigasinya!
-        return res.status(200).json({ 
-            status: false, 
-            message: "Semua alamat API dicoba namun gagal. Cek debug_info.", 
-            debug_info: riwayatDebug,
-            payload_dikirim: payloadSuper
-        });
+        const response = await fetch(targetUrl, options);
+        const data = await response.json();
+        
+        return res.status(200).json(data);
 
     } catch (error) {
-        return res.status(500).json({ status: false, message: 'Gagal terhubung ke Vercel' });
+        console.error(`Xoftware API Error [${action}]:`, error);
+        return res.status(500).json({ status: false, message: 'Gagal terhubung dengan server pusat Xoftware' });
     }
 }
