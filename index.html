@@ -714,7 +714,6 @@
         </div>
 
 
-        <!-- FULLSCREEN STORY VIEWER -->
 <div id="story-viewer-modal" class="fixed inset-0 z-[600] hidden items-center justify-center bg-black/95 backdrop-blur-md opacity-0 transition-opacity duration-300">
     <div id="story-progress-container" class="absolute top-4 left-4 right-4 flex gap-1 z-50"></div>
     
@@ -765,7 +764,25 @@
             <i class="far fa-heart text-white text-xl"></i>
         </button>
     </div>
+
+    <div id="story-owner-controls" class="absolute bottom-6 left-0 right-0 z-[60] hidden flex-col items-center">
+        <button onclick="showStoryViewers()" class="flex flex-col items-center text-white active:scale-90 transition-transform">
+            <i class="fas fa-chevron-up mb-1 animate-bounce"></i>
+            <div class="flex items-center gap-2 bg-black/60 backdrop-blur-md px-4 py-1.5 rounded-full text-xs font-bold border border-white/10">
+                <i class="fas fa-eye text-brand-info"></i> <span id="story-viewer-count">...</span>
+            </div>
+        </button>
+    </div>
+
+    <div id="story-viewers-list-modal" class="absolute bottom-0 left-0 w-full h-[60%] bg-[#1A1133] rounded-t-3xl z-[100] transition-transform duration-300 translate-y-full flex flex-col border-t border-white/10">
+        <div class="p-4 border-b border-white/5 flex justify-between items-center shrink-0">
+            <h3 class="text-white font-bold text-sm"><i class="fas fa-eye text-brand-info mr-2"></i> Dilihat oleh</h3>
+            <button onclick="closeStoryViewers()" class="text-gray-400 hover:text-white w-8 h-8 rounded-full bg-white/5 flex items-center justify-center"><i class="fas fa-times"></i></button>
+        </div>
+        <div id="story-viewers-container" class="flex-1 overflow-y-auto p-2 hide-scroll"></div>
+    </div>
 </div>
+
 
 
         
@@ -1903,7 +1920,7 @@
             const widget = document.getElementById('floating-widget');
             if (!widget.classList.contains('opacity-0')) {
                 if (document.getElementById('chat-room-view').classList.contains('flex')) {
-                    closeChatRoom(true, true);
+                    closeChatRoom(true, false);
                     isPopupClosed = true;
                 } else {
                     widget.classList.add('opacity-0', 'pointer-events-none', 'translate-y-8', 'scale-95');
@@ -4002,13 +4019,12 @@ async function viewStory(userId, name, avatar) {
                 vidEl.src = story.media_url;
                 vidEl.classList.remove('hidden');
                 
-                // 🔥 PERBAIKAN: Dipaksa langsung false agar video status langsung otomatis bersuara kencang saat dibuka
                 vidEl.muted = false; 
                 vidEl.play().catch(() => {});
                 
                 if (volBtn) {
                     volBtn.classList.remove('hidden');
-                    volBtn.innerHTML = '<i class="fas fa-volume-up"></i>'; // Set default ikon ke speaker menyala
+                    volBtn.innerHTML = '<i class="fas fa-volume-up"></i>'; 
                 }
             } else {
                 imgEl.src = story.media_url;
@@ -4030,9 +4046,9 @@ async function viewStory(userId, name, avatar) {
             const btnDelete = document.getElementById('btn-delete-story');
             if (btnDelete) {
                 if (currentUser && story.user_id === currentUser.id) {
-                    btnDelete.classList.remove('hidden'); // Munculkan jika milik sendiri
+                    btnDelete.classList.remove('hidden'); 
                 } else {
-                    btnDelete.classList.add('hidden'); // Sembunyikan jika milik orang lain
+                    btnDelete.classList.add('hidden'); 
                 }
             }
             
@@ -4043,11 +4059,11 @@ async function viewStory(userId, name, avatar) {
                 
                 bar.style.transition = 'none'; 
                 if (i < index) {
-                    bar.style.width = '100%'; // Garis sebelumnya FULL
+                    bar.style.width = '100%'; 
                 } else if (i > index) {
-                    bar.style.width = '0%';   // Garis selanjutnya KOSONG
+                    bar.style.width = '0%';   
                 } else {
-                    bar.style.width = '0%';   // Garis saat ini reset ke 0 dulu
+                    bar.style.width = '0%';   
                 }
             }
             
@@ -4055,7 +4071,6 @@ async function viewStory(userId, name, avatar) {
             
             // --- JALANKAN TIMING PROGRESS BAR ---
             if (story.media_type === 'video') {
-                // Jika video, bar berjalan mengikuti durasi asli video
                 vidEl.onloadedmetadata = () => {
                     const duration = vidEl.duration || 5;
                     setTimeout(() => {
@@ -4066,12 +4081,10 @@ async function viewStory(userId, name, avatar) {
                         }
                     }, 50);
                 };
-                // Saat durasi video berakhir, otomatis lompat ke status berikutnya
                 vidEl.onended = () => {
                     nextStory();
                 };
             } else {
-                // Jika foto, jalankan bar default selama 5 detik seperti biasa
                 setTimeout(() => {
                     const activeBar = document.getElementById(`story-progress-${index}`);
                     if (activeBar) {
@@ -4083,6 +4096,292 @@ async function viewStory(userId, name, avatar) {
                     }, 5000);
                 }, 50);
             }
+
+            // ==========================================
+            // LOGIKA LIKE, VIEW, & TAMPILAN PEMILIK STORY (BARU)
+            // ==========================================
+            const replyContainer = document.getElementById('story-reply-container');
+            const ownerControls = document.getElementById('story-owner-controls');
+            
+            if (currentUser) {
+                if (story.user_id === currentUser.id) {
+                    // JIKA MILIK SENDIRI
+                    if (replyContainer) replyContainer.classList.add('hidden');
+                    if (ownerControls) {
+                        ownerControls.classList.remove('hidden');
+                        ownerControls.classList.add('flex');
+                    }
+                    // Ambil jumlah penonton dari Supabase
+                    fetchStoryViewsCount(story.id);
+
+                } else {
+                    // JIKA MILIK ORANG LAIN
+                    if (ownerControls) {
+                        ownerControls.classList.add('hidden');
+                        ownerControls.classList.remove('flex');
+                    }
+                    if (replyContainer) {
+                        replyContainer.classList.remove('hidden');
+                        const replyInput = document.getElementById('story-reply-input');
+                        if (replyInput) replyInput.value = ''; 
+                        
+                        // Reset ikon heart
+                        const heartIcon = replyContainer.querySelector('.fa-heart');
+                        if (heartIcon) {
+                            heartIcon.classList.replace('fas', 'far');
+                            heartIcon.classList.remove('text-brand-accent', 'animate-ping');
+                        }
+                    }
+                    
+                    // Rekam mata yang melihat & Cek status Like akun kita
+                    recordStoryView(story.id);
+                    checkStoryLikeStatus(story.id);
+                }
+            }
+        } // <--- AKHIR DARI FUNGSI playStory
+        
+        // ==========================================
+        // FUNGSI PEMBANTU STORY VIEWS & LIKES
+        // ==========================================
+
+        async function recordStoryView(storyId) {
+            try {
+                await supabaseClient.from('story_views').insert({ story_id: storyId, user_id: currentUser.id });
+            } catch (e) {
+                // Abaikan jika error 23505 (Artinya user sudah pernah melihat story ini sebelumnya)
+            }
+        }
+
+        async function checkStoryLikeStatus(storyId) {
+            const heartIcon = document.querySelector('#story-reply-container .fa-heart');
+            if(!heartIcon) return;
+            
+            // Set default jadi kosong (belum di-like) sebelum mengambil data lambat dari DB
+            heartIcon.classList.replace('fas', 'far');
+            heartIcon.classList.remove('text-brand-accent');
+            
+            // Cek ke DB apakah akun ini sudah pernah Like story ini
+            const { data } = await supabaseClient.from('story_likes').select('id').eq('story_id', storyId).eq('user_id', currentUser.id).single();
+            if (data) {
+                // Jika ketemu, ubah jadi merah/pink
+                heartIcon.classList.replace('far', 'fas');
+                heartIcon.classList.add('text-brand-accent');
+            }
+        }
+
+        async function fetchStoryViewsCount(storyId) {
+            const countEl = document.getElementById('story-viewer-count');
+            countEl.innerText = "...";
+            const { count } = await supabaseClient.from('story_views').select('*', { count: 'exact', head: true }).eq('story_id', storyId);
+            countEl.innerText = count || 0;
+        }
+
+        // Menampilkan UI Daftar Penonton & Siapa Saja yang me-Like
+        async function showStoryViewers() {
+            pauseStoryForReply(); // Pinjam fungsi pause agar story tak terlewat
+            const modal = document.getElementById('story-viewers-list-modal');
+            modal.classList.remove('translate-y-full');
+            
+            const container = document.getElementById('story-viewers-container');
+            container.innerHTML = '<div class="text-center py-10"><i class="fas fa-spinner fa-spin text-brand-accent text-2xl"></i></div>';
+            
+            const story = currentActiveStories[currentActiveStories.currentIndex];
+            
+            // Ambil data penonton & data yang ngelike secara bersamaan
+            const { data: views } = await supabaseClient.from('story_views').select('created_at, user_id, profiles(nickname, avatar_url)').eq('story_id', story.id).order('created_at', { ascending: false });
+            const { data: likes } = await supabaseClient.from('story_likes').select('user_id').eq('story_id', story.id);
+            
+            const likedUserIds = likes ? likes.map(l => l.user_id) : [];
+            
+            if (!views || views.length === 0) {
+                container.innerHTML = '<div class="text-center py-10 text-xs text-gray-500">Belum ada yang melihat status ini.</div>';
+                return;
+            }
+            
+            let html = '';
+            views.forEach(v => {
+                const ava = v.profiles?.avatar_url || `https://ui-avatars.com/api/?name=${v.profiles?.nickname}&background=1A1133&color=fff`;
+                const isLiked = likedUserIds.includes(v.user_id);
+                // Jika user ini me-like, munculkan ikon hati merah di sebelah namanya
+                const heartIcon = isLiked ? '<i class="fas fa-heart text-brand-accent text-lg drop-shadow-md"></i>' : '';
+                
+                html += `
+                <div class="flex items-center justify-between p-3 border-b border-white/5 hover:bg-white/5 transition-colors cursor-pointer" onclick="viewUserProfile('${v.user_id}')">
+                    <div class="flex items-center gap-3">
+                        <img src="${ava}" class="w-10 h-10 rounded-full object-cover border border-white/10">
+                        <div>
+                            <h4 class="font-bold text-white text-[13px]">${v.profiles?.nickname || 'User'}</h4>
+                            <p class="text-[9px] text-gray-500">${timeAgo(v.created_at)}</p>
+                        </div>
+                    </div>
+                    ${heartIcon}
+                </div>`;
+            });
+            container.innerHTML = html;
+        }
+
+        function closeStoryViewers() {
+            document.getElementById('story-viewers-list-modal').classList.add('translate-y-full');
+            resumeStoryAfterReply();
+        }
+
+
+            // ==========================================
+            // LOGIKA LIKE, VIEW, & TAMPILAN PEMILIK STORY (BARU)
+            // ==========================================
+            const replyContainer = document.getElementById('story-reply-container');
+            const ownerControls = document.getElementById('story-owner-controls');
+            
+            if (currentUser) {
+                if (story.user_id === currentUser.id) {
+                    // JIKA MILIK SENDIRI
+                    if (replyContainer) replyContainer.classList.add('hidden');
+                    if (ownerControls) {
+                        ownerControls.classList.remove('hidden');
+                        ownerControls.classList.add('flex');
+                    }
+                    // Ambil jumlah penonton dari Supabase
+                    fetchStoryViewsCount(story.id);
+
+                } else {
+                    // JIKA MILIK ORANG LAIN
+                    if (ownerControls) {
+                        ownerControls.classList.add('hidden');
+                        ownerControls.classList.remove('flex');
+                    }
+                    if (replyContainer) {
+                        replyContainer.classList.remove('hidden');
+                        document.getElementById('story-reply-input').value = ''; 
+                    }
+                    
+                    // Rekam mata yang melihat & Cek status Like akun kita
+                    recordStoryView(story.id);
+                    checkStoryLikeStatus(story.id);
+                }
+            }
+        }
+
+
+            // ==========================================
+            // LOGIKA LIKE, VIEW, & TAMPILAN PEMILIK STORY (BARU)
+            // ==========================================
+            const replyContainer = document.getElementById('story-reply-container');
+            const ownerControls = document.getElementById('story-owner-controls');
+            
+            if (currentUser) {
+                if (story.user_id === currentUser.id) {
+                    // JIKA MILIK SENDIRI
+                    if (replyContainer) replyContainer.classList.add('hidden');
+                    if (ownerControls) {
+                        ownerControls.classList.remove('hidden');
+                        ownerControls.classList.add('flex');
+                    }
+                    // Ambil jumlah penonton dari Supabase
+                    fetchStoryViewsCount(story.id);
+
+                } else {
+                    // JIKA MILIK ORANG LAIN
+                    if (ownerControls) {
+                        ownerControls.classList.add('hidden');
+                        ownerControls.classList.remove('flex');
+                    }
+                    if (replyContainer) {
+                        replyContainer.classList.remove('hidden');
+                        document.getElementById('story-reply-input').value = ''; 
+                    }
+                    
+                    // Rekam mata yang melihat & Cek status Like akun kita
+                    recordStoryView(story.id);
+                    checkStoryLikeStatus(story.id);
+                }
+            }
+        }
+        
+                // ==========================================
+        // FUNGSI PEMBANTU STORY VIEWS & LIKES
+        // ==========================================
+
+        async function recordStoryView(storyId) {
+            try {
+                await supabaseClient.from('story_views').insert({ story_id: storyId, user_id: currentUser.id });
+            } catch (e) {
+                // Abaikan jika error 23505 (Artinya user sudah pernah melihat story ini sebelumnya)
+            }
+        }
+
+        async function checkStoryLikeStatus(storyId) {
+            const heartIcon = document.querySelector('#story-reply-container .fa-heart');
+            if(!heartIcon) return;
+            
+            // Set default jadi kosong (belum di-like) sebelum mengambil data lambat dari DB
+            heartIcon.classList.replace('fas', 'far');
+            heartIcon.classList.remove('text-brand-accent');
+            
+            // Cek ke DB apakah akun ini sudah pernah Like story ini
+            const { data } = await supabaseClient.from('story_likes').select('id').eq('story_id', storyId).eq('user_id', currentUser.id).single();
+            if (data) {
+                // Jika ketemu, ubah jadi merah/pink
+                heartIcon.classList.replace('far', 'fas');
+                heartIcon.classList.add('text-brand-accent');
+            }
+        }
+
+        async function fetchStoryViewsCount(storyId) {
+            const countEl = document.getElementById('story-viewer-count');
+            countEl.innerText = "...";
+            const { count } = await supabaseClient.from('story_views').select('*', { count: 'exact', head: true }).eq('story_id', storyId);
+            countEl.innerText = count || 0;
+        }
+
+        // Menampilkan UI Daftar Penonton & Siapa Saja yang me-Like
+        async function showStoryViewers() {
+            pauseStoryForReply(); // Pinjam fungsi pause agar story tak terlewat
+            const modal = document.getElementById('story-viewers-list-modal');
+            modal.classList.remove('translate-y-full');
+            
+            const container = document.getElementById('story-viewers-container');
+            container.innerHTML = '<div class="text-center py-10"><i class="fas fa-spinner fa-spin text-brand-accent text-2xl"></i></div>';
+            
+            const story = currentActiveStories[currentActiveStories.currentIndex];
+            
+            // Ambil data penonton & data yang ngelike secara bersamaan
+            const { data: views } = await supabaseClient.from('story_views').select('created_at, user_id, profiles(nickname, avatar_url)').eq('story_id', story.id).order('created_at', { ascending: false });
+            const { data: likes } = await supabaseClient.from('story_likes').select('user_id').eq('story_id', story.id);
+            
+            const likedUserIds = likes ? likes.map(l => l.user_id) : [];
+            
+            if (!views || views.length === 0) {
+                container.innerHTML = '<div class="text-center py-10 text-xs text-gray-500">Belum ada yang melihat status ini.</div>';
+                return;
+            }
+            
+            let html = '';
+            views.forEach(v => {
+                const ava = v.profiles?.avatar_url || `https://ui-avatars.com/api/?name=${v.profiles?.nickname}&background=1A1133&color=fff`;
+                const isLiked = likedUserIds.includes(v.user_id);
+                // Jika user ini me-like, munculkan ikon hati merah di sebelah namanya
+                const heartIcon = isLiked ? '<i class="fas fa-heart text-brand-accent text-lg drop-shadow-md"></i>' : '';
+                
+                html += `
+                <div class="flex items-center justify-between p-3 border-b border-white/5 hover:bg-white/5 transition-colors cursor-pointer" onclick="viewUserProfile('${v.user_id}')">
+                    <div class="flex items-center gap-3">
+                        <img src="${ava}" class="w-10 h-10 rounded-full object-cover border border-white/10">
+                        <div>
+                            <h4 class="font-bold text-white text-[13px]">${v.profiles?.nickname || 'User'}</h4>
+                            <p class="text-[9px] text-gray-500">${timeAgo(v.created_at)}</p>
+                        </div>
+                    </div>
+                    ${heartIcon}
+                </div>`;
+            });
+            container.innerHTML = html;
+        }
+
+        function closeStoryViewers() {
+            document.getElementById('story-viewers-list-modal').classList.add('translate-y-full');
+            resumeStoryAfterReply();
+        }
+
 
             // ==========================================
             // --- LOGIKA BARU: TAMPILKAN/SEMBUNYIKAN BAR BALASAN ---
