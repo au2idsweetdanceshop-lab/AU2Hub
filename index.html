@@ -5903,8 +5903,8 @@ function renderProdukXoftware(data) {
     }
 
     container.innerHTML = data.map((p, index) => {
-        // Domain utama server Xoftware milikmu
-        const domainXoftware = "https://web.xoftware.id/"; 
+        // 🔥 JALUR FIX: Menggunakan domain lengkap beserta nama toko lu
+        const domainXoftware = "https://web.xoftware.id/warungputri/"; 
 
         let fotoProduk = p.image || p.image_url || '';
 
@@ -5912,7 +5912,7 @@ function renderProdukXoftware(data) {
         if (!fotoProduk) {
             fotoProduk = 'https://images.unsplash.com/photo-1614680376593-902f74fa0d41?w=400';
         } 
-        // JIKA LINKNYA RELATIF: Otomatis disambung ke domain xoftware.id
+        // JIKA LINKNYA RELATIF: Otomatis disambung ke domain lengkap warungputri
         else if (!fotoProduk.startsWith('http')) {
             if (fotoProduk.startsWith('/')) {
                 fotoProduk = fotoProduk.substring(1); 
@@ -5924,7 +5924,7 @@ function renderProdukXoftware(data) {
         <div onclick="openDetailProduk(${index})" class="bg-brand-card rounded-2xl border border-white/5 overflow-hidden flex flex-col hover:border-brand-accent/30 transition-all smooth-reveal shadow-lg cursor-pointer">
             
             <div class="relative w-full aspect-square bg-black/40 overflow-hidden group">
-                <img src="${fotoProduk}" alt="${p.title}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+                <img src="${fotoProduk}" alt="${p.title}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onerror="console.log('Gagal muat URL:', this.src)">
                 <span class="absolute top-2 left-2 bg-brand-accent/90 text-white text-[8px] font-extrabold px-2 py-0.5 rounded-md backdrop-blur-sm border border-white/10 shadow-md">
                     ${p.stock > 0 ? 'READY' : 'LIMIT'}
                 </span>
@@ -5954,6 +5954,7 @@ function renderProdukXoftware(data) {
         `;
     }).join('');
 }
+
 
 
 
@@ -5999,7 +6000,7 @@ function makeDynamicQRIS(amount) {
     return fullPayload + crcString;
 }
 
-// 🔥 LOGIKA BUKA DETAIL PRODUK ALA SHOPEE WITH SLIDER SWIPE (FIX IMAGES)
+// 🔥 LOGIKA BUKA DETAIL PRODUK ALA SHOPEE WITH SLIDER SWIPE (FIX IMAGES WARUNGPUTRI)
 function openDetailProduk(index) {
     const p = xoftwareProdukGlobal[index];
     if (!p) return;
@@ -6021,12 +6022,12 @@ function openDetailProduk(index) {
     const carousel = document.getElementById('detail-image-carousel');
     carousel.innerHTML = ''; // Bersihkan sisa gambar sebelumnya
 
-    const domainXoftware = "https://web.xoftware.id/";
+    // 🔥 Menggunakan jalur lengkap warungputri
+    const domainXoftware = "https://web.xoftware.id/warungputri/";
     let daftarGambar = [];
     let imgMentah = p.image || p.image_url || '';
 
     if (imgMentah) {
-        // Jika jalurnya lokal/relatif, kita paksa sambung ke domain utama
         if (!imgMentah.startsWith('http')) {
             if (imgMentah.startsWith('/')) imgMentah = imgMentah.substring(1);
             imgMentah = domainXoftware + imgMentah;
@@ -6077,6 +6078,7 @@ function openDetailProduk(index) {
     // Daftarkan ke history browser agar jika tombol back HP dipencet, lacinya otomatis menutup
     history.pushState({ popup: 'detail_produk' }, null, '#detail');
 }
+
 
 
 function closeDetailProduk() {
