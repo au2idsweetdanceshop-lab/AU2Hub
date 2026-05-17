@@ -4394,29 +4394,69 @@ async function sendStoryReply() {
     }
 }
 
-// Fungsi Like Story (Animasi Hati)
-function likeStoryAktif(btn) {
+// Fungsi Like Story (Animasi Hati & Simpan ke DB)
+async function likeStoryAktif(btn) {
     if (!currentUser) return showToast("Silakan login untuk menyukai!", "error");
     
     const icon = btn.querySelector('i');
+    const story = currentActiveStories[currentActiveStories.currentIndex];
     
-    // Toggle animasi Hati
-    if (icon.classList.contains('far')) {
-        icon.classList.replace('far', 'fas');
-        icon.classList.add('text-brand-accent', 'animate-ping'); // Berwarna pink & berdetak
+    // Matikan tombol sementara agar tidak dispam klik
+    btn.style.pointerEvents = 'none';
+    
+    try {
+        if (icon.classList.contains('far')) {
+            // === PROSES LIKE ===
+            icon.classList.replace('far', 'fas');
+            icon.classList.add('text-brand-accent', 'animate-ping');
+            
+            setTimeout(() => icon.classList.remove('animate-ping'), 500);
+            
+            // Tembak data ke tabel story_likes
+            const { error } = await supabaseClient.from('story_likes').insert({
+                story_id: story.id,
+                user_id: currentUser.id
+            });
+
+            if (error) {
+                // Jika error karena sudah pernah like (duplikat), abaikan saja
+                if (error.code !== '23505') throw error;
+            }
+
+            const nama = document.getElementById('viewer-story-name').innerText;
+            showToast(`Anda menyukai status ${nama}`, "success");
+            
+        } else {
+            // === PROSES UNLIKE (BATAL LIKE) ===
+            icon.classList.replace('fas', 'far');
+            icon.classList.remove('text-brand-accent');
+
+            // Hapus data dari tabel story_likes
+            const { error } = await supabaseClient.from('story_likes')
+                .delete()
+                .eq('story_id', story.id)
+                .eq('user_id', currentUser.id);
+
+            if (error) throw error;
+        }
+    } catch (e) {
+        console.error("Gagal memproses like:", e);
+        showToast("Terjadi kesalahan saat menyukai.", "error");
         
-        setTimeout(() => icon.classList.remove('animate-ping'), 500);
-        
-        const nama = document.getElementById('viewer-story-name').innerText;
-        showToast(`Anda menyukai status ${nama}`, "success");
-        
-        // Opsional: Jika Anda punya tabel 'story_likes' di DB, kirim datanya ke Supabase di sini
-    } else {
-        // Batal Like
-        icon.classList.replace('fas', 'far');
-        icon.classList.remove('text-brand-accent');
+        // Kembalikan ikon jika gagal (Rollback UI)
+        if (icon.classList.contains('fas')) {
+            icon.classList.replace('fas', 'far');
+            icon.classList.remove('text-brand-accent');
+        } else {
+            icon.classList.replace('far', 'fas');
+            icon.classList.add('text-brand-accent');
+        }
+    } finally {
+        // Nyalakan kembali tombol
+        btn.style.pointerEvents = 'auto';
     }
 }
+
 
 
 
