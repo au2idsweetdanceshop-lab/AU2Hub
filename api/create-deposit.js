@@ -7,7 +7,7 @@ module.exports = async (req, res) => {
     const { user_id, nominal } = req.body;
 
     // Ini link Apps Script milikmu yang tadi
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbyidsRrTER7gyLZSdgMSCh5y8ZirxicS7cF31CqS1_WVL72i2R6KtZclpu1RUCfBshi/exec"; 
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbyahi5GUD2kdoGWF2XxIBcWDrK2gfNYH0tphVRURwKSKac1KcO0K4KK3PQsiPNUqQKFeQ/exec"; 
 
     const response = await fetch(GAS_URL, {
       method: 'POST',
