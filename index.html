@@ -381,75 +381,27 @@
             <div id="faq-container" class="space-y-3 pb-4"></div>
         </section>
 
-        <section id="layanan" class="tab-content py-2">
-                <div class="bg-brand-card rounded-2xl p-5 shadow-[0_0_20px_rgba(0,240,255,0.05)] w-full text-white mb-8 mt-2 border border-white/5 relative overflow-hidden">
-        <div class="absolute -right-6 -top-6 w-24 h-24 bg-brand-info/10 rounded-full blur-2xl"></div>
-        
-        <div class="flex items-stretch justify-between mb-6 relative z-10">
-            <div class="flex flex-1 justify-around items-center pr-3">
-                <div class="text-center">
-                    <p class="text-[10px] text-gray-400 font-bold mb-1 uppercase tracking-wider">Saldo Akun</p>
-                    <h3 id="ui-saldo-xoftware" class="text-lg font-extrabold text-brand-info shadow-sm drop-shadow-md">Rp 0</h3>
-                </div>
-                
-                <div class="w-px h-8 bg-white/10 mx-2"></div> 
-                
-                <div class="text-center">
-                    <p class="text-[10px] text-gray-400 font-bold mb-1 uppercase tracking-wider">Point Akun</p>
-                    <h3 id="ui-point-xoftware" class="text-lg font-extrabold text-white">0</h3>
-                </div>
-            </div>
-            
-            <button onclick="requestDepositQRIS()" class="bg-gradient-to-r from-brand-info to-brand-purple text-white rounded-xl w-24 flex flex-col items-center justify-center py-3 transition-all shadow-[0_0_15px_rgba(0,240,255,0.25)] hover:brightness-110 active:scale-95">
-                <i class="fas fa-qrcode text-xl mb-1.5 animate-pulse"></i>
-                <span class="text-[10px] font-extrabold tracking-wide">DEPOSIT</span>
-            </button>
-        </div>
-
-        <div class="grid grid-cols-4 gap-2 border-t border-white/5 pt-4 relative z-10">
-            <button class="flex flex-col items-center justify-center hover:opacity-80 active:scale-95 transition-transform group">
-                <div class="bg-white/5 w-10 h-10 rounded-full flex items-center justify-center mb-2 border border-white/5 group-hover:border-brand-info/30 group-hover:bg-brand-info/5 transition-all">
-                    <i class="fas fa-shopping-cart text-gray-300 group-hover:text-brand-info text-lg transition-colors"></i>
-                </div>
-                <span class="text-[9px] font-bold text-gray-400 uppercase tracking-wide">Keranjang</span>
-            </button>
-            <button class="flex flex-col items-center justify-center hover:opacity-80 active:scale-95 transition-transform group">
-                <div class="bg-white/5 w-10 h-10 rounded-full flex items-center justify-center mb-2 border border-white/5 group-hover:border-brand-info/30 group-hover:bg-brand-info/5 transition-all">
-                    <i class="fas fa-ticket-alt text-gray-300 group-hover:text-brand-info text-lg transition-colors"></i>
-                </div>
-                <span class="text-[9px] font-bold text-gray-400 uppercase tracking-wide">Voucher</span>
-            </button>
-            <button class="flex flex-col items-center justify-center hover:opacity-80 active:scale-95 transition-transform group">
-                <div class="bg-white/5 w-10 h-10 rounded-full flex items-center justify-center mb-2 border border-white/5 group-hover:border-brand-info/30 group-hover:bg-brand-info/5 transition-all">
-                    <i class="fas fa-star text-gray-300 group-hover:text-brand-info text-lg transition-colors"></i>
-                </div>
-                <span class="text-[9px] font-bold text-gray-400 uppercase tracking-wide">Peringkat</span>
-            </button>
-            <button class="flex flex-col items-center justify-center hover:opacity-80 active:scale-95 transition-transform group">
-                <div class="bg-white/5 w-10 h-10 rounded-full flex items-center justify-center mb-2 border border-white/5 group-hover:border-brand-success/30 group-hover:bg-brand-success/5 transition-all">
-                    <i class="fab fa-whatsapp text-gray-300 group-hover:text-brand-success text-lg transition-colors"></i>
-                </div>
-                <span class="text-[9px] font-bold text-gray-400 uppercase tracking-wide">Chat Owner</span>
-            </button>
-        </div>
-    </div>
-
-            <div class="relative mb-5">
+                <section id="layanan" class="tab-content py-2">
+            <div class="relative mb-5 mt-2">
                 <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-brand-accent/70"></i>
-                <input type="text" id="serviceSearch" placeholder="Cari layanan..." class="w-full bg-brand-card border border-brand-accent/30 rounded-2xl py-3.5 pl-12 pr-4 text-sm text-white focus:outline-none focus:border-brand-accent transition-all shadow-[0_0_10px_rgba(255,0,122,0.1)]">
+                <input type="text" id="serviceSearch" placeholder="Cari layanan produk..." class="w-full bg-brand-card border border-brand-accent/30 rounded-2xl py-3.5 pl-12 pr-4 text-sm text-white focus:outline-none focus:border-brand-accent transition-all shadow-[0_0_10px_rgba(255,0,122,0.1)]">
             </div>
+
             <div class="flex justify-between items-center mb-5">
                 <h3 class="text-xl font-extrabold flex items-center gap-2">
-                    <div class="w-1.5 h-6 bg-brand-accent rounded-full"></div> Layanan
+                    <div class="w-1.5 h-6 bg-brand-accent rounded-full"></div> Katalog Layanan
                 </h3>
-                <span class="text-[10px] bg-brand-accent/20 text-brand-accent px-2 py-1.5 rounded-lg font-bold border border-brand-accent/30 tracking-wider">100% AMAN</span>
+                <span class="text-[10px] bg-brand-info/20 text-brand-info px-2 py-1.5 rounded-lg font-bold border border-brand-info/30 tracking-wider">AUTO DANA</span>
             </div>
+            
             <div id="service-list" class="space-y-3 mb-6"></div>
+            
             <div class="bg-brand-info/5 rounded-2xl p-4 border border-brand-info/20 mb-8">
                 <h3 class="font-bold text-sm text-brand-info mb-2 flex items-center"><i class="fas fa-info-circle mr-2"></i> Cara Memesan:</h3>
-                <p class="text-xs text-gray-400 leading-relaxed">Pilih dan klik tombol <strong>"Beli"</strong> pada paket di atas. Anda akan diarahkan ke halaman pembayaran otomatis untuk melihat detail transfer dan konfirmasi langsung ke WhatsApp Admin.</p>
+                <p class="text-xs text-gray-400 leading-relaxed">Klik tombol <strong>"BELI"</strong>. Anda akan diarahkan ke halaman pembayaran otomatis QRIS DANA. Setelah bayar, sistem kasir akan konfirmasi dalam 1 detik.</p>
             </div>
         </section>
+
 
         <section id="sosial" class="tab-content py-2">
             <!-- HEADER SOSIAL BARU (Ada Tombol Upload) -->
@@ -5912,60 +5864,22 @@ async function sendMessageRoom() {
             }, 150); 
         }
 
+
         
+        let xoftwareProdukGlobal = []; 
 
-
-
-        // ==========================================
-        // SISTEM INTEGRASI TOTAL FITUR XOFTWARE PPOB
-        // ==========================================
-
-        // 1. Fungsi Mengambil & Menampilkan Saldo + Point
-        async function loadDataXoftware() {
-            try {
-                const response = await fetch('/api/get-xoftware?action=saldo');
-                const result = await response.json();
-
-                if (result.status === true && result.data) {
-                    const saldoXoftware = result.data.saldo || 0;
-                    const pointXoftware = result.data.point || 0;
-
-                    // Suntikkan data asli ke komponen UI Card
-                    document.getElementById('ui-saldo-xoftware').innerText = `Rp ${saldoXoftware.toLocaleString('id-ID')}`;
-                    document.getElementById('ui-point-xoftware').innerText = pointXoftware.toLocaleString('id-ID');
-                }
-            } catch (error) {
-                console.error("Gagal memuat saldo Xoftware:", error);
-            }
-        }
-
-// Wadah baru untuk menyimpan data produk Xoftware agar bisa dicari/difilter
-let xoftwareProdukGlobal = []; 
-
+// 1. Tarik Katalog Xoftware
 async function loadProdukXoftware() {
     const container = document.getElementById('service-list');
     if (!container) return;
-
-    container.innerHTML = `
-        <div class="text-center py-10 text-xs text-brand-info animate-pulse">
-            <i class="fas fa-sync fa-spin mb-2 text-2xl"></i>
-            <br>Sinkronisasi Produk WarungPutri...
-        </div>`;
+    container.innerHTML = `<div class="text-center py-10 text-xs text-brand-info animate-pulse"><i class="fas fa-sync fa-spin mb-2 text-2xl"></i><br>Menarik Katalog Produk...</div>`;
 
     try {
         const response = await fetch('/api/get-xoftware?action=produk');
         const result = await response.json();
 
         if (result.status === true && Array.isArray(result.data)) {
-            if (result.data.length === 0) {
-                container.innerHTML = '<div class="text-center py-10 text-xs text-gray-500">WarungPutri belum mengupload produk.</div>';
-                return;
-            }
-
-            // Simpan data ke memori global
             xoftwareProdukGlobal = result.data; 
-            
-            // Panggil fungsi untuk menampilkan produk
             renderProdukXoftware(xoftwareProdukGlobal);
         } else {
             container.innerHTML = '<div class="text-center py-10 text-xs text-red-500">Gagal memuat katalog produk.</div>';
@@ -5975,11 +5889,9 @@ async function loadProdukXoftware() {
     }
 }
 
-// Fungsi pembantu baru untuk merender HTML produk Xoftware
+// 2. Tampilkan Katalog & Tombol DANA
 function renderProdukXoftware(data) {
     const container = document.getElementById('service-list');
-    if (!container) return;
-
     if (data.length === 0) {
         container.innerHTML = '<div class="text-center py-10 text-xs text-gray-400"><i class="fas fa-search-minus mb-2 text-lg"></i><br>Produk tidak ditemukan.</div>';
         return;
@@ -5989,153 +5901,77 @@ function renderProdukXoftware(data) {
         <div class="bg-brand-card p-4 rounded-2xl border border-white/5 flex justify-between items-center hover:border-brand-accent/30 transition-all smooth-reveal">
             <div class="w-[60%]">
                 <div class="font-bold text-sm text-white mb-1">${p.title}</div>
-                <div class="text-[10px] text-gray-400 leading-tight">${p.description || 'Sistem Pengiriman Otomatis 24 Jam.'}</div>
+                <div class="text-[10px] text-gray-400 leading-tight">${p.description || 'Pengiriman Manual via WA.'}</div>
                 <div class="text-[9px] text-brand-info mt-1.5"><i class="fas fa-layer-group mr-1"></i> Stok: ${p.stock} item</div>
             </div>
             <div class="text-right flex flex-col items-end">
                 <div class="text-brand-accent font-extrabold text-[14px] mb-2">Rp ${p.price.toLocaleString('id-ID')}</div>
-                <button onclick="checkoutXoftware('${p.code}', ${p.price}, '${p.title.replace(/'/g, "\\'")}')" class="bg-brand-accent/10 text-brand-accent text-[10px] font-bold px-4 py-2 rounded-full border border-brand-accent/30 active:scale-90 transition-transform">BELI</button>
+                <button onclick="checkoutRobotDANA('${p.title.replace(/'/g, "\\'")}', ${p.price})" class="bg-[#118EEA]/20 text-[#118EEA] text-[10px] font-extrabold px-4 py-2 rounded-full border border-[#118EEA]/40 active:scale-90 transition-transform"><i class="fas fa-wallet mr-1"></i> BELI VIA DANA</button>
             </div>
         </div>
     `).join('');
 }
 
-        // 3. Fungsi Eksekusi Pembelian Instan (Pilihan: Potong Saldo / Auto QRIS)
-        async function checkoutXoftware(productCode, price, productTitle) {
-            // 1. Manfaatkan modal konfirmasi bawaan kamu untuk memberikan opsi pembayaran
-            const pakaiSaldo = await customConfirm(`[PILIHAN PEMBAYARAN]\n\nApakah Anda ingin membeli "${productTitle}" menggunakan Saldo Akun?\n\n(Klik OKE untuk potong saldo akun, atau klik BATAL untuk bayar langsung pakai Auto QRIS)`);
-            
-            if (pakaiSaldo) {
-                // ==========================================
-                // JALUR 1: PEMBAYARAN POTONG SALDO AKUN
-                // ==========================================
-                showToast("Memproses transaksi saldo...", "info");
+// 3. Fungsi Fitur Pencarian
+document.getElementById('serviceSearch').addEventListener('input', (e) => {
+    const val = e.target.value.toLowerCase();
+    const hasilFilter = xoftwareProdukGlobal.filter(p => 
+        p.title.toLowerCase().includes(val) || 
+        (p.description && p.description.toLowerCase().includes(val))
+    );
+    renderProdukXoftware(hasilFilter);
+});
 
-                try {
-                    const response = await fetch('/api/get-xoftware?action=order', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ product_code: productCode, quantity: 1 })
-                    });
+// 4. Logika Checkout Pembayaran Robot DANA
+async function checkoutRobotDANA(namaProduk, harga) {
+    if (!currentUser) return showToast("Silakan login dulu untuk membeli!", "error");
 
-                    const result = await response.json();
+    const konfirmasi = await customConfirm(`Lanjutkan pesanan untuk:\n\n${namaProduk}\n\nTotal: Rp ${harga.toLocaleString('id-ID')} via DANA Otomatis?`);
+    if (!konfirmasi) return;
 
-                    if (result.status === true) {
-                        showToast("Transaksi Berhasil!", "success");
-                        loadDataXoftware(); // Refresh saldo seketika
+    showToast("Menyiapkan antrean pembayaran...", "info");
 
-                        let strukAkun = "";
-                        if (result.data && Array.isArray(result.data.accounts)) {
-                            result.data.accounts.forEach((acc, i) => {
-                                strukAkun += `\n[DATA LIVE AKUN ${i+1}]\nEmail/User : ${acc.email}\nPassword   : ${acc.pass}\n`;
-                            });
-                        }
+    try {
+        // Tembak API yang nyambung ke Google Sheets kamu
+        const response = await fetch('/api/create-deposit', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                user_id: currentUser.id,
+                nominal: harga
+            })
+        });
 
-                        await customAlert(`PROSES SUKSES! 🎉\n\nID Transaksi: #${result.data.transaction_id}\nTotal Potong Saldo: Rp ${result.data.total_price.toLocaleString('id-ID')}\n${strukAkun}\n⚠️ PERINGATAN: Harap catat atau screenshot data akun di atas sekarang. Interaksi ini akan dibersihkan.`);
-                    } else {
-                        await customAlert(`Transaksi Gagal:\n${result.message || 'Saldo tidak mencukupi atau stok produk sedang habis.'}`);
-                    }
-                } catch (error) {
-                    showToast("Terjadi gangguan komunikasi dengan server pusat.", "error");
-                }
-            } else {
-                // ==========================================
-                // JALUR 2: PEMBAYARAN INSTAN PAKAI AUTO QRIS
-                // ==========================================
-                const konfirmasiQris = await customConfirm(`[AUTO QRIS INSTAN]\n\nApakah Anda ingin membuat Barcode QRIS otomatis seharga Rp ${price.toLocaleString('id-ID')} untuk membeli "${productTitle}"?`);
-                if (!konfirmasiQris) return;
+        const result = await response.json();
 
-                showToast("Sedang membuat barcode QRIS instan...", "info");
+        if (result.status === "success") {
+            // Setup halaman layar pembayaran
+            document.getElementById('pay-total').innerText = `Rp ${harga.toLocaleString('id-ID')}`;
+            document.getElementById('pay-product').innerText = namaProduk;
+            document.getElementById('nominal-asli').value = harga;
 
-                try {
-                    const response = await fetch('/api/get-xoftware?action=qris', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ amount: price }) // Tembak nominal sesuai harga produk
-                    });
-
-                    const result = await response.json();
-
-                    if (result.status === true && result.data) {
-                        // Suntikkan data transaksi langsung ke nota pembayaran bawaan HTML kamu
-                        document.getElementById('pay-total').innerText = `Rp ${result.data.total_to_pay.toLocaleString('id-ID')}`;
-                        document.getElementById('pay-product').innerText = `Bayar Instan: ${productTitle}`;
-                        document.getElementById('nominal-asli').value = result.data.total_to_pay;
-
-                        // Generate Payload QR String dari WarungPutri menjadi gambar barcode QRIS real-time
-                        const qrImgUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(result.data.qr_string)}`;
-                        const qrContainerElement = document.querySelector('#pembayaran img');
-                        if (qrContainerElement) {
-                            qrContainerElement.src = qrImgUrl;
-                        }
-
-                        // Set tombol konfirmasi WA otomatis untuk cadangan kirim nota ke admin
-                        const noWA = "6283815584661";
-                        const teksWA = encodeURIComponent(`Halo Admin, saya sudah melakukan scan Auto QRIS Instan untuk pembelian produk:\n\nProduk : *${productTitle}*\nTotal Bayar : *Rp ${result.data.total_to_pay.toLocaleString('id-ID')}*\nID Transaksi: ${result.data.transaction_id}`);
-                        document.getElementById('wa-confirm').setAttribute('href', `https://wa.me/${noWA}?text=${teksWA}`);
-
-                        // Buka tab lembar nota pembayaran secara otomatis
-                        switchTab('pembayaran');
-                        showToast("Barcode QRIS Instan Berhasil Dibuat!", "success");
-                    } else {
-                        await customAlert(`Gagal membuat QRIS: ${result.message || 'Metode pembayaran sedang maintenance.'}`);
-                    }
-                } catch (error) {
-                    showToast("Gagal memproses request barcode QRIS.", "error");
-                }
+            // ⚠️ GANTI LINK DI BAWAH INI DENGAN LINK GAMBAR QRIS DANA BISNISMU
+            const qrImgUrl = `https://drive.google.com/uc?export=view&id=1TbGGJpXDTarVbZspPd3YCANMZ_XQNNIE`;
+            const qrContainerElement = document.querySelector('#pembayaran img');
+            if (qrContainerElement) {
+                qrContainerElement.src = qrImgUrl;
             }
+
+            // Siapkan tombol konfirmasi WhatsApp ke kamu
+            const noWA = "6283815584661"; // ⚠️ Ganti nomor WA mu jika perlu
+            const teksWA = encodeURIComponent(`Halo Admin, saya pesan produk:\n\n*${namaProduk}*\nTotal Bayar : Rp ${harga.toLocaleString('id-ID')}\n\nPembayaran via DANA sudah saya transfer. Tolong dicek!`);
+            document.getElementById('wa-confirm').setAttribute('href', `https://wa.me/${noWA}?text=${teksWA}`);
+
+            switchTab('pembayaran');
+            showToast("Silakan scan QRIS & pastikan nominal sesuai!", "success");
+        } else {
+            await customAlert(`Gagal membuat pesanan: Server Google Sheets lambat.`);
         }
+    } catch (error) {
+        showToast("Gangguan jaringan saat konek ke server.", "error");
+    }
+}
 
-
-        // 4. Fitur Baru: Request Pembuatan QRIS Otomatis (Deposit Saldo)
-        async function requestDepositQRIS() {
-            const inputNominal = await customPrompt("Masukkan nominal top up saldo (Rp):", "10000");
-            if (!inputNominal) return;
-
-            const nominalmurni = parseInt(inputNominal.replace(/\D/g, ""));
-            if (isNaN(nominalmurni) || nominalmurni < 1000) {
-                return showToast("Minimal deposit adalah Rp 1.000", "error");
-            }
-
-            showToast("Sedang membuat barcode QRIS...", "info");
-
-            try {
-                const response = await fetch('/api/get-xoftware?action=qris', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ amount: nominalmurni })
-                });
-
-                const result = await response.json();
-
-                if (result.status === true && result.data) {
-                    // Siapkan layar lembar pembayaran menggunakan nota QRIS otomatis bawaan websitemu
-                    document.getElementById('pay-total').innerText = `Rp ${result.data.total_to_pay.toLocaleString('id-ID')}`;
-                    document.getElementById('pay-product').innerText = `Deposit Saldo #${result.data.transaction_id}`;
-                    document.getElementById('nominal-asli').value = result.data.total_to_pay;
-
-                    // Generate Payload QR String langsung jadi gambar barcode QRIS real-time
-                    const qrImgUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(result.data.qr_string)}`;
-                    const qrContainerElement = document.querySelector('#pembayaran img');
-                    if (qrContainerElement) {
-                        qrContainerElement.src = qrImgUrl;
-                    }
-
-                    // Set tombol konfirmasi WA untuk cadangan kirim bukti ke owner
-                    const noWA = "6283815584661";
-                    const teksWA = encodeURIComponent(`Halo Admin, saya sudah melakukan Open Deposit via QRIS otomatis di website AU2Hub sebesar Rp ${result.data.total_to_pay.toLocaleString('id-ID')}.\n\nID Transaksi: ${result.data.transaction_id}`);
-                    document.getElementById('wa-confirm').setAttribute('href', `https://wa.me/${noWA}?text=${teksWA}`);
-
-                    // Buka tab pembayaran secara visual
-                    switchTab('pembayaran');
-                    showToast("Barcode QRIS WarungPutri Berhasil Dibuat!", "success");
-                } else {
-                    await customAlert(`Gagal membuat QRIS: ${result.message || 'Metode pembayaran sedang maintenance.'}`);
-                }
-            } catch (error) {
-                showToast("Gagal memproses request barcode QRIS.", "error");
-            }
-        }
 
 
 
@@ -6154,10 +5990,8 @@ function renderProdukXoftware(data) {
             checkSession();
             muatDataRipper();
             renderFaqs();
-            // renderServices(); <-- Sudah dihapus agar tidak bentrok dengan data Xoftware
             
-            // Memanggil API Akun & Produk WarungPutri (Xoftware) saat halaman dimuat
-            loadDataXoftware();
+            // Menampilkan Katalog Xoftware yang otomatis terhubung ke Robot DANA kamu saat halaman dimuat
             loadProdukXoftware();
 
             // Mendaftarkan Service Worker PWA
@@ -6186,6 +6020,7 @@ function renderProdukXoftware(data) {
                 });
             }
         });
+
 
 
 
