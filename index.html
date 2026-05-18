@@ -5903,14 +5903,15 @@ function renderProdukXoftware(data) {
     }
 
     container.innerHTML = data.map((p, index) => {
-        // 🔥 JALUR FIX: Menggunakan domain lengkap beserta nama toko lu
+        // Domain utama server Xoftware beserta subfolder tokomu
         const domainXoftware = "https://web.xoftware.id/warungputri/"; 
 
-        let fotoProduk = p.image || p.image_url || '';
+        // Cerdas: Cek semua kemungkinan nama kolom gambar dari Xoftware
+        let fotoProduk = p.image || p.image_url || p.gambar || p.foto || p.thumbnail || p.logo || '';
 
-        // JIKA LINKNYA KOSONG: Pakai gambar cadangan cyberpunk
+        // JIKA LINKNYA KOSONG: Jangan pakai Unsplash (diblokir), pakai tema Cyberpunk ADT Store!
         if (!fotoProduk) {
-            fotoProduk = 'https://images.unsplash.com/photo-1614680376593-902f74fa0d41?w=400';
+            fotoProduk = 'https://placehold.co/400x400/1a1133/ff007a?text=ADT+STORE';
         } 
         // JIKA LINKNYA RELATIF: Otomatis disambung ke domain lengkap warungputri
         else if (!fotoProduk.startsWith('http')) {
@@ -5924,7 +5925,7 @@ function renderProdukXoftware(data) {
         <div onclick="openDetailProduk(${index})" class="bg-brand-card rounded-2xl border border-white/5 overflow-hidden flex flex-col hover:border-brand-accent/30 transition-all smooth-reveal shadow-lg cursor-pointer">
             
             <div class="relative w-full aspect-square bg-black/40 overflow-hidden group">
-                <img src="${fotoProduk}" alt="${p.title}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onerror="console.log('Gagal muat URL:', this.src)">
+                <img src="${fotoProduk}" alt="${p.title}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onerror="this.src='https://placehold.co/400x400/1a1133/ff007a?text=ADT+STORE'">
                 <span class="absolute top-2 left-2 bg-brand-accent/90 text-white text-[8px] font-extrabold px-2 py-0.5 rounded-md backdrop-blur-sm border border-white/10 shadow-md">
                     ${p.stock > 0 ? 'READY' : 'LIMIT'}
                 </span>
@@ -5954,6 +5955,7 @@ function renderProdukXoftware(data) {
         `;
     }).join('');
 }
+
 
 
 
@@ -6005,27 +6007,23 @@ function openDetailProduk(index) {
     const p = xoftwareProdukGlobal[index];
     if (!p) return;
 
-    // Isikan teks detail produk
     document.getElementById('detail-product-title').innerText = p.title;
     document.getElementById('detail-product-price').innerText = `Rp ${p.price.toLocaleString('id-ID')}`;
     document.getElementById('detail-product-stock').innerText = p.stock;
     document.getElementById('detail-product-desc').innerText = p.description || "Tidak ada deskripsi tambahan.";
 
-    // Pasang fungsi beli ke tombol final di bawah laci
     const btnBeli = document.getElementById('btn-beli-detail');
     btnBeli.onclick = () => {
-        closeDetailProduk(); // Tutup lacinya dulu
-        checkoutRobotDANA(p.title, p.price); // Jalankan pembayaran otomatis
+        closeDetailProduk();
+        checkoutRobotDANA(p.title, p.price);
     };
 
-    // --- LOGIKA MULTIPLE IMAGE SLIDER (BISA DIGESER) ---
     const carousel = document.getElementById('detail-image-carousel');
-    carousel.innerHTML = ''; // Bersihkan sisa gambar sebelumnya
+    carousel.innerHTML = ''; 
 
-    // 🔥 Menggunakan jalur lengkap warungputri
     const domainXoftware = "https://web.xoftware.id/warungputri/";
     let daftarGambar = [];
-    let imgMentah = p.image || p.image_url || '';
+    let imgMentah = p.image || p.image_url || p.gambar || p.foto || p.thumbnail || p.logo || '';
 
     if (imgMentah) {
         if (!imgMentah.startsWith('http')) {
@@ -6047,38 +6045,31 @@ function openDetailProduk(index) {
     }
 
     if (daftarGambar.length === 0) {
-        daftarGambar.push('https://images.unsplash.com/photo-1614680376593-902f74fa0d41?w=400');
+        daftarGambar.push('https://placehold.co/400x400/1a1133/ff007a?text=ADT+STORE');
     }
 
-    // Masukkan semua daftar gambar ke dalam carousel HTML
     carousel.innerHTML = daftarGambar.map(imgUrl => `
         <div class="w-full h-full flex-shrink-0 snap-center">
-            <img src="${imgUrl.trim()}" class="w-full h-full object-cover">
+            <img src="${imgUrl.trim()}" class="w-full h-full object-cover" onerror="this.src='https://placehold.co/400x400/1a1133/ff007a?text=ADT+STORE'">
         </div>
     `).join('');
 
-    // Atur angka indikator halaman foto (Misal: 1/3)
     const currentTxt = document.getElementById('carousel-current-index');
     const totalTxt = document.getElementById('carousel-total-index');
-    
     currentTxt.innerText = "1";
     totalTxt.innerText = daftarGambar.length;
 
-    // Efek ketika digeser pakai jari (Update angka halaman foto secara live)
     carousel.onscroll = () => {
         let page = Math.round(carousel.scrollLeft / carousel.clientWidth) + 1;
         currentTxt.innerText = page;
     };
 
-    // Luncurkan lacinya naik ke atas layar HP
     const laci = document.getElementById('modal-detail-produk');
     laci.classList.remove('translate-y-full');
     laci.classList.add('translate-y-0');
 
-    // Daftarkan ke history browser agar jika tombol back HP dipencet, lacinya otomatis menutup
     history.pushState({ popup: 'detail_produk' }, null, '#detail');
 }
-
 
 
 function closeDetailProduk() {
