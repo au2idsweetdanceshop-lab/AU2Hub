@@ -391,7 +391,7 @@
                 <h3 class="text-xl font-extrabold flex items-center gap-2">
                     <div class="w-1.5 h-6 bg-brand-accent rounded-full"></div> Katalog Layanan
                 </h3>
-                <span class="text-[10px] bg-brand-info/20 text-brand-info px-2 py-1.5 rounded-lg font-bold border border-brand-info/30 tracking-wider">AUTO DANA</span>
+                <span class="text-[10px] bg-brand-info/20 text-brand-info px-2 py-1.5 rounded-lg font-bold border border-brand-info/30 tracking-wider">AUTO QRIS</span>
             </div>
             
             <div id="service-list" class="grid grid-cols-2 gap-3 mb-6"></div>
@@ -5903,22 +5903,26 @@ function renderProdukXoftware(data) {
     }
 
     container.innerHTML = data.map((p, index) => {
-        // Domain utama server Xoftware beserta subfolder tokomu
-        const domainXoftware = "https://web.xoftware.id/warungputri/"; 
+        // Domain utama server Xoftware (Tanpa subfolder biar ga nyasar)
+        const domainXoftware = "https://web.xoftware.id/"; 
 
         // Cerdas: Cek semua kemungkinan nama kolom gambar dari Xoftware
-        let fotoProduk = p.image || p.image_url || p.gambar || p.foto || p.thumbnail || p.logo || '';
+        let rawImage = p.image || p.image_url || p.gambar || p.foto || p.thumbnail || p.logo || p.images || p.img || p.cover || p.icon || '';
 
-        // JIKA LINKNYA KOSONG: Jangan pakai Unsplash (diblokir), pakai tema Cyberpunk ADT Store!
-        if (!fotoProduk) {
-            fotoProduk = 'https://placehold.co/400x400/1a1133/ff007a?text=ADT+STORE';
+        // JIKA GAMBARNYA BANYAK (ADA KOMA), AMBIL GAMBAR PERTAMA AJA BUAT COVER DEPAN
+        if (typeof rawImage === 'string' && rawImage.includes(',')) {
+            rawImage = rawImage.split(',')[0].trim();
+        }
+
+        let fotoProduk = rawImage;
+
+        // JIKA LINK RELATIF DARI XOFTWARE (Kagak ada http-nya)
+        if (fotoProduk && !fotoProduk.startsWith('http')) {
+            fotoProduk = domainXoftware + (fotoProduk.startsWith('/') ? fotoProduk.substring(1) : fotoProduk);
         } 
-        // JIKA LINKNYA RELATIF: Otomatis disambung ke domain lengkap warungputri
-        else if (!fotoProduk.startsWith('http')) {
-            if (fotoProduk.startsWith('/')) {
-                fotoProduk = fotoProduk.substring(1); 
-            }
-            fotoProduk = domainXoftware + fotoProduk;
+        // JIKA KOSONG TOTAL, PAKAI ADT STORE
+        else if (!fotoProduk) {
+            fotoProduk = 'https://placehold.co/400x400/1a1133/ff007a?text=ADT+STORE';
         }
         
         return `
@@ -5927,7 +5931,7 @@ function renderProdukXoftware(data) {
             <div class="relative w-full aspect-square bg-black/40 overflow-hidden group">
                 <img src="${fotoProduk}" alt="${p.title}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onerror="this.src='https://placehold.co/400x400/1a1133/ff007a?text=ADT+STORE'">
                 <span class="absolute top-2 left-2 bg-brand-accent/90 text-white text-[8px] font-extrabold px-2 py-0.5 rounded-md backdrop-blur-sm border border-white/10 shadow-md">
-                    ${p.stock > 0 ? 'READY' : 'LIMIT'}
+                    READY
                 </span>
             </div>
             
@@ -5942,8 +5946,8 @@ function renderProdukXoftware(data) {
                 </div>
                 
                 <div class="mt-auto">
-                    <div class="text-[9px] text-brand-info font-bold mb-1.5 flex items-center gap-1">
-                        <i class="fas fa-boxes text-[8px]"></i> Stok: ${p.stock}
+                    <div class="text-[9px] text-brand-success font-bold mb-1.5 flex items-center gap-1">
+                        <i class="fas fa-bolt text-[8px]"></i> Instan 1 Detik
                     </div>
                     <div class="text-brand-accent font-extrabold text-sm tracking-tight">
                         Rp ${p.price.toLocaleString('id-ID')}
@@ -5955,6 +5959,7 @@ function renderProdukXoftware(data) {
         `;
     }).join('');
 }
+
 
 
 
@@ -6002,55 +6007,67 @@ function makeDynamicQRIS(amount) {
     return fullPayload + crcString;
 }
 
-// 🔥 LOGIKA BUKA DETAIL PRODUK ALA SHOPEE WITH SLIDER SWIPE (FIX IMAGES WARUNGPUTRI)
+// 🔥 LOGIKA BUKA DETAIL PRODUK ALA SHOPEE WITH SLIDER SWIPE
 function openDetailProduk(index) {
     const p = xoftwareProdukGlobal[index];
     if (!p) return;
 
     document.getElementById('detail-product-title').innerText = p.title;
     document.getElementById('detail-product-price').innerText = `Rp ${p.price.toLocaleString('id-ID')}`;
-    document.getElementById('detail-product-stock').innerText = p.stock;
     document.getElementById('detail-product-desc').innerText = p.description || "Tidak ada deskripsi tambahan.";
+    
+    // Stok sudah kita matikan (sesuai langkah B)
+    // document.getElementById('detail-product-stock').innerText = p.stock;
 
     const btnBeli = document.getElementById('btn-beli-detail');
     btnBeli.onclick = () => {
         closeDetailProduk();
-        checkoutRobotDANA(p.title, p.price);
+        
+        // Sedot dan gabungin Deskripsi + Syarat Ketentuan dari Xoftware
+        let teksSyarat = p.syarat_ketentuan || p.terms || p.syarat || ""; 
+        let teksDeskripsi = p.description || "";
+        
+        let infoLengkap = "";
+        if (teksDeskripsi) infoLengkap += "*Deskripsi:*\n" + teksDeskripsi + "\n\n";
+        if (teksSyarat) infoLengkap += "*Syarat & Ketentuan:*\n" + teksSyarat;
+        
+        // Kirim datanya ke fungsi Robot DANA
+        checkoutRobotDANA(p.title, p.price, infoLengkap);
     };
 
     const carousel = document.getElementById('detail-image-carousel');
     carousel.innerHTML = ''; 
 
-    const domainXoftware = "https://web.xoftware.id/warungputri/";
+    // Domain Xoftware Pusat (sudah bersih tanpa warungputri)
+    const domainXoftware = "https://web.xoftware.id/";
+    
+    // Cerdas cari kolom gambar
+    let rawImages = p.images || p.image || p.image_url || p.gambar || p.foto || p.thumbnail || p.logo || p.img || p.cover || '';
     let daftarGambar = [];
-    let imgMentah = p.image || p.image_url || p.gambar || p.foto || p.thumbnail || p.logo || '';
 
-    if (imgMentah) {
-        if (!imgMentah.startsWith('http')) {
-            if (imgMentah.startsWith('/')) imgMentah = imgMentah.substring(1);
-            imgMentah = domainXoftware + imgMentah;
-        }
-        daftarGambar.push(imgMentah);
-    }
-
-    if (p.images && typeof p.images === 'string') {
-        daftarGambar = p.images.split(',').map(img => {
+    if (rawImages) {
+        // Pecah semua link gambar berdasarkan TANDA KOMA
+        let splitImages = rawImages.split(',');
+        
+        daftarGambar = splitImages.map(img => {
             let cleanImg = img.trim();
+            // Cek apakah link dari luar (Postimages) atau nyedot dari Xoftware
             if (cleanImg && !cleanImg.startsWith('http')) {
-                if (cleanImg.startsWith('/')) cleanImg = cleanImg.substring(1);
-                return domainXoftware + cleanImg;
+                return domainXoftware + (cleanImg.startsWith('/') ? cleanImg.substring(1) : cleanImg);
             }
             return cleanImg;
-        });
+        }).filter(img => img !== ""); // Buang kalau ada yang kosong
     }
 
+    // Kalau beneran kagak ada gambar sama sekali
     if (daftarGambar.length === 0) {
         daftarGambar.push('https://placehold.co/400x400/1a1133/ff007a?text=ADT+STORE');
     }
 
+    // Cetak ke dalam Laci Shopee (Bisa di-swipe kalau lebih dari 1)
     carousel.innerHTML = daftarGambar.map(imgUrl => `
         <div class="w-full h-full flex-shrink-0 snap-center">
-            <img src="${imgUrl.trim()}" class="w-full h-full object-cover" onerror="this.src='https://placehold.co/400x400/1a1133/ff007a?text=ADT+STORE'">
+            <img src="${imgUrl}" class="w-full h-full object-cover" onerror="this.src='https://placehold.co/400x400/1a1133/ff007a?text=ADT+STORE'">
         </div>
     `).join('');
 
@@ -6059,6 +6076,7 @@ function openDetailProduk(index) {
     currentTxt.innerText = "1";
     totalTxt.innerText = daftarGambar.length;
 
+    // Logika ganti angka saat digeser
     carousel.onscroll = () => {
         let page = Math.round(carousel.scrollLeft / carousel.clientWidth) + 1;
         currentTxt.innerText = page;
@@ -6084,8 +6102,9 @@ function closeDetailProduk() {
 
 
 
+
 // 4. Logika Checkout Pembayaran Robot DANA (VERSI OTOMATIS NOMINAL + AUTO SUCCESS UI)
-async function checkoutRobotDANA(namaProduk, harga) {
+async function checkoutRobotDANA(namaProduk, harga, deskripsi) {
     if (!currentUser) return showToast("Silakan login dulu untuk membeli!", "error");
 
     const konfirmasi = await customConfirm(`Lanjutkan pesanan untuk:\n\n${namaProduk}\n\nTotal: Rp ${harga.toLocaleString('id-ID')} via DANA Otomatis?`);
@@ -6125,7 +6144,7 @@ async function checkoutRobotDANA(namaProduk, harga) {
             switchTab('pembayaran');
             showToast("Silakan scan! Sistem sedang memantau pembayaran Anda.", "success");
 
-            // 🔥 RADAR PENGECEK STATUS (OTOMATIS TIAP 3 DETIK)
+            // 🔥 RADAR PENGECEK STATUS (CEPAT: 1 DETIK)
             if(window.cekPembayaranInterval) clearInterval(window.cekPembayaranInterval);
             
             window.cekPembayaranInterval = setInterval(async () => {
@@ -6141,9 +6160,9 @@ async function checkoutRobotDANA(namaProduk, harga) {
                     if(cekData.status === "SUCCESS") {
                         clearInterval(window.cekPembayaranInterval); // Matikan radar
                         
-                        // Siapkan teks otomatis buat dikirim ke WA pembeli
-                        const noWA = "6283815584661"; 
-                        const teksWASukses = encodeURIComponent(`Halo Admin Joki AU2Hub,\n\nPembayaran DANA saya sudah terkonfirmasi sukses otomatis oleh sistem!\n\nPesanan: *${namaProduk}*\nTotal: Rp ${harga.toLocaleString('id-ID')}\n\nIni data akun saya untuk diproses:`);
+                        // Siapkan teks otomatis buat dikirim ke WA pembeli (DENGAN INFO XOFTWARE)
+                        const infoXoftware = deskripsi ? deskripsi.replace(/<[^>]*>?/gm, '') : '';
+                        const teksWASukses = encodeURIComponent(`Halo Admin Joki AU2Hub,\n\nPembayaran DANA saya sudah terkonfirmasi sukses otomatis oleh sistem!\n\nPesanan: *${namaProduk}*\nTotal: Rp ${harga.toLocaleString('id-ID')}\n\n${infoXoftware}\n\nIni data akun saya untuk diproses:\n1. ID Game: \n2. Nickname: `);
                         
                         // UBAH LAYAR JADI CENTANG HIJAU + TOMBOL WA
                         const wadahPembayaran = document.getElementById('qris-container');
@@ -6168,7 +6187,7 @@ async function checkoutRobotDANA(namaProduk, harga) {
                         }
                     }
                 } catch(e) { console.log("Radar tertunda..."); }
-            }, 3000); // Mengecek setiap 3000 milidetik (3 detik)
+            }, 1000); // Mengecek setiap 1000 milidetik (1 detik)
 
         } else {
             await customAlert(`Gagal membuat pesanan.`);
@@ -6177,6 +6196,7 @@ async function checkoutRobotDANA(namaProduk, harga) {
         showToast("Gangguan jaringan.", "error");
     }
 }
+
 
 
         // ==========================================
@@ -6252,10 +6272,10 @@ async function checkoutRobotDANA(namaProduk, harga) {
                 <h3 class="text-lg font-extrabold text-white leading-snug" id="detail-product-title">Nama Produk</h3>
             </div>
             
-            <div class="flex gap-4 border-y border-white/5 py-3 text-[11px] font-bold uppercase tracking-wider text-gray-400">
-                <span class="text-brand-info"><i class="fas fa-boxes mr-1"></i> Stok: <span id="detail-product-stock">0</span></span>
-                <span><i class="fas fa-shipping-fast mr-1"></i> Instan 1 Detik</span>
-            </div>
+<div class="flex gap-4 border-y border-white/5 py-3 text-[11px] font-bold uppercase tracking-wider text-gray-400">
+    <span class="text-brand-success flex items-center gap-1"><i class="fas fa-bolt mr-1"></i> Proses Instan 1 Detik</span>
+</div>
+
 
             <div>
                 <h4 class="text-xs font-extrabold text-gray-300 uppercase tracking-widest mb-2">Deskripsi Produk</h4>
@@ -6266,7 +6286,7 @@ async function checkoutRobotDANA(namaProduk, harga) {
 
     <div class="absolute bottom-0 w-full glass border-t border-white/5 p-4 shrink-0 pb-6 rounded-t-2xl z-10">
         <button id="btn-beli-detail" onclick="" class="w-full bg-gradient-to-r from-[#00F0FF] via-[#8A2BE2] to-[#FF007A] text-white py-4 rounded-xl font-extrabold text-sm active:scale-95 transition-transform shadow-lg shadow-brand-purple/20 flex justify-center items-center gap-2">
-            <i class="fas fa-shopping-bag"></i> BELI SEKARANG VIA DANA
+            <i class="fas fa-shopping-bag"></i> BELI SEKARANG VIA AUTO QRIS
         </button>
     </div>
 </div>
