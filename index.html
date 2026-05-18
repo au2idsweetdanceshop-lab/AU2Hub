@@ -387,12 +387,15 @@
                 <input type="text" id="serviceSearch" placeholder="Cari layanan produk..." class="w-full bg-brand-card border border-brand-accent/30 rounded-2xl py-3.5 pl-12 pr-4 text-sm text-white focus:outline-none focus:border-brand-accent transition-all shadow-[0_0_10px_rgba(255,0,122,0.1)]">
             </div>
 
-            <div class="flex justify-between items-center mb-5">
+            <div class="flex justify-between items-center mb-4">
                 <h3 class="text-xl font-extrabold flex items-center gap-2">
                     <div class="w-1.5 h-6 bg-brand-accent rounded-full"></div> Katalog Layanan
                 </h3>
                 <span class="text-[10px] bg-brand-info/20 text-brand-info px-2 py-1.5 rounded-lg font-bold border border-brand-info/30 tracking-wider">AUTO QRIS</span>
             </div>
+
+            <div id="kategori-container" class="flex overflow-x-auto hide-scroll gap-2 mb-4 pb-1">
+                </div>
             
             <div id="service-list" class="grid grid-cols-2 gap-3 mb-6"></div>
             
@@ -5873,13 +5876,14 @@ async function sendMessageRoom() {
 
 
         
-        let xoftwareProdukGlobal = []; 
+let xoftwareProdukGlobal = []; 
+let kategoriAktif = 'Semua';
 
 // 1. Tarik Katalog Xoftware
 async function loadProdukXoftware() {
     const container = document.getElementById('service-list');
     if (!container) return;
-    container.innerHTML = `<div class="text-center py-10 text-xs text-brand-info animate-pulse"><i class="fas fa-sync fa-spin mb-2 text-2xl"></i><br>Menarik Katalog Produk...</div>`;
+    container.innerHTML = `<div class="text-center py-10 text-xs text-brand-info animate-pulse col-span-2"><i class="fas fa-sync fa-spin mb-2 text-2xl"></i><br>Menarik Katalog Produk...</div>`;
 
     try {
         const response = await fetch('/api/get-xoftware?action=produk');
@@ -5887,13 +5891,59 @@ async function loadProdukXoftware() {
 
         if (result.status === true && Array.isArray(result.data)) {
             xoftwareProdukGlobal = result.data; 
+            renderKategoriTabs(xoftwareProdukGlobal); // <--- BIKIN TAB KATEGORI
             renderProdukXoftware(xoftwareProdukGlobal);
         } else {
-            container.innerHTML = '<div class="text-center py-10 text-xs text-red-500">Gagal memuat katalog produk.</div>';
+            container.innerHTML = '<div class="text-center py-10 text-xs text-red-500 col-span-2">Gagal memuat katalog produk.</div>';
         }
     } catch (error) {
-        container.innerHTML = '<div class="text-center py-10 text-xs text-red-500">Gangguan jaringan katalog.</div>';
+        container.innerHTML = '<div class="text-center py-10 text-xs text-red-500 col-span-2">Gangguan jaringan katalog.</div>';
     }
+}
+
+// 🔥 MESIN KATEGORI OTOMATIS
+function renderKategoriTabs(data) {
+    const container = document.getElementById('kategori-container');
+    if (!container) return;
+
+    // Scan semua produk dan kumpulin kategorinya (Anti Duplikat)
+    let categories = new Set();
+    data.forEach(p => {
+        let kat = p.category || p.kategori || p.brand || 'Lainnya'; 
+        categories.add(kat);
+    });
+
+    let arrKategori = ['Semua', ...Array.from(categories).sort()];
+
+    container.innerHTML = arrKategori.map(k => `
+        <button onclick="pilihKategori('${k}')" id="btn-kat-${k.replace(/\s+/g, '-')}" class="kat-tab-btn flex-shrink-0 px-4 py-2 rounded-full text-[10px] uppercase tracking-wider font-extrabold transition-all border shadow-sm ${k === 'Semua' ? 'bg-brand-accent text-white border-brand-accent shadow-brand-accent/30' : 'bg-black/40 text-gray-400 border-white/5 hover:border-brand-info hover:text-white'}">
+            ${k}
+        </button>
+    `).join('');
+}
+
+function pilihKategori(kat) {
+    kategoriAktif = kat;
+    document.getElementById('serviceSearch').value = ''; // Reset pencarian
+
+    // Ganti Animasi Warna Tombol
+    document.querySelectorAll('.kat-tab-btn').forEach(btn => {
+        btn.className = "kat-tab-btn flex-shrink-0 px-4 py-2 rounded-full text-[10px] uppercase tracking-wider font-extrabold transition-all border shadow-sm bg-black/40 text-gray-400 border-white/5 hover:border-brand-info hover:text-white";
+    });
+    const btnAktif = document.getElementById(`btn-kat-${kat.replace(/\s+/g, '-')}`);
+    if(btnAktif) {
+        btnAktif.className = "kat-tab-btn flex-shrink-0 px-4 py-2 rounded-full text-[10px] uppercase tracking-wider font-extrabold transition-all border shadow-sm bg-brand-accent text-white border-brand-accent shadow-brand-accent/30";
+    }
+
+    // Filter Produknya
+    let dataFiltered = xoftwareProdukGlobal;
+    if (kat !== 'Semua') {
+        dataFiltered = xoftwareProdukGlobal.filter(p => {
+            let pKat = p.category || p.kategori || p.brand || 'Lainnya';
+            return pKat === kat;
+        });
+    }
+    renderProdukXoftware(dataFiltered);
 }
 
 // 2. Tampilkan Katalog & Tombol DANA
@@ -5904,40 +5954,29 @@ function renderProdukXoftware(data) {
         return;
     }
 
-    // Backup lokal tetap ada berdasarkan Kode Produk (p.code)
-    const folderGambarLokal = {
-        "FLIX": "https://nos.wjv-1.neo.id/au2hub/IMG-20260518-WA0208.jpg",
-    };
+    const folderGambarLokal = { "FLIX": "https://nos.wjv-1.neo.id/au2hub/IMG-20260518-WA0208.jpg" };
 
     container.innerHTML = data.map((p, index) => {
         const domainXoftware = "https://web.xoftware.id/"; 
         let rawImage = p.image || p.image_url || p.gambar || p.foto || p.thumbnail || p.logo || p.images || '';
-
-        // Trik Sakti: Cek apakah ada link gambar rahasia di dalam deskripsi
         let deskripsiTeks = p.description || "";
         let linkDariDeskripsi = "";
         const regexImg = /\[IMG:\s*(.*?)\]/;
         const match = deskripsiTeks.match(regexImg);
-        if (match) {
-            linkDariDeskripsi = match[1];
-        }
-
-        // Tentukan gambar utama: Cek Xoftware ➡️ Cek Trik Deskripsi ➡️ Cek Kode Lokal ➡️ Cadangan ADT Store
-        let fotoFinal = rawImage || linkDariDeskripsi || folderGambarLokal[p.code] || '';
-
-        // Kalau gambarnya banyak (ada koma), ambil gambar pertama aja buat cover depan
-        if (typeof fotoFinal === 'string' && fotoFinal.includes(',')) {
-            fotoFinal = fotoFinal.split(',')[0].trim();
-        }
-
-        if (fotoFinal && !fotoFinal.startsWith('http')) {
-            fotoFinal = domainXoftware + (fotoFinal.startsWith('/') ? fotoFinal.substring(1) : fotoFinal);
-        } else if (!fotoFinal) {
-            fotoFinal = 'https://placehold.co/400x400/1a1133/ff007a?text=ADT+STORE';
-        }
         
+        if (match) linkDariDeskripsi = match[1];
+
+        let fotoFinal = rawImage || linkDariDeskripsi || folderGambarLokal[p.code] || '';
+        if (typeof fotoFinal === 'string' && fotoFinal.includes(',')) fotoFinal = fotoFinal.split(',')[0].trim();
+        if (fotoFinal && !fotoFinal.startsWith('http')) fotoFinal = domainXoftware + (fotoFinal.startsWith('/') ? fotoFinal.substring(1) : fotoFinal);
+        else if (!fotoFinal) fotoFinal = 'https://placehold.co/400x400/1a1133/ff007a?text=ADT+STORE';
+        
+        // 🔥 TRIK AMAN: Cari tau INDEX ASLI produk ini di array global (xoftwareProdukGlobal)
+        // Biar pas ngeklik produk dari hasil filter, yang kebuka tetep bener!
+        const realIndex = xoftwareProdukGlobal.findIndex(item => item === p);
+
         return `
-        <div onclick="openDetailProduk(${index})" class="bg-brand-card rounded-2xl border border-white/5 overflow-hidden flex flex-col hover:border-brand-accent/30 transition-all smooth-reveal shadow-lg cursor-pointer">
+        <div onclick="openDetailProduk(${realIndex})" class="bg-brand-card rounded-2xl border border-white/5 overflow-hidden flex flex-col hover:border-brand-accent/30 transition-all smooth-reveal shadow-lg cursor-pointer">
             <div class="relative w-full aspect-square bg-black/40 overflow-hidden group">
                 <img src="${fotoFinal}" alt="${p.title}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onerror="this.src='https://placehold.co/400x400/1a1133/ff007a?text=ADT+STORE'">
                 <span class="absolute top-2 left-2 bg-brand-accent/90 text-white text-[8px] font-extrabold px-2 py-0.5 rounded-md backdrop-blur-sm border border-white/10 shadow-md">
@@ -5946,20 +5985,12 @@ function renderProdukXoftware(data) {
             </div>
             <div class="p-3 flex-1 flex flex-col justify-between gap-1">
                 <div>
-                    <div class="font-extrabold text-xs text-white leading-snug line-clamp-2 mb-1 min-h-[2.4rem]">
-                        ${p.title}
-                    </div>
-                    <div class="text-[10px] text-gray-400 truncate mb-1">
-                        ${deskripsiTeks.replace(regexImg, '').trim() || 'Proses cepat via WA.'}
-                    </div>
+                    <div class="font-extrabold text-xs text-white leading-snug line-clamp-2 mb-1 min-h-[2.4rem]">${p.title}</div>
+                    <div class="text-[10px] text-gray-400 truncate mb-1">${deskripsiTeks.replace(regexImg, '').trim() || 'Proses cepat via WA.'}</div>
                 </div>
                 <div class="mt-auto">
-                    <div class="text-[9px] text-brand-success font-bold mb-1.5 flex items-center gap-1">
-                        <i class="fas fa-bolt text-[8px]"></i> INCLUDE REKBER NIKKY
-                    </div>
-                    <div class="text-brand-accent font-extrabold text-sm tracking-tight">
-                        Rp ${p.price.toLocaleString('id-ID')}
-                    </div>
+                    <div class="text-[9px] text-brand-success font-bold mb-1.5 flex items-center gap-1"><i class="fas fa-bolt text-[8px]"></i> Instan 1 Detik</div>
+                    <div class="text-brand-accent font-extrabold text-sm tracking-tight">Rp ${p.price.toLocaleString('id-ID')}</div>
                 </div>
             </div>
         </div>
@@ -5967,16 +5998,22 @@ function renderProdukXoftware(data) {
     }).join('');
 }
 
-
-// 3. Fungsi Fitur Pencarian
+// 3. Fungsi Fitur Pencarian Pintar (Gabungan Kategori)
 document.getElementById('serviceSearch').addEventListener('input', (e) => {
     const val = e.target.value.toLowerCase();
-    const hasilFilter = xoftwareProdukGlobal.filter(p => 
-        p.title.toLowerCase().includes(val) || 
-        (p.description && p.description.toLowerCase().includes(val))
-    );
+    
+    // Filter data berdasarkan kata kunci DAN kategori yang lagi aktif
+    const hasilFilter = xoftwareProdukGlobal.filter(p => {
+        let cocokKataKunci = p.title.toLowerCase().includes(val) || (p.description && p.description.toLowerCase().includes(val));
+        let pKat = p.category || p.kategori || p.brand || 'Lainnya';
+        let cocokKategori = (kategoriAktif === 'Semua') ? true : (pKat === kategoriAktif);
+        
+        return cocokKataKunci && cocokKategori;
+    });
+    
     renderProdukXoftware(hasilFilter);
 });
+
 
 
 // 🔥 FUNGSI SAKTI GENERATOR QRIS OTOMATIS NOMINAL
@@ -6013,16 +6050,40 @@ function makeDynamicQRIS(amount) {
 let currentProductPrice = 0;
 let currentProductQty = 1;
 
+// 1. Fungsi Tombol Plus Minus
 function ubahJumlahPesan(delta) {
     let newQty = currentProductQty + delta;
-    if (newQty < 1) newQty = 1; // Minimal 1, ga boleh 0 atau minus
+    if (newQty < 1) newQty = 1; 
     currentProductQty = newQty;
     
-    // Update angka di layar
     const elQty = document.getElementById('detail-qty');
-    if (elQty) elQty.innerText = currentProductQty;
+    if (elQty) elQty.value = currentProductQty; // Pake .value karena sekarang jadi input box
     
-    // Update total harga di layar
+    updateHargaLayar();
+}
+
+// 2. Fungsi Diketik Manual (Real-time)
+function inputJumlahPesan(val) {
+    let parsed = parseInt(val);
+    if (!isNaN(parsed) && parsed >= 1) {
+        currentProductQty = parsed;
+        updateHargaLayar();
+    }
+}
+
+// 3. Fungsi Mencegah User Ngetik Huruf Aneh / Dikosongin
+function validasiJumlah(el) {
+    let parsed = parseInt(el.value);
+    if (isNaN(parsed) || parsed < 1) {
+        parsed = 1;
+        el.value = 1;
+    }
+    currentProductQty = parsed;
+    updateHargaLayar();
+}
+
+// 4. Update Angka Harga
+function updateHargaLayar() {
     let totalPrice = currentProductPrice * currentProductQty;
     document.getElementById('detail-product-price').innerText = `Rp ${totalPrice.toLocaleString('id-ID')}`;
 }
@@ -6036,7 +6097,8 @@ function openDetailProduk(index) {
     currentProductPrice = p.price;
     currentProductQty = 1;
     const elQty = document.getElementById('detail-qty');
-    if (elQty) elQty.innerText = "1";
+    if (elQty) elQty.value = "1"; // Ubah innerText jadi value
+
 
     let deskripsiAsli = p.description || "";
     let daftarGambar = [];
@@ -6323,7 +6385,7 @@ async function checkoutRobotDANA(namaProduk, harga, deskripsi) {
     <span class="text-xs font-bold text-gray-300 uppercase tracking-widest">Jumlah Pembelian</span>
     <div class="flex items-center gap-3 bg-black/40 border border-white/10 rounded-xl p-1">
         <button onclick="ubahJumlahPesan(-1)" class="w-8 h-8 flex items-center justify-center text-white hover:bg-white/10 rounded-lg active:scale-95 transition-all"><i class="fas fa-minus text-xs"></i></button>
-        <span id="detail-qty" class="text-sm font-extrabold text-white w-6 text-center">1</span>
+        <input type="tel" id="detail-qty" value="1" oninput="inputJumlahPesan(this.value)" onblur="validasiJumlah(this)" class="text-sm font-extrabold text-white w-10 text-center bg-transparent outline-none border-none p-0 m-0" maxlength="4">
         <button onclick="ubahJumlahPesan(1)" class="w-8 h-8 flex items-center justify-center text-white hover:bg-white/10 rounded-lg active:scale-95 transition-all"><i class="fas fa-plus text-xs"></i></button>
     </div>
 </div>
