@@ -5891,7 +5891,7 @@ async function loadProdukXoftware() {
 
         if (result.status === true && Array.isArray(result.data)) {
             xoftwareProdukGlobal = result.data; 
-            renderKategoriTabs(xoftwareProdukGlobal); // <--- BIKIN TAB KATEGORI
+            renderKategoriTabs(xoftwareProdukGlobal); 
             renderProdukXoftware(xoftwareProdukGlobal);
         } else {
             container.innerHTML = '<div class="text-center py-10 text-xs text-red-500 col-span-2">Gagal memuat katalog produk.</div>';
@@ -5901,16 +5901,18 @@ async function loadProdukXoftware() {
     }
 }
 
-// 🔥 MESIN KATEGORI OTOMATIS
+// 🔥 SCANNED BARU: Otomatis ngebaca database kategori asli dari API Xoftware lu Om
 function renderKategoriTabs(data) {
     const container = document.getElementById('kategori-container');
     if (!container) return;
 
-    // Scan semua produk dan kumpulin kategorinya (Anti Duplikat)
     let categories = new Set();
     data.forEach(p => {
-        let kat = p.category || p.kategori || p.brand || 'Lainnya'; 
-        categories.add(kat);
+        let kat = p.category_name || p.brand_name || p.group_name || p.category || p.kategori || p.brand || p.type || 'Lainnya'; 
+        if (kat && typeof kat === 'string') {
+            kat = kat.trim();
+            if (kat !== "") categories.add(kat);
+        }
     });
 
     let arrKategori = ['Semua', ...Array.from(categories).sort()];
@@ -5924,9 +5926,8 @@ function renderKategoriTabs(data) {
 
 function pilihKategori(kat) {
     kategoriAktif = kat;
-    document.getElementById('serviceSearch').value = ''; // Reset pencarian
+    document.getElementById('serviceSearch').value = ''; 
 
-    // Ganti Animasi Warna Tombol
     document.querySelectorAll('.kat-tab-btn').forEach(btn => {
         btn.className = "kat-tab-btn flex-shrink-0 px-4 py-2 rounded-full text-[10px] uppercase tracking-wider font-extrabold transition-all border shadow-sm bg-black/40 text-gray-400 border-white/5 hover:border-brand-info hover:text-white";
     });
@@ -5935,18 +5936,17 @@ function pilihKategori(kat) {
         btnAktif.className = "kat-tab-btn flex-shrink-0 px-4 py-2 rounded-full text-[10px] uppercase tracking-wider font-extrabold transition-all border shadow-sm bg-brand-accent text-white border-brand-accent shadow-brand-accent/30";
     }
 
-    // Filter Produknya
     let dataFiltered = xoftwareProdukGlobal;
     if (kat !== 'Semua') {
         dataFiltered = xoftwareProdukGlobal.filter(p => {
-            let pKat = p.category || p.kategori || p.brand || 'Lainnya';
-            return pKat === kat;
+            let pKat = p.category_name || p.brand_name || p.group_name || p.category || p.kategori || p.brand || p.type || 'Lainnya';
+            return pKat.trim() === kat;
         });
     }
     renderProdukXoftware(dataFiltered);
 }
 
-// 2. Tampilkan Katalog & Tombol DANA
+// 2. Tampilkan Katalog (OPTIMASI ANTILAG: Pake Staggered Render Delay)
 function renderProdukXoftware(data) {
     const container = document.getElementById('service-list');
     if (data.length === 0) {
@@ -5971,12 +5971,13 @@ function renderProdukXoftware(data) {
         if (fotoFinal && !fotoFinal.startsWith('http')) fotoFinal = domainXoftware + (fotoFinal.startsWith('/') ? fotoFinal.substring(1) : fotoFinal);
         else if (!fotoFinal) fotoFinal = 'https://placehold.co/400x400/1a1133/ff007a?text=ADT+STORE';
         
-        // 🔥 TRIK AMAN: Cari tau INDEX ASLI produk ini di array global (xoftwareProdukGlobal)
-        // Biar pas ngeklik produk dari hasil filter, yang kebuka tetep bener!
         const realIndex = xoftwareProdukGlobal.findIndex(item => item === p);
 
+        // Kuncian rahasia: Ngasih delay 0.02s per item biar GPU HP kagak kaget pas ganti kategori
+        const delayAnimasi = Math.min(index * 0.02, 0.4);
+
         return `
-        <div onclick="openDetailProduk(${realIndex})" class="bg-brand-card rounded-2xl border border-white/5 overflow-hidden flex flex-col hover:border-brand-accent/30 transition-all smooth-reveal shadow-lg cursor-pointer">
+        <div onclick="openDetailProduk(${realIndex})" style="animation-delay: ${delayAnimasi}s; opacity: 0;" class="bg-brand-card rounded-2xl border border-white/5 overflow-hidden flex flex-col hover:border-brand-accent/30 transition-all smooth-reveal shadow-lg cursor-pointer">
             <div class="relative w-full aspect-square bg-black/40 overflow-hidden group">
                 <img src="${fotoFinal}" alt="${p.title}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onerror="this.src='https://placehold.co/400x400/1a1133/ff007a?text=ADT+STORE'">
                 <span class="absolute top-2 left-2 bg-brand-accent/90 text-white text-[8px] font-extrabold px-2 py-0.5 rounded-md backdrop-blur-sm border border-white/10 shadow-md">
@@ -6001,18 +6002,17 @@ function renderProdukXoftware(data) {
 // 3. Fungsi Fitur Pencarian Pintar (Gabungan Kategori)
 document.getElementById('serviceSearch').addEventListener('input', (e) => {
     const val = e.target.value.toLowerCase();
-    
-    // Filter data berdasarkan kata kunci DAN kategori yang lagi aktif
     const hasilFilter = xoftwareProdukGlobal.filter(p => {
         let cocokKataKunci = p.title.toLowerCase().includes(val) || (p.description && p.description.toLowerCase().includes(val));
-        let pKat = p.category || p.kategori || p.brand || 'Lainnya';
-        let cocokKategori = (kategoriAktif === 'Semua') ? true : (pKat === kategoriAktif);
+        let pKat = p.category_name || p.brand_name || p.group_name || p.category || p.kategori || p.brand || p.type || 'Lainnya';
+        let cocokKategori = (kategoriAktif === 'Semua') ? true : (pKat.trim() === kategoriAktif);
         
         return cocokKataKunci && cocokKategori;
     });
-    
     renderProdukXoftware(hasilFilter);
 });
+
+
 
 
 
