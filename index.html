@@ -372,6 +372,25 @@
                         </div>
                     </div>
                 </div>
+                
+                <div class="bg-brand-card rounded-2xl p-4 border border-white/5 mt-4 text-left">
+                    <div class="flex items-start">
+                        <i class="fas fa-id-badge text-brand-accent text-xl mt-1 mr-3"></i>
+                        <div class="w-full">
+                            <h3 class="font-bold text-white mb-2">Sistem Kasta Lencana Dewa</h3>
+                            <p class="text-[11px] text-gray-400 mb-3 leading-relaxed">Upload video kreasi dance lu di menu Sosial buat naikin kasta harga diri dan dapet voucher diskon joki otomatis!</p>
+                            <div class="space-y-2.5 bg-black/30 p-3 rounded-xl border border-white/5">
+                                <div class="flex justify-between items-center text-[11px]"><span class="text-gray-300 font-medium">10+ Video ➡️ Verified</span> <span class="inline-flex items-center gap-1 bg-gradient-to-r from-brand-info to-[#89f7fe] text-brand-dark px-1.5 py-px rounded text-[8px] font-extrabold uppercase"><i class="fas fa-check-circle"></i> Verified</span></div>
+                                <div class="flex justify-between items-center text-[11px]"><span class="text-gray-300 font-medium">25+ Video ➡️ Elite</span> <span class="inline-flex items-center gap-1 bg-gradient-to-r from-brand-purple to-[#c471ed] text-white px-1.5 py-px rounded text-[8px] font-extrabold uppercase"><i class="fas fa-star"></i> Elite</span></div>
+                                <div class="flex justify-between items-center text-[11px]"><span class="text-gray-300 font-medium">50+ Video ➡️ Master (Diskon 5%)</span> <span class="inline-flex items-center gap-1 bg-gradient-to-r from-brand-accent to-[#ff758c] text-white px-1.5 py-px rounded text-[8px] font-extrabold uppercase"><i class="fas fa-fire"></i> Master</span></div>
+                                <div class="flex justify-between items-center text-[11px]"><span class="text-gray-300 font-medium">100+ Video ➡️ Legend (Diskon 10%)</span> <span class="inline-flex items-center gap-1 bg-gradient-to-r from-yellow-400 to-yellow-600 text-black px-1.5 py-px rounded text-[8px] font-extrabold uppercase"><i class="fas fa-crown"></i> Legend</span></div>
+                            </div>
+                            <p class="text-[9px] text-brand-info mt-2 italic">*Kasta Legend bisa Rebirth tanpa batas tiap kelipatan 50 video tambahan!</p>
+                        </div>
+                    </div>
+                </div>
+
+                
             </div>
             <h2 class="text-lg font-extrabold text-white mb-4 text-center">Tanya Jawab (FAQ)</h2>
             <div class="relative mb-4">
@@ -570,6 +589,31 @@
                     <div class="flex flex-col items-center cursor-pointer hover:opacity-70 transition-opacity" onclick="showUserList('pengikut')"><span id="stat-pengikut" class="font-bold text-white text-base">0</span><span class="text-[9px] text-gray-400 uppercase tracking-widest">Pengikut</span></div>
                     <div class="flex flex-col items-center"><span id="profile-total-likes" class="font-bold text-white text-base">0</span><span class="text-[9px] text-gray-400 uppercase tracking-widest">Suka</span></div>
                 </div>
+                
+                <div id="order-tracker-section" class="mb-6 bg-black/30 border border-white/5 rounded-2xl p-4 max-w-sm mx-auto text-left">
+                    <div class="flex justify-between items-center mb-3">
+                        <span class="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider">Status Pesanan Joki</span>
+                        <span onclick="cekStatusPesanan('riwayat')" class="text-[9px] font-bold text-brand-info underline cursor-pointer">Lihat Riwayat</span>
+                    </div>
+                    <div class="grid grid-cols-3 text-center">
+                        <div onclick="cekStatusPesanan('bayar')" class="relative flex flex-col items-center gap-1 cursor-pointer group">
+                            <i class="fas fa-wallet text-gray-500 group-hover:text-brand-accent text-lg"></i>
+                            <span class="text-[8px] font-bold text-gray-400 group-hover:text-white uppercase tracking-tight">Belum Bayar</span>
+                            <span id="badge-track-bayar" class="hidden absolute -top-1 right-3 bg-red-500 text-white text-[8px] font-bold w-4 h-4 flex items-center justify-center rounded-full border border-brand-dark">0</span>
+                        </div>
+                        <div onclick="cekStatusPesanan('proses')" class="relative flex flex-col items-center gap-1 cursor-pointer group">
+                            <i class="fas fa-box text-gray-500 group-hover:text-brand-accent text-lg"></i>
+                            <span class="text-[8px] font-bold text-gray-400 group-hover:text-white uppercase tracking-tight">Diproses</span>
+                            <span id="badge-track-proses" class="hidden absolute -top-1 right-5 bg-red-500 text-white text-[8px] font-bold w-4 h-4 flex items-center justify-center rounded-full border border-brand-dark">0</span>
+                        </div>
+                        <div onclick="cekStatusPesanan('selesai')" class="relative flex flex-col items-center gap-1 cursor-pointer group">
+                            <i class="fas fa-check-double text-gray-500 group-hover:text-brand-success text-lg"></i>
+                            <span class="text-[8px] font-bold text-gray-400 group-hover:text-white uppercase tracking-tight">Selesai</span>
+                            <span id="badge-track-selesai" class="hidden absolute -top-1 right-5 bg-brand-success text-white text-[8px] font-bold w-4 h-4 flex items-center justify-center rounded-full border border-brand-dark">0</span>
+                        </div>
+                    </div>
+                </div>
+
 
                 <div id="profile-actions-own" class="flex gap-2 justify-center px-4 mb-6">
                     <button onclick="openEditProfileModal()" class="flex-1 bg-white/10 border border-white/10 py-2.5 rounded-xl text-[11px] font-bold text-white flex items-center justify-center gap-2 hover:bg-white/20 transition-colors">
@@ -960,7 +1004,7 @@
                     <label id="btn-edit-group-avatar" for="edit-group-avatar" class="hidden absolute bottom-0 right-0 bg-brand-info text-brand-dark w-8 h-8 rounded-full flex items-center justify-center cursor-pointer border-2 border-brand-dark active:scale-90 transition-transform">
                         <i class="fas fa-camera text-xs"></i>
                     </label>
-                    <input type="file" id="edit-group-avatar" class="hidden" accept="image/*">
+                    <input type="file" id="edit-group-avatar" class="hidden" accept="image/*" onchange="handleGroupAvatarUpload(event)">
                 </div>
                 <h3 id="info-group-name" class="text-xl font-extrabold text-white mt-3">Nama Grup</h3>
                 <p id="info-group-desc" class="text-[11px] text-gray-400 mt-1 px-4">Deskripsi Grup</p>
@@ -1537,6 +1581,19 @@
                 checkGlobalUnreadMessages();
                 document.querySelectorAll('#profile-logged-in').forEach(el => el.classList.remove('hidden')); 
                 document.getElementById('profile-logged-out').classList.add('hidden'); 
+                
+                // 🚀 PRO-FIX 5 TAHUN AMAN: Jika data video kosong (direct link/refresh toko), paksa fetch background biar diskon kasta gak zonk!
+                if (allVideosData.length === 0) {
+                    try {
+                        const res = await fetch('/api/get-videos');
+                        const dataDariSheet = await res.json();
+                        allVideosData = dataDariSheet.map(v => {
+                            v.id = v.id || v.video_id || v.ID || 'vid_' + Math.random().toString(36).substr(2, 9);
+                            return v;
+                        }).filter(v => !blockedUsersList.includes(v.user_id));
+                    } catch(e) { console.log("Silent fetch videos failed"); }
+                }
+
                 updateUIForLoggedIn(); 
                 initPresence();
                 updateMyLastSeen();
@@ -1984,12 +2041,19 @@
             }
 
             const authModal = document.getElementById('modal-auth');
-            if (!authModal.classList.contains('hidden')) {
+            if (authModal && !authModal.classList.contains('hidden')) {
                 authModal.classList.add('hidden'); 
                 authModal.classList.remove('flex');
                 isPopupClosed = true;
             }
 
+            // 🏆 RE-SINKRONISASI TOMBOL BACK UTAMA LEADERBOARD MODAL
+            const leaderboardModal = document.getElementById('modal-leaderboard');
+            if (leaderboardModal && !leaderboardModal.classList.contains('hidden')) {
+                leaderboardModal.classList.add('hidden');
+                leaderboardModal.classList.remove('flex');
+                isPopupClosed = true;
+            }
 
             // 2. SETELAH POP-UP AMAN, BARU TANGKAP LAYAR MENGAMBANG
             if (document.body.classList.contains('video-focused')) {
@@ -2012,6 +2076,7 @@
             }
             switchTab(newHash.split('?')[0], null, false);
         });
+
 
 
         // FUNGSI KEMBALI DARI PROFIL YANG SUDAH DIPERBAIKI SANGAT AMAN
@@ -3484,7 +3549,8 @@ async function feedToggleFollow(targetUserId, btnElement) {
         async function searchUsersForChat(query) {
             if (!query.trim()) return loadChatList();
             
-            const container = document.getElementById('chat-list-container');
+            // 🚨 KUNCI FIX: Arahkan langsung ke container personal chat biar gak eror crash!
+            const container = document.getElementById('chat-personal-container');
             container.innerHTML = '<div class="flex justify-center mt-6"><i class="fas fa-spinner fa-spin text-brand-accent text-xl"></i></div>';
             
             const { data } = await supabaseClient.from('profiles').select('*').ilike('nickname', `%${query}%`).limit(15);
@@ -5325,16 +5391,18 @@ async function uploadAndSendVoice(blob) {
         reader.readAsDataURL(blob);
         reader.onloadend = async () => {
             try {
-                const base64data = reader.result.split(',')[1];
-                const response = await fetch('/api/upload-url', {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ fileBase64: base64data, filetype: 'audio/webm' })
+                // Samakan dengan sistem upload gambar & video lu yang udah terbukti anti-gagal
+                const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent('voice_'+Date.now()+'.webm')}&filetype=${encodeURIComponent('audio/webm')}`);
+                const dataUrl = await resUrl.json();
+                
+                // Upload file fisik suara ke Biznet Storage
+                await fetch(dataUrl.uploadUrl, { 
+                    method: 'PUT', 
+                    body: blob, 
+                    headers: { 'Content-Type': 'audio/webm', 'x-amz-acl': 'public-read' } 
                 });
 
-                const data = await response.json();
-                if (data.error) throw new Error(data.error);
-
-                let msgText = `[AUDIO]${data.url}`;
+                let msgText = `[AUDIO]${dataUrl.finalVideoUrl}`;
                 
                 // SISIPKAN KODE BALASAN JIKA ADA
                 if (currentReplyId) {
@@ -6046,6 +6114,11 @@ function renderProdukXoftware(data) {
         const realIndex = xoftwareProdukGlobal.findIndex(item => item === p);
         const delayAnimasi = Math.min(index * 0.02, 0.4);
 
+        // 🔥 LOGIKA HARGA CORET MARKETING AUTOMATIC
+        let hargaCoret = Math.ceil((p.price * 1.3) / 1000) * 1000; // Markup 30%, buletin ke ribuan terdekat
+        if (p.price > 100000) hargaCoret = Math.ceil((p.price * 1.2) / 5000) * 5000; // Kalau ratusan ribu nambah 20% biar wajar
+        if (p.price <= 5000) hargaCoret = p.price + 2500; // Kalau produk murah di bawah 5rb
+
         return `
         <div onclick="openDetailProduk(${realIndex})" style="animation-delay: ${delayAnimasi}s; opacity: 0;" class="bg-brand-card rounded-2xl border border-white/5 overflow-hidden flex flex-col hover:border-brand-accent/30 transition-all smooth-reveal shadow-lg cursor-pointer">
             <div class="relative w-full aspect-square bg-black/40 overflow-hidden group">
@@ -6060,8 +6133,11 @@ function renderProdukXoftware(data) {
                     <div class="text-[10px] text-gray-400 truncate mb-1">${deskripsiTeks.replace(regexImg, '').trim() || 'Proses cepat via WA.'}</div>
                 </div>
                 <div class="mt-auto">
-                    <div class="text-[9px] text-brand-success font-bold mb-1.5 flex items-center gap-1"><i class="fas fa-bolt text-[8px]"></i> Instan 1 Detik</div>
-                    <div class="text-brand-accent font-extrabold text-sm tracking-tight">Rp ${p.price.toLocaleString('id-ID')}</div>
+                    <div class="text-[9px] text-brand-success font-bold mb-1 flex items-center gap-1"><i class="fas fa-bolt text-[8px]"></i> Instan 1 Detik</div>
+                    <div class="flex items-center gap-1.5 mt-0.5">
+                        <div class="text-gray-500 line-through text-[10px] font-medium">Rp ${hargaCoret.toLocaleString('id-ID')}</div>
+                        <div class="text-brand-accent font-extrabold text-sm tracking-tight">Rp ${p.price.toLocaleString('id-ID')}</div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -6149,11 +6225,38 @@ function validasiJumlah(el) {
     updateHargaLayar();
 }
 
-// 4. Update Angka Harga
+// 4. Update Angka Harga (Dengan Coretan Marketing + Potongan Kasta Live)
 function updateHargaLayar() {
     let totalPrice = currentProductPrice * currentProductQty;
-    document.getElementById('detail-product-price').innerText = `Rp ${totalPrice.toLocaleString('id-ID')}`;
+    
+    // Rumus hitung harga coret otomatis biar sinkron
+    let baseHargaCoret = Math.ceil((currentProductPrice * 1.3) / 1000) * 1000;
+    if (currentProductPrice > 100000) baseHargaCoret = Math.ceil((currentProductPrice * 1.2) / 5000) * 5000;
+    if (currentProductPrice <= 5000) baseHargaCoret = currentProductPrice + 2500;
+
+    let totalHargaCoret = baseHargaCoret * currentProductQty;
+
+    // 👑 DETEKSI DISKON KASTA LIVE: Potong harga asli langsung di layar laci produk!
+    const badgeDiscount = document.getElementById('detail-discount-badge');
+    if (currentUser && badgeDiscount) {
+        const videoSaya = allVideosData.filter(v => v.user_id === currentUser.id).length;
+        if (videoSaya >= 100) {
+            totalPrice = Math.floor(totalPrice * 0.9); // Sunat 10%
+            badgeDiscount.innerHTML = `<i class="fas fa-percentage mr-1"></i> DISKON LEGEND 10% AKTIF`;
+            badgeDiscount.classList.remove('hidden');
+        } else if (videoSaya >= 50) {
+            totalPrice = Math.floor(totalPrice * 0.95); // Sunat 5%
+            badgeDiscount.innerHTML = `<i class="fas fa-percentage mr-1"></i> DISKON MASTER 5% AKTIF`;
+            badgeDiscount.classList.remove('hidden');
+        } else {
+            badgeDiscount.classList.add('hidden');
+        }
+    }
+
+    // Suntikkan ke elemen teks laci produk
+    document.getElementById('detail-product-price').innerHTML = `<span class="text-gray-500 line-through text-sm font-medium mr-2">Rp ${totalHargaCoret.toLocaleString('id-ID')}</span>Rp ${totalPrice.toLocaleString('id-ID')}`;
 }
+
 
 // 🔥 LOGIKA BUKA DETAIL PRODUK ALA SHOPEE WITH SLIDER SWIPE
 function openDetailProduk(index) {
@@ -6183,7 +6286,7 @@ function openDetailProduk(index) {
     }
 
     document.getElementById('detail-product-title').innerText = p.title;
-    document.getElementById('detail-product-price').innerText = `Rp ${p.price.toLocaleString('id-ID')}`;
+    updateHargaLayar(); // 🚀 Panggil mesin otomatis biar harga coret langsung nongol di laci
     
     const urlRegex = /(https?:\/\/[^\s]+)/g;
     let deskripsiBisaDiklik = cleanDescription.replace(urlRegex, '<a href="$1" target="_blank" class="text-brand-info underline hover:text-white transition-colors font-bold">$1</a>');
@@ -6197,12 +6300,28 @@ function openDetailProduk(index) {
         if (cleanDescription) infoLengkap += "*Deskripsi:*\n" + cleanDescription + "\n\n";
         if (teksSyarat) infoLengkap += "*Syarat & Ketentuan:*\n" + teksSyarat;
         
-        // PENTING: Kalkulasi Total Harga & Nama Produk untuk dikirim ke Kasir DANA
         let totalHargaCheckout = currentProductPrice * currentProductQty;
         let namaProdukFinal = currentProductQty > 1 ? `${p.title} (x${currentProductQty})` : p.title;
 
+        // 👑 SISTEM VOUCHER POTONGAN HARGA KASTA DEWA OTOMATIS
+        if (currentUser) {
+            const videoSaya = allVideosData.filter(v => v.user_id === currentUser.id).length;
+            if (videoSaya >= 100) {
+                // Kasta Legend Potong 10%
+                totalHargaCheckout = Math.floor(totalHargaCheckout * 0.9);
+                namaProdukFinal += " (Diskon Kasta Legend 10%)";
+                showToast("Selamat! Akun Legend Anda dapet diskon 10% otomatis!", "success");
+            } else if (videoSaya >= 50) {
+                // Kasta Master Potong 5%
+                totalHargaCheckout = Math.floor(totalHargaCheckout * 0.95);
+                namaProdukFinal += " (Diskon Kasta Master 5%)";
+                showToast("Selamat! Akun Master Anda dapet diskon 5% otomatis!", "success");
+            }
+        }
+
         checkoutRobotDANA(namaProdukFinal, totalHargaCheckout, infoLengkap);
     };
+
 
     const carousel = document.getElementById('detail-image-carousel');
     carousel.innerHTML = ''; 
@@ -6430,9 +6549,15 @@ async function checkoutRobotDANA(namaProduk, harga, deskripsi) {
         });
         
         
-// 🤖 HELPER SAKTI V2: Sistem Lencana Kasta Tertinggi (Harga Diri Tingkat Dewa - Modern)
+// 🤖 HELPER SAKTI V3: Sistem Lencana Kasta Tertinggi + Rebirth Loop Tanpa Batas 5 Tahun Awet
 function getBadgeByVideoCount(count) {
-    if (count >= 100) return '<span class="inline-flex items-center gap-1 bg-gradient-to-r from-yellow-400 to-yellow-600 text-black px-1.5 py-px rounded text-[8px] font-extrabold ml-1.5 shadow-[0_0_10px_rgba(250,204,21,0.8)] tracking-widest uppercase border border-yellow-300"><i class="fas fa-crown"></i> Legend</span>';
+    // KASTA END-GAME: LOOPING REBIRTH LEGEND (Tembus 100 Video ke atas)
+    if (count >= 100) {
+        // Hitung tingkatan tier dewa (Tiap 50 video nambah 1 tingkat kasta)
+        const tierDewa = Math.floor((count - 100) / 50) + 1;
+        const romawiTier = tierDewa > 1 ? ` ${tierDewa}` : ''; // Kalo tingkat 2 jadi "Legend 2"
+        return `<span class="inline-flex items-center gap-1 bg-gradient-to-r from-yellow-400 via-orange-500 to-yellow-600 text-black px-1.5 py-px rounded text-[8px] font-extrabold ml-1.5 shadow-[0_0_12px_rgba(250,204,21,1)] tracking-widest uppercase border border-yellow-300"><i class="fas fa-crown"></i> Legend${romawiTier}</span>`;
+    }
     
     if (count >= 50) return '<span class="inline-flex items-center gap-1 bg-gradient-to-r from-brand-accent to-[#ff758c] text-white px-1.5 py-px rounded text-[8px] font-extrabold ml-1.5 shadow-[0_0_10px_rgba(255,0,122,0.8)] tracking-widest uppercase border border-brand-accent"><i class="fas fa-fire"></i> Master</span>';
     
@@ -6480,6 +6605,22 @@ async function switchLeaderboardTab(tab) {
         // Loading Data
         containerCreator.innerHTML = '<div class="text-center py-10"><i class="fas fa-spinner fa-spin text-brand-accent text-2xl"></i></div>';
         
+        // 🚀 PRO-FIX VERCEL: Jika data video masih kosong (user langsung klik piala), paksa fetch mandiri ke server biar gak zonk!
+        if (allVideosData.length === 0) {
+            try {
+                const res = await fetch('/api/get-videos');
+                let dataDariSheet = await res.json();
+                dataDariSheet = dataDariSheet.map(v => {
+                    v.id = v.id || v.video_id || v.ID || 'vid_' + Math.random().toString(36).substr(2, 9);
+                    return v;
+                });
+                allVideosData = dataDariSheet.filter(v => !blockedUsersList.includes(v.user_id));
+            } catch(e) {
+                containerCreator.innerHTML = '<p class="text-center text-xs text-red-500 py-10">Gagal memuat data ranking creator.</p>';
+                return;
+            }
+        }
+
         const userStats = {};
         allVideosData.forEach(vid => {
             if (!userStats[vid.user_id]) {
@@ -6520,8 +6661,8 @@ async function switchLeaderboardTab(tab) {
                 </div>
             </div>`;
         }).join('');
-
-    } else if (tab === 'sultan') {
+    }
+ else if (tab === 'sultan') {
         // UI Animasi Switch
         btnSultan.className = 'flex-1 py-2.5 text-[11px] font-bold text-brand-dark bg-gradient-to-r from-yellow-400 to-yellow-600 rounded-xl shadow-[0_0_15px_rgba(250,204,21,0.4)] transition-all';
         btnCreator.className = 'flex-1 py-2.5 text-[11px] font-bold text-gray-500 hover:text-white rounded-xl transition-all bg-transparent shadow-none border border-transparent hover:border-white/10';
@@ -6668,8 +6809,8 @@ Sedang dikerjakan oleh Tim AU2Hub. Jika Admin sudah mengkonfirmasi selesai via W
     else if (status === 'bayar') {
         showToast("Tidak ada tagihan yang belum dibayar.", "info");
     } 
-    else if (status === 'selesai') {
-        // Pamerin jumlah pesanan yang udah sukses
+    else if (status === 'selesai' || status === 'riwayat') {
+        // Pamerin jumlah pesanan yang udah sukses (Menghandle klik laci Selesai dan teks Lihat Riwayat)
         const { count } = await supabaseClient.from('orders').select('*', { count: 'exact', head: true }).eq('user_id', currentUser.id).eq('status', 'selesai');
         if (count && count > 0) {
             customAlert(`Anda memiliki ${count} riwayat pesanan yang telah selesai dikerjakan. Terima kasih telah mempercayakan akun Anda di AU2Hub!`);
@@ -6678,6 +6819,44 @@ Sedang dikerjakan oleh Tim AU2Hub. Jika Admin sudah mengkonfirmasi selesai via W
         }
     }
 }
+
+// 👥 AUTO-UPDATE FOTO PROFIL GRUP (REAL-TIME STORAGE)
+async function handleGroupAvatarUpload(event) {
+    const file = event.target.files[0]; 
+    if (!file || !activeGroupId) return;
+    
+    showToast("Mengupdate foto profil grup...", "info");
+    
+    try {
+        // 1. Ambil URL unggahan dari API URL lu
+        const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent('group_edit_'+Date.now())}&filetype=${encodeURIComponent(file.type)}`);
+        const dataUrl = await resUrl.json();
+        
+        // 2. Upload file fisik ke storage Biznet GIO
+        await fetch(dataUrl.uploadUrl, { 
+            method: 'PUT', 
+            body: file, 
+            headers: { 'Content-Type': file.type, 'x-amz-acl': 'public-read' } 
+        });
+        
+        // 3. Tembak perubahan URL foto baru ke database Supabase
+        const { error } = await supabaseClient
+            .from('groups')
+            .update({ avatar_url: dataUrl.finalVideoUrl })
+            .eq('id', activeGroupId);
+            
+        if (error) throw error;
+
+        // 4. Ubah tampilan layar secara instan tanpa reload
+        document.getElementById('info-group-avatar').src = dataUrl.finalVideoUrl;
+        showToast("Foto profil grup berhasil diperbarui!", "success");
+        loadChatList(); // Refresh daftar pesan masuk di latar belakang
+        
+    } catch(err) {
+        showToast("Gagal memperbarui foto grup.", "error");
+    }
+}
+
 
 
 
@@ -6706,8 +6885,9 @@ Sedang dikerjakan oleh Tim AU2Hub. Jika Admin sudah mengkonfirmasi selesai via W
                 <h3 class="text-lg font-extrabold text-white leading-snug" id="detail-product-title">Nama Produk</h3>
             </div>
             
-<div class="flex gap-4 border-y border-white/5 py-3 text-[11px] font-bold uppercase tracking-wider text-gray-400">
+<div class="flex flex-wrap gap-4 border-y border-white/5 py-3 text-[11px] font-bold uppercase tracking-wider text-gray-400">
     <span class="text-brand-success flex items-center gap-1"><i class="fas fa-bolt mr-1"></i> INCLUDE REKBER NIKKY</span>
+    <span id="detail-discount-badge" class="hidden text-brand-info flex items-center gap-1"></span>
 </div>
 
 <div class="flex justify-between items-center border-b border-white/5 pb-4">
