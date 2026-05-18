@@ -394,7 +394,7 @@
                 <span class="text-[10px] bg-brand-info/20 text-brand-info px-2 py-1.5 rounded-lg font-bold border border-brand-info/30 tracking-wider">AUTO QRIS</span>
             </div>
 
-            <div id="kategori-container" class="flex overflow-x-auto hide-scroll gap-2 mb-4 pb-1">
+            <div id="kategori-container" class="grid grid-cols-4 gap-x-2 gap-y-5 mb-6 bg-black/20 p-4 rounded-2xl border border-white/5 shadow-inner">
                 </div>
             
             <div id="service-list" class="grid grid-cols-2 gap-3 mb-6"></div>
@@ -5879,15 +5879,35 @@ async function sendMessageRoom() {
 let xoftwareProdukGlobal = []; 
 let kategoriAktif = 'Semua';
 
+// 🤖 HELPER 1: Scanner Otomatis Ikon FontAwesome ala Gojek
+function getKategoriIcon(name) {
+    name = name.toLowerCase();
+    if (name === 'semua') return 'fa-th-large';
+    if (name.includes('joki')) return 'fa-bolt';
+    if (name.includes('netflix') || name.includes('flix') || name.includes('video') || name.includes('premium')) return 'fa-play';
+    if (name.includes('game') || name.includes('ml') || name.includes('ff') || name.includes('dance') || name.includes('bingo')) return 'fa-gamepad';
+    if (name.includes('diamond') || name.includes('dm') || name.includes('topup')) return 'fa-gem';
+    if (name.includes('app') || name.includes('aplikasi') || name.includes('contact') || name.includes('getcontact')) return 'fa-mobile-alt';
+    return 'fa-layer-group'; // Ikon cadangan standar
+}
+
+// 🤖 HELPER 2: Scanner Otomatis Warna Neon Ikon biar berwarna layaknya Gojek
+function getIconColorClass(name, isActive) {
+    if (isActive) return '!text-white'; // Kalau aktif, ikonnya dipaksa putih bersih
+    name = name.toLowerCase();
+    if (name === 'semua') return 'text-brand-info';
+    if (name.includes('joki')) return 'text-yellow-400';
+    if (name.includes('netflix') || name.includes('flix')) return 'text-red-500';
+    if (name.includes('game') || name.includes('dance') || name.includes('bingo')) return 'text-brand-purple';
+    return 'text-brand-accent';
+}
+
 // 🤖 FUNGSI SAKTI: Pendeteksi Kategori Otomatis lewat Judul Produk
 function getCategoryName(p) {
     let kat = p.category_name || p.brand_name || p.group_name || p.category || p.kategori || p.brand || p.type;
-    
-    // Jika API Xoftware lu kosong melompong, potong kata pertama dari Judul Produk!
     if (!kat && p.title) {
         kat = p.title.trim().split(' ')[0]; 
     }
-    
     return kat ? kat.trim().toUpperCase() : 'LAINNYA';
 }
 
@@ -5913,7 +5933,7 @@ async function loadProdukXoftware() {
     }
 }
 
-// 2. Bikin Tombol Kategori Di Layar
+// 2. Tancap Dashboard Grid Kategori di Layar (MODEL GOJEK PREMIUM)
 function renderKategoriTabs(data) {
     const container = document.getElementById('kategori-container');
     if (!container) return;
@@ -5925,24 +5945,28 @@ function renderKategoriTabs(data) {
 
     let arrKategori = ['Semua', ...Array.from(categories).sort()];
 
-    container.innerHTML = arrKategori.map(k => `
-        <button onclick="pilihKategori('${k}')" id="btn-kat-${k.replace(/\s+/g, '-')}" class="kat-tab-btn flex-shrink-0 px-4 py-2 rounded-full text-[10px] uppercase tracking-wider font-extrabold transition-all border shadow-sm ${k === 'Semua' ? 'bg-brand-accent text-white border-brand-accent shadow-brand-accent/30' : 'bg-black/40 text-gray-400 border-white/5 hover:border-brand-info hover:text-white'}">
-            ${k}
-        </button>
-    `).join('');
+    container.innerHTML = arrKategori.map(k => {
+        const isActive = k === kategoriAktif;
+        const iconName = getKategoriIcon(k);
+        const colorClass = getIconColorClass(k, isActive);
+        
+        return `
+        <div onclick="pilihKategori('${k}')" class="flex flex-col items-center gap-2 cursor-pointer text-center group active:scale-95 transition-all">
+            <div class="w-12 h-12 rounded-[1.2rem] flex items-center justify-center transition-all border ${isActive ? 'bg-brand-accent border-brand-accent shadow-lg shadow-brand-accent/30' : 'bg-brand-card border-white/5 shadow-md group-hover:border-brand-info'}">
+                <i class="fas ${iconName} text-base transition-colors ${colorClass}"></i>
+            </div>
+            <span class="text-[9px] font-extrabold tracking-wide truncate w-full uppercase leading-tight ${isActive ? 'text-brand-accent' : 'text-gray-400 group-hover:text-white'}">
+                ${k}
+            </span>
+        </div>
+        `;
+    }).join('');
 }
 
 function pilihKategori(kat) {
     kategoriAktif = kat;
     document.getElementById('serviceSearch').value = ''; 
-
-    document.querySelectorAll('.kat-tab-btn').forEach(btn => {
-        btn.className = "kat-tab-btn flex-shrink-0 px-4 py-2 rounded-full text-[10px] uppercase tracking-wider font-extrabold transition-all border shadow-sm bg-black/40 text-gray-400 border-white/5 hover:border-brand-info hover:text-white";
-    });
-    const btnAktif = document.getElementById(`btn-kat-${kat.replace(/\s+/g, '-')}`);
-    if(btnAktif) {
-        btnAktif.className = "kat-tab-btn flex-shrink-0 px-4 py-2 rounded-full text-[10px] uppercase tracking-wider font-extrabold transition-all border shadow-sm bg-brand-accent text-white border-brand-accent shadow-brand-accent/30";
-    }
+    renderKategoriTabs(xoftwareProdukGlobal); // Refresh status tombol aktif
 
     let dataFiltered = xoftwareProdukGlobal;
     if (kat !== 'Semua') {
@@ -6012,6 +6036,7 @@ document.getElementById('serviceSearch').addEventListener('input', (e) => {
     });
     renderProdukXoftware(hasilFilter);
 });
+
 
 
 
