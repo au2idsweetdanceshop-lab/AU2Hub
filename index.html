@@ -5902,49 +5902,55 @@ function renderProdukXoftware(data) {
         return;
     }
 
+    // Backup lokal tetap ada berdasarkan Kode Produk (p.code)
+    const folderGambarLokal = {
+        "FLIX": "https://nos.wjv-1.neo.id/au2hub/IMG-20260518-WA0208.jpg",
+    };
+
     container.innerHTML = data.map((p, index) => {
-        // Domain utama server Xoftware (Tanpa subfolder biar ga nyasar)
         const domainXoftware = "https://web.xoftware.id/"; 
+        let rawImage = p.image || p.image_url || p.gambar || p.foto || p.thumbnail || p.logo || p.images || '';
 
-        // Cerdas: Cek semua kemungkinan nama kolom gambar dari Xoftware
-        let rawImage = p.image || p.image_url || p.gambar || p.foto || p.thumbnail || p.logo || p.images || p.img || p.cover || p.icon || '';
-
-        // JIKA GAMBARNYA BANYAK (ADA KOMA), AMBIL GAMBAR PERTAMA AJA BUAT COVER DEPAN
-        if (typeof rawImage === 'string' && rawImage.includes(',')) {
-            rawImage = rawImage.split(',')[0].trim();
+        // Trik Sakti: Cek apakah ada link gambar rahasia di dalam deskripsi
+        let deskripsiTeks = p.description || "";
+        let linkDariDeskripsi = "";
+        const regexImg = /\[IMG:\s*(.*?)\]/;
+        const match = deskripsiTeks.match(regexImg);
+        if (match) {
+            linkDariDeskripsi = match[1];
         }
 
-        let fotoProduk = rawImage;
+        // Tentukan gambar utama: Cek Xoftware ➡️ Cek Trik Deskripsi ➡️ Cek Kode Lokal ➡️ Cadangan ADT Store
+        let fotoFinal = rawImage || linkDariDeskripsi || folderGambarLokal[p.code] || '';
 
-        // JIKA LINK RELATIF DARI XOFTWARE (Kagak ada http-nya)
-        if (fotoProduk && !fotoProduk.startsWith('http')) {
-            fotoProduk = domainXoftware + (fotoProduk.startsWith('/') ? fotoProduk.substring(1) : fotoProduk);
-        } 
-        // JIKA KOSONG TOTAL, PAKAI ADT STORE
-        else if (!fotoProduk) {
-            fotoProduk = 'https://placehold.co/400x400/1a1133/ff007a?text=ADT+STORE';
+        // Kalau gambarnya banyak (ada koma), ambil gambar pertama aja buat cover depan
+        if (typeof fotoFinal === 'string' && fotoFinal.includes(',')) {
+            fotoFinal = fotoFinal.split(',')[0].trim();
+        }
+
+        if (fotoFinal && !fotoFinal.startsWith('http')) {
+            fotoFinal = domainXoftware + (fotoFinal.startsWith('/') ? fotoFinal.substring(1) : fotoFinal);
+        } else if (!fotoFinal) {
+            fotoFinal = 'https://placehold.co/400x400/1a1133/ff007a?text=ADT+STORE';
         }
         
         return `
         <div onclick="openDetailProduk(${index})" class="bg-brand-card rounded-2xl border border-white/5 overflow-hidden flex flex-col hover:border-brand-accent/30 transition-all smooth-reveal shadow-lg cursor-pointer">
-            
             <div class="relative w-full aspect-square bg-black/40 overflow-hidden group">
-                <img src="${fotoProduk}" alt="${p.title}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onerror="this.src='https://placehold.co/400x400/1a1133/ff007a?text=ADT+STORE'">
+                <img src="${fotoFinal}" alt="${p.title}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onerror="this.src='https://placehold.co/400x400/1a1133/ff007a?text=ADT+STORE'">
                 <span class="absolute top-2 left-2 bg-brand-accent/90 text-white text-[8px] font-extrabold px-2 py-0.5 rounded-md backdrop-blur-sm border border-white/10 shadow-md">
                     READY
                 </span>
             </div>
-            
             <div class="p-3 flex-1 flex flex-col justify-between gap-1">
                 <div>
                     <div class="font-extrabold text-xs text-white leading-snug line-clamp-2 mb-1 min-h-[2.4rem]">
                         ${p.title}
                     </div>
                     <div class="text-[10px] text-gray-400 truncate mb-1">
-                        ${p.description || 'Proses cepat via WA.'}
+                        ${deskripsiTeks.replace(regexImg, '').trim() || 'Proses cepat via WA.'}
                     </div>
                 </div>
-                
                 <div class="mt-auto">
                     <div class="text-[9px] text-brand-success font-bold mb-1.5 flex items-center gap-1">
                         <i class="fas fa-bolt text-[8px]"></i> Instan 1 Detik
@@ -5954,16 +5960,10 @@ function renderProdukXoftware(data) {
                     </div>
                 </div>
             </div>
-            
         </div>
         `;
     }).join('');
 }
-
-
-
-
-
 
 
 // 3. Fungsi Fitur Pencarian
@@ -6012,59 +6012,60 @@ function openDetailProduk(index) {
     const p = xoftwareProdukGlobal[index];
     if (!p) return;
 
+    let deskripsiAsli = p.description || "";
+    let daftarGambar = [];
+
+    // Trik Sakti: Ekstrak kode [IMG: ...] dari deskripsi
+    const regexImg = /\[IMG:\s*(.*?)\]/;
+    const match = deskripsiAsli.match(regexImg);
+    
+    let cleanDescription = deskripsiAsli;
+    let linkDariDeskripsi = "";
+    
+    if (match) {
+        linkDariDeskripsi = match[1];
+        cleanDescription = deskripsiAsli.replace(regexImg, "").trim(); // Hapus text kode biar ga diliat pembeli
+    }
+
     document.getElementById('detail-product-title').innerText = p.title;
     document.getElementById('detail-product-price').innerText = `Rp ${p.price.toLocaleString('id-ID')}`;
-    document.getElementById('detail-product-desc').innerText = p.description || "Tidak ada deskripsi tambahan.";
+    document.getElementById('detail-product-desc').innerText = cleanDescription || "Tidak ada deskripsi tambahan.";
     
-    // Stok sudah kita matikan (sesuai langkah B)
-    // document.getElementById('detail-product-stock').innerText = p.stock;
-
     const btnBeli = document.getElementById('btn-beli-detail');
     btnBeli.onclick = () => {
         closeDetailProduk();
-        
-        // Sedot dan gabungin Deskripsi + Syarat Ketentuan dari Xoftware
         let teksSyarat = p.syarat_ketentuan || p.terms || p.syarat || ""; 
-        let teksDeskripsi = p.description || "";
-        
         let infoLengkap = "";
-        if (teksDeskripsi) infoLengkap += "*Deskripsi:*\n" + teksDeskripsi + "\n\n";
+        if (cleanDescription) infoLengkap += "*Deskripsi:*\n" + cleanDescription + "\n\n";
         if (teksSyarat) infoLengkap += "*Syarat & Ketentuan:*\n" + teksSyarat;
-        
-        // Kirim datanya ke fungsi Robot DANA
         checkoutRobotDANA(p.title, p.price, infoLengkap);
     };
 
     const carousel = document.getElementById('detail-image-carousel');
     carousel.innerHTML = ''; 
 
-    // Domain Xoftware Pusat (sudah bersih tanpa warungputri)
     const domainXoftware = "https://web.xoftware.id/";
+    const folderGambarLokal = {
+        "FLIX": "https://nos.wjv-1.neo.id/au2hub/IMG-20260518-WA0208.jpg",
+    };
     
-    // Cerdas cari kolom gambar
-    let rawImages = p.images || p.image || p.image_url || p.gambar || p.foto || p.thumbnail || p.logo || p.img || p.cover || '';
-    let daftarGambar = [];
+    let rawImages = p.images || p.image || p.image_url || p.gambar || p.foto || p.thumbnail || p.logo || p.img || linkDariDeskripsi || folderGambarLokal[p.code] || '';
 
     if (rawImages) {
-        // Pecah semua link gambar berdasarkan TANDA KOMA
         let splitImages = rawImages.split(',');
-        
         daftarGambar = splitImages.map(img => {
             let cleanImg = img.trim();
-            // Cek apakah link dari luar (Postimages) atau nyedot dari Xoftware
             if (cleanImg && !cleanImg.startsWith('http')) {
                 return domainXoftware + (cleanImg.startsWith('/') ? cleanImg.substring(1) : cleanImg);
             }
             return cleanImg;
-        }).filter(img => img !== ""); // Buang kalau ada yang kosong
+        }).filter(img => img !== "");
     }
 
-    // Kalau beneran kagak ada gambar sama sekali
     if (daftarGambar.length === 0) {
         daftarGambar.push('https://placehold.co/400x400/1a1133/ff007a?text=ADT+STORE');
     }
 
-    // Cetak ke dalam Laci Shopee (Bisa di-swipe kalau lebih dari 1)
     carousel.innerHTML = daftarGambar.map(imgUrl => `
         <div class="w-full h-full flex-shrink-0 snap-center">
             <img src="${imgUrl}" class="w-full h-full object-cover" onerror="this.src='https://placehold.co/400x400/1a1133/ff007a?text=ADT+STORE'">
@@ -6076,7 +6077,6 @@ function openDetailProduk(index) {
     currentTxt.innerText = "1";
     totalTxt.innerText = daftarGambar.length;
 
-    // Logika ganti angka saat digeser
     carousel.onscroll = () => {
         let page = Math.round(carousel.scrollLeft / carousel.clientWidth) + 1;
         currentTxt.innerText = page;
@@ -6088,19 +6088,6 @@ function openDetailProduk(index) {
 
     history.pushState({ popup: 'detail_produk' }, null, '#detail');
 }
-
-
-function closeDetailProduk() {
-    const laci = document.getElementById('modal-detail-produk');
-    laci.classList.remove('translate-y-0');
-    laci.classList.add('translate-y-full');
-    
-    if (window.location.hash === '#detail') {
-        history.back();
-    }
-}
-
-
 
 
 // 4. Logika Checkout Pembayaran Robot DANA (VERSI OTOMATIS NOMINAL + AUTO SUCCESS UI)
