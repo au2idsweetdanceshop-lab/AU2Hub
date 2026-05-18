@@ -5955,7 +5955,7 @@ function renderProdukXoftware(data) {
                 </div>
                 <div class="mt-auto">
                     <div class="text-[9px] text-brand-success font-bold mb-1.5 flex items-center gap-1">
-                        <i class="fas fa-bolt text-[8px]"></i> Instan 1 Detik
+                        <i class="fas fa-bolt text-[8px]"></i> INCLUDE REKBER NIKKY
                     </div>
                     <div class="text-brand-accent font-extrabold text-sm tracking-tight">
                         Rp ${p.price.toLocaleString('id-ID')}
@@ -6009,10 +6009,34 @@ function makeDynamicQRIS(amount) {
     return fullPayload + crcString;
 }
 
+// 🔥 VARIABEL GLOBAL UNTUK KALKULASI HARGA
+let currentProductPrice = 0;
+let currentProductQty = 1;
+
+function ubahJumlahPesan(delta) {
+    let newQty = currentProductQty + delta;
+    if (newQty < 1) newQty = 1; // Minimal 1, ga boleh 0 atau minus
+    currentProductQty = newQty;
+    
+    // Update angka di layar
+    const elQty = document.getElementById('detail-qty');
+    if (elQty) elQty.innerText = currentProductQty;
+    
+    // Update total harga di layar
+    let totalPrice = currentProductPrice * currentProductQty;
+    document.getElementById('detail-product-price').innerText = `Rp ${totalPrice.toLocaleString('id-ID')}`;
+}
+
 // 🔥 LOGIKA BUKA DETAIL PRODUK ALA SHOPEE WITH SLIDER SWIPE
 function openDetailProduk(index) {
     const p = xoftwareProdukGlobal[index];
     if (!p) return;
+
+    // Reset Qty & Harga setiap laci dibuka
+    currentProductPrice = p.price;
+    currentProductQty = 1;
+    const elQty = document.getElementById('detail-qty');
+    if (elQty) elQty.innerText = "1";
 
     let deskripsiAsli = p.description || "";
     let daftarGambar = [];
@@ -6031,7 +6055,10 @@ function openDetailProduk(index) {
 
     document.getElementById('detail-product-title').innerText = p.title;
     document.getElementById('detail-product-price').innerText = `Rp ${p.price.toLocaleString('id-ID')}`;
-    document.getElementById('detail-product-desc').innerText = cleanDescription || "Tidak ada deskripsi tambahan.";
+    
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    let deskripsiBisaDiklik = cleanDescription.replace(urlRegex, '<a href="$1" target="_blank" class="text-brand-info underline hover:text-white transition-colors font-bold">$1</a>');
+    document.getElementById('detail-product-desc').innerHTML = deskripsiBisaDiklik || "Tidak ada deskripsi tambahan.";
     
     const btnBeli = document.getElementById('btn-beli-detail');
     btnBeli.onclick = () => {
@@ -6040,7 +6067,12 @@ function openDetailProduk(index) {
         let infoLengkap = "";
         if (cleanDescription) infoLengkap += "*Deskripsi:*\n" + cleanDescription + "\n\n";
         if (teksSyarat) infoLengkap += "*Syarat & Ketentuan:*\n" + teksSyarat;
-        checkoutRobotDANA(p.title, p.price, infoLengkap);
+        
+        // PENTING: Kalkulasi Total Harga & Nama Produk untuk dikirim ke Kasir DANA
+        let totalHargaCheckout = currentProductPrice * currentProductQty;
+        let namaProdukFinal = currentProductQty > 1 ? `${p.title} (x${currentProductQty})` : p.title;
+
+        checkoutRobotDANA(namaProdukFinal, totalHargaCheckout, infoLengkap);
     };
 
     const carousel = document.getElementById('detail-image-carousel');
@@ -6076,8 +6108,17 @@ function openDetailProduk(index) {
 
     const currentTxt = document.getElementById('carousel-current-index');
     const totalTxt = document.getElementById('carousel-total-index');
+    const badgeCounter = document.getElementById('carousel-counter-badge'); 
+    
     currentTxt.innerText = "1";
     totalTxt.innerText = daftarGambar.length;
+
+    // 🔥 LOGIKA BARU: Sembunyikan angka 1/1 kalau gambar cuma sebiji
+    if (daftarGambar.length > 1) {
+        badgeCounter.classList.remove('hidden');
+    } else {
+        badgeCounter.classList.add('hidden');
+    }
 
     carousel.onscroll = () => {
         let page = Math.round(carousel.scrollLeft / carousel.clientWidth) + 1;
@@ -6263,7 +6304,7 @@ async function checkoutRobotDANA(namaProduk, harga, deskripsi) {
         <div class="relative w-full aspect-square bg-black/50 border-b border-white/5">
             <div id="detail-image-carousel" class="flex overflow-x-auto hide-scroll snap-x snap-mandatory h-full w-full">
                 </div>
-            <div class="absolute bottom-4 right-4 bg-black/60 backdrop-blur-md text-white text-[10px] font-bold px-3 py-1 rounded-full border border-white/10 shadow-md">
+                        <div id="carousel-counter-badge" class="absolute bottom-4 right-4 bg-black/60 backdrop-blur-md text-white text-[10px] font-bold px-3 py-1 rounded-full border border-white/10 shadow-md">
                 <span id="carousel-current-index">1</span>/<span id="carousel-total-index">1</span>
             </div>
         </div>
@@ -6275,7 +6316,16 @@ async function checkoutRobotDANA(namaProduk, harga, deskripsi) {
             </div>
             
 <div class="flex gap-4 border-y border-white/5 py-3 text-[11px] font-bold uppercase tracking-wider text-gray-400">
-    <span class="text-brand-success flex items-center gap-1"><i class="fas fa-bolt mr-1"></i> Proses Instan 1 Detik</span>
+    <span class="text-brand-success flex items-center gap-1"><i class="fas fa-bolt mr-1"></i> INCLUDE REKBER NIKKY</span>
+</div>
+
+<div class="flex justify-between items-center border-b border-white/5 pb-4">
+    <span class="text-xs font-bold text-gray-300 uppercase tracking-widest">Jumlah Pembelian</span>
+    <div class="flex items-center gap-3 bg-black/40 border border-white/10 rounded-xl p-1">
+        <button onclick="ubahJumlahPesan(-1)" class="w-8 h-8 flex items-center justify-center text-white hover:bg-white/10 rounded-lg active:scale-95 transition-all"><i class="fas fa-minus text-xs"></i></button>
+        <span id="detail-qty" class="text-sm font-extrabold text-white w-6 text-center">1</span>
+        <button onclick="ubahJumlahPesan(1)" class="w-8 h-8 flex items-center justify-center text-white hover:bg-white/10 rounded-lg active:scale-95 transition-all"><i class="fas fa-plus text-xs"></i></button>
+    </div>
 </div>
 
 
