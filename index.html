@@ -412,9 +412,14 @@
                 <h3 class="text-xl font-extrabold flex items-center gap-2">
                     <div class="w-1.5 h-6 bg-[#25D366] rounded-full"></div> Feed Komunitas
                 </h3>
-                <button onclick="openUploadModal()" class="bg-gradient-to-tr from-brand-accent to-brand-purple text-white w-10 h-10 rounded-full shadow-[0_0_15px_rgba(255,0,122,0.4)] flex items-center justify-center active:scale-90 transition-all hover:rotate-12">
-                    <i class="fas fa-camera text-sm"></i>
-                </button>
+                <div class="flex gap-2">
+                    <button onclick="openLeaderboardModal()" class="bg-gradient-to-tr from-brand-info to-brand-purple text-white w-10 h-10 rounded-full shadow-[0_0_15px_rgba(0,240,255,0.4)] flex items-center justify-center active:scale-90 transition-all hover:-translate-y-1">
+                        <i class="fas fa-trophy text-sm text-yellow-400"></i>
+                    </button>
+                    <button onclick="openUploadModal()" class="bg-gradient-to-tr from-brand-accent to-brand-purple text-white w-10 h-10 rounded-full shadow-[0_0_15px_rgba(255,0,122,0.4)] flex items-center justify-center active:scale-90 transition-all hover:rotate-12">
+                        <i class="fas fa-camera text-sm"></i>
+                    </button>
+                </div>
             </div>
             
             <div id="sosial-wrapper" class="relative w-full h-[calc(100dvh-240px)] min-h-[400px] rounded-3xl overflow-hidden border border-white/10 shadow-lg bg-brand-dark flex flex-col transition-all duration-300">
@@ -1125,6 +1130,29 @@
         <a href="#rekber" onclick="switchTab('rekber', event)" class="nav-item flex flex-col items-center justify-center flex-1 text-gray-500 transition-colors"><i class="fas fa-shield-alt text-xl mb-1"></i><span class="text-[9px] font-bold mt-0.5">Rekber</span></a>
         <a href="#ripper" onclick="switchTab('ripper', event)" class="nav-item flex flex-col items-center justify-center flex-1 text-gray-500 transition-colors"><i class="fas fa-user-ninja text-xl mb-1"></i><span class="text-[9px] font-bold mt-0.5">Ripper</span></a>
         <a href="#profile" onclick="switchTab('profile', event)" class="nav-item flex flex-col items-center justify-center flex-1 text-gray-500 transition-colors"><i class="fas fa-user-circle text-xl mb-1"></i><span class="text-[9px] font-bold mt-0.5">Profil</span></a>
+        
+    <div id="modal-leaderboard" class="fixed inset-0 z-[250] hidden items-center justify-center bg-black/90 backdrop-blur-md px-6 transition-all duration-300">
+        <div class="bg-brand-card w-full max-w-sm rounded-3xl border border-white/10 shadow-2xl relative modal-anim flex flex-col max-h-[75vh] overflow-hidden">
+            <div class="flex justify-between items-center p-5 border-b border-white/5 bg-brand-dark/80 backdrop-blur-xl shrink-0">
+                <h3 class="font-extrabold text-white text-sm flex items-center gap-2">
+                    <i class="fas fa-trophy text-yellow-400"></i> LEADERBOARD
+                </h3>
+                <button onclick="closeLeaderboardModal()" class="text-gray-400 hover:text-white w-8 h-8 rounded-full bg-white/5 flex items-center justify-center active:scale-95 transition-all"><i class="fas fa-times"></i></button>
+            </div>
+            
+            <div class="flex p-2 bg-black/40 shrink-0 gap-1 border-b border-white/5">
+                <button id="tab-lb-creator" onclick="switchLeaderboardTab('creator')" class="flex-1 py-2.5 text-[11px] font-bold text-white bg-brand-accent rounded-xl shadow-[0_0_15px_rgba(255,0,122,0.4)] transition-all">🎬 Top Creator</button>
+                <button id="tab-lb-sultan" onclick="switchLeaderboardTab('sultan')" class="flex-1 py-2.5 text-[11px] font-bold text-gray-500 hover:text-white rounded-xl transition-all">💸 Top Sultan</button>
+            </div>
+
+            <div id="leaderboard-container-creator" class="flex-1 overflow-y-auto p-3 hide-scroll space-y-2 block"></div>
+            <div id="leaderboard-container-sultan" class="flex-1 overflow-y-auto p-3 hide-scroll space-y-2 hidden"></div>
+            
+            <p class="text-[9px] text-gray-500 p-3 text-center bg-black/20 shrink-0">*Peringkat diperbarui secara real-time oleh sistem.</p>
+        </div>
+    </div>
+
+        
     </nav>
 
     <script>
@@ -2005,6 +2033,10 @@
                 const actionOwn = document.getElementById('profile-actions-own'); if(actionOwn) actionOwn.classList.remove('hidden');
                 const actionOther = document.getElementById('profile-actions-other'); if(actionOther) actionOther.classList.add('hidden');
                 
+                const tracker = document.getElementById('order-tracker-section'); if(tracker) tracker.classList.remove('hidden');
+
+
+                
                 const btnBack = document.getElementById('btn-back-profile'); if(btnBack) btnBack.classList.add('hidden');
                 const btnEditAva = document.getElementById('btn-edit-avatar'); if(btnEditAva) btnEditAva.classList.remove('hidden');
                 
@@ -2084,87 +2116,96 @@ function closeUploadModal() {
     document.getElementById('video-preview-element').src = '';
 }
         
-        async function openUserProfile(userId) {
-            try {
-                let wasPopupOpen = false;
+async function openUserProfile(userId) {
+    try {
+        let wasPopupOpen = false;
 
-                // 1. Matikan mode video utama jika aktif
-                if (document.body.classList.contains('video-focused')) {
-                    toggleGlobalAudio(true); 
-                    wasPopupOpen = true;
-                }
-                
-                // 2. Tutup pop-up video profil jika aktif
-                const floatingPlayer = document.getElementById('floating-video-player');
-                if (floatingPlayer && !floatingPlayer.classList.contains('hidden')) {
-                    closeFloatingVideo(true);
-                    wasPopupOpen = true;
-                }
+        // 1. Matikan mode video utama jika aktif
+        if (document.body.classList.contains('video-focused')) {
+            toggleGlobalAudio(true); 
+            wasPopupOpen = true;
+        }
+        
+        // 2. Tutup pop-up video profil jika aktif
+        const floatingPlayer = document.getElementById('floating-video-player');
+        if (floatingPlayer && !floatingPlayer.classList.contains('hidden')) {
+            closeFloatingVideo(true);
+            wasPopupOpen = true;
+        }
 
-                viewedUserId = userId;
-                
-                // 👇 KUNCI PERBAIKAN: Berikan jeda 10ms agar render browser tidak bertabrakan saat video dihancurkan
-                setTimeout(() => {
-                    switchTab('profile', null, false);
-                }, 10);
+        viewedUserId = userId;
+        
+        // 👇 KUNCI PERBAIKAN: Berikan jeda 10ms agar render browser tidak bertabrakan saat video dihancurkan
+        setTimeout(() => {
+            switchTab('profile', null, false);
+        }, 10);
 
-                // Tampilkan loading skeleton
-                document.getElementById('profile-loading').classList.remove('hidden');
-                document.querySelectorAll('#profile-logged-in').forEach(el => el.classList.add('hidden'));
-                
-                const isOwn = (userId === currentUser?.id);
-                
-                // Ambil data profil (Aman dari silent error)
-                const { data, error } = await supabaseClient.from('profiles').select('*').eq('id', userId).single();
-                if (error && error.code !== 'PGRST116') {
-                    console.error("Error database:", error);
-                }
-                
-                // Render teks profil
-                const elNick2 = document.getElementById('profile-nickname'); if(elNick2) elNick2.innerText = "@" + (data?.nickname || "Player");
-                const elBio2 = document.getElementById('profile-bio'); if(elBio2) elBio2.innerText = data?.bio || "Belum ada deskripsi.";
-                const elImg2 = document.getElementById('profile-img'); if(elImg2) elImg2.src = data?.avatar_url || `https://ui-avatars.com/api/?name=${data?.nickname || 'Player'}&background=1A1133&color=fff`;
+        // Tampilkan loading skeleton
+        document.getElementById('profile-loading').classList.remove('hidden');
+        document.querySelectorAll('#profile-logged-in').forEach(el => el.classList.add('hidden'));
+        
+        const isOwn = (userId === currentUser?.id);
+        
+        // Ambil data profil (Aman dari silent error)
+        const { data, error } = await supabaseClient.from('profiles').select('*').eq('id', userId).single();
+        if (error && error.code !== 'PGRST116') {
+            console.error("Error database:", error);
+        }
+        
+        const elBio2 = document.getElementById('profile-bio'); if(elBio2) elBio2.innerText = data?.bio || "Belum ada deskripsi.";
+        const elImg2 = document.getElementById('profile-img'); if(elImg2) elImg2.src = data?.avatar_url || `https://ui-avatars.com/api/?name=${data?.nickname || 'Player'}&background=1A1133&color=fff`;
 
-                const actionOwn = document.getElementById('profile-actions-own'); if(actionOwn) actionOwn.classList.toggle('hidden', !isOwn);
-                const actionOther = document.getElementById('profile-actions-other'); if(actionOther) actionOther.classList.toggle('hidden', isOwn);
-                
-                document.getElementById('btn-back-profile').classList.toggle('hidden', isOwn);
-                
-                const inputAva = document.getElementById('btn-edit-avatar');
-                if(inputAva) inputAva.classList.toggle('hidden', !isOwn);
+        const actionOwn = document.getElementById('profile-actions-own'); if(actionOwn) actionOwn.classList.toggle('hidden', !isOwn);
+        const actionOther = document.getElementById('profile-actions-other'); if(actionOther) actionOther.classList.toggle('hidden', isOwn);
+        
+        const tracker = document.getElementById('order-tracker-section'); if(tracker) tracker.classList.toggle('hidden', !isOwn);
 
-                const elVidTitle = document.getElementById('profile-video-title');
-                if(elVidTitle) {
-                    if(isOwn) { elVidTitle.innerHTML = `<i class="fas fa-grip-vertical mr-2 text-brand-info"></i> Video Saya`; } 
-                    else { elVidTitle.innerHTML = `<i class="fas fa-grip-vertical mr-2 text-brand-info"></i> Video ${data?.nickname || ''}`; }
-                }
-                
-                const userVideos = allVideosData.filter(v => v.user_id === userId);
-                const elLikes = document.getElementById('profile-total-likes');
-                if (elLikes) elLikes.innerText = (userVideos.length * 3);
+        document.getElementById('btn-back-profile').classList.toggle('hidden', isOwn);
+        
+        const inputAva = document.getElementById('btn-edit-avatar');
+        if(inputAva) inputAva.classList.toggle('hidden', !isOwn);
 
-                renderProfileVideos(userId);
-                fetchFollowStats(userId); 
-                
-                // Hilangkan loading dan munculkan profil
-                document.getElementById('profile-loading').classList.add('hidden');
-                document.querySelectorAll('#profile-logged-in').forEach(el => el.classList.remove('hidden'));
-                
-                checkBlockStatusUI();
-                
-                // Pastikan riwayat URL tidak kacau
-                if(!isOwn) {
-                    if (wasPopupOpen) {
-                        history.replaceState({ popup: 'user_profile' }, null, `#profile?id=${userId}`);
-                    } else {
-                        history.pushState({ popup: 'user_profile' }, null, `#profile?id=${userId}`);
-                    }
-                }
-            } catch (err) {
-                console.error("Gagal membuka profil:", err);
-                showToast("Terjadi kesalahan saat memuat profil.", "error");
+        const elVidTitle = document.getElementById('profile-video-title');
+        if(elVidTitle) {
+            if(isOwn) { elVidTitle.innerHTML = `<i class="fas fa-grip-vertical mr-2 text-brand-info"></i> Video Saya`; } 
+            else { elVidTitle.innerHTML = `<i class="fas fa-grip-vertical mr-2 text-brand-info"></i> Video ${data?.nickname || ''}`; }
+        }
+        
+        // 🚀 PERBAIKAN UTAMA: Tarik data video dari internet duluan sampai beres (await)
+        await renderProfileVideos(userId);
+        
+        // Baru hitung lencana badge & total likes biar auto-akurat tanpa delay / bug nunggu refresh
+        const userVideos = allVideosData.filter(v => v.user_id === userId);
+        const badgeHTML = getBadgeByVideoCount(userVideos.length);
+        const elNick2 = document.getElementById('profile-nickname'); 
+        if(elNick2) elNick2.innerHTML = "@" + (data?.nickname || "Player") + badgeHTML;
+
+        const elLikes = document.getElementById('profile-total-likes');
+        if (elLikes) elLikes.innerText = (userVideos.length * 3);
+
+        fetchFollowStats(userId); 
+        loadOrderTracker(userId); // <--- INI DIA YANG KETINGGALAN OM
+
+        // Hilangkan loading dan munculkan profil
+        document.getElementById('profile-loading').classList.add('hidden');
+        document.querySelectorAll('#profile-logged-in').forEach(el => el.classList.remove('hidden'));
+        
+        checkBlockStatusUI();
+        
+        // Pastikan riwayat URL tidak kacau
+        if(!isOwn) {
+            if (wasPopupOpen) {
+                history.replaceState({ popup: 'user_profile' }, null, `#profile?id=${userId}`);
+            } else {
+                history.pushState({ popup: 'user_profile' }, null, `#profile?id=${userId}`);
             }
         }
+    } catch (err) {
+        console.error("Gagal membuka profil:", err);
+        showToast("Terjadi kesalahan saat memuat profil.", "error");
+    }
+}
+
 
         
         // FUNGSI MELIHAT PROFIL USER LAIN DARI MANA SAJA
@@ -3041,8 +3082,8 @@ document.getElementById('serviceSearch').addEventListener('input', (e) => {
 
                         <!-- 1. Area Teks Kiri Bawah -->
                         <div class="absolute bottom-6 left-4 z-40 w-[75%] pr-2 pointer-events-auto flex flex-col justify-end pb-2">
-                            <p onclick="event.stopPropagation(); viewUserProfile('${vid.user_id}')" class="font-bold text-[16px] text-white cursor-pointer hover:text-brand-info drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)] mb-1.5">
-                                @${vid.nickname || "Player"}
+                            <p onclick="event.stopPropagation(); viewUserProfile('${vid.user_id}')" class="font-bold text-[16px] text-white cursor-pointer hover:text-brand-info drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)] mb-1.5 flex items-center">
+                                @${vid.nickname || "Player"} ${getBadgeByVideoCount(allVideosData.filter(v => v.user_id === vid.user_id).length)}
                             </p>
                             <div onclick="this.classList.toggle('expanded')" class="caption-text text-[14px] text-white/95 drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)] cursor-pointer leading-snug">
                                 ${formatCaption(vid.caption)}
@@ -6295,6 +6336,18 @@ async function checkoutRobotDANA(namaProduk, harga, deskripsi) {
                         const infoXoftware = deskripsi ? deskripsi.replace(/<[^>]*>?/gm, '') : '';
                         const teksWASukses = encodeURIComponent(`Halo Admin Joki AU2Hub,\n\nPembayaran DANA saya sudah terkonfirmasi sukses otomatis oleh sistem!\n\nPesanan: *${namaProduk}*\nTotal: Rp ${harga.toLocaleString('id-ID')}\n\n${infoXoftware}\n\nIni data akun saya untuk diproses:\n1. ID Game: \n2. Nickname: `);
                         
+                        // 🚀 AUTO-TRACKER: Masukkan pesanan ke database Supabase otomatis sebagai "Diproses"
+                        try {
+                            await supabaseClient.from('orders').insert({
+                                user_id: currentUser.id,
+                                product_name: namaProduk,
+                                price: harga,
+                                status: 'proses',
+                                created_at: new Date().toISOString()
+                            });
+                        } catch(e) { console.log("Gagal auto-track", e); }
+
+                        
                         // UBAH LAYAR JADI CENTANG HIJAU + TOMBOL WA
                         const wadahPembayaran = document.getElementById('qris-container');
                         if (wadahPembayaran) {
@@ -6375,6 +6428,256 @@ async function checkoutRobotDANA(namaProduk, harga, deskripsi) {
                 });
             }
         });
+        
+        
+// 🤖 HELPER SAKTI V2: Sistem Lencana Kasta Tertinggi (Harga Diri Tingkat Dewa - Modern)
+function getBadgeByVideoCount(count) {
+    if (count >= 100) return '<span class="inline-flex items-center gap-1 bg-gradient-to-r from-yellow-400 to-yellow-600 text-black px-1.5 py-px rounded text-[8px] font-extrabold ml-1.5 shadow-[0_0_10px_rgba(250,204,21,0.8)] tracking-widest uppercase border border-yellow-300"><i class="fas fa-crown"></i> Legend</span>';
+    
+    if (count >= 50) return '<span class="inline-flex items-center gap-1 bg-gradient-to-r from-brand-accent to-[#ff758c] text-white px-1.5 py-px rounded text-[8px] font-extrabold ml-1.5 shadow-[0_0_10px_rgba(255,0,122,0.8)] tracking-widest uppercase border border-brand-accent"><i class="fas fa-fire"></i> Master</span>';
+    
+    if (count >= 25) return '<span class="inline-flex items-center gap-1 bg-gradient-to-r from-brand-purple to-[#c471ed] text-white px-1.5 py-px rounded text-[8px] font-extrabold ml-1.5 shadow-[0_0_10px_rgba(138,43,226,0.8)] tracking-widest uppercase border border-brand-purple"><i class="fas fa-star"></i> Elite</span>';
+    
+    if (count >= 10) return '<span class="inline-flex items-center gap-1 bg-gradient-to-r from-brand-info to-[#89f7fe] text-brand-dark px-1.5 py-px rounded text-[8px] font-extrabold ml-1.5 shadow-[0_0_10px_rgba(0,240,255,0.8)] tracking-widest uppercase border border-brand-info"><i class="fas fa-check-circle"></i> Verified</span>';
+    
+    return ''; 
+}
+
+
+// 🤖 GAMIFIKASI V2: Logika Papan Peringkat Dual Mode (Top Creator & Top Sultan)
+function openLeaderboardModal() {
+    const modal = document.getElementById('modal-leaderboard');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    
+    history.pushState({ popup: 'leaderboard' }, null, '#leaderboard');
+    
+    // Auto buka tab Creator saat pertama di-klik
+    switchLeaderboardTab('creator');
+}
+
+function closeLeaderboardModal() {
+    if (window.location.hash === '#leaderboard') history.back();
+    const modal = document.getElementById('modal-leaderboard');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+}
+
+// 🧠 MESIN PENARIK DATA LEADERBOARD
+async function switchLeaderboardTab(tab) {
+    const btnCreator = document.getElementById('tab-lb-creator');
+    const btnSultan = document.getElementById('tab-lb-sultan');
+    const containerCreator = document.getElementById('leaderboard-container-creator');
+    const containerSultan = document.getElementById('leaderboard-container-sultan');
+
+    if (tab === 'creator') {
+        // UI Animasi Switch
+        btnCreator.className = 'flex-1 py-2.5 text-[11px] font-bold text-white bg-brand-accent rounded-xl shadow-[0_0_15px_rgba(255,0,122,0.4)] transition-all';
+        btnSultan.className = 'flex-1 py-2.5 text-[11px] font-bold text-gray-500 hover:text-white rounded-xl transition-all bg-transparent shadow-none border border-transparent hover:border-white/10';
+        containerCreator.classList.replace('hidden', 'block');
+        containerSultan.classList.replace('block', 'hidden');
+
+        // Loading Data
+        containerCreator.innerHTML = '<div class="text-center py-10"><i class="fas fa-spinner fa-spin text-brand-accent text-2xl"></i></div>';
+        
+        const userStats = {};
+        allVideosData.forEach(vid => {
+            if (!userStats[vid.user_id]) {
+                userStats[vid.user_id] = { user_id: vid.user_id, nickname: vid.nickname || "Player", avatar_url: vid.avatar_url || "", videoCount: 0 };
+            }
+            userStats[vid.user_id].videoCount++;
+        });
+
+        const sortedLeaderboard = Object.values(userStats).sort((a, b) => b.videoCount - a.videoCount);
+
+        if (sortedLeaderboard.length === 0) {
+            containerCreator.innerHTML = '<p class="text-center text-xs text-gray-500 py-10">Belum ada kompetisi dimulai.</p>';
+            return;
+        }
+
+        containerCreator.innerHTML = sortedLeaderboard.map((user, index) => {
+            const rank = index + 1;
+            const ava = user.avatar_url || `https://ui-avatars.com/api/?name=${user.nickname}&background=1A1133&color=fff`;
+            let rankBadge = `<span class="text-xs font-bold text-gray-500 w-6 text-center">#${rank}</span>`;
+            if (rank === 1) rankBadge = '<div class="w-6 flex justify-center text-xl text-yellow-400 drop-shadow-[0_0_6px_rgba(250,204,21,0.6)]"><i class="fas fa-medal"></i></div>';
+            if (rank === 2) rankBadge = '<div class="w-6 flex justify-center text-xl text-gray-300 drop-shadow-[0_0_6px_rgba(209,213,219,0.6)]"><i class="fas fa-medal"></i></div>';
+            if (rank === 3) rankBadge = '<div class="w-6 flex justify-center text-xl text-amber-600 drop-shadow-[0_0_6px_rgba(217,119,6,0.6)]"><i class="fas fa-medal"></i></div>';
+            
+            const statusBadge = getBadgeByVideoCount(user.videoCount);
+
+            return `
+            <div onclick="viewUserProfile('${user.user_id}'); closeLeaderboardModal();" class="flex items-center justify-between p-3 bg-black/20 border border-white/5 rounded-2xl hover:bg-white/10 transition-all cursor-pointer">
+                <div class="flex items-center gap-3 min-w-0 flex-1">
+                    ${rankBadge}
+                    <img src="${ava}" class="w-9 h-9 rounded-full object-cover border border-white/10 shrink-0">
+                    <div class="truncate">
+                        <h4 class="font-bold text-white text-xs flex items-center gap-1">@${user.nickname} ${statusBadge}</h4>
+                        <p class="text-[10px] text-gray-400 mt-0.5">${user.videoCount} Video dibagikan</p>
+                    </div>
+                </div>
+                <div class="text-right ml-2 shrink-0">
+                    <span class="text-[10px] font-extrabold bg-brand-accent/10 text-brand-accent px-2.5 py-1 rounded-lg border border-brand-accent/20 tracking-wider">${user.videoCount * 10} XP</span>
+                </div>
+            </div>`;
+        }).join('');
+
+    } else if (tab === 'sultan') {
+        // UI Animasi Switch
+        btnSultan.className = 'flex-1 py-2.5 text-[11px] font-bold text-brand-dark bg-gradient-to-r from-yellow-400 to-yellow-600 rounded-xl shadow-[0_0_15px_rgba(250,204,21,0.4)] transition-all';
+        btnCreator.className = 'flex-1 py-2.5 text-[11px] font-bold text-gray-500 hover:text-white rounded-xl transition-all bg-transparent shadow-none border border-transparent hover:border-white/10';
+        containerSultan.classList.replace('hidden', 'block');
+        containerCreator.classList.replace('block', 'hidden');
+
+        // Loading Data
+        containerSultan.innerHTML = '<div class="text-center py-10"><i class="fas fa-spinner fa-spin text-yellow-400 text-2xl"></i></div>';
+
+        try {
+            // Tarik data pesanan yang statusnya udah selesai dari database
+            const { data: orders, error } = await supabaseClient.from('orders').select('user_id, price').eq('status', 'selesai');
+            
+            if (error || !orders || orders.length === 0) {
+                containerSultan.innerHTML = '<p class="text-center text-xs text-gray-500 py-10">Belum ada data sultan yang memborong.</p>';
+                return;
+            }
+
+            // Kelompokkan dan jumlahin duitnya per user
+            const sultanStats = {};
+            orders.forEach(o => {
+                if (!sultanStats[o.user_id]) sultanStats[o.user_id] = { user_id: o.user_id, totalSpent: 0 };
+                sultanStats[o.user_id].totalSpent += Number(o.price);
+            });
+
+            // Urutkan dari yang duitnya paling banyak
+            const sortedSultans = Object.values(sultanStats).sort((a, b) => b.totalSpent - a.totalSpent);
+            
+            // Ambil Profil mereka
+            const userIds = sortedSultans.map(s => s.user_id);
+            const { data: profiles } = await supabaseClient.from('profiles').select('id, nickname, avatar_url').in('id', userIds);
+
+            containerSultan.innerHTML = sortedSultans.map((sultan, index) => {
+                const rank = index + 1;
+                const p = profiles?.find(x => x.id === sultan.user_id);
+                const nickname = p?.nickname || "Player";
+                const ava = p?.avatar_url || `https://ui-avatars.com/api/?name=${nickname}&background=1A1133&color=fff`;
+                
+                // Medali versi Sultan
+                let rankBadge = `<span class="text-xs font-bold text-gray-500 w-6 text-center">#${rank}</span>`;
+                if (rank === 1) rankBadge = '<div class="w-6 flex justify-center text-xl text-yellow-400 drop-shadow-[0_0_6px_rgba(250,204,21,0.6)]"><i class="fas fa-crown"></i></div>';
+                if (rank === 2) rankBadge = '<div class="w-6 flex justify-center text-xl text-gray-300 drop-shadow-[0_0_6px_rgba(209,213,219,0.6)]"><i class="fas fa-medal"></i></div>';
+                if (rank === 3) rankBadge = '<div class="w-6 flex justify-center text-xl text-amber-600 drop-shadow-[0_0_6px_rgba(217,119,6,0.6)]"><i class="fas fa-medal"></i></div>';
+
+                return `
+                <div onclick="viewUserProfile('${sultan.user_id}'); closeLeaderboardModal();" class="flex items-center justify-between p-3 bg-black/20 border border-white/5 rounded-2xl hover:bg-white/10 transition-all cursor-pointer relative overflow-hidden">
+                    ${rank === 1 ? '<div class="absolute inset-0 bg-gradient-to-r from-yellow-500/10 to-transparent pointer-events-none"></div>' : ''}
+                    <div class="flex items-center gap-3 min-w-0 flex-1 relative z-10">
+                        ${rankBadge}
+                        <img src="${ava}" class="w-9 h-9 rounded-full object-cover border border-white/10 shrink-0">
+                        <div class="truncate">
+                            <h4 class="font-bold text-white text-xs truncate">@${nickname}</h4>
+                            <p class="text-[10px] text-yellow-500 mt-0.5 font-bold tracking-wide">Rp ${sultan.totalSpent.toLocaleString('id-ID')}</p>
+                        </div>
+                    </div>
+                    <div class="text-right ml-2 shrink-0 relative z-10">
+                        <span class="text-[10px] font-extrabold bg-gradient-to-tr from-yellow-400 to-yellow-600 text-black px-2 py-1 rounded-lg border border-yellow-300 shadow-[0_0_10px_rgba(250,204,21,0.4)]">VIP</span>
+                    </div>
+                </div>`;
+            }).join('');
+        } catch(e) {
+            containerSultan.innerHTML = '<p class="text-center text-xs text-red-500 py-10">Gagal menarik data Sultan.</p>';
+        }
+    }
+}
+
+
+
+// 📦 LOGIKA TRACKER PESANAN (REAL-TIME DATABASE)
+async function loadOrderTracker(userId) {
+    // Sembunyikan semua badge saat loading awal
+    const bBayar = document.getElementById('badge-track-bayar'); if(bBayar) bBayar.classList.add('hidden');
+    const bProses = document.getElementById('badge-track-proses'); if(bProses) bProses.classList.add('hidden');
+    const bSelesai = document.getElementById('badge-track-selesai'); if(bSelesai) bSelesai.classList.add('hidden');
+
+    try {
+        // Narik data dari tabel 'orders' di Supabase (Pastikan lu bikin tabel ini nanti)
+        const { data, error } = await supabaseClient.from('orders').select('status').eq('user_id', userId);
+        
+        if (data && data.length > 0) {
+            let countBayar = data.filter(o => o.status === 'bayar').length;
+            let countProses = data.filter(o => o.status === 'proses').length;
+            let countSelesai = data.filter(o => o.status === 'selesai').length;
+
+            if (countBayar > 0 && bBayar) {
+                bBayar.innerText = countBayar; bBayar.classList.remove('hidden');
+            }
+            if (countProses > 0 && bProses) {
+                bProses.innerText = countProses; bProses.classList.remove('hidden');
+            }
+            if (countSelesai > 0 && bSelesai) {
+                bSelesai.innerText = countSelesai; bSelesai.classList.remove('hidden');
+            }
+        }
+    } catch (err) {
+        console.log("Tabel orders belum siap, abaikan tracker.");
+    }
+}
+
+// 📦 LOGIKA KLIK PESANAN ALA SHOPEE (PESANAN DITERIMA)
+async function cekStatusPesanan(status) {
+    if (!currentUser) return showToast("Silakan login terlebih dahulu.", "error");
+
+    if (status === 'proses') {
+        showToast("Menarik data pesanan...", "info");
+        
+        // Tarik pesanan yang lagi status 'proses'
+        const { data, error } = await supabaseClient
+            .from('orders')
+            .select('*')
+            .eq('user_id', currentUser.id)
+            .eq('status', 'proses')
+            .order('created_at', { ascending: false });
+
+        if (data && data.length > 0) {
+            // Ambil pesanan yang terbaru di daftar
+            const pesananAktif = data[0];
+            
+            // Pop-up Konfirmasi Shopee Style
+            const konfirmasi = await customConfirm(`Pesanan Anda:
+
+*${pesananAktif.product_name}*
+
+Sedang dikerjakan oleh Tim AU2Hub. Jika Admin sudah mengkonfirmasi selesai via WA, klik 'OKE' untuk menyelesaikan pesanan ini.`);
+            
+            if (konfirmasi) {
+                // Pembeli klik OKE, ubah status database jadi 'selesai'
+                const { error: updateErr } = await supabaseClient
+                    .from('orders')
+                    .update({ status: 'selesai' })
+                    .eq('id', pesananAktif.id);
+
+                if (!updateErr) {
+                    showToast("Pesanan Selesai! Terima kasih.", "success");
+                    loadOrderTracker(currentUser.id); // Auto-Refresh Angka Laci
+                } else {
+                    showToast("Gagal memperbarui pesanan.", "error");
+                }
+            }
+        } else {
+            customAlert("Tidak ada pesanan yang sedang diproses saat ini.");
+        }
+    } 
+    else if (status === 'bayar') {
+        showToast("Tidak ada tagihan yang belum dibayar.", "info");
+    } 
+    else if (status === 'selesai') {
+        // Pamerin jumlah pesanan yang udah sukses
+        const { count } = await supabaseClient.from('orders').select('*', { count: 'exact', head: true }).eq('user_id', currentUser.id).eq('status', 'selesai');
+        if (count && count > 0) {
+            customAlert(`Anda memiliki ${count} riwayat pesanan yang telah selesai dikerjakan. Terima kasih telah mempercayakan akun Anda di AU2Hub!`);
+        } else {
+            showToast("Belum ada riwayat pesanan yang selesai.", "info");
+        }
+    }
+}
 
 
 
