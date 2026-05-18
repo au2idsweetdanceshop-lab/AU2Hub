@@ -5879,6 +5879,18 @@ async function sendMessageRoom() {
 let xoftwareProdukGlobal = []; 
 let kategoriAktif = 'Semua';
 
+// 🤖 FUNGSI SAKTI: Pendeteksi Kategori Otomatis lewat Judul Produk
+function getCategoryName(p) {
+    let kat = p.category_name || p.brand_name || p.group_name || p.category || p.kategori || p.brand || p.type;
+    
+    // Jika API Xoftware lu kosong melompong, potong kata pertama dari Judul Produk!
+    if (!kat && p.title) {
+        kat = p.title.trim().split(' ')[0]; 
+    }
+    
+    return kat ? kat.trim().toUpperCase() : 'LAINNYA';
+}
+
 // 1. Tarik Katalog Xoftware
 async function loadProdukXoftware() {
     const container = document.getElementById('service-list');
@@ -5901,18 +5913,14 @@ async function loadProdukXoftware() {
     }
 }
 
-// 🔥 SCANNED BARU: Otomatis ngebaca database kategori asli dari API Xoftware lu Om
+// 2. Bikin Tombol Kategori Di Layar
 function renderKategoriTabs(data) {
     const container = document.getElementById('kategori-container');
     if (!container) return;
 
     let categories = new Set();
     data.forEach(p => {
-        let kat = p.category_name || p.brand_name || p.group_name || p.category || p.kategori || p.brand || p.type || 'Lainnya'; 
-        if (kat && typeof kat === 'string') {
-            kat = kat.trim();
-            if (kat !== "") categories.add(kat);
-        }
+        categories.add(getCategoryName(p));
     });
 
     let arrKategori = ['Semua', ...Array.from(categories).sort()];
@@ -5938,15 +5946,12 @@ function pilihKategori(kat) {
 
     let dataFiltered = xoftwareProdukGlobal;
     if (kat !== 'Semua') {
-        dataFiltered = xoftwareProdukGlobal.filter(p => {
-            let pKat = p.category_name || p.brand_name || p.group_name || p.category || p.kategori || p.brand || p.type || 'Lainnya';
-            return pKat.trim() === kat;
-        });
+        dataFiltered = xoftwareProdukGlobal.filter(p => getCategoryName(p) === kat);
     }
     renderProdukXoftware(dataFiltered);
 }
 
-// 2. Tampilkan Katalog (OPTIMASI ANTILAG: Pake Staggered Render Delay)
+// 3. Tampilkan Katalog Produk ke Grid Layar
 function renderProdukXoftware(data) {
     const container = document.getElementById('service-list');
     if (data.length === 0) {
@@ -5972,8 +5977,6 @@ function renderProdukXoftware(data) {
         else if (!fotoFinal) fotoFinal = 'https://placehold.co/400x400/1a1133/ff007a?text=ADT+STORE';
         
         const realIndex = xoftwareProdukGlobal.findIndex(item => item === p);
-
-        // Kuncian rahasia: Ngasih delay 0.02s per item biar GPU HP kagak kaget pas ganti kategori
         const delayAnimasi = Math.min(index * 0.02, 0.4);
 
         return `
@@ -5999,20 +6002,16 @@ function renderProdukXoftware(data) {
     }).join('');
 }
 
-// 3. Fungsi Fitur Pencarian Pintar (Gabungan Kategori)
+// 4. Fungsi Fitur Pencarian Gabungan
 document.getElementById('serviceSearch').addEventListener('input', (e) => {
     const val = e.target.value.toLowerCase();
     const hasilFilter = xoftwareProdukGlobal.filter(p => {
         let cocokKataKunci = p.title.toLowerCase().includes(val) || (p.description && p.description.toLowerCase().includes(val));
-        let pKat = p.category_name || p.brand_name || p.group_name || p.category || p.kategori || p.brand || p.type || 'Lainnya';
-        let cocokKategori = (kategoriAktif === 'Semua') ? true : (pKat.trim() === kategoriAktif);
-        
+        let cocokKategori = (kategoriAktif === 'Semua') ? true : (getCategoryName(p) === kategoriAktif);
         return cocokKataKunci && cocokKategori;
     });
     renderProdukXoftware(hasilFilter);
 });
-
-
 
 
 
