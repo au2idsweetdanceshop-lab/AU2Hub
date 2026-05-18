@@ -1879,13 +1879,15 @@
 
         window.addEventListener('popstate', () => {
             let isPopupClosed = false;
-                const laciShopee = document.getElementById('modal-detail-produk');
-    if (laciShopee && !laciShopee.classList.contains('translate-y-full')) {
-        closeDetailProduk();
-        return;
-    }
+            
+            // 1. TANGKAP LACI SHOPEE DULUAN (Kuncian Anti-Nyangkut)
+            const laciShopee = document.getElementById('modal-detail-produk');
+            if (laciShopee && !laciShopee.classList.contains('translate-y-full')) {
+                closeDetailProduk(true); // <--- KUNCI SAKTINYA DISINI: ngasih tau kalau ini dari tombol Back HP
+                return;
+            }
 
-            // 1. TANGKAP SEMUA POP-UP DULU (Biar menutup duluan kalau tombol Back ditekan)
+            // 2. TANGKAP SEMUA POP-UP DULU (Biar menutup duluan kalau tombol Back ditekan)
             const lightbox = document.getElementById('lightbox-modal');
             if(!lightbox.classList.contains('hidden')) {
                 closeLightbox();
@@ -1929,27 +1931,26 @@
                 isPopupClosed = true;
             }
 
-        const widget = document.getElementById('floating-widget');
+            const widget = document.getElementById('floating-widget');
 
-        // JIKA WIDGET CHAT SEDANG TERBUKA
-        if (!widget.classList.contains('opacity-0')) {
-            
-            // 1. CEK: Apakah user sedang di dalam RUANG CHAT (Isi Pesan)?
-            const roomView = document.getElementById('chat-room-view');
-            if (roomView && roomView.classList.contains('flex')) {
-                // Jika iya, pencet Back = BALIK KE DAFTAR PESAN (INBOX)
-                closeChatRoom(true); 
-                return; // Berhenti di sini agar widget tidak langsung tertutup semua
-            } 
-            
-            // 2. CEK: Apakah user sedang di DAFTAR CHAT (Inbox)?
-            else {
-                // Jika iya, pencet Back = TUTUP WIDGET SEPENUHNYA
-                widget.classList.add('opacity-0', 'pointer-events-none', 'translate-y-8', 'scale-95');
-                return;
+            // JIKA WIDGET CHAT SEDANG TERBUKA
+            if (!widget.classList.contains('opacity-0')) {
+                
+                // 1. CEK: Apakah user sedang di dalam RUANG CHAT (Isi Pesan)?
+                const roomView = document.getElementById('chat-room-view');
+                if (roomView && roomView.classList.contains('flex')) {
+                    // Jika iya, pencet Back = BALIK KE DAFTAR PESAN (INBOX)
+                    closeChatRoom(true); 
+                    return; // Berhenti di sini agar widget tidak langsung tertutup semua
+                } 
+                
+                // 2. CEK: Apakah user sedang di DAFTAR CHAT (Inbox)?
+                else {
+                    // Jika iya, pencet Back = TUTUP WIDGET SEPENUHNYA
+                    widget.classList.add('opacity-0', 'pointer-events-none', 'translate-y-8', 'scale-95');
+                    return;
+                }
             }
-        }
-
 
             const authModal = document.getElementById('modal-auth');
             if (!authModal.classList.contains('hidden')) {
@@ -1957,6 +1958,7 @@
                 authModal.classList.remove('flex');
                 isPopupClosed = true;
             }
+
 
             // 2. SETELAH POP-UP AMAN, BARU TANGKAP LAYAR MENGAMBANG
             if (document.body.classList.contains('video-focused')) {
@@ -6088,6 +6090,19 @@ function openDetailProduk(index) {
 
     history.pushState({ popup: 'detail_produk' }, null, '#detail');
 }
+
+// FUNGSI PENUTUP LACI SHOPEE (ANTI-NYANGKUT TOMBOL BACK HP)
+function closeDetailProduk(dariTombolBackHP = false) {
+    const laci = document.getElementById('modal-detail-produk');
+    laci.classList.remove('translate-y-0');
+    laci.classList.add('translate-y-full');
+    
+    // Mencegah HP narik history back 2 kali kalau asalnya emang udah dari tombol back HP
+    if (!dariTombolBackHP && window.location.hash === '#detail') {
+        history.back();
+    }
+}
+
 
 
 // 4. Logika Checkout Pembayaran Robot DANA (VERSI OTOMATIS NOMINAL + AUTO SUCCESS UI)
