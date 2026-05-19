@@ -4933,7 +4933,17 @@ function bukaPreviewMedia(file, context) {
         imgEl.classList.add('hidden');
         vidEl.src = url;
         vidEl.classList.remove('hidden');
-        vidEl.play();
+        
+        // --- PAKSA SUARA NYALA OTOMATIS ---
+        vidEl.muted = false; 
+        
+        // Mainkan video. Dilengkapi penangkap error (catch) jika seandainya
+        // browser HP (misal Safari iPhone mode ketat) memblokir autoplay bersuara.
+        vidEl.play().catch((err) => {
+            console.log("Autoplay bersuara ditolak browser, fallback ke mode bisu.");
+            vidEl.muted = true;
+            vidEl.play();
+        });
     } else {
         vidEl.classList.add('hidden');
         vidEl.pause();
