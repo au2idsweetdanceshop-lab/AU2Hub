@@ -288,6 +288,16 @@ animation: marquee 6s linear infinite;
 mask-image: linear-gradient(to right, black 80%, transparent 100%);
 }
 
+/* Toggle Switch Animasi Custom untuk TikTok UI */
+input[type="checkbox"].peer:checked + div {
+    background-color: #2BD975 !important;
+}
+input[type="checkbox"].peer:checked + div::after {
+    transform: translateX(100%);
+    border-color: white;
+}
+
+
 </style> </head>
 <body class="pb-24">
 
@@ -1063,60 +1073,81 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
 
 <!-- MODAL UPLOAD VIDEO MODERN (DESAIN KEKINIAN) -->
 <div id="modal-upload" class="fixed inset-0 z-[600] hidden items-end sm:items-center justify-center bg-black/95 backdrop-blur-xl px-0 sm:px-6 transition-all duration-500">
-<!-- Container Utama: Warna Gradien Biru Gelap ke Ungu ala UI Modern -->
-<div class="w-full max-w-md bg-gradient-to-b from-[#2A1B54] to-[#1A1133] rounded-t-[3rem] sm:rounded-[2.5rem] border border-white/10 p-8 shadow-2xl relative modal-anim overflow-hidden">
+    <div class="w-full max-w-md bg-[#121319] rounded-t-[2rem] sm:rounded-[2rem] border-t sm:border border-white/10 p-6 shadow-2xl relative modal-anim overflow-hidden flex flex-col max-h-[90vh]">
+        
+        <div class="flex justify-between items-center pb-4 border-b border-white/5 shrink-0">
+            <button onclick="closeUploadModal()" class="text-gray-400 hover:text-white text-sm font-bold flex items-center gap-1">
+                <i class="fas fa-chevron-left text-xs"></i> Batal
+            </button>
+            <h3 class="text-base font-bold text-white tracking-tight">Posting Video</h3>
+            <div class="w-10"></div> </div>
 
-<!-- Header -->
-<div class="flex justify-between items-center mb-8 relative z-10">
-<div>
-<h3 class="text-2xl font-extrabold text-white tracking-tight">Create Post</h3>
-<p class="text-[10px] text-[#00F0FF] font-bold uppercase tracking-widest opacity-90 mt-1">Share your dance moves</p>
-</div>
-<button onclick="closeUploadModal()" class="w-10 h-10 rounded-2xl bg-white/5 hover:bg-white/10 flex items-center justify-center text-white active:scale-90 transition-all border border-white/10">
-<i class="fas fa-times"></i>
-</button>
+        <div class="overflow-y-auto hide-scroll flex-1 py-4 space-y-5">
+            
+            <div class="flex gap-4 items-start">
+                <div class="flex-1 flex flex-col gap-2">
+                    <textarea id="input-video-caption" rows="4" placeholder="Tulis deskripsi, tantangan, atau ajak teman berdansa..." 
+                        class="w-full bg-transparent text-sm text-white outline-none resize-none placeholder:text-gray-500 leading-relaxed"></textarea>
+                    
+                    <div class="flex gap-2">
+                        <button onclick="insertUploadShortcut('#')" class="bg-white/5 hover:bg-white/10 text-white text-xs font-semibold px-3 py-1.5 rounded-full border border-white/5 active:scale-95 transition-all">
+                            <span class="text-brand-accent font-bold mr-1">#</span> Tagar
+                        </button>
+                        <button onclick="insertUploadShortcut('@')" class="bg-white/5 hover:bg-white/10 text-white text-xs font-semibold px-3 py-1.5 rounded-full border border-white/5 active:scale-95 transition-all">
+                            <span class="text-brand-info font-bold mr-1">@</span> Teman
+                        </button>
+                    </div>
+                </div>
+
+                <input type="file" id="input-video-file" accept="video/*" class="hidden" onchange="handleVideoSelect(this)">
+                <label XR-Style for="input-video-file" id="drop-zone" class="w-24 aspect-[3/4] rounded-xl border border-dashed border-white/20 bg-white/5 flex flex-col items-center justify-center cursor-pointer overflow-hidden shrink-0 group relative hover:border-brand-accent/50 transition-colors">
+                    
+                    <div id="upload-placeholder" class="text-center p-2 flex flex-col items-center justify-center">
+                        <i class="fas fa-cloud-upload-alt text-xl text-gray-400 mb-1 group-hover:scale-110 transition-transform"></i>
+                        <span class="text-[9px] font-bold text-gray-400 uppercase tracking-tight">Pilih Video</span>
+                    </div>
+
+                    <div id="video-preview-container" class="hidden absolute inset-0 bg-black">
+                        <video id="video-preview-element" class="w-full h-full object-cover opacity-90" loop muted playsinline></video>
+                        <div class="absolute inset-0 bg-black/30 flex items-center justify-center pointer-events-none">
+                            <i class="fas fa-sync-alt text-white/70 text-xs animate-spin hidden" id="mini-upload-spinner"></i>
+                        </div>
+                    </div>
+                </label>
+            </div>
+
+            <div class="border-t border-white/5 pt-4 space-y-1">
+                <div class="flex justify-between items-center py-3 border-b border-white/5 cursor-pointer active:bg-white/5 px-2 rounded-xl transition-colors" onclick="showToast('Fitur pembatasan privasi akan hadir pada update selanjutnya!', 'info')">
+                    <div class="flex items-center gap-3">
+                        <div class="w-7 h-7 rounded-full bg-white/5 flex items-center justify-center text-gray-300"><i class="fas fa-earth-asia text-xs"></i></div>
+                        <span class="text-xs font-semibold text-gray-200">Siapa yang dapat melihat video ini</span>
+                    </div>
+                    <span class="text-xs text-gray-500 font-bold flex items-center gap-1">Publik <i class="fas fa-chevron-right text-[10px]"></i></span>
+                </div>
+
+                <div class="flex justify-between items-center py-3 px-2 rounded-xl">
+                    <div class="flex items-center gap-3">
+                        <div class="w-7 h-7 rounded-full bg-white/5 flex items-center justify-center text-gray-300"><i class="fas fa-comment-dots text-xs"></i></div>
+                        <span class="text-xs font-semibold text-gray-200">Izinkan Komentar</span>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer select-none">
+                        <input type="checkbox" checked class="sr-only peer" id="upload-allow-comments">
+                        <div class="w-9 h-5 bg-white/10 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-brand-success"></div>
+                    </label>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="pt-4 border-t border-white/5 shrink-0 bg-[#121319] pb-2 flex gap-3">
+            <button onclick="prosesUploadVideo()" class="flex-1 bg-[#FE2C55] hover:bg-[#e12246] text-white py-3.5 rounded-xl font-extrabold text-xs tracking-wider uppercase active:scale-95 transition-all shadow-[0_6px_20px_rgba(254,44,85,0.3)] flex justify-center items-center gap-2">
+                <span>Posting Sekarang</span> <i class="fas fa-paper-plane text-xs"></i>
+            </button>
+        </div>
+        
+    </div>
 </div>
 
-<div class="space-y-6 relative z-10">
-<!-- Drop Zone / Area Pilih Video -->
-<input type="file" id="input-video-file" accept="video/*" class="hidden" onchange="handleVideoSelect(this)">
-<label for="input-video-file" id="drop-zone" class="relative w-full aspect-[4/3] rounded-[2rem] border-2 border-dashed border-white/10 bg-white/5 flex flex-col items-center justify-center cursor-pointer overflow-hidden group hover:border-[#FF007A]/50 transition-all backdrop-blur-sm">
-
-<!-- Tampilan Sebelum Pilih Video -->
-<div id="upload-placeholder" class="flex flex-col items-center transition-all duration-300">
-<div class="w-16 h-16 bg-gradient-to-tr from-[#FF007A] to-[#FF8A00] rounded-[1.2rem] flex items-center justify-center shadow-[0_10px_20px_rgba(255,0,122,0.4)] mb-4 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300">
-<i class="fas fa-plus text-2xl text-white"></i>
-</div>
-<span class="text-sm font-bold text-white mb-1">Pilih Video Kerenmu</span>
-<span class="text-[9px] text-gray-400 font-bold uppercase tracking-widest">MP4, MOV up to 50MB</span>
-</div>
-
-<!-- Mini Preview (Muncul Setelah Pilih File) -->
-<div id="video-preview-container" class="hidden absolute inset-0 bg-black/80">
-<video id="video-preview-element" class="w-full h-full object-cover opacity-80"></video>
-<div class="absolute inset-0 flex items-center justify-center">
-<div class="bg-black/60 backdrop-blur-md px-4 py-2 rounded-full border border-white/20 shadow-lg">
-<span id="nama-file-info" class="text-xs font-bold text-white truncate max-w-[150px]"></span>
-</div>
-</div>
-</div>
-</label>
-
-<!-- Kolom Caption -->
-<div class="relative group">
-<textarea id="input-video-caption" rows="3" placeholder="Tulis caption yang bikin viral..."
-class="w-full bg-white/5 border border-white/10 rounded-[1.5rem] px-5 py-4 text-sm text-white outline-none focus:border-[#00F0FF]/50 focus:bg-white/10 transition-all resize-none placeholder:text-gray-500 backdrop-blur-sm"></textarea>
-<div class="absolute bottom-3 right-5 text-[9px] text-gray-500 font-bold uppercase tracking-widest">Public Post</div>
-</div>
-
-<!-- Tombol Submit (Gradien Cerah) -->
-<button onclick="prosesUploadVideo()" class="w-full bg-gradient-to-r from-[#00F0FF] via-[#8A2BE2] to-[#FF007A] text-white py-4 rounded-[1.2rem] font-extrabold text-sm active:scale-95 transition-all shadow-[0_10px_30px_rgba(138,43,226,0.4)] flex justify-center items-center gap-3 hover:brightness-110">
-<span>POSTING SEKARANG</span>
-<i class="fas fa-paper-plane"></i>
-</button>
-</div>
-</div>
-</div>
 
 <div id="modal-event" class="fixed inset-0 z-[60] hidden items-center justify-center bg-black/80 backdrop-blur-sm px-4">
 <div class="absolute inset-0" onclick="closeModalEvent()"></div>
@@ -1169,8 +1200,8 @@ class="w-full bg-white/5 border border-white/10 rounded-[1.5rem] px-5 py-4 text-
 <a href="#ripper" onclick="switchTab('ripper', event)" class="nav-item flex flex-col items-center justify-center flex-1 text-gray-500 transition-colors"><i class="fas fa-user-ninja text-xl mb-1"></i><span class="text-[9px] font-bold mt-0.5">Ripper</span></a>
 <a href="#profile" onclick="switchTab('profile', event)" class="nav-item flex flex-col items-center justify-center flex-1 text-gray-500 transition-colors"><i class="fas fa-user-circle text-xl mb-1"></i><span class="text-[9px] font-bold mt-0.5">Profil</span></a>
 
-<div id="modal-leaderboard" class="fixed inset-0 z-[250] hidden items-center justify-center bg-black/90 backdrop-blur-md px-6 transition-all duration-300">
-<div class="bg-brand-card w-full max-w-sm rounded-3xl border border-white/10 shadow-2xl relative modal-anim flex flex-col max-h-[75vh] overflow-hidden">
+<div id="modal-leaderboard" class="fixed inset-0 z-[250] hidden items-end sm:items-center justify-center bg-black/90 backdrop-blur-md px-0 sm:px-6 transition-all duration-300">
+<div class="bg-brand-card w-full max-w-md sm:rounded-3xl rounded-t-[2.5rem] border border-white/10 shadow-2xl relative modal-anim flex flex-col h-[85vh] sm:h-auto sm:max-h-[85vh] overflow-hidden">
 <div class="flex justify-between items-center p-5 border-b border-white/5 bg-brand-dark/80 backdrop-blur-xl shrink-0">
 <h3 class="font-extrabold text-white text-sm flex items-center gap-2">
 <i class="fas fa-trophy text-yellow-400"></i> LEADERBOARD
@@ -1183,10 +1214,10 @@ class="w-full bg-white/5 border border-white/10 rounded-[1.5rem] px-5 py-4 text-
 <button id="tab-lb-sultan" onclick="switchLeaderboardTab('sultan')" class="flex-1 py-2.5 text-[11px] font-bold text-gray-500 hover:text-white rounded-xl transition-all">💸 Top Sultan</button>
 </div>
 
-<div id="leaderboard-container-creator" class="flex-1 overflow-y-auto p-3 hide-scroll space-y-2 block"></div>
-<div id="leaderboard-container-sultan" class="flex-1 overflow-y-auto p-3 hide-scroll space-y-2 hidden"></div>
+<div id="leaderboard-container-creator" class="flex-1 overflow-y-auto p-3 hide-scroll space-y-2 block pb-6"></div>
+<div id="leaderboard-container-sultan" class="flex-1 overflow-y-auto p-3 hide-scroll space-y-2 hidden pb-6"></div>
 
-<p class="text-[9px] text-gray-500 p-3 text-center bg-black/20 shrink-0">*Peringkat diperbarui secara real-time oleh sistem.</p>
+<p class="text-[9px] text-gray-500 p-4 text-center bg-brand-dark shrink-0 z-10 relative">*Peringkat diperbarui secara real-time oleh sistem.</p>
 </div>
 </div>
 
@@ -2242,40 +2273,81 @@ m.classList.add('flex');
 }
 
 
-// Tambahkan fungsi ini agar preview video muncul saat dipilih
+// Tombol Pintasan # dan @ ala TikTok
+function insertUploadShortcut(char) {
+    const textarea = document.getElementById('input-video-caption');
+    if (!textarea) return;
+    
+    const pos = textarea.selectionStart;
+    const text = textarea.value;
+    
+    // Sisipkan karakter di posisi kursor aktif
+    textarea.value = text.substring(0, pos) + char + text.substring(pos);
+    textarea.focus();
+    
+    // Pindahkan kursor tepat setelah karakter yang dimasukkan
+    textarea.setSelectionRange(pos + 1, pos + 1);
+}
+
+// Override Fungsi handleVideoSelect Bawaan Anda agar Pas di Mini Cover
 function handleVideoSelect(input) {
-const file = input.files[0];
-const placeholder = document.getElementById('upload-placeholder');
-const previewContainer = document.getElementById('video-preview-container');
-const previewVideo = document.getElementById('video-preview-element');
-const fileNameInfo = document.getElementById('nama-file-info');
+    const file = input.files[0];
+    const placeholder = document.getElementById('upload-placeholder');
+    const previewContainer = document.getElementById('video-preview-container');
+    const previewVideo = document.getElementById('video-preview-element');
+    const spinner = document.getElementById('mini-upload-spinner');
 
-if (file) {
-const url = URL.createObjectURL(file);
-previewVideo.src = url;
-previewVideo.play();
+    if (file) {
+        // Validasi ukuran maksimal 50MB biar memori HP pembeli gak jebol
+        if (file.size > 50 * 1024 * 1024) {
+            showToast("Ukuran video terlalu besar! Maksimal 50MB.", "error");
+            input.value = '';
+            return;
+        }
 
-placeholder.classList.add('opacity-0');
-setTimeout(() => {
-placeholder.classList.add('hidden');
-previewContainer.classList.remove('hidden');
-previewContainer.classList.add('flex', 'animate-fade-in');
-fileNameInfo.innerText = file.name;
-}, 300);
+        const url = URL.createObjectURL(file);
+        previewVideo.src = url;
+        
+        // Sembunyikan instruksi teks, nyalakan layar preview video mini
+        if (placeholder) placeholder.classList.add('hidden');
+        if (previewContainer) previewContainer.classList.remove('hidden');
+        
+        // Nyalakan spinner loading
+        if (spinner) spinner.classList.remove('hidden');
+
+        // Tunggu video siap diputar, lalu matikan spinner
+        previewVideo.oncanplay = () => {
+            if (spinner) spinner.classList.add('hidden');
+        };
+        
+        // Putar video otomatis tanpa suara di pojok kanan laci
+        previewVideo.muted = true;
+        previewVideo.play().catch(() => {});
+        showToast("Video berhasil dimuat!", "success");
+    }
 }
-}
 
-// Pastikan fungsi closeUploadModal mereset preview
+// Override Fungsi closeUploadModal Agar Mereset Seluruh Tampilan Mini Cover
 function closeUploadModal() {
-if (window.location.hash === '#upload') history.back();
-const m = document.getElementById('modal-upload');
-m.classList.add('hidden'); m.classList.remove('flex');
+    if (window.location.hash === '#upload') history.back();
+    const m = document.getElementById('modal-upload');
+    m.classList.add('hidden'); 
+    m.classList.remove('flex');
 
-// Reset preview
-document.getElementById('upload-placeholder').classList.remove('hidden', 'opacity-0');
-document.getElementById('video-preview-container').classList.add('hidden');
-document.getElementById('video-preview-element').src = '';
+    // Reset Form & Preview Kembalikan ke Default
+    const placeholder = document.getElementById('upload-placeholder');
+    const previewContainer = document.getElementById('video-preview-container');
+    const previewVideo = document.getElementById('video-preview-element');
+    const fileInput = document.getElementById('input-video-file');
+    const captionInput = document.getElementById('input-video-caption');
+    
+    if (placeholder) placeholder.classList.remove('hidden');
+    if (previewContainer) previewContainer.classList.add('hidden');
+    if (previewVideo) { previewVideo.pause(); previewVideo.src = ''; }
+    if (fileInput) fileInput.value = '';
+    if (captionInput) captionInput.value = '';
 }
+
 
 async function openUserProfile(userId) {
 try {
