@@ -588,9 +588,27 @@ Satu pintu untuk info update terbaru, panduan pemula, jasa joki profesional, dan
 </label>
 <input type="file" id="avatar-input" class="hidden" accept="image/*" onchange="handleAvatarUpload(event)">
 </div>
-<h3 id="profile-nickname" class="text-xl font-extrabold text-white">@Nickname</h3>
+<!-- Nickname & Badge Level -->
+<div class="flex items-center justify-center gap-2 mb-1">
+    <h3 id="profile-nickname" class="text-xl font-extrabold text-white">@Nickname</h3>
+    <span id="profile-level-badge" class="hidden bg-gradient-to-r from-brand-accent to-brand-purple text-white text-[10px] font-extrabold px-2 py-0.5 rounded-md border border-white/20 shadow-[0_0_10px_rgba(255,0,122,0.3)]">Lv. 1</span>
+</div>
 
-<p id="profile-bio" class="text-[11px] text-gray-300 mt-2 mb-4 px-6 leading-relaxed whitespace-pre-line">Mencari teman main Sweet Dance. Add ID aku ya!</p>
+<p id="profile-bio" class="text-[11px] text-gray-300 mt-1 mb-4 px-6 leading-relaxed whitespace-pre-line">Mencari teman main Sweet Dance. Add ID aku ya!</p>
+
+<!-- Progress Bar EXP -->
+<div id="profile-exp-container" class="max-w-[200px] mx-auto mb-6 hidden">
+    <div class="flex justify-between text-[9px] text-gray-400 font-bold mb-1 px-1 tracking-wider uppercase">
+        <span id="text-exp-current">EXP: 0</span>
+        <span id="text-exp-target">Next: 100</span>
+    </div>
+    <div class="w-full h-2.5 bg-black/50 border border-white/10 rounded-full overflow-hidden shadow-inner">
+        <div id="bar-exp-progress" class="h-full bg-gradient-to-r from-brand-info to-brand-accent w-0 transition-all duration-700 ease-out rounded-full relative">
+            <!-- Efek kilauan di ujung bar -->
+            <div class="absolute top-0 right-0 bottom-0 w-2 bg-white/50 blur-[2px]"></div>
+        </div>
+    </div>
+</div>
 
 <div class="flex justify-center gap-8 mb-6 border-y border-white/5 py-3">
 <div class="flex flex-col items-center cursor-pointer hover:opacity-70 transition-opacity" onclick="showUserList('mengikuti')"><span id="stat-mengikuti" class="font-bold text-white text-base">0</span><span class="text-[9px] text-gray-400 uppercase tracking-widest">Mengikuti</span></div>
@@ -1904,23 +1922,103 @@ updateUIForLoggedOut();
 }
 }
 
-async function fetchProfile() {
-const { data, error } = await supabaseClient.from('profiles').select('*').eq('id', currentUser.id).single();
-if (data) {
-userProfile = data;
-} else {
-userProfile = { nickname: 'Player', avatar_url: '', bio: 'Halo! Salam kenal.' };
-await supabaseClient.from('profiles').upsert({ id: currentUser.id, nickname: 'Player', avatar_url: '', bio: 'Halo! Salam kenal.' });
+// ==========================================
+// FITUR LEVEL & EXP SYSTEM
+// ==========================================
+function hitungStatusLevel(totalExp) {
+    let exp = totalExp || 0; 
+    const level = Math.floor(Math.sqrt(exp / 100)) + 1;
+    const batasBawahExp = Math.pow(level - 1, 2) * 100;
+    const targetNextLevel = Math.pow(level, 2) * 100;
+    const expTerkumpulDiLevelIni = exp - batasBawahExp;
+    const totalExpDibutuhkanLevelIni = targetNextLevel - batasBawahExp;
+    let persentase = Math.floor((expTerkumpulDiLevelIni / totalExpDibutuhkanLevelIni) * 100);
+    if (persentase < 0) persentase = 0;
+    if (persentase > 100) persentase = 100;
+    return { level, exp, targetNextLevel, persentase };
 }
 
-if(!viewedUserId || viewedUserId === currentUser.id) {
-const pNick = document.getElementById('profile-nickname'); if(pNick) pNick.innerText = "@" + (userProfile.nickname || "Player");
-const pBio = document.getElementById('profile-bio'); if(pBio) pBio.innerText = userProfile.bio || "Belum ada deskripsi.";
-if (userProfile.avatar_url && userProfile.avatar_url !== "") {
-const pImg = document.getElementById('profile-img'); if(pImg) pImg.src = userProfile.avatar_url;
+// Fungsi Penambah EXP Otomatis (Background)
+async function tambahExp(jumlah) {
+    if (!currentUser || !userProfile) return;
+    
+    // Hitung level sebelum ditambah
+    const expLama = userProfile.exp || 0;
+    const levelLama = hitungStatusLevel(expLama).level;
+    
+    // Hitung exp & level baru
+    const expBaru = expLama + jumlah;
+    const levelBaru = hitungStatusLevel(expBaru).level;
+    
+    // Update data lokal
+    userProfile.exp = expBaru;
+
+    try {
+        // Tembak pembaruan ke Database
+        await supabaseClient.from('profiles').update({ exp: expBaru }).eq('id', currentUser.id);
+        
+        // Munculkan notifikasi jika Naik Level!
+        if (levelBaru > levelLama) {
+            showToast(`🎉 SELAMAT! Anda naik ke Level ${levelBaru}!`, "success");
+        }
+
+        // Update animasi bar langsung jika pengguna sedang membuka layar profilnya sendiri
+        if (document.getElementById('profile').classList.contains('active') && viewedUserId === currentUser.id) {
+            const statusLevel = hitungStatusLevel(expBaru);
+            document.getElementById('profile-level-badge').innerText = `Lv. ${statusLevel.level}`;
+            document.getElementById('text-exp-current').innerText = `EXP: ${statusLevel.exp}`;
+            document.getElementById('text-exp-target').innerText = `Next: ${statusLevel.targetNextLevel}`;
+            document.getElementById('bar-exp-progress').style.width = `${statusLevel.persentase}%`;
+        }
+    } catch (e) {
+        console.error("Gagal auto-update EXP:", e);
+    }
 }
+
+
+async function fetchProfile() {
+    const { data, error } = await supabaseClient.from('profiles').select('*').eq('id', currentUser.id).single();
+    if (data) {
+        userProfile = data;
+    } else {
+        userProfile = { nickname: 'Player', avatar_url: '', bio: 'Halo! Salam kenal.', exp: 0 };
+        await supabaseClient.from('profiles').upsert({ id: currentUser.id, nickname: 'Player', avatar_url: '', bio: 'Halo! Salam kenal.', exp: 0 });
+    }
+
+    if(!viewedUserId || viewedUserId === currentUser.id) {
+        const pNick = document.getElementById('profile-nickname'); if(pNick) pNick.innerText = "@" + (userProfile.nickname || "Player");
+        const pBio = document.getElementById('profile-bio'); if(pBio) pBio.innerText = userProfile.bio || "Belum ada deskripsi.";
+        if (userProfile.avatar_url && userProfile.avatar_url !== "") {
+            const pImg = document.getElementById('profile-img'); if(pImg) pImg.src = userProfile.avatar_url;
+        }
+
+        // --- TAMBAHAN BARU: EKSEKUSI LEVEL ---
+        // Catatan: Pastikan di database Supabase Anda, tabel 'profiles' sudah ada kolom 'exp' bertipe int4/numeric.
+        const expData = userProfile.exp || 0; 
+        const statusLevel = hitungStatusLevel(expData);
+
+        const elLevelBadge = document.getElementById('profile-level-badge');
+        const elExpContainer = document.getElementById('profile-exp-container');
+        
+        if (elLevelBadge && elExpContainer) {
+            // Tampilkan tulisan Level
+            elLevelBadge.innerText = `Lv. ${statusLevel.level}`;
+            elLevelBadge.classList.remove('hidden');
+            
+            // Animasikan bar dan teks
+            document.getElementById('text-exp-current').innerText = `EXP: ${statusLevel.exp}`;
+            document.getElementById('text-exp-target').innerText = `Next: ${statusLevel.targetNextLevel}`;
+            
+            // Gunakan timeout kecil agar efek animasi transisi CSS terlihat saat dimuat
+            setTimeout(() => {
+                document.getElementById('bar-exp-progress').style.width = `${statusLevel.persentase}%`;
+            }, 100);
+            
+            elExpContainer.classList.remove('hidden');
+        }
+    }
 }
-}
+
 
 function openAuthModal() {
 history.pushState({ popup: 'auth' }, null, '#auth');
@@ -2281,6 +2379,7 @@ window.addEventListener('popstate', () => {
         return;
     }
     
+    
         // TANGKAP MODAL RIWAYAT PESANAN
     const modalRiwayat = document.getElementById('modal-riwayat-pesanan');
     if (modalRiwayat && !modalRiwayat.classList.contains('hidden')) {
@@ -2619,7 +2718,9 @@ await renderProfileVideos(userId);
 
 // Baru hitung lencana badge & total likes biar auto-akurat tanpa delay / bug nunggu refresh
 const userVideos = allVideosData.filter(v => v.user_id === userId);
-const badgeHTML = getBadgeByVideoCount(userVideos.length);
+// Ambil level dari status profil yang sedang dibuka
+const statusLevel = hitungStatusLevel(data?.exp || 0).level;
+const badgeHTML = getBadgeByLevelAndVideos(statusLevel, userVideos.length);
 const elNick2 = document.getElementById('profile-nickname');
 if(elNick2) elNick2.innerHTML = "@" + (data?.nickname || "Player") + badgeHTML;
 
@@ -3340,6 +3441,7 @@ updateCommentCountUI(activeVideoId, floatComment);
 }
 
 cancelReply();
+tambahExp(10); // <--- SISTEM EXP
 } else {
 throw new Error("Gagal menyimpan komentar");
 }
@@ -4858,7 +4960,7 @@ body: JSON.stringify(spreadsheetPayload)
 });
 
 showToast("Berhasil diposting!", "success");
-
+tambahExp(50); // <--- SISTEM EXP
 fileInput.value = ''; captionInput.value = '';
 closeUploadModal();
 allVideosData = [];
@@ -5047,9 +5149,11 @@ async function prosesKirimMedia() {
                 media_type: file.type.startsWith('video/') ? 'video' : 'image',
                 caption: caption
             });
-            if (error) throw error;
-            showToast("Status berhasil diperbarui!", "success");
-            loadStories(); 
+if (error) throw error;
+showToast("Status berhasil diperbarui!", "success");
+tambahExp(20); // <--- SISTEM EXP
+loadStories(); 
+
         }
 
         tutupPreviewMedia();
@@ -6379,6 +6483,8 @@ else insertData.receiver_id = targetId;
 const { error } = await supabaseClient.from('messages').insert(insertData);
 if (error) throw error;
 
+tambahExp(2); // <--- SISTEM EXP
+
 } catch (err) {
 showToast("Gagal mengirim pesan", "error");
 // Hapus gelembung sementara jika gagal
@@ -7217,23 +7323,26 @@ btnInstallContainer.classList.add('hidden');
 
 
 // 🤖 HELPER SAKTI V3: Sistem Lencana Kasta Tertinggi + Rebirth Loop Tanpa Batas 5 Tahun Awet
-function getBadgeByVideoCount(count) {
-// KASTA END-GAME: LOOPING REBIRTH LEGEND (Tembus 100 Video ke atas)
-if (count >= 100) {
-// Hitung tingkatan tier dewa (Tiap 50 video nambah 1 tingkat kasta)
-const tierDewa = Math.floor((count - 100) / 50) + 1;
-const romawiTier = tierDewa > 1 ? ` ${tierDewa}` : ''; // Kalo tingkat 2 jadi "Legend 2"
-return `<span class="inline-flex items-center gap-1 bg-gradient-to-r from-yellow-400 via-orange-500 to-yellow-600 text-black px-1.5 py-px rounded text-[8px] font-extrabold ml-1.5 shadow-[0_0_12px_rgba(250,204,21,1)] tracking-widest uppercase border border-yellow-300"><i class="fas fa-crown"></i> Legend${romawiTier}</span>`;
+function getBadgeByLevelAndVideos(level, count) {
+    // Kasta Legend: Level 10 ke atas ATAU 100+ video
+    if (level >= 10 || count >= 100) {
+        return `<span class="inline-flex items-center gap-1 bg-gradient-to-r from-yellow-400 via-orange-500 to-yellow-600 text-black px-1.5 py-px rounded text-[8px] font-extrabold ml-1.5 shadow-[0_0_12px_rgba(250,204,21,1)] tracking-widest uppercase border border-yellow-300"><i class="fas fa-crown"></i> LEGEND</span>`;
+    }
+    // Kasta Master: Level 5 ke atas ATAU 50+ video
+    if (level >= 5 || count >= 50) {
+        return '<span class="inline-flex items-center gap-1 bg-gradient-to-r from-brand-accent to-[#ff758c] text-white px-1.5 py-px rounded text-[8px] font-extrabold ml-1.5 shadow-[0_0_10px_rgba(255,0,122,0.8)] tracking-widest uppercase border border-brand-accent"><i class="fas fa-fire"></i> MASTER</span>';
+    }
+    // Kasta Elite: Level 3 ke atas ATAU 25+ video
+    if (level >= 3 || count >= 25) {
+        return '<span class="inline-flex items-center gap-1 bg-gradient-to-r from-brand-purple to-[#c471ed] text-white px-1.5 py-px rounded text-[8px] font-extrabold ml-1.5 shadow-[0_0_10px_rgba(138,43,226,0.8)] tracking-widest uppercase border border-brand-purple"><i class="fas fa-star"></i> ELITE</span>';
+    }
+    // Kasta Verified: Level 2 ke atas ATAU 10+ video
+    if (level >= 2 || count >= 10) {
+        return '<span class="inline-flex items-center gap-1 bg-gradient-to-r from-brand-info to-[#89f7fe] text-brand-dark px-1.5 py-px rounded text-[8px] font-extrabold ml-1.5 shadow-[0_0_10px_rgba(0,240,255,0.8)] tracking-widest uppercase border border-brand-info"><i class="fas fa-check-circle"></i> VERIFIED</span>';
+    }
+    return '';
 }
 
-if (count >= 50) return '<span class="inline-flex items-center gap-1 bg-gradient-to-r from-brand-accent to-[#ff758c] text-white px-1.5 py-px rounded text-[8px] font-extrabold ml-1.5 shadow-[0_0_10px_rgba(255,0,122,0.8)] tracking-widest uppercase border border-brand-accent"><i class="fas fa-fire"></i> Master</span>';
-
-if (count >= 25) return '<span class="inline-flex items-center gap-1 bg-gradient-to-r from-brand-purple to-[#c471ed] text-white px-1.5 py-px rounded text-[8px] font-extrabold ml-1.5 shadow-[0_0_10px_rgba(138,43,226,0.8)] tracking-widest uppercase border border-brand-purple"><i class="fas fa-star"></i> Elite</span>';
-
-if (count >= 10) return '<span class="inline-flex items-center gap-1 bg-gradient-to-r from-brand-info to-[#89f7fe] text-brand-dark px-1.5 py-px rounded text-[8px] font-extrabold ml-1.5 shadow-[0_0_10px_rgba(0,240,255,0.8)] tracking-widest uppercase border border-brand-info"><i class="fas fa-check-circle"></i> Verified</span>';
-
-return '';
-}
 
 
 // 🤖 GAMIFIKASI V2: Logika Papan Peringkat Dual Mode (Top Creator & Top Sultan)
