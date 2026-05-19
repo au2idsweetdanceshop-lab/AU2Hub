@@ -1400,28 +1400,42 @@ let typingTimer; // VARIABEL TYPING INDICATOR
                 const data = await res.json();
 
                 if (data.status === 'success') {
-                    // 1. RENDER BANNER EVENT
+                    // 1. RENDER BANNER EVENT (SLIDER / CAROUSEL MODE)
                     if (data.info && data.info.length > 0) {
-                        eventContainer.innerHTML = data.info.map((evt, idx) => `
-                            <div class="bg-gradient-to-b from-[#1A1133] to-[#0F0920] rounded-[2rem] p-1.5 border border-white/10 shadow-[0_10px_30px_rgba(0,0,0,0.5)] mb-5 smooth-reveal" style="animation-delay: ${idx * 0.1}s">
+                        let carouselHTML = `
+                        <div class="relative w-full overflow-hidden rounded-[2rem] pb-8 pt-1">
+                            <div id="info-image-carousel" onscroll="updateInfoCarouselDots()" class="flex overflow-x-auto hide-scroll snap-x snap-mandatory gap-4 relative px-1 items-stretch">
+                        `;
+
+                        carouselHTML += data.info.map((evt, idx) => `
+                            <div class="w-full flex-shrink-0 snap-center bg-gradient-to-b from-[#1A1133] to-[#0F0920] rounded-[2rem] p-1.5 border border-white/10 shadow-[0_10px_30px_rgba(0,0,0,0.5)] smooth-reveal h-auto flex flex-col" style="animation-delay: ${idx * 0.1}s">
                                 ${evt.link_gambar ? `
-                                <div class="relative w-full h-44 rounded-t-[1.7rem] rounded-b-xl overflow-hidden mb-3">
+                                <div class="relative w-full h-44 rounded-t-[1.7rem] rounded-b-xl overflow-hidden mb-3 shrink-0">
                                     <img src="${evt.link_gambar}" alt="Event" class="w-full h-full object-cover">
                                     <div class="absolute inset-0 bg-gradient-to-t from-brand-dark via-transparent to-transparent opacity-80"></div>
                                     <div class="absolute top-3 right-3 bg-black/60 backdrop-blur-md border border-white/20 text-white text-[9px] font-extrabold px-2.5 py-1 rounded-full uppercase tracking-wider flex items-center gap-1"><i class="fas fa-bell text-brand-accent animate-pulse"></i> INFO</div>
                                 </div>
                                 ` : ''}
-                                <div class="px-4 pb-4 ${!evt.link_gambar ? 'pt-4' : ''}">
+                                <div class="px-4 pb-4 flex flex-col flex-1 ${!evt.link_gambar ? 'pt-4' : ''}">
                                     <h3 class="font-extrabold text-white text-base mb-1.5 leading-snug">${evt.judul}</h3>
-                                    <p class="text-[11px] text-gray-400 mb-4 leading-relaxed whitespace-pre-line">${evt.deskripsi}</p>
+                                    <p class="text-[11px] text-gray-400 mb-4 leading-relaxed whitespace-pre-line flex-1">${evt.deskripsi}</p>
                                     ${evt.link_facebook ? `
-                                    <a href="${evt.link_facebook}" target="_blank" class="flex justify-center items-center w-full bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold py-3.5 rounded-xl active:scale-95 transition-all text-xs shadow-inner">
+                                    <a href="${evt.link_facebook}" target="_blank" class="flex justify-center items-center w-full bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold py-3.5 rounded-xl active:scale-95 transition-all text-xs shadow-inner mt-auto">
                                         <i class="fas fa-external-link-alt mr-2 text-brand-info"></i> Baca Selengkapnya
                                     </a>
                                     ` : ''}
                                 </div>
                             </div>
                         `).join('');
+
+                        carouselHTML += `
+                            </div>
+                            <div id="info-carousel-dots" class="absolute bottom-0 left-1/2 -translate-x-1/2 flex space-x-1.5 z-10 pointer-events-none mt-4">
+                                ${data.info.map((_, i) => `<div class="info-dot-indicator h-1.5 rounded-full transition-all duration-300 ${i === 0 ? 'w-4 bg-brand-accent' : 'w-1.5 bg-white/40'}"></div>`).join('')}
+                            </div>
+                        </div>
+                        `;
+                        eventContainer.innerHTML = carouselHTML;
                     } else {
                         eventContainer.innerHTML = '<div class="text-center py-8 text-xs text-gray-500 bg-brand-card rounded-3xl border border-white/5"><i class="fas fa-box-open text-3xl mb-2 opacity-50"></i><br>Belum ada pengumuman terbaru.</div>';
                     }
@@ -1444,6 +1458,20 @@ let typingTimer; // VARIABEL TYPING INDICATOR
                 eventContainer.innerHTML = '<div class="text-center py-6 text-xs text-red-500 bg-brand-card rounded-2xl border border-red-500/20">Gagal memuat info server.</div>';
                 faqContainer.innerHTML = '<div class="text-center py-6 text-xs text-red-500 bg-brand-card rounded-2xl border border-red-500/20">Gagal memuat FAQ.</div>';
             }
+        }
+
+        function updateInfoCarouselDots() {
+            const carousel = document.getElementById('info-image-carousel'); 
+            const dots = document.querySelectorAll('.info-dot-indicator');
+            if (!carousel || dots.length === 0) return; 
+            const maxScroll = carousel.scrollWidth - carousel.clientWidth; 
+            if (maxScroll <= 0) return;
+            let activeIndex = Math.round((carousel.scrollLeft / maxScroll) * (dots.length - 1)); 
+            activeIndex = Math.max(0, Math.min(activeIndex, dots.length - 1));
+            dots.forEach((dot, index) => { 
+                if (index === activeIndex) { dot.className = "info-dot-indicator h-1.5 rounded-full transition-all duration-300 w-4 bg-brand-accent"; } 
+                else { dot.className = "info-dot-indicator h-1.5 rounded-full transition-all duration-300 w-1.5 bg-white/40"; } 
+            });
         }
 
 
@@ -6256,9 +6284,21 @@ let crcString = crc.toString(16).toUpperCase().padStart(4, '0');
 return fullPayload + crcString;
 }
 
-// 🔥 VARIABEL GLOBAL UNTUK KALKULASI HARGA
+// 🔥 VARIABEL GLOBAL UNTUK KALKULASI HARGA & VARIASI
 let currentProductPrice = 0;
 let currentProductQty = 1;
+let currentSelectedVariation = ""; // Nyimpen nama variasi yang dipilih
+
+// 🌟 FUNGSI BARU: KLIK VARIASI
+function pilihVariasi(namaVariasi, hargaVariasi) {
+    currentSelectedVariation = namaVariasi;
+    currentProductPrice = parseFloat(hargaVariasi) || 0;
+    
+    // Refresh warna tombol biar keliatan mana yang aktif
+    if (window.renderVariasiButtons) window.renderVariasiButtons(namaVariasi);
+    
+    updateHargaLayar(); // Update harga ke layar
+}
 
 // 1. Fungsi Tombol Plus Minus
 function ubahJumlahPesan(delta) {
@@ -6327,17 +6367,54 @@ document.getElementById('detail-product-price').innerHTML = `<span class="text-g
 
 // 🔥 LOGIKA BUKA DETAIL PRODUK ALA SHOPEE WITH SLIDER SWIPE
 function openDetailProduk(index) {
-const p = xoftwareProdukGlobal[index];
-if (!p) return;
+    const p = xoftwareProdukGlobal[index];
+    if (!p) return;
 
-// Reset Qty & Harga setiap laci dibuka
-currentProductPrice = p.price;
-currentProductQty = 1;
-const elQty = document.getElementById('detail-qty');
-if (elQty) elQty.value = "1"; // Ubah innerText jadi value
+    // 1. RESET STATE LACI
+    currentProductQty = 1;
+    currentSelectedVariation = "";
+    const elQty = document.getElementById('detail-qty');
+    if (elQty) elQty.value = "1";
+
+    // 2. DETEKSI VARIASI DARI XOFTWARE
+    let arrVariasi = p.variations || p.variasi || p.variants || [];
+    const variasiContainer = document.getElementById('detail-variasi-container');
+    const variasiList = document.getElementById('detail-variasi-list');
+
+    if (arrVariasi && arrVariasi.length > 0) {
+        variasiContainer.classList.remove('hidden');
+        
+        // Auto-Pilih Variasi Pertama
+        currentProductPrice = parseFloat(arrVariasi[0].price);
+        currentSelectedVariation = arrVariasi[0].name || arrVariasi[0].nama || "Variasi 1";
+
+        // Fungsi Render Tombol Variasi
+        window.renderVariasiButtons = function(activeName) {
+            variasiList.innerHTML = arrVariasi.map(v => {
+                let vName = (v.name || v.nama || "Variasi").replace(/'/g, "\\'");
+                let vPrice = parseFloat(v.price) || 0;
+                let isActive = (vName === activeName);
+                
+                let baseClass = "px-4 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ";
+                let activeClass = isActive 
+                    ? "bg-brand-accent/20 border-brand-accent text-brand-accent shadow-[0_0_10px_rgba(255,0,122,0.3)]" 
+                    : "bg-black/30 border-white/10 text-gray-400 hover:border-brand-info/50 hover:text-white";
+                
+                return `<div onclick="pilihVariasi('${vName}', ${vPrice})" class="${baseClass} ${activeClass}">${vName}</div>`;
+            }).join('');
+        };
+        window.renderVariasiButtons(currentSelectedVariation);
+        
+    } else {
+        // Kalau Gak Ada Variasi, Pake Harga Asli
+        variasiContainer.classList.add('hidden');
+        currentProductPrice = parseFloat(p.price) || 0;
+        currentSelectedVariation = "";
+    }
 
 
-let deskripsiAsli = p.description || "";
+    let deskripsiAsli = p.description || "";
+
 let daftarGambar = [];
 
 // Trik Sakti: Ekstrak kode [IMG: ...] dari deskripsi
@@ -6367,10 +6444,15 @@ let infoLengkap = "";
 if (cleanDescription) infoLengkap += "*Deskripsi:*\n" + cleanDescription + "\n\n";
 if (teksSyarat) infoLengkap += "*Syarat & Ketentuan:*\n" + teksSyarat;
 
-let totalHargaCheckout = currentProductPrice * currentProductQty;
-let namaProdukFinal = currentProductQty > 1 ? `${p.title} (x${currentProductQty})` : p.title;
+        let totalHargaCheckout = currentProductPrice * currentProductQty;
+        
+        // 🔥 Format Nama Pesanan Biar Variasi Ikut Ke WA
+        let namaProdukFinal = p.title;
+        if (currentSelectedVariation !== "") namaProdukFinal += ` - ${currentSelectedVariation}`;
+        if (currentProductQty > 1) namaProdukFinal += ` (x${currentProductQty})`;
 
-// 👑 SISTEM VOUCHER POTONGAN HARGA KASTA DEWA OTOMATIS
+        // 👑 SISTEM VOUCHER POTONGAN HARGA KASTA DEWA OTOMATIS
+
 if (currentUser) {
 const videoSaya = allVideosData.filter(v => v.user_id === currentUser.id).length;
 if (videoSaya >= 100) {
@@ -6933,6 +7015,19 @@ showToast("Gagal memperbarui foto grup.", "error");
 }
 
 
+        function updateInfoCarouselDots() {
+            const carousel = document.getElementById('info-image-carousel'); 
+            const dots = document.querySelectorAll('.info-dot-indicator');
+            if (!carousel || dots.length === 0) return; 
+            const maxScroll = carousel.scrollWidth - carousel.clientWidth; 
+            if (maxScroll <= 0) return;
+            let activeIndex = Math.round((carousel.scrollLeft / maxScroll) * (dots.length - 1)); 
+            activeIndex = Math.max(0, Math.min(activeIndex, dots.length - 1));
+            dots.forEach((dot, index) => { 
+                if (index === activeIndex) { dot.className = "info-dot-indicator h-1.5 rounded-full transition-all duration-300 w-4 bg-brand-accent"; } 
+                else { dot.className = "info-dot-indicator h-1.5 rounded-full transition-all duration-300 w-1.5 bg-white/40"; } 
+            });
+        }
 
 
 
@@ -6954,39 +7049,58 @@ showToast("Gagal memperbarui foto grup.", "error");
 </div>
 </div>
 
-<div class="p-5 space-y-4">
-<div>
-<div class="text-brand-accent font-extrabold text-2xl tracking-tight mb-2" id="detail-product-price">Rp 0</div>
-<h3 class="text-lg font-extrabold text-white leading-snug" id="detail-product-title">Nama Produk</h3>
-</div>
+<div id="modal-detail-produk" class="fixed inset-x-0 bottom-0 z-[180] h-[85vh] glass border-t border-white/10 rounded-t-[2.5rem] flex flex-col max-w-md mx-auto transition-transform duration-300 translate-y-full">
+    <div class="flex justify-center p-3 shrink-0 bg-brand-dark/40 rounded-t-[2.5rem]" onclick="closeDetailProduk()">
+        <div class="w-12 h-1.5 bg-white/20 rounded-full cursor-pointer hover:bg-white/40"></div>
+    </div>
+    
+    <div class="overflow-y-auto hide-scroll flex-1 pb-24">
+        <div class="relative w-full aspect-square bg-black/50 border-b border-white/5">
+            <div id="detail-image-carousel" class="flex overflow-x-auto hide-scroll snap-x snap-mandatory h-full w-full">
+            </div>
+            <div id="carousel-counter-badge" class="absolute bottom-4 right-4 bg-black/60 backdrop-blur-md text-white text-[10px] font-bold px-3 py-1 rounded-full border border-white/10 shadow-md">
+                <span id="carousel-current-index">1</span>/<span id="carousel-total-index">1</span>
+            </div>
+        </div>
 
-<div class="flex flex-wrap gap-4 border-y border-white/5 py-3 text-[11px] font-bold uppercase tracking-wider text-gray-400">
-<span class="text-brand-success flex items-center gap-1"><i class="fas fa-bolt mr-1"></i> INCLUDE REKBER NIKKY</span>
-<span id="detail-discount-badge" class="hidden text-brand-info flex items-center gap-1"></span>
-</div>
+        <div class="p-5 space-y-4">
+            <div>
+                <div class="text-brand-accent font-extrabold text-2xl tracking-tight mb-2" id="detail-product-price">Rp 0</div>
+                <h3 class="text-lg font-extrabold text-white leading-snug" id="detail-product-title">Nama Produk</h3>
+            </div>
+            
+            <div id="detail-variasi-container" class="hidden border-t border-white/5 pt-4">
+                <span class="text-xs font-bold text-gray-300 uppercase tracking-widest mb-2 block">Pilih Variasi</span>
+                <div id="detail-variasi-list" class="flex flex-wrap gap-2">
+                    </div>
+            </div>
 
-<div class="flex justify-between items-center border-b border-white/5 pb-4">
-<span class="text-xs font-bold text-gray-300 uppercase tracking-widest">Jumlah Pembelian</span>
-<div class="flex items-center gap-3 bg-black/40 border border-white/10 rounded-xl p-1">
-<button onclick="ubahJumlahPesan(-1)" class="w-8 h-8 flex items-center justify-center text-white hover:bg-white/10 rounded-lg active:scale-95 transition-all"><i class="fas fa-minus text-xs"></i></button>
-<input type="tel" id="detail-qty" value="1" oninput="inputJumlahPesan(this.value)" onblur="validasiJumlah(this)" class="text-sm font-extrabold text-white w-10 text-center bg-transparent outline-none border-none p-0 m-0" maxlength="4">
-<button onclick="ubahJumlahPesan(1)" class="w-8 h-8 flex items-center justify-center text-white hover:bg-white/10 rounded-lg active:scale-95 transition-all"><i class="fas fa-plus text-xs"></i></button>
-</div>
-</div>
+            <div class="flex flex-wrap gap-4 border-y border-white/5 py-3 text-[11px] font-bold uppercase tracking-wider text-gray-400">
+                <span class="text-brand-success flex items-center gap-1"><i class="fas fa-bolt mr-1"></i> INCLUDE REKBER NIKKY</span>
+                <span id="detail-discount-badge" class="hidden text-brand-info flex items-center gap-1"></span>
+            </div>
 
+            <div class="flex justify-between items-center border-b border-white/5 pb-4">
+                <span class="text-xs font-bold text-gray-300 uppercase tracking-widest">Jumlah Pembelian</span>
+                <div class="flex items-center gap-3 bg-black/40 border border-white/10 rounded-xl p-1">
+                    <button onclick="ubahJumlahPesan(-1)" class="w-8 h-8 flex items-center justify-center text-white hover:bg-white/10 rounded-lg active:scale-95 transition-all"><i class="fas fa-minus text-xs"></i></button>
+                    <input type="tel" id="detail-qty" value="1" oninput="inputJumlahPesan(this.value)" onblur="validasiJumlah(this)" class="text-sm font-extrabold text-white w-10 text-center bg-transparent outline-none border-none p-0 m-0" maxlength="4">
+                    <button onclick="ubahJumlahPesan(1)" class="w-8 h-8 flex items-center justify-center text-white hover:bg-white/10 rounded-lg active:scale-95 transition-all"><i class="fas fa-plus text-xs"></i></button>
+                </div>
+            </div>
 
-<div>
-<h4 class="text-xs font-extrabold text-gray-300 uppercase tracking-widest mb-2">Deskripsi Produk</h4>
-<p class="text-xs text-gray-400 leading-relaxed whitespace-pre-line" id="detail-product-desc">Detail deskripsi...</p>
-</div>
-</div>
-</div>
+            <div>
+                <h4 class="text-xs font-extrabold text-gray-300 uppercase tracking-widest mb-2">Deskripsi Produk</h4>
+                <p class="text-xs text-gray-400 leading-relaxed whitespace-pre-line" id="detail-product-desc">Detail deskripsi...</p>
+            </div>
+        </div>
+    </div>
 
-<div class="absolute bottom-0 w-full glass border-t border-white/5 p-4 shrink-0 pb-6 rounded-t-2xl z-10">
-<button id="btn-beli-detail" onclick="" class="w-full bg-gradient-to-r from-[#00F0FF] via-[#8A2BE2] to-[#FF007A] text-white py-4 rounded-xl font-extrabold text-sm active:scale-95 transition-transform shadow-lg shadow-brand-purple/20 flex justify-center items-center gap-2">
-<i class="fas fa-shopping-bag"></i> BELI SEKARANG VIA AUTO QRIS
-</button>
-</div>
+    <div class="absolute bottom-0 w-full glass border-t border-white/5 p-4 shrink-0 pb-6 rounded-t-2xl z-10">
+        <button id="btn-beli-detail" onclick="" class="w-full bg-gradient-to-r from-[#00F0FF] via-[#8A2BE2] to-[#FF007A] text-white py-4 rounded-xl font-extrabold text-sm active:scale-95 transition-transform shadow-lg shadow-brand-purple/20 flex justify-center items-center gap-2">
+            <i class="fas fa-shopping-bag"></i> BELI SEKARANG VIA AUTO QRIS
+        </button>
+    </div>
 </div>
 </body>
 </html>
