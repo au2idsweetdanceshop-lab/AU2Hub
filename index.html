@@ -1444,18 +1444,32 @@ let typingTimer; // VARIABEL TYPING INDICATOR
                             <div class="w-full flex-shrink-0 snap-center bg-gradient-to-b from-[#1A1133] to-[#0F0920] rounded-[2rem] p-1.5 border border-white/10 shadow-[0_10px_30px_rgba(0,0,0,0.5)] smooth-reveal h-auto flex flex-col" style="animation-delay: ${idx * 0.1}s">
                                 
                                 ${evt.link_gambar && evt.link_gambar.length > 0 && evt.link_gambar[0] !== "" ? `
-                                <div class="relative w-full h-44 rounded-t-[1.7rem] rounded-b-xl overflow-x-auto flex gap-2 snap-x snap-mandatory mb-3 shrink-0 hide-scroll">
+                                <div class="relative w-full h-44 rounded-t-[1.7rem] rounded-b-xl overflow-hidden mb-3 shrink-0">
                                     
-                                    ${evt.link_gambar.map(urlGambar => urlGambar.trim() !== "" ? `
-                                        <img src="${urlGambar.trim()}" alt="Event" class="w-full h-full object-cover shrink-0 snap-center rounded-xl animate-pulse" onload="this.classList.remove('animate-pulse')" onerror="this.src='https://placehold.co/400x400/1a1133/ff007a?text=IMAGE+ERROR'">
-                                    ` : '').join('')}
+                                    <div onscroll="updateInnerDots(this)" class="flex overflow-x-auto hide-scroll snap-x snap-mandatory w-full h-full relative">
+                                        ${evt.link_gambar.map(urlGambar => urlGambar.trim() !== "" ? `
+                                            <div class="w-full h-full flex-shrink-0 snap-center relative">
+                                                <img src="${urlGambar.trim()}" alt="Event" class="w-full h-full object-cover animate-pulse" onload="this.classList.remove('animate-pulse')" onerror="this.src='https://placehold.co/400x400/1a1133/ff007a?text=IMAGE+ERROR'">
+                                                <div class="absolute inset-0 bg-gradient-to-t from-brand-dark/90 via-transparent to-transparent pointer-events-none opacity-80"></div>
+                                            </div>
+                                        ` : '').join('')}
+                                    </div>
                                     
-                                    <div class="absolute inset-0 bg-gradient-to-t from-brand-dark via-transparent to-transparent opacity-80 pointer-events-none"></div>
-                                    <div class="absolute top-3 right-3 bg-black/60 backdrop-blur-md border border-white/20 text-white text-[9px] font-extrabold px-2.5 py-1 rounded-full uppercase tracking-wider flex items-center gap-1 z-10">
+                                    <div class="absolute top-3 right-3 bg-black/60 backdrop-blur-md border border-white/20 text-white text-[9px] font-extrabold px-2.5 py-1 rounded-full uppercase tracking-wider flex items-center gap-1 z-10 pointer-events-none">
                                         <i class="fas fa-bell text-brand-accent animate-pulse"></i> INFO
                                     </div>
+
+                                    ${evt.link_gambar.length > 1 ? `
+                                    <div class="inner-dots-container absolute bottom-3 left-1/2 -translate-x-1/2 flex space-x-1.5 z-10 pointer-events-none">
+                                        ${evt.link_gambar.map((_, dotIdx) => `
+                                            <div class="inner-dot h-1.5 rounded-full transition-all duration-300 ${dotIdx === 0 ? 'w-4 bg-brand-accent' : 'w-1.5 bg-white/40'}"></div>
+                                        `).join('')}
+                                    </div>
+                                    ` : ''}
+
                                 </div>
                                 ` : ''}
+
 
                                 <div class="px-4 pb-4 flex flex-col flex-1 ${!evt.link_gambar || evt.link_gambar[0] === "" ? 'pt-4' : ''}">
                                     <h3 class="font-extrabold text-white text-base mb-1.5 leading-snug">${evt.judul}</h3>
@@ -1514,6 +1528,34 @@ let typingTimer; // VARIABEL TYPING INDICATOR
                 else { dot.className = "info-dot-indicator h-1.5 rounded-full transition-all duration-300 w-1.5 bg-white/40"; } 
             });
         }
+        
+        function updateInnerDots(container) {
+            // Kita harus naik SATU TINGKAT lagi untuk bisa menemukan inner-dots-container
+            // Karena pembungkus titik-titiknya ada sejajar dengan pembungkus luarnya
+            const dotsWrapper = container.closest('.relative.w-full.h-44').querySelector('.inner-dots-container');
+            if (!dotsWrapper) return;
+            
+            const dots = dotsWrapper.querySelectorAll('.inner-dot');
+            if (dots.length === 0) return;
+            
+            // Kalkulasi posisi gambar saat ini
+            const maxScroll = container.scrollWidth - container.clientWidth; 
+            if (maxScroll <= 0) return;
+            
+            let activeIndex = Math.round((container.scrollLeft / maxScroll) * (dots.length - 1)); 
+            activeIndex = Math.max(0, Math.min(activeIndex, dots.length - 1));
+            
+            // Perbarui visualisasi titik (Panjang dan Warnanya)
+            dots.forEach((dot, index) => { 
+                if (index === activeIndex) { 
+                    dot.className = "inner-dot h-1.5 rounded-full transition-all duration-300 w-4 bg-brand-accent"; 
+                } else { 
+                    dot.className = "inner-dot h-1.5 rounded-full transition-all duration-300 w-1.5 bg-white/40"; 
+                } 
+            });
+        }
+
+
 
 
         function formatCaption(text) {
