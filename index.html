@@ -3585,7 +3585,7 @@ function handleTyping(el) {
     if (activeGroupId && currentGroupMembers.length > 0) {
         const cursorPos = el.selectionStart;
         const textBeforeCursor = el.value.substring(0, cursorPos);
-        const words = textBeforeCursor.split(/[\s\n]/);
+                const words = textBeforeCursor.split(/\s+/);
         const currentWord = words[words.length - 1]; // Mengambil kata terakhir yang diketik
 
         const mentionContainer = document.getElementById('mention-list-container');
@@ -6179,7 +6179,7 @@ replyHtml = `
 // --- TANGANI TEKS, GAMBAR, ATAU AUDIO ---
 let contentHtml = '';
 if (rawMessage.startsWith('[IMG]')) {
-    const firstNewline = rawMessage.indexOf('\n');
+        const firstNewline = rawMessage.indexOf(String.fromCharCode(10));
     let url = rawMessage;
     let caption = '';
     
