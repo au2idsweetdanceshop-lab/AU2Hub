@@ -711,9 +711,7 @@ Satu pintu untuk info update terbaru, panduan pemula, jasa joki profesional, dan
 </div>
 </div>
 <!-- List Status Teman -->
-<div class="flex justify-between items-center mb-2 px-3 mt-4">
-    <p class="text-[11px] text-gray-400 font-semibold">Pembaruan terkini</p>
-</div>
+<p class="text-[10px] text-gray-500 font-bold mb-2 ml-3 uppercase">Pembaruan Terbaru</p>
 <div id="status-list-container" class="space-y-1">
 <div class="text-center py-6 text-xs text-gray-500"><i class="fas fa-spinner fa-spin"></i> Memuat status...</div>
 </div>
@@ -746,9 +744,6 @@ Satu pintu untuk info update terbaru, panduan pemula, jasa joki profesional, dan
 <!-- INPUT CHAT MODERN (WHATSAPP STYLE) -->
 <div class="p-4 border-t border-white/5 bg-brand-card/80 backdrop-blur-lg shrink-0 flex flex-col relative">
 
-<div id="mention-list-container" class="hidden absolute bottom-[100%] left-0 w-full bg-[#121319]/95 backdrop-blur-xl border-t border-white/10 max-h-40 overflow-y-auto z-[200] rounded-t-2xl shadow-[0_-10px_20px_rgba(0,0,0,0.5)] flex flex-col hide-scroll"></div>
-
-
 <!-- KOTAK PREVIEW BALASAN (Hidden by default) -->
 <div id="chat-reply-preview" class="hidden w-full max-w-md mx-auto mb-2 bg-black/40 border-l-4 border-brand-info rounded-r-xl p-2 relative transition-all">
 <div class="flex justify-between items-start pr-6">
@@ -765,7 +760,7 @@ Satu pintu untuk info update terbaru, panduan pemula, jasa joki profesional, dan
 <!-- AREA KETIK -->
 <div class="flex items-end gap-3 max-w-md mx-auto w-full">
 <div class="relative pb-1">
-<input type="file" id="chat-image-input" accept="image/*" class="hidden" onchange="handleChatImageSelect(event)">
+<input type="file" id="chat-image-input" accept="image/*" class="hidden" onchange="uploadChatImage(event)">
 <label for="chat-image-input" class="w-12 h-12 rounded-2xl bg-white/5 hover:bg-brand-info/20 hover:text-brand-info flex items-center justify-center text-gray-400 cursor-pointer transition-all border border-white/10 active:scale-90"><i class="fas fa-paperclip text-lg"></i></label>
 </div>
 <div class="flex-1 relative">
@@ -1085,8 +1080,7 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
                 <i class="fas fa-chevron-left text-xs"></i> Batal
             </button>
             <h3 class="text-base font-bold text-white tracking-tight">Posting Video</h3>
-            <div class="w-10"></div> 
-        </div>
+            <div class="w-10"></div> </div>
 
         <div class="overflow-y-auto hide-scroll flex-1 py-4 space-y-5">
             
@@ -1105,37 +1099,30 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
                     </div>
                 </div>
 
-                <div class="relative shrink-0 w-24 aspect-[3/4]">
-                    <input type="file" id="input-video-file" accept="video/*" class="hidden" onchange="handleVideoSelect(this)">
+                <input type="file" id="input-video-file" accept="video/*" class="hidden" onchange="handleVideoSelect(this)">
+                <label XR-Style for="input-video-file" id="drop-zone" class="w-24 aspect-[3/4] rounded-xl border border-dashed border-white/20 bg-white/5 flex flex-col items-center justify-center cursor-pointer overflow-hidden shrink-0 group relative hover:border-brand-accent/50 transition-colors">
                     
-                    <label for="input-video-file" id="drop-zone" class="absolute inset-0 rounded-xl border border-dashed border-white/20 bg-white/5 flex flex-col items-center justify-center cursor-pointer overflow-hidden group hover:border-brand-accent/50 transition-colors">
-                        <div id="upload-placeholder" class="text-center p-2 flex flex-col items-center justify-center">
-                            <i class="fas fa-cloud-upload-alt text-xl text-gray-400 mb-1 group-hover:scale-110 transition-transform"></i>
-                            <span class="text-[9px] font-bold text-gray-400 uppercase tracking-tight">Pilih Video</span>
-                        </div>
-                    </label>
+                    <div id="upload-placeholder" class="text-center p-2 flex flex-col items-center justify-center">
+                        <i class="fas fa-cloud-upload-alt text-xl text-gray-400 mb-1 group-hover:scale-110 transition-transform"></i>
+                        <span class="text-[9px] font-bold text-gray-400 uppercase tracking-tight">Pilih Video</span>
+                    </div>
 
-                    <div id="video-preview-container" class="hidden absolute inset-0 bg-black rounded-xl overflow-hidden cursor-pointer group shadow-lg" onclick="bukaPreviewVideoTersimpan()">
-                        <video id="video-preview-element" class="w-full h-full object-cover opacity-70" loop muted playsinline></video>
-                        <div class="absolute inset-0 flex items-center justify-center">
-                            <i class="fas fa-play-circle text-white/90 text-2xl drop-shadow-md group-hover:scale-110 transition-transform" id="play-icon-preview"></i>
+                    <div id="video-preview-container" class="hidden absolute inset-0 bg-black">
+                        <video id="video-preview-element" class="w-full h-full object-cover opacity-90" loop muted playsinline></video>
+                        <div class="absolute inset-0 bg-black/30 flex items-center justify-center pointer-events-none">
                             <i class="fas fa-sync-alt text-white/70 text-xs animate-spin hidden" id="mini-upload-spinner"></i>
                         </div>
-                        <label for="input-video-file" onclick="event.stopPropagation()" class="absolute top-1.5 right-1.5 bg-black/70 hover:bg-brand-accent backdrop-blur-sm rounded-full w-6 h-6 flex items-center justify-center text-white cursor-pointer z-10 transition-colors shadow-md">
-                            <i class="fas fa-pen text-[10px]"></i>
-                        </label>
                     </div>
-                </div>
+                </label>
             </div>
 
             <div class="border-t border-white/5 pt-4 space-y-1">
-                <div class="flex justify-between items-center py-3 border-b border-white/5 cursor-pointer active:bg-white/5 px-2 rounded-xl transition-colors" onclick="togglePrivacyStatus()">
+                <div class="flex justify-between items-center py-3 border-b border-white/5 cursor-pointer active:bg-white/5 px-2 rounded-xl transition-colors" onclick="showToast('Fitur pembatasan privasi akan hadir pada update selanjutnya!', 'info')">
                     <div class="flex items-center gap-3">
-                        <div class="w-7 h-7 rounded-full bg-white/5 flex items-center justify-center text-gray-300"><i id="privacy-icon" class="fas fa-earth-asia text-xs"></i></div>
+                        <div class="w-7 h-7 rounded-full bg-white/5 flex items-center justify-center text-gray-300"><i class="fas fa-earth-asia text-xs"></i></div>
                         <span class="text-xs font-semibold text-gray-200">Siapa yang dapat melihat video ini</span>
                     </div>
-                    <span class="text-xs text-gray-500 font-bold flex items-center gap-1"><span id="privacy-text">Publik</span> <i class="fas fa-chevron-right text-[10px]"></i></span>
-                    <input type="hidden" id="upload-privacy" value="publik">
+                    <span class="text-xs text-gray-500 font-bold flex items-center gap-1">Publik <i class="fas fa-chevron-right text-[10px]"></i></span>
                 </div>
 
                 <div class="flex justify-between items-center py-3 px-2 rounded-xl">
@@ -1160,7 +1147,6 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
         
     </div>
 </div>
-
 
 
 <div id="modal-event" class="fixed inset-0 z-[60] hidden items-center justify-center bg-black/80 backdrop-blur-sm px-4">
@@ -1226,13 +1212,6 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
 <div class="flex p-2 bg-black/40 shrink-0 gap-1 border-b border-white/5">
 <button id="tab-lb-creator" onclick="switchLeaderboardTab('creator')" class="flex-1 py-2.5 text-[11px] font-bold text-white bg-brand-accent rounded-xl shadow-[0_0_15px_rgba(255,0,122,0.4)] transition-all">🎬 Top Creator</button>
 <button id="tab-lb-sultan" onclick="switchLeaderboardTab('sultan')" class="flex-1 py-2.5 text-[11px] font-bold text-gray-500 hover:text-white rounded-xl transition-all">💸 Top Sultan</button>
-</div>
-
-<div class="p-3 border-b border-white/5 bg-brand-dark/50 shrink-0">
-    <div class="relative">
-        <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-xs"></i>
-        <input type="text" id="search-leaderboard" placeholder="Cari nickname..." class="w-full bg-black/40 border border-white/10 rounded-xl py-2 pl-9 pr-3 text-xs text-white outline-none focus:border-brand-accent transition-colors" oninput="filterLeaderboard(this.value)">
-    </div>
 </div>
 
 <div id="leaderboard-container-creator" class="flex-1 overflow-y-auto p-3 hide-scroll space-y-2 block pb-6"></div>
@@ -1427,22 +1406,6 @@ let onlineUsersMap = new Map();
 let selectedMessageId = null;
 let blockedUsersList = [];
 let typingTimer; // VARIABEL TYPING INDICATOR
-let currentGroupMembers = []; // Menyimpan daftar member untuk fitur mention
-
-async function fetchGroupMembersForMention(groupId) {
-    currentGroupMembers = [];
-    try {
-        const { data: members } = await supabaseClient.from('group_members').select('user_id').eq('group_id', groupId);
-        if (members && members.length > 0) {
-            const userIds = members.map(m => m.user_id);
-            const { data: profiles } = await supabaseClient.from('profiles').select('nickname').in('id', userIds);
-            if (profiles) {
-                currentGroupMembers = profiles.map(p => p.nickname);
-            }
-        }
-    } catch (e) { console.error("Gagal menarik data mention", e); }
-}
-
 
 
         let globalFaqData = [];
@@ -2147,20 +2110,6 @@ closeStoryViewer();
 return;
 }
 
-const storyUploadModal = document.getElementById('modal-story-upload');
-if (storyUploadModal && !storyUploadModal.classList.contains('translate-y-full')) {
-    closeStoryUploadModal();
-    return;
-}
-
-const chatImageUploadModal = document.getElementById('modal-chat-image-upload');
-if (chatImageUploadModal && !chatImageUploadModal.classList.contains('translate-y-full')) {
-    closeChatImageModal();
-    return;
-}
-
-
-
 const modalMsgOption = document.getElementById('modal-msg-option');
 if (!modalMsgOption.classList.contains('hidden')) {
 modalMsgOption.classList.add('hidden'); modalMsgOption.classList.remove('flex');
@@ -2398,60 +2347,6 @@ function closeUploadModal() {
     if (fileInput) fileInput.value = '';
     if (captionInput) captionInput.value = '';
 }
-
-// Fitur Buka Preview Full Screen
-function bukaPreviewVideoTersimpan() {
-    const fileInput = document.getElementById('input-video-file');
-    if (!fileInput.files || !fileInput.files[0]) return;
-
-    const url = URL.createObjectURL(fileInput.files[0]);
-    const modal = document.getElementById('modal-preview-upload');
-    const vid = document.getElementById('full-preview-video');
-    
-    vid.src = url;
-    modal.classList.remove('hidden');
-    modal.classList.add('flex');
-    setTimeout(() => modal.classList.remove('opacity-0'), 10);
-    vid.play().catch(()=>{});
-}
-
-function tutupPreviewVideoTersimpan() {
-    const modal = document.getElementById('modal-preview-upload');
-    const vid = document.getElementById('full-preview-video');
-    
-    modal.classList.add('opacity-0');
-    vid.pause();
-    setTimeout(() => {
-        modal.classList.add('hidden');
-        modal.classList.remove('flex');
-        vid.src = '';
-    }, 300);
-}
-
-// Fitur Toggle Status Privasi
-function togglePrivacyStatus() {
-    const valInput = document.getElementById('upload-privacy');
-    const textSpan = document.getElementById('privacy-text');
-    const icon = document.getElementById('privacy-icon');
-    
-    if (valInput.value === 'publik') {
-        valInput.value = 'teman';
-        textSpan.innerText = 'Teman';
-        icon.className = 'fas fa-user-friends text-xs text-brand-info';
-        showToast("Hanya teman & pengikut yang dapat melihat.", "info");
-    } else if (valInput.value === 'teman') {
-        valInput.value = 'privat';
-        textSpan.innerText = 'Privat';
-        icon.className = 'fas fa-lock text-xs text-brand-accent';
-        showToast("Video dikunci. Hanya Anda yang dapat melihat.", "info");
-    } else {
-        valInput.value = 'publik';
-        textSpan.innerText = 'Publik';
-        icon.className = 'fas fa-earth-asia text-xs text-brand-success';
-        showToast("Video Publik. Semua orang dapat melihat.", "success");
-    }
-}
-
 
 
 async function openUserProfile(userId) {
@@ -3574,70 +3469,12 @@ sendMessageRoom();
 }
 
 function handleTyping(el) {
-    // 1. Auto-resize tinggi kotak
-    el.style.height = 'auto';
-    el.style.height = el.scrollHeight + 'px';
+// 1. Auto-resize tinggi kotak sesuai dengan teks (Maksimal 120px dari HTML)
+el.style.height = 'auto';
+el.style.height = el.scrollHeight + 'px';
 
-    // 2. Sinyal Typing & Tombol Mic
-    sendTypingStatus();
-
-    // 3. LOGIKA MENTION (Khusus di Grup)
-    if (activeGroupId && currentGroupMembers.length > 0) {
-        const cursorPos = el.selectionStart;
-        const textBeforeCursor = el.value.substring(0, cursorPos);
-                const words = textBeforeCursor.split(/\s+/);
-        const currentWord = words[words.length - 1]; // Mengambil kata terakhir yang diketik
-
-        const mentionContainer = document.getElementById('mention-list-container');
-
-        if (currentWord.startsWith('@')) {
-            const searchQuery = currentWord.substring(1).toLowerCase();
-            
-            // Filter nama, dan kecualikan nama diri sendiri
-            const filteredMembers = currentGroupMembers.filter(name => 
-                name.toLowerCase().includes(searchQuery) && name !== (userProfile?.nickname || "")
-            );
-
-            if (filteredMembers.length > 0) {
-                mentionContainer.innerHTML = filteredMembers.map(name => `
-                    <div class="px-4 py-3 border-b border-white/5 text-white text-xs font-bold hover:bg-white/10 cursor-pointer active:bg-brand-accent/20 transition-colors flex items-center gap-2" 
-                         onclick="insertMention('${name.replace(/'/g, "\\'")}')">
-                        <div class="w-6 h-6 rounded-full bg-brand-info flex items-center justify-center text-[#121319]"><i class="fas fa-at text-[10px]"></i></div>
-                        ${name}
-                    </div>
-                `).join('');
-                mentionContainer.classList.remove('hidden');
-            } else {
-                mentionContainer.classList.add('hidden');
-            }
-        } else {
-            mentionContainer.classList.add('hidden');
-        }
-    }
-}
-
-// Fungsi eksekusi saat nama di-klik
-function insertMention(name) {
-    const input = document.getElementById('chat-room-input');
-    const cursorPos = input.selectionStart;
-    const textBeforeCursor = input.value.substring(0, cursorPos);
-    const textAfterCursor = input.value.substring(cursorPos);
-    
-    // Cari posisi @ terakhir sebelum kursor
-    const lastAtPos = textBeforeCursor.lastIndexOf('@');
-    
-    if (lastAtPos !== -1) {
-        // Gabungkan teks lama dengan nama yang dipilih
-        const newTextBeforeCursor = textBeforeCursor.substring(0, lastAtPos) + `@${name} `;
-        input.value = newTextBeforeCursor + textAfterCursor;
-        
-        // Fokuskan kembali keyboard dan taruh kursor di depan nama
-        input.focus();
-        input.selectionStart = input.selectionEnd = newTextBeforeCursor.length;
-    }
-    
-    document.getElementById('mention-list-container').classList.add('hidden');
-    handleTyping(input); // Resize ulang kotaknya
+// 2. Panggil fungsi asli milik Anda untuk urus Ikon Mic & Sinyal Typing
+sendTypingStatus();
 }
 
 
@@ -3944,16 +3781,11 @@ document.getElementById('active-chat-avatar').src = avatar;
 
 // 3. Set ID yang sedang aktif agar fungsi kirim pesan tahu mau dikirim ke mana
 if (isGroup) {
-    activeGroupId = id;
-    activeChatUserId = null;
-    document.getElementById('active-chat-status').innerText = 'Grup Obrolan';
-    document.getElementById('active-chat-online-dot').classList.add('hidden');
-    fetchGroupMembersForMention(id); // <--- Menarik data teman satu grup
+activeGroupId = id;
+activeChatUserId = null;
+document.getElementById('active-chat-status').innerText = 'Grup Obrolan';
+document.getElementById('active-chat-online-dot').classList.add('hidden');
 } else {
-    activeChatUserId = id;
-    activeGroupId = null;
-    currentGroupMembers = []; // Kosongkan kalau ini chat pribadi
-}
 activeChatUserId = id;
 activeGroupId = null;
 }
@@ -4404,121 +4236,39 @@ container.innerHTML = `<div class="text-center py-6 text-xs text-red-500">Gagal 
 }
 
 
-// ==========================================
-// FITUR UPLOAD STORY (WHATSAPP STYLE)
-// ==========================================
-let pendingStoryFile = null;
+async function handleUploadStory(event) {
+const file = event.target.files[0];
+if (!file) return;
+event.target.value = '';
 
-function handleUploadStory(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-    
-    pendingStoryFile = file;
-    const url = URL.createObjectURL(file);
-    
-    const modal = document.getElementById('modal-story-upload');
-    const img = document.getElementById('story-preview-img');
-    const vid = document.getElementById('story-preview-vid');
-    const captionInput = document.getElementById('story-caption-input');
-    
-    // Reset state media
-    img.classList.add('hidden');
-    vid.classList.add('hidden');
-    vid.pause();
-    captionInput.value = '';
-    captionInput.style.height = 'auto'; // Reset ukuran kotak teks
-    
-    // Deteksi File (Video atau Gambar)
-    if (file.type.startsWith('video/')) {
-        vid.src = url;
-        vid.classList.remove('hidden');
-        vid.play().catch(()=>{});
-    } else {
-        img.src = url;
-        img.classList.remove('hidden');
-    }
-    
-    // Panggil History supaya tombol back HP bisa nutup layar ini
-    history.pushState({ popup: 'story_upload' }, null, '#story_upload');
-    
-    // Munculkan layar
-    modal.classList.remove('hidden');
-    modal.classList.add('flex');
-    setTimeout(() => {
-        modal.classList.remove('translate-y-full');
-        modal.classList.add('translate-y-0');
-    }, 10);
-    
-    // Reset input supaya kalau milih gambar yang sama tetap kebaca
-    event.target.value = '';
+// ---> MUNCULKAN POP-UP TANYA CAPTION DULU SEBELUM UPLOAD MULAI
+const captionStory = await customPrompt("Tulis caption untuk status ini:", "");
+if (captionStory === null) return; // Dibatalkan jika user klik Batal
+
+showToast("Mengunggah status...", "info");
+
+try {
+// Upload file ke storage (bisa re-use API upload-url kamu)
+const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent('story_'+Date.now())}&filetype=${encodeURIComponent(file.type)}`);
+const dataUrl = await resUrl.json();
+await fetch(dataUrl.uploadUrl, { method: 'PUT', body: file, headers: { 'Content-Type': file.type, 'x-amz-acl': 'public-read' } });
+
+// Simpan ke database Supabase tabel 'stories'
+const { error } = await supabaseClient.from('stories').insert({
+user_id: currentUser.id,
+media_url: dataUrl.finalVideoUrl,
+media_type: file.type.startsWith('video/') ? 'video' : 'image',
+caption: captionStory // ---> SIMPAN CAPTION KE DATABASE
+});
+
+if (error) throw error;
+showToast("Status berhasil diperbarui!", "success");
+loadStories(); // Refresh list
+
+} catch (err) {
+showToast("Gagal mengunggah status.", "error");
 }
-
-// Fungsi Tutup Layar Preview
-function closeStoryUploadModal() {
-    if (window.location.hash === '#story_upload') history.back();
-    const modal = document.getElementById('modal-story-upload');
-    const vid = document.getElementById('story-preview-vid');
-    
-    modal.classList.remove('translate-y-0');
-    modal.classList.add('translate-y-full');
-    
-    setTimeout(() => {
-        modal.classList.add('hidden');
-        modal.classList.remove('flex');
-        vid.pause();
-        vid.src = '';
-        document.getElementById('story-preview-img').src = '';
-        pendingStoryFile = null;
-    }, 300);
 }
-
-// Eksekusi Tombol Kirim (Pesawat Kertas)
-async function prosesUploadStoryWhatsApp() {
-    if (!currentUser || !pendingStoryFile) return;
-    
-    const captionStr = document.getElementById('story-caption-input').value.trim();
-    const btn = document.getElementById('btn-send-story');
-    const file = pendingStoryFile;
-    
-    // Matikan tombol saat loading
-    btn.disabled = true;
-    const iconAsli = btn.innerHTML;
-    btn.innerHTML = '<i class="fas fa-circle-notch fa-spin text-xl"></i>';
-    
-    showToast("Mengunggah status...", "info");
-    
-    try {
-        const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent('story_'+Date.now())}&filetype=${encodeURIComponent(file.type)}`);
-        const dataUrl = await resUrl.json();
-        
-        await fetch(dataUrl.uploadUrl, { 
-            method: 'PUT', 
-            body: file, 
-            headers: { 'Content-Type': file.type, 'x-amz-acl': 'public-read' } 
-        });
-
-        const { error } = await supabaseClient.from('stories').insert({
-            user_id: currentUser.id,
-            media_url: dataUrl.finalVideoUrl,
-            media_type: file.type.startsWith('video/') ? 'video' : 'image',
-            caption: captionStr
-        });
-
-        if (error) throw error;
-        
-        showToast("Status berhasil diperbarui!", "success");
-        closeStoryUploadModal();
-        loadStories(); 
-
-    } catch (err) {
-        showToast("Gagal mengunggah status.", "error");
-    } finally {
-        // Kembalikan tombol jika gagal/selesai
-        btn.disabled = false;
-        btn.innerHTML = iconAsli;
-    }
-}
-
 
 
 // STORY VIEWER LOGIC (WHATSAPP STYLE)
@@ -4803,205 +4553,134 @@ playStory(prevIndex);
 
 
 
-// ==========================================
-// FITUR UPLOAD VIDEO (KODE FINAL BEBAS ERROR)
-// ==========================================
 async function prosesUploadVideo() {
-    if (!currentUser) return showToast("Silakan login untuk memposting video!", "error");
+if (!currentUser) return openAuthModal();
 
-    const fileInput = document.getElementById('input-video-file');
-    const captionInput = document.getElementById('input-video-caption');
-    const file = fileInput.files[0];
+const fileInput = document.getElementById('input-video-file');
+const captionInput = document.getElementById('input-video-caption');
+const file = fileInput.files[0];
+if (!file) return showToast("Pilih video dulu!", "error");
 
-    if (!file) return showToast("Pilih video terlebih dahulu!", "error");
+const btn = document.querySelector('button[onclick="prosesUploadVideo()"]');
+btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
 
-    const btn = document.querySelector('button[onclick="prosesUploadVideo()"]');
-    btn.disabled = true;
-    btn.innerHTML = '<i class="fas fa-circle-notch fa-spin text-xl"></i> Memproses...';
-    isUploading = true;
+// Kunci window unload
+isUploading = true;
 
-    try {
-        showToast("Sedang mengunggah video...", "info");
+try {
+const configRes = await fetch('/api/get-config');
+const config = await configRes.json();
 
-        // 1. Dapatkan URL Upload dari server Biznet / Storage Anda
-        const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent('video_'+Date.now())}&filetype=${encodeURIComponent(file.type)}`);
-        const dataUrl = await resUrl.json();
+if (!config.gasUrl) throw new Error("Link GAS tidak ditemukan di config");
 
-        // 2. Upload file fisik ke Storage
-        await fetch(dataUrl.uploadUrl, {
-            method: 'PUT',
-            body: file,
-            headers: { 'Content-Type': file.type, 'x-amz-acl': 'public-read' }
-        });
+const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent(file.name)}&filetype=${file.type}`);
+const dataUrl = await resUrl.json();
 
-        // 3. Tangkap nilai privasi dan toggle komentar
-        const privasiStatus = document.getElementById('upload-privacy') ? document.getElementById('upload-privacy').value : 'publik';
-        const izinkanKomen = document.getElementById('upload-allow-comments') ? document.getElementById('upload-allow-comments').checked : true;
+// 🔥 PERBAIKAN 1: Menambahkan header x-amz-acl agar Biznet membuka izin baca publik untuk file video ini
+await fetch(dataUrl.uploadUrl, {
+method: 'PUT',
+body: file,
+headers: {
+'Content-Type': file.type,
+'x-amz-acl': 'public-read'
+}
+});
 
-        // 4. Susun Payload Bersih untuk Google Sheets & Local
-        const spreadsheetPayload = {
-            ID_Video: 'vid_' + Date.now(),
-            URL_Video: dataUrl.finalVideoUrl,
-            id: 'vid_' + Date.now(),
-            video_url: dataUrl.finalVideoUrl,
-            caption: captionInput.value || "",
-            nickname: userProfile?.nickname || "Player",
-            avatar_url: userProfile?.avatar_url || "",
-            user_id: currentUser.id,
-            privacy: privasiStatus,          
-            allow_comments: izinkanKomen,    
-            created_at: new Date().toISOString()
-        };
+const spreadsheetPayload = {
+// --- DUA BARIS INI TAMBAHAN BARU UNTUK GOOGLE SHEETS ---
+ID_Video: 'vid_' + Date.now(),
+URL_Video: dataUrl.finalVideoUrl,
 
-        // 5. Masukkan ke antrean lokal agar langsung tayang tanpa nunggu loading
-        newUploads.push(spreadsheetPayload);
+// --- SISANYA TETAP SAMA (JANGAN DIHAPUS UNTUK DATABASE INTERNAL) ---
+id: 'vid_' + Date.now(),
+video_url: dataUrl.finalVideoUrl,
+caption: captionInput.value || "",
+nickname: userProfile?.nickname || "Player",
+avatar_url: userProfile?.avatar_url || "",
+user_id: currentUser.id,
+created_at: new Date().toISOString()
+};
 
-        // 6. Tembak ke Google Sheets
-        const configRes = await fetch('/api/get-config');
-        const config = await configRes.json();
-        
-        if (config.gasUrl) {
-            await fetch(config.gasUrl, {
-                method: 'POST',
-                mode: 'no-cors',
-                headers: { 'Content-Type': 'text/plain' },
-                body: JSON.stringify(spreadsheetPayload)
-            });
-        }
+// 🔥 PERBAIKAN 2: Masukkan data video baru ke antrean lokal aplikasi biar langsung tayang di feed tanpa nunggu Google Sheets yang lelet
+newUploads.push(spreadsheetPayload);
 
-        showToast("Berhasil diposting!", "success");
+await fetch(config.gasUrl, {
+method: 'POST',
+mode: 'no-cors',
+headers: { 'Content-Type': 'text/plain' },
+body: JSON.stringify(spreadsheetPayload)
+});
 
-        // 7. Reset Form dan Tutup Modal
-        fileInput.value = ''; 
-        captionInput.value = '';
-        closeUploadModal();
-        allVideosData = [];
+showToast("Berhasil diposting!", "success");
 
-        // 8. Smart Redirect: Kembali ke feed sosial
-        if (tabSebelumnya && tabSebelumnya !== 'sosial' && tabSebelumnya !== 'upload') {
-            switchTab(tabSebelumnya);
-        } else {
-            switchTab('sosial');
-        }
-        loadVideos();
+fileInput.value = ''; captionInput.value = '';
+closeUploadModal();
+allVideosData = [];
 
-    } catch (err) {
-        showToast("Error: " + err.message, "error");
-    } finally {
-        // 9. Kembalikan kondisi tombol seperti semula
-        btn.disabled = false; 
-        btn.innerHTML = '<span>Posting Sekarang</span> <i class="fas fa-paper-plane text-xs"></i>';
-        isUploading = false;
-    }
+// Smart Redirect: Cek apakah halaman sblmnya valid, jika tidak lempar ke feed sosial
+if (tabSebelumnya && tabSebelumnya !== 'sosial' && tabSebelumnya !== 'upload') {
+switchTab(tabSebelumnya);
+} else {
+switchTab('sosial');
+}
+loadVideos();
+
+} catch (err) {
+showToast("Error: " + err.message, "error");
+} finally {
+btn.disabled = false; btn.innerHTML = '<i class="fas fa-paper-plane mr-2"></i> Posting Video';
+isUploading = false; // Buka kunci window unload
+}
 }
 
 
 
+async function uploadChatImage(event) {
+const file = event.target.files[0];
+if (!file || (!activeChatUserId && !activeGroupId)) return;
+const isGroup = !!activeGroupId;
+const targetId = isGroup ? activeGroupId : activeChatUserId;
 
-// ==========================================
-// FITUR PREVIEW GAMBAR CHAT (WHATSAPP STYLE)
-// ==========================================
-let pendingChatImageFile = null;
-
-function handleChatImageSelect(event) {
-    const file = event.target.files[0];
-    if (!file || (!activeChatUserId && !activeGroupId)) return;
-    
-    pendingChatImageFile = file;
-    const url = URL.createObjectURL(file);
-    
-    const modal = document.getElementById('modal-chat-image-upload');
-    const img = document.getElementById('chat-preview-img');
-    const captionInput = document.getElementById('chat-image-caption');
-    
-    img.src = url;
-    captionInput.value = '';
-    captionInput.style.height = 'auto';
-    
-    // Pasang pelindung tombol back HP
-    history.pushState({ popup: 'chat_image_upload' }, null, '#chat_image_upload');
-    
-    modal.classList.remove('hidden');
-    modal.classList.add('flex');
-    setTimeout(() => {
-        modal.classList.remove('translate-y-full');
-        modal.classList.add('translate-y-0');
-    }, 10);
-    
-    event.target.value = ''; // Reset input
+// PENJAGA PINTU GRUP
+if (isGroup) {
+const { data: checkMember } = await supabaseClient.from('group_members').select('user_id').eq('group_id', targetId).eq('user_id', currentUser.id).single();
+if (!checkMember) {
+await customAlert("Anda tidak dapat mengirim foto karena telah dikeluarkan dari grup ini.");
+event.target.value = ''; closeChatRoom(); return;
+}
 }
 
-function closeChatImageModal() {
-    if (window.location.hash === '#chat_image_upload') history.back();
-    const modal = document.getElementById('modal-chat-image-upload');
-    
-    modal.classList.remove('translate-y-0');
-    modal.classList.add('translate-y-full');
-    
-    setTimeout(() => {
-        modal.classList.add('hidden');
-        modal.classList.remove('flex');
-        document.getElementById('chat-preview-img').src = '';
-        pendingChatImageFile = null;
-    }, 300);
+// Tangkap data balasan
+const currentReplyId = replyingToMsgId;
+const currentReplyName = replyingToMsgName;
+const currentReplyText = replyingToMsgText;
+cancelChatReply();
+
+event.target.value = '';
+showToast("Mengirim gambar...", "info");
+
+try {
+const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent('img_'+Date.now())}&filetype=${encodeURIComponent(file.type)}`);
+const dataUrl = await resUrl.json();
+await fetch(dataUrl.uploadUrl, { method: 'PUT', body: file, headers: { 'Content-Type': file.type, 'x-amz-acl': 'public-read' } });
+
+let msgText = `[IMG]${dataUrl.finalVideoUrl}`;
+
+// SISIPKAN KODE BALASAN JIKA ADA
+if (currentReplyId) {
+const safeName = currentReplyName.replace(/\|\|/g, "").replace(/\]/g, "");
+const safeText = currentReplyText.replace(/\|\|/g, "").replace(/\]/g, "");
+msgText = `[REPLY:${currentReplyId}||${safeName}||${safeText}]\n${msgText}`;
 }
 
-async function prosesUploadChatImage() {
-    if (!pendingChatImageFile) return;
-    const file = pendingChatImageFile;
-    const captionStr = document.getElementById('chat-image-caption').value.trim();
-    const isGroup = !!activeGroupId;
-    const targetId = isGroup ? activeGroupId : activeChatUserId;
+const tempMsg = { id: 'temp-'+Date.now(), sender_id: currentUser.id, message: msgText, created_at: new Date().toISOString() };
+appendMessageBubble(tempMsg); scrollToBottomChat();
 
-    // PENJAGA PINTU GRUP
-    if (isGroup) {
-        const { data: checkMember } = await supabaseClient.from('group_members').select('user_id').eq('group_id', targetId).eq('user_id', currentUser.id).single();
-        if (!checkMember) {
-            await customAlert("Anda tidak dapat mengirim foto karena telah dikeluarkan dari grup ini.");
-            closeChatImageModal();
-            closeChatRoom(); 
-            return;
-        }
-    }
-
-    // Tangkap data balasan
-    const currentReplyId = replyingToMsgId;
-    const currentReplyName = replyingToMsgName;
-    const currentReplyText = replyingToMsgText;
-    cancelChatReply();
-    
-    closeChatImageModal(); // Langsung tutup layar preview biar responsif
-    showToast("Mengirim gambar...", "info");
-
-    try {
-        const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent('img_'+Date.now())}&filetype=${encodeURIComponent(file.type)}`);
-        const dataUrl = await resUrl.json();
-        await fetch(dataUrl.uploadUrl, { method: 'PUT', body: file, headers: { 'Content-Type': file.type, 'x-amz-acl': 'public-read' } });
-
-        // Gabungkan URL gambar dan Caption (jika ada) menggunakan \n (baris baru)
-        let msgText = `[IMG]${dataUrl.finalVideoUrl}`;
-        if (captionStr) {
-            msgText += `\n${captionStr}`;
-        }
-
-        // SISIPKAN KODE BALASAN JIKA ADA
-        if (currentReplyId) {
-            const safeName = currentReplyName.replace(/\|\|/g, "").replace(/\]/g, "");
-            const safeText = currentReplyText.replace(/\|\|/g, "").replace(/\]/g, "");
-            msgText = `[REPLY:${currentReplyId}||${safeName}||${safeText}]\n${msgText}`;
-        }
-
-        const tempMsg = { id: 'temp-'+Date.now(), sender_id: currentUser.id, message: msgText, created_at: new Date().toISOString() };
-        appendMessageBubble(tempMsg); scrollToBottomChat();
-
-        const insertData = { sender_id: currentUser.id, message: msgText };
-        if (isGroup) insertData.group_id = targetId; else insertData.receiver_id = targetId;
-        await supabaseClient.from('messages').insert(insertData);
-    } catch (err) { 
-        showToast("Gagal mengirim gambar", "error"); 
-    }
+const insertData = { sender_id: currentUser.id, message: msgText };
+if (isGroup) insertData.group_id = targetId; else insertData.receiver_id = targetId;
+await supabaseClient.from('messages').insert(insertData);
+} catch (err) { showToast("Gagal gambar", "error"); }
 }
-
 
 // ==========================================
 // FITUR BALAS & LIKE STORY (WHATSAPP STYLE)
@@ -6208,20 +5887,8 @@ replyHtml = `
 // --- TANGANI TEKS, GAMBAR, ATAU AUDIO ---
 let contentHtml = '';
 if (rawMessage.startsWith('[IMG]')) {
-        const firstNewline = rawMessage.indexOf(String.fromCharCode(10));
-    let url = rawMessage;
-    let caption = '';
-    
-    // Pisahkan URL gambar dan Teks Caption jika ada
-    if (firstNewline !== -1) {
-        url = rawMessage.substring(5, firstNewline);
-        caption = rawMessage.substring(firstNewline + 1);
-    } else {
-        url = rawMessage.substring(5);
-    }
-    
-    contentHtml = `<img src="${url}" class="max-w-[200px] rounded-lg cursor-pointer mt-1 shadow-sm" onclick="openLightbox('${url}')">`;
-    if (caption) contentHtml += `<div class="mt-1.5 text-white/90">${formatCaption(caption)}</div>`;
+const url = rawMessage.replace('[IMG]', '');
+contentHtml = `<img src="${url}" class="max-w-[200px] rounded-lg cursor-pointer mt-1" onclick="openLightbox('${url}')">`;
 } else if (rawMessage.startsWith('[AUDIO]')) {
 const url = rawMessage.replace('[AUDIO]', '');
 contentHtml = `<audio controls class="w-[200px] mt-1 h-8"><source src="${url}" type="audio/webm"></audio>`;
@@ -7165,198 +6832,146 @@ const chatBtn = document.querySelector('button[onclick="toggleWidget()"]');
 if (chatBtn) chatBtn.classList.remove('hidden');
 }
 
-// 🧠 GLOBAL VARIABEL UNTUK FILTER TANPA LOADING
-let globalDataCreator = [];
-let globalDataSultan = [];
-let activeLbTab = 'creator';
-
-// MESIN PENARIK DATA LEADERBOARD
+// 🧠 MESIN PENARIK DATA LEADERBOARD
 async function switchLeaderboardTab(tab) {
-    activeLbTab = tab;
-    const btnCreator = document.getElementById('tab-lb-creator');
-    const btnSultan = document.getElementById('tab-lb-sultan');
-    const containerCreator = document.getElementById('leaderboard-container-creator');
-    const containerSultan = document.getElementById('leaderboard-container-sultan');
-    const searchInput = document.getElementById('search-leaderboard');
-    
-    // Reset pencarian setiap pindah tab
-    if(searchInput) searchInput.value = '';
+const btnCreator = document.getElementById('tab-lb-creator');
+const btnSultan = document.getElementById('tab-lb-sultan');
+const containerCreator = document.getElementById('leaderboard-container-creator');
+const containerSultan = document.getElementById('leaderboard-container-sultan');
 
-    if (tab === 'creator') {
-        // UI Animasi Switch
-        btnCreator.className = 'flex-1 py-2.5 text-[11px] font-bold text-white bg-brand-accent rounded-xl shadow-[0_0_15px_rgba(255,0,122,0.4)] transition-all';
-        btnSultan.className = 'flex-1 py-2.5 text-[11px] font-bold text-gray-500 hover:text-white rounded-xl transition-all bg-transparent shadow-none border border-transparent hover:border-white/10';
-        containerCreator.classList.replace('hidden', 'block');
-        containerSultan.classList.replace('block', 'hidden');
+if (tab === 'creator') {
+// UI Animasi Switch
+btnCreator.className = 'flex-1 py-2.5 text-[11px] font-bold text-white bg-brand-accent rounded-xl shadow-[0_0_15px_rgba(255,0,122,0.4)] transition-all';
+btnSultan.className = 'flex-1 py-2.5 text-[11px] font-bold text-gray-500 hover:text-white rounded-xl transition-all bg-transparent shadow-none border border-transparent hover:border-white/10';
+containerCreator.classList.replace('hidden', 'block');
+containerSultan.classList.replace('block', 'hidden');
 
-        // Jika data sudah ada, langsung render (nggak usah loading lagi)
-        if (globalDataCreator.length > 0) {
-            return renderCreatorList(globalDataCreator);
-        }
+// Loading Data
+containerCreator.innerHTML = '<div class="text-center py-10"><i class="fas fa-spinner fa-spin text-brand-accent text-2xl"></i></div>';
 
-        containerCreator.innerHTML = '<div class="text-center py-10"><i class="fas fa-spinner fa-spin text-brand-accent text-2xl"></i></div>';
-
-        if (allVideosData.length === 0) {
-            try {
-                const res = await fetch('/api/get-videos');
-                let dataDariSheet = await res.json();
-                dataDariSheet = dataDariSheet.map(v => {
-                    v.id = v.id || v.video_id || v.ID || 'vid_' + Math.random().toString(36).substr(2, 9);
-                    return v;
-                });
-                allVideosData = dataDariSheet.filter(v => !blockedUsersList.includes(v.user_id));
-            } catch(e) {
-                containerCreator.innerHTML = '<p class="text-center text-xs text-red-500 py-10">Gagal memuat data ranking creator.</p>';
-                return;
-            }
-        }
-
-        const userStats = {};
-        allVideosData.forEach(vid => {
-            if (!userStats[vid.user_id]) {
-                userStats[vid.user_id] = { user_id: vid.user_id, nickname: vid.nickname || "Player", avatar_url: vid.avatar_url || "", videoCount: 0 };
-            }
-            userStats[vid.user_id].videoCount++;
-        });
-
-        globalDataCreator = Object.values(userStats).sort((a, b) => b.videoCount - a.videoCount);
-        
-        // Simpan index original sebagai Ranking aslinya sebelum di filter
-        globalDataCreator.forEach((u, i) => u.originalRank = i + 1);
-
-        renderCreatorList(globalDataCreator);
-    } 
-    else if (tab === 'sultan') {
-        // UI Animasi Switch
-        btnSultan.className = 'flex-1 py-2.5 text-[11px] font-bold text-brand-dark bg-gradient-to-r from-yellow-400 to-yellow-600 rounded-xl shadow-[0_0_15px_rgba(250,204,21,0.4)] transition-all';
-        btnCreator.className = 'flex-1 py-2.5 text-[11px] font-bold text-gray-500 hover:text-white rounded-xl transition-all bg-transparent shadow-none border border-transparent hover:border-white/10';
-        containerSultan.classList.replace('hidden', 'block');
-        containerCreator.classList.replace('block', 'hidden');
-
-        // Jika data sudah ada, langsung render
-        if (globalDataSultan.length > 0) {
-            return renderSultanList(globalDataSultan);
-        }
-
-        containerSultan.innerHTML = '<div class="text-center py-10"><i class="fas fa-spinner fa-spin text-yellow-400 text-2xl"></i></div>';
-
-        try {
-            const { data: orders, error } = await supabaseClient.from('orders').select('user_id, price').eq('status', 'selesai');
-
-            if (error || !orders || orders.length === 0) {
-                containerSultan.innerHTML = '<p class="text-center text-xs text-gray-500 py-10">Belum ada data sultan yang memborong.</p>';
-                return;
-            }
-
-            const sultanStats = {};
-            orders.forEach(o => {
-                if (!sultanStats[o.user_id]) sultanStats[o.user_id] = { user_id: o.user_id, totalSpent: 0 };
-                sultanStats[o.user_id].totalSpent += Number(o.price);
-            });
-
-            let sortedSultans = Object.values(sultanStats).sort((a, b) => b.totalSpent - a.totalSpent);
-            const userIds = sortedSultans.map(s => s.user_id);
-            const { data: profiles } = await supabaseClient.from('profiles').select('id, nickname, avatar_url').in('id', userIds);
-
-            // Gabungkan nama & profil agar mudah dicari nanti
-            globalDataSultan = sortedSultans.map((sultan, index) => {
-                const p = profiles?.find(x => x.id === sultan.user_id);
-                return {
-                    ...sultan,
-                    nickname: p?.nickname || "Player",
-                    avatar_url: p?.avatar_url || "",
-                    originalRank: index + 1
-                };
-            });
-
-            renderSultanList(globalDataSultan);
-        } catch(e) {
-            containerSultan.innerHTML = '<p class="text-center text-xs text-red-500 py-10">Gagal menarik data Sultan.</p>';
-        }
-    }
+// 🚀 PRO-FIX VERCEL: Jika data video masih kosong (user langsung klik piala), paksa fetch mandiri ke server biar gak zonk!
+if (allVideosData.length === 0) {
+try {
+const res = await fetch('/api/get-videos');
+let dataDariSheet = await res.json();
+dataDariSheet = dataDariSheet.map(v => {
+v.id = v.id || v.video_id || v.ID || 'vid_' + Math.random().toString(36).substr(2, 9);
+return v;
+});
+allVideosData = dataDariSheet.filter(v => !blockedUsersList.includes(v.user_id));
+} catch(e) {
+containerCreator.innerHTML = '<p class="text-center text-xs text-red-500 py-10">Gagal memuat data ranking creator.</p>';
+return;
+}
 }
 
-// FUNGSI RENDER CREATOR
-function renderCreatorList(dataArray) {
-    const container = document.getElementById('leaderboard-container-creator');
-    if (dataArray.length === 0) {
-        container.innerHTML = '<p class="text-center text-xs text-gray-500 py-10">Data tidak ditemukan.</p>';
-        return;
-    }
+const userStats = {};
+allVideosData.forEach(vid => {
+if (!userStats[vid.user_id]) {
+userStats[vid.user_id] = { user_id: vid.user_id, nickname: vid.nickname || "Player", avatar_url: vid.avatar_url || "", videoCount: 0 };
+}
+userStats[vid.user_id].videoCount++;
+});
 
-    container.innerHTML = dataArray.map(user => {
-        const ava = user.avatar_url || `https://ui-avatars.com/api/?name=${user.nickname}&background=1A1133&color=fff`;
-        let rankBadge = `<span class="text-xs font-bold text-gray-500 w-6 text-center">#${user.originalRank}</span>`;
-        if (user.originalRank === 1) rankBadge = '<div class="w-6 flex justify-center text-xl text-yellow-400 drop-shadow-[0_0_6px_rgba(250,204,21,0.6)]"><i class="fas fa-medal"></i></div>';
-        if (user.originalRank === 2) rankBadge = '<div class="w-6 flex justify-center text-xl text-gray-300 drop-shadow-[0_0_6px_rgba(209,213,219,0.6)]"><i class="fas fa-medal"></i></div>';
-        if (user.originalRank === 3) rankBadge = '<div class="w-6 flex justify-center text-xl text-amber-600 drop-shadow-[0_0_6px_rgba(217,119,6,0.6)]"><i class="fas fa-medal"></i></div>';
+const sortedLeaderboard = Object.values(userStats).sort((a, b) => b.videoCount - a.videoCount);
 
-        const statusBadge = getBadgeByVideoCount(user.videoCount);
-
-        return `
-        <div onclick="viewUserProfile('${user.user_id}'); closeLeaderboardModal();" class="flex items-center justify-between p-3 bg-black/20 border border-white/5 rounded-2xl hover:bg-white/10 transition-all cursor-pointer">
-            <div class="flex items-center gap-3 min-w-0 flex-1">
-                ${rankBadge}
-                <img src="${ava}" class="w-9 h-9 rounded-full object-cover border border-white/10 shrink-0">
-                <div class="truncate">
-                    <h4 class="font-bold text-white text-xs flex items-center gap-1">@${user.nickname} ${statusBadge}</h4>
-                    <p class="text-[10px] text-gray-400 mt-0.5">${user.videoCount} Video dibagikan</p>
-                </div>
-            </div>
-            <div class="text-right ml-2 shrink-0">
-                <span class="text-[10px] font-extrabold bg-brand-accent/10 text-brand-accent px-2.5 py-1 rounded-lg border border-brand-accent/20 tracking-wider">${user.videoCount * 10} XP</span>
-            </div>
-        </div>`;
-    }).join('');
+if (sortedLeaderboard.length === 0) {
+containerCreator.innerHTML = '<p class="text-center text-xs text-gray-500 py-10">Belum ada kompetisi dimulai.</p>';
+return;
 }
 
-// FUNGSI RENDER SULTAN
-function renderSultanList(dataArray) {
-    const container = document.getElementById('leaderboard-container-sultan');
-    if (dataArray.length === 0) {
-        container.innerHTML = '<p class="text-center text-xs text-gray-500 py-10">Data tidak ditemukan.</p>';
-        return;
-    }
+containerCreator.innerHTML = sortedLeaderboard.map((user, index) => {
+const rank = index + 1;
+const ava = user.avatar_url || `https://ui-avatars.com/api/?name=${user.nickname}&background=1A1133&color=fff`;
+let rankBadge = `<span class="text-xs font-bold text-gray-500 w-6 text-center">#${rank}</span>`;
+if (rank === 1) rankBadge = '<div class="w-6 flex justify-center text-xl text-yellow-400 drop-shadow-[0_0_6px_rgba(250,204,21,0.6)]"><i class="fas fa-medal"></i></div>';
+if (rank === 2) rankBadge = '<div class="w-6 flex justify-center text-xl text-gray-300 drop-shadow-[0_0_6px_rgba(209,213,219,0.6)]"><i class="fas fa-medal"></i></div>';
+if (rank === 3) rankBadge = '<div class="w-6 flex justify-center text-xl text-amber-600 drop-shadow-[0_0_6px_rgba(217,119,6,0.6)]"><i class="fas fa-medal"></i></div>';
 
-    container.innerHTML = dataArray.map(sultan => {
-        const ava = sultan.avatar_url || `https://ui-avatars.com/api/?name=${sultan.nickname}&background=1A1133&color=fff`;
+const statusBadge = getBadgeByVideoCount(user.videoCount);
 
-        let rankBadge = `<span class="text-xs font-bold text-gray-500 w-6 text-center">#${sultan.originalRank}</span>`;
-        if (sultan.originalRank === 1) rankBadge = '<div class="w-6 flex justify-center text-xl text-yellow-400 drop-shadow-[0_0_6px_rgba(250,204,21,0.6)]"><i class="fas fa-crown"></i></div>';
-        if (sultan.originalRank === 2) rankBadge = '<div class="w-6 flex justify-center text-xl text-gray-300 drop-shadow-[0_0_6px_rgba(209,213,219,0.6)]"><i class="fas fa-medal"></i></div>';
-        if (sultan.originalRank === 3) rankBadge = '<div class="w-6 flex justify-center text-xl text-amber-600 drop-shadow-[0_0_6px_rgba(217,119,6,0.6)]"><i class="fas fa-medal"></i></div>';
+return `
+<div onclick="viewUserProfile('${user.user_id}'); closeLeaderboardModal();" class="flex items-center justify-between p-3 bg-black/20 border border-white/5 rounded-2xl hover:bg-white/10 transition-all cursor-pointer">
+<div class="flex items-center gap-3 min-w-0 flex-1">
+${rankBadge}
+<img src="${ava}" class="w-9 h-9 rounded-full object-cover border border-white/10 shrink-0">
+<div class="truncate">
+<h4 class="font-bold text-white text-xs flex items-center gap-1">@${user.nickname} ${statusBadge}</h4>
+<p class="text-[10px] text-gray-400 mt-0.5">${user.videoCount} Video dibagikan</p>
+</div>
+</div>
+<div class="text-right ml-2 shrink-0">
+<span class="text-[10px] font-extrabold bg-brand-accent/10 text-brand-accent px-2.5 py-1 rounded-lg border border-brand-accent/20 tracking-wider">${user.videoCount * 10} XP</span>
+</div>
+</div>`;
+}).join('');
+}
+else if (tab === 'sultan') {
+// UI Animasi Switch
+btnSultan.className = 'flex-1 py-2.5 text-[11px] font-bold text-brand-dark bg-gradient-to-r from-yellow-400 to-yellow-600 rounded-xl shadow-[0_0_15px_rgba(250,204,21,0.4)] transition-all';
+btnCreator.className = 'flex-1 py-2.5 text-[11px] font-bold text-gray-500 hover:text-white rounded-xl transition-all bg-transparent shadow-none border border-transparent hover:border-white/10';
+containerSultan.classList.replace('hidden', 'block');
+containerCreator.classList.replace('block', 'hidden');
 
-        return `
-        <div onclick="viewUserProfile('${sultan.user_id}'); closeLeaderboardModal();" class="flex items-center justify-between p-3 bg-black/20 border border-white/5 rounded-2xl hover:bg-white/10 transition-all cursor-pointer relative overflow-hidden">
-            ${sultan.originalRank === 1 ? '<div class="absolute inset-0 bg-gradient-to-r from-yellow-500/10 to-transparent pointer-events-none"></div>' : ''}
-            <div class="flex items-center gap-3 min-w-0 flex-1 relative z-10">
-                ${rankBadge}
-                <img src="${ava}" class="w-9 h-9 rounded-full object-cover border border-white/10 shrink-0">
-                <div class="truncate">
-                    <h4 class="font-bold text-white text-xs truncate">@${sultan.nickname}</h4>
-                    <p class="text-[10px] text-yellow-500 mt-0.5 font-bold tracking-wide">Rp ${sultan.totalSpent.toLocaleString('id-ID')}</p>
-                </div>
-            </div>
-            <div class="text-right ml-2 shrink-0 relative z-10">
-                <span class="text-[10px] font-extrabold bg-gradient-to-tr from-yellow-400 to-yellow-600 text-black px-2 py-1 rounded-lg border border-yellow-300 shadow-[0_0_10px_rgba(250,204,21,0.4)]">VIP</span>
-            </div>
-        </div>`;
-    }).join('');
+// Loading Data
+containerSultan.innerHTML = '<div class="text-center py-10"><i class="fas fa-spinner fa-spin text-yellow-400 text-2xl"></i></div>';
+
+try {
+// Tarik data pesanan yang statusnya udah selesai dari database
+const { data: orders, error } = await supabaseClient.from('orders').select('user_id, price').eq('status', 'selesai');
+
+if (error || !orders || orders.length === 0) {
+containerSultan.innerHTML = '<p class="text-center text-xs text-gray-500 py-10">Belum ada data sultan yang memborong.</p>';
+return;
 }
 
-// 🔎 FUNGSI FILTER REAL-TIME (TANPA LOADING)
-function filterLeaderboard(keyword) {
-    const val = keyword.toLowerCase().trim();
-    
-    if (activeLbTab === 'creator') {
-        const filtered = globalDataCreator.filter(u => u.nickname.toLowerCase().includes(val));
-        renderCreatorList(filtered);
-    } else {
-        const filtered = globalDataSultan.filter(s => s.nickname.toLowerCase().includes(val));
-        renderSultanList(filtered);
-    }
-}
+// Kelompokkan dan jumlahin duitnya per user
+const sultanStats = {};
+orders.forEach(o => {
+if (!sultanStats[o.user_id]) sultanStats[o.user_id] = { user_id: o.user_id, totalSpent: 0 };
+sultanStats[o.user_id].totalSpent += Number(o.price);
+});
 
+// Urutkan dari yang duitnya paling banyak
+const sortedSultans = Object.values(sultanStats).sort((a, b) => b.totalSpent - a.totalSpent);
+
+// Ambil Profil mereka
+const userIds = sortedSultans.map(s => s.user_id);
+const { data: profiles } = await supabaseClient.from('profiles').select('id, nickname, avatar_url').in('id', userIds);
+
+containerSultan.innerHTML = sortedSultans.map((sultan, index) => {
+const rank = index + 1;
+const p = profiles?.find(x => x.id === sultan.user_id);
+const nickname = p?.nickname || "Player";
+const ava = p?.avatar_url || `https://ui-avatars.com/api/?name=${nickname}&background=1A1133&color=fff`;
+
+// Medali versi Sultan
+let rankBadge = `<span class="text-xs font-bold text-gray-500 w-6 text-center">#${rank}</span>`;
+if (rank === 1) rankBadge = '<div class="w-6 flex justify-center text-xl text-yellow-400 drop-shadow-[0_0_6px_rgba(250,204,21,0.6)]"><i class="fas fa-crown"></i></div>';
+if (rank === 2) rankBadge = '<div class="w-6 flex justify-center text-xl text-gray-300 drop-shadow-[0_0_6px_rgba(209,213,219,0.6)]"><i class="fas fa-medal"></i></div>';
+if (rank === 3) rankBadge = '<div class="w-6 flex justify-center text-xl text-amber-600 drop-shadow-[0_0_6px_rgba(217,119,6,0.6)]"><i class="fas fa-medal"></i></div>';
+
+return `
+<div onclick="viewUserProfile('${sultan.user_id}'); closeLeaderboardModal();" class="flex items-center justify-between p-3 bg-black/20 border border-white/5 rounded-2xl hover:bg-white/10 transition-all cursor-pointer relative overflow-hidden">
+${rank === 1 ? '<div class="absolute inset-0 bg-gradient-to-r from-yellow-500/10 to-transparent pointer-events-none"></div>' : ''}
+<div class="flex items-center gap-3 min-w-0 flex-1 relative z-10">
+${rankBadge}
+<img src="${ava}" class="w-9 h-9 rounded-full object-cover border border-white/10 shrink-0">
+<div class="truncate">
+<h4 class="font-bold text-white text-xs truncate">@${nickname}</h4>
+<p class="text-[10px] text-yellow-500 mt-0.5 font-bold tracking-wide">Rp ${sultan.totalSpent.toLocaleString('id-ID')}</p>
+</div>
+</div>
+<div class="text-right ml-2 shrink-0 relative z-10">
+<span class="text-[10px] font-extrabold bg-gradient-to-tr from-yellow-400 to-yellow-600 text-black px-2 py-1 rounded-lg border border-yellow-300 shadow-[0_0_10px_rgba(250,204,21,0.4)]">VIP</span>
+</div>
+</div>`;
+}).join('');
+} catch(e) {
+containerSultan.innerHTML = '<p class="text-center text-xs text-red-500 py-10">Gagal menarik data Sultan.</p>';
+}
+}
+}
 
 
 
@@ -7507,61 +7122,6 @@ showToast("Gagal memperbarui foto grup.", "error");
 </script>
 
 <script>eruda.init();</script>
-
-<div id="modal-chat-image-upload" class="fixed inset-0 z-[9999] hidden flex-col bg-black h-[100dvh] w-full transition-transform duration-300 translate-y-full">
-    <div class="flex items-center px-4 py-4 bg-gradient-to-b from-black/60 to-transparent absolute top-0 w-full z-50">
-        <button onclick="closeChatImageModal()" class="text-white w-10 h-10 flex items-center justify-center rounded-full bg-black/40 hover:bg-white/20 transition-all active:scale-90">
-            <i class="fas fa-times text-xl"></i>
-        </button>
-    </div>
-
-    <div class="flex-1 relative flex items-center justify-center overflow-hidden bg-black pb-16">
-        <img id="chat-preview-img" class="w-full max-h-full object-contain shadow-2xl" src="">
-    </div>
-
-    <div class="bg-black/60 backdrop-blur-xl p-3 flex items-end gap-3 absolute bottom-0 w-full z-50 border-t border-white/10">
-        <div class="flex-1 bg-white/10 border border-white/20 rounded-3xl px-4 py-2.5 flex items-center">
-            <textarea id="chat-image-caption" rows="1" placeholder="Tambahkan keterangan..." class="w-full bg-transparent text-white text-sm outline-none resize-none hide-scroll max-h-24" oninput="this.style.height = ''; this.style.height = this.scrollHeight + 'px'"></textarea>
-        </div>
-        <button id="btn-send-chat-img" onclick="prosesUploadChatImage()" class="w-12 h-[42px] shrink-0 rounded-2xl bg-[#25D366] hover:bg-[#20bd5a] text-white flex items-center justify-center shadow-[0_0_15px_rgba(37,211,102,0.4)] active:scale-90 transition-transform">
-            <i class="fas fa-paper-plane text-lg"></i>
-        </button>
-    </div>
-</div>
-
-
-<div id="modal-story-upload" class="fixed inset-0 z-[9999] hidden flex-col bg-black h-[100dvh] w-full transition-transform duration-300 translate-y-full">
-    <div class="flex items-center px-4 py-4 bg-gradient-to-b from-black/60 to-transparent absolute top-0 w-full z-50">
-        <button onclick="closeStoryUploadModal()" class="text-white w-10 h-10 flex items-center justify-center rounded-full bg-black/40 hover:bg-white/20 transition-all active:scale-90">
-            <i class="fas fa-times text-xl"></i>
-        </button>
-    </div>
-
-    <div class="flex-1 relative flex items-center justify-center overflow-hidden bg-black pb-16">
-        <img id="story-preview-img" class="w-full max-h-full object-contain hidden shadow-2xl" src="">
-        <video id="story-preview-vid" class="w-full max-h-full object-contain hidden shadow-2xl" autoplay loop muted playsinline></video>
-    </div>
-
-    <div class="bg-black/60 backdrop-blur-xl p-3 flex items-end gap-3 absolute bottom-0 w-full z-50 border-t border-white/10">
-        <div class="flex-1 bg-white/10 border border-white/20 rounded-3xl px-4 py-2.5 flex items-center">
-            <textarea id="story-caption-input" rows="1" placeholder="Tambahkan keterangan..." class="w-full bg-transparent text-white text-sm outline-none resize-none hide-scroll max-h-24" oninput="this.style.height = ''; this.style.height = this.scrollHeight + 'px'"></textarea>
-        </div>
-        <button id="btn-send-story" onclick="prosesUploadStoryWhatsApp()" class="w-12 h-[42px] shrink-0 rounded-2xl bg-[#25D366] hover:bg-[#20bd5a] text-white flex items-center justify-center shadow-[0_0_15px_rgba(37,211,102,0.4)] active:scale-90 transition-transform">
-            <i class="fas fa-paper-plane text-lg"></i>
-        </button>
-    </div>
-</div>
-
-
-<div id="modal-preview-upload" class="fixed inset-0 z-[9999] hidden items-center justify-center bg-black/95 backdrop-blur-md opacity-0 transition-opacity duration-300">
-    <button onclick="tutupPreviewVideoTersimpan()" class="absolute top-6 right-6 text-white bg-white/10 w-12 h-12 rounded-full flex items-center justify-center active:scale-90 z-50 hover:bg-white/20 transition-colors"><i class="fas fa-times text-xl"></i></button>
-    <div class="w-full max-w-md h-full flex flex-col justify-center items-center relative">
-        <video id="full-preview-video" class="w-full max-h-[85vh] object-contain shadow-2xl" controls playsinline></video>
-        <p class="absolute bottom-10 text-white/50 text-xs font-bold tracking-widest uppercase">Pratinjau Video</p>
-    </div>
-</div>
-
-
 <div id="modal-detail-produk" class="fixed inset-x-0 bottom-0 z-[180] h-[85vh] glass border-t border-white/10 rounded-t-[2.5rem] flex flex-col max-w-md mx-auto transition-transform duration-300 translate-y-full">
     
     <div class="flex justify-center p-3 shrink-0 bg-brand-dark/40 rounded-t-[2.5rem]" onclick="closeDetailProduk()">
