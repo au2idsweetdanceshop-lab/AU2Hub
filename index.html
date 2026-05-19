@@ -2280,6 +2280,14 @@ window.addEventListener('popstate', () => {
         closeDetailProduk(true); 
         return;
     }
+    
+        // TANGKAP MODAL RIWAYAT PESANAN
+    const modalRiwayat = document.getElementById('modal-riwayat-pesanan');
+    if (modalRiwayat && !modalRiwayat.classList.contains('hidden')) {
+        closeRiwayatPesanan(true); 
+        return;
+    }
+
 
     // ==========================================
     // 🚀 TAMBAHAN BARU: TANGKAP MODAL UPLOAD VIDEO & PRIVASI
@@ -3069,6 +3077,42 @@ setTimeout(() => { btnSalin.innerHTML = teksAsli; btnSalin.classList.replace('te
 
 
 
+// ==========================================
+// FITUR PENCARIAN LEADERBOARD (DOM FILTERING)
+// ==========================================
+document.getElementById('leaderboardSearch').addEventListener('input', function(e) {
+    const keyword = e.target.value.toLowerCase();
+
+    // 1. Filter daftar di Tab Top Creator
+    const creatorList = document.querySelectorAll('#leaderboard-container-creator > div');
+    creatorList.forEach(item => {
+        // Ambil teks nama dari dalam tag <h4>
+        const nameElement = item.querySelector('h4');
+        if (nameElement) {
+            const name = nameElement.innerText.toLowerCase();
+            // Jika nama cocok dengan ketikan, tampilkan. Jika tidak, sembunyikan.
+            if (name.includes(keyword)) {
+                item.style.display = ''; // Kembali ke tampilan bawaan (flex)
+            } else {
+                item.style.display = 'none'; // Sembunyikan
+            }
+        }
+    });
+
+    // 2. Filter daftar di Tab Top Sultan
+    const sultanList = document.querySelectorAll('#leaderboard-container-sultan > div');
+    sultanList.forEach(item => {
+        const nameElement = item.querySelector('h4');
+        if (nameElement) {
+            const name = nameElement.innerText.toLowerCase();
+            if (name.includes(keyword)) {
+                item.style.display = ''; 
+            } else {
+                item.style.display = 'none'; 
+            }
+        }
+    });
+});
 
 
 
@@ -7383,11 +7427,19 @@ console.log("Tabel orders belum siap, abaikan tracker.");
 }
 }
 
-function closeRiwayatPesanan() {
+function closeRiwayatPesanan(dariTombolBackHP = false) {
     const modal = document.getElementById('modal-riwayat-pesanan');
-    modal.classList.add('hidden');
-    modal.classList.remove('flex');
+    if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }
+
+    // Jika ditutup pakai tombol (X) silang, hapus jejak URL-nya
+    if (!dariTombolBackHP && window.location.hash === '#riwayat') {
+        history.back();
+    }
 }
+
 
 
 // 📦 LOGIKA KLIK PESANAN ALA SHOPEE (PESANAN DITERIMA)
@@ -7444,6 +7496,10 @@ else if (status === 'selesai' || status === 'riwayat') {
     // Buka Modal & Tampilkan Loading
     modal.classList.remove('hidden');
     modal.classList.add('flex');
+    
+    // Tambahkan jejak #riwayat agar terdeteksi oleh tombol back HP
+    history.pushState({ popup: 'riwayat_pesanan' }, null, '#riwayat');
+
     container.innerHTML = '<div class="flex flex-col items-center justify-center mt-20"><i class="fas fa-spinner fa-spin text-brand-info text-4xl mb-3"></i><p class="text-[10px] text-gray-500 font-bold tracking-widest uppercase">Memuat Database...</p></div>';
 
     try {
