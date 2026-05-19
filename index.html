@@ -164,10 +164,14 @@ body.video-focused header,
 body.video-focused #modal-auth,
 body.video-focused #comment-drawer,
 body.video-focused #toast-container,
-body.video-focused #modal-upload {
-z-index: 9999999 !important;
-pointer-events: auto !important;
+body.video-focused #modal-upload,
+body.video-focused #modal-privasi-video,
+body.video-focused #modal-pratinjau {
+    z-index: 9999999 !important;
+    pointer-events: auto !important;
 }
+
+
 
 /* 4. SEMBUNYIKAN MENU BAWAH SAAT MENGAMBANG BIAR FOKUS */
 body.video-focused nav {
@@ -760,7 +764,7 @@ Satu pintu untuk info update terbaru, panduan pemula, jasa joki profesional, dan
 <!-- AREA KETIK -->
 <div class="flex items-end gap-3 max-w-md mx-auto w-full">
 <div class="relative pb-1">
-<input type="file" id="chat-image-input" accept="image/*" class="hidden" onchange="uploadChatImage(event)">
+<input type="file" id="chat-image-input" accept="image/*,video/*" class="hidden" onchange="handleChatMediaSelect(event)">
 <label for="chat-image-input" class="w-12 h-12 rounded-2xl bg-white/5 hover:bg-brand-info/20 hover:text-brand-info flex items-center justify-center text-gray-400 cursor-pointer transition-all border border-white/10 active:scale-90"><i class="fas fa-paperclip text-lg"></i></label>
 </div>
 <div class="flex-1 relative">
@@ -1107,23 +1111,36 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
                         <span class="text-[9px] font-bold text-gray-400 uppercase tracking-tight">Pilih Video</span>
                     </div>
 
-                    <div id="video-preview-container" class="hidden absolute inset-0 bg-black">
-                        <video id="video-preview-element" class="w-full h-full object-cover opacity-90" loop muted playsinline></video>
-                        <div class="absolute inset-0 bg-black/30 flex items-center justify-center pointer-events-none">
-                            <i class="fas fa-sync-alt text-white/70 text-xs animate-spin hidden" id="mini-upload-spinner"></i>
-                        </div>
-                    </div>
+<div id="video-preview-container" class="hidden absolute inset-0 bg-black">
+    <video id="video-preview-element" class="w-full h-full object-cover opacity-90" loop muted playsinline></video>
+    
+    <button type="button" onclick="bukaPratinjauVideo(event)" class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 bg-black/50 backdrop-blur-md rounded-full flex items-center justify-center text-white border border-white/20 active:scale-90 z-20 hover:bg-brand-accent transition-colors">
+        <i class="fas fa-play text-xs ml-0.5"></i>
+    </button>
+    
+    <div class="absolute bottom-1.5 w-full text-center pointer-events-none z-10">
+        <span class="text-[7px] text-white/80 bg-black/50 px-2 py-0.5 rounded shadow-sm">Ketuk tuk ubah</span>
+    </div>
+
+    <div class="absolute inset-0 bg-black/30 flex items-center justify-center pointer-events-none">
+        <i class="fas fa-sync-alt text-white/70 text-xs animate-spin hidden" id="mini-upload-spinner"></i>
+    </div>
+</div>
+
                 </label>
             </div>
 
             <div class="border-t border-white/5 pt-4 space-y-1">
-                <div class="flex justify-between items-center py-3 border-b border-white/5 cursor-pointer active:bg-white/5 px-2 rounded-xl transition-colors" onclick="showToast('Fitur pembatasan privasi akan hadir pada update selanjutnya!', 'info')">
-                    <div class="flex items-center gap-3">
-                        <div class="w-7 h-7 rounded-full bg-white/5 flex items-center justify-center text-gray-300"><i class="fas fa-earth-asia text-xs"></i></div>
-                        <span class="text-xs font-semibold text-gray-200">Siapa yang dapat melihat video ini</span>
-                    </div>
-                    <span class="text-xs text-gray-500 font-bold flex items-center gap-1">Publik <i class="fas fa-chevron-right text-[10px]"></i></span>
-                </div>
+<div class="flex justify-between items-center py-3 border-b border-white/5 cursor-pointer active:bg-white/5 px-2 rounded-xl transition-colors" onclick="bukaPilihanPrivasi()">
+    <div class="flex items-center gap-3">
+        <div class="w-7 h-7 rounded-full bg-white/5 flex items-center justify-center text-gray-300">
+            <i id="ikon-privasi-utama" class="fas fa-earth-asia text-xs"></i>
+        </div>
+        <span class="text-xs font-semibold text-gray-200">Siapa yang dapat melihat video ini</span>
+    </div>
+    <span id="label-privasi-teks" class="text-xs text-gray-500 font-bold flex items-center gap-1">Publik <i class="fas fa-chevron-right text-[10px]"></i></span>
+</div>
+
 
                 <div class="flex justify-between items-center py-3 px-2 rounded-xl">
                     <div class="flex items-center gap-3">
@@ -1148,7 +1165,56 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
     </div>
 </div>
 
+<div id="modal-privasi-video" class="fixed inset-x-0 bottom-0 z-[700] bg-[#121319] border-t border-white/10 rounded-t-3xl transition-transform duration-300 translate-y-full flex flex-col pointer-events-auto shadow-[0_-10px_40px_rgba(0,0,0,0.8)] hidden">
+    <div class="flex justify-between items-center p-5 border-b border-white/5">
+        <h4 class="font-bold text-white text-sm mx-auto">Siapa yang dapat melihat</h4>
+        <button onclick="tutupPilihanPrivasi()" class="absolute right-5 text-gray-400 w-8 h-8 flex items-center justify-center bg-white/5 rounded-full active:scale-95"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="p-2 space-y-1 pb-8">
+        <div onclick="setPrivasiVideo('Publik', 'fa-earth-asia')" class="flex items-center gap-3 p-4 hover:bg-white/5 rounded-xl cursor-pointer active:scale-95 transition-all">
+            <div class="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center"><i class="fas fa-earth-asia text-white"></i></div>
+            <div class="flex-1"><div class="text-sm font-bold text-white">Publik</div><div class="text-[10px] text-gray-400">Semua orang dapat melihat</div></div>
+        </div>
+        <div onclick="setPrivasiVideo('Teman', 'fa-user-friends')" class="flex items-center gap-3 p-4 hover:bg-white/5 rounded-xl cursor-pointer active:scale-95 transition-all">
+            <div class="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center"><i class="fas fa-user-friends text-white"></i></div>
+            <div class="flex-1"><div class="text-sm font-bold text-white">Teman</div><div class="text-[10px] text-gray-400">Pengikut yang Anda ikuti balik</div></div>
+        </div>
+        <div onclick="setPrivasiVideo('Privat', 'fa-lock')" class="flex items-center gap-3 p-4 hover:bg-white/5 rounded-xl cursor-pointer active:scale-95 transition-all">
+            <div class="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center"><i class="fas fa-lock text-white"></i></div>
+            <div class="flex-1"><div class="text-sm font-bold text-white">Hanya saya</div><div class="text-[10px] text-gray-400">Hanya Anda yang dapat melihat</div></div>
+        </div>
+    </div>
+</div> <div id="modal-pratinjau" class="fixed inset-0 z-[800] bg-black hidden flex-col items-center justify-center">
+    <button onclick="tutupPratinjauVideo()" class="absolute top-6 right-6 text-white bg-white/10 border border-white/20 w-10 h-10 rounded-full flex items-center justify-center active:scale-90 z-[810] hover:bg-white/20"><i class="fas fa-times"></i></button>
+    <video id="video-pratinjau-full" class="w-full max-h-[90vh] object-contain" controls playsinline></video>
+</div>
 
+<div id="modal-preview-media" class="fixed inset-0 z-[1000] hidden bg-[#0b141a] flex-col transition-all duration-300 opacity-0 translate-y-full">
+    
+    <div class="flex justify-between items-center p-4 bg-black/40 absolute top-0 w-full z-50">
+        <button onclick="tutupPreviewMedia()" class="text-white w-10 h-10 flex items-center justify-center rounded-full active:bg-white/20 transition-colors">
+            <i class="fas fa-times text-xl"></i>
+        </button>
+        <div class="text-white font-bold text-sm drop-shadow-md tracking-wide" id="preview-media-title">Kirim Media</div>
+        <div class="w-10"></div> </div>
+
+    <div class="flex-1 flex items-center justify-center relative w-full h-full overflow-hidden bg-[#0b141a]">
+        <img id="preview-media-img" src="" class="w-full h-full object-contain hidden" />
+        <video id="preview-media-vid" class="w-full h-full object-contain hidden" playsinline autoplay loop muted></video>
+    </div>
+
+    <div class="p-3 bg-[#0b141a] absolute bottom-0 w-full z-50 pb-8 flex gap-2 items-end">
+        <div class="flex-1 bg-[#2A2F32] rounded-3xl px-4 py-3 flex items-center shadow-inner">
+            <textarea id="preview-media-caption" rows="1" placeholder="Tambahkan keterangan..." class="w-full bg-transparent text-white text-sm outline-none resize-none max-h-28 hide-scroll" oninput="this.style.height='auto'; this.style.height=this.scrollHeight+'px';"></textarea>
+        </div>
+        <button id="btn-send-media" onclick="prosesKirimMedia()" class="w-12 h-12 rounded-full bg-brand-success text-white flex items-center justify-center shadow-[0_4px_12px_rgba(37,211,102,0.4)] active:scale-90 transition-transform shrink-0">
+            <i class="fas fa-paper-plane text-lg mr-0.5"></i>
+        </button>
+    </div>
+
+        </div>
+    </div>
+</div>
 <div id="modal-event" class="fixed inset-0 z-[60] hidden items-center justify-center bg-black/80 backdrop-blur-sm px-4">
 <div class="absolute inset-0" onclick="closeModalEvent()"></div>
 
@@ -1259,6 +1325,62 @@ e.preventDefault();
 e.returnValue = 'Upload sedang berlangsung. Yakin ingin meninggalkan halaman?';
 }
 });
+
+let privasiVideoAktif = 'Publik';
+
+function bukaPilihanPrivasi() {
+    const modal = document.getElementById('modal-privasi-video');
+    modal.classList.remove('hidden');
+    // Beri jeda sangat sedikit agar efek geser (slide-up) terlihat mulus
+    setTimeout(() => modal.classList.remove('translate-y-full'), 10);
+}
+
+function tutupPilihanPrivasi() {
+    const modal = document.getElementById('modal-privasi-video');
+    modal.classList.add('translate-y-full');
+    // Beri waktu laci turun dulu sebelum benar-benar dihilangkan (hidden)
+    setTimeout(() => modal.classList.add('hidden'), 300);
+}
+
+function bukaPratinjauVideo(e) {
+    e.preventDefault();   // Mencegah file manager/galeri terbuka lagi
+    e.stopPropagation();  // Mencegah klik tembus ke kotak label
+
+    const videoKecil = document.getElementById('video-preview-element');
+    const videoFull = document.getElementById('video-pratinjau-full');
+    const modalPratinjau = document.getElementById('modal-pratinjau');
+
+    if (!videoKecil.src) return;
+
+    // Salin video dan buka mode full screen
+    videoFull.src = videoKecil.src;
+    modalPratinjau.classList.remove('hidden');
+    modalPratinjau.classList.add('flex');
+    
+    // Mainkan video dengan fitur kontrol & bersuara
+    videoFull.muted = false;
+    videoFull.play();
+}
+
+function tutupPratinjauVideo() {
+    const videoFull = document.getElementById('video-pratinjau-full');
+    const modalPratinjau = document.getElementById('modal-pratinjau');
+    
+    // Matikan pemutar dan tutup layar
+    videoFull.pause();
+    videoFull.src = '';
+    modalPratinjau.classList.add('hidden');
+    modalPratinjau.classList.remove('flex');
+}
+
+
+function setPrivasiVideo(jenis, ikon) {
+    privasiVideoAktif = jenis;
+    // Ubah teks dan ikon di menu upload sesuai pilihan user
+    document.getElementById('label-privasi-teks').innerHTML = `${jenis} <i class="fas fa-chevron-right text-[10px]"></i>`;
+    document.getElementById('ikon-privasi-utama').className = `fas ${ikon} text-xs`;
+    tutupPilihanPrivasi();
+}
 
 function showToast(message, type = 'info') {
 const container = document.getElementById('toast-container');
@@ -2140,6 +2262,13 @@ if (isPush && window.location.hash !== `#${tabId}`) history.pushState(null, null
 
 window.addEventListener('popstate', () => {
 let isPopupClosed = false;
+
+const modalPreviewMedia = document.getElementById('modal-preview-media');
+if (modalPreviewMedia && !modalPreviewMedia.classList.contains('hidden')) {
+    tutupPreviewMedia(true);
+    return;
+}
+
 
 // 1. TANGKAP LACI SHOPEE DULUAN (Kuncian Anti-Nyangkut)
 const laciShopee = document.getElementById('modal-detail-produk');
@@ -4140,7 +4269,13 @@ prefix = (msg.is_read || msg.is_read === 'true') ? '<i class="fas fa-check-doubl
 }
 
 if (preview === '[DELETED]' || deletedForMe.includes(msg.id)) { preview = '<i class="fas fa-ban mr-1"></i> Dihapus'; prefix = ''; }
-else if (preview.startsWith('[IMG]')) { preview = '<i class="fas fa-image mr-1"></i> Gambar'; }
+else if (preview.startsWith('[IMG]')) { 
+    preview = preview.includes('||CAP||') ? `<i class="fas fa-image mr-1"></i> ${preview.split('||CAP||')[1]}` : '<i class="fas fa-image mr-1"></i> Gambar'; 
+}
+else if (preview.startsWith('[VIDEO]')) { 
+    preview = preview.includes('||CAP||') ? `<i class="fas fa-video mr-1"></i> ${preview.split('||CAP||')[1]}` : '<i class="fas fa-video mr-1"></i> Video'; 
+}
+
 else if (preview.startsWith('[AUDIO]')) { preview = '<i class="fas fa-microphone mr-1"></i> Pesan Suara'; }
 }
 
@@ -4285,42 +4420,6 @@ console.error(e);
 container.innerHTML = `<div class="text-center py-6 text-xs text-red-500">Gagal memuat status.</div>`;
 }
 }
-
-
-async function handleUploadStory(event) {
-const file = event.target.files[0];
-if (!file) return;
-event.target.value = '';
-
-// ---> MUNCULKAN POP-UP TANYA CAPTION DULU SEBELUM UPLOAD MULAI
-const captionStory = await customPrompt("Tulis caption untuk status ini:", "");
-if (captionStory === null) return; // Dibatalkan jika user klik Batal
-
-showToast("Mengunggah status...", "info");
-
-try {
-// Upload file ke storage (bisa re-use API upload-url kamu)
-const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent('story_'+Date.now())}&filetype=${encodeURIComponent(file.type)}`);
-const dataUrl = await resUrl.json();
-await fetch(dataUrl.uploadUrl, { method: 'PUT', body: file, headers: { 'Content-Type': file.type, 'x-amz-acl': 'public-read' } });
-
-// Simpan ke database Supabase tabel 'stories'
-const { error } = await supabaseClient.from('stories').insert({
-user_id: currentUser.id,
-media_url: dataUrl.finalVideoUrl,
-media_type: file.type.startsWith('video/') ? 'video' : 'image',
-caption: captionStory // ---> SIMPAN CAPTION KE DATABASE
-});
-
-if (error) throw error;
-showToast("Status berhasil diperbarui!", "success");
-loadStories(); // Refresh list
-
-} catch (err) {
-showToast("Gagal mengunggah status.", "error");
-}
-}
-
 
 // STORY VIEWER LOGIC (WHATSAPP STYLE)
 async function viewStory(userId, name, avatar) {
@@ -4684,54 +4783,178 @@ isUploading = false; // Buka kunci window unload
 }
 }
 
+// ==========================================
+// FITUR PREVIEW MEDIA WHATSAPP STYLE (CHAT & STORY)
+// ==========================================
+let mediaPreviewFile = null;
+let mediaPreviewContext = ''; // Isinya 'chat' atau 'story'
 
+// 1. Interceptor untuk Chat
+async function handleChatMediaSelect(event) {
+    const file = event.target.files[0];
+    if (!file || (!activeChatUserId && !activeGroupId)) return;
 
-async function uploadChatImage(event) {
-const file = event.target.files[0];
-if (!file || (!activeChatUserId && !activeGroupId)) return;
-const isGroup = !!activeGroupId;
-const targetId = isGroup ? activeGroupId : activeChatUserId;
-
-// PENJAGA PINTU GRUP
-if (isGroup) {
-const { data: checkMember } = await supabaseClient.from('group_members').select('user_id').eq('group_id', targetId).eq('user_id', currentUser.id).single();
-if (!checkMember) {
-await customAlert("Anda tidak dapat mengirim foto karena telah dikeluarkan dari grup ini.");
-event.target.value = ''; closeChatRoom(); return;
-}
-}
-
-// Tangkap data balasan
-const currentReplyId = replyingToMsgId;
-const currentReplyName = replyingToMsgName;
-const currentReplyText = replyingToMsgText;
-cancelChatReply();
-
-event.target.value = '';
-showToast("Mengirim gambar...", "info");
-
-try {
-const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent('img_'+Date.now())}&filetype=${encodeURIComponent(file.type)}`);
-const dataUrl = await resUrl.json();
-await fetch(dataUrl.uploadUrl, { method: 'PUT', body: file, headers: { 'Content-Type': file.type, 'x-amz-acl': 'public-read' } });
-
-let msgText = `[IMG]${dataUrl.finalVideoUrl}`;
-
-// SISIPKAN KODE BALASAN JIKA ADA
-if (currentReplyId) {
-const safeName = currentReplyName.replace(/\|\|/g, "").replace(/\]/g, "");
-const safeText = currentReplyText.replace(/\|\|/g, "").replace(/\]/g, "");
-msgText = `[REPLY:${currentReplyId}||${safeName}||${safeText}]\n${msgText}`;
+    // Cek keamanan jika ini di Grup
+    if (activeGroupId) {
+        const { data: checkMember } = await supabaseClient.from('group_members').select('user_id').eq('group_id', activeGroupId).eq('user_id', currentUser.id).single();
+        if (!checkMember) {
+            await customAlert("Anda tidak dapat mengirim foto karena telah dikeluarkan dari grup ini.");
+            event.target.value = ''; closeChatRoom(); return;
+        }
+    }
+    bukaPreviewMedia(file, 'chat');
+    event.target.value = ''; // Reset
 }
 
-const tempMsg = { id: 'temp-'+Date.now(), sender_id: currentUser.id, message: msgText, created_at: new Date().toISOString() };
-appendMessageBubble(tempMsg); scrollToBottomChat();
-
-const insertData = { sender_id: currentUser.id, message: msgText };
-if (isGroup) insertData.group_id = targetId; else insertData.receiver_id = targetId;
-await supabaseClient.from('messages').insert(insertData);
-} catch (err) { showToast("Gagal gambar", "error"); }
+// 2. Interceptor untuk Story
+function handleUploadStory(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    bukaPreviewMedia(file, 'story');
+    event.target.value = ''; // Reset
 }
+
+// 3. Mesin UI Layar Preview
+function bukaPreviewMedia(file, context) {
+    history.pushState({ popup: 'media_preview' }, null, '#mediapreview');
+    
+    mediaPreviewFile = file;
+    mediaPreviewContext = context;
+
+    const modal = document.getElementById('modal-preview-media');
+    const imgEl = document.getElementById('preview-media-img');
+    const vidEl = document.getElementById('preview-media-vid');
+    const titleEl = document.getElementById('preview-media-title');
+    const captionInput = document.getElementById('preview-media-caption');
+    
+    captionInput.value = '';
+    captionInput.style.height = 'auto'; 
+
+    const url = URL.createObjectURL(file);
+
+    // Deteksi Video atau Foto
+    if (file.type.startsWith('video/')) {
+        imgEl.classList.add('hidden');
+        vidEl.src = url;
+        vidEl.classList.remove('hidden');
+        vidEl.play();
+    } else {
+        vidEl.classList.add('hidden');
+        vidEl.pause();
+        imgEl.src = url;
+        imgEl.classList.remove('hidden');
+    }
+
+    titleEl.innerText = context === 'chat' ? 'Kirim ke Obrolan' : 'Status Baru';
+    
+    // Sembunyikan widget chat (bila sedang terbuka) agar tidak tumpang tindih
+    const floatingWidget = document.getElementById('floating-widget');
+    if (floatingWidget) floatingWidget.style.opacity = '0'; 
+
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    
+    // Efek Slide-Up Muluss
+    setTimeout(() => {
+        modal.classList.remove('opacity-0', 'translate-y-full');
+    }, 10);
+}
+
+function tutupPreviewMedia(dariTombolBack = false) {
+    const modal = document.getElementById('modal-preview-media');
+    modal.classList.add('opacity-0', 'translate-y-full');
+    
+    // Kembalikan widget chat jika kita sedang berada di inbox/room
+    if(window.location.hash.startsWith('#inbox') || window.location.hash.startsWith('#chatroom')) {
+        const floatingWidget = document.getElementById('floating-widget');
+        if (floatingWidget) floatingWidget.style.opacity = '1';
+    }
+
+    if (!dariTombolBack && window.location.hash === '#mediapreview') history.back();
+
+    setTimeout(() => {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+        document.getElementById('preview-media-vid').pause();
+        document.getElementById('preview-media-vid').src = '';
+        document.getElementById('preview-media-img').src = '';
+        mediaPreviewFile = null;
+    }, 300);
+}
+
+// 4. Eksekusi Pengiriman ke Server
+async function prosesKirimMedia() {
+    if (!mediaPreviewFile) return;
+
+    const file = mediaPreviewFile;
+    const context = mediaPreviewContext;
+    const caption = document.getElementById('preview-media-caption').value.trim();
+    const btnSend = document.getElementById('btn-send-media');
+    
+    btnSend.disabled = true;
+    btnSend.innerHTML = '<i class="fas fa-circle-notch fa-spin text-xl"></i>';
+
+    try {
+        // Upload File ke Storage
+        const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent(context + '_' + Date.now())}&filetype=${encodeURIComponent(file.type)}`);
+        const dataUrl = await resUrl.json();
+        await fetch(dataUrl.uploadUrl, { method: 'PUT', body: file, headers: { 'Content-Type': file.type, 'x-amz-acl': 'public-read' } });
+
+        const fileUrl = dataUrl.finalVideoUrl;
+
+        if (context === 'chat') {
+            // ======== KIRIM CHAT ========
+            const isGroup = !!activeGroupId;
+            const targetId = isGroup ? activeGroupId : activeChatUserId;
+
+            // Handle Reply
+            const currentReplyId = replyingToMsgId;
+            const currentReplyName = replyingToMsgName;
+            const currentReplyText = replyingToMsgText;
+            cancelChatReply();
+
+            // Gabungkan Tipe, URL, dan Caption
+            let msgText = file.type.startsWith('video/') ? `[VIDEO]${fileUrl}` : `[IMG]${fileUrl}`;
+            if (caption) msgText += `||CAP||${caption}`;
+
+            if (currentReplyId) {
+                const safeName = currentReplyName.replace(/\|\|/g, "").replace(/\]/g, "");
+                const safeText = currentReplyText.replace(/\|\|/g, "").replace(/\]/g, "");
+                msgText = `[REPLY:${currentReplyId}||${safeName}||${safeText}]\n${msgText}`;
+            }
+
+            // UI Instan
+            const tempId = 'temp-' + Date.now();
+            const tempMsg = { id: tempId, sender_id: currentUser.id, message: msgText, created_at: new Date().toISOString() };
+            appendMessageBubble(tempMsg); scrollToBottomChat();
+
+            // DB Insert
+            const insertData = { sender_id: currentUser.id, message: msgText };
+            if (isGroup) insertData.group_id = targetId; else insertData.receiver_id = targetId;
+            await supabaseClient.from('messages').insert(insertData);
+
+        } else if (context === 'story') {
+            // ======== KIRIM STORY ========
+            const { error } = await supabaseClient.from('stories').insert({
+                user_id: currentUser.id,
+                media_url: fileUrl,
+                media_type: file.type.startsWith('video/') ? 'video' : 'image',
+                caption: caption
+            });
+            if (error) throw error;
+            showToast("Status berhasil diperbarui!", "success");
+            loadStories(); 
+        }
+
+        tutupPreviewMedia();
+    } catch (err) {
+        showToast("Gagal mengirim file: " + err.message, "error");
+    } finally {
+        btnSend.disabled = false;
+        btnSend.innerHTML = '<i class="fas fa-paper-plane text-lg mr-0.5"></i>';
+    }
+}
+
 
 // ==========================================
 // FITUR BALAS & LIKE STORY (WHATSAPP STYLE)
@@ -5938,8 +6161,23 @@ replyHtml = `
 // --- TANGANI TEKS, GAMBAR, ATAU AUDIO ---
 let contentHtml = '';
 if (rawMessage.startsWith('[IMG]')) {
-const url = rawMessage.replace('[IMG]', '');
-contentHtml = `<img src="${url}" class="max-w-[200px] rounded-lg cursor-pointer mt-1" onclick="openLightbox('${url}')">`;
+    let urlPart = rawMessage.replace('[IMG]', '');
+    let cap = '';
+    if (urlPart.includes('||CAP||')) {
+        const parts = urlPart.split('||CAP||');
+        urlPart = parts[0]; cap = parts[1];
+    }
+    contentHtml = `<img src="${urlPart}" class="max-w-[200px] rounded-lg cursor-pointer mt-1 shadow-sm" onclick="openLightbox('${urlPart}')">`;
+    if (cap) contentHtml += `<div class="mt-1.5 text-white/95 text-[11.5px]">${formatCaption(cap)}</div>`;
+} else if (rawMessage.startsWith('[VIDEO]')) {
+    let urlPart = rawMessage.replace('[VIDEO]', '');
+    let cap = '';
+    if (urlPart.includes('||CAP||')) {
+        const parts = urlPart.split('||CAP||');
+        urlPart = parts[0]; cap = parts[1];
+    }
+    contentHtml = `<video src="${urlPart}" class="max-w-[200px] rounded-lg mt-1 shadow-sm" controls playsinline></video>`;
+    if (cap) contentHtml += `<div class="mt-1.5 text-white/95 text-[11.5px]">${formatCaption(cap)}</div>`;
 } else if (rawMessage.startsWith('[AUDIO]')) {
 const url = rawMessage.replace('[AUDIO]', '');
 contentHtml = `<audio controls class="w-[200px] mt-1 h-8"><source src="${url}" type="audio/webm"></audio>`;
