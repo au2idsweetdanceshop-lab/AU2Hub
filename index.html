@@ -6545,11 +6545,23 @@ history.back();
 
 
 
-// 4. Logika Checkout Pembayaran Robot DANA (VERSI OTOMATIS NOMINAL + AUTO SUCCESS UI)
+// 4. Logika Checkout Pembayaran Robot DANA (VERSI OTOMATIS NOMINAL + KODE UNIK DISKON)
 async function checkoutRobotDANA(namaProduk, harga, deskripsi) {
 if (!currentUser) return showToast("Silakan login dulu untuk membeli!", "error");
 
-const konfirmasi = await customConfirm(`Lanjutkan pesanan untuk:\n\n${namaProduk}\n\nTotal: Rp ${harga.toLocaleString('id-ID')} via DANA Otomatis?`);
+// --- LOGIKA KODE UNIK DISKON (1 - 500) MULAI DI SINI ---
+let kodeUnik = Math.floor(Math.random() * 500) + 1;
+
+// Keamanan: Jaga-jaga kalau harga produk kebetulan sangat murah (misal Rp 300) biar nggak jadi minus
+if (harga <= 500) {
+    kodeUnik = Math.floor(Math.random() * (harga - 1)) + 1; 
+}
+
+let hargaDenganKodeUnik = harga - kodeUnik;
+if (hargaDenganKodeUnik < 1) hargaDenganKodeUnik = 1; // Limit minimal QRIS adalah Rp 1
+// -------------------------------------------------------
+
+const konfirmasi = await customConfirm(`Lanjutkan pesanan untuk:\n\n${namaProduk}\n\nTotal: Rp ${hargaDenganKodeUnik.toLocaleString('id-ID')} via DANA Otomatis?`);
 if (!konfirmasi) return;
 
 showToast("Menyiapkan antrean pembayaran...", "info");
@@ -6560,18 +6572,19 @@ method: 'POST',
 headers: { 'Content-Type': 'application/json' },
 body: JSON.stringify({
 user_id: currentUser.id,
-nominal: harga
+nominal: hargaDenganKodeUnik // Pakai harga yang sudah dipotong diskon
 })
 });
 
 const result = await response.json();
 
 if (result.status === "success") {
-document.getElementById('pay-total').innerText = `Rp ${harga.toLocaleString('id-ID')}`;
+document.getElementById('pay-total').innerText = `Rp ${hargaDenganKodeUnik.toLocaleString('id-ID')}`;
 document.getElementById('pay-product').innerText = namaProduk;
-document.getElementById('nominal-asli').value = harga;
+document.getElementById('nominal-asli').value = hargaDenganKodeUnik;
 
-const teksQRISDinamis = makeDynamicQRIS(harga);
+// Generate QRIS dengan angka yang sudah dipotong diskon
+const teksQRISDinamis = makeDynamicQRIS(hargaDenganKodeUnik);
 const qrImgUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(teksQRISDinamis)}`;
 
 const qrContainerElement = document.querySelector('#pembayaran img');
@@ -6594,7 +6607,7 @@ try {
 let cekRes = await fetch('/api/check-deposit', {
 method: 'POST',
 headers: { 'Content-Type': 'application/json' },
-body: JSON.stringify({ nominal: harga })
+body: JSON.stringify({ nominal: hargaDenganKodeUnik }) // Pantau angka yang sudah didiskon!
 });
 let cekData = await cekRes.json();
 
@@ -6602,23 +6615,23 @@ let cekData = await cekRes.json();
 if(cekData.status === "SUCCESS") {
 clearInterval(window.cekPembayaranInterval); // Matikan radar
 
-// Siapkan teks otomatis buat dikirim ke WA pembeli (DENGAN INFO XOFTWARE)
+// Siapkan teks otomatis buat dikirim ke WA pembeli
 const infoXoftware = deskripsi ? deskripsi.replace(/<[^>]*>?/gm, '') : '';
-const teksWASukses = encodeURIComponent(`Halo Admin Joki AU2Hub,\n\nPembayaran DANA saya sudah terkonfirmasi sukses otomatis oleh sistem!\n\nPesanan: *${namaProduk}*\nTotal: Rp ${harga.toLocaleString('id-ID')}\n\n${infoXoftware}\n\nIni data akun saya untuk diproses:\n1. ID Game: \n2. Nickname: `);
+const teksWASukses = encodeURIComponent(`Halo Admin Joki AU2Hub,\n\nPembayaran DANA saya sudah terkonfirmasi sukses otomatis oleh sistem!\n\nPesanan: *${namaProduk}*\nTotal: Rp ${hargaDenganKodeUnik.toLocaleString('id-ID')}\n\n${infoXoftware}\n\n(Berikut ini saya lampirkan gambar bukti transfer QRIS / screenshot)`);
 
-// 🚀 AUTO-TRACKER: Masukkan pesanan ke database Supabase otomatis sebagai "Diproses"
+// 🚀 AUTO-TRACKER: Masukkan pesanan ke database
 try {
 await supabaseClient.from('orders').insert({
 user_id: currentUser.id,
 product_name: namaProduk,
-price: harga,
+price: hargaDenganKodeUnik, // Simpan harga akhir ke database riwayat
 status: 'proses',
 created_at: new Date().toISOString()
 });
 } catch(e) { console.log("Gagal auto-track", e); }
 
 
-// UBAH LAYAR JADI CENTANG HIJAU + TOMBOL WA
+// UBAH LAYAR JADI CENTANG HIJAU
 const wadahPembayaran = document.getElementById('qris-container');
 if (wadahPembayaran) {
 wadahPembayaran.innerHTML = `
@@ -6628,7 +6641,7 @@ wadahPembayaran.innerHTML = `
 <i class="fas fa-check-circle text-7xl text-brand-success relative z-10 drop-shadow-[0_0_20px_rgba(37,211,102,0.8)]"></i>
 </div>
 <h2 class="text-2xl font-extrabold text-white mb-2 tracking-tight">Pembayaran Berhasil!</h2>
-<p class="text-gray-400 text-xs mb-8 leading-relaxed px-4">Dana senilai <strong class="text-brand-success">Rp ${harga.toLocaleString('id-ID')}</strong> telah diterima sistem.<br>Silakan hubungi Admin untuk proses pesanan Anda.</p>
+<p class="text-gray-400 text-xs mb-8 leading-relaxed px-4">Dana senilai <strong class="text-brand-success">Rp ${hargaDenganKodeUnik.toLocaleString('id-ID')}</strong> telah diterima sistem.<br>Silakan hubungi Admin untuk proses pesanan Anda.</p>
 
 <div class="w-full space-y-3">
 <a href="https://wa.me/${noWA}?text=${teksWASukses}" target="_blank" class="flex justify-center items-center w-full bg-[#25D366] hover:bg-[#20bd5a] text-white py-4 rounded-xl font-bold shadow-[0_8px_20px_rgba(37,211,102,0.3)] active:scale-95 transition-all uppercase tracking-wider text-xs">
@@ -6641,7 +6654,7 @@ wadahPembayaran.innerHTML = `
 }
 }
 } catch(e) { console.log("Radar tertunda..."); }
-}, 1000); // Mengecek setiap 1000 milidetik (1 detik)
+}, 1000);
 
 } else {
 await customAlert(`Gagal membuat pesanan.`);
