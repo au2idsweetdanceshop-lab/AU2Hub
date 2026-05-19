@@ -4803,69 +4803,98 @@ playStory(prevIndex);
 
 
 
-// Tangkap nilai privasi dan toggle komentar
-const privasiStatus = document.getElementById('upload-privacy') ? document.getElementById('upload-privacy').value : 'publik';
-const izinkanKomen = document.getElementById('upload-allow-comments') ? document.getElementById('upload-allow-comments').checked : true;
+// ==========================================
+// FITUR UPLOAD VIDEO (KODE FINAL BEBAS ERROR)
+// ==========================================
+async function prosesUploadVideo() {
+    if (!currentUser) return showToast("Silakan login untuk memposting video!", "error");
 
-const spreadsheetPayload = {
-// --- DUA BARIS INI TAMBAHAN BARU UNTUK GOOGLE SHEETS ---
-ID_Video: 'vid_' + Date.now(),
-URL_Video: dataUrl.finalVideoUrl,
+    const fileInput = document.getElementById('input-video-file');
+    const captionInput = document.getElementById('input-video-caption');
+    const file = fileInput.files[0];
 
-// --- SISANYA TETAP SAMA (JANGAN DIHAPUS UNTUK DATABASE INTERNAL) ---
-id: 'vid_' + Date.now(),
-video_url: dataUrl.finalVideoUrl,
-caption: captionInput.value || "",
-nickname: userProfile?.nickname || "Player",
-avatar_url: userProfile?.avatar_url || "",
-user_id: currentUser.id,
-privacy: privasiStatus,          // Menambahkan data privasi (Publik/Teman/Privat)
-allow_comments: izinkanKomen,    // Menambahkan status izinkan komentar (True/False)
-created_at: new Date().toISOString()
-};
+    if (!file) return showToast("Pilih video terlebih dahulu!", "error");
 
+    const btn = document.querySelector('button[onclick="prosesUploadVideo()"]');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-circle-notch fa-spin text-xl"></i> Memproses...';
+    isUploading = true;
 
-// --- SISANYA TETAP SAMA (JANGAN DIHAPUS UNTUK DATABASE INTERNAL) ---
-id: 'vid_' + Date.now(),
-video_url: dataUrl.finalVideoUrl,
-caption: captionInput.value || "",
-nickname: userProfile?.nickname || "Player",
-avatar_url: userProfile?.avatar_url || "",
-user_id: currentUser.id,
-created_at: new Date().toISOString()
-};
+    try {
+        showToast("Sedang mengunggah video...", "info");
 
-// 🔥 PERBAIKAN 2: Masukkan data video baru ke antrean lokal aplikasi biar langsung tayang di feed tanpa nunggu Google Sheets yang lelet
-newUploads.push(spreadsheetPayload);
+        // 1. Dapatkan URL Upload dari server Biznet / Storage Anda
+        const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent('video_'+Date.now())}&filetype=${encodeURIComponent(file.type)}`);
+        const dataUrl = await resUrl.json();
 
-await fetch(config.gasUrl, {
-method: 'POST',
-mode: 'no-cors',
-headers: { 'Content-Type': 'text/plain' },
-body: JSON.stringify(spreadsheetPayload)
-});
+        // 2. Upload file fisik ke Storage
+        await fetch(dataUrl.uploadUrl, {
+            method: 'PUT',
+            body: file,
+            headers: { 'Content-Type': file.type, 'x-amz-acl': 'public-read' }
+        });
 
-showToast("Berhasil diposting!", "success");
+        // 3. Tangkap nilai privasi dan toggle komentar
+        const privasiStatus = document.getElementById('upload-privacy') ? document.getElementById('upload-privacy').value : 'publik';
+        const izinkanKomen = document.getElementById('upload-allow-comments') ? document.getElementById('upload-allow-comments').checked : true;
 
-fileInput.value = ''; captionInput.value = '';
-closeUploadModal();
-allVideosData = [];
+        // 4. Susun Payload Bersih untuk Google Sheets & Local
+        const spreadsheetPayload = {
+            ID_Video: 'vid_' + Date.now(),
+            URL_Video: dataUrl.finalVideoUrl,
+            id: 'vid_' + Date.now(),
+            video_url: dataUrl.finalVideoUrl,
+            caption: captionInput.value || "",
+            nickname: userProfile?.nickname || "Player",
+            avatar_url: userProfile?.avatar_url || "",
+            user_id: currentUser.id,
+            privacy: privasiStatus,          
+            allow_comments: izinkanKomen,    
+            created_at: new Date().toISOString()
+        };
 
-// Smart Redirect: Cek apakah halaman sblmnya valid, jika tidak lempar ke feed sosial
-if (tabSebelumnya && tabSebelumnya !== 'sosial' && tabSebelumnya !== 'upload') {
-switchTab(tabSebelumnya);
-} else {
-switchTab('sosial');
+        // 5. Masukkan ke antrean lokal agar langsung tayang tanpa nunggu loading
+        newUploads.push(spreadsheetPayload);
+
+        // 6. Tembak ke Google Sheets
+        const configRes = await fetch('/api/get-config');
+        const config = await configRes.json();
+        
+        if (config.gasUrl) {
+            await fetch(config.gasUrl, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'text/plain' },
+                body: JSON.stringify(spreadsheetPayload)
+            });
+        }
+
+        showToast("Berhasil diposting!", "success");
+
+        // 7. Reset Form dan Tutup Modal
+        fileInput.value = ''; 
+        captionInput.value = '';
+        closeUploadModal();
+        allVideosData = [];
+
+        // 8. Smart Redirect: Kembali ke feed sosial
+        if (tabSebelumnya && tabSebelumnya !== 'sosial' && tabSebelumnya !== 'upload') {
+            switchTab(tabSebelumnya);
+        } else {
+            switchTab('sosial');
+        }
+        loadVideos();
+
+    } catch (err) {
+        showToast("Error: " + err.message, "error");
+    } finally {
+        // 9. Kembalikan kondisi tombol seperti semula
+        btn.disabled = false; 
+        btn.innerHTML = '<span>Posting Sekarang</span> <i class="fas fa-paper-plane text-xs"></i>';
+        isUploading = false;
+    }
 }
-loadVideos();
 
-} catch (err) {
-showToast("Error: " + err.message, "error");
-} finally {
-btn.disabled = false; btn.innerHTML = '<i class="fas fa-paper-plane mr-2"></i> Posting Video';
-isUploading = false; // Buka kunci window unload
-}
-}
 
 
 
