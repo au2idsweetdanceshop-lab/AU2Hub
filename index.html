@@ -1279,7 +1279,12 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
 <button id="tab-lb-creator" onclick="switchLeaderboardTab('creator')" class="flex-1 py-2.5 text-[11px] font-bold text-white bg-brand-accent rounded-xl shadow-[0_0_15px_rgba(255,0,122,0.4)] transition-all">🎬 Top Creator</button>
 <button id="tab-lb-sultan" onclick="switchLeaderboardTab('sultan')" class="flex-1 py-2.5 text-[11px] font-bold text-gray-500 hover:text-white rounded-xl transition-all">💸 Top Sultan</button>
 </div>
-
+<div class="p-3 bg-brand-dark/50 shrink-0 border-b border-white/5">
+    <div class="relative">
+        <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-xs"></i>
+        <input type="text" id="leaderboardSearch" placeholder="Cari nama player..." class="w-full bg-black/40 border border-white/10 rounded-xl py-2 pl-9 pr-3 text-xs text-white outline-none focus:border-brand-accent transition-colors">
+    </div>
+</div>
 <div id="leaderboard-container-creator" class="flex-1 overflow-y-auto p-3 hide-scroll space-y-2 block pb-6"></div>
 <div id="leaderboard-container-sultan" class="flex-1 overflow-y-auto p-3 hide-scroll space-y-2 hidden pb-6"></div>
 
@@ -2261,28 +2266,45 @@ if (isPush && window.location.hash !== `#${tabId}`) history.pushState(null, null
 }
 
 window.addEventListener('popstate', () => {
-let isPopupClosed = false;
+    let isPopupClosed = false;
 
-const modalPreviewMedia = document.getElementById('modal-preview-media');
-if (modalPreviewMedia && !modalPreviewMedia.classList.contains('hidden')) {
-    tutupPreviewMedia(true);
-    return;
-}
+    const modalPreviewMedia = document.getElementById('modal-preview-media');
+    if (modalPreviewMedia && !modalPreviewMedia.classList.contains('hidden')) {
+        tutupPreviewMedia(true);
+        return;
+    }
 
+    // 1. TANGKAP LACI SHOPEE DULUAN (Kuncian Anti-Nyangkut)
+    const laciShopee = document.getElementById('modal-detail-produk');
+    if (laciShopee && !laciShopee.classList.contains('translate-y-full')) {
+        closeDetailProduk(true); 
+        return;
+    }
 
-// 1. TANGKAP LACI SHOPEE DULUAN (Kuncian Anti-Nyangkut)
-const laciShopee = document.getElementById('modal-detail-produk');
-if (laciShopee && !laciShopee.classList.contains('translate-y-full')) {
-closeDetailProduk(true); // <--- KUNCI SAKTINYA DISINI: ngasih tau kalau ini dari tombol Back HP
-return;
-}
+    // ==========================================
+    // 🚀 TAMBAHAN BARU: TANGKAP MODAL UPLOAD VIDEO & PRIVASI
+    // ==========================================
+    const modalPrivasi = document.getElementById('modal-privasi-video');
+    if (modalPrivasi && (!modalPrivasi.classList.contains('hidden') && !modalPrivasi.classList.contains('translate-y-full'))) {
+        tutupPilihanPrivasi();
+        // Kembalikan jejak URL ke #upload agar bisa di-back lagi untuk menutup form upload
+        history.pushState({ popup: 'upload' }, null, '#upload');
+        return;
+    }
 
-// 2. TANGKAP SEMUA POP-UP DULU (Biar menutup duluan kalau tombol Back ditekan)
-const lightbox = document.getElementById('lightbox-modal');
-if(!lightbox.classList.contains('hidden')) {
-closeLightbox();
-return;
-}
+    const modalUpload = document.getElementById('modal-upload');
+    if (modalUpload && !modalUpload.classList.contains('hidden')) {
+        closeUploadModal();
+        return;
+    }
+    // ==========================================
+
+    // 2. TANGKAP SEMUA POP-UP DULU (Biar menutup duluan kalau tombol Back ditekan)
+    const lightbox = document.getElementById('lightbox-modal');
+    if(!lightbox.classList.contains('hidden')) {
+        closeLightbox();
+        return;
+    }
 
 const storyModal = document.getElementById('story-viewer-modal');
 if (storyModal && !storyModal.classList.contains('hidden')) {
@@ -2691,40 +2713,52 @@ if(nextVid && nextVid.getAttribute('preload') !== 'auto') nextVid.setAttribute('
 }
 
 function openProfileFeed(userId, startIndex) {
-// 1. Ambil video milik user ini saja
-currentProfileVideos = allVideosData.filter(v => v.user_id === userId);
-if(currentProfileVideos.length === 0) return;
+    // 1. Ambil video milik user ini saja
+    currentProfileVideos = allVideosData.filter(v => v.user_id === userId);
+    if(currentProfileVideos.length === 0) return;
 
-// 2. Balikkan urutan agar yang terbaru ada di atas (Sama persis seperti urutan grid)
-currentProfileVideos = [...currentProfileVideos].reverse();
+    // 2. Balikkan urutan agar yang terbaru ada di atas (Sama persis seperti grid)
+    currentProfileVideos = [...currentProfileVideos].reverse();
 
-// 3. ATUR INDEX MULAI KE POSISI VIDEO YANG DIKLIK
-// Karena kita mengirim index dari grid, tidak perlu lagi pencarian ID yang rawan error
-profileFeedIndex = parseInt(startIndex) || 0;
+    // 3. Tentukan index target
+    let targetIndex = parseInt(startIndex) || 0;
 
-// Bersihkan layar player
-const container = document.getElementById('floating-feed-container');
-container.innerHTML = '';
+    // Bersihkan layar player
+    const container = document.getElementById('floating-feed-container');
+    container.innerHTML = '';
+    container.scrollTop = 0;
 
-// PERBAIKAN PENTING: Reset scroll ke atas jika sebelumnya user pernah scroll
-container.scrollTop = 0;
+    // Hentikan paksa semua video utama di background
+    document.querySelectorAll('.video-player').forEach(v => v.pause());
 
-// ---> TAMBAHAN BARU: Hentikan paksa semua video utama di background agar suara tidak tabrakan
-document.querySelectorAll('.video-player').forEach(v => v.pause());
+    // Tampilkan floating player
+    document.getElementById('floating-video-player').classList.remove('hidden');
+    document.getElementById('floating-video-player').classList.add('flex');
 
-// Tampilkan floating player
-document.getElementById('floating-video-player').classList.remove('hidden');
-document.getElementById('floating-video-player').classList.add('flex');
+    if(floatObs) floatObs.disconnect();
+    setupFloatVideoObserver();
 
-if(floatObs) floatObs.disconnect();
-setupFloatVideoObserver();
+    // 🚀 KUNCI PERBAIKAN TIKTOK-STYLE: 
+    // Muat video dari urutan 0 (paling baru) SAMPAI video yang diklik + 2 video di bawahnya.
+    profileFeedIndex = 0;
+    let amountToLoad = targetIndex + 3; // Menentukan seberapa banyak yang dirender awal
+    
+    // Panggil fungsi render dengan jumlah yang disesuaikan
+    renderProfileVideoBatch(amountToLoad);
 
-// Render video mulai dari index yang di-klik
-renderProfileVideoBatch();
+    // 🚀 LOMPAT INSTAN KE BAWAH:
+    // Scroll layar otomatis tepat ke video yang baru saja diklik
+    setTimeout(() => {
+        const targetCard = container.children[targetIndex];
+        if (targetCard) {
+            targetCard.scrollIntoView({ behavior: 'auto', block: 'start' });
+        }
+    }, 10); // Jeda super singkat agar DOM siap dulu
 
-// ✅ FINAL: Tambahkan jejak URL '#profil_video' agar terdeteksi tombol back HP
-history.pushState({ popup: 'floating_video' }, null, '#profil_video');
+    // Tambahkan jejak URL agar tombol back HP terdeteksi
+    history.pushState({ popup: 'floating_video' }, null, '#profil_video');
 }
+
 
 function closeFloatingVideo(skipHistory = false) {
 // 1. Matikan video dan bersihkan layar DULU
@@ -2740,103 +2774,111 @@ history.back();
 }
 
 
-function renderProfileVideoBatch() {
-const container = document.getElementById('floating-feed-container');
+function renderProfileVideoBatch(customAmount = 3) {
+    const container = document.getElementById('floating-feed-container');
 
-if (profileFeedIndex >= currentProfileVideos.length) {
-return;
+    if (profileFeedIndex >= currentProfileVideos.length) {
+        return;
+    }
+
+    // 🚀 PERBAIKAN: Gunakan customAmount, bukan angka 3 mati
+    const nextBatch = currentProfileVideos.slice(profileFeedIndex, profileFeedIndex + customAmount);
+    if (nextBatch.length === 0) return;
+
+    const htmlString = nextBatch.map((vid) => `
+    <div class="snap-start w-full h-full flex-shrink-0 relative flex items-center justify-center bg-black/95 px-0 sm:px-4 py-0 sm:py-6">
+    <div class="w-full max-w-sm aspect-[9/16] relative bg-brand-dark mx-auto h-full sm:h-auto sm:rounded-3xl overflow-hidden shadow-2xl">
+    <div class="absolute inset-0 flex items-center justify-center z-0"><div class="w-12 h-12 border-4 border-brand-accent/20 border-t-brand-accent rounded-full animate-spin"></div></div>
+
+    <video class="absolute inset-0 m-auto w-full h-full object-cover float-video-player transition-opacity duration-500 opacity-0 z-10"
+    onloadeddata="this.classList.remove('opacity-0')" loop ${isGlobalMuted ? 'muted' : ''} playsinline preload="metadata"
+    ontimeupdate="updateVideoProgress(this)"
+    onclick="toggleProfileVideoAudio(this)">
+    <source src="${vid.video_url}" type="video/mp4">
+    </video>
+
+    <div class="volume-indicator absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-white bg-black/60 w-16 h-16 rounded-full flex items-center justify-center z-[60] pointer-events-none opacity-0 transition-all duration-300 scale-150">
+    <i class="fas fa-volume-up text-2xl"></i>
+    </div>
+
+    <div class="absolute bottom-0 left-0 w-full h-3 z-50 cursor-pointer group touch-none flex flex-col justify-end pb-1"
+    onpointerdown="startSeek(event, this)" onpointermove="doSeek(event, this)" onpointerup="endSeek(event, this)" onpointercancel="endSeek(event, this)">
+    <div class="w-full h-1 bg-white/30 relative">
+    <div class="progress-fill h-full bg-white w-0 relative pointer-events-none transition-all duration-75 ease-linear">
+    <div class="absolute -right-2 top-1/2 -translate-y-1/2 w-4 h-4 bg-white rounded-full scale-0 group-hover:scale-100 transition-transform shadow-md"></div>
+    </div>
+    </div>
+    </div>
+
+    <div class="absolute bottom-0 left-0 w-full p-6 flex justify-between items-end z-20 pointer-events-none bg-gradient-to-t from-black/80 to-transparent pb-10 sm:pb-6">
+    <div class="text-white drop-shadow-lg w-[75%] pointer-events-auto">
+    <p class="font-bold text-[15px] shadow-black drop-shadow-md mb-1.5">@${vid.nickname || "Player"}</p>
+    <div onclick="this.classList.toggle('expanded')" class="caption-text text-[13px] opacity-90 shadow-black drop-shadow-md cursor-pointer pr-2 leading-relaxed">${formatCaption(vid.caption)}</div>
+    </div>
+
+    <div class="flex flex-col gap-4 items-center pointer-events-auto mb-2 mr-1">
+    <div class="like-container flex flex-col items-center gap-0.5" data-vid="${vid.id}">
+    <button onclick="likeVideo('${vid.id}', this)" class="hover:scale-110 transition-transform active:scale-90">
+    <i class="fas fa-heart text-[32px] text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]"></i>
+    </button>
+    <span class="like-count-display text-white text-[12px] font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">0</span>
+    </div>
+
+    <div class="comment-count-container flex flex-col items-center gap-0.5" data-vid="${vid.id}">
+    <button onclick="openComments('${vid.id}')" class="hover:scale-110 transition-transform active:scale-90">
+    <i class="fas fa-comment-dots text-[32px] text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]" style="transform: scaleX(-1);"></i>
+    </button>
+    <span class="comment-count-display text-white text-[12px] font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">0</span>
+    </div>
+
+    <div class="flex flex-col items-center gap-0.5 mt-1">
+    <button onclick="shareVideo('${vid.id}', this)" class="hover:scale-110 transition-transform active:scale-90">
+    <i class="fas fa-share text-[30px] text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]"></i>
+    </button>
+    <span class="text-white text-[11px] font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">Share</span>
+    </div>
+
+    ${currentUser && vid.user_id === currentUser.id ? `
+    <button onclick="deleteVideo('${vid.id}')" class="hover:scale-110 transition-transform mt-3 active:scale-90">
+    <div class="bg-black/50 p-2 rounded-full border border-white/20 backdrop-blur-sm">
+    <i class="fas fa-trash text-red-500 text-xl drop-shadow-md"></i>
+    </div>
+    </button>
+    ` : ''}
+    </div>
+    </div>
+    </div>
+    </div>`).join('');
+
+    container.insertAdjacentHTML('beforeend', htmlString);
+    
+    // 🚀 PERBAIKAN: Tambah index sesuai dengan jumlah yang benar-benar dirender
+    profileFeedIndex += nextBatch.length;
+
+    const videoActions = container.querySelectorAll('.snap-start:not(.data-loaded)');
+    videoActions.forEach((card) => {
+        card.classList.add('data-loaded');
+        const vidId = card.querySelector('.like-container').dataset.vid;
+        updateLikeCountUI(vidId, card.querySelector('.like-container'));
+        updateCommentCountUI(vidId, card.querySelector('.comment-count-container'));
+    });
+
+    const unobservedVideos = container.querySelectorAll('.float-video-player:not(.observed)');
+    unobservedVideos.forEach((v, i) => {
+        v.classList.add('observed'); if (floatObs) floatObs.observe(v);
+        if (i === unobservedVideos.length - 1) {
+            const lastVideoObserver = new IntersectionObserver(entries => {
+                if(entries[0].isIntersecting) { 
+                    lastVideoObserver.disconnect(); 
+                    // 🚀 PERBAIKAN: Ketika di-scroll ke mentok bawah, tetap muat 3 per 3 secara standar
+                    renderProfileVideoBatch(3); 
+                }
+            }, { threshold: 0.1 });
+            lastVideoObserver.observe(v.closest('.snap-start'));
+        }
+    });
 }
 
-const nextBatch = currentProfileVideos.slice(profileFeedIndex, profileFeedIndex + 3);
-if (nextBatch.length === 0) return;
-
-const htmlString = nextBatch.map((vid) => `
-<div class="snap-start w-full h-full flex-shrink-0 relative flex items-center justify-center bg-black/95 px-0 sm:px-4 py-0 sm:py-6">
-<div class="w-full max-w-sm aspect-[9/16] relative bg-brand-dark mx-auto h-full sm:h-auto sm:rounded-3xl overflow-hidden shadow-2xl">
-<div class="absolute inset-0 flex items-center justify-center z-0"><div class="w-12 h-12 border-4 border-brand-accent/20 border-t-brand-accent rounded-full animate-spin"></div></div>
-
-<video class="absolute inset-0 m-auto w-full h-full object-cover float-video-player transition-opacity duration-500 opacity-0 z-10"
-onloadeddata="this.classList.remove('opacity-0')" loop ${isGlobalMuted ? 'muted' : ''} playsinline preload="metadata"
-ontimeupdate="updateVideoProgress(this)"
-onclick="toggleProfileVideoAudio(this)">
-<source src="${vid.video_url}" type="video/mp4">
-</video>
-
-<div class="volume-indicator absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-white bg-black/60 w-16 h-16 rounded-full flex items-center justify-center z-[60] pointer-events-none opacity-0 transition-all duration-300 scale-150">
-<i class="fas fa-volume-up text-2xl"></i>
-</div>
-
-<div class="absolute bottom-0 left-0 w-full h-3 z-50 cursor-pointer group touch-none flex flex-col justify-end pb-1"
-onpointerdown="startSeek(event, this)" onpointermove="doSeek(event, this)" onpointerup="endSeek(event, this)" onpointercancel="endSeek(event, this)">
-<div class="w-full h-1 bg-white/30 relative">
-<div class="progress-fill h-full bg-white w-0 relative pointer-events-none transition-all duration-75 ease-linear">
-<div class="absolute -right-2 top-1/2 -translate-y-1/2 w-4 h-4 bg-white rounded-full scale-0 group-hover:scale-100 transition-transform shadow-md"></div>
-</div>
-</div>
-</div>
-
-<div class="absolute bottom-0 left-0 w-full p-6 flex justify-between items-end z-20 pointer-events-none bg-gradient-to-t from-black/80 to-transparent pb-10 sm:pb-6">
-<div class="text-white drop-shadow-lg w-[75%] pointer-events-auto">
-<p class="font-bold text-[15px] shadow-black drop-shadow-md mb-1.5">@${vid.nickname || "Player"}</p>
-<div onclick="this.classList.toggle('expanded')" class="caption-text text-[13px] opacity-90 shadow-black drop-shadow-md cursor-pointer pr-2 leading-relaxed">${formatCaption(vid.caption)}</div>
-</div>
-
-<div class="flex flex-col gap-4 items-center pointer-events-auto mb-2 mr-1">
-<div class="like-container flex flex-col items-center gap-0.5" data-vid="${vid.id}">
-<button onclick="likeVideo('${vid.id}', this)" class="hover:scale-110 transition-transform active:scale-90">
-<i class="fas fa-heart text-[32px] text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]"></i>
-</button>
-<span class="like-count-display text-white text-[12px] font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">0</span>
-</div>
-
-<div class="comment-count-container flex flex-col items-center gap-0.5" data-vid="${vid.id}">
-<button onclick="openComments('${vid.id}')" class="hover:scale-110 transition-transform active:scale-90">
-<i class="fas fa-comment-dots text-[32px] text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]" style="transform: scaleX(-1);"></i>
-</button>
-<span class="comment-count-display text-white text-[12px] font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">0</span>
-</div>
-
-<div class="flex flex-col items-center gap-0.5 mt-1">
-<button onclick="shareVideo('${vid.id}', this)" class="hover:scale-110 transition-transform active:scale-90">
-<i class="fas fa-share text-[30px] text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]"></i>
-</button>
-<span class="text-white text-[11px] font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">Share</span>
-</div>
-
-${currentUser && vid.user_id === currentUser.id ? `
-<button onclick="deleteVideo('${vid.id}')" class="hover:scale-110 transition-transform mt-3 active:scale-90">
-<div class="bg-black/50 p-2 rounded-full border border-white/20 backdrop-blur-sm">
-<i class="fas fa-trash text-red-500 text-xl drop-shadow-md"></i>
-</div>
-</button>
-` : ''}
-</div>
-</div>
-</div>
-</div>`).join('');
-
-container.insertAdjacentHTML('beforeend', htmlString);
-profileFeedIndex += 3;
-
-const videoActions = container.querySelectorAll('.snap-start:not(.data-loaded)');
-videoActions.forEach((card) => {
-card.classList.add('data-loaded');
-const vidId = card.querySelector('.like-container').dataset.vid;
-updateLikeCountUI(vidId, card.querySelector('.like-container'));
-updateCommentCountUI(vidId, card.querySelector('.comment-count-container'));
-});
-
-const unobservedVideos = container.querySelectorAll('.float-video-player:not(.observed)');
-unobservedVideos.forEach((v, i) => {
-v.classList.add('observed'); if (floatObs) floatObs.observe(v);
-if (i === unobservedVideos.length - 1) {
-const lastVideoObserver = new IntersectionObserver(entries => {
-if(entries[0].isIntersecting) { lastVideoObserver.disconnect(); renderProfileVideoBatch(); }
-}, { threshold: 0.1 });
-lastVideoObserver.observe(v.closest('.snap-start'));
-}
-});
-}
 
 // FUNGSI KHUSUS UNTUK MENGONTROL SUARA DI VIDEO PROFIL (KLIK 1 KALI)
 function toggleProfileVideoAudio(video) {
@@ -6912,14 +6954,12 @@ if (!currentUser) return showToast("Silakan login dulu untuk membeli!", "error")
 
 // --- LOGIKA KODE UNIK DISKON (1 - 500) MULAI DI SINI ---
 let kodeUnik = Math.floor(Math.random() * 500) + 1;
-
-// Keamanan: Jaga-jaga kalau harga produk kebetulan sangat murah (misal Rp 300) biar nggak jadi minus
 if (harga <= 500) {
     kodeUnik = Math.floor(Math.random() * (harga - 1)) + 1; 
 }
 
 let hargaDenganKodeUnik = harga - kodeUnik;
-if (hargaDenganKodeUnik < 1) hargaDenganKodeUnik = 1; // Limit minimal QRIS adalah Rp 1
+if (hargaDenganKodeUnik < 1) hargaDenganKodeUnik = 1; 
 // -------------------------------------------------------
 
 const konfirmasi = await customConfirm(`Lanjutkan pesanan untuk:\n\n${namaProduk}\n\nTotal: Rp ${hargaDenganKodeUnik.toLocaleString('id-ID')} via DANA Otomatis?`);
@@ -6928,23 +6968,61 @@ if (!konfirmasi) return;
 showToast("Menyiapkan antrean pembayaran...", "info");
 
 try {
+// ==========================================
+// 🔥 PERBAIKAN: KEMBALIKAN HTML QRIS ASLI JIKA SEBELUMNYA SUDAH DIHAPUS OLEH NOTIF SUKSES
+// ==========================================
+const wadahPembayaran = document.getElementById('qris-container');
+if (wadahPembayaran && !document.getElementById('pay-total')) {
+    wadahPembayaran.innerHTML = `
+        <div class="absolute -right-10 -top-10 w-32 h-32 bg-brand-accent/10 rounded-full blur-2xl"></div>
+        <div class="text-xs text-gray-500 uppercase tracking-widest mb-1">Total Tagihan</div>
+        <div class="flex justify-between items-end mb-6 relative z-10">
+        <div id="pay-total" class="text-3xl font-extrabold text-brand-accent tracking-tight">Rp 0</div>
+        <button onclick="salinNominal()" id="btn-salin" class="bg-brand-info/10 text-brand-info border border-brand-info/30 text-[10px] font-bold px-3 py-1.5 rounded-lg active:scale-95 transition-all flex items-center h-max">
+        <i class="fas fa-copy mr-1.5"></i> Salin
+        </button>
+        <input type="hidden" id="nominal-asli" value="0">
+        </div>
+        <div class="bg-white p-3 rounded-2xl mb-6 mx-auto w-max shadow-[0_0_20px_rgba(0,240,255,0.15)] relative group z-10">
+        <img src="" alt="QRIS ADT" class="w-44 h-44 object-cover rounded-xl">
+        <div class="absolute inset-0 bg-black/60 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl backdrop-blur-sm">
+        <i class="fas fa-camera text-white text-2xl mb-2"></i>
+        <span class="text-white text-[10px] font-bold">Screenshot & Simpan</span>
+        </div>
+        </div>
+        <div class="text-[11px] font-bold text-center text-white uppercase tracking-widest mb-6 relative z-10">ADT STORE</div>
+
+        <div class="space-y-3 mb-8 bg-black/30 p-4 rounded-2xl border border-white/5 relative z-10">
+        <div class="flex justify-between text-xs border-b border-white/5 pb-2"><span class="text-gray-400">Paket Pesanan</span><span id="pay-product" class="text-white font-bold text-right pl-4 leading-tight">-</span></div>
+        <div class="flex justify-between text-xs pt-1"><span class="text-gray-400">Admin Rekber NIKKY</span><span class="text-brand-info font-bold">Include (Gratis)</span></div>
+        </div>
+
+        <a id="wa-confirm" href="#" target="_blank" class="flex justify-center items-center w-full bg-[#25D366] hover:bg-[#20bd5a] active:scale-[0.98] transition-all text-white font-bold py-4 rounded-2xl shadow-[0_8px_20px_rgba(37,211,102,0.25)] text-sm relative z-10">
+        <i class="fab fa-whatsapp text-lg mr-2"></i> Konfirmasi ke Admin
+        </a>
+        <p class="text-center text-[10px] text-gray-500 mt-4 leading-relaxed relative z-10">*Sistem otomatis menyiapkan chat pesanan. Jangan lupa lampirkan screenshot bukti transfer.</p>
+    `;
+}
+// ==========================================
+
 const response = await fetch('/api/create-deposit', {
 method: 'POST',
 headers: { 'Content-Type': 'application/json' },
 body: JSON.stringify({
 user_id: currentUser.id,
-nominal: hargaDenganKodeUnik // Pakai harga yang sudah dipotong diskon
+nominal: hargaDenganKodeUnik 
 })
 });
 
 const result = await response.json();
 
 if (result.status === "success") {
+// Karena kita sudah merestore HTML di atas, proses DOM di bawah ini tidak akan crash lagi
 document.getElementById('pay-total').innerText = `Rp ${hargaDenganKodeUnik.toLocaleString('id-ID')}`;
 document.getElementById('pay-product').innerText = namaProduk;
 document.getElementById('nominal-asli').value = hargaDenganKodeUnik;
 
-// Generate QRIS dengan angka yang sudah dipotong diskon
+// Generate QRIS 
 const teksQRISDinamis = makeDynamicQRIS(hargaDenganKodeUnik);
 const qrImgUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(teksQRISDinamis)}`;
 
