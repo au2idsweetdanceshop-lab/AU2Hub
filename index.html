@@ -2793,7 +2793,7 @@ function renderProfileVideoBatch(customAmount = 3) {
     <video class="absolute inset-0 m-auto w-full h-full object-cover float-video-player transition-opacity duration-500 opacity-0 z-10"
     onloadeddata="this.classList.remove('opacity-0')" loop ${isGlobalMuted ? 'muted' : ''} playsinline preload="metadata"
     ontimeupdate="updateVideoProgress(this)"
-    onclick="toggleProfileVideoAudio(this)">
+    onclick="handleFloatVideoClick(event, this, '${vid.id}')">
     <source src="${vid.video_url}" type="video/mp4">
     </video>
 
@@ -2913,21 +2913,31 @@ indicator.classList.add('opacity-0', 'scale-150');
 }
 
 function handleFloatVideoClick(event, videoElement, vidId) {
-const now = Date.now();
-const TIMESLOT = 300;
+    const now = Date.now();
+    const TIMESLOT = 300; // Jeda waktu maksimal (milidetik) untuk dihitung sebagai klik 2x
 
-if (now - lastTap < TIMESLOT) {
-const card = videoElement.closest('.snap-start');
-const likeBtn = card.querySelector('.like-container button');
-likeVideo(vidId, likeBtn);
-createHeartAt(event);
-} else {
-setTimeout(() => {
-if (Date.now() - lastTap >= TIMESLOT) { toggleGlobalAudio(); }
-}, TIMESLOT);
+    if (now - lastTap < TIMESLOT) {
+        // --- JIKA KLIK 2X (DOUBLE TAP) ---
+        // Cari tombol like di video profil ini dan picu fungsi like
+        const card = videoElement.closest('.snap-start');
+        const likeBtn = card.querySelector('.like-container button');
+        
+        likeVideo(vidId, likeBtn); // Proses like ke database
+        createHeartAt(event);      // Munculkan animasi pop-up Hati di titik jari
+    } else {
+        // --- JIKA KLIK 1X (SINGLE TAP) ---
+        // Kasih delay dikit, kalau tidak ada klik kedua, berarti dia cuma mau nyalain/matiin suara
+        setTimeout(() => {
+            if (Date.now() - lastTap >= TIMESLOT) { 
+                toggleProfileVideoAudio(videoElement); 
+            }
+        }, TIMESLOT);
+    }
+    
+    // Simpan waktu klik terakhir
+    lastTap = now;
 }
-lastTap = now;
-}
+
 
 function handleVideoClick(event, videoElement, vidId) {
 const now = Date.now();
@@ -7373,6 +7383,13 @@ console.log("Tabel orders belum siap, abaikan tracker.");
 }
 }
 
+function closeRiwayatPesanan() {
+    const modal = document.getElementById('modal-riwayat-pesanan');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+}
+
+
 // 📦 LOGIKA KLIK PESANAN ALA SHOPEE (PESANAN DITERIMA)
 async function cekStatusPesanan(status) {
 if (!currentUser) return showToast("Silakan login terlebih dahulu.", "error");
@@ -7421,14 +7438,52 @@ else if (status === 'bayar') {
 showToast("Tidak ada tagihan yang belum dibayar.", "info");
 }
 else if (status === 'selesai' || status === 'riwayat') {
-// Pamerin jumlah pesanan yang udah sukses (Menghandle klik laci Selesai dan teks Lihat Riwayat)
-const { count } = await supabaseClient.from('orders').select('*', { count: 'exact', head: true }).eq('user_id', currentUser.id).eq('status', 'selesai');
-if (count && count > 0) {
-customAlert(`Anda memiliki ${count} riwayat pesanan yang telah selesai dikerjakan. Terima kasih telah mempercayakan akun Anda di AU2Hub!`);
-} else {
-showToast("Belum ada riwayat pesanan yang selesai.", "info");
+    const modal = document.getElementById('modal-riwayat-pesanan');
+    const container = document.getElementById('riwayat-pesanan-list');
+    
+    // Buka Modal & Tampilkan Loading
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    container.innerHTML = '<div class="flex flex-col items-center justify-center mt-20"><i class="fas fa-spinner fa-spin text-brand-info text-4xl mb-3"></i><p class="text-[10px] text-gray-500 font-bold tracking-widest uppercase">Memuat Database...</p></div>';
+
+    try {
+        // Tarik SEMUA pesanan (Baik yang masih Diproses maupun Selesai) - Urut dari yang terbaru
+        const { data, error } = await supabaseClient
+            .from('orders')
+            .select('*')
+            .eq('user_id', currentUser.id)
+            .order('created_at', { ascending: false });
+
+        if (data && data.length > 0) {
+            container.innerHTML = data.map(order => {
+                // Konfigurasi Warna Label Sesuai Status
+                let statusColor = order.status === 'selesai' ? 'text-brand-success bg-brand-success/10 border-brand-success/30' : 
+                                  (order.status === 'proses' ? 'text-yellow-400 bg-yellow-400/10 border-yellow-400/30' : 'text-gray-400 bg-gray-500/10 border-gray-500/30');
+                
+                let icon = order.status === 'selesai' ? 'fa-check-circle' : 'fa-box';
+                
+                return `
+                <div class="bg-brand-dark/50 border border-white/5 p-4 rounded-2xl flex flex-col gap-2 relative overflow-hidden transition-all hover:border-brand-info/30">
+                    <div class="flex justify-between items-start z-10">
+                        <h4 class="text-xs font-bold text-white line-clamp-2 pr-3">${order.product_name}</h4>
+                        <span class="text-[9px] font-extrabold px-2 py-1 rounded-md border whitespace-nowrap flex items-center gap-1 ${statusColor} shrink-0 shadow-sm">
+                            <i class="fas ${icon}"></i> ${order.status.toUpperCase()}
+                        </span>
+                    </div>
+                    <div class="flex justify-between items-end mt-2 z-10 border-t border-white/5 pt-2.5">
+                        <span class="text-[9px] text-gray-400"><i class="far fa-clock mr-1"></i>${timeAgo(order.created_at)}</span>
+                        <span class="text-[13px] font-extrabold text-brand-accent">Rp ${Number(order.price).toLocaleString('id-ID')}</span>
+                    </div>
+                </div>`;
+            }).join('');
+        } else {
+            container.innerHTML = '<div class="text-center mt-20 text-gray-500"><i class="fas fa-receipt text-5xl mb-3 opacity-30"></i><p class="text-xs font-bold uppercase tracking-wider">Belum Ada Riwayat Pesanan</p></div>';
+        }
+    } catch (e) {
+        container.innerHTML = '<div class="text-center mt-20 text-red-500 text-xs">Gagal menarik data dari server.</div>';
+    }
 }
-}
+
 }
 
 // 👥 AUTO-UPDATE FOTO PROFIL GRUP (REAL-TIME STORAGE)
@@ -7489,6 +7544,26 @@ showToast("Gagal memperbarui foto grup.", "error");
 </script>
 
 <script>eruda.init();</script>
+<!-- MODAL RIWAYAT PESANAN -->
+<div id="modal-riwayat-pesanan" class="fixed inset-0 z-[300] hidden items-end sm:items-center justify-center bg-black/90 backdrop-blur-md px-0 sm:px-6 transition-all duration-300">
+    <div class="bg-brand-card w-full max-w-md sm:rounded-3xl rounded-t-[2.5rem] border border-white/10 shadow-2xl relative modal-anim flex flex-col h-[80vh] sm:h-auto sm:max-h-[80vh] overflow-hidden">
+        
+        <!-- Header Laci -->
+        <div class="flex justify-between items-center p-5 border-b border-white/5 bg-brand-dark/80 backdrop-blur-xl shrink-0">
+            <h3 class="font-extrabold text-white text-sm flex items-center gap-2">
+                <i class="fas fa-receipt text-brand-info"></i> RIWAYAT PESANAN
+            </h3>
+            <button onclick="closeRiwayatPesanan()" class="text-gray-400 hover:text-white w-8 h-8 rounded-full bg-white/5 flex items-center justify-center active:scale-95 transition-all"><i class="fas fa-times"></i></button>
+        </div>
+        
+        <!-- Area Konten (Otomatis Scroll) -->
+        <div id="riwayat-pesanan-list" class="flex-1 overflow-y-auto p-4 hide-scroll space-y-3 bg-black/40 pb-10">
+            <!-- Data dari database Supabase akan disuntikkan ke sini -->
+        </div>
+
+    </div>
+</div>
+
 <div id="modal-detail-produk" class="fixed inset-x-0 bottom-0 z-[180] h-[85vh] glass border-t border-white/10 rounded-t-[2.5rem] flex flex-col max-w-md mx-auto transition-transform duration-300 translate-y-full">
     
     <div class="flex justify-center p-3 shrink-0 bg-brand-dark/40 rounded-t-[2.5rem]" onclick="closeDetailProduk()">
