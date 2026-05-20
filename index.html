@@ -1475,7 +1475,7 @@ function customAlert(title) {
         const titleEl = document.getElementById('alert-title');
         const btnOk = document.getElementById('alert-ok');
 
-        // 🔥 LOGIKA BARU: Deteksi Link otomatis di dalam teks pop-up
+        // Deteksi Link otomatis
         const urlRegex = /(https?:\/\/[^\s]+)/g;
         let formattedText = title.replace(urlRegex, (url) => {
             return `<a href="${url}" target="_blank" class="text-brand-info underline font-bold">${url}</a>`;
@@ -1483,18 +1483,34 @@ function customAlert(title) {
         // Ubah \n jadi <br>
         formattedText = formattedText.replace(/\n/g, "<br>");
 
-        titleEl.innerHTML = formattedText; // Pake innerHTML biar tag <a> bekerja
+        titleEl.innerHTML = formattedText;
+        
+        // 🔥 TAMBAHAN: Suntikkan riwayat URL agar terdeteksi oleh tombol back HP
+        history.pushState({ popup: 'alert' }, null, '#alert');
+
         modal.classList.remove('hidden');
         modal.classList.add('flex');
 
+        // Simpan resolve agar bisa diakses dari tombol back
+        window.currentAlertResolve = resolve;
+
         btnOk.onclick = () => {
-            modal.classList.add('hidden');
-            modal.classList.remove('flex');
+            // 🔥 TAMBAHAN: Gunakan history.back() agar kembali secara rapi
+            if (window.location.hash === '#alert') {
+                history.back(); 
+            } else {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }
             btnOk.onclick = null;
-            resolve();
+            if (typeof window.currentAlertResolve === 'function') {
+                window.currentAlertResolve();
+                window.currentAlertResolve = null;
+            }
         };
     });
 }
+
 
 
 
@@ -2497,6 +2513,20 @@ window.addEventListener('popstate', () => {
     // ==========================================
 
     // 2. TANGKAP SEMUA POP-UP DULU (Biar menutup duluan kalau tombol Back ditekan)
+        // --- MENDETEKSI POP-UP BANTUAN CEPAT ---
+    const modalAlert = document.getElementById('modal-alert');
+    if (modalAlert && !modalAlert.classList.contains('hidden')) {
+        modalAlert.classList.add('hidden');
+        modalAlert.classList.remove('flex');
+        
+        // Selesaikan Promise jika ditutup lewat tombol back HP
+        if (typeof window.currentAlertResolve === 'function') {
+            window.currentAlertResolve();
+            window.currentAlertResolve = null;
+        }
+        return;
+    }
+
     const lightbox = document.getElementById('lightbox-modal');
     if(!lightbox.classList.contains('hidden')) {
         closeLightbox();
