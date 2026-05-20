@@ -1293,22 +1293,25 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
 <button onclick="closeLeaderboardModal()" class="text-gray-400 hover:text-white w-8 h-8 rounded-full bg-white/5 flex items-center justify-center active:scale-95 transition-all"><i class="fas fa-times"></i></button>
 </div>
 
+<!-- 3 NAVIGASI TAB LEADERBOARD (UPDATED) -->
 <div class="flex p-2 bg-black/40 shrink-0 gap-1 border-b border-white/5">
-<button id="tab-lb-creator" onclick="switchLeaderboardTab('creator')" class="flex-1 py-2.5 text-[11px] font-bold text-white bg-brand-accent rounded-xl shadow-[0_0_15px_rgba(255,0,122,0.4)] transition-all">🎬 Top Creator</button>
-<button id="tab-lb-sultan" onclick="switchLeaderboardTab('sultan')" class="flex-1 py-2.5 text-[11px] font-bold text-gray-500 hover:text-white rounded-xl transition-all">💸 Top Sultan</button>
+    <button id="tab-lb-creator" onclick="switchLeaderboardTab('creator')" class="flex-1 py-2.5 text-[10px] font-bold text-white bg-brand-accent rounded-xl shadow-[0_0_15px_rgba(255,0,122,0.4)] transition-all">🎬 Creator</button>
+    <button id="tab-lb-level" onclick="switchLeaderboardTab('level')" class="flex-1 py-2.5 text-[10px] font-bold text-gray-500 hover:text-white rounded-xl transition-all">🏆 Level</button>
+    <button id="tab-lb-sultan" onclick="switchLeaderboardTab('sultan')" class="flex-1 py-2.5 text-[10px] font-bold text-gray-500 hover:text-white rounded-xl transition-all">💸 Sultan</button>
 </div>
+
 <div class="p-3 bg-brand-dark/50 shrink-0 border-b border-white/5">
     <div class="relative">
         <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-xs"></i>
         <input type="text" id="leaderboardSearch" placeholder="Cari nama player..." class="w-full bg-black/40 border border-white/10 rounded-xl py-2 pl-9 pr-3 text-xs text-white outline-none focus:border-brand-accent transition-colors">
     </div>
 </div>
+
+<!-- CONTAINER DAFTAR RANKING (TAMBAH LEVEL CONTAINER) -->
 <div id="leaderboard-container-creator" class="flex-1 overflow-y-auto p-3 hide-scroll space-y-2 block pb-6"></div>
+<div id="leaderboard-container-level" class="flex-1 overflow-y-auto p-3 hide-scroll space-y-2 hidden pb-6"></div>
 <div id="leaderboard-container-sultan" class="flex-1 overflow-y-auto p-3 hide-scroll space-y-2 hidden pb-6"></div>
 
-<p class="text-[9px] text-gray-500 p-4 text-center bg-brand-dark shrink-0 z-10 relative">*Peringkat diperbarui secara real-time oleh sistem.</p>
-</div>
-</div>
 
 
 </nav>
@@ -2517,42 +2520,68 @@ switchTab(newHash.split('?')[0], null, false);
 
 // FUNGSI KEMBALI DARI PROFIL YANG SUDAH DIPERBAIKI SANGAT AMAN
 function kembaliDariProfil() {
-// Pindah tab secara visual
-switchTab(tabSebelumnya, null, false);
+    // Pindah tab secara visual
+    switchTab(tabSebelumnya, null, false);
 
-// Mengganti URL tanpa memicu popstate yang berisiko bentrok dengan chat widget
-history.replaceState(null, null, '#' + tabSebelumnya);
+    // Mengganti URL tanpa memicu popstate yang berisiko bentrok dengan chat widget
+    history.replaceState(null, null, '#' + tabSebelumnya);
 
-// Reset profil yang tertinggal di background (agar siap pas di-klik dari bawah)
-if (currentUser) {
-viewedUserId = currentUser.id;
+    // Reset profil yang tertinggal di background (agar siap pas di-klik dari bawah)
+    if (currentUser) {
+        viewedUserId = currentUser.id;
 
-const pNick = document.getElementById('profile-nickname'); if(pNick) pNick.innerText = "@" + (userProfile?.nickname || "Player");
-const pBio = document.getElementById('profile-bio'); if(pBio) pBio.innerText = userProfile?.bio || "Belum ada deskripsi.";
-const pImg = document.getElementById('profile-img'); if(pImg) pImg.src = userProfile?.avatar_url || `https://ui-avatars.com/api/?name=${userProfile?.nickname || 'Player'}&background=1A1133&color=fff`;
+        // 1. Ambil data current user
+        const userVideos = allVideosData.filter(v => v.user_id === currentUser.id);
+        const myExp = userProfile?.exp || 0;
+        const myStatusLevel = hitungStatusLevel(myExp);
+        const myBadgeHTML = getBadgeByLevelAndVideos(myStatusLevel.level, userVideos.length);
 
-const actionOwn = document.getElementById('profile-actions-own'); if(actionOwn) actionOwn.classList.remove('hidden');
-const actionOther = document.getElementById('profile-actions-other'); if(actionOther) actionOther.classList.add('hidden');
+        // 2. Kembalikan Nickname & Badge
+        const pNick = document.getElementById('profile-nickname'); 
+        if(pNick) pNick.innerHTML = "@" + (userProfile?.nickname || "Player") + myBadgeHTML;
 
-const tracker = document.getElementById('order-tracker-section'); if(tracker) tracker.classList.remove('hidden');
+        // 3. Kembalikan Bio & Foto
+        const pBio = document.getElementById('profile-bio'); if(pBio) pBio.innerText = userProfile?.bio || "Belum ada deskripsi.";
+        const pImg = document.getElementById('profile-img'); if(pImg) pImg.src = userProfile?.avatar_url || `https://ui-avatars.com/api/?name=${userProfile?.nickname || 'Player'}&background=1A1133&color=fff`;
 
+        // 4. Kembalikan Level & Bar EXP
+        const elLevelBadge = document.getElementById('profile-level-badge');
+        const elExpContainer = document.getElementById('profile-exp-container');
 
+        if (elLevelBadge && elExpContainer) {
+            elLevelBadge.innerText = `Lv. ${myStatusLevel.level}`;
+            elLevelBadge.classList.remove('hidden');
+            
+            document.getElementById('text-exp-current').innerText = `EXP: ${myStatusLevel.exp}`;
+            document.getElementById('text-exp-target').innerText = `Next: ${myStatusLevel.targetNextLevel}`;
+            
+            setTimeout(() => {
+                document.getElementById('bar-exp-progress').style.width = `${myStatusLevel.persentase}%`;
+            }, 100);
+            
+            elExpContainer.classList.remove('hidden');
+        }
 
-const btnBack = document.getElementById('btn-back-profile'); if(btnBack) btnBack.classList.add('hidden');
-const btnEditAva = document.getElementById('btn-edit-avatar'); if(btnEditAva) btnEditAva.classList.remove('hidden');
+        const actionOwn = document.getElementById('profile-actions-own'); if(actionOwn) actionOwn.classList.remove('hidden');
+        const actionOther = document.getElementById('profile-actions-other'); if(actionOther) actionOther.classList.add('hidden');
 
-const elVidTitle = document.getElementById('profile-video-title');
-if(elVidTitle) elVidTitle.innerHTML = `<i class="fas fa-grip-vertical mr-2 text-brand-info"></i> Video Saya`;
+        const tracker = document.getElementById('order-tracker-section'); if(tracker) tracker.classList.remove('hidden');
+        const btnBack = document.getElementById('btn-back-profile'); if(btnBack) btnBack.classList.add('hidden');
+        const btnEditAva = document.getElementById('btn-edit-avatar'); if(btnEditAva) btnEditAva.classList.remove('hidden');
 
-renderProfileVideos(currentUser.id);
-fetchFollowStats(currentUser.id);
-} else {
-viewedUserId = null;
-document.querySelectorAll('#profile-logged-in').forEach(el => el.classList.add('hidden'));
-document.getElementById('profile-logged-out').classList.remove('hidden');
-const btnBack = document.getElementById('btn-back-profile'); if(btnBack) btnBack.classList.add('hidden');
+        const elVidTitle = document.getElementById('profile-video-title');
+        if(elVidTitle) elVidTitle.innerHTML = `<i class="fas fa-grip-vertical mr-2 text-brand-info"></i> Video Saya`;
+
+        renderProfileVideos(currentUser.id);
+        fetchFollowStats(currentUser.id);
+    } else {
+        viewedUserId = null;
+        document.querySelectorAll('#profile-logged-in').forEach(el => el.classList.add('hidden'));
+        document.getElementById('profile-logged-out').classList.remove('hidden');
+        const btnBack = document.getElementById('btn-back-profile'); if(btnBack) btnBack.classList.add('hidden');
+    }
 }
-}
+
 
 function openModalEvent() {
 history.pushState({ popup: 'modal' }, null, '#event');
@@ -2718,14 +2747,37 @@ await renderProfileVideos(userId);
 
 // Baru hitung lencana badge & total likes biar auto-akurat tanpa delay / bug nunggu refresh
 const userVideos = allVideosData.filter(v => v.user_id === userId);
-// Ambil level dari status profil yang sedang dibuka
-const statusLevel = hitungStatusLevel(data?.exp || 0).level;
-const badgeHTML = getBadgeByLevelAndVideos(statusLevel, userVideos.length);
+
+// 1. Ambil & Hitung Level User yang Dilihat
+const expDataLain = data?.exp || 0;
+const statusLevelObj = hitungStatusLevel(expDataLain);
+
+// 2. Update Nickname & Kasta Badge
+const badgeHTML = getBadgeByLevelAndVideos(statusLevelObj.level, userVideos.length);
 const elNick2 = document.getElementById('profile-nickname');
 if(elNick2) elNick2.innerHTML = "@" + (data?.nickname || "Player") + badgeHTML;
 
+// 3. Update Level Badge & Bar EXP Sesuai Profil yang Dibuka
+const elLevelBadge = document.getElementById('profile-level-badge');
+const elExpContainer = document.getElementById('profile-exp-container');
+
+if (elLevelBadge && elExpContainer) {
+    elLevelBadge.innerText = `Lv. ${statusLevelObj.level}`;
+    elLevelBadge.classList.remove('hidden');
+    
+    document.getElementById('text-exp-current').innerText = `EXP: ${statusLevelObj.exp}`;
+    document.getElementById('text-exp-target').innerText = `Next: ${statusLevelObj.targetNextLevel}`;
+    
+    setTimeout(() => {
+        document.getElementById('bar-exp-progress').style.width = `${statusLevelObj.persentase}%`;
+    }, 100);
+    
+    elExpContainer.classList.remove('hidden');
+}
+
 const elLikes = document.getElementById('profile-total-likes');
 if (elLikes) elLikes.innerText = (userVideos.length * 3);
+
 
 fetchFollowStats(userId);
 loadOrderTracker(userId); // <--- INI DIA YANG KETINGGALAN OM
@@ -3184,36 +3236,30 @@ setTimeout(() => { btnSalin.innerHTML = teksAsli; btnSalin.classList.replace('te
 document.getElementById('leaderboardSearch').addEventListener('input', function(e) {
     const keyword = e.target.value.toLowerCase();
 
-    // 1. Filter daftar di Tab Top Creator
-    const creatorList = document.querySelectorAll('#leaderboard-container-creator > div');
-    creatorList.forEach(item => {
-        // Ambil teks nama dari dalam tag <h4>
-        const nameElement = item.querySelector('h4');
-        if (nameElement) {
-            const name = nameElement.innerText.toLowerCase();
-            // Jika nama cocok dengan ketikan, tampilkan. Jika tidak, sembunyikan.
-            if (name.includes(keyword)) {
-                item.style.display = ''; // Kembali ke tampilan bawaan (flex)
-            } else {
-                item.style.display = 'none'; // Sembunyikan
+    // Fungsi pembantu untuk memfilter elemen di dalam container secara otomatis
+    const filterLeaderboard = (containerId) => {
+        const list = document.querySelectorAll(`${containerId} > div`);
+        list.forEach(item => {
+            // Ambil teks nama dari dalam tag <h4>
+            const nameElement = item.querySelector('h4');
+            if (nameElement) {
+                const name = nameElement.innerText.toLowerCase();
+                // Jika nama cocok dengan ketikan, tampilkan. Jika tidak, sembunyikan.
+                if (name.includes(keyword)) {
+                    item.style.display = ''; // Kembali ke tampilan bawaan (flex/block)
+                } else {
+                    item.style.display = 'none'; // Sembunyikan
+                }
             }
-        }
-    });
+        });
+    };
 
-    // 2. Filter daftar di Tab Top Sultan
-    const sultanList = document.querySelectorAll('#leaderboard-container-sultan > div');
-    sultanList.forEach(item => {
-        const nameElement = item.querySelector('h4');
-        if (nameElement) {
-            const name = nameElement.innerText.toLowerCase();
-            if (name.includes(keyword)) {
-                item.style.display = ''; 
-            } else {
-                item.style.display = 'none'; 
-            }
-        }
-    });
+    // Jalankan penyaringan untuk ketiga tab leaderboard secara serentak
+    filterLeaderboard('#leaderboard-container-creator');
+    filterLeaderboard('#leaderboard-container-level');
+    filterLeaderboard('#leaderboard-container-sultan');
 });
+
 
 
 
@@ -7390,146 +7436,190 @@ const chatBtn = document.querySelector('button[onclick="toggleWidget()"]');
 if (chatBtn) chatBtn.classList.remove('hidden');
 }
 
-// 🧠 MESIN PENARIK DATA LEADERBOARD
+// 🧠 MESIN PENARIK DATA LEADERBOARD DUAL-TAB JADI TRIPLE-TAB
 async function switchLeaderboardTab(tab) {
-const btnCreator = document.getElementById('tab-lb-creator');
-const btnSultan = document.getElementById('tab-lb-sultan');
-const containerCreator = document.getElementById('leaderboard-container-creator');
-const containerSultan = document.getElementById('leaderboard-container-sultan');
+    const btnCreator = document.getElementById('tab-lb-creator');
+    const btnLevel = document.getElementById('tab-lb-level');
+    const btnSultan = document.getElementById('tab-lb-sultan');
+    
+    const containerCreator = document.getElementById('leaderboard-container-creator');
+    const containerLevel = document.getElementById('leaderboard-container-level');
+    const containerSultan = document.getElementById('leaderboard-container-sultan');
 
-if (tab === 'creator') {
-// UI Animasi Switch
-btnCreator.className = 'flex-1 py-2.5 text-[11px] font-bold text-white bg-brand-accent rounded-xl shadow-[0_0_15px_rgba(255,0,122,0.4)] transition-all';
-btnSultan.className = 'flex-1 py-2.5 text-[11px] font-bold text-gray-500 hover:text-white rounded-xl transition-all bg-transparent shadow-none border border-transparent hover:border-white/10';
-containerCreator.classList.replace('hidden', 'block');
-containerSultan.classList.replace('block', 'hidden');
+    // Reset Semua Tombol ke Default (Tidak Aktif)
+    const normalClass = 'flex-1 py-2.5 text-[10px] font-bold text-gray-500 hover:text-white rounded-xl transition-all bg-transparent shadow-none border border-transparent hover:border-white/10';
+    btnCreator.className = normalClass;
+    btnLevel.className = normalClass;
+    btnSultan.className = normalClass;
 
-// Loading Data
-containerCreator.innerHTML = '<div class="text-center py-10"><i class="fas fa-spinner fa-spin text-brand-accent text-2xl"></i></div>';
+    // Sembunyikan Semua Wadah List
+    containerCreator.classList.replace('block', 'hidden');
+    containerLevel.classList.replace('block', 'hidden');
+    containerSultan.classList.replace('block', 'hidden');
 
-// 🚀 PRO-FIX VERCEL: Jika data video masih kosong (user langsung klik piala), paksa fetch mandiri ke server biar gak zonk!
-if (allVideosData.length === 0) {
-try {
-const res = await fetch('/api/get-videos');
-let dataDariSheet = await res.json();
-dataDariSheet = dataDariSheet.map(v => {
-v.id = v.id || v.video_id || v.ID || 'vid_' + Math.random().toString(36).substr(2, 9);
-return v;
-});
-allVideosData = dataDariSheet.filter(v => !blockedUsersList.includes(v.user_id));
-} catch(e) {
-containerCreator.innerHTML = '<p class="text-center text-xs text-red-500 py-10">Gagal memuat data ranking creator.</p>';
-return;
+    if (tab === 'creator') {
+        btnCreator.className = 'flex-1 py-2.5 text-[10px] font-bold text-white bg-brand-accent rounded-xl shadow-[0_0_15px_rgba(255,0,122,0.4)] transition-all';
+        containerCreator.classList.replace('hidden', 'block');
+        containerCreator.innerHTML = '<div class="text-center py-10"><i class="fas fa-spinner fa-spin text-brand-accent text-2xl"></i></div>';
+
+        // Fetch Data Creator (Gunakan cache ram allVideosData Anda)
+        if (allVideosData.length === 0) {
+            try {
+                const res = await fetch('/api/get-videos');
+                let dataDariSheet = await res.json();
+                dataDariSheet = dataDariSheet.map(v => { v.id = v.id || v.video_id || v.ID || 'vid_' + Math.random().toString(36).substr(2, 9); return v; });
+                allVideosData = dataDariSheet.filter(v => !blockedUsersList.includes(v.user_id));
+            } catch(e) {
+                containerCreator.innerHTML = '<p class="text-center text-xs text-red-500 py-10">Gagal memuat ranking.</p>';
+                return;
+            }
+        }
+
+        const userStats = {};
+        allVideosData.forEach(vid => {
+            if (!userStats[vid.user_id]) {
+                userStats[vid.user_id] = { user_id: vid.user_id, nickname: vid.nickname || "Player", avatar_url: vid.avatar_url || "", videoCount: 0 };
+            }
+            userStats[vid.user_id].videoCount++;
+        });
+
+        const sortedLeaderboard = Object.values(userStats).sort((a, b) => b.videoCount - a.videoCount);
+        if (sortedLeaderboard.length === 0) {
+            containerCreator.innerHTML = '<p class="text-center text-xs text-gray-500 py-10">Belum ada kompetisi dimulai.</p>';
+            return;
+        }
+
+        containerCreator.innerHTML = sortedLeaderboard.map((user, index) => {
+            const rank = index + 1;
+            const ava = user.avatar_url || `https://ui-avatars.com/api/?name=${user.nickname}&background=1A1133&color=fff`;
+            let rankBadge = `<span class="text-xs font-bold text-gray-500 w-6 text-center">#${rank}</span>`;
+            if (rank === 1) rankBadge = '<div class="w-6 flex justify-center text-xl text-yellow-400"><i class="fas fa-medal"></i></div>';
+            if (rank === 2) rankBadge = '<div class="w-6 flex justify-center text-xl text-gray-300"><i class="fas fa-medal"></i></div>';
+            if (rank === 3) rankBadge = '<div class="w-6 flex justify-center text-xl text-amber-600"><i class="fas fa-medal"></i></div>';
+
+            return `
+            <div onclick="viewUserProfile('${user.user_id}'); closeLeaderboardModal();" class="flex items-center justify-between p-3 bg-black/20 border border-white/5 rounded-2xl hover:bg-white/10 transition-all cursor-pointer">
+                <div class="flex items-center gap-3 min-w-0 flex-1">
+                    ${rankBadge}
+                    <img src="${ava}" class="w-9 h-9 rounded-full object-cover border border-white/10 shrink-0">
+                    <div class="truncate">
+                        <h4 class="font-bold text-white text-xs flex items-center gap-1">@${user.nickname}</h4>
+                        <p class="text-[10px] text-gray-400 mt-0.5">${user.videoCount} Video dibagikan</p>
+                    </div>
+                </div>
+                <div class="text-right ml-2 shrink-0">
+                    <span class="text-[10px] font-extrabold bg-brand-accent/10 text-brand-accent px-2.5 py-1 rounded-lg border border-brand-accent/20 tracking-wider">${user.videoCount * 10} XP</span>
+                </div>
+            </div>`;
+        }).join('');
+
+    } else if (tab === 'level') {
+        // 🔥 TAB BARU: TOP LEVEL SINKRONISASI SUPABASE
+        btnLevel.className = 'flex-1 py-2.5 text-[10px] font-bold text-white bg-brand-purple rounded-xl shadow-[0_0_15px_rgba(162,119,255,0.4)] transition-all';
+        containerLevel.classList.replace('hidden', 'block');
+        containerLevel.innerHTML = '<div class="text-center py-10"><i class="fas fa-spinner fa-spin text-brand-purple text-2xl"></i></div>';
+
+        try {
+            // Tarik 50 Player dengan EXP Tertinggi dari database Supabase
+            const { data: topPlayers, error } = await supabaseClient
+                .from('profiles')
+                .select('*')
+                .order('exp', { ascending: false })
+                .limit(50);
+
+            if (error || !topPlayers || topPlayers.length === 0) {
+                containerLevel.innerHTML = '<p class="text-center text-xs text-gray-500 py-10">Belum ada data level terdeteksi.</p>';
+                return;
+            }
+
+            containerLevel.innerHTML = topPlayers.map((player, index) => {
+                const rank = index + 1;
+                const ava = player.avatar_url || `https://ui-avatars.com/api/?name=${player.nickname}&background=1A1133&color=fff`;
+                const statusLevel = hitungStatusLevel(player.exp || 0);
+                
+                // Hitung jumlah video untuk validasi Kasta Badge lencana dewa
+                const videoCount = allVideosData.filter(v => v.user_id === player.id).length;
+                const statusBadge = getBadgeByLevelAndVideos(statusLevel.level, videoCount);
+
+                let rankBadge = `<span class="text-xs font-bold text-gray-500 w-6 text-center">#${rank}</span>`;
+                if (rank === 1) rankBadge = '<div class="w-6 flex justify-center text-xl text-yellow-400 drop-shadow-[0_0_6px_rgba(250,204,21,0.5)]"><i class="fas fa-trophy"></i></div>';
+                if (rank === 2) rankBadge = '<div class="w-6 flex justify-center text-xl text-gray-300"><i class="fas fa-award"></i></div>';
+                if (rank === 3) rankBadge = '<div class="w-6 flex justify-center text-xl text-amber-600"><i class="fas fa-award"></i></div>';
+
+                return `
+                <div onclick="viewUserProfile('${player.id}'); closeLeaderboardModal();" class="flex items-center justify-between p-3 bg-black/20 border border-white/5 rounded-2xl hover:bg-white/10 transition-all cursor-pointer">
+                    <div class="flex items-center gap-3 min-w-0 flex-1">
+                        ${rankBadge}
+                        <img src="${ava}" class="w-9 h-9 rounded-full object-cover border border-white/10 shrink-0">
+                        <div class="truncate">
+                            <h4 class="font-bold text-white text-xs flex items-center gap-1">@${player.nickname} ${statusBadge}</h4>
+                            <p class="text-[10px] text-gray-400 mt-0.5">Total akumulasi: ${statusLevel.exp.toLocaleString('id-ID')} EXP</p>
+                        </div>
+                    </div>
+                    <div class="text-right ml-2 shrink-0">
+                        <span class="text-[11px] font-black bg-gradient-to-r from-brand-info to-brand-purple text-white px-3 py-1 rounded-xl border border-white/10 tracking-tight shadow-md">Lv. ${statusLevel.level}</span>
+                    </div>
+                </div>`;
+            }).join('');
+
+        } catch (err) {
+            containerLevel.innerHTML = '<p class="text-center text-xs text-red-500 py-10">Gagal menarik data database level.</p>';
+        }
+
+    } else if (tab === 'sultan') {
+        btnSultan.className = 'flex-1 py-2.5 text-[10px] font-bold text-brand-dark bg-gradient-to-r from-yellow-400 to-yellow-600 rounded-xl shadow-[0_0_15px_rgba(250,204,21,0.4)] transition-all';
+        containerSultan.classList.replace('hidden', 'block');
+        containerSultan.innerHTML = '<div class="text-center py-10"><i class="fas fa-spinner fa-spin text-yellow-400 text-2xl"></i></div>';
+
+        try {
+            const { data: orders, error } = await supabaseClient.from('orders').select('user_id, price').eq('status', 'selesai');
+            if (error || !orders || orders.length === 0) {
+                containerSultan.innerHTML = '<p class="text-center text-xs text-gray-500 py-10">Belum ada data sultan yang memborong.</p>';
+                return;
+            }
+
+            const sultanStats = {};
+            orders.forEach(o => {
+                if (!sultanStats[o.user_id]) sultanStats[o.user_id] = { user_id: o.user_id, totalSpent: 0 };
+                sultanStats[o.user_id].totalSpent += Number(o.price);
+            });
+
+            const sortedSultans = Object.values(sultanStats).sort((a, b) => b.totalSpent - a.totalSpent);
+            const userIds = sortedSultans.map(s => s.user_id);
+            const { data: profiles } = await supabaseClient.from('profiles').select('id, nickname, avatar_url').in('id', userIds);
+
+            containerSultan.innerHTML = sortedSultans.map((sultan, index) => {
+                const rank = index + 1;
+                const p = profiles?.find(x => x.id === sultan.user_id);
+                const nickname = p?.nickname || "Player";
+                const ava = p?.avatar_url || `https://ui-avatars.com/api/?name=${nickname}&background=1A1133&color=fff`;
+
+                let rankBadge = `<span class="text-xs font-bold text-gray-500 w-6 text-center">#${rank}</span>`;
+                if (rank === 1) rankBadge = '<div class="w-6 flex justify-center text-xl text-yellow-400"><i class="fas fa-crown"></i></div>';
+                if (rank === 2) rankBadge = '<div class="w-6 flex justify-center text-xl text-gray-300"><i class="fas fa-medal"></i></div>';
+                if (rank === 3) rankBadge = '<div class="w-6 flex justify-center text-xl text-amber-600"><i class="fas fa-medal"></i></div>';
+
+                return `
+                <div onclick="viewUserProfile('${sTemplate}'); closeLeaderboardModal();" class="flex items-center justify-between p-3 bg-black/20 border border-white/5 rounded-2xl hover:bg-white/10 transition-all cursor-pointer relative overflow-hidden">
+                    <div class="flex items-center gap-3 min-w-0 flex-1 relative z-10">
+                        ${rankBadge}
+                        <img src="${ava}" class="w-9 h-9 rounded-full object-cover border border-white/10 shrink-0">
+                        <div class="truncate">
+                            <h4 class="font-bold text-white text-xs truncate">@${nickname}</h4>
+                            <p class="text-[10px] text-yellow-500 mt-0.5 font-bold tracking-wide">Rp ${sultan.totalSpent.toLocaleString('id-ID')}</p>
+                        </div>
+                    </div>
+                    <div class="text-right ml-2 shrink-0 relative z-10">
+                        <span class="text-[10px] font-extrabold bg-gradient-to-tr from-yellow-400 to-yellow-600 text-black px-2 py-1 rounded-lg border border-yellow-300 shadow-[0_0_10px_rgba(250,204,21,0.4)]">VIP</span>
+                    </div>
+                </div>`;
+            }).join('');
+        } catch(e) {
+            containerSultan.innerHTML = '<p class="text-center text-xs text-red-500 py-10">Gagal menarik data Sultan.</p>';
+        }
+    }
 }
-}
 
-const userStats = {};
-allVideosData.forEach(vid => {
-if (!userStats[vid.user_id]) {
-userStats[vid.user_id] = { user_id: vid.user_id, nickname: vid.nickname || "Player", avatar_url: vid.avatar_url || "", videoCount: 0 };
-}
-userStats[vid.user_id].videoCount++;
-});
-
-const sortedLeaderboard = Object.values(userStats).sort((a, b) => b.videoCount - a.videoCount);
-
-if (sortedLeaderboard.length === 0) {
-containerCreator.innerHTML = '<p class="text-center text-xs text-gray-500 py-10">Belum ada kompetisi dimulai.</p>';
-return;
-}
-
-containerCreator.innerHTML = sortedLeaderboard.map((user, index) => {
-const rank = index + 1;
-const ava = user.avatar_url || `https://ui-avatars.com/api/?name=${user.nickname}&background=1A1133&color=fff`;
-let rankBadge = `<span class="text-xs font-bold text-gray-500 w-6 text-center">#${rank}</span>`;
-if (rank === 1) rankBadge = '<div class="w-6 flex justify-center text-xl text-yellow-400 drop-shadow-[0_0_6px_rgba(250,204,21,0.6)]"><i class="fas fa-medal"></i></div>';
-if (rank === 2) rankBadge = '<div class="w-6 flex justify-center text-xl text-gray-300 drop-shadow-[0_0_6px_rgba(209,213,219,0.6)]"><i class="fas fa-medal"></i></div>';
-if (rank === 3) rankBadge = '<div class="w-6 flex justify-center text-xl text-amber-600 drop-shadow-[0_0_6px_rgba(217,119,6,0.6)]"><i class="fas fa-medal"></i></div>';
-
-const statusBadge = getBadgeByLevelAndVideos(0, user.videoCount);
-
-return `
-<div onclick="viewUserProfile('${user.user_id}'); closeLeaderboardModal();" class="flex items-center justify-between p-3 bg-black/20 border border-white/5 rounded-2xl hover:bg-white/10 transition-all cursor-pointer">
-<div class="flex items-center gap-3 min-w-0 flex-1">
-${rankBadge}
-<img src="${ava}" class="w-9 h-9 rounded-full object-cover border border-white/10 shrink-0">
-<div class="truncate">
-<h4 class="font-bold text-white text-xs flex items-center gap-1">@${user.nickname} ${statusBadge}</h4>
-<p class="text-[10px] text-gray-400 mt-0.5">${user.videoCount} Video dibagikan</p>
-</div>
-</div>
-<div class="text-right ml-2 shrink-0">
-<span class="text-[10px] font-extrabold bg-brand-accent/10 text-brand-accent px-2.5 py-1 rounded-lg border border-brand-accent/20 tracking-wider">${user.videoCount * 10} XP</span>
-</div>
-</div>`;
-}).join('');
-}
-else if (tab === 'sultan') {
-// UI Animasi Switch
-btnSultan.className = 'flex-1 py-2.5 text-[11px] font-bold text-brand-dark bg-gradient-to-r from-yellow-400 to-yellow-600 rounded-xl shadow-[0_0_15px_rgba(250,204,21,0.4)] transition-all';
-btnCreator.className = 'flex-1 py-2.5 text-[11px] font-bold text-gray-500 hover:text-white rounded-xl transition-all bg-transparent shadow-none border border-transparent hover:border-white/10';
-containerSultan.classList.replace('hidden', 'block');
-containerCreator.classList.replace('block', 'hidden');
-
-// Loading Data
-containerSultan.innerHTML = '<div class="text-center py-10"><i class="fas fa-spinner fa-spin text-yellow-400 text-2xl"></i></div>';
-
-try {
-// Tarik data pesanan yang statusnya udah selesai dari database
-const { data: orders, error } = await supabaseClient.from('orders').select('user_id, price').eq('status', 'selesai');
-
-if (error || !orders || orders.length === 0) {
-containerSultan.innerHTML = '<p class="text-center text-xs text-gray-500 py-10">Belum ada data sultan yang memborong.</p>';
-return;
-}
-
-// Kelompokkan dan jumlahin duitnya per user
-const sultanStats = {};
-orders.forEach(o => {
-if (!sultanStats[o.user_id]) sultanStats[o.user_id] = { user_id: o.user_id, totalSpent: 0 };
-sultanStats[o.user_id].totalSpent += Number(o.price);
-});
-
-// Urutkan dari yang duitnya paling banyak
-const sortedSultans = Object.values(sultanStats).sort((a, b) => b.totalSpent - a.totalSpent);
-
-// Ambil Profil mereka
-const userIds = sortedSultans.map(s => s.user_id);
-const { data: profiles } = await supabaseClient.from('profiles').select('id, nickname, avatar_url').in('id', userIds);
-
-containerSultan.innerHTML = sortedSultans.map((sultan, index) => {
-const rank = index + 1;
-const p = profiles?.find(x => x.id === sultan.user_id);
-const nickname = p?.nickname || "Player";
-const ava = p?.avatar_url || `https://ui-avatars.com/api/?name=${nickname}&background=1A1133&color=fff`;
-
-// Medali versi Sultan
-let rankBadge = `<span class="text-xs font-bold text-gray-500 w-6 text-center">#${rank}</span>`;
-if (rank === 1) rankBadge = '<div class="w-6 flex justify-center text-xl text-yellow-400 drop-shadow-[0_0_6px_rgba(250,204,21,0.6)]"><i class="fas fa-crown"></i></div>';
-if (rank === 2) rankBadge = '<div class="w-6 flex justify-center text-xl text-gray-300 drop-shadow-[0_0_6px_rgba(209,213,219,0.6)]"><i class="fas fa-medal"></i></div>';
-if (rank === 3) rankBadge = '<div class="w-6 flex justify-center text-xl text-amber-600 drop-shadow-[0_0_6px_rgba(217,119,6,0.6)]"><i class="fas fa-medal"></i></div>';
-
-return `
-<div onclick="viewUserProfile('${sultan.user_id}'); closeLeaderboardModal();" class="flex items-center justify-between p-3 bg-black/20 border border-white/5 rounded-2xl hover:bg-white/10 transition-all cursor-pointer relative overflow-hidden">
-${rank === 1 ? '<div class="absolute inset-0 bg-gradient-to-r from-yellow-500/10 to-transparent pointer-events-none"></div>' : ''}
-<div class="flex items-center gap-3 min-w-0 flex-1 relative z-10">
-${rankBadge}
-<img src="${ava}" class="w-9 h-9 rounded-full object-cover border border-white/10 shrink-0">
-<div class="truncate">
-<h4 class="font-bold text-white text-xs truncate">@${nickname}</h4>
-<p class="text-[10px] text-yellow-500 mt-0.5 font-bold tracking-wide">Rp ${sultan.totalSpent.toLocaleString('id-ID')}</p>
-</div>
-</div>
-<div class="text-right ml-2 shrink-0 relative z-10">
-<span class="text-[10px] font-extrabold bg-gradient-to-tr from-yellow-400 to-yellow-600 text-black px-2 py-1 rounded-lg border border-yellow-300 shadow-[0_0_10px_rgba(250,204,21,0.4)]">VIP</span>
-</div>
-</div>`;
-}).join('');
-} catch(e) {
-containerSultan.innerHTML = '<p class="text-center text-xs text-red-500 py-10">Gagal menarik data Sultan.</p>';
-}
-}
-}
 
 
 
