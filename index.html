@@ -377,8 +377,9 @@ Satu pintu untuk info update terbaru, panduan pemula, jasa joki profesional, dan
                 </div>
             </div>
 
-            <h3 class="text-xs font-extrabold text-gray-500 uppercase tracking-widest mb-3">Bantuan Cepat</h3>
-            <div class="grid grid-cols-2 gap-3 mb-8">
+<h3 class="text-xs font-extrabold text-gray-500 uppercase tracking-widest mb-3">Bantuan Cepat</h3>
+<div id="bantuan-cepat-container" class="grid grid-cols-2 gap-3 mb-8">
+
                 <div onclick="customAlert('Panduan Dasar Pemula:\n\n1. Rajin selesaikan Misi Harian.\n2. Gabung komunitas/fam untuk benefit.\n3. Waspada: Transaksi akun wajib Rekber.')" class="bg-gradient-to-br from-brand-card to-[#0A0615] p-4 rounded-2xl border border-white/5 flex flex-col items-center justify-center text-center cursor-pointer active:scale-95 transition-all group hover:border-brand-purple/50 shadow-lg">
                     <div class="w-10 h-10 rounded-full bg-brand-purple/20 text-brand-purple flex items-center justify-center mb-2 group-hover:scale-110 transition-transform"><i class="fas fa-book-open"></i></div>
                     <span class="text-[10px] font-bold text-gray-300 group-hover:text-white transition-colors">Panduan Pemula</span>
@@ -1555,7 +1556,7 @@ let typingTimer; // VARIABEL TYPING INDICATOR
                 const data = await res.json();
 
                 if (data.status === 'success') {
-                    // RENDER MULTIPLE BANNER EVENT (SLIDER LUAR AUTOMATIC)
+                    // 1. RENDER MULTIPLE BANNER EVENT (SLIDER LUAR AUTOMATIC)
                     if (data.info && data.info.length > 0) {
                         let carouselHTML = `
                         <div class="relative w-full overflow-hidden rounded-[2rem] pb-8 pt-1">
@@ -1598,17 +1599,116 @@ let typingTimer; // VARIABEL TYPING INDICATOR
                                 `;
                             }
 
-                            // --- LOGIKA POTONG TEKS DESKRIPSI ---
+                            // --- LOGIKA POTONG TEKS DESKRIPSI (BISA KLIK BUKA/TUTUP) ---
                             let deskripsiTeks = evt.deskripsi || "";
-                            let isPanjang = deskripsiTeks.length > 120; // Tombol muncul jika teks lebih dari 120 karakter
+                            let isPanjang = deskripsiTeks.length > 120;
                             let deskripsiHTML = isPanjang
                                 ? `
-                                <div class="flex-1 mb-4 flex flex-col items-start">
-                                    <p id="info-desc-${idx}" class="text-[11px] text-gray-400 leading-relaxed whitespace-pre-line line-clamp-3 transition-all duration-300">${deskripsiTeks}</p>
-                                    <button onclick="document.getElementById('info-desc-${idx}').classList.remove('line-clamp-3'); this.remove();" class="text-[10px] text-brand-info font-bold mt-1.5 hover:text-white active:scale-95 transition-all">Lihat Selengkapnya...</button>
+                                <div class="flex-1 mb-4 flex flex-col items-start w-full">
+                                    <p id="info-desc-${idx}" onclick="toggleInfoDesc(${idx})" class="text-[11px] text-gray-400 leading-relaxed whitespace-pre-line line-clamp-3 transition-all duration-300 cursor-pointer w-full hover:text-gray-300" title="Klik untuk baca semua">${deskripsiTeks}</p>
+                                    <button id="info-btn-${idx}" onclick="toggleInfoDesc(${idx})" class="text-[10px] text-brand-info font-bold mt-1.5 hover:text-white active:scale-95 transition-all">Lihat Selengkapnya ▼</button>
                                 </div>
                                 `
                                 : `<p class="text-[11px] text-gray-400 mb-4 leading-relaxed whitespace-pre-line flex-1">${deskripsiTeks}</p>`;
+
+                            return `
+                            <div class="w-[calc(100%-24px)] flex-shrink-0 snap-center bg-gradient-to-b from-[#1A1133] to-[#0F0920] rounded-[2rem] p-1.5 border border-white/10 shadow-[0_10px_30px_rgba(0,0,0,0.5)] smooth-reveal h-auto flex flex-col" style="animation-delay: ${idx * 0.1}s">
+                                ${gambarSliderHTML}
+                                <div class="px-4 pb-4 flex flex-col flex-1 ${arrGambar.length === 0 || !arrGambar[0] ? 'pt-4' : ''}">
+                                    <h3 class="font-extrabold text-white text-base mb-1.5 leading-snug">${evt.judul || "Pengumuman"}</h3>
+                                    
+                                    ${deskripsiHTML}
+                                    
+                                    ${evt.link_facebook ? `
+                                    <a href="${evt.link_facebook}" target="_blank" class="flex justify-center items-center w-full bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold py-3.5 rounded-xl active:scale-95 transition-all text-xs shadow-inner mt-auto">
+                                        <i class="fas fa-external-link-alt mr-2 text-brand-info"></i> Baca Selengkapnya
+                                    </a>
+                                    ` : ''}
+                                </div>
+                            </div>
+                            `;
+                        }).join('');
+
+                        carouselHTML += `
+                            </div>
+                            <div id="info-carousel-dots" class="absolute bottom-0 left-1/2 -translate-x-1/2 flex space-x-1.5 z-10 pointer-events-none mt-4">
+                                ${data.info.map((_, i) => `<div class="info-dot-indicator h-1.5 rounded-full transition-all duration-300 ${i === 0 ? 'w-4 bg-brand-accent' : 'w-1.5 bg-white/40'}"></div>`).join('')}
+                            </div>
+                        </div>
+                        `;
+                        eventContainer.innerHTML = carouselHTML;
+                    } else {
+                        eventContainer.innerHTML = '<div class="text-center py-8 text-xs text-gray-500 bg-brand-card rounded-3xl border border-white/5"><i class="fas fa-box-open text-3xl mb-2 opacity-50"></i><br>Belum ada pengumuman terbaru.</div>';
+                    }
+
+                    // 2. RENDER FAQ
+                    if (data.faq && data.faq.length > 0) {
+                        globalFaqData = data.faq.map(f => ({ t: f.pertanyaan, j: f.jawaban }));
+                        renderFaqs(globalFaqData);
+                    } else {
+                        faqContainer.innerHTML = '<div class="text-center py-6 text-xs text-gray-500 bg-brand-card rounded-2xl border border-white/5">FAQ kosong.</div>';
+                    }
+
+                    // 3. RENDER BANTUAN CEPAT (DINAMIS DARI SPREADSHEET)
+                    if (data.bantuan && data.bantuan.length > 0) {
+                        const bantuanContainer = document.getElementById('bantuan-cepat-container');
+                        let htmlBantuan = '';
+                        
+                        data.bantuan.forEach(item => {
+                            let judul = item.Judul || item.judul || 'Bantuan';
+                            let ikon = item.Ikon || item.ikon || 'fa-info-circle';
+                            let warna = item.Warna || item.warna || 'brand-info'; 
+                            let tipeAksi = (item.TipeAksi || item.tipe_aksi || '').toLowerCase();
+                            let targetAksi = item.TargetAksi || item.target_aksi || '';
+                            
+                            let aksiKode = '';
+                            if (tipeAksi === 'alert' || tipeAksi === 'popup') {
+                                // Ubah enter (baris baru) dari spreadsheet agar tidak merusak script
+                                let safeTarget = targetAksi.replace(/'/g, "\\'").replace(/\n/g, "\\n");
+                                aksiKode = `customAlert('${safeTarget}')`;
+                            } else if (tipeAksi === 'tab') {
+                                aksiKode = `switchTab('${targetAksi}')`;
+                            } else if (tipeAksi === 'link') {
+                                aksiKode = `window.open('${targetAksi}', '_blank')`;
+                            }
+
+                            htmlBantuan += `
+                            <div onclick="${aksiKode}" class="bg-gradient-to-br from-brand-card to-[#0A0615] p-4 rounded-2xl border border-white/5 flex flex-col items-center justify-center text-center cursor-pointer active:scale-95 transition-all group hover:border-${warna}/50 shadow-lg">
+                                <div class="w-10 h-10 rounded-full bg-${warna}/20 text-${warna} flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+                                    <i class="fas ${ikon}"></i>
+                                </div>
+                                <span class="text-[10px] font-bold text-gray-300 group-hover:text-white transition-colors">${judul}</span>
+                            </div>`;
+                        });
+                        
+                        if (bantuanContainer) bantuanContainer.innerHTML = htmlBantuan;
+                    }
+
+                    isInfoLoaded = true;
+                    if(forceRefresh) showToast("Info berhasil diperbarui!", "success");
+                } else {
+                    throw new Error("Gagal ngambil data Info dari Sheets");
+                }
+            } catch (e) {
+                console.log(e);
+                eventContainer.innerHTML = '<div class="text-center py-6 text-xs text-red-500 bg-brand-card rounded-2xl border border-red-500/20">Gagal memuat info server.</div>';
+                faqContainer.innerHTML = '<div class="text-center py-6 text-xs text-red-500 bg-brand-card rounded-2xl border border-red-500/20">Gagal memuat FAQ.</div>';
+            }
+        }
+
+
+// --- LOGIKA POTONG TEKS DESKRIPSI ---
+let deskripsiTeks = evt.deskripsi || "";
+let isPanjang = deskripsiTeks.length > 120; // Tombol muncul jika teks lebih dari 120 karakter
+let deskripsiHTML = isPanjang
+    ? `
+    <div class="flex-1 mb-4 flex flex-col items-start w-full">
+        <p id="info-desc-${idx}" onclick="toggleInfoDesc(${idx})" class="text-[11px] text-gray-400 leading-relaxed whitespace-pre-line line-clamp-3 transition-all duration-300 cursor-pointer w-full hover:text-gray-300" title="Klik untuk baca semua">${deskripsiTeks}</p>
+        <button id="info-btn-${idx}" onclick="toggleInfoDesc(${idx})" class="text-[10px] text-brand-info font-bold mt-1.5 hover:text-white active:scale-95 transition-all">Lihat Selengkapnya ▼</button>
+    </div>
+    `
+    : `<p class="text-[11px] text-gray-400 mb-4 leading-relaxed whitespace-pre-line flex-1">${deskripsiTeks}</p>`;
+
 
                             return `
                             <div class="w-[calc(100%-24px)] flex-shrink-0 snap-center bg-gradient-to-b from-[#1A1133] to-[#0F0920] rounded-[2rem] p-1.5 border border-white/10 shadow-[0_10px_30px_rgba(0,0,0,0.5)] smooth-reveal h-auto flex flex-col" style="animation-delay: ${idx * 0.1}s">
@@ -1707,16 +1807,50 @@ let typingTimer; // VARIABEL TYPING INDICATOR
         
 
 
-        function formatCaption(text) {
-        if(!text) return '';
-        return text
+// FORMAT TEKS (Otomatis deteksi @Mention dan #Hashtag)
+function formatCaption(text) {
+    if(!text) return '';
+    let formatted = text
         .replace(/&/g, "&amp;")
         .replace(/</g, "&lt;")
         .replace(/>/g, "&gt;")
         .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#39;")
-        .replace(/\n/g, "<br>");
+        .replace(/'/g, "&#39;");
+
+    // 1. Deteksi Hashtag (#tagar) - Warna Biru
+    formatted = formatted.replace(/#(\w+)/g, '<span onclick="event.stopPropagation(); showToast(\'Fitur pencarian tagar #$1 sedang dikembangkan\', \'info\')" class="font-bold text-brand-info hover:underline cursor-pointer">#$1</span>');
+
+    // 2. Deteksi Mention (@username) - Warna Pink/Accent
+    formatted = formatted.replace(/@(\w+)/g, '<span onclick="event.stopPropagation(); viewUserProfileByNickname(\'$1\')" class="font-bold text-brand-accent hover:underline cursor-pointer">@$1</span>');
+
+    // 3. Deteksi Enter (Baris baru)
+    formatted = formatted.replace(/\n/g, "<br>");
+    
+    return formatted;
+}
+
+// FUNGSI KLIK MENTION: Mencari User ID berdasarkan Nickname
+async function viewUserProfileByNickname(nickname) {
+    showToast("Mencari pengguna...", "info");
+    
+    try {
+        // Cari di database Supabase yang nicknamenya mirip (ilike = tidak peduli huruf besar/kecil)
+        const { data, error } = await supabaseClient
+            .from('profiles')
+            .select('id')
+            .ilike('nickname', nickname)
+            .single();
+            
+        if (data && data.id) {
+            // Jika ketemu, buka profilnya
+            viewUserProfile(data.id);
+        } else {
+            showToast(`Pengguna @${nickname} tidak ditemukan.`, "error");
         }
+    } catch (err) {
+        showToast(`Pengguna @${nickname} tidak ditemukan.`, "error");
+    }
+}
 
 
 
@@ -7904,6 +8038,25 @@ async function loadDataRekber(forceRefresh = false) {
     }
 }
 
+// Fitur Buka/Tutup Deskripsi di Pusat Informasi
+function toggleInfoDesc(idx) {
+    const desc = document.getElementById(`info-desc-${idx}`);
+    const btn = document.getElementById(`info-btn-${idx}`);
+    
+    if (desc) {
+        if (desc.classList.contains('line-clamp-3')) {
+            // Jika sedang tertutup -> Buka
+            desc.classList.remove('line-clamp-3');
+            if (btn) btn.innerHTML = 'Tutup Selengkapnya ▲';
+        } else {
+            // Jika sedang terbuka -> Tutup
+            desc.classList.add('line-clamp-3');
+            if (btn) btn.innerHTML = 'Lihat Selengkapnya ▼';
+        }
+    }
+}
+
+
 
 
 
@@ -7972,10 +8125,12 @@ async function loadDataRekber(forceRefresh = false) {
                 </div>
             </div>
 
-            <div>
-                <h4 class="text-xs font-extrabold text-gray-300 uppercase tracking-widest mb-2">Deskripsi Produk</h4>
-                <p class="text-xs text-gray-400 leading-relaxed whitespace-pre-line" id="detail-product-desc">Detail deskripsi...</p>
-            </div>
+<div>
+    <h4 class="text-xs font-extrabold text-gray-300 uppercase tracking-widest mb-2">Deskripsi Produk</h4>
+    <p class="text-xs text-gray-400 leading-relaxed whitespace-pre-line line-clamp-4 cursor-pointer transition-all duration-300" id="detail-product-desc" onclick="this.classList.toggle('line-clamp-4'); const btn = document.getElementById('btn-toggle-desc'); btn.innerHTML = this.classList.contains('line-clamp-4') ? 'Lihat Selengkapnya ▼' : 'Tutup Selengkapnya ▲';">Detail deskripsi...</p>
+    <button id="btn-toggle-desc" onclick="document.getElementById('detail-product-desc').click()" class="text-[10px] text-brand-info font-bold mt-1.5 hover:text-white active:scale-95 transition-all">Lihat Selengkapnya ▼</button>
+</div>
+
         </div>
     </div>
 
