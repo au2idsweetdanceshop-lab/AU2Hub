@@ -8009,6 +8009,40 @@ function toggleInfoDesc(idx) {
 }
 
 
+// --- JURUS SWIPE LEADERBOARD ---
+let lbTouchStartX = 0;
+const lbModal = document.getElementById('modal-leaderboard');
+
+lbModal.addEventListener('touchstart', e => {
+    lbTouchStartX = e.changedTouches[0].screenX;
+}, {passive: true});
+
+lbModal.addEventListener('touchend', e => {
+    let touchEndX = e.changedTouches[0].screenX;
+    let diff = lbTouchStartX - touchEndX;
+    
+    // Minimal geser 50 pixel biar gak kepencet pas lagi scroll pelan
+    if (Math.abs(diff) > 50) { 
+        const tabs = ['creator', 'level', 'sultan'];
+        let currentTab = '';
+        
+        // Cek tab mana yang lagi aktif
+        if (!document.getElementById('leaderboard-container-creator').classList.contains('hidden')) currentTab = 'creator';
+        else if (!document.getElementById('leaderboard-container-level').classList.contains('hidden')) currentTab = 'level';
+        else currentTab = 'sultan';
+
+        let currentIndex = tabs.indexOf(currentTab);
+        
+        if (diff > 0) { 
+            // Swipe ke KIRI (Geser layar ke kiri) = Pindah ke TAB BERIKUTNYA
+            if (currentIndex < 2) switchLeaderboardTab(tabs[currentIndex + 1]);
+        } else { 
+            // Swipe ke KANAN (Geser layar ke kanan) = Pindah ke TAB SEBELUMNYA
+            if (currentIndex > 0) switchLeaderboardTab(tabs[currentIndex - 1]);
+        }
+    }
+}, {passive: true});
+
 
 
 
