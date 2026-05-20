@@ -1571,57 +1571,65 @@ let typingTimer; // VARIABEL TYPING INDICATOR
             }
 
             try {
-                // Tarik link Google Apps Script lu
                 const configRes = await fetch('/api/get-config');
                 const config = await configRes.json();
                 if (!config.gasUrl) throw new Error("Link GAS tidak ditemukan");
 
-                // Panggil data dari Sheets lu
                 const res = await fetch(`${config.gasUrl}?action=get_info`);
                 const data = await res.json();
 
                 if (data.status === 'success') {
-                    // 1. RENDER BANNER EVENT (SLIDER / CAROUSEL MODE)
+                    // RENDER MULTIPLE BANNER EVENT (SLIDER LUAR AUTOMATIC)
                     if (data.info && data.info.length > 0) {
                         let carouselHTML = `
                         <div class="relative w-full overflow-hidden rounded-[2rem] pb-8 pt-1">
                             <div id="info-image-carousel" onscroll="updateInfoCarouselDots()" class="flex overflow-x-auto hide-scroll snap-x snap-mandatory gap-4 relative px-1 items-stretch">
                         `;
 
-                        carouselHTML += data.info.map((evt, idx) => `
-                            <div class="w-full flex-shrink-0 snap-center bg-gradient-to-b from-[#1A1133] to-[#0F0920] rounded-[2rem] p-1.5 border border-white/10 shadow-[0_10px_30px_rgba(0,0,0,0.5)] smooth-reveal h-auto flex flex-col" style="animation-delay: ${idx * 0.1}s">
-                                
-                                ${evt.link_gambar && evt.link_gambar.length > 0 && evt.link_gambar[0] !== "" ? `
+                        carouselHTML += data.info.map((evt, idx) => {
+                            // AMAN KAN DATA GAMBAR MULTIPLE DARI GOOGLE SHEETS
+                            let rawGambar = evt.link_gambar || evt.gambar || "";
+                            let arrGambar = [];
+                            
+                            if (typeof rawGambar === 'string' && rawGambar.trim() !== "") {
+                                // Pecah string berdasarkan koma atau enter jika user memasukkan banyak link
+                                arrGambar = rawGambar.split(/[\n,]+/).map(url => url.trim()).filter(url => url !== "");
+                            } else if (Array.isArray(rawGambar)) {
+                                arrGambar = rawGambar.filter(url => url && url.trim() !== "");
+                            }
+
+                            // GENERATE SLIDER DALAM (SLIDER GAMBAR) JIKA ADA > 0 GAMBAR
+                            let gambarSliderHTML = '';
+                            if (arrGambar.length > 0) {
+                                gambarSliderHTML = `
                                 <div class="relative w-full h-44 rounded-t-[1.7rem] rounded-b-xl overflow-hidden mb-3 shrink-0">
-                                    
                                     <div onscroll="updateInnerDots(this)" class="flex overflow-x-auto hide-scroll snap-x snap-mandatory w-full h-full relative">
-                                        ${evt.link_gambar.map(urlGambar => urlGambar.trim() !== "" ? `
+                                        ${arrGambar.map(urlGambar => `
                                             <div class="w-full h-full flex-shrink-0 snap-center relative">
-                                                <img src="${urlGambar.trim()}" alt="Event" class="w-full h-full object-cover animate-pulse" onload="this.classList.remove('animate-pulse')" onerror="this.src='https://placehold.co/400x400/1a1133/ff007a?text=IMAGE+ERROR'">
+                                                <img src="${urlGambar}" alt="Event" class="w-full h-full object-cover">
                                                 <div class="absolute inset-0 bg-gradient-to-t from-brand-dark/90 via-transparent to-transparent pointer-events-none opacity-80"></div>
                                             </div>
-                                        ` : '').join('')}
-                                    </div>
-                                    
-                                    <div class="absolute top-3 right-3 bg-black/60 backdrop-blur-md border border-white/20 text-white text-[9px] font-extrabold px-2.5 py-1 rounded-full uppercase tracking-wider flex items-center gap-1 z-10 pointer-events-none">
-                                        <i class="fas fa-bell text-brand-accent animate-pulse"></i> INFO
+                                        `).join('')}
                                     </div>
 
-                                    ${evt.link_gambar.length > 1 ? `
+                                    ${arrGambar.length > 1 ? `
                                     <div class="inner-dots-container absolute bottom-3 left-1/2 -translate-x-1/2 flex space-x-1.5 z-10 pointer-events-none">
-                                        ${evt.link_gambar.map((_, dotIdx) => `
+                                        ${arrGambar.map((_, dotIdx) => `
                                             <div class="inner-dot h-1.5 rounded-full transition-all duration-300 ${dotIdx === 0 ? 'w-4 bg-brand-accent' : 'w-1.5 bg-white/40'}"></div>
                                         `).join('')}
                                     </div>
                                     ` : ''}
-
                                 </div>
-                                ` : ''}
+                                `;
+                            }
 
-
-                                <div class="px-4 pb-4 flex flex-col flex-1 ${!evt.link_gambar || evt.link_gambar[0] === "" ? 'pt-4' : ''}">
-                                    <h3 class="font-extrabold text-white text-base mb-1.5 leading-snug">${evt.judul}</h3>
-                                    <p class="text-[11px] text-gray-400 mb-4 leading-relaxed whitespace-pre-line flex-1">${evt.deskripsi}</p>
+                            // RETURN KARTU INFORMASI UTAMA (Lebar diset w-[calc(100%-24px)] agar kartu kedua mengintip)
+                            return `
+                            <div class="w-[calc(100%-24px)] flex-shrink-0 snap-center bg-gradient-to-b from-[#1A1133] to-[#0F0920] rounded-[2rem] p-1.5 border border-white/10 shadow-[0_10px_30px_rgba(0,0,0,0.5)] smooth-reveal h-auto flex flex-col" style="animation-delay: ${idx * 0.1}s">
+                                ${gambarSliderHTML}
+                                <div class="px-4 pb-4 flex flex-col flex-1 ${arrGambar.length === 0 || !arrGambar[0] ? 'pt-4' : ''}">
+                                    <h3 class="font-extrabold text-white text-base mb-1.5 leading-snug">${evt.judul || "Pengumuman"}</h3>
+                                    <p class="text-[11px] text-gray-400 mb-4 leading-relaxed whitespace-pre-line flex-1">${evt.deskripsi || ""}</p>
                                     ${evt.link_facebook ? `
                                     <a href="${evt.link_facebook}" target="_blank" class="flex justify-center items-center w-full bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold py-3.5 rounded-xl active:scale-95 transition-all text-xs shadow-inner mt-auto">
                                         <i class="fas fa-external-link-alt mr-2 text-brand-info"></i> Baca Selengkapnya
@@ -1629,7 +1637,8 @@ let typingTimer; // VARIABEL TYPING INDICATOR
                                     ` : ''}
                                 </div>
                             </div>
-                        `).join('');
+                            `;
+                        }).join('');
 
                         carouselHTML += `
                             </div>
@@ -1663,19 +1672,49 @@ let typingTimer; // VARIABEL TYPING INDICATOR
             }
         }
 
+
         function updateInfoCarouselDots() {
             const carousel = document.getElementById('info-image-carousel'); 
             const dots = document.querySelectorAll('.info-dot-indicator');
             if (!carousel || dots.length === 0) return; 
-            const maxScroll = carousel.scrollWidth - carousel.clientWidth; 
-            if (maxScroll <= 0) return;
-            let activeIndex = Math.round((carousel.scrollLeft / maxScroll) * (dots.length - 1)); 
+            
+            // Dapatkan index aktif berdasarkan jarak scroll dibagi lebar 1 kartu info
+            const scrollLeft = carousel.scrollLeft;
+            const cardWidth = carousel.firstElementChild ? carousel.firstElementChild.clientWidth : carousel.clientWidth;
+            let activeIndex = Math.round(scrollLeft / (cardWidth + 16)); // 16 adalah ukuran gap CSS
+            
             activeIndex = Math.max(0, Math.min(activeIndex, dots.length - 1));
             dots.forEach((dot, index) => { 
                 if (index === activeIndex) { dot.className = "info-dot-indicator h-1.5 rounded-full transition-all duration-300 w-4 bg-brand-accent"; } 
                 else { dot.className = "info-dot-indicator h-1.5 rounded-full transition-all duration-300 w-1.5 bg-white/40"; } 
             });
         }
+        
+        function updateInnerDots(container) {
+            // Amankan pencarian elemen container dots internal
+            const parentCard = container.closest('.relative.w-full.h-44');
+            if (!parentCard) return;
+            const dotsWrapper = parentCard.querySelector('.inner-dots-container');
+            if (!dotsWrapper) return;
+            
+            const dots = dotsWrapper.querySelectorAll('.inner-dot');
+            if (dots.length === 0) return;
+            
+            const scrollLeft = container.scrollLeft;
+            const imgWidth = container.clientWidth;
+            let activeIndex = Math.round(scrollLeft / imgWidth); 
+            
+            activeIndex = Math.max(0, Math.min(activeIndex, dots.length - 1));
+            
+            dots.forEach((dot, index) => { 
+                if (index === activeIndex) { 
+                    dot.className = "inner-dot h-1.5 rounded-full transition-all duration-300 w-4 bg-brand-accent"; 
+                } else { 
+                    dot.className = "inner-dot h-1.5 rounded-full transition-all duration-300 w-1.5 bg-white/40"; 
+                } 
+            });
+        }
+
         
         function updateInnerDots(container) {
             // Kita harus naik SATU TINGKAT lagi untuk bisa menemukan inner-dots-container
@@ -7807,19 +7846,6 @@ showToast("Gagal memperbarui foto grup.", "error");
 }
 
 
-        function updateInfoCarouselDots() {
-            const carousel = document.getElementById('info-image-carousel'); 
-            const dots = document.querySelectorAll('.info-dot-indicator');
-            if (!carousel || dots.length === 0) return; 
-            const maxScroll = carousel.scrollWidth - carousel.clientWidth; 
-            if (maxScroll <= 0) return;
-            let activeIndex = Math.round((carousel.scrollLeft / maxScroll) * (dots.length - 1)); 
-            activeIndex = Math.max(0, Math.min(activeIndex, dots.length - 1));
-            dots.forEach((dot, index) => { 
-                if (index === activeIndex) { dot.className = "info-dot-indicator h-1.5 rounded-full transition-all duration-300 w-4 bg-brand-accent"; } 
-                else { dot.className = "info-dot-indicator h-1.5 rounded-full transition-all duration-300 w-1.5 bg-white/40"; } 
-            });
-        }
         
         function getBadgeByVideoCount(count) {
     return getBadgeByLevelAndVideos(0, count);
