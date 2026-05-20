@@ -1207,8 +1207,6 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
         </button>
     </div>
 
-        </div>
-    </div>
 </div>
 <div id="modal-event" class="fixed inset-0 z-[60] hidden items-center justify-center bg-black/80 backdrop-blur-sm px-4">
 <div class="absolute inset-0" onclick="closeModalEvent()"></div>
@@ -1697,70 +1695,6 @@ let typingTimer; // VARIABEL TYPING INDICATOR
         }
 
 
-// --- LOGIKA POTONG TEKS DESKRIPSI ---
-let deskripsiTeks = evt.deskripsi || "";
-let isPanjang = deskripsiTeks.length > 120; // Tombol muncul jika teks lebih dari 120 karakter
-let deskripsiHTML = isPanjang
-    ? `
-    <div class="flex-1 mb-4 flex flex-col items-start w-full">
-        <p id="info-desc-${idx}" onclick="toggleInfoDesc(${idx})" class="text-[11px] text-gray-400 leading-relaxed whitespace-pre-line line-clamp-3 transition-all duration-300 cursor-pointer w-full hover:text-gray-300" title="Klik untuk baca semua">${deskripsiTeks}</p>
-        <button id="info-btn-${idx}" onclick="toggleInfoDesc(${idx})" class="text-[10px] text-brand-info font-bold mt-1.5 hover:text-white active:scale-95 transition-all">Lihat Selengkapnya ▼</button>
-    </div>
-    `
-    : `<p class="text-[11px] text-gray-400 mb-4 leading-relaxed whitespace-pre-line flex-1">${deskripsiTeks}</p>`;
-
-
-                            return `
-                            <div class="w-[calc(100%-24px)] flex-shrink-0 snap-center bg-gradient-to-b from-[#1A1133] to-[#0F0920] rounded-[2rem] p-1.5 border border-white/10 shadow-[0_10px_30px_rgba(0,0,0,0.5)] smooth-reveal h-auto flex flex-col" style="animation-delay: ${idx * 0.1}s">
-                                ${gambarSliderHTML}
-                                <div class="px-4 pb-4 flex flex-col flex-1 ${arrGambar.length === 0 || !arrGambar[0] ? 'pt-4' : ''}">
-                                    <h3 class="font-extrabold text-white text-base mb-1.5 leading-snug">${evt.judul || "Pengumuman"}</h3>
-                                    
-                                    ${deskripsiHTML}
-                                    
-                                    ${evt.link_facebook ? `
-                                    <a href="${evt.link_facebook}" target="_blank" class="flex justify-center items-center w-full bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold py-3.5 rounded-xl active:scale-95 transition-all text-xs shadow-inner mt-auto">
-                                        <i class="fas fa-external-link-alt mr-2 text-brand-info"></i> Baca Selengkapnya
-                                    </a>
-                                    ` : ''}
-                                </div>
-                            </div>
-                            `;
-                        }).join('');
-
-                        carouselHTML += `
-                            </div>
-                            <div id="info-carousel-dots" class="absolute bottom-0 left-1/2 -translate-x-1/2 flex space-x-1.5 z-10 pointer-events-none mt-4">
-                                ${data.info.map((_, i) => `<div class="info-dot-indicator h-1.5 rounded-full transition-all duration-300 ${i === 0 ? 'w-4 bg-brand-accent' : 'w-1.5 bg-white/40'}"></div>`).join('')}
-                            </div>
-                        </div>
-                        `;
-                        eventContainer.innerHTML = carouselHTML;
-                    } else {
-                        eventContainer.innerHTML = '<div class="text-center py-8 text-xs text-gray-500 bg-brand-card rounded-3xl border border-white/5"><i class="fas fa-box-open text-3xl mb-2 opacity-50"></i><br>Belum ada pengumuman terbaru.</div>';
-                    }
-
-                    // 2. RENDER FAQ
-                    if (data.faq && data.faq.length > 0) {
-                        globalFaqData = data.faq.map(f => ({ t: f.pertanyaan, j: f.jawaban }));
-                        renderFaqs(globalFaqData);
-                    } else {
-                        faqContainer.innerHTML = '<div class="text-center py-6 text-xs text-gray-500 bg-brand-card rounded-2xl border border-white/5">FAQ kosong.</div>';
-                    }
-
-                    isInfoLoaded = true;
-                    if(forceRefresh) showToast("Info berhasil diperbarui!", "success");
-                } else {
-                    throw new Error("Gagal ngambil data Info dari Sheets");
-                }
-            } catch (e) {
-                console.log(e);
-                eventContainer.innerHTML = '<div class="text-center py-6 text-xs text-red-500 bg-brand-card rounded-2xl border border-red-500/20">Gagal memuat info server.</div>';
-                faqContainer.innerHTML = '<div class="text-center py-6 text-xs text-red-500 bg-brand-card rounded-2xl border border-red-500/20">Gagal memuat FAQ.</div>';
-            }
-        }
-
-
 
         function updateInfoCarouselDots() {
             const carousel = document.getElementById('info-image-carousel'); 
@@ -1828,7 +1762,6 @@ function formatCaption(text) {
     
     return formatted;
 }
-
 
 // FUNGSI KLIK MENTION: Mencari User ID berdasarkan Nickname
 async function viewUserProfileByNickname(nickname) {
