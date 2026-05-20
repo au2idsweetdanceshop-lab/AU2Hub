@@ -1829,6 +1829,7 @@ function formatCaption(text) {
     return formatted;
 }
 
+
 // FUNGSI KLIK MENTION: Mencari User ID berdasarkan Nickname
 async function viewUserProfileByNickname(nickname) {
     showToast("Mencari pengguna...", "info");
@@ -7736,7 +7737,7 @@ async function switchLeaderboardTab(tab) {
                 if (rank === 3) rankBadge = '<div class="w-6 flex justify-center text-xl text-amber-600"><i class="fas fa-medal"></i></div>';
 
                 return `
-                <div onclick="viewUserProfile('${sTemplate}'); closeLeaderboardModal();" class="flex items-center justify-between p-3 bg-black/20 border border-white/5 rounded-2xl hover:bg-white/10 transition-all cursor-pointer relative overflow-hidden">
+                <div onclick="viewUserProfile('${sultan.user_id}'); closeLeaderboardModal();" class="flex items-center justify-between p-3 bg-black/20 border border-white/5 rounded-2xl hover:bg-white/10 transition-all cursor-pointer relative overflow-hidden">
                     <div class="flex items-center gap-3 min-w-0 flex-1 relative z-10">
                         ${rankBadge}
                         <img src="${ava}" class="w-9 h-9 rounded-full object-cover border border-white/10 shrink-0">
