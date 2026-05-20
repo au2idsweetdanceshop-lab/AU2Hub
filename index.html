@@ -1942,25 +1942,47 @@ function hitungStatusLevel(totalExp) {
 async function tambahExp(jumlah) {
     if (!currentUser || !userProfile) return;
     
-    // Hitung level sebelum ditambah
+    // 1. Hitung EXP & Level baru
     const expLama = userProfile.exp || 0;
     const levelLama = hitungStatusLevel(expLama).level;
-    
-    // Hitung exp & level baru
     const expBaru = expLama + jumlah;
-    const levelBaru = hitungStatusLevel(expBaru).level;
+    const statusLevel = hitungStatusLevel(expBaru);
+    const levelBaru = statusLevel.level;
     
-    // Update data lokal
+    // 2. Update data lokal agar data di web tetap sinkron
     userProfile.exp = expBaru;
 
     try {
-        // Tembak pembaruan ke Database
-        await supabaseClient.from('profiles').update({ exp: expBaru }).eq('id', currentUser.id);
+        // 3. Tembak ke Database Supabase
+        const { error } = await supabaseClient.from('profiles').update({ exp: expBaru }).eq('id', currentUser.id);
+        if (error) throw error;
         
-        // Munculkan notifikasi jika Naik Level!
+        // 4. Update UI secara INSTAN (Tanpa Refresh)
+        // Cek dulu apakah user lagi buka halaman profil sendiri
+        const profilePage = document.getElementById('profile');
+        if (profilePage && profilePage.classList.contains('active') && viewedUserId === currentUser.id) {
+            const elBadge = document.getElementById('profile-level-badge');
+            const elExpCur = document.getElementById('text-exp-current');
+            const elExpTar = document.getElementById('text-exp-target');
+            const elBar = document.getElementById('bar-exp-progress');
+
+            if (elBadge) elBadge.innerText = `Lv. ${levelBaru}`;
+            if (elExpCur) elExpCur.innerText = `EXP: ${expBaru}`;
+            if (elExpTar) elExpTar.innerText = `Next: ${statusLevel.targetNextLevel}`;
+            if (elBar) elBar.style.width = `${statusLevel.persentase}%`;
+        }
+
+        // 5. Munculkan notifikasi level up
         if (levelBaru > levelLama) {
             showToast(`🎉 SELAMAT! Anda naik ke Level ${levelBaru}!`, "success");
         }
+
+    } catch (e) {
+        console.error("Gagal auto-update EXP:", e);
+        showToast("Gagal simpan progress.", "error");
+    }
+}
+
 
         // Update animasi bar langsung jika pengguna sedang membuka layar profilnya sendiri
         if (document.getElementById('profile').classList.contains('active') && viewedUserId === currentUser.id) {
@@ -2722,7 +2744,14 @@ const userVideos = allVideosData.filter(v => v.user_id === userId);
 const statusLevel = hitungStatusLevel(data?.exp || 0).level;
 const badgeHTML = getBadgeByLevelAndVideos(statusLevel, userVideos.length);
 const elNick2 = document.getElementById('profile-nickname');
-if(elNick2) elNick2.innerHTML = "@" + (data?.nickname || "Player") + badgeHTML;
+// hitung level berdasarkan EXP user yang sedang dibuka (data.exp)
+const statusLevel = hitungStatusLevel(data?.exp || 0).level;
+// hitung jumlah video user yang sedang dibuka
+const jumlahVideo = allVideosData.filter(v => v.user_id === userId).length;
+// pakai fungsi level untuk badge di profil
+const badgeProfil = getBadgeByLevelAndVideos(statusLevel, jumlahVideo);
+
+if(elNick2) elNick2.innerHTML = "@" + (data?.nickname || "Player") + badgeProfil;
 
 const elLikes = document.getElementById('profile-total-likes');
 if (elLikes) elLikes.innerText = (userVideos.length * 3);
@@ -3651,18 +3680,10 @@ if (vid.readyState >= 3) onVideoReady(); else { vid.addEventListener('canplay', 
 
 // Fungsi Helper untuk memunculkan Badge Kasta di Feed & Leaderboard
 function getBadgeByVideoCount(count) {
-    if (count >= 100) {
-        return `<span class="inline-flex items-center gap-1 bg-gradient-to-r from-yellow-400 via-orange-500 to-yellow-600 text-black px-1.5 py-px rounded text-[8px] font-extrabold ml-1.5 shadow-[0_0_12px_rgba(250,204,21,1)] tracking-widest uppercase border border-yellow-300"><i class="fas fa-crown"></i> LEGEND</span>`;
-    }
-    if (count >= 50) {
-        return '<span class="inline-flex items-center gap-1 bg-gradient-to-r from-brand-accent to-[#ff758c] text-white px-1.5 py-px rounded text-[8px] font-extrabold ml-1.5 shadow-[0_0_10px_rgba(255,0,122,0.8)] tracking-widest uppercase border border-brand-accent"><i class="fas fa-fire"></i> MASTER</span>';
-    }
-    if (count >= 25) {
-        return '<span class="inline-flex items-center gap-1 bg-gradient-to-r from-brand-purple to-[#c471ed] text-white px-1.5 py-px rounded text-[8px] font-extrabold ml-1.5 shadow-[0_0_10px_rgba(138,43,226,0.8)] tracking-widest uppercase border border-brand-purple"><i class="fas fa-star"></i> ELITE</span>';
-    }
-    if (count >= 10) {
-        return '<span class="inline-flex items-center gap-1 bg-gradient-to-r from-brand-info to-[#89f7fe] text-brand-dark px-1.5 py-px rounded text-[8px] font-extrabold ml-1.5 shadow-[0_0_10px_rgba(0,240,255,0.8)] tracking-widest uppercase border border-brand-info"><i class="fas fa-check-circle"></i> VERIFIED</span>';
-    }
+    if (count >= 100) return `<span class="inline-flex items-center gap-1 bg-gradient-to-r from-yellow-400 via-orange-500 to-yellow-600 text-black px-1.5 py-px rounded text-[8px] font-extrabold ml-1.5 shadow-[0_0_12px_rgba(250,204,21,1)] tracking-widest uppercase border border-yellow-300"><i class="fas fa-crown"></i> LEGEND</span>`;
+    if (count >= 50) return '<span class="inline-flex items-center gap-1 bg-gradient-to-r from-brand-accent to-[#ff758c] text-white px-1.5 py-px rounded text-[8px] font-extrabold ml-1.5 shadow-[0_0_10px_rgba(255,0,122,0.8)] tracking-widest uppercase border border-brand-accent"><i class="fas fa-fire"></i> MASTER</span>';
+    if (count >= 25) return '<span class="inline-flex items-center gap-1 bg-gradient-to-r from-brand-purple to-[#c471ed] text-white px-1.5 py-px rounded text-[8px] font-extrabold ml-1.5 shadow-[0_0_10px_rgba(138,43,226,0.8)] tracking-widest uppercase border border-brand-purple"><i class="fas fa-star"></i> ELITE</span>';
+    if (count >= 10) return '<span class="inline-flex items-center gap-1 bg-gradient-to-r from-brand-info to-[#89f7fe] text-brand-dark px-1.5 py-px rounded text-[8px] font-extrabold ml-1.5 shadow-[0_0_10px_rgba(0,240,255,0.8)] tracking-widest uppercase border border-brand-info"><i class="fas fa-check-circle"></i> VERIFIED</span>';
     return '';
 }
 
