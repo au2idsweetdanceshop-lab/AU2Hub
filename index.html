@@ -1627,10 +1627,26 @@ let typingTimer; // VARIABEL TYPING INDICATOR
                             return `
                             <div class="w-[calc(100%-24px)] flex-shrink-0 snap-center bg-gradient-to-b from-[#1A1133] to-[#0F0920] rounded-[2rem] p-1.5 border border-white/10 shadow-[0_10px_30px_rgba(0,0,0,0.5)] smooth-reveal h-auto flex flex-col" style="animation-delay: ${idx * 0.1}s">
                                 ${gambarSliderHTML}
-                                <div class="px-4 pb-4 flex flex-col flex-1 ${arrGambar.length === 0 || !arrGambar[0] ? 'pt-4' : ''}">
-                                    <h3 class="font-extrabold text-white text-base mb-1.5 leading-snug">${evt.judul || "Pengumuman"}</h3>
-                                    <p class="text-[11px] text-gray-400 mb-4 leading-relaxed whitespace-pre-line flex-1">${evt.deskripsi || ""}</p>
-                                    ${evt.link_facebook ? `
+// --- LOGIKA POTONG TEKS DESKRIPSI ---
+let deskripsiTeks = evt.deskripsi || "";
+let isPanjang = deskripsiTeks.length > 120; // Tombol muncul jika teks lebih dari 120 karakter
+let deskripsiHTML = isPanjang
+    ? `
+    <div class="flex-1 mb-4 flex flex-col items-start">
+        <p id="info-desc-${idx}" class="text-[11px] text-gray-400 leading-relaxed whitespace-pre-line line-clamp-3 transition-all duration-300">${deskripsiTeks}</p>
+        <button onclick="document.getElementById('info-desc-${idx}').classList.remove('line-clamp-3'); this.remove();" class="text-[10px] text-brand-info font-bold mt-1.5 hover:text-white active:scale-95 transition-all">Lihat Selengkapnya...</button>
+    </div>
+    `
+    : `<p class="text-[11px] text-gray-400 mb-4 leading-relaxed whitespace-pre-line flex-1">${deskripsiTeks}</p>`;
+
+return `
+<div class="w-[calc(100%-24px)] flex-shrink-0 snap-center bg-gradient-to-b from-[#1A1133] to-[#0F0920] rounded-[2rem] p-1.5 border border-white/10 shadow-[0_10px_30px_rgba(0,0,0,0.5)] smooth-reveal h-auto flex flex-col" style="animation-delay: ${idx * 0.1}s">
+    ${gambarSliderHTML}
+    <div class="px-4 pb-4 flex flex-col flex-1 ${arrGambar.length === 0 || !arrGambar[0] ? 'pt-4' : ''}">
+        <h3 class="font-extrabold text-white text-base mb-1.5 leading-snug">${evt.judul || "Pengumuman"}</h3>
+        
+        ${deskripsiHTML} ${evt.link_facebook ? `
+
                                     <a href="${evt.link_facebook}" target="_blank" class="flex justify-center items-center w-full bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold py-3.5 rounded-xl active:scale-95 transition-all text-xs shadow-inner mt-auto">
                                         <i class="fas fa-external-link-alt mr-2 text-brand-info"></i> Baca Selengkapnya
                                     </a>
@@ -1716,33 +1732,6 @@ let typingTimer; // VARIABEL TYPING INDICATOR
         }
 
         
-        function updateInnerDots(container) {
-            // Kita harus naik SATU TINGKAT lagi untuk bisa menemukan inner-dots-container
-            // Karena pembungkus titik-titiknya ada sejajar dengan pembungkus luarnya
-            const dotsWrapper = container.closest('.relative.w-full.h-44').querySelector('.inner-dots-container');
-            if (!dotsWrapper) return;
-            
-            const dots = dotsWrapper.querySelectorAll('.inner-dot');
-            if (dots.length === 0) return;
-            
-            // Kalkulasi posisi gambar saat ini
-            const maxScroll = container.scrollWidth - container.clientWidth; 
-            if (maxScroll <= 0) return;
-            
-            let activeIndex = Math.round((container.scrollLeft / maxScroll) * (dots.length - 1)); 
-            activeIndex = Math.max(0, Math.min(activeIndex, dots.length - 1));
-            
-            // Perbarui visualisasi titik (Panjang dan Warnanya)
-            dots.forEach((dot, index) => { 
-                if (index === activeIndex) { 
-                    dot.className = "inner-dot h-1.5 rounded-full transition-all duration-300 w-4 bg-brand-accent"; 
-                } else { 
-                    dot.className = "inner-dot h-1.5 rounded-full transition-all duration-300 w-1.5 bg-white/40"; 
-                } 
-            });
-        }
-
-
 
 
         function formatCaption(text) {
