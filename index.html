@@ -1470,23 +1470,32 @@ btnCancel.onclick = () => { cleanup(); resolve(false); };
 }
 
 function customAlert(title) {
-return new Promise((resolve) => {
-const modal = document.getElementById('modal-alert');
-const titleEl = document.getElementById('alert-title');
-const btnOk = document.getElementById('alert-ok');
+    return new Promise((resolve) => {
+        const modal = document.getElementById('modal-alert');
+        const titleEl = document.getElementById('alert-title');
+        const btnOk = document.getElementById('alert-ok');
 
-titleEl.innerText = title;
-modal.classList.remove('hidden');
-modal.classList.add('flex');
+        // 🔥 LOGIKA BARU: Deteksi Link otomatis di dalam teks pop-up
+        const urlRegex = /(https?:\/\/[^\s]+)/g;
+        let formattedText = title.replace(urlRegex, (url) => {
+            return `<a href="${url}" target="_blank" class="text-brand-info underline font-bold">${url}</a>`;
+        });
+        // Ubah \n jadi <br>
+        formattedText = formattedText.replace(/\n/g, "<br>");
 
-btnOk.onclick = () => {
-modal.classList.add('hidden');
-modal.classList.remove('flex');
-btnOk.onclick = null;
-resolve();
-};
-});
+        titleEl.innerHTML = formattedText; // Pake innerHTML biar tag <a> bekerja
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+
+        btnOk.onclick = () => {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            btnOk.onclick = null;
+            resolve();
+        };
+    });
 }
+
 
 
 function togglePassword(inputId, iconId) {
