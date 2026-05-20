@@ -7840,7 +7840,7 @@ async function loadDataRekber(forceRefresh = false) {
             const dataProsedur = data.find(d => d.Kategori.toLowerCase() === 'prosedur');
             if (dataProsedur) {
                 // Mengubah \n di spreadsheet menjadi <li>
-                const prosedurList = dataProsedur.Deskripsi.split('\n').map(item => `<li>${item}</li>`).join('');
+                const prosedurList = dataProsedur.Deskripsi.split(/\\n/).map(item => `<li>${item.trim()}</li>`).join('');
                 
                 htmlOutput += `
                 <div class="bg-brand-card rounded-2xl p-5 border border-white/5 mb-6 relative overflow-hidden">
