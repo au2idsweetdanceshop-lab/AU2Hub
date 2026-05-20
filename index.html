@@ -1659,27 +1659,36 @@ let typingTimer; // VARIABEL TYPING INDICATOR
                             let tipeAksi = (item.TipeAksi || item.tipe_aksi || '').toLowerCase();
                             let targetAksi = item.TargetAksi || item.target_aksi || '';
                             
-                            let aksiKode = '';
+                            let atributKlik = '';
+                            let tagPembuka = 'a'; // Semua tombol dipaksa jadi tag 'a' (link) agar aman
+                            
                             if (tipeAksi === 'alert' || tipeAksi === 'popup') {
-                                // Ubah enter (baris baru) dari spreadsheet agar tidak merusak script
                                 let safeTarget = targetAksi.replace(/'/g, "\\'").replace(/\n/g, "\\n");
-                                aksiKode = `customAlert('${safeTarget}')`;
+                                atributKlik = `href="javascript:void(0)" onclick="customAlert('${safeTarget}')"`;
+                                
                             } else if (tipeAksi === 'tab') {
-                                aksiKode = `switchTab('${targetAksi}')`;
+                                atributKlik = `href="javascript:void(0)" onclick="switchTab('${targetAksi}')"`;
+                                
                             } else if (tipeAksi === 'link') {
-                                aksiKode = `window.open('${targetAksi}', '_blank')`;
+                                let amanUrl = targetAksi;
+                                // Otomatis tambah https:// kalau di spreadsheet lupa ditulis
+                                if (!amanUrl.startsWith('http')) {
+                                    amanUrl = 'https://' + amanUrl;
+                                }
+                                atributKlik = `href="${amanUrl}" target="_blank"`;
                             }
 
                             htmlBantuan += `
-                            <div onclick="${aksiKode}" class="bg-gradient-to-br from-brand-card to-[#0A0615] p-4 rounded-2xl border border-white/5 flex flex-col items-center justify-center text-center cursor-pointer active:scale-95 transition-all group hover:border-${warna}/50 shadow-lg">
+                            <${tagPembuka} ${atributKlik} class="bg-gradient-to-br from-brand-card to-[#0A0615] p-4 rounded-2xl border border-white/5 flex flex-col items-center justify-center text-center cursor-pointer active:scale-95 transition-all group hover:border-${warna}/50 shadow-lg block decoration-transparent">
                                 <div class="w-10 h-10 rounded-full bg-${warna}/20 text-${warna} flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
                                     <i class="fas ${ikon}"></i>
                                 </div>
                                 <span class="text-[10px] font-bold text-gray-300 group-hover:text-white transition-colors">${judul}</span>
-                            </div>`;
+                            </${tagPembuka}>`;
                         });
-                        
+
                         if (bantuanContainer) bantuanContainer.innerHTML = htmlBantuan;
+
                     }
 
                     isInfoLoaded = true;
