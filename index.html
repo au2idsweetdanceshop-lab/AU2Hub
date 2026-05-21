@@ -599,7 +599,14 @@ Satu pintu untuk info update terbaru, panduan pemula, jasa joki profesional, dan
 <span onclick="cekStatusPesanan('riwayat')" class="text-[9px] font-bold text-brand-info underline cursor-pointer">Lihat Riwayat</span>
 </div>
 <div class="grid grid-cols-3 text-center">
-<div onclick="cekStatusPesanan('bayar')" class="relative flex flex-col items-center gap-1 cursor-pointer group">
+<!-- Untuk status belum bayar -->
+<div onclick="bukaDetailPesanan('bayar')" class="relative flex flex-col items-center gap-1 cursor-pointer group">
+
+<!-- Untuk status diproses -->
+<div onclick="bukaDetailPesanan('proses')" class="relative flex flex-col items-center gap-1 cursor-pointer group">
+
+<!-- Untuk status selesai -->
+<div onclick="bukaDetailPesanan('selesai')" class="relative flex flex-col items-center gap-1 cursor-pointer group">
 <i class="fas fa-wallet text-gray-500 group-hover:text-brand-accent text-lg"></i>
 <span class="text-[8px] font-bold text-gray-400 group-hover:text-white uppercase tracking-tight">Belum Bayar</span>
 <span id="badge-track-bayar" class="hidden absolute -top-1 right-3 bg-red-500 text-white text-[8px] font-bold w-4 h-4 flex items-center justify-center rounded-full border border-brand-dark">0</span>
@@ -7816,8 +7823,6 @@ function closeRiwayatPesanan(dariTombolBackHP = false) {
 
 
 
-
-
 // 📦 LOGIKA KLIK PESANAN ALA SHOPEE (PESANAN DITERIMA)
 async function cekStatusPesanan(status) {
 if (!currentUser) return showToast("Silakan login terlebih dahulu.", "error");
@@ -7865,12 +7870,16 @@ customAlert("Tidak ada pesanan yang sedang diproses saat ini.");
 else if (status === 'bayar') {
     const modal = document.getElementById('modal-riwayat-pesanan');
     const container = document.getElementById('riwayat-pesanan-list');
+    
+    // Buka Modal & Tampilkan Loading
     modal.classList.remove('hidden');
     modal.classList.add('flex');
     history.pushState({ popup: 'riwayat_pesanan' }, null, '#riwayat');
-    container.innerHTML = '<div class="flex flex-col items-center justify-center mt-20"><i class="fas fa-spinner fa-spin text-brand-info text-4xl mb-3"></i></div>';
+
+    container.innerHTML = '<div class="flex flex-col items-center justify-center mt-20"><i class="fas fa-spinner fa-spin text-brand-info text-4xl mb-3"></i><p class="text-[10px] text-gray-500 font-bold tracking-widest uppercase">Memuat Database...</p></div>';
 
     try {
+        // Tarik KHUSUS pesanan yang berstatus PENDING
         const { data, error } = await supabaseClient
             .from('orders')
             .select('*')
@@ -7880,31 +7889,24 @@ else if (status === 'bayar') {
 
         if (data && data.length > 0) {
             container.innerHTML = data.map(order => {
-                let noInvoice = `INV-${String(order.id).substring(0, 8).toUpperCase()}`;
                 return `
-                <div class="bg-brand-card border border-white/10 rounded-2xl p-4 flex flex-col gap-3 relative overflow-hidden shadow-xl transition-all hover:border-brand-info/30 message-anim">
-                    <div class="flex justify-between items-center border-b border-white/5 pb-2.5 z-10">
-                        <div><span class="text-[8px] text-gray-500 block font-mono tracking-wider">NO. INVOICE</span>
-                        <span class="text-[11px] font-black text-brand-info font-mono tracking-tight">#${noInvoice}</span></div>
-                        <span class="text-[9px] font-extrabold px-2 py-1 rounded-md border text-red-500 bg-red-500/10 border-red-500/30 shadow-sm"><i class="fas fa-wallet"></i> BELUM BAYAR</span>
+                <div class="bg-brand-dark/50 border border-white/5 p-4 rounded-2xl flex flex-col gap-2 relative overflow-hidden transition-all hover:border-brand-info/30">
+                    <div class="flex justify-between items-start z-10">
+                        <h4 class="text-xs font-bold text-white line-clamp-2 pr-3">${order.product_name}</h4>
+                        <span class="text-[9px] font-extrabold px-2 py-1 rounded-md border whitespace-nowrap flex items-center gap-1 text-red-500 bg-red-500/10 border-red-500/30 shrink-0 shadow-sm">
+                            <i class="fas fa-wallet"></i> BELUM BAYAR
+                        </span>
                     </div>
-                    <div class="space-y-1 z-10">
-                        <span class="text-[8px] text-gray-500 block tracking-wider">DESKRIPSI PRODUK</span>
-                        <h4 class="text-xs font-bold text-white leading-snug line-clamp-2">${order.product_name}</h4>
-                    </div>
-                    <div class="flex flex-col gap-2 border-t border-white/5 pt-2.5 mt-1 z-10 relative">
-                        <button onclick="lanjutkanPembayaran('${order.id}', '${order.product_name.replace(/'/g, "\\'")}', ${order.price})" class="w-full bg-brand-accent text-white py-2.5 rounded-xl font-extrabold text-[10px] tracking-wider uppercase active:scale-95 transition-all">Lanjutkan Pembayaran</button>
+                    <div class="flex justify-between items-end mt-2 z-10 border-t border-white/5 pt-2.5">
+                        <span class="text-[9px] text-gray-400"><i class="far fa-clock mr-1"></i>${timeAgo(order.created_at)}</span>
+                        <span class="text-[13px] font-extrabold text-brand-accent">Rp ${Number(order.price).toLocaleString('id-ID')}</span>
                     </div>
                 </div>`;
-            }).join(''); // <--- INI WAJIB ADA
+            }).join('');
         } else {
-            container.innerHTML = '<div class="text-center mt-20 text-gray-500">Tidak ada tagihan.</div>';
+            container.innerHTML = '<div class="text-center mt-20 text-gray-500"><i class="fas fa-wallet text-5xl mb-3 opacity-30"></i><p class="text-xs font-bold uppercase tracking-wider">Tidak Ada Tagihan</p></div>';
         }
     } catch (e) {
-        container.innerHTML = '<div class="text-center mt-20 text-red-500 text-xs">Gagal memuat data.</div>';
-    }
-}
- catch (e) {
         container.innerHTML = '<div class="text-center mt-20 text-red-500 text-xs">Gagal menarik data dari server.</div>';
     }
 }
@@ -7929,54 +7931,28 @@ else if (status === 'selesai' || status === 'riwayat') {
             .eq('user_id', currentUser.id)
             .order('created_at', { ascending: false });
 
-                // Konfigurasi Label Status Dinamis
-                let statusColor = '';
-                let icon = '';
-                let statusText = order.status.toUpperCase();
-
-                if (order.status === 'selesai') {
-                    statusColor = 'text-brand-success bg-brand-success/10 border-brand-success/30';
-                    icon = 'fa-check-circle';
-                } else if (order.status === 'proses') {
-                    statusColor = 'text-yellow-400 bg-yellow-400/10 border-yellow-400/30';
-                    icon = 'fa-box';
-                } else {
-                    statusColor = 'text-red-500 bg-red-500/10 border-red-500/30';
-                    icon = 'fa-wallet';
-                    statusText = 'BELUM BAYAR';
-                }
-
-                let noInvoice = `INV-${String(order.id).substring(0, 8).toUpperCase()}`;
-
+        if (data && data.length > 0) {
+            container.innerHTML = data.map(order => {
+                // Konfigurasi Warna Label Sesuai Status
+                let statusColor = order.status === 'selesai' ? 'text-brand-success bg-brand-success/10 border-brand-success/30' : 
+                                  (order.status === 'proses' ? 'text-yellow-400 bg-yellow-400/10 border-yellow-400/30' : 'text-gray-400 bg-gray-500/10 border-gray-500/30');
+                
+                let icon = order.status === 'selesai' ? 'fa-check-circle' : 'fa-box';
+                
                 return `
-                <div class="bg-brand-card border border-white/10 rounded-2xl p-4 flex flex-col gap-3 relative overflow-hidden shadow-xl transition-all hover:border-brand-info/30 message-anim">
-                    <div class="flex justify-between items-center border-b border-white/5 pb-2.5 z-10">
-                        <div>
-                            <span class="text-[8px] text-gray-500 block font-mono tracking-wider">NO. INVOICE</span>
-                            <span class="text-[11px] font-black text-brand-info font-mono tracking-tight">#${noInvoice}</span>
-                        </div>
-                        <span class="text-[9px] font-extrabold px-2 py-1 rounded-md border whitespace-nowrap flex items-center gap-1 ${statusColor} shrink-0 shadow-sm tracking-wide">
-                            <i class="fas ${icon}"></i> ${statusText}
+                <div class="bg-brand-dark/50 border border-white/5 p-4 rounded-2xl flex flex-col gap-2 relative overflow-hidden transition-all hover:border-brand-info/30">
+                    <div class="flex justify-between items-start z-10">
+                        <h4 class="text-xs font-bold text-white line-clamp-2 pr-3">${order.product_name}</h4>
+                        <span class="text-[9px] font-extrabold px-2 py-1 rounded-md border whitespace-nowrap flex items-center gap-1 ${statusColor} shrink-0 shadow-sm">
+                            <i class="fas ${icon}"></i> ${order.status.toUpperCase()}
                         </span>
                     </div>
-                    
-                    <div class="space-y-1 z-10">
-                        <span class="text-[8px] text-gray-500 block tracking-wider">DESKRIPSI PRODUK</span>
-                        <h4 class="text-xs font-bold text-white leading-snug line-clamp-2">${order.product_name}</h4>
-                    </div>
-                    
-                    <div class="bg-black/20 rounded-xl p-2.5 text-[10px] space-y-1 border border-white/5 font-medium z-10">
-                        <div class="flex justify-between"><span class="text-gray-400">Metode Bayar</span><span class="text-gray-200 font-bold">DANA Otomatis</span></div>
-                        <div class="flex justify-between"><span class="text-gray-400">Waktu Update</span><span class="text-gray-300 font-mono">${timeAgo(order.created_at)}</span></div>
-                    </div>
-                    
-                    <div class="flex justify-between items-center border-t border-white/5 pt-2.5 mt-1 z-10">
-                        <span class="text-[9px] text-gray-400 font-bold tracking-wider">TOTAL SELESAI</span>
-                        <span class="text-sm font-black text-brand-success tracking-tight">Rp ${Number(order.price).toLocaleString('id-ID')}</span>
+                    <div class="flex justify-between items-end mt-2 z-10 border-t border-white/5 pt-2.5">
+                        <span class="text-[9px] text-gray-400"><i class="far fa-clock mr-1"></i>${timeAgo(order.created_at)}</span>
+                        <span class="text-[13px] font-extrabold text-brand-accent">Rp ${Number(order.price).toLocaleString('id-ID')}</span>
                     </div>
                 </div>`;
-            }).join(''); // <--- TAMBAHKAN BARIS INI DI SINI
-
+            }).join('');
         } else {
             container.innerHTML = '<div class="text-center mt-20 text-gray-500"><i class="fas fa-receipt text-5xl mb-3 opacity-30"></i><p class="text-xs font-bold uppercase tracking-wider">Belum Ada Riwayat Pesanan</p></div>';
         }
@@ -7985,100 +7961,6 @@ else if (status === 'selesai' || status === 'riwayat') {
     }
 }
 
-
-function lanjutkanPembayaran(orderId, namaProduk, harga) {
-    // 1. Tutup laci riwayat pesanan
-    closeRiwayatPesanan();
-    
-    // 2. Set ulang UI Halaman Pembayaran (Ambil nilai HTML mentah jika sempat ke-reset)
-    const wadahPembayaran = document.getElementById('qris-container');
-    if (wadahPembayaran && !document.getElementById('pay-total')) {
-        wadahPembayaran.innerHTML = `
-            <div class="absolute -right-10 -top-10 w-32 h-32 bg-brand-accent/10 rounded-full blur-2xl"></div>
-            <div class="text-xs text-gray-500 uppercase tracking-widest mb-1">Total Tagihan</div>
-            <div class="flex justify-between items-end mb-6 relative z-10">
-            <div id="pay-total" class="text-3xl font-extrabold text-brand-accent tracking-tight">Rp 0</div>
-            <button onclick="salinNominal()" id="btn-salin" class="bg-brand-info/10 text-brand-info border border-brand-info/30 text-[10px] font-bold px-3 py-1.5 rounded-lg active:scale-95 transition-all flex items-center h-max">
-            <i class="fas fa-copy mr-1.5"></i> Salin
-            </button>
-            <input type="hidden" id="nominal-asli" value="0">
-            </div>
-            <div class="bg-white p-3 rounded-2xl mb-6 mx-auto w-max shadow-[0_0_20px_rgba(0,240,255,0.15)] relative group z-10">
-            <img src="" alt="QRIS ADT" class="w-44 h-44 object-cover rounded-xl">
-            <div class="absolute inset-0 bg-black/60 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl backdrop-blur-sm">
-            <i class="fas fa-camera text-white text-2xl mb-2"></i>
-            <span class="text-white text-[10px] font-bold">Screenshot & Simpan</span>
-            </div>
-            </div>
-            <div class="text-[11px] font-bold text-center text-white uppercase tracking-widest mb-6 relative z-10">ADT STORE</div>
-            <div class="space-y-3 mb-8 bg-black/30 p-4 rounded-2xl border border-white/5 relative z-10">
-            <div class="flex justify-between text-xs border-b border-white/5 pb-2"><span class="text-gray-400">Paket Pesanan</span><span id="pay-product" class="text-white font-bold text-right pl-4 leading-tight">-</span></div>
-            <div class="flex justify-between text-xs pt-1"><span class="text-gray-400">Admin Rekber NIKKY</span><span class="text-brand-info font-bold">Include (Gratis)</span></div>
-            </div>
-            <a id="wa-confirm" href="#" target="_blank" class="flex justify-center items-center w-full bg-[#25D366] hover:bg-[#20bd5a] active:scale-[0.98] transition-all text-white font-bold py-4 rounded-2xl shadow-[0_8px_20px_rgba(37,211,102,0.25)] text-sm relative z-10">
-            <i class="fab fa-whatsapp text-lg mr-2"></i> Konfirmasi ke Admin
-            </a>
-            <p class="text-center text-[10px] text-gray-500 mt-4 leading-relaxed relative z-10">*Sistem otomatis menyiapkan chat pesanan. Jangan lupa lampirkan screenshot bukti transfer.</p>
-        `;
-    }
-
-    document.getElementById('pay-total').innerText = `Rp ${harga.toLocaleString('id-ID')}`;
-    document.getElementById('pay-product').innerText = namaProduk;
-    document.getElementById('nominal-asli').value = harga;
-
-    // 3. Generate Ulang QRIS
-    const teksQRISDinamis = makeDynamicQRIS(harga);
-    const qrImgUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(teksQRISDinamis)}`;
-
-    const qrContainerElement = document.querySelector('#pembayaran img');
-    if (qrContainerElement) qrContainerElement.src = qrImgUrl;
-
-    const noWA = "6283815584661";
-    const teksWA = encodeURIComponent(`Halo Admin, pesanan DANA saya sudah otomatis masuk ya untuk:\n\n(Berikut ini saya lampirkan gambar bukti transfer QRIS / screenshot)\n*${namaProduk}*`);
-    document.getElementById('wa-confirm').setAttribute('href', `https://wa.me/${noWA}?text=${teksWA}`);
-
-    // 4. Pindah ke Halaman Pembayaran
-    switchTab('pembayaran');
-    showToast("Melanjutkan pesanan...", "info");
-
-    // 5. Jalankan kembali radar pengecekan ke Supabase
-    if(window.cekPembayaranInterval) clearInterval(window.cekPembayaranInterval);
-
-    window.cekPembayaranInterval = setInterval(async () => {
-        try {
-            const { data: cekData } = await supabaseClient
-                .from('orders')
-                .select('status')
-                .eq('id', orderId)
-                .single();
-
-            if(cekData && cekData.status === "SUCCESS") {
-                clearInterval(window.cekPembayaranInterval);
-                await supabaseClient.from('orders').update({status: 'proses'}).eq('id', orderId);
-
-                const teksWASukses = encodeURIComponent(`Halo Admin Joki AU2Hub,\n\nPembayaran DANA saya sudah terkonfirmasi sukses otomatis oleh sistem!\n\nPesanan: *${namaProduk}*\nTotal: Rp ${harga.toLocaleString('id-ID')}\n\n(Berikut ini saya lampirkan gambar bukti transfer QRIS / screenshot)`);
-
-                const wadahPenyelesaian = document.getElementById('qris-container');
-                if (wadahPenyelesaian) {
-                    wadahPenyelesaian.innerHTML = `
-                    <div class="flex flex-col items-center justify-center py-6 text-center modal-anim">
-                        <div class="relative w-24 h-24 mb-6">
-                            <div class="absolute inset-0 bg-brand-success rounded-full animate-ping opacity-20"></div>
-                            <i class="fas fa-check-circle text-7xl text-brand-success relative z-10 drop-shadow-[0_0_20px_rgba(37,211,102,0.8)]"></i>
-                        </div>
-                        <h2 class="text-2xl font-extrabold text-white mb-2 tracking-tight">Pembayaran Berhasil!</h2>
-                        <p class="text-gray-400 text-xs mb-8 leading-relaxed px-4">Dana senilai <strong class="text-brand-success">Rp ${harga.toLocaleString('id-ID')}</strong> telah diterima sistem.<br>Silakan hubungi Admin untuk proses pesanan Anda.</p>
-                        <div class="w-full space-y-3">
-                            <a href="https://wa.me/${noWA}?text=${teksWASukses}" target="_blank" class="flex justify-center items-center w-full bg-[#25D366] hover:bg-[#20bd5a] text-white py-4 rounded-xl font-bold shadow-[0_8px_20px_rgba(37,211,102,0.3)] active:scale-95 transition-all uppercase tracking-wider text-xs">
-                                <i class="fab fa-whatsapp text-lg mr-2"></i> Chat Admin (Kirim Data)
-                            </a>
-                            <button onclick="window.location.reload()" class="w-full bg-white/5 text-white py-4 rounded-xl font-bold active:scale-95 transition-all uppercase tracking-wider text-xs border border-white/10 hover:bg-white/10">Selesai & Kembali</button>
-                        </div>
-                    </div>`;
-                }
-            }
-        } catch(e) { console.log("Radar tertunda..."); }
-    }, 1000);
 }
 
 // 👥 AUTO-UPDATE FOTO PROFIL GRUP (REAL-TIME STORAGE)
@@ -8267,6 +8149,80 @@ lbModal.addEventListener('touchend', e => {
     }
 }, {passive: true});
 
+// Membuka modal detail pesanan dari tracker
+function bukaDetailPesanan(status, layananInfo = 'Joki GB Sweet Dance', hargaInfo = 'Rp 50.000') {
+    const modal = document.getElementById('modal-detail-pesanan');
+    const actionArea = document.getElementById('action-belum-bayar');
+    const pesanLain = document.getElementById('pesan-status-lain');
+    const statusBadge = document.getElementById('detail-status-badge');
+
+    // Set Data Info
+    document.getElementById('detail-nama-layanan').innerText = layananInfo;
+    document.getElementById('detail-harga-layanan').innerText = hargaInfo;
+
+    // Logika render tombol berdasarkan status
+    if (status === 'bayar') {
+        statusBadge.innerText = 'BELUM BAYAR';
+        statusBadge.className = 'font-extrabold text-red-500 uppercase tracking-wider';
+        
+        actionArea.classList.replace('hidden', 'flex');
+        pesanLain.classList.add('hidden');
+    } else if (status === 'proses') {
+        statusBadge.innerText = 'DIPROSES';
+        statusBadge.className = 'font-extrabold text-brand-info uppercase tracking-wider';
+        
+        actionArea.classList.replace('flex', 'hidden');
+        pesanLain.classList.remove('hidden');
+        pesanLain.innerText = 'Pesanan sedang dikerjakan oleh admin/joki.';
+    } else if (status === 'selesai') {
+        statusBadge.innerText = 'SELESAI';
+        statusBadge.className = 'font-extrabold text-brand-success uppercase tracking-wider';
+        
+        actionArea.classList.replace('flex', 'hidden');
+        pesanLain.classList.remove('hidden');
+        pesanLain.innerText = 'Pesanan ini telah selesai.';
+    }
+
+    // Tampilkan Modal
+    modal.classList.replace('hidden', 'flex');
+}
+
+// Menutup modal detail pesanan
+function closeDetailPesanan() {
+    document.getElementById('modal-detail-pesanan').classList.replace('flex', 'hidden');
+}
+
+// Eksekusi Pembayaran Ulang
+function prosesBayarUlang() {
+    closeDetailPesanan();
+    
+    // Arahkan user kembali ke tab/seksi QRIS Pembayaran
+    switchTab('pembayaran');
+    
+    // Jika kamu memiliki fungsi toast/notifikasi
+    // showToast('Silakan scan QRIS untuk melanjutkan pembayaran', 'info');
+}
+
+// Eksekusi Pembatalan Pesanan
+function batalkanPesanan() {
+    // Gunakan fungsi konfirmasi bawaan yang sudah kamu buat di HTML (modal-confirm)
+    // Atau jika belum nyambung, bisa pakai prompt standar dulu:
+    const konfirmasi = confirm("Apakah kamu yakin ingin membatalkan pesanan ini?");
+    
+    if (konfirmasi) {
+        closeDetailPesanan();
+        
+        // Panggil logika Supabase/Database kamu di sini untuk update status jadi 'dibatalkan'
+        /* 
+          await supabase.from('pesanan').update({ status: 'dibatalkan' }).eq('id', pesananId); 
+        */
+        
+        // Update UI Tracker (Contoh: reset badge belum bayar)
+        document.getElementById('badge-track-bayar').classList.add('hidden');
+        
+        alert("Pesanan berhasil dibatalkan.");
+    }
+}
 
 
 
@@ -8350,5 +8306,52 @@ lbModal.addEventListener('touchend', e => {
         </button>
     </div>
 </div>
+
+<!-- MODAL DETAIL PESANAN (TRACKER) -->
+<div id="modal-detail-pesanan" class="fixed inset-0 z-[600] hidden items-center justify-center bg-black/90 backdrop-blur-md px-6 transition-all duration-300">
+    <div class="bg-brand-card w-full max-w-sm rounded-3xl border border-white/10 p-6 shadow-2xl relative modal-anim">
+        <!-- Tombol Tutup -->
+        <button onclick="closeDetailPesanan()" class="absolute top-4 right-4 text-gray-500 hover:text-white w-8 h-8 flex justify-center items-center rounded-full bg-white/5 active:scale-95 transition-colors">
+            <i class="fas fa-times"></i>
+        </button>
+
+        <h3 class="text-xl font-extrabold mb-4 text-white flex items-center">
+            <i class="fas fa-receipt mr-2 text-brand-info"></i> Detail Pesanan
+        </h3>
+
+        <!-- Informasi Pesanan -->
+        <div class="bg-black/40 p-4 rounded-xl border border-white/5 mb-5 space-y-3">
+            <div class="flex justify-between text-xs border-b border-white/5 pb-2">
+                <span class="text-gray-400">Status</span>
+                <span id="detail-status-badge" class="font-bold text-red-500 uppercase tracking-wider">Belum Bayar</span>
+            </div>
+            <div class="flex justify-between text-xs">
+                <span class="text-gray-400">Layanan</span>
+                <span id="detail-nama-layanan" class="font-bold text-white text-right max-w-[150px] truncate">Memuat...</span>
+            </div>
+            <div class="flex justify-between text-xs pt-1">
+                <span class="text-gray-400">Total Tagihan</span>
+                <span id="detail-harga-layanan" class="font-extrabold text-brand-accent text-sm">Rp 0</span>
+            </div>
+        </div>
+
+        <!-- Tombol Aksi: Hanya Muncul Jika Status "Belum Bayar" -->
+        <div id="action-belum-bayar" class="hidden flex-col gap-2.5">
+            <button onclick="prosesBayarUlang()" class="w-full bg-gradient-to-r from-brand-info to-brand-accent text-white py-3.5 rounded-xl font-bold active:scale-95 transition-transform text-sm shadow-[0_0_15px_rgba(0,240,255,0.3)] flex items-center justify-center">
+                <i class="fas fa-wallet mr-2"></i> Lanjutkan Pembayaran
+            </button>
+            <button onclick="batalkanPesanan()" class="w-full bg-red-500/10 border border-red-500/30 text-red-500 py-3 rounded-xl font-bold active:scale-95 transition-transform text-sm flex items-center justify-center hover:bg-red-500/20">
+                <i class="fas fa-times-circle mr-2"></i> Batalkan Pesanan
+            </button>
+        </div>
+
+        <!-- Pesan Tambahan untuk status lain (opsional) -->
+        <p id="pesan-status-lain" class="hidden text-[10px] text-gray-500 text-center italic mt-2">
+            Pesanan ini sudah diproses atau selesai.
+        </p>
+    </div>
+</div>
+
+
 </body>
 </html>
