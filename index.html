@@ -2319,7 +2319,8 @@ return;
 }
 
 
-const userVideos = allVideosData.filter(v => v.user_id === uidToRender);
+// PERBAIKAN: Gunakan String() agar tidak error jika ID berupa Angka vs Teks
+const userVideos = allVideosData.filter(v => String(v.user_id) === String(uidToRender));
 
 const elLikes = document.getElementById('profile-total-likes');
 if (elLikes) elLikes.innerText = (userVideos.length * 3);
@@ -2744,8 +2745,9 @@ function kembaliDariProfil() {
             elExpContainer.classList.remove('hidden');
         }
 
-        const actionOwn = document.getElementById('profile-actions-own'); if(actionOwn) actionOwn.classList.remove('hidden');
-        const actionOther = document.getElementById('profile-actions-other'); if(actionOther) actionOther.classList.add('hidden');
+const actionOwn = document.getElementById('profile-actions-own'); if(actionOwn) { actionOwn.classList.remove('hidden'); actionOwn.style.display = 'flex'; }
+const actionOther = document.getElementById('profile-actions-other'); if(actionOther) { actionOther.classList.add('hidden'); actionOther.style.display = 'none'; }
+
 
         const tracker = document.getElementById('order-tracker-section'); if(tracker) tracker.classList.remove('hidden');
         const btnBack = document.getElementById('btn-back-profile'); if(btnBack) btnBack.classList.add('hidden');
@@ -2908,16 +2910,16 @@ console.error("Error database:", error);
 const elBio2 = document.getElementById('profile-bio'); if(elBio2) elBio2.innerText = data?.bio || "Belum ada deskripsi.";
 const elImg2 = document.getElementById('profile-img'); if(elImg2) elImg2.src = data?.avatar_url || `https://ui-avatars.com/api/?name=${data?.nickname || 'Player'}&background=1A1133&color=fff`;
 
-// Atur visibilitas tombol profil secara aman tanpa merusak struktur Flexbox
+// Atur visibilitas tombol profil secara aman paksa lewat inline style
 const actionOwn = document.getElementById('profile-actions-own');
 const actionOther = document.getElementById('profile-actions-other');
 
 if (isOwn) {
-    if(actionOwn) actionOwn.classList.remove('hidden');
-    if(actionOther) actionOther.classList.add('hidden');
+    if(actionOwn) { actionOwn.classList.remove('hidden'); actionOwn.style.display = 'flex'; }
+    if(actionOther) { actionOther.classList.add('hidden'); actionOther.style.display = 'none'; }
 } else {
-    if(actionOwn) actionOwn.classList.add('hidden');
-    if(actionOther) actionOther.classList.remove('hidden');
+    if(actionOwn) { actionOwn.classList.add('hidden'); actionOwn.style.display = 'none'; }
+    if(actionOther) { actionOther.classList.remove('hidden'); actionOther.style.display = 'flex'; }
 }
 
 
@@ -2938,7 +2940,8 @@ else { elVidTitle.innerHTML = `<i class="fas fa-grip-vertical mr-2 text-brand-in
 await renderProfileVideos(userId);
 
 // Baru hitung lencana badge & total likes biar auto-akurat tanpa delay / bug nunggu refresh
-const userVideos = allVideosData.filter(v => v.user_id === userId);
+// PERBAIKAN: Pakai String() agar total Likes & Video orang lain akurat
+const userVideos = allVideosData.filter(v => String(v.user_id) === String(userId));
 
 // 1. Ambil & Hitung Level User yang Dilihat
 const expDataLain = data?.exp || 0;
