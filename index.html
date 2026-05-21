@@ -2501,11 +2501,15 @@ window.addEventListener('popstate', () => {
         return;
     }
     
-    
         // TANGKAP MODAL RIWAYAT PESANAN
     const modalRiwayat = document.getElementById('modal-riwayat-pesanan');
     if (modalRiwayat && !modalRiwayat.classList.contains('hidden')) {
         closeRiwayatPesanan(true); 
+        return;
+    }
+    const modalInvoice = document.getElementById('modal-detail-pesanan');
+    if (modalInvoice && !modalInvoice.classList.contains('hidden')) {
+        closeDetailPesanan(true);
         return;
     }
 
@@ -7909,51 +7913,6 @@ async function cekStatusPesanan(kategori) {
     }
 }
 
-// 🔥 FUNGSI PEMBUKA MODAL INVOICE (DIPERBARUI)
-function bukaDetailPesananDinamis(orderId, productName, price, status) {
-    // Simpan ke variabel global agar bisa dipakai untuk membatalkan/bayar ulang
-    activeOrderIdToPay = orderId;
-    activeOrderPriceToPay = price;
-    activeOrderNameToPay = productName;
-
-    const modal = document.getElementById('modal-detail-pesanan');
-    
-    // Suntikkan data asli dari database ke layar HTML
-    document.getElementById('detail-nama-layanan').innerText = productName;
-    document.getElementById('detail-harga-layanan').innerText = `Rp ${price.toLocaleString('id-ID')}`;
-    
-    const statusBadge = document.getElementById('detail-status-badge');
-    const actionBelumBayar = document.getElementById('action-belum-bayar');
-    const pesanStatusLain = document.getElementById('pesan-status-lain');
-
-    // LOGIKA TAMPILAN DINAMIS BERDASARKAN STATUS
-    if (status === 'PENDING') {
-        statusBadge.innerText = 'BELUM BAYAR';
-        statusBadge.className = 'font-extrabold text-red-500 uppercase tracking-wider';
-        
-        actionBelumBayar.classList.replace('hidden', 'flex'); // Munculkan tombol Lanjut Bayar & Batal
-        pesanStatusLain.classList.add('hidden'); // Sembunyikan teks info
-        
-    } else if (status === 'proses') {
-        statusBadge.innerText = 'DIPROSES';
-        statusBadge.className = 'font-extrabold text-brand-info uppercase tracking-wider';
-        
-        actionBelumBayar.classList.replace('flex', 'hidden'); // Sembunyikan tombol
-        pesanStatusLain.classList.remove('hidden'); // Munculkan teks info
-        pesanStatusLain.innerText = 'Pesanan ini sedang diproses oleh admin.';
-        
-    } else if (status === 'selesai') {
-        statusBadge.innerText = 'SELESAI';
-        statusBadge.className = 'font-extrabold text-brand-success uppercase tracking-wider';
-        
-        actionBelumBayar.classList.replace('flex', 'hidden'); // Sembunyikan tombol
-        pesanStatusLain.classList.remove('hidden'); // Munculkan teks info
-        pesanStatusLain.innerText = 'Pesanan ini telah selesai. Terima kasih!';
-    }
-
-    modal.classList.replace('hidden', 'flex');
-}
-
 
 // 👥 AUTO-UPDATE FOTO PROFIL GRUP (REAL-TIME STORAGE)
 async function handleGroupAvatarUpload(event) {
@@ -8141,8 +8100,7 @@ lbModal.addEventListener('touchend', e => {
     }
 }, {passive: true});
 
-// Membuka modal detail pesanan dari tracker
-// BUKA LACI DETAIL INVOICE SECARA DINAMIS
+// 🔥 FUNGSI PEMBUKA MODAL INVOICE (DIPERBARUI DENGAN BACK DETECTION)
 function bukaDetailPesananDinamis(orderId, productName, price, status) {
     // Simpan ke variabel global agar bisa dipakai untuk membatalkan/bayar ulang
     activeOrderIdToPay = orderId;
@@ -8185,12 +8143,21 @@ function bukaDetailPesananDinamis(orderId, productName, price, status) {
     }
 
     modal.classList.replace('hidden', 'flex');
+
+    // 🔥 KUNCI UTAMA 1: Tambahkan jejak URL ke browser HP
+    history.pushState({ popup: 'detail_pesanan' }, null, '#invoice');
 }
 
 
-// Menutup modal detail pesanan
-function closeDetailPesanan() {
+
+// 🔥 FUNGSI MENUTUP MODAL INVOICE (DIPERBARUI DENGAN BACK DETECTION)
+function closeDetailPesanan(dariTombolBackHP = false) {
     document.getElementById('modal-detail-pesanan').classList.replace('flex', 'hidden');
+
+    // 🔥 KUNCI UTAMA 2: Hapus jejak URL jika ditutup manual lewat tombol (X)
+    if (!dariTombolBackHP && window.location.hash === '#invoice') {
+        history.back();
+    }
 }
 
 // EKSEKUSI PEMBATALAN PESANAN DARI DATABASE
