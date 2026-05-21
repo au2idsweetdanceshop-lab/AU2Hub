@@ -2895,8 +2895,20 @@ console.error("Error database:", error);
 const elBio2 = document.getElementById('profile-bio'); if(elBio2) elBio2.innerText = data?.bio || "Belum ada deskripsi.";
 const elImg2 = document.getElementById('profile-img'); if(elImg2) elImg2.src = data?.avatar_url || `https://ui-avatars.com/api/?name=${data?.nickname || 'Player'}&background=1A1133&color=fff`;
 
-const actionOwn = document.getElementById('profile-actions-own'); if(actionOwn) actionOwn.classList.toggle('hidden', !isOwn);
-const actionOther = document.getElementById('profile-actions-other'); if(actionOther) actionOther.classList.toggle('hidden', isOwn);
+// 👇 PERBAIKAN: Memaksa DOM memprioritaskan tampilan flex dan membuang class hidden tanpa konflik
+const actionOwn = document.getElementById('profile-actions-own'); 
+if(actionOwn) { actionOwn.classList.remove('hidden'); actionOwn.classList.add('flex'); }
+const actionOther = document.getElementById('profile-actions-other'); 
+if(actionOther) { actionOther.classList.remove('flex'); actionOther.classList.add('hidden'); }
+
+
+if (isOwn) {
+    if(actionOwn) { actionOwn.classList.remove('hidden'); actionOwn.classList.add('flex'); }
+    if(actionOther) { actionOther.classList.remove('flex'); actionOther.classList.add('hidden'); }
+} else {
+    if(actionOwn) { actionOwn.classList.remove('flex'); actionOwn.classList.add('hidden'); }
+    if(actionOther) { actionOther.classList.remove('hidden'); actionOther.classList.add('flex'); }
+}
 
 const tracker = document.getElementById('order-tracker-section'); if(tracker) tracker.classList.toggle('hidden', !isOwn);
 
@@ -3835,10 +3847,12 @@ let dataDariSheet = await res.json();
 
 // --- TAMBAHAN BARU: PENYERAGAMAN ID PINTAR ---
 dataDariSheet = dataDariSheet.map(v => {
-v.id = v.id || v.video_id || v.ID || 'vid_' + Math.random().toString(36).substr(2, 9);
-return v;
+    v.id = v.id || v.video_id || v.ID || 'vid_' + Math.random().toString(36).substr(2, 9);
+    // 👇 PERBAIKAN: Wajib seragamkan user_id agar grid video muncul di profil orang lain
+    v.user_id = v.user_id || v.User_ID || v.userId || v.userid;
+    return v;
 });
-// ---------------------------------------------
+
 
 newUploads.forEach(newVid => {
 newVid.id = newVid.id || newVid.video_id; // Pastikan ID baru juga seragam
