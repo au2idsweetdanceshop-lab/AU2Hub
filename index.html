@@ -7870,7 +7870,6 @@ async function cekStatusPesanan(kategori) {
                 let statusColor = '';
                 let icon = '';
                 let teksStatus = order.status.toUpperCase();
-                let clickAction = ''; // Action kalau di-klik
 
                 if (order.status === 'selesai') {
                     statusColor = 'text-brand-success bg-brand-success/10 border-brand-success/30';
@@ -7882,9 +7881,11 @@ async function cekStatusPesanan(kategori) {
                     statusColor = 'text-gray-400 bg-gray-500/10 border-gray-500/30';
                     icon = 'fa-wallet';
                     teksStatus = 'PENDING';
-                    // JIKA PENDING, BISA DIKLIK MUNCULIN INVOICE DINAMIS
-                    clickAction = `onclick="bukaDetailPesananDinamis('${order.id}', '${order.product_name.replace(/'/g, "\\'")}', ${order.price})" class="cursor-pointer hover:border-brand-accent/50"`;
                 }
+
+                // 🔥 KUNCI PERUBAHAN: Action klik sekarang berlaku untuk SEMUA status
+                // Status dilempar sebagai parameter ke-4
+                let clickAction = `onclick="bukaDetailPesananDinamis('${order.id}', '${order.product_name.replace(/'/g, "\\'")}', ${order.price}, '${order.status}')" class="cursor-pointer hover:border-brand-accent/50"`;
 
                 return `
                 <div ${clickAction} class="bg-brand-dark/50 border border-white/5 p-4 rounded-2xl flex flex-col gap-2 relative overflow-hidden transition-all hover:border-white/10 ${order.status === 'PENDING' ? 'border-red-500/20 shadow-[0_0_10px_rgba(239,68,68,0.1)]' : ''}">
@@ -7908,8 +7909,51 @@ async function cekStatusPesanan(kategori) {
     }
 }
 
+// 🔥 FUNGSI PEMBUKA MODAL INVOICE (DIPERBARUI)
+function bukaDetailPesananDinamis(orderId, productName, price, status) {
+    // Simpan ke variabel global agar bisa dipakai untuk membatalkan/bayar ulang
+    activeOrderIdToPay = orderId;
+    activeOrderPriceToPay = price;
+    activeOrderNameToPay = productName;
 
+    const modal = document.getElementById('modal-detail-pesanan');
+    
+    // Suntikkan data asli dari database ke layar HTML
+    document.getElementById('detail-nama-layanan').innerText = productName;
+    document.getElementById('detail-harga-layanan').innerText = `Rp ${price.toLocaleString('id-ID')}`;
+    
+    const statusBadge = document.getElementById('detail-status-badge');
+    const actionBelumBayar = document.getElementById('action-belum-bayar');
+    const pesanStatusLain = document.getElementById('pesan-status-lain');
+
+    // LOGIKA TAMPILAN DINAMIS BERDASARKAN STATUS
+    if (status === 'PENDING') {
+        statusBadge.innerText = 'BELUM BAYAR';
+        statusBadge.className = 'font-extrabold text-red-500 uppercase tracking-wider';
+        
+        actionBelumBayar.classList.replace('hidden', 'flex'); // Munculkan tombol Lanjut Bayar & Batal
+        pesanStatusLain.classList.add('hidden'); // Sembunyikan teks info
+        
+    } else if (status === 'proses') {
+        statusBadge.innerText = 'DIPROSES';
+        statusBadge.className = 'font-extrabold text-brand-info uppercase tracking-wider';
+        
+        actionBelumBayar.classList.replace('flex', 'hidden'); // Sembunyikan tombol
+        pesanStatusLain.classList.remove('hidden'); // Munculkan teks info
+        pesanStatusLain.innerText = 'Pesanan ini sedang diproses oleh admin.';
+        
+    } else if (status === 'selesai') {
+        statusBadge.innerText = 'SELESAI';
+        statusBadge.className = 'font-extrabold text-brand-success uppercase tracking-wider';
+        
+        actionBelumBayar.classList.replace('flex', 'hidden'); // Sembunyikan tombol
+        pesanStatusLain.classList.remove('hidden'); // Munculkan teks info
+        pesanStatusLain.innerText = 'Pesanan ini telah selesai. Terima kasih!';
+    }
+
+    modal.classList.replace('hidden', 'flex');
 }
+
 
 // 👥 AUTO-UPDATE FOTO PROFIL GRUP (REAL-TIME STORAGE)
 async function handleGroupAvatarUpload(event) {
@@ -8092,14 +8136,14 @@ lbModal.addEventListener('touchend', e => {
             if (currentIndex < 2) switchLeaderboardTab(tabs[currentIndex + 1]);
         } else { 
             // Swipe ke KANAN (Geser layar ke kanan) = Pindah ke TAB SEBELUMNYA
-            if (currentIndex > 0) switchLeaderboardTab(tabs[currentIndex - 1]);
+            if (currentIndex > 0) switchLeaderboardTabl(tabs[currentIndex - 1]);
         }
     }
 }, {passive: true});
 
 // Membuka modal detail pesanan dari tracker
-// BUKA LACI DETAIL INVOICE (GAMBAR 1) SECARA DINAMIS
-function bukaDetailPesananDinamis(orderId, productName, price) {
+// BUKA LACI DETAIL INVOICE SECARA DINAMIS
+function bukaDetailPesananDinamis(orderId, productName, price, status) {
     // Simpan ke variabel global agar bisa dipakai untuk membatalkan/bayar ulang
     activeOrderIdToPay = orderId;
     activeOrderPriceToPay = price;
@@ -8112,14 +8156,37 @@ function bukaDetailPesananDinamis(orderId, productName, price) {
     document.getElementById('detail-harga-layanan').innerText = `Rp ${price.toLocaleString('id-ID')}`;
     
     const statusBadge = document.getElementById('detail-status-badge');
-    statusBadge.innerText = 'BELUM BAYAR';
-    statusBadge.className = 'font-extrabold text-red-500 uppercase tracking-wider';
-    
-    document.getElementById('action-belum-bayar').classList.replace('hidden', 'flex');
-    document.getElementById('pesan-status-lain').classList.add('hidden');
+    const actionBelumBayar = document.getElementById('action-belum-bayar');
+    const pesanStatusLain = document.getElementById('pesan-status-lain');
+
+    // LOGIKA TAMPILAN DINAMIS BERDASARKAN STATUS
+    if (status === 'PENDING') {
+        statusBadge.innerText = 'BELUM BAYAR';
+        statusBadge.className = 'font-extrabold text-red-500 uppercase tracking-wider';
+        
+        actionBelumBayar.classList.replace('hidden', 'flex'); // Munculkan tombol Lanjut Bayar & Batal
+        pesanStatusLain.classList.add('hidden'); // Sembunyikan teks info
+        
+    } else if (status === 'proses') {
+        statusBadge.innerText = 'DIPROSES';
+        statusBadge.className = 'font-extrabold text-brand-info uppercase tracking-wider';
+        
+        actionBelumBayar.classList.replace('flex', 'hidden'); // Sembunyikan tombol aksi
+        pesanStatusLain.classList.remove('hidden'); // Munculkan teks info
+        pesanStatusLain.innerText = 'Pesanan ini sedang diproses oleh admin.';
+        
+    } else if (status === 'selesai') {
+        statusBadge.innerText = 'SELESAI';
+        statusBadge.className = 'font-extrabold text-brand-success uppercase tracking-wider';
+        
+        actionBelumBayar.classList.replace('flex', 'hidden'); // Sembunyikan tombol aksi
+        pesanStatusLain.classList.remove('hidden'); // Munculkan teks info
+        pesanStatusLain.innerText = 'Pesanan ini telah selesai. Terima kasih!';
+    }
 
     modal.classList.replace('hidden', 'flex');
 }
+
 
 // Menutup modal detail pesanan
 function closeDetailPesanan() {
