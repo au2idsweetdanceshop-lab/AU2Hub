@@ -599,30 +599,27 @@ Satu pintu untuk info update terbaru, panduan pemula, jasa joki profesional, dan
 <span onclick="cekStatusPesanan('riwayat')" class="text-[9px] font-bold text-brand-info underline cursor-pointer">Lihat Riwayat</span>
 </div>
 <div class="grid grid-cols-3 text-center">
-<!-- Untuk status belum bayar -->
-<div onclick="bukaDetailPesanan('bayar')" class="relative flex flex-col items-center gap-1 cursor-pointer group">
+    
+    <div onclick="bukaDetailPesanan('bayar')" class="relative flex flex-col items-center gap-1 cursor-pointer group">
+        <i class="fas fa-wallet text-gray-500 group-hover:text-brand-accent text-lg"></i>
+        <span class="text-[8px] font-bold text-gray-400 group-hover:text-white uppercase tracking-tight">Belum Bayar</span>
+        <span id="badge-track-bayar" class="hidden absolute -top-1 right-3 bg-red-500 text-white text-[8px] font-bold w-4 h-4 flex items-center justify-center rounded-full border border-brand-dark">0</span>
+    </div>
 
-<!-- Untuk status diproses -->
-<div onclick="bukaDetailPesanan('proses')" class="relative flex flex-col items-center gap-1 cursor-pointer group">
+    <div onclick="cekStatusPesanan('proses')" class="relative flex flex-col items-center gap-1 cursor-pointer group">
+        <i class="fas fa-box text-gray-500 group-hover:text-brand-accent text-lg"></i>
+        <span class="text-[8px] font-bold text-gray-400 group-hover:text-white uppercase tracking-tight">Diproses</span>
+        <span id="badge-track-proses" class="hidden absolute -top-1 right-5 bg-red-500 text-white text-[8px] font-bold w-4 h-4 flex items-center justify-center rounded-full border border-brand-dark">0</span>
+    </div>
 
-<!-- Untuk status selesai -->
-<div onclick="bukaDetailPesanan('selesai')" class="relative flex flex-col items-center gap-1 cursor-pointer group">
-<i class="fas fa-wallet text-gray-500 group-hover:text-brand-accent text-lg"></i>
-<span class="text-[8px] font-bold text-gray-400 group-hover:text-white uppercase tracking-tight">Belum Bayar</span>
-<span id="badge-track-bayar" class="hidden absolute -top-1 right-3 bg-red-500 text-white text-[8px] font-bold w-4 h-4 flex items-center justify-center rounded-full border border-brand-dark">0</span>
+    <div onclick="cekStatusPesanan('selesai')" class="relative flex flex-col items-center gap-1 cursor-pointer group">
+        <i class="fas fa-check-double text-gray-500 group-hover:text-brand-success text-lg"></i>
+        <span class="text-[8px] font-bold text-gray-400 group-hover:text-white uppercase tracking-tight">Selesai</span>
+        <span id="badge-track-selesai" class="hidden absolute -top-1 right-5 bg-brand-success text-white text-[8px] font-bold w-4 h-4 flex items-center justify-center rounded-full border border-brand-dark">0</span>
+    </div>
+
 </div>
-<div onclick="cekStatusPesanan('proses')" class="relative flex flex-col items-center gap-1 cursor-pointer group">
-<i class="fas fa-box text-gray-500 group-hover:text-brand-accent text-lg"></i>
-<span class="text-[8px] font-bold text-gray-400 group-hover:text-white uppercase tracking-tight">Diproses</span>
-<span id="badge-track-proses" class="hidden absolute -top-1 right-5 bg-red-500 text-white text-[8px] font-bold w-4 h-4 flex items-center justify-center rounded-full border border-brand-dark">0</span>
-</div>
-<div onclick="cekStatusPesanan('selesai')" class="relative flex flex-col items-center gap-1 cursor-pointer group">
-<i class="fas fa-check-double text-gray-500 group-hover:text-brand-success text-lg"></i>
-<span class="text-[8px] font-bold text-gray-400 group-hover:text-white uppercase tracking-tight">Selesai</span>
-<span id="badge-track-selesai" class="hidden absolute -top-1 right-5 bg-brand-success text-white text-[8px] font-bold w-4 h-4 flex items-center justify-center rounded-full border border-brand-dark">0</span>
-</div>
-</div>
-</div>
+
 
 
 <div id="profile-actions-own" class="flex gap-2 justify-center px-4 mb-6">
