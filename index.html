@@ -600,7 +600,7 @@ Satu pintu untuk info update terbaru, panduan pemula, jasa joki profesional, dan
 </div>
 <div class="grid grid-cols-3 text-center">
     
-    <div onclick="bukaDetailPesanan('bayar')" class="relative flex flex-col items-center gap-1 cursor-pointer group">
+    <div onclick="cekStatusPesanan('bayar')" class="relative flex flex-col items-center gap-1 cursor-pointer group">
         <i class="fas fa-wallet text-gray-500 group-hover:text-brand-accent text-lg"></i>
         <span class="text-[8px] font-bold text-gray-400 group-hover:text-white uppercase tracking-tight">Belum Bayar</span>
         <span id="badge-track-bayar" class="hidden absolute -top-1 right-3 bg-red-500 text-white text-[8px] font-bold w-4 h-4 flex items-center justify-center rounded-full border border-brand-dark">0</span>
@@ -619,6 +619,7 @@ Satu pintu untuk info update terbaru, panduan pemula, jasa joki profesional, dan
     </div>
 
 </div>
+
 
 
 
@@ -7821,52 +7822,19 @@ function closeRiwayatPesanan(dariTombolBackHP = false) {
 
 
 // 📦 LOGIKA KLIK PESANAN ALA SHOPEE (PESANAN DITERIMA)
-async function cekStatusPesanan(status) {
-if (!currentUser) return showToast("Silakan login terlebih dahulu.", "error");
+// VARIABEL GLOBAL UNTUK MENYIMPAN DATA TAGIHAN AKTIF
+let activeOrderIdToPay = null;
+let activeOrderPriceToPay = 0;
+let activeOrderNameToPay = "";
 
-if (status === 'proses') {
-showToast("Menarik data pesanan...", "info");
+async function cekStatusPesanan(kategori) {
+    if (!currentUser) return showToast("Silakan login terlebih dahulu.", "error");
 
-// Tarik pesanan yang lagi status 'proses'
-const { data, error } = await supabaseClient
-.from('orders')
-.select('*')
-.eq('user_id', currentUser.id)
-.eq('status', 'proses')
-.order('created_at', { ascending: false });
-
-if (data && data.length > 0) {
-// Ambil pesanan yang terbaru di daftar
-const pesananAktif = data[0];
-
-// Pop-up Konfirmasi Shopee Style
-const konfirmasi = await customConfirm(`Pesanan Anda:
-
-*${pesananAktif.product_name}*
-
-Sedang dikerjakan oleh Tim AU2Hub. Jika Admin sudah mengkonfirmasi selesai via WA, klik 'OKE' untuk menyelesaikan pesanan ini.`);
-
-if (konfirmasi) {
-// Pembeli klik OKE, ubah status database jadi 'selesai'
-const { error: updateErr } = await supabaseClient
-.from('orders')
-.update({ status: 'selesai' })
-.eq('id', pesananAktif.id);
-
-if (!updateErr) {
-showToast("Pesanan Selesai! Terima kasih.", "success");
-loadOrderTracker(currentUser.id); // Auto-Refresh Angka Laci
-} else {
-showToast("Gagal memperbarui pesanan.", "error");
-}
-}
-} else {
-customAlert("Tidak ada pesanan yang sedang diproses saat ini.");
-}
-}
-else if (status === 'bayar') {
     const modal = document.getElementById('modal-riwayat-pesanan');
     const container = document.getElementById('riwayat-pesanan-list');
+    
+    // Ambil judul header laci
+    const headerTitle = modal.querySelector('h3'); 
     
     // Buka Modal & Tampilkan Loading
     modal.classList.remove('hidden');
@@ -7876,72 +7844,54 @@ else if (status === 'bayar') {
     container.innerHTML = '<div class="flex flex-col items-center justify-center mt-20"><i class="fas fa-spinner fa-spin text-brand-info text-4xl mb-3"></i><p class="text-[10px] text-gray-500 font-bold tracking-widest uppercase">Memuat Database...</p></div>';
 
     try {
-        // Tarik KHUSUS pesanan yang berstatus PENDING
-        const { data, error } = await supabaseClient
-            .from('orders')
-            .select('*')
-            .eq('user_id', currentUser.id)
-            .eq('status', 'PENDING') 
-            .order('created_at', { ascending: false });
+        // Query dasar: Tarik pesanan milik user ini, urutkan dari yang terbaru
+        let query = supabaseClient.from('orders').select('*').eq('user_id', currentUser.id).order('created_at', { ascending: false });
 
-        if (data && data.length > 0) {
-            container.innerHTML = data.map(order => {
-                return `
-                <div class="bg-brand-dark/50 border border-white/5 p-4 rounded-2xl flex flex-col gap-2 relative overflow-hidden transition-all hover:border-brand-info/30">
-                    <div class="flex justify-between items-start z-10">
-                        <h4 class="text-xs font-bold text-white line-clamp-2 pr-3">${order.product_name}</h4>
-                        <span class="text-[9px] font-extrabold px-2 py-1 rounded-md border whitespace-nowrap flex items-center gap-1 text-red-500 bg-red-500/10 border-red-500/30 shrink-0 shadow-sm">
-                            <i class="fas fa-wallet"></i> BELUM BAYAR
-                        </span>
-                    </div>
-                    <div class="flex justify-between items-end mt-2 z-10 border-t border-white/5 pt-2.5">
-                        <span class="text-[9px] text-gray-400"><i class="far fa-clock mr-1"></i>${timeAgo(order.created_at)}</span>
-                        <span class="text-[13px] font-extrabold text-brand-accent">Rp ${Number(order.price).toLocaleString('id-ID')}</span>
-                    </div>
-                </div>`;
-            }).join('');
+        // Filter status berdasarkan tombol yang diklik & ubah Judul Modal
+        if (kategori === 'bayar') {
+            query = query.eq('status', 'PENDING');
+            headerTitle.innerHTML = '<i class="fas fa-wallet text-red-500"></i> TAGIHAN BELUM BAYAR';
+        } else if (kategori === 'proses') {
+            query = query.eq('status', 'proses');
+            headerTitle.innerHTML = '<i class="fas fa-box text-brand-info"></i> PESANAN DIPROSES';
+        } else if (kategori === 'selesai') {
+            query = query.eq('status', 'selesai');
+            headerTitle.innerHTML = '<i class="fas fa-check-circle text-brand-success"></i> PESANAN SELESAI';
         } else {
-            container.innerHTML = '<div class="text-center mt-20 text-gray-500"><i class="fas fa-wallet text-5xl mb-3 opacity-30"></i><p class="text-xs font-bold uppercase tracking-wider">Tidak Ada Tagihan</p></div>';
+            // Jika klik "Lihat Riwayat" (Semua data)
+            headerTitle.innerHTML = '<i class="fas fa-receipt text-brand-info"></i> SEMUA RIWAYAT';
         }
-    } catch (e) {
-        container.innerHTML = '<div class="text-center mt-20 text-red-500 text-xs">Gagal menarik data dari server.</div>';
-    }
-}
-else if (status === 'selesai' || status === 'riwayat') {
-    const modal = document.getElementById('modal-riwayat-pesanan');
-    const container = document.getElementById('riwayat-pesanan-list');
-    
-    // Buka Modal & Tampilkan Loading
-    modal.classList.remove('hidden');
-    modal.classList.add('flex');
-    
-    // Tambahkan jejak #riwayat agar terdeteksi oleh tombol back HP
-    history.pushState({ popup: 'riwayat_pesanan' }, null, '#riwayat');
 
-    container.innerHTML = '<div class="flex flex-col items-center justify-center mt-20"><i class="fas fa-spinner fa-spin text-brand-info text-4xl mb-3"></i><p class="text-[10px] text-gray-500 font-bold tracking-widest uppercase">Memuat Database...</p></div>';
-
-    try {
-        // Tarik SEMUA pesanan (Baik yang masih Diproses maupun Selesai) - Urut dari yang terbaru
-        const { data, error } = await supabaseClient
-            .from('orders')
-            .select('*')
-            .eq('user_id', currentUser.id)
-            .order('created_at', { ascending: false });
+        const { data, error } = await query;
 
         if (data && data.length > 0) {
             container.innerHTML = data.map(order => {
-                // Konfigurasi Warna Label Sesuai Status
-                let statusColor = order.status === 'selesai' ? 'text-brand-success bg-brand-success/10 border-brand-success/30' : 
-                                  (order.status === 'proses' ? 'text-yellow-400 bg-yellow-400/10 border-yellow-400/30' : 'text-gray-400 bg-gray-500/10 border-gray-500/30');
-                
-                let icon = order.status === 'selesai' ? 'fa-check-circle' : 'fa-box';
-                
+                // Konfigurasi Warna & Ikon Sesuai Status
+                let statusColor = '';
+                let icon = '';
+                let teksStatus = order.status.toUpperCase();
+                let clickAction = ''; // Action kalau di-klik
+
+                if (order.status === 'selesai') {
+                    statusColor = 'text-brand-success bg-brand-success/10 border-brand-success/30';
+                    icon = 'fa-check-circle';
+                } else if (order.status === 'proses') {
+                    statusColor = 'text-brand-info bg-brand-info/10 border-brand-info/30';
+                    icon = 'fa-box';
+                } else if (order.status === 'PENDING') {
+                    statusColor = 'text-gray-400 bg-gray-500/10 border-gray-500/30';
+                    icon = 'fa-wallet';
+                    teksStatus = 'PENDING';
+                    // JIKA PENDING, BISA DIKLIK MUNCULIN INVOICE DINAMIS
+                    clickAction = `onclick="bukaDetailPesananDinamis('${order.id}', '${order.product_name.replace(/'/g, "\\'")}', ${order.price})" class="cursor-pointer hover:border-brand-accent/50"`;
+                }
+
                 return `
-                <div class="bg-brand-dark/50 border border-white/5 p-4 rounded-2xl flex flex-col gap-2 relative overflow-hidden transition-all hover:border-brand-info/30">
+                <div ${clickAction} class="bg-brand-dark/50 border border-white/5 p-4 rounded-2xl flex flex-col gap-2 relative overflow-hidden transition-all hover:border-white/10 ${order.status === 'PENDING' ? 'border-red-500/20 shadow-[0_0_10px_rgba(239,68,68,0.1)]' : ''}">
                     <div class="flex justify-between items-start z-10">
                         <h4 class="text-xs font-bold text-white line-clamp-2 pr-3">${order.product_name}</h4>
                         <span class="text-[9px] font-extrabold px-2 py-1 rounded-md border whitespace-nowrap flex items-center gap-1 ${statusColor} shrink-0 shadow-sm">
-                            <i class="fas ${icon}"></i> ${order.status.toUpperCase()}
+                            <i class="fas ${icon}"></i> ${teksStatus}
                         </span>
                     </div>
                     <div class="flex justify-between items-end mt-2 z-10 border-t border-white/5 pt-2.5">
@@ -7951,12 +7901,13 @@ else if (status === 'selesai' || status === 'riwayat') {
                 </div>`;
             }).join('');
         } else {
-            container.innerHTML = '<div class="text-center mt-20 text-gray-500"><i class="fas fa-receipt text-5xl mb-3 opacity-30"></i><p class="text-xs font-bold uppercase tracking-wider">Belum Ada Riwayat Pesanan</p></div>';
+            container.innerHTML = `<div class="text-center mt-20 text-gray-500"><i class="fas fa-box-open text-5xl mb-3 opacity-30"></i><p class="text-xs font-bold uppercase tracking-wider">TIDAK ADA DATA</p></div>`;
         }
     } catch (e) {
         container.innerHTML = '<div class="text-center mt-20 text-red-500 text-xs">Gagal menarik data dari server.</div>';
     }
 }
+
 
 }
 
@@ -8147,40 +8098,26 @@ lbModal.addEventListener('touchend', e => {
 }, {passive: true});
 
 // Membuka modal detail pesanan dari tracker
-function bukaDetailPesanan(status, layananInfo = 'Joki GB Sweet Dance', hargaInfo = 'Rp 50.000') {
+// BUKA LACI DETAIL INVOICE (GAMBAR 1) SECARA DINAMIS
+function bukaDetailPesananDinamis(orderId, productName, price) {
+    // Simpan ke variabel global agar bisa dipakai untuk membatalkan/bayar ulang
+    activeOrderIdToPay = orderId;
+    activeOrderPriceToPay = price;
+    activeOrderNameToPay = productName;
+
     const modal = document.getElementById('modal-detail-pesanan');
-    const actionArea = document.getElementById('action-belum-bayar');
-    const pesanLain = document.getElementById('pesan-status-lain');
+    
+    // Suntikkan data asli dari database ke layar HTML
+    document.getElementById('detail-nama-layanan').innerText = productName;
+    document.getElementById('detail-harga-layanan').innerText = `Rp ${price.toLocaleString('id-ID')}`;
+    
     const statusBadge = document.getElementById('detail-status-badge');
+    statusBadge.innerText = 'BELUM BAYAR';
+    statusBadge.className = 'font-extrabold text-red-500 uppercase tracking-wider';
+    
+    document.getElementById('action-belum-bayar').classList.replace('hidden', 'flex');
+    document.getElementById('pesan-status-lain').classList.add('hidden');
 
-    // Set Data Info
-    document.getElementById('detail-nama-layanan').innerText = layananInfo;
-    document.getElementById('detail-harga-layanan').innerText = hargaInfo;
-
-    // Logika render tombol berdasarkan status
-    if (status === 'bayar') {
-        statusBadge.innerText = 'BELUM BAYAR';
-        statusBadge.className = 'font-extrabold text-red-500 uppercase tracking-wider';
-        
-        actionArea.classList.replace('hidden', 'flex');
-        pesanLain.classList.add('hidden');
-    } else if (status === 'proses') {
-        statusBadge.innerText = 'DIPROSES';
-        statusBadge.className = 'font-extrabold text-brand-info uppercase tracking-wider';
-        
-        actionArea.classList.replace('flex', 'hidden');
-        pesanLain.classList.remove('hidden');
-        pesanLain.innerText = 'Pesanan sedang dikerjakan oleh admin/joki.';
-    } else if (status === 'selesai') {
-        statusBadge.innerText = 'SELESAI';
-        statusBadge.className = 'font-extrabold text-brand-success uppercase tracking-wider';
-        
-        actionArea.classList.replace('flex', 'hidden');
-        pesanLain.classList.remove('hidden');
-        pesanLain.innerText = 'Pesanan ini telah selesai.';
-    }
-
-    // Tampilkan Modal
     modal.classList.replace('hidden', 'flex');
 }
 
@@ -8189,37 +8126,44 @@ function closeDetailPesanan() {
     document.getElementById('modal-detail-pesanan').classList.replace('flex', 'hidden');
 }
 
-// Eksekusi Pembayaran Ulang
-function prosesBayarUlang() {
-    closeDetailPesanan();
+// EKSEKUSI PEMBATALAN PESANAN DARI DATABASE
+async function batalkanPesanan() {
+    if (!activeOrderIdToPay) return;
     
-    // Arahkan user kembali ke tab/seksi QRIS Pembayaran
-    switchTab('pembayaran');
-    
-    // Jika kamu memiliki fungsi toast/notifikasi
-    // showToast('Silakan scan QRIS untuk melanjutkan pembayaran', 'info');
-}
-
-// Eksekusi Pembatalan Pesanan
-function batalkanPesanan() {
-    // Gunakan fungsi konfirmasi bawaan yang sudah kamu buat di HTML (modal-confirm)
-    // Atau jika belum nyambung, bisa pakai prompt standar dulu:
-    const konfirmasi = confirm("Apakah kamu yakin ingin membatalkan pesanan ini?");
+    const konfirmasi = await customConfirm("Apakah kamu yakin ingin membatalkan pesanan ini?");
     
     if (konfirmasi) {
-        closeDetailPesanan();
+        closeDetailPesanan(); // Tutup popup invoice
+        showToast("Membatalkan pesanan...", "info");
         
-        // Panggil logika Supabase/Database kamu di sini untuk update status jadi 'dibatalkan'
-        /* 
-          await supabase.from('pesanan').update({ status: 'dibatalkan' }).eq('id', pesananId); 
-        */
-        
-        // Update UI Tracker (Contoh: reset badge belum bayar)
-        document.getElementById('badge-track-bayar').classList.add('hidden');
-        
-        alert("Pesanan berhasil dibatalkan.");
+        try {
+            // Hapus data PENDING tersebut dari tabel orders di Supabase
+            const { error } = await supabaseClient.from('orders').delete().eq('id', activeOrderIdToPay);
+            if (error) throw error;
+            
+            showToast("Pesanan berhasil dibatalkan.", "success");
+            
+            // Refresh layar List (Gambar 2) dan Angka Badge di Profile
+            cekStatusPesanan('bayar'); 
+            loadOrderTracker(currentUser.id); 
+            
+        } catch (err) {
+            showToast("Gagal membatalkan pesanan.", "error");
+        }
     }
 }
+
+// EKSEKUSI LANJUTKAN PEMBAYARAN VIA QRIS DANA
+function prosesBayarUlang() {
+    if (!activeOrderIdToPay) return;
+    
+    closeDetailPesanan(); // Tutup popup invoice
+    closeRiwayatPesanan(); // Tutup list riwayat
+    
+    // Tembak langsung ke fungsi Checkout Robot DANA pakai data yang tersimpan
+    checkoutRobotDANA(activeOrderNameToPay, activeOrderPriceToPay, "Melanjutkan pembayaran tagihan tertunda.");
+}
+
 
 
 
