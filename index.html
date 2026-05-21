@@ -89,6 +89,8 @@ display: -webkit-box;
 overflow: hidden;
 max-height: 2.8em;
 transition: max-height 0.3s ease;
+word-break: break-word;
+overflow-wrap: anywhere;
 }
 .caption-text.expanded {
 -webkit-line-clamp: unset;
@@ -300,6 +302,17 @@ input[type="checkbox"].peer:checked + div::after {
     transform: translateX(100%);
     border-color: white;
 }
+
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  nav {
+    padding-bottom: env(safe-area-inset-bottom) !important;
+    height: calc(70px + env(safe-area-inset-bottom)) !important;
+  }
+  header {
+    padding-top: max(1rem, env(safe-area-inset-top)) !important;
+  }
+}
+
 
 
 </style> </head>
@@ -815,7 +828,7 @@ Satu pintu untuk info update terbaru, panduan pemula, jasa joki profesional, dan
 <div id="viewer-story-caption" class="bg-black/60 backdrop-blur-md text-white text-sm px-5 py-3 rounded-2xl shadow-lg text-center max-w-[85%] hidden break-words leading-relaxed border border-white/10"></div>
 </div>
 
-<div id="story-reply-container" class="absolute bottom-6 left-4 right-4 z-[60] flex items-center gap-3">
+<div id="story-reply-container" class="fixed bottom-6 left-4 right-4 z-[60] flex items-center gap-3 transition-transform duration-300">
 <div class="flex-1 bg-[#1A1A1A]/80 backdrop-blur-md rounded-full px-5 py-3.5 flex items-center border border-white/10 shadow-lg">
 <input type="text" id="story-reply-input" placeholder="Balas"
 class="bg-transparent w-full text-white text-sm outline-none placeholder:text-gray-300"
@@ -877,9 +890,9 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
 <button onclick="closeComments()" class="text-gray-400 text-lg w-8 h-8 rounded-full bg-white/5 flex items-center justify-center active:scale-95 transition-colors"><i class="fas fa-times"></i></button>
 </div>
 
-<div id="comment-list" class="flex-1 overflow-y-auto p-5 space-y-2 hide-scroll pb-32"></div>
+<div id="comment-list" class="flex-1 overflow-y-auto p-5 space-y-2 hide-scroll"></div>
 
-<div class="absolute bottom-0 w-full glass border-t border-white/5 p-4 shrink-0 pb-6 rounded-t-xl z-10">
+<div class="w-full glass border-t border-white/5 p-4 shrink-0 pb-6 rounded-t-xl z-10 mt-auto">
 <div id="reply-indicator" class="hidden flex justify-between items-center mb-2 px-1 text-[10px] text-gray-400">
 <span>Membalas <b id="replying-to-name" class="text-brand-info"></b></span>
 <button onclick="cancelReply()" class="hover:text-white bg-white/10 w-4 h-4 rounded-full flex items-center justify-center"><i class="fas fa-times"></i></button>
@@ -2895,20 +2908,18 @@ console.error("Error database:", error);
 const elBio2 = document.getElementById('profile-bio'); if(elBio2) elBio2.innerText = data?.bio || "Belum ada deskripsi.";
 const elImg2 = document.getElementById('profile-img'); if(elImg2) elImg2.src = data?.avatar_url || `https://ui-avatars.com/api/?name=${data?.nickname || 'Player'}&background=1A1133&color=fff`;
 
-// 👇 PERBAIKAN: Memaksa DOM memprioritaskan tampilan flex dan membuang class hidden tanpa konflik
-const actionOwn = document.getElementById('profile-actions-own'); 
-if(actionOwn) { actionOwn.classList.remove('hidden'); actionOwn.classList.add('flex'); }
-const actionOther = document.getElementById('profile-actions-other'); 
-if(actionOther) { actionOther.classList.remove('flex'); actionOther.classList.add('hidden'); }
-
+// Atur visibilitas tombol profil secara aman tanpa merusak struktur Flexbox
+const actionOwn = document.getElementById('profile-actions-own');
+const actionOther = document.getElementById('profile-actions-other');
 
 if (isOwn) {
-    if(actionOwn) { actionOwn.classList.remove('hidden'); actionOwn.classList.add('flex'); }
-    if(actionOther) { actionOther.classList.remove('flex'); actionOther.classList.add('hidden'); }
+    if(actionOwn) actionOwn.classList.remove('hidden');
+    if(actionOther) actionOther.classList.add('hidden');
 } else {
-    if(actionOwn) { actionOwn.classList.remove('flex'); actionOwn.classList.add('hidden'); }
-    if(actionOther) { actionOther.classList.remove('hidden'); actionOther.classList.add('flex'); }
+    if(actionOwn) actionOwn.classList.add('hidden');
+    if(actionOther) actionOther.classList.remove('hidden');
 }
+
 
 const tracker = document.getElementById('order-tracker-section'); if(tracker) tracker.classList.toggle('hidden', !isOwn);
 
