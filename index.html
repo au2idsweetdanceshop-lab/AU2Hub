@@ -2500,18 +2500,21 @@ window.addEventListener('popstate', () => {
         closeDetailProduk(true); 
         return;
     }
-    
-        // TANGKAP MODAL RIWAYAT PESANAN
-    const modalRiwayat = document.getElementById('modal-riwayat-pesanan');
-    if (modalRiwayat && !modalRiwayat.classList.contains('hidden')) {
-        closeRiwayatPesanan(true); 
-        return;
-    }
+
+    // 2. TANGKAP MODAL INVOICE (KARENA INI MENUMPUK DI ATAS RIWAYAT) 👇
     const modalInvoice = document.getElementById('modal-detail-pesanan');
     if (modalInvoice && !modalInvoice.classList.contains('hidden')) {
         closeDetailPesanan(true);
         return;
     }
+
+    // 3. BARU TANGKAP MODAL RIWAYAT PESANAN (LAPISAN BAWAH) 👇
+    const modalRiwayat = document.getElementById('modal-riwayat-pesanan');
+    if (modalRiwayat && !modalRiwayat.classList.contains('hidden')) {
+        closeRiwayatPesanan(true); 
+        return;
+    }
+
 
 
     // ==========================================
