@@ -1,43 +1,35 @@
-// api/webhook-dana.js
-module.exports = async (req, res) => {
-  // Sistem hanya menerima kiriman data metode POST dari MacroDroid HP-mu
+export default async function handler(req, res) {
+  // Hanya izinkan MacroDroid mengirim data via metode POST
   if (req.method !== 'POST') {
-    return res.status(405).json({ message: 'Method tidak diizinkan' });
+    return res.status(405).json({ error: 'Method tidak diizinkan' });
   }
 
   try {
-    const { pesan } = req.body;
+    const { action, nominal } = req.body;
 
-    if (!pesan) {
-      return res.status(400).json({ status: 'failed', message: 'Pesan kosong' });
+    if (action === 'PROCESS_PAYMENT') {
+      const textNotif = nominal || "";
+      
+      // Ekstrak angka murni dari teks notif (Kebal titik/koma)
+      const nominalTarget = parseInt(textNotif.replace(/\D/g, '')) || 0;
+
+      // ---------------------------------------------------------
+      // AREA UPDATE DATABASE
+      // Di sinilah Anda memasukkan logika untuk mengubah status PENDING jadi SUCCESS
+      // Contoh: await db.collection('deposit').updateOne({ nominal: nominalTarget, status: 'PENDING' }, { $set: { status: 'SUCCESS' } });
+      // ---------------------------------------------------------
+
+      // Respons kilat kembali ke MacroDroid
+      return res.status(200).json({ 
+        status: 'success', 
+        message: 'Pembayaran diterima',
+        nominal_masuk: nominalTarget 
+      });
     }
 
-    // 1. Ekstrak nominal angka bulat dari teks notifikasi DANA kamu
-    const nominalRegex = /Rp\s?([\d.]+)/i;
-    const matchNominal = pesan.match(nominalRegex);
-
-    if (!matchNominal) {
-      return res.status(200).json({ status: 'ignored', message: 'Bukan notifikasi nominal uang' });
-    }
-
-    const nominalUang = parseInt(matchNominal[1].replace(/\./g, ''));
-
-    // 2. Menembak link Google Apps Script yang barusan kamu deploy!
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbyidsRrTER7gyLZSdgMSCh5y8ZirxicS7cF31CqS1_WVL72i2R6KtZclpu1RUCfBshi/exec"; 
-
-    const response = await fetch(GAS_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        action: "PROCESS_PAYMENT",
-        nominal: nominalUang
-      })
-    });
-
-    const result = await response.json();
-    return res.status(200).json(result);
-
+    return res.status(200).json({ status: 'ignored' });
+    
   } catch (error) {
-    return res.status(500).json({ status: 'error', error: error.message });
+    return res.status(500).json({ error: 'Terjadi kesalahan server' });
   }
-};
+}
