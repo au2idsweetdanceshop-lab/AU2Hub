@@ -7299,11 +7299,11 @@ history.back();
 
 
 
-// 4. Logika Checkout Pembayaran Robot DANA (VERSI OTOMATIS NOMINAL + KODE UNIK DISKON)
+// 4. Logika Checkout Pembayaran Robot DANA (VERSI SUPABASE SUPER KILAT)
 async function checkoutRobotDANA(namaProduk, harga, deskripsi) {
 if (!currentUser) return showToast("Silakan login dulu untuk membeli!", "error");
 
-// --- LOGIKA KODE UNIK DISKON (1 - 500) MULAI DI SINI ---
+// --- LOGIKA KODE UNIK DISKON (1 - 500) ---
 let kodeUnik = Math.floor(Math.random() * 500) + 1;
 if (harga <= 500) {
     kodeUnik = Math.floor(Math.random() * (harga - 1)) + 1; 
@@ -7320,7 +7320,7 @@ showToast("Menyiapkan antrean pembayaran...", "info");
 
 try {
 // ==========================================
-// 🔥 PERBAIKAN: KEMBALIKAN HTML QRIS ASLI JIKA SEBELUMNYA SUDAH DIHAPUS OLEH NOTIF SUKSES
+// 1. RESTORE HTML UI QRIS (Bawaan Anda, Tetap Sama)
 // ==========================================
 const wadahPembayaran = document.getElementById('qris-container');
 if (wadahPembayaran && !document.getElementById('pay-total')) {
@@ -7342,45 +7342,46 @@ if (wadahPembayaran && !document.getElementById('pay-total')) {
         </div>
         </div>
         <div class="text-[11px] font-bold text-center text-white uppercase tracking-widest mb-6 relative z-10">ADT STORE</div>
-
         <div class="space-y-3 mb-8 bg-black/30 p-4 rounded-2xl border border-white/5 relative z-10">
         <div class="flex justify-between text-xs border-b border-white/5 pb-2"><span class="text-gray-400">Paket Pesanan</span><span id="pay-product" class="text-white font-bold text-right pl-4 leading-tight">-</span></div>
         <div class="flex justify-between text-xs pt-1"><span class="text-gray-400">Admin Rekber NIKKY</span><span class="text-brand-info font-bold">Include (Gratis)</span></div>
         </div>
-
         <a id="wa-confirm" href="#" target="_blank" class="flex justify-center items-center w-full bg-[#25D366] hover:bg-[#20bd5a] active:scale-[0.98] transition-all text-white font-bold py-4 rounded-2xl shadow-[0_8px_20px_rgba(37,211,102,0.25)] text-sm relative z-10">
         <i class="fab fa-whatsapp text-lg mr-2"></i> Konfirmasi ke Admin
         </a>
         <p class="text-center text-[10px] text-gray-500 mt-4 leading-relaxed relative z-10">*Sistem otomatis menyiapkan chat pesanan. Jangan lupa lampirkan screenshot bukti transfer.</p>
     `;
 }
+
 // ==========================================
+// 2. SIMPAN ANTREAN KE SUPABASE (MENGGANTIKAN /api/create-deposit)
+// ==========================================
+// Kita simpan status awal sebagai 'PENDING' agar bisa diintai oleh webhook
+const { data: orderData, error: orderError } = await supabaseClient
+    .from('orders')
+    .insert({
+        user_id: currentUser.id,
+        product_name: namaProduk,
+        price: hargaDenganKodeUnik,
+        status: 'PENDING' // <-- Webhook bertugas mengubah ini jadi SUCCESS
+    })
+    .select()
+    .single();
 
-const response = await fetch('/api/create-deposit', {
-method: 'POST',
-headers: { 'Content-Type': 'application/json' },
-body: JSON.stringify({
-user_id: currentUser.id,
-nominal: hargaDenganKodeUnik 
-})
-});
+if (orderError) throw orderError;
 
-const result = await response.json();
-
-if (result.status === "success") {
-// Karena kita sudah merestore HTML di atas, proses DOM di bawah ini tidak akan crash lagi
+// ==========================================
+// 3. GENERATE QRIS DAN TAMPILKAN UI
+// ==========================================
 document.getElementById('pay-total').innerText = `Rp ${hargaDenganKodeUnik.toLocaleString('id-ID')}`;
 document.getElementById('pay-product').innerText = namaProduk;
 document.getElementById('nominal-asli').value = hargaDenganKodeUnik;
 
-// Generate QRIS 
 const teksQRISDinamis = makeDynamicQRIS(hargaDenganKodeUnik);
 const qrImgUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(teksQRISDinamis)}`;
 
 const qrContainerElement = document.querySelector('#pembayaran img');
-if (qrContainerElement) {
-qrContainerElement.src = qrImgUrl;
-}
+if (qrContainerElement) qrContainerElement.src = qrImgUrl;
 
 const noWA = "6283815584661";
 const teksWA = encodeURIComponent(`Halo Admin, pesanan DANA saya sudah otomatis masuk ya untuk:\n\n*${namaProduk}*`);
@@ -7389,70 +7390,61 @@ document.getElementById('wa-confirm').setAttribute('href', `https://wa.me/${noWA
 switchTab('pembayaran');
 showToast("Silakan scan! Sistem sedang memantau pembayaran Anda.", "success");
 
-// 🔥 RADAR PENGECEK STATUS (CEPAT: 1 DETIK)
+// ==========================================
+// 4. RADAR PENGECEK STATUS REAL-TIME KE SUPABASE
+// ==========================================
 if(window.cekPembayaranInterval) clearInterval(window.cekPembayaranInterval);
 
 window.cekPembayaranInterval = setInterval(async () => {
 try {
-let cekRes = await fetch('/api/check-deposit', {
-method: 'POST',
-headers: { 'Content-Type': 'application/json' },
-body: JSON.stringify({ nominal: hargaDenganKodeUnik }) // Pantau angka yang sudah didiskon!
-});
-let cekData = await cekRes.json();
+    // Tembak langsung ke Supabase tanpa perantara
+    const { data: cekData } = await supabaseClient
+        .from('orders')
+        .select('status')
+        .eq('id', orderData.id)
+        .single();
 
-// JIKA GOOGLE SHEETS BILANG SUCCESS, UBAH LAYAR!
-if(cekData.status === "SUCCESS") {
-clearInterval(window.cekPembayaranInterval); // Matikan radar
+    // Jika MacroDroid & Webhook sudah mengubahnya jadi SUCCESS
+    if(cekData && cekData.status === "SUCCESS") {
+        clearInterval(window.cekPembayaranInterval); // Matikan radar
 
-// Siapkan teks otomatis buat dikirim ke WA pembeli
-const infoXoftware = deskripsi ? deskripsi.replace(/<[^>]*>?/gm, '') : '';
-const teksWASukses = encodeURIComponent(`Halo Admin Joki AU2Hub,\n\nPembayaran DANA saya sudah terkonfirmasi sukses otomatis oleh sistem!\n\nPesanan: *${namaProduk}*\nTotal: Rp ${hargaDenganKodeUnik.toLocaleString('id-ID')}\n\n${infoXoftware}\n\n(Berikut ini saya lampirkan gambar bukti transfer QRIS / screenshot)`);
+        // Ubah status jadi 'proses' agar masuk ke riwayat Joki (Sesuai sistem UI Anda)
+        await supabaseClient.from('orders').update({status: 'proses'}).eq('id', orderData.id);
 
-// 🚀 AUTO-TRACKER: Masukkan pesanan ke database
-try {
-await supabaseClient.from('orders').insert({
-user_id: currentUser.id,
-product_name: namaProduk,
-price: hargaDenganKodeUnik, // Simpan harga akhir ke database riwayat
-status: 'proses',
-created_at: new Date().toISOString()
-});
-} catch(e) { console.log("Gagal auto-track", e); }
+        // Siapkan teks otomatis buat dikirim ke WA pembeli
+        const infoXoftware = deskripsi ? deskripsi.replace(/<[^>]*>?/gm, '') : '';
+        const teksWASukses = encodeURIComponent(`Halo Admin Joki AU2Hub,\n\nPembayaran DANA saya sudah terkonfirmasi sukses otomatis oleh sistem!\n\nPesanan: *${namaProduk}*\nTotal: Rp ${hargaDenganKodeUnik.toLocaleString('id-ID')}\n\n${infoXoftware}\n\n(Berikut ini saya lampirkan gambar bukti transfer QRIS / screenshot)`);
 
-
-// UBAH LAYAR JADI CENTANG HIJAU
-const wadahPembayaran = document.getElementById('qris-container');
-if (wadahPembayaran) {
-wadahPembayaran.innerHTML = `
-<div class="flex flex-col items-center justify-center py-6 text-center modal-anim">
-<div class="relative w-24 h-24 mb-6">
-<div class="absolute inset-0 bg-brand-success rounded-full animate-ping opacity-20"></div>
-<i class="fas fa-check-circle text-7xl text-brand-success relative z-10 drop-shadow-[0_0_20px_rgba(37,211,102,0.8)]"></i>
-</div>
-<h2 class="text-2xl font-extrabold text-white mb-2 tracking-tight">Pembayaran Berhasil!</h2>
-<p class="text-gray-400 text-xs mb-8 leading-relaxed px-4">Dana senilai <strong class="text-brand-success">Rp ${hargaDenganKodeUnik.toLocaleString('id-ID')}</strong> telah diterima sistem.<br>Silakan hubungi Admin untuk proses pesanan Anda.</p>
-
-<div class="w-full space-y-3">
-<a href="https://wa.me/${noWA}?text=${teksWASukses}" target="_blank" class="flex justify-center items-center w-full bg-[#25D366] hover:bg-[#20bd5a] text-white py-4 rounded-xl font-bold shadow-[0_8px_20px_rgba(37,211,102,0.3)] active:scale-95 transition-all uppercase tracking-wider text-xs">
-<i class="fab fa-whatsapp text-lg mr-2"></i> Chat Admin (Kirim Data)
-</a>
-<button onclick="window.location.reload()" class="w-full bg-white/5 text-white py-4 rounded-xl font-bold active:scale-95 transition-all uppercase tracking-wider text-xs border border-white/10 hover:bg-white/10">Selesai & Kembali</button>
-</div>
-</div>
-`;
-}
-}
+        // UBAH LAYAR JADI CENTANG HIJAU
+        const wadahPembayaran = document.getElementById('qris-container');
+        if (wadahPembayaran) {
+        wadahPembayaran.innerHTML = `
+        <div class="flex flex-col items-center justify-center py-6 text-center modal-anim">
+        <div class="relative w-24 h-24 mb-6">
+        <div class="absolute inset-0 bg-brand-success rounded-full animate-ping opacity-20"></div>
+        <i class="fas fa-check-circle text-7xl text-brand-success relative z-10 drop-shadow-[0_0_20px_rgba(37,211,102,0.8)]"></i>
+        </div>
+        <h2 class="text-2xl font-extrabold text-white mb-2 tracking-tight">Pembayaran Berhasil!</h2>
+        <p class="text-gray-400 text-xs mb-8 leading-relaxed px-4">Dana senilai <strong class="text-brand-success">Rp ${hargaDenganKodeUnik.toLocaleString('id-ID')}</strong> telah diterima sistem.<br>Silakan hubungi Admin untuk proses pesanan Anda.</p>
+        <div class="w-full space-y-3">
+        <a href="https://wa.me/${noWA}?text=${teksWASukses}" target="_blank" class="flex justify-center items-center w-full bg-[#25D366] hover:bg-[#20bd5a] text-white py-4 rounded-xl font-bold shadow-[0_8px_20px_rgba(37,211,102,0.3)] active:scale-95 transition-all uppercase tracking-wider text-xs">
+        <i class="fab fa-whatsapp text-lg mr-2"></i> Chat Admin (Kirim Data)
+        </a>
+        <button onclick="window.location.reload()" class="w-full bg-white/5 text-white py-4 rounded-xl font-bold active:scale-95 transition-all uppercase tracking-wider text-xs border border-white/10 hover:bg-white/10">Selesai & Kembali</button>
+        </div>
+        </div>
+        `;
+        }
+    }
 } catch(e) { console.log("Radar tertunda..."); }
 }, 1000);
 
-} else {
-await customAlert(`Gagal membuat pesanan.`);
-}
 } catch (error) {
-showToast("Gangguan jaringan.", "error");
+    showToast("Gangguan jaringan / Database.", "error");
+    console.error(error);
 }
 }
+
 
 
 
