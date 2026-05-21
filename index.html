@@ -7384,7 +7384,7 @@ const qrContainerElement = document.querySelector('#pembayaran img');
 if (qrContainerElement) qrContainerElement.src = qrImgUrl;
 
 const noWA = "6283815584661";
-const teksWA = encodeURIComponent(`Halo Admin, pesanan DANA saya sudah otomatis masuk ya untuk:\n\n*${namaProduk}*`);
+const teksWA = encodeURIComponent(`Halo Admin Joki AU2Hub,\n\nSaya ingin mengkonfirmasi pembayaran pesanan saya:\n\nPaket : *${name}*\nTotal : *Rp ${hargaRupiah}*\n\n(Berikut ini saya lampirkan gambar bukti transfer QRIS / screenshot)`);
 document.getElementById('wa-confirm').setAttribute('href', `https://wa.me/${noWA}?text=${teksWA}`);
 
 switchTab('pembayaran');
