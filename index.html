@@ -7815,14 +7815,21 @@ console.log("Tabel orders belum siap, abaikan tracker.");
 
 function closeRiwayatPesanan(dariTombolBackHP = false) {
     const modal = document.getElementById('modal-riwayat-pesanan');
-    if (modal) {
-        modal.classList.add('hidden');
-        modal.classList.remove('flex');
-    }
-
-    // Jika ditutup pakai tombol (X) silang, hapus jejak URL-nya
+    
     if (!dariTombolBackHP && window.location.hash === '#riwayat') {
-        history.back();
+        history.back(); // Pancing popstate
+    } else {
+        if (modal) {
+            // Beri efek halus memudar saat ditutup
+            modal.style.opacity = '0';
+            modal.style.transition = 'opacity 0.3s ease';
+            
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+                modal.style.opacity = '1'; // Reset
+            }, 300);
+        }
     }
 }
 
@@ -8155,11 +8162,20 @@ function bukaDetailPesananDinamis(orderId, productName, price, status) {
 
 // 🔥 FUNGSI MENUTUP MODAL INVOICE (DIPERBARUI DENGAN BACK DETECTION)
 function closeDetailPesanan(dariTombolBackHP = false) {
-    document.getElementById('modal-detail-pesanan').classList.replace('flex', 'hidden');
-
-    // 🔥 KUNCI UTAMA 2: Hapus jejak URL jika ditutup manual lewat tombol (X)
+    const modal = document.getElementById('modal-detail-pesanan');
+    
     if (!dariTombolBackHP && window.location.hash === '#invoice') {
+        // Jika dari tombol (X) atau Batal, biarkan history.back() memanggil popstate
         history.back();
+    } else {
+        // Jika popstate sudah bekerja (Back HP), berikan efek halus sebelum menghilang
+        modal.style.opacity = '0';
+        modal.style.transition = 'opacity 0.3s ease';
+        
+        setTimeout(() => {
+            modal.classList.replace('flex', 'hidden');
+            modal.style.opacity = '1'; // Reset untuk dibuka lagi nanti
+        }, 300);
     }
 }
 
