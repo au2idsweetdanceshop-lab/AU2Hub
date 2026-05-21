@@ -632,7 +632,7 @@ Satu pintu untuk info update terbaru, panduan pemula, jasa joki profesional, dan
 </button>
 </div>
 
-<div id="profile-actions-other" class="hidden flex-col gap-2 justify-center px-4 mb-6">
+<div id="profile-actions-other" class="hidden flex flex-col gap-2 justify-center px-4 mb-6">
 <div class="flex gap-2">
 <button id="btn-follow" onclick="toggleFollow(viewedUserId)" class="flex-1 bg-brand-accent py-2.5 rounded-xl text-[11px] font-extrabold text-white uppercase tracking-wide hover:scale-95 transition-transform shadow-[0_0_15px_rgba(255,0,122,0.3)]">Ikuti</button>
 <button onclick="kirimPesanPribadi(viewedUserId)" class="flex-1 bg-white/10 border border-white/10 py-2.5 rounded-xl text-[11px] font-bold text-white hover:bg-white/20 transition-colors">Kirim Pesan</button>
@@ -1801,7 +1801,7 @@ function formatCaption(text) {
         .replace(/'/g, "&#39;");
 
     // 1. Deteksi Hashtag (#tagar) - Warna Biru
-    formatted = formatted.replace(/#(\w+)/g, '<span onclick="event.stopPropagation(); showToast(\'Fitur pencarian tagar #$1 sedang dikembangkan\', \'info\')" class="font-bold text-brand-info hover:underline cursor-pointer">#$1</span>');
+    formatted = formatted.replace(/#(\w+)/g, '<span onclick="event.stopPropagation(); cariBerdasarkanTagar(\'$1\')" class="font-bold text-brand-info hover:underline cursor-pointer">#$1</span>');
 
     // 2. Deteksi Mention (@username) - Warna Pink/Accent
     formatted = formatted.replace(/@(\w+)/g, '<span onclick="event.stopPropagation(); viewUserProfileByNickname(\'$1\')" class="font-bold text-brand-accent hover:underline cursor-pointer">@$1</span>');
@@ -1834,6 +1834,32 @@ async function viewUserProfileByNickname(nickname) {
         showToast(`Pengguna @${nickname} tidak ditemukan.`, "error");
     }
 }
+
+function cariBerdasarkanTagar(tagar) {
+    // 1. Tutup popup atau layar yang sedang aktif jika diperlukan
+    const storyModal = document.getElementById('story-viewer-modal');
+    if (storyModal && !storyModal.classList.contains('hidden')) {
+        closeStoryViewer();
+    }
+    
+    // 2. Filter data video yang caption-nya mengandung hashtag tersebut
+    const videoDitemukan = allVideosData.filter(v => 
+        v.caption && v.caption.toLowerCase().includes('#' + tagar.toLowerCase())
+    );
+
+    if (videoDitemukan.length === 0) {
+        showToast(`Belum ada video dengan tagar #${tagar}`, "error");
+        return;
+    }
+
+    showToast(`Ditemukan ${videoDitemukan.length} video dengan tagar #${tagar}`, "success");
+
+    // 3. (Opsional) Tampilkan hasil pencarian
+    // Anda bisa memanfaatkan modal daftar user yang sudah ada atau membuat 
+    // container baru khusus untuk menampilkan grid hasil pencarian video.
+    console.log("Hasil pencarian tagar:", videoDitemukan);
+}
+
 
 
 
@@ -2258,10 +2284,13 @@ let dataDariSheet = await res.json();
 
 // --- TAMBAHAN BARU: PENYERAGAMAN ID PINTAR ---
 dataDariSheet = dataDariSheet.map(v => {
-v.id = v.id || v.video_id || v.ID || 'vid_' + Math.random().toString(36).substr(2, 9);
-return v;
+    v.id = v.id || v.video_id || v.ID || 'vid_' + Math.random().toString(36).substr(2, 9);
+    // 👇 TAMBAHKAN BARIS INI AGAR GRID VIDEO MUNCUL 👇
+    v.user_id = v.user_id || v.User_ID || v.userId || v.userid; 
+    return v;
 });
 // ---------------------------------------------
+
 
 newUploads.forEach(newVid => {
 newVid.id = newVid.id || newVid.video_id; // Samakan juga ID untuk video baru
@@ -2919,8 +2948,9 @@ const elLikes = document.getElementById('profile-total-likes');
 if (elLikes) elLikes.innerText = (userVideos.length * 3);
 
 
-fetchFollowStats(userId);
-loadOrderTracker(userId); // <--- INI DIA YANG KETINGGALAN OM
+// Tambahkan 'await' agar sistem menunggu datanya siap dulu sebelum menampilkan profil
+await fetchFollowStats(userId);
+await loadOrderTracker(userId); 
 
 // Hilangkan loading dan munculkan profil
 document.getElementById('profile-loading').classList.add('hidden');
@@ -8078,18 +8108,23 @@ function toggleInfoDesc(idx) {
 
 // --- JURUS SWIPE LEADERBOARD ---
 let lbTouchStartX = 0;
+let lbTouchStartY = 0; // Tambahan untuk mendeteksi sumbu Y (vertikal)
 const lbModal = document.getElementById('modal-leaderboard');
 
 lbModal.addEventListener('touchstart', e => {
     lbTouchStartX = e.changedTouches[0].screenX;
+    lbTouchStartY = e.changedTouches[0].screenY;
 }, {passive: true});
 
 lbModal.addEventListener('touchend', e => {
     let touchEndX = e.changedTouches[0].screenX;
-    let diff = lbTouchStartX - touchEndX;
+    let touchEndY = e.changedTouches[0].screenY;
     
-    // Minimal geser 50 pixel biar gak kepencet pas lagi scroll pelan
-    if (Math.abs(diff) > 50) { 
+    let diffX = lbTouchStartX - touchEndX;
+    let diffY = lbTouchStartY - touchEndY;
+    
+    // Validasi: Geser sumbu X harus > 50px DAN Geser sumbu Y harus < 50px (mencegah tab pindah saat sedang scroll ke bawah/atas)
+    if (Math.abs(diffX) > 50 && Math.abs(diffY) < 50) { 
         const tabs = ['creator', 'level', 'sultan'];
         let currentTab = '';
         
@@ -8100,15 +8135,16 @@ lbModal.addEventListener('touchend', e => {
 
         let currentIndex = tabs.indexOf(currentTab);
         
-        if (diff > 0) { 
-            // Swipe ke KIRI (Geser layar ke kiri) = Pindah ke TAB BERIKUTNYA
+        if (diffX > 0) { 
+            // Swipe ke KIRI = Pindah ke TAB BERIKUTNYA
             if (currentIndex < 2) switchLeaderboardTab(tabs[currentIndex + 1]);
         } else { 
-            // Swipe ke KANAN (Geser layar ke kanan) = Pindah ke TAB SEBELUMNYA
-            if (currentIndex > 0) switchLeaderboardTabl(tabs[currentIndex - 1]);
+            // Swipe ke KANAN = Pindah ke TAB SEBELUMNYA (TYPO DIPERBAIKI)
+            if (currentIndex > 0) switchLeaderboardTab(tabs[currentIndex - 1]); 
         }
     }
 }, {passive: true});
+
 
 // 🔥 FUNGSI PEMBUKA MODAL INVOICE (DIPERBARUI DENGAN BACK DETECTION)
 function bukaDetailPesananDinamis(orderId, productName, price, status) {
