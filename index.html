@@ -1241,13 +1241,23 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
 
 <!-- MODAL DAFTAR USER FOLLOW/FOLLOWING -->
 <div id="modal-user-list" class="fixed inset-0 z-[250] hidden items-center justify-center bg-black/90 backdrop-blur-md px-6">
-<div class="bg-brand-card w-full max-w-sm rounded-3xl border border-white/10 shadow-2xl relative modal-anim flex flex-col max-h-[70vh]">
-<div class="flex justify-between items-center p-4 border-b border-white/5">
-<h3 id="user-list-title" class="font-bold text-white text-sm">Daftar Pengguna</h3>
-<button onclick="closeUserList()" class="text-gray-400 hover:text-white w-8 h-8 rounded-full bg-white/5 flex items-center justify-center"><i class="fas fa-times"></i></button>
-</div>
-<div id="user-list-container" class="flex-1 overflow-y-auto p-2 hide-scroll"></div>
-</div>
+    <div class="bg-brand-card w-full max-w-sm rounded-3xl border border-white/10 shadow-2xl relative modal-anim flex flex-col max-h-[70vh]">
+        
+        <div class="flex justify-between items-center p-4 border-b border-white/5 shrink-0">
+            <h3 id="user-list-title" class="font-bold text-white text-sm">Daftar Pengguna</h3>
+            <button onclick="closeUserList()" class="text-gray-400 hover:text-white w-8 h-8 rounded-full bg-white/5 flex items-center justify-center active:scale-95 transition-all"><i class="fas fa-times"></i></button>
+        </div>
+        
+        <!-- [BARU] Kotak Pencarian Instan -->
+        <div class="p-3 bg-black/20 shrink-0 border-b border-white/5">
+            <div class="relative">
+                <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-xs"></i>
+                <input type="text" id="userListSearch" placeholder="Cari nama pengguna..." class="w-full bg-black/40 border border-white/10 rounded-xl py-2 pl-9 pr-3 text-xs text-white outline-none focus:border-brand-accent transition-colors">
+            </div>
+        </div>
+
+        <div id="user-list-container" class="flex-1 overflow-y-auto p-2 hide-scroll block"></div>
+    </div>
 </div>
 
 <nav class="fixed bottom-0 left-0 w-full glass z-40 flex justify-around items-center h-[70px] px-1 shadow-[0_-10px_30px_rgba(0,0,0,0.5)]">
@@ -1901,6 +1911,7 @@ const title = document.getElementById('user-list-title');
 title.innerText = type === 'mengikuti' ? 'Mengikuti' : 'Pengikut';
 modal.classList.remove('hidden');
 modal.classList.add('flex');
+document.getElementById('userListSearch').value = '';
 container.innerHTML = '<div class="flex justify-center mt-10"><i class="fas fa-spinner fa-spin text-brand-accent text-xl"></i></div>';
 
 let query = supabaseClient.from('follows').select(type === 'mengikuti' ? 'following_id' : 'follower_id').eq(type === 'mengikuti' ? 'follower_id' : 'following_id', targetId);
@@ -3390,6 +3401,32 @@ let htmlString = dataYangDitampilkan.map(r => `<div class="p-4 border-b border-w
 container.innerHTML = htmlString;
 if (!isSearch && !isRipperExpanded && data.length > 5) { container.innerHTML += `<div id="wadah-tombol-semua" class="p-5 text-center bg-black/20 mt-1 border-t border-white/5"><button onclick="tampilkanSemuaRipper(this)" class="bg-brand-accent/20 border border-brand-accent/40 text-brand-accent text-xs font-bold py-2.5 px-6 rounded-full active:scale-95 transition-all w-full flex items-center justify-center"><i class="fas fa-list-ul mr-2"></i> Tampilkan Semua Laporan</button></div>`; }
 }
+
+// ==========================================
+// FITUR PENCARIAN PENGIKUT/MENGIKUTI (INSTAN DOM FILTERING)
+// ==========================================
+document.getElementById('userListSearch').addEventListener('input', function(e) {
+    const keyword = e.target.value.toLowerCase();
+    const container = document.getElementById('user-list-container');
+    
+    // Ambil semua elemen baris user (div) di dalam container
+    const listItems = container.querySelectorAll('div.flex.items-center.p-3'); 
+    
+    listItems.forEach(item => {
+        // Ambil nama dari tag h4
+        const nameElement = item.querySelector('h4');
+        if (nameElement) {
+            const name = nameElement.innerText.toLowerCase();
+            // Cek kecocokan
+            if (name.includes(keyword)) {
+                item.style.display = ''; // Tampilkan
+            } else {
+                item.style.display = 'none'; // Sembunyikan
+            }
+        }
+    });
+});
+
 
 function tampilkanSemuaRipper(tombol) {
 isRipperExpanded = true; localStorage.setItem('statusLihatSemua', 'true');
@@ -7745,7 +7782,7 @@ try {
 const { data, error } = await supabaseClient.from('orders').select('status').eq('user_id', userId);
 
 if (data && data.length > 0) {
-let countBayar = data.filter(o => o.status === 'bayar').length;
+let countBayar = data.filter(o => o.status === 'PENDING').length;
 let countProses = data.filter(o => o.status === 'proses').length;
 let countSelesai = data.filter(o => o.status === 'selesai').length;
 
@@ -7824,7 +7861,47 @@ customAlert("Tidak ada pesanan yang sedang diproses saat ini.");
 }
 }
 else if (status === 'bayar') {
-showToast("Tidak ada tagihan yang belum dibayar.", "info");
+    const modal = document.getElementById('modal-riwayat-pesanan');
+    const container = document.getElementById('riwayat-pesanan-list');
+    
+    // Buka Modal & Tampilkan Loading
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    history.pushState({ popup: 'riwayat_pesanan' }, null, '#riwayat');
+
+    container.innerHTML = '<div class="flex flex-col items-center justify-center mt-20"><i class="fas fa-spinner fa-spin text-brand-info text-4xl mb-3"></i><p class="text-[10px] text-gray-500 font-bold tracking-widest uppercase">Memuat Database...</p></div>';
+
+    try {
+        // Tarik KHUSUS pesanan yang berstatus PENDING
+        const { data, error } = await supabaseClient
+            .from('orders')
+            .select('*')
+            .eq('user_id', currentUser.id)
+            .eq('status', 'PENDING') 
+            .order('created_at', { ascending: false });
+
+        if (data && data.length > 0) {
+            container.innerHTML = data.map(order => {
+                return `
+                <div class="bg-brand-dark/50 border border-white/5 p-4 rounded-2xl flex flex-col gap-2 relative overflow-hidden transition-all hover:border-brand-info/30">
+                    <div class="flex justify-between items-start z-10">
+                        <h4 class="text-xs font-bold text-white line-clamp-2 pr-3">${order.product_name}</h4>
+                        <span class="text-[9px] font-extrabold px-2 py-1 rounded-md border whitespace-nowrap flex items-center gap-1 text-red-500 bg-red-500/10 border-red-500/30 shrink-0 shadow-sm">
+                            <i class="fas fa-wallet"></i> BELUM BAYAR
+                        </span>
+                    </div>
+                    <div class="flex justify-between items-end mt-2 z-10 border-t border-white/5 pt-2.5">
+                        <span class="text-[9px] text-gray-400"><i class="far fa-clock mr-1"></i>${timeAgo(order.created_at)}</span>
+                        <span class="text-[13px] font-extrabold text-brand-accent">Rp ${Number(order.price).toLocaleString('id-ID')}</span>
+                    </div>
+                </div>`;
+            }).join('');
+        } else {
+            container.innerHTML = '<div class="text-center mt-20 text-gray-500"><i class="fas fa-wallet text-5xl mb-3 opacity-30"></i><p class="text-xs font-bold uppercase tracking-wider">Tidak Ada Tagihan</p></div>';
+        }
+    } catch (e) {
+        container.innerHTML = '<div class="text-center mt-20 text-red-500 text-xs">Gagal menarik data dari server.</div>';
+    }
 }
 else if (status === 'selesai' || status === 'riwayat') {
     const modal = document.getElementById('modal-riwayat-pesanan');
