@@ -2279,72 +2279,68 @@ fetchFollowStats(currentUser.id);
 }
 
 async function renderProfileVideos(targetUserId = null) {
-const grid = document.getElementById('profile-video-grid');
-if (!grid) return;
+    const grid = document.getElementById('profile-video-grid');
+    if (!grid) return;
 
-const uidToRender = targetUserId || (currentUser ? currentUser.id : null);
+    const uidToRender = String(targetUserId || (currentUser ? currentUser.id : viewedUserId));
 
-if (!uidToRender) {
-grid.innerHTML = '';
-return;
+    if (!uidToRender || uidToRender === 'null' || uidToRender === 'undefined') {
+        grid.innerHTML = '';
+        return;
+    }
+
+    if (allVideosData.length === 0) {
+        try {
+            grid.innerHTML = '<div class="col-span-3 text-center text-xs text-brand-info py-4"><i class="fas fa-spinner fa-spin text-xl mb-2"></i><br>Memuat...</div>';
+            const res = await fetch('/api/get-videos');
+            let dataDariSheet = await res.json();
+
+            dataDariSheet = dataDariSheet.map(v => {
+                v.id = v.id || v.video_id || v.ID || 'vid_' + Math.random().toString(36).substr(2, 9);
+                v.user_id = v.user_id || v.User_ID || v.userId || v.userid; 
+                return v;
+            });
+
+            newUploads.forEach(newVid => {
+                newVid.id = newVid.id || newVid.video_id;
+                if (!dataDariSheet.find(v => v.id === newVid.id)) dataDariSheet.push(newVid);
+            });
+
+            dataDariSheet = dataDariSheet.filter(v => !blockedUsersList.includes(v.user_id));
+            allVideosData = dataDariSheet;
+        } catch(e) {
+            grid.innerHTML = '<p class="col-span-3 text-center text-xs text-red-500 py-4">Gagal memuat video profil.</p>';
+            return;
+        }
+    }
+
+    const userVideos = allVideosData.filter(v => String(v.user_id) === uidToRender);
+
+    const elLikes = document.getElementById('profile-total-likes');
+    if (elLikes) elLikes.innerText = (userVideos.length * 3);
+
+    const reversedVideos = [...userVideos].reverse();
+
+    if (reversedVideos.length === 0) {
+        grid.innerHTML = '<div class="col-span-3 text-center text-xs text-gray-500 py-8 bg-black/20 rounded-xl border border-white/5"><i class="fas fa-film text-2xl mb-2 opacity-50"></i><br>Belum ada video yang diupload.</div>';
+        return;
+    }
+
+    grid.innerHTML = reversedVideos.map((vid, index) => {
+        return `
+        <div class="aspect-[9/16] bg-black relative rounded-md overflow-hidden border border-white/10 group cursor-pointer" onclick="openProfileFeed('${vid.user_id}', ${index})">
+            <video class="w-full h-full object-cover" preload="metadata">
+                <source src="${vid.video_url}" type="video/mp4">
+            </video>
+            <div class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                <i class="fas fa-play text-white text-xl"></i>
+            </div>
+        </div>
+        `;
+    }).join('');
 }
 
-if (allVideosData.length === 0) {
-try {
-grid.innerHTML = '<div class="col-span-3 text-center text-xs text-brand-info py-4"><i class="fas fa-spinner fa-spin text-xl mb-2"></i><br>Memuat...</div>';
-const res = await fetch('/api/get-videos');
-let dataDariSheet = await res.json();
 
-// --- TAMBAHAN BARU: PENYERAGAMAN ID PINTAR ---
-dataDariSheet = dataDariSheet.map(v => {
-    v.id = v.id || v.video_id || v.ID || 'vid_' + Math.random().toString(36).substr(2, 9);
-    // 👇 TAMBAHKAN BARIS INI AGAR GRID VIDEO MUNCUL 👇
-    v.user_id = v.user_id || v.User_ID || v.userId || v.userid; 
-    return v;
-});
-// ---------------------------------------------
-
-
-newUploads.forEach(newVid => {
-newVid.id = newVid.id || newVid.video_id; // Samakan juga ID untuk video baru
-if (!dataDariSheet.find(v => v.id === newVid.id)) dataDariSheet.push(newVid);
-});
-
-dataDariSheet = dataDariSheet.filter(v => !blockedUsersList.includes(v.user_id));
-allVideosData = dataDariSheet;
-} catch(e) {
-grid.innerHTML = '<p class="col-span-3 text-center text-xs text-red-500 py-4">Gagal memuat video profil.</p>';
-return;
-}
-}
-
-
-// PERBAIKAN: Gunakan String() agar tidak error jika ID berupa Angka vs Teks
-const userVideos = allVideosData.filter(v => String(v.user_id) === String(uidToRender));
-
-const elLikes = document.getElementById('profile-total-likes');
-if (elLikes) elLikes.innerText = (userVideos.length * 3);
-
-const reversedVideos = [...userVideos].reverse();
-
-if (reversedVideos.length === 0) {
-grid.innerHTML = '<div class="col-span-3 text-center text-xs text-gray-500 py-8 bg-black/20 rounded-xl border border-white/5"><i class="fas fa-film text-2xl mb-2 opacity-50"></i><br>Belum ada video yang diupload.</div>';
-return;
-}
-
-// PERBAIKAN: Menggunakan map dengan parameter (vid, index)
-grid.innerHTML = reversedVideos.map((vid, index) => {
-return `
-<div class="aspect-[9/16] bg-black relative rounded-md overflow-hidden border border-white/10 group cursor-pointer" onclick="openProfileFeed('${vid.user_id}', ${index})">
-<video class="w-full h-full object-cover" preload="metadata">
-<source src="${vid.video_url}" type="video/mp4">
-</video>
-<div class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-<i class="fas fa-play text-white text-xl"></i>
-</div>
-</div>
-`}).join('');
-}
 
 
 
@@ -2872,131 +2868,133 @@ function closeUploadModal() {
 
 
 async function openUserProfile(userId) {
-try {
-let wasPopupOpen = false;
+    try {
+        let wasPopupOpen = false;
 
-// 1. Matikan mode video utama jika aktif
-if (document.body.classList.contains('video-focused')) {
-toggleGlobalAudio(true);
-wasPopupOpen = true;
+        if (document.body.classList.contains('video-focused')) {
+            toggleGlobalAudio(true);
+            wasPopupOpen = true;
+        }
+
+        const floatingPlayer = document.getElementById('floating-video-player');
+        if (floatingPlayer && !floatingPlayer.classList.contains('hidden')) {
+            closeFloatingVideo(true);
+            wasPopupOpen = true;
+        }
+
+        viewedUserId = userId;
+
+        setTimeout(() => {
+            switchTab('profile', null, false);
+        }, 10);
+
+        document.getElementById('profile-loading').classList.remove('hidden');
+        document.querySelectorAll('#profile-logged-in').forEach(el => el.classList.add('hidden'));
+
+        const currentUserId = currentUser ? String(currentUser.id) : null;
+        const targetId = String(userId);
+        const isOwn = (targetId === currentUserId);
+
+        const { data, error } = await supabaseClient.from('profiles').select('*').eq('id', userId).single();
+        if (error && error.code !== 'PGRST116') {
+            console.error("Error database:", error);
+        }
+
+        const elBio2 = document.getElementById('profile-bio'); if(elBio2) elBio2.innerText = data?.bio || "Belum ada deskripsi.";
+        const elImg2 = document.getElementById('profile-img'); if(elImg2) elImg2.src = data?.avatar_url || `https://ui-avatars.com/api/?name=${data?.nickname || 'Player'}&background=1A1133&color=fff`;
+
+        const actionOwn = document.getElementById('profile-actions-own');
+        const actionOther = document.getElementById('profile-actions-other');
+
+        if (isOwn) {
+            if(actionOwn) { actionOwn.classList.remove('hidden'); actionOwn.style.display = 'flex'; }
+            if(actionOther) { actionOther.classList.add('hidden'); actionOther.style.display = 'none'; }
+        } else {
+            if(actionOwn) { actionOwn.classList.add('hidden'); actionOwn.style.display = 'none'; }
+            if(actionOther) { actionOther.classList.remove('hidden'); actionOther.style.display = 'flex'; }
+        }
+
+        const tracker = document.getElementById('order-tracker-section'); 
+        if(tracker) {
+            if(isOwn) { tracker.classList.remove('hidden'); tracker.style.display = 'block'; }
+            else { tracker.classList.add('hidden'); tracker.style.display = 'none'; }
+        }
+
+        const btnBack = document.getElementById('btn-back-profile');
+        if (btnBack) {
+            if (isOwn) { btnBack.classList.add('hidden'); btnBack.style.display = 'none'; }
+            else { btnBack.classList.remove('hidden'); btnBack.style.display = 'flex'; }
+        }
+
+        const inputAva = document.getElementById('btn-edit-avatar');
+        if(inputAva) {
+            if(isOwn) { inputAva.classList.remove('hidden'); inputAva.style.display = 'flex'; }
+            else { inputAva.classList.add('hidden'); inputAva.style.display = 'none'; }
+        }
+
+        const elVidTitle = document.getElementById('profile-video-title');
+        if(elVidTitle) {
+            if(isOwn) { elVidTitle.innerHTML = `<i class="fas fa-grip-vertical mr-2 text-brand-info"></i> Video Saya`; }
+            else { elVidTitle.innerHTML = `<i class="fas fa-grip-vertical mr-2 text-brand-info"></i> Video ${data?.nickname || ''}`; }
+        }
+
+        await renderProfileVideos(userId);
+
+        const userVideos = allVideosData.filter(v => String(v.user_id) === targetId);
+        const expDataLain = data?.exp || 0;
+        const statusLevelObj = hitungStatusLevel(expDataLain);
+        const badgeHTML = getBadgeByLevelAndVideos(statusLevelObj.level, userVideos.length);
+        
+        const elNick2 = document.getElementById('profile-nickname');
+        if(elNick2) elNick2.innerHTML = "@" + (data?.nickname || "Player") + badgeHTML;
+
+        const elLevelBadge = document.getElementById('profile-level-badge');
+        const elExpContainer = document.getElementById('profile-exp-container');
+
+        if (elLevelBadge && elExpContainer) {
+            elLevelBadge.innerText = `Lv. ${statusLevelObj.level}`;
+            elLevelBadge.classList.remove('hidden');
+            
+            document.getElementById('text-exp-current').innerText = `EXP: ${statusLevelObj.exp}`;
+            document.getElementById('text-exp-target').innerText = `Next: ${statusLevelObj.targetNextLevel}`;
+            
+            setTimeout(() => {
+                document.getElementById('bar-exp-progress').style.width = `${statusLevelObj.persentase}%`;
+            }, 100);
+            
+            elExpContainer.classList.remove('hidden');
+        }
+
+        const elLikes = document.getElementById('profile-total-likes');
+        if (elLikes) elLikes.innerText = (userVideos.length * 3);
+
+        try { await fetchFollowStats(userId); } catch (e) { console.warn(e); }
+        try { await loadOrderTracker(userId); } catch (e) { console.warn(e); }
+
+        document.getElementById('profile-loading').classList.add('hidden');
+        document.querySelectorAll('#profile-logged-in').forEach(el => {
+            el.classList.remove('hidden');
+            if (el.tagName === 'DIV' && el.id !== 'profile-actions-other' && el.id !== 'profile-actions-own') {
+                el.style.display = 'block';
+            }
+        });
+
+        checkBlockStatusUI();
+
+        if(!isOwn) {
+            if (wasPopupOpen) {
+                history.replaceState({ popup: 'user_profile' }, null, `#profile?id=${userId}`);
+            } else {
+                history.pushState({ popup: 'user_profile' }, null, `#profile?id=${userId}`);
+            }
+        }
+    } catch (err) {
+        console.error("Gagal membuka profil:", err);
+        showToast("Terjadi kesalahan saat memuat profil.", "error");
+    }
 }
 
-// 2. Tutup pop-up video profil jika aktif
-const floatingPlayer = document.getElementById('floating-video-player');
-if (floatingPlayer && !floatingPlayer.classList.contains('hidden')) {
-closeFloatingVideo(true);
-wasPopupOpen = true;
-}
 
-viewedUserId = userId;
-
-// 👇 KUNCI PERBAIKAN: Berikan jeda 10ms agar render browser tidak bertabrakan saat video dihancurkan
-setTimeout(() => {
-switchTab('profile', null, false);
-}, 10);
-
-// Tampilkan loading skeleton
-document.getElementById('profile-loading').classList.remove('hidden');
-document.querySelectorAll('#profile-logged-in').forEach(el => el.classList.add('hidden'));
-
-const isOwn = (userId === currentUser?.id);
-
-// Ambil data profil (Aman dari silent error)
-const { data, error } = await supabaseClient.from('profiles').select('*').eq('id', userId).single();
-if (error && error.code !== 'PGRST116') {
-console.error("Error database:", error);
-}
-
-const elBio2 = document.getElementById('profile-bio'); if(elBio2) elBio2.innerText = data?.bio || "Belum ada deskripsi.";
-const elImg2 = document.getElementById('profile-img'); if(elImg2) elImg2.src = data?.avatar_url || `https://ui-avatars.com/api/?name=${data?.nickname || 'Player'}&background=1A1133&color=fff`;
-
-// Atur visibilitas tombol profil secara aman paksa lewat inline style
-const actionOwn = document.getElementById('profile-actions-own');
-const actionOther = document.getElementById('profile-actions-other');
-
-if (isOwn) {
-    if(actionOwn) { actionOwn.classList.remove('hidden'); actionOwn.style.display = 'flex'; }
-    if(actionOther) { actionOther.classList.add('hidden'); actionOther.style.display = 'none'; }
-} else {
-    if(actionOwn) { actionOwn.classList.add('hidden'); actionOwn.style.display = 'none'; }
-    if(actionOther) { actionOther.classList.remove('hidden'); actionOther.style.display = 'flex'; }
-}
-
-
-const tracker = document.getElementById('order-tracker-section'); if(tracker) tracker.classList.toggle('hidden', !isOwn);
-
-document.getElementById('btn-back-profile').classList.toggle('hidden', isOwn);
-
-const inputAva = document.getElementById('btn-edit-avatar');
-if(inputAva) inputAva.classList.toggle('hidden', !isOwn);
-
-const elVidTitle = document.getElementById('profile-video-title');
-if(elVidTitle) {
-if(isOwn) { elVidTitle.innerHTML = `<i class="fas fa-grip-vertical mr-2 text-brand-info"></i> Video Saya`; }
-else { elVidTitle.innerHTML = `<i class="fas fa-grip-vertical mr-2 text-brand-info"></i> Video ${data?.nickname || ''}`; }
-}
-
-// 🚀 PERBAIKAN UTAMA: Tarik data video dari internet duluan sampai beres (await)
-await renderProfileVideos(userId);
-
-// Baru hitung lencana badge & total likes biar auto-akurat tanpa delay / bug nunggu refresh
-// PERBAIKAN: Pakai String() agar total Likes & Video orang lain akurat
-const userVideos = allVideosData.filter(v => String(v.user_id) === String(userId));
-
-// 1. Ambil & Hitung Level User yang Dilihat
-const expDataLain = data?.exp || 0;
-const statusLevelObj = hitungStatusLevel(expDataLain);
-
-// 2. Update Nickname & Kasta Badge
-const badgeHTML = getBadgeByLevelAndVideos(statusLevelObj.level, userVideos.length);
-const elNick2 = document.getElementById('profile-nickname');
-if(elNick2) elNick2.innerHTML = "@" + (data?.nickname || "Player") + badgeHTML;
-
-// 3. Update Level Badge & Bar EXP Sesuai Profil yang Dibuka
-const elLevelBadge = document.getElementById('profile-level-badge');
-const elExpContainer = document.getElementById('profile-exp-container');
-
-if (elLevelBadge && elExpContainer) {
-    elLevelBadge.innerText = `Lv. ${statusLevelObj.level}`;
-    elLevelBadge.classList.remove('hidden');
-    
-    document.getElementById('text-exp-current').innerText = `EXP: ${statusLevelObj.exp}`;
-    document.getElementById('text-exp-target').innerText = `Next: ${statusLevelObj.targetNextLevel}`;
-    
-    setTimeout(() => {
-        document.getElementById('bar-exp-progress').style.width = `${statusLevelObj.persentase}%`;
-    }, 100);
-    
-    elExpContainer.classList.remove('hidden');
-}
-
-const elLikes = document.getElementById('profile-total-likes');
-if (elLikes) elLikes.innerText = (userVideos.length * 3);
-
-
-// Tambahkan 'await' agar sistem menunggu datanya siap dulu sebelum menampilkan profil
-await fetchFollowStats(userId);
-await loadOrderTracker(userId); 
-
-// Hilangkan loading dan munculkan profil
-document.getElementById('profile-loading').classList.add('hidden');
-document.querySelectorAll('#profile-logged-in').forEach(el => el.classList.remove('hidden'));
-
-checkBlockStatusUI();
-
-// Pastikan riwayat URL tidak kacau
-if(!isOwn) {
-if (wasPopupOpen) {
-history.replaceState({ popup: 'user_profile' }, null, `#profile?id=${userId}`);
-} else {
-history.pushState({ popup: 'user_profile' }, null, `#profile?id=${userId}`);
-}
-}
-} catch (err) {
-console.error("Gagal membuka profil:", err);
-showToast("Terjadi kesalahan saat memuat profil.", "error");
-}
-}
 
 
 
