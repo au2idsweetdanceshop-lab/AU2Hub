@@ -25,13 +25,13 @@
   ],
   "screenshots": [
     {
-      "src": "/app-icon-512.png",
+      "src": "/app-icon-51v2.png",
       "sizes": "512x512",
       "type": "image/png",
       "form_factor": "narrow"
     },
     {
-      "src": "/app-icon-512.png",
+      "src": "/app-icon-51v2.png",
       "sizes": "512x512",
       "type": "image/png",
       "form_factor": "wide"
