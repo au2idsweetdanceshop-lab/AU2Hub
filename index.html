@@ -330,14 +330,25 @@ input[type="checkbox"].peer:checked + div::after {
 .nav-item.active {
     background-color: rgba(255, 255, 255, 0.1);
     color: #FF007A !important;
-    border-radius: 1.5rem; /* Bentuk melengkung halus seperti kapsul */
-    height: 80px !important; /* INI KUNCINYA: Memanjang ke atas & bawah saat diklik */
+    border-radius: 1.5rem; 
+}
+
+/* KHUSUS MENU BIASA: Memanjang ke atas & bawah */
+.nav-item.active:not([href="#home"]) {
+    height: 80px !important; 
+}
+
+/* KHUSUS LOGO HOME: Jangan memanjang, cukup gambarnya saja yang membesar */
+.nav-item.active[href="#home"] img {
+    transform: scale(1.15);
+    transition: transform 0.3s ease;
 }
 
 .nav-item.active i {
     animation: none;
-    transform: scale(1.2); /* Ikon sedikit lebih besar saat aktif */
+    transform: scale(1.2); 
 }
+
 
 /* Sembunyikan Navigasi ke Kiri saat Nonton Video Penuh */
 body.video-focused nav {
@@ -2615,11 +2626,16 @@ if(headerTop) headerTop.style.filter = 'blur(8px) opacity(0.5)';
 
 
 function switchTab(tabId, event = null, isPush = true) {
-if (event) event.preventDefault();
+    if (event) event.preventDefault();
 
-// 🚀 PRO-FIX 5 TAHUN: PAKSA BALIK PROFIL SENDIRI TANPA SYARAT + CLEAR PARAMS URL
-if (tabId === 'profile' && event !== null && currentUser) {
-viewedUserId = currentUser.id;
+    // 🔥 FIX: Mencegah tabrakan layar freeze saat klik AU2Hub dari dalam mode Nonton Video
+    if (document.body.classList.contains('video-focused')) {
+        toggleGlobalAudio(true);
+    }
+
+    // 🚀 PRO-FIX 5 TAHUN: PAKSA BALIK PROFIL SENDIRI TANPA SYARAT + CLEAR PARAMS URL
+    if (tabId === 'profile' && event !== null && currentUser) {
+        viewedUserId = currentUser.id;
 
 // Bersihkan sisa query string (?id=...) dari URL biar balik murni mentereng ke #profile
 history.replaceState({ popup: 'my_profile' }, null, '#profile');
