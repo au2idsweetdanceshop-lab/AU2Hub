@@ -8370,10 +8370,8 @@ atBtn.addEventListener('touchstart', (e) => {
 // 2. Seret Tombol Mengikuti Gerakan Jari
 atBtn.addEventListener('touchmove', (e) => {
     const touch = e.touches[0];
-    
-    // HAPUS let diffX dan diffY yang salah sebelumnya. Cukup pakai logika ini:
-    
-    // Jika jari geser lebih dari 6 pixel, konfirmasi sebagai mode DRAG (Bukan klik biasa)
+
+    // FIX: Menggunakan atStartX dan atStartY yang benar
     if (Math.abs(touch.clientX - atStartX) > 6 || Math.abs(touch.clientY - atStartY) > 6) {
         isAtDragging = true;
     }
@@ -8382,7 +8380,7 @@ atBtn.addEventListener('touchmove', (e) => {
         let newX = atInitialX + (touch.clientX - atStartX);
         let newY = atInitialY + (touch.clientY - atStartY);
 
-        // Proteksi pagar layar (Biar tombol ga melosot keluar dari HP)
+        // Proteksi pagar layar
         newX = Math.max(8, Math.min(window.innerWidth - 56, newX));
         newY = Math.max(8, Math.min(window.innerHeight - 80, newY));
 
@@ -8393,31 +8391,31 @@ atBtn.addEventListener('touchmove', (e) => {
     }
 }, { passive: true });
 
-
 // 3. Jari Dilepas (Buka Menu atau Efek Magnet Snap)
 atBtn.addEventListener('touchend', () => {
-    atBtn.style.opacity = '0.5'; // Redupkan kembali biar ga ganggu pemandangan gacha
+    atBtn.style.opacity = '0.5'; 
     
     if (!isAtDragging) {
-        // JIKA HANYA DIKLIK SEKALI -> Buka Control Center
+        // JIKA HANYA DIKLIK SEKALI
         openAssistiveMenu();
     } else {
-        // JIKA DI-DRAG -> Picu Fungsi Efek Magnet Khas Apple iOS
+        // JIKA DI-DRAG -> Efek Magnet
         const rect = atBtn.getBoundingClientRect();
         const batasTengahLayar = window.innerWidth / 2;
         
         atBtn.style.transition = 'left 0.4s cubic-bezier(0.16, 1, 0.3, 1), top 0.2s ease';
         
         if (rect.left + 24 < batasTengahLayar) {
-            atBtn.style.left = '12px'; // Nempel Magnet ke Kiri
+            atBtn.style.left = '12px'; 
         } else {
-            atBtn.style.left = `${window.innerWidth - 48 - 12}px`; // Nempel Magnet ke Kanan
+            atBtn.style.left = `${window.innerWidth - 56}px`; 
         }
         
-        // Matikan transisi setelah animasi nempel beres agar pas diseret berikutnya ga delay
         setTimeout(() => { atBtn.style.transition = 'none'; }, 400);
     }
+    isAtDragging = false; // Reset status drag
 });
+
 
 // FUNCTIONS UNTUK KONTROL ANIMASI BUKA TUTUP LACI MENU
 function openAssistiveMenu() {
