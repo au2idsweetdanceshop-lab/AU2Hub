@@ -1,7 +1,6 @@
 {
   "name": "AU2Hub Community",
   "short_name": "AU2Hub",
-  "description": "Pusat Komunitas, Joki, dan Rekber AU2ID Sweet Dance terpercaya.",
   "id": "/",
   "start_url": "/",
   "display": "standalone",
@@ -20,21 +19,7 @@
       "src": "/app-icon-51v2.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
-    }
-  ],
-  "screenshots": [
-    {
-      "src": "/app-icon-51v2.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "form_factor": "narrow"
-    },
-    {
-      "src": "/app-icon-51v2.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "form_factor": "wide"
+      "purpose": "any"
     }
   ]
 }
