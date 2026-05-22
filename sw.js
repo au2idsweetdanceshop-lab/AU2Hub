@@ -1,4 +1,4 @@
-const CACHE_NAME = 'au2hub-cache-v4'; // 🚀 NAIKKAN ANGKA INI SETIAP KALI ANDA UPDATE CODINGAN
+const CACHE_NAME = 'au2hub-cache-v5'; // 🚀 NAIKKAN ANGKA INI SETIAP KALI ANDA UPDATE CODINGAN
 
 // Event Install: Langsung aktif tanpa memaksakan download array statis (Aman untuk Vercel)
 self.addEventListener('install', (event) => {
