@@ -115,6 +115,15 @@ will-change: transform, opacity;
 /* SOLUSI FINAL V2: MENGAMBANG, SCROLL LANCAR, NO BLUR BUG   */
 /* ========================================================= */
 
+/* Sembunyikan AssistiveTouch saat mode layar penuh video (TikTok style) */
+body.video-focused #assistive-touch {
+    opacity: 0 !important;
+    transform: scale(0.5) !important;
+    pointer-events: none !important;
+    transition: all 0.3s ease !important;
+}
+
+
 /* 1. KUNCI ANTI-BOCOR KLIK (Matikan klik latar belakang) */
 body.video-focused {
 overflow: hidden !important;
@@ -234,6 +243,8 @@ transition: all 0.4s ease;
 
 
 
+
+
 /* JURUS 1: Isolasi Rendering (Sangat Ampuh) */
 .snap-start {
 content-visibility: auto;
@@ -316,7 +327,7 @@ input[type="checkbox"].peer:checked + div::after {
 
 
 </style> </head>
-<body class="pb-24">
+<body class="pb-6">
 
 
 <div id="toast-container" class="fixed top-6 left-0 w-full px-4 z-[200] flex flex-col items-center gap-3 pointer-events-auto"></div>
@@ -1333,51 +1344,6 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
         <div id="leaderboard-container-sultan" class="flex-1 overflow-y-auto p-3 hide-scroll space-y-2 hidden pb-6"></div>
     </div>
 </div>
-
-<nav class="fixed bottom-0 left-0 w-full glass z-40 shadow-[0_-10px_30px_rgba(0,0,0,0.5)]">
-    
-    <div class="absolute inset-y-0 left-0 w-4 bg-gradient-to-r from-[#0F0920] to-transparent z-10 pointer-events-none"></div>
-    <div class="absolute inset-y-0 right-0 w-4 bg-gradient-to-l from-[#0F0920] to-transparent z-10 pointer-events-none"></div>
-
-    <div class="flex overflow-x-auto hide-scroll snap-x snap-mandatory items-center h-[70px] px-4 w-full touch-pan-x">
-        
-        <a href="#home" onclick="switchTab('home', event)" class="nav-item snap-center shrink-0 flex flex-col items-center justify-center w-[72px] text-gray-500 transition-colors">
-            <i class="fas fa-home text-xl mb-1"></i><span class="text-[9px] font-bold mt-0.5">Home</span>
-        </a>
-        
-        <a href="#info" onclick="switchTab('info', event)" class="nav-item snap-center shrink-0 flex flex-col items-center justify-center w-[72px] text-gray-500 transition-colors">
-            <i class="fas fa-bullhorn text-xl mb-1"></i><span class="text-[9px] font-bold mt-0.5">Info</span>
-        </a>
-        
-        <a href="#layanan" onclick="switchTab('layanan', event)" class="nav-item snap-center shrink-0 flex flex-col items-center justify-center w-[72px] text-gray-500 transition-colors">
-            <i class="fas fa-bolt text-xl mb-1"></i><span class="text-[9px] font-bold mt-0.5">Layanan</span>
-        </a>
-        
-        <a href="#sosial" onclick="switchTab('sosial', event)" class="nav-item snap-center shrink-0 flex flex-col items-center justify-center w-[72px] text-gray-500 transition-colors">
-            <i class="fas fa-camera-retro text-xl mb-1"></i><span class="text-[9px] font-bold mt-0.5">Sosial</span>
-        </a>
-        
-        <a href="#rekber" onclick="switchTab('rekber', event)" class="nav-item snap-center shrink-0 flex flex-col items-center justify-center w-[72px] text-gray-500 transition-colors">
-            <i class="fas fa-shield-alt text-xl mb-1"></i><span class="text-[9px] font-bold mt-0.5">Rekber</span>
-        </a>
-        
-        <a href="#ripper" onclick="switchTab('ripper', event)" class="nav-item snap-center shrink-0 flex flex-col items-center justify-center w-[72px] text-gray-500 transition-colors">
-            <i class="fas fa-user-ninja text-xl mb-1"></i><span class="text-[9px] font-bold mt-0.5">Ripper</span>
-        </a>
-        
-        <a href="#pesanan" onclick="switchTab('pesanan', event)" class="nav-item snap-center shrink-0 flex flex-col items-center justify-center w-[72px] text-gray-500 transition-colors">
-            <i class="fas fa-receipt text-xl mb-1"></i><span class="text-[9px] font-bold mt-0.5">Pesanan</span>
-        </a>
-        
-        <a href="#profile" onclick="switchTab('profile', event)" class="nav-item snap-center shrink-0 flex flex-col items-center justify-center w-[72px] text-gray-500 transition-colors">
-            <i class="fas fa-user-circle text-xl mb-1"></i><span class="text-[9px] font-bold mt-0.5">Profil</span>
-        </a>
-        
-        <div class="snap-center shrink-0 w-2"></div>
-        
-    </div>
-</nav>
-
 
 <script>
 // ---- FUNGSI UNTUK LIGHTBOX (GAMBAR DI CHAT) ----
@@ -3442,28 +3408,36 @@ showToast("Gagal menghapus ke server: " + err.message, "error");
 
 // FITUR SHARE VIDEO (DIPERBAIKI)
 function shareVideo(vidId, btn) {
-const finalId = vidId && vidId !== 'undefined' ? vidId : '';
+    const finalId = vidId && vidId !== 'undefined' ? vidId : '';
+    if (!finalId) {
+        showToast("Gagal menyalin link: ID Video tidak ditemukan", "error");
+        return;
+    }
 
-if (!finalId) {
-showToast("Gagal menyalin link: ID Video tidak ditemukan", "error");
-return;
+    const link = window.location.origin + window.location.pathname + '#sosial?vid=' + finalId;
+
+    // Cek apakah HP user support fitur Share Native
+    if (navigator.share) {
+        navigator.share({
+            title: 'AU2Hub Video',
+            text: 'Cek kreasi dance keren ini di AU2Hub!',
+            url: link
+        }).catch((error) => console.log('Error sharing', error));
+    } else {
+        // Fallback: Kalau buka di PC/Browser lama, tetap pakai Copy Clipboard
+        navigator.clipboard.writeText(link).then(() => {
+            showToast("Link video disalin ke clipboard!", "success");
+            const icon = btn.querySelector('i');
+            icon.classList.replace('fa-share', 'fa-check');
+            icon.classList.add('text-brand-success');
+            setTimeout(() => {
+                icon.classList.replace('fa-check', 'fa-share');
+                icon.classList.remove('text-brand-success');
+            }, 2000);
+        });
+    }
 }
 
-const link = window.location.origin + window.location.pathname + '#sosial?vid=' + finalId;
-
-navigator.clipboard.writeText(link).then(() => {
-showToast("Link video disalin ke clipboard!", "success");
-const icon = btn.querySelector('i');
-icon.classList.replace('fa-share', 'fa-check');
-icon.classList.add('text-brand-success');
-setTimeout(() => {
-icon.classList.replace('fa-check', 'fa-share');
-icon.classList.remove('text-brand-success');
-}, 2000);
-}).catch(() => {
-showToast("Gagal menyalin link otomatis", "error");
-});
-}
 
 
 
@@ -8396,9 +8370,9 @@ atBtn.addEventListener('touchstart', (e) => {
 // 2. Seret Tombol Mengikuti Gerakan Jari
 atBtn.addEventListener('touchmove', (e) => {
     const touch = e.touches[0];
-    let diffX = touch.clientX - startX; // Gunakan variabel let murni
-    let diffY = touch.clientY - startY;
-
+    
+    // HAPUS let diffX dan diffY yang salah sebelumnya. Cukup pakai logika ini:
+    
     // Jika jari geser lebih dari 6 pixel, konfirmasi sebagai mode DRAG (Bukan klik biasa)
     if (Math.abs(touch.clientX - atStartX) > 6 || Math.abs(touch.clientY - atStartY) > 6) {
         isAtDragging = true;
@@ -8418,6 +8392,7 @@ atBtn.addEventListener('touchmove', (e) => {
         atBtn.style.right = 'auto';
     }
 }, { passive: true });
+
 
 // 3. Jari Dilepas (Buka Menu atau Efek Magnet Snap)
 atBtn.addEventListener('touchend', () => {
@@ -8659,32 +8634,6 @@ function executeAssistive(target) {
         <div class="w-5 h-5 bg-white/80 rounded-full shadow-inner"></div>
     </div>
 </div>
-
-<div id="modal-leaderboard" class="fixed inset-0 z-[250] hidden items-end sm:items-center justify-center bg-black/90 backdrop-blur-md px-0 sm:px-6 transition-all duration-300">
-    <div class="bg-brand-card w-full max-w-md sm:rounded-3xl rounded-t-[2.5rem] border border-white/10 shadow-2xl relative modal-anim flex flex-col h-[85vh] sm:h-auto sm:max-h-[85vh] overflow-hidden">
-        <div class="flex justify-between items-center p-5 border-b border-white/5 bg-brand-dark/80 backdrop-blur-xl shrink-0">
-            <h3 class="font-extrabold text-white text-sm flex items-center gap-2">
-                <i class="fas fa-trophy text-yellow-400"></i> LEADERBOARD
-            </h3>
-            <button onclick="closeLeaderboardModal()" class="text-gray-400 hover:text-white w-8 h-8 rounded-full bg-white/5 flex items-center justify-center active:scale-95 transition-all"><i class="fas fa-times"></i></button>
-        </div>
-        <div class="flex p-2 bg-black/40 shrink-0 gap-1 border-b border-white/5">
-            <button id="tab-lb-creator" onclick="switchLeaderboardTab('creator')" class="flex-1 py-2.5 text-[10px] font-bold text-white bg-brand-accent rounded-xl shadow-[0_0_15px_rgba(255,0,122,0.4)] transition-all">🎬 Creator</button>
-            <button id="tab-lb-level" onclick="switchLeaderboardTab('level')" class="flex-1 py-2.5 text-[10px] font-bold text-gray-500 hover:text-white rounded-xl transition-all">🏆 Level</button>
-            <button id="tab-lb-sultan" onclick="switchLeaderboardTab('sultan')" class="flex-1 py-2.5 text-[10px] font-bold text-gray-500 hover:text-white rounded-xl transition-all">💸 Sultan</button>
-        </div>
-        <div class="p-3 bg-brand-dark/50 shrink-0 border-b border-white/5">
-            <div class="relative">
-                <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-xs"></i>
-                <input type="text" id="leaderboardSearch" placeholder="Cari nama player..." class="w-full bg-black/40 border border-white/10 rounded-xl py-2 pl-9 pr-3 text-xs text-white outline-none focus:border-brand-accent transition-colors">
-            </div>
-        </div>
-        <div id="leaderboard-container-creator" class="flex-1 overflow-y-auto p-3 hide-scroll space-y-2 block pb-6"></div>
-        <div id="leaderboard-container-level" class="flex-1 overflow-y-auto p-3 hide-scroll space-y-2 hidden pb-6"></div>
-        <div id="leaderboard-container-sultan" class="flex-1 overflow-y-auto p-3 hide-scroll space-y-2 hidden pb-6"></div>
-    </div>
-</div>
-
 
 
 </body>
