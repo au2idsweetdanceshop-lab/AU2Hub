@@ -1,24 +1,11 @@
-const CACHE_NAME = 'au2hub-cache-v1';
+const CACHE_NAME = 'au2hub-cache-v2'; // Dinaikkan versinya agar browser tahu ada update
 
-// Daftar file utama. 
-// PENTING: Jika satu saja file di bawah ini 404, Service Worker akan gagal install!
-const assets = [
-  '/',
-  '/index.html',
-  '/manifest-v2.json'
-];
-
+// Event Install: Langsung aktif tanpa memaksakan download array statis (aman untuk Vercel)
 self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      console.log('SW: Cache berhasil dibuka');
-      // Gunakan catch agar kalau ada gambar/file yang gagal diload, SW tidak ikut hancur
-      return cache.addAll(assets).catch(err => console.error('SW: Gagal cache assets', err));
-    })
-  );
-  self.skipWaiting();
+  self.skipWaiting(); 
 });
 
+// Event Activate: Membersihkan cache lama jika ada update versi
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((cacheNames) => {
@@ -32,13 +19,14 @@ self.addEventListener('activate', (event) => {
       );
     })
   );
-  self.clients.claim();
+  event.waitUntil(self.clients.claim());
 });
 
+// Event Fetch: Mengakali error Vercel. Ambil dari jaringan dulu, kalau gagal/offline baru cari di cache
 self.addEventListener('fetch', (event) => {
   event.respondWith(
-    caches.match(event.request).then((response) => {
-      return response || fetch(event.request);
+    fetch(event.request).catch(() => {
+      return caches.match(event.request);
     })
   );
 });
