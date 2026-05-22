@@ -8606,19 +8606,16 @@ function copyLinkLaciAktif(btn) {
             </div>
 
 <div>
-    <h4 class="text-xs font-extrabold text-gray-300 uppercase tracking-widest mb-2">Deskripsi Produk</h4>
-    <p class="text-xs text-gray-400 leading-relaxed whitespace-pre-line line-clamp-4 cursor-pointer transition-all duration-300" id="detail-product-desc" onclick="this.classList.toggle('line-clamp-4'); const btn = document.getElementById('btn-toggle-desc'); btn.innerHTML = this.classList.contains('line-clamp-4') ? 'Lihat Selengkapnya ▼' : 'Tutup Selengkapnya ▲';">Detail deskripsi...</p>
-    <button id="btn-toggle-desc" onclick="document.getElementById('detail-product-desc').click()" class="text-[10px] text-brand-info font-bold mt-1.5 hover:text-white active:scale-95 transition-all">Lihat Selengkapnya ▼</button>
-</div>
-
-        </div>
+        <h4 class="text-xs font-extrabold text-gray-300 uppercase tracking-widest mb-2">Deskripsi Produk</h4>
+        <p class="text-xs text-gray-400 leading-relaxed whitespace-pre-line line-clamp-4 cursor-pointer transition-all duration-300" id="detail-product-desc" onclick="this.classList.toggle('line-clamp-4'); const btn = document.getElementById('btn-toggle-desc'); btn.innerHTML = this.classList.contains('line-clamp-4') ? 'Lihat Selengkapnya ▼' : 'Tutup Selengkapnya ▲';">Detail deskripsi...</p>
+        <button id="btn-toggle-desc" onclick="document.getElementById('detail-product-desc').click()" class="text-[10px] text-brand-info font-bold mt-1.5 hover:text-white active:scale-95 transition-all">Lihat Selengkapnya ▼</button>
     </div>
 
-    <div class="absolute bottom-0 w-full glass border-t border-white/5 p-4 shrink-0 pb-6 rounded-t-2xl z-10">
-        <button id="btn-beli-detail" onclick="" class="w-full bg-gradient-to-r from-[#00F0FF] via-[#8A2BE2] to-[#FF007A] text-white py-4 rounded-xl font-extrabold text-sm active:scale-95 transition-transform shadow-lg shadow-brand-purple/20 flex justify-center items-center gap-2">
-            <i class="fas fa-shopping-bag"></i> BELI SEKARANG VIA AUTO QRIS
-        </button>
-    </div>
+         <div class="w-full glass border-t border-white/5 p-4 shrink-0 pb-6 rounded-t-2xl z-10 mt-auto">
+            <button id="btn-beli-detail" onclick="" class="w-full bg-gradient-to-r from-[#00F0FF] via-[#8A2BE2] to-[#FF007A] text-white py-4 rounded-xl font-extrabold text-sm active:scale-95 transition-transform shadow-lg shadow-brand-purple/20 flex justify-center items-center gap-2">
+                <i class="fas fa-shopping-bag"></i> BELI SEKARANG VIA AUTO QRIS
+            </button>
+        </div> </div>
 
 <!-- MODAL DETAIL PESANAN (TRACKER) -->
 <div id="modal-detail-pesanan" class="fixed inset-0 z-[600] hidden items-center justify-center bg-black/90 backdrop-blur-md px-6 transition-all duration-300">
