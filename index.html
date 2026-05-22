@@ -6346,97 +6346,6 @@ timeIndicator.querySelector('.time-total').innerText = formatTime(video.duration
 }
 
 // ==========================================
-// EVENT BROWSER PWA & INISIALISASI HALAMAN
-// ==========================================
-let deferredPrompt;
-
-// 1. Menangkap sinyal PWA dari browser secara diam-diam
-window.addEventListener('beforeinstallprompt', (e) => {
-    e.preventDefault();
-    deferredPrompt = e;
-});
-
-// 2. Deteksi jika aplikasi sukses terinstal (Tombol otomatis hilang)
-window.addEventListener('appinstalled', () => {
-    console.log('AU2Hub sukses terpasang di perangkat!');
-    deferredPrompt = null;
-    const btnInstallContainer = document.getElementById('install-container');
-    if (btnInstallContainer) {
-        btnInstallContainer.classList.add('hidden');
-    }
-});
-
-// 3. Saat Halaman Selesai Dimuat (Pusat Eksekusi)
-document.addEventListener('DOMContentLoaded', () => {
-    // --- Inisialisasi Fungsi Bawaan Aplikasi ---
-    let tabAwal = window.location.hash.substring(1);
-    if (!tabAwal) {
-        tabAwal = localStorage.getItem('lastTab') || 'home';
-    }
-    switchTab(tabAwal, null, false);
-
-    checkSession();
-    muatDataRipper();
-    loadInfoLayanan();
-    loadDataRekber();
-
-    // Memuat Katalog Produk
-    loadProdukXoftware().then(() => {
-        const urlHash = window.location.hash.substring(1);
-        if (urlHash.startsWith('detail?id=')) {
-            const produkIndex = urlHash.split('=')[1];
-            if (produkIndex && xoftwareProdukGlobal[produkIndex]) {
-                setTimeout(() => {
-                    openDetailProduk(parseInt(produkIndex));
-                }, 500);
-            }
-        }
-    });
-
-    // Mendaftarkan Service Worker
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('/sw.js')
-            .then(() => console.log("Service Worker AU2Hub Aktif!"))
-            .catch(err => console.error("Service Worker Gagal:", err));
-    }
-
-    // --- LOGIKA TOMBOL INSTALASI PAKSA MUNCUL ---
-    const btnInstallManual = document.getElementById('btn-install-manual');
-    const btnInstallContainer = document.getElementById('install-container');
-
-    // Cek layar: Apakah user sedang buka dari Aplikasi (Home Screen) atau Browser biasa?
-    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
-
-    // Jika BUKAN dari aplikasi (berarti dari browser biasa), PAKSA tombol muncul!
-    if (!isStandalone && btnInstallContainer) {
-        btnInstallContainer.classList.remove('hidden');
-    }
-
-    // Aksi ketika tombol install diklik
-    if (btnInstallManual) {
-        btnInstallManual.addEventListener('click', async () => {
-            if (deferredPrompt) {
-                // Jika Chrome sudah mendeteksi kelayakan PWA (Android/Desktop)
-                deferredPrompt.prompt();
-                const { outcome } = await deferredPrompt.userChoice;
-                
-                if (outcome === 'accepted') {
-                    console.log('User menerima instalasi');
-                    btnInstallContainer.classList.add('hidden');
-                } else {
-                    console.log('User menolak instalasi');
-                }
-                deferredPrompt = null;
-            } else {
-                // FALLBACK IPHONE & BROWSER LAIN: Munculkan tutorial manual
-                customAlert("📱 **Cara Instal Manual:**\n\n**Android (Chrome):** Tekan ikon Titik Tiga (⋮) di pojok kanan atas browser, lalu pilih **Instal Aplikasi** atau **Tambahkan ke Layar Utama**.\n\n**iPhone (Safari):** Tekan ikon Share (Bagikan) di tengah bawah, lalu gulir dan pilih **Tambah ke Layar Utama**.");
-            }
-        });
-    }
-});
-
-
-// ==========================================
 // FITUR HAPUS PESAN (Hapus Untukku & Semua)
 // ==========================================
 function showMsgOptions(msgId, senderId) {
@@ -7868,32 +7777,52 @@ loadProdukXoftware().then(() => {
     }
 });
 
-// Mendaftarkan Service Worker PWA
-if ('serviceWorker' in navigator) {
-navigator.serviceWorker.register('/sw.js')
-.then(() => console.log("Service Worker AU2Hub Aktif!"))
-.catch(err => console.error("Service Worker Gagal:", err));
-}
+  // 1. Daftarkan Service Worker
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js')
+      .then(() => console.log('SW Berhasil!'))
+      .catch((err) => console.log('SW Gagal:', err));
+  }
 
-// Logika Klik Tombol Instal PWA
-const btnInstallManual = document.getElementById('btn-install-manual');
-const btnInstallContainer = document.getElementById('install-container');
+  // 2. Tangkap Event Install PWA
+  let deferredPrompt;
+  const btnInstallContainer = document.getElementById('install-container');
+  const btnInstallManual = document.getElementById('btn-install-manual');
 
-if (btnInstallManual) {
-btnInstallManual.addEventListener('click', async () => {
-if (!deferredPrompt) return;
+  window.addEventListener('beforeinstallprompt', (e) => {
+    // Cegah Chrome memunculkan pop-up default
+    e.preventDefault();
+    deferredPrompt = e;
+    
+    // Munculkan tombol install buatan Anda
+    if (btnInstallContainer) {
+      btnInstallContainer.classList.remove('hidden');
+    }
+  });
 
-deferredPrompt.prompt();
-const { outcome } = await deferredPrompt.userChoice;
-console.log(`User memilih: ${outcome}`);
+  // 3. Logika Klik Tombol Install
+  if (btnInstallManual) {
+    btnInstallManual.addEventListener('click', async () => {
+      if (!deferredPrompt) return;
+      
+      // Munculkan dialog install bawaan HP
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      console.log('Hasil install:', outcome);
+      
+      // Sembunyikan tombol setelah diklik
+      deferredPrompt = null;
+      btnInstallContainer.classList.add('hidden');
+    });
+  }
 
-deferredPrompt = null;
-if (btnInstallContainer) {
-btnInstallContainer.classList.add('hidden');
-}
-});
-}
-});
+  // 4. Sembunyikan tombol jika sudah berhasil di-install
+  window.addEventListener('appinstalled', () => {
+    console.log('Aplikasi terinstal!');
+    if (btnInstallContainer) {
+      btnInstallContainer.classList.add('hidden');
+    }
+  });
 
 
 // 🤖 HELPER SAKTI V3: Sistem Lencana Kasta Tertinggi + Rebirth Loop Tanpa Batas 5 Tahun Awet (VERSI IKON SAJA)
@@ -8700,47 +8629,7 @@ function copyLinkLaciAktif(btn) {
     });
 }
 
-// ==========================================
-// PUSAT LOGIKA INSTALASI PWA (COPY PASTE INI)
-// ==========================================
-let deferredPrompt;
 
-// 1. Menangkap sinyal dari Chrome bahwa web BISA diinstal
-window.addEventListener('beforeinstallprompt', (e) => {
-    e.preventDefault();
-    deferredPrompt = e;
-    
-    // Tombol dimunculkan hanya jika Chrome mengizinkan instalasi
-    const btnInstallContainer = document.getElementById('install-container');
-    if (btnInstallContainer) {
-        btnInstallContainer.classList.remove('hidden');
-    }
-});
-
-// 2. Jika user sudah klik install, tombol otomatis hilang
-window.addEventListener('appinstalled', () => {
-    const btnInstallContainer = document.getElementById('install-container');
-    if (btnInstallContainer) btnInstallContainer.classList.add('hidden');
-});
-
-// 3. Menangani klik tombol manual
-document.getElementById('btn-install-manual').addEventListener('click', async () => {
-    if (deferredPrompt) {
-        deferredPrompt.prompt();
-        const { outcome } = await deferredPrompt.userChoice;
-        console.log(`User memilih: ${outcome}`);
-        deferredPrompt = null;
-    } else {
-        // Fallback untuk iPhone/Browser yang tidak otomatis
-        customAlert("📱 **Cara Instal Manual:**\n\n**Android:** Klik Titik Tiga (⋮) > 'Instal Aplikasi'.\n**iPhone:** Klik tombol Share > 'Tambah ke Layar Utama'.");
-    }
-});
-
-// 4. Deteksi apakah sudah terinstal (Sembunyikan tombol jika sudah di mode aplikasi)
-if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
-    const btnInstallContainer = document.getElementById('install-container');
-    if (btnInstallContainer) btnInstallContainer.classList.add('hidden');
-}
 
 
 </script>
