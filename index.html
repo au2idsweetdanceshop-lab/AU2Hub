@@ -370,22 +370,67 @@ body.video-focused nav {
 }
 
 /* Sembunyikan Scrollbar di Menu Kiri */
-nav::-webkit-scrollbar { display: none; 
+nav::-webkit-scrollbar { display: none; }
 
 </style> </head>
 <body class="pl-[60px]">
 
-<div id="custom-splash" class="fixed inset-0 z-[9999999] bg-[#0F0920] flex flex-col items-center justify-center transition-all duration-500 ease-out pointer-events-none">
+<div id="custom-splash" class="fixed inset-0 z-[9999999] bg-[#0F0920] flex flex-col items-center justify-center transition-all duration-500 ease-out">
     <div class="relative flex flex-col items-center">
         <div class="absolute inset-0 bg-brand-accent blur-3xl opacity-30 animate-pulse"></div>
         
-        <img src="https://nos.wjv-1.neo.id/au2hub/Picsart_26-05-22_23-46-22-498.png" alt="AU2Hub" class="w-32 h-32 relative z-10 splash-logo-anim drop-shadow-[0_0_20px_rgba(0,240,255,0.5)]">
+        <!-- ID 'splash-logo' kita gunakan untuk mengganti gambar lewat JS -->
+        <img id="splash-logo" src="https://nos.wjv-1.neo.id/au2hub/Picsart_26-05-22_23-46-22-498.png" alt="AU2Hub" 
+             class="w-32 h-32 relative z-10 splash-logo-anim drop-shadow-[0_0_20px_rgba(0,240,255,0.5)] transition-opacity duration-500">
         
         <div class="mt-8 flex gap-2 items-center text-brand-info text-xs font-bold tracking-widest animate-pulse">
             <i class="fas fa-circle-notch fa-spin"></i> MEMUAT AU2HUB...
         </div>
     </div>
 </div>
+
+
+<script>
+    // Script mandiri agar splash screen 100% dijamin hilang walau script utama error
+    function removeSplashScreen() {
+        const splashScreen = document.getElementById('custom-splash');
+        if (splashScreen) {
+            splashScreen.style.opacity = '0';
+            splashScreen.style.transform = 'scale(1.1)';
+            setTimeout(() => splashScreen.remove(), 500);
+        }
+    }
+    // Hilang dalam 1.5 detik saat web dibaca
+    document.addEventListener('DOMContentLoaded', () => { setTimeout(removeSplashScreen, 1500); });
+    // Jaring pengaman mutlak
+    setTimeout(removeSplashScreen, 3500); 
+</script>
+
+<script>
+    const logoElement = document.getElementById('splash-logo');
+    // Daftar link gambar promosi Anda
+    const promoImages = [
+        "https://nos.wjv-1.neo.id/au2hub/Picsart_26-05-22_23-46-22-498.png",
+        "https://link-gambar-promosi-2.png", // Ganti dengan link Anda
+        "https://link-gambar-promosi-3.png"  // Ganti dengan link Anda
+    ];
+    
+    let currentIndex = 0;
+
+    // Fungsi untuk mengganti gambar dengan efek pudar
+    function rotateLogo() {
+        currentIndex = (currentIndex + 1) % promoImages.length;
+        logoElement.style.opacity = '0';
+        
+        setTimeout(() => {
+            logoElement.src = promoImages[currentIndex];
+            logoElement.style.opacity = '1';
+        }, 500);
+    }
+
+    // Ganti gambar setiap 1.5 detik (sesuaikan dengan kecepatan animasi Anda)
+    setInterval(rotateLogo, 1500);
+</script>
 
 
 
@@ -8723,34 +8768,6 @@ async function copyLinkLaciAktif(btn) {
         });
     }
 }
-
-// Logika Menghilangkan Splash Screen setelah aplikasi siap
-function removeSplashScreen() {
-    const splashScreen = document.getElementById('custom-splash');
-    if (splashScreen) {
-        // Beri efek pudar memudar (fade out)
-        splashScreen.style.opacity = '0';
-        splashScreen.style.transform = 'scale(1.1)'; // Efek sedikit membesar saat hilang
-        
-        // Hapus elemen dari HTML setelah animasi pudar selesai (500ms)
-        setTimeout(() => {
-            splashScreen.remove();
-        }, 500);
-    }
-}
-
-// 1. Eksekusi cepat segera setelah struktur HTML terbaca (tidak nunggu gambar/CDN lambat)
-document.addEventListener('DOMContentLoaded', () => {
-    setTimeout(removeSplashScreen, 1500); // Tampil 1.5 detik lalu hilang
-});
-
-// 2. SAFETY NET (Jaring Pengaman)
-// Jika koneksi user super lambat dan DOMContentLoaded tersendat, 
-// paksa splash screen hilang setelah maksimal 4 detik.
-setTimeout(removeSplashScreen, 4000);
-
-
-
 
 </script>
 
