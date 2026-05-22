@@ -8372,6 +8372,114 @@ function prosesBayarUlang() {
     checkoutRobotDANA(activeOrderNameToPay, activeOrderPriceToPay, "Melanjutkan pembayaran tagihan tertunda.");
 }
 
+// =========================================================
+// LOGIKA GAMEPLAY ASSISTIVETOUCH (IPHONE SMART DRAG & SNAP)
+// =========================================================
+const atBtn = document.getElementById('assistive-touch');
+let isAtDragging = false;
+let atStartX, atStartY, atInitialX, atInitialY;
+
+// 1. Deteksi Sentuhan Pertama Jari
+atBtn.addEventListener('touchstart', (e) => {
+    isAtDragging = false;
+    const touch = e.touches[0];
+    atStartX = touch.clientX;
+    atStartY = touch.clientY;
+    
+    const rect = atBtn.getBoundingClientRect();
+    atInitialX = rect.left;
+    atInitialY = rect.top;
+    
+    atBtn.style.opacity = '1'; // Terangkan tombol saat disentuh
+}, { passive: true });
+
+// 2. Seret Tombol Mengikuti Gerakan Jari
+atBtn.addEventListener('touchmove', (e) => {
+    const touch = e.touches[0];
+    let diffX = touch.clientX - startX; // Gunakan variabel let murni
+    let diffY = touch.clientY - startY;
+
+    // Jika jari geser lebih dari 6 pixel, konfirmasi sebagai mode DRAG (Bukan klik biasa)
+    if (Math.abs(touch.clientX - atStartX) > 6 || Math.abs(touch.clientY - atStartY) > 6) {
+        isAtDragging = true;
+    }
+
+    if (isAtDragging) {
+        let newX = atInitialX + (touch.clientX - atStartX);
+        let newY = atInitialY + (touch.clientY - atStartY);
+
+        // Proteksi pagar layar (Biar tombol ga melosot keluar dari HP)
+        newX = Math.max(8, Math.min(window.innerWidth - 56, newX));
+        newY = Math.max(8, Math.min(window.innerHeight - 80, newY));
+
+        atBtn.style.left = `${newX}px`;
+        atBtn.style.top = `${newY}px`;
+        atBtn.style.bottom = 'auto';
+        atBtn.style.right = 'auto';
+    }
+}, { passive: true });
+
+// 3. Jari Dilepas (Buka Menu atau Efek Magnet Snap)
+atBtn.addEventListener('touchend', () => {
+    atBtn.style.opacity = '0.5'; // Redupkan kembali biar ga ganggu pemandangan gacha
+    
+    if (!isAtDragging) {
+        // JIKA HANYA DIKLIK SEKALI -> Buka Control Center
+        openAssistiveMenu();
+    } else {
+        // JIKA DI-DRAG -> Picu Fungsi Efek Magnet Khas Apple iOS
+        const rect = atBtn.getBoundingClientRect();
+        const batasTengahLayar = window.innerWidth / 2;
+        
+        atBtn.style.transition = 'left 0.4s cubic-bezier(0.16, 1, 0.3, 1), top 0.2s ease';
+        
+        if (rect.left + 24 < batasTengahLayar) {
+            atBtn.style.left = '12px'; // Nempel Magnet ke Kiri
+        } else {
+            atBtn.style.left = `${window.innerWidth - 48 - 12}px`; // Nempel Magnet ke Kanan
+        }
+        
+        // Matikan transisi setelah animasi nempel beres agar pas diseret berikutnya ga delay
+        setTimeout(() => { atBtn.style.transition = 'none'; }, 400);
+    }
+});
+
+// FUNCTIONS UNTUK KONTROL ANIMASI BUKA TUTUP LACI MENU
+function openAssistiveMenu() {
+    const menu = document.getElementById('assistive-menu');
+    const box = menu.querySelector('div');
+    menu.classList.remove('hidden');
+    menu.classList.add('flex');
+    setTimeout(() => {
+        menu.classList.remove('opacity-0');
+        box.classList.remove('scale-90');
+        box.classList.add('scale-100');
+    }, 10);
+}
+
+function closeAssistiveMenu() {
+    const menu = document.getElementById('assistive-menu');
+    const box = menu.querySelector('div');
+    menu.classList.add('opacity-0');
+    box.classList.remove('scale-100');
+    box.classList.add('scale-90');
+    setTimeout(() => {
+        menu.classList.add('hidden');
+        menu.classList.remove('flex');
+    }, 300);
+}
+
+// EKSEKUTOR KLIK MENU
+function executeAssistive(target) {
+    closeAssistiveMenu(); // Tutup dulaan laci AssistiveTouch
+    if (target === 'leaderboard') {
+        openLeaderboardModal(); // Panggil fungsi bawaan lu
+    } else {
+        switchTab(target); // Pindah tab murni bawaan lu
+    }
+}
+
+
 
 
 
@@ -8500,6 +8608,83 @@ function prosesBayarUlang() {
         </p>
     </div>
 </div>
+
+<div id="assistive-menu" onclick="closeAssistiveMenu()" class="fixed inset-0 z-[99999] hidden items-center justify-center bg-black/70 backdrop-blur-sm opacity-0 transition-all duration-300">
+    <div onclick="event.stopPropagation()" class="bg-[#161B2E]/95 border border-white/10 rounded-[2.5rem] p-5 w-[290px] h-[290px] grid grid-cols-3 gap-3 items-center justify-center backdrop-blur-2xl shadow-[0_25px_50px_-12px_rgba(0,0,0,0.8),0_0_40px_rgba(162,119,255,0.15)] scale-90 transition-all duration-300">
+        
+        <div onclick="executeAssistive('home')" class="flex flex-col items-center justify-center bg-white/5 hover:bg-white/10 border border-white/5 w-18 h-18 rounded-2xl cursor-pointer active:scale-90 transition-all">
+            <i class="fas fa-home text-lg text-brand-info shadow-[0_0_10px_rgba(70,179,255,0.4)]"></i>
+            <span class="text-[9px] font-bold text-gray-300 mt-1">Home</span>
+        </div>
+        <div onclick="executeAssistive('info')" class="flex flex-col items-center justify-center bg-white/5 hover:bg-white/10 border border-white/5 w-18 h-18 rounded-2xl cursor-pointer active:scale-90 transition-all">
+            <i class="fas fa-bullhorn text-lg text-brand-purple shadow-[0_0_10px_rgba(162,119,255,0.4)]"></i>
+            <span class="text-[9px] font-bold text-gray-300 mt-1">Info</span>
+        </div>
+        <div onclick="executeAssistive('layanan')" class="flex flex-col items-center justify-center bg-white/5 hover:bg-white/10 border border-white/5 w-18 h-18 rounded-2xl cursor-pointer active:scale-90 transition-all">
+            <i class="fas fa-bolt text-lg text-yellow-400 shadow-[0_0_10px_rgba(250,204,21,0.4)]"></i>
+            <span class="text-[9px] font-bold text-gray-300 mt-1">Layanan</span>
+        </div>
+
+        <div onclick="executeAssistive('sosial')" class="flex flex-col items-center justify-center bg-white/5 hover:bg-white/10 border border-white/5 w-18 h-18 rounded-2xl cursor-pointer active:scale-90 transition-all">
+            <i class="fas fa-camera-retro text-lg text-brand-accent shadow-[0_0_10px_rgba(255,126,186,0.4)]"></i>
+            <span class="text-[9px] font-bold text-gray-300 mt-1">Sosial</span>
+        </div>
+        <div onclick="executeAssistive('leaderboard')" class="flex flex-col items-center justify-center bg-gradient-to-br from-brand-accent to-brand-purple w-18 h-18 rounded-2xl cursor-pointer active:scale-90 transition-all shadow-lg shadow-brand-purple/30 border border-white/10">
+            <i class="fas fa-trophy text-xl text-yellow-300 animate-bounce"></i>
+            <span class="text-[9px] font-extrabold text-white mt-1 tracking-wide">RANKING</span>
+        </div>
+        <div onclick="executeAssistive('rekber')" class="flex flex-col items-center justify-center bg-white/5 hover:bg-white/10 border border-white/5 w-18 h-18 rounded-2xl cursor-pointer active:scale-90 transition-all">
+            <i class="fas fa-shield-alt text-lg text-brand-success shadow-[0_0_10px_rgba(43,217,117,0.4)]"></i>
+            <span class="text-[9px] font-bold text-gray-300 mt-1">Rekber</span>
+        </div>
+
+        <div onclick="executeAssistive('ripper')" class="flex flex-col items-center justify-center bg-white/5 hover:bg-white/10 border border-white/5 w-18 h-18 rounded-2xl cursor-pointer active:scale-90 transition-all">
+            <i class="fas fa-user-ninja text-lg text-red-500 shadow-[0_0_10px_rgba(239,68,68,0.4)]"></i>
+            <span class="text-[9px] font-bold text-gray-300 mt-1">Ripper</span>
+        </div>
+        <div onclick="executeAssistive('pesanan')" class="flex flex-col items-center justify-center bg-white/5 hover:bg-white/10 border border-white/5 w-18 h-18 rounded-2xl cursor-pointer active:scale-90 transition-all">
+            <i class="fas fa-receipt text-lg text-brand-info shadow-[0_0_10px_rgba(70,179,255,0.4)]"></i>
+            <span class="text-[9px] font-bold text-gray-300 mt-1">Pesanan</span>
+        </div>
+        <div onclick="executeAssistive('profile')" class="flex flex-col items-center justify-center bg-white/5 hover:bg-white/10 border border-white/5 w-18 h-18 rounded-2xl cursor-pointer active:scale-90 transition-all">
+            <i class="fas fa-user-circle text-lg text-gray-300 shadow-[0_0_10px_rgba(255,255,255,0.2)]"></i>
+            <span class="text-[9px] font-bold text-gray-300 mt-1">Profil</span>
+        </div>
+
+    </div>
+</div>
+
+<div id="assistive-touch" class="fixed bottom-32 right-4 z-[9999] w-12 h-12 bg-black/40 backdrop-blur-md rounded-full border border-white/20 flex items-center justify-center cursor-pointer shadow-xl select-none touch-none opacity-50 transition-opacity duration-300 hover:opacity-100" style="touch-action: none;">
+    <div class="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center border border-white/30">
+        <div class="w-5 h-5 bg-white/80 rounded-full shadow-inner"></div>
+    </div>
+</div>
+
+<div id="modal-leaderboard" class="fixed inset-0 z-[250] hidden items-end sm:items-center justify-center bg-black/90 backdrop-blur-md px-0 sm:px-6 transition-all duration-300">
+    <div class="bg-brand-card w-full max-w-md sm:rounded-3xl rounded-t-[2.5rem] border border-white/10 shadow-2xl relative modal-anim flex flex-col h-[85vh] sm:h-auto sm:max-h-[85vh] overflow-hidden">
+        <div class="flex justify-between items-center p-5 border-b border-white/5 bg-brand-dark/80 backdrop-blur-xl shrink-0">
+            <h3 class="font-extrabold text-white text-sm flex items-center gap-2">
+                <i class="fas fa-trophy text-yellow-400"></i> LEADERBOARD
+            </h3>
+            <button onclick="closeLeaderboardModal()" class="text-gray-400 hover:text-white w-8 h-8 rounded-full bg-white/5 flex items-center justify-center active:scale-95 transition-all"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="flex p-2 bg-black/40 shrink-0 gap-1 border-b border-white/5">
+            <button id="tab-lb-creator" onclick="switchLeaderboardTab('creator')" class="flex-1 py-2.5 text-[10px] font-bold text-white bg-brand-accent rounded-xl shadow-[0_0_15px_rgba(255,0,122,0.4)] transition-all">🎬 Creator</button>
+            <button id="tab-lb-level" onclick="switchLeaderboardTab('level')" class="flex-1 py-2.5 text-[10px] font-bold text-gray-500 hover:text-white rounded-xl transition-all">🏆 Level</button>
+            <button id="tab-lb-sultan" onclick="switchLeaderboardTab('sultan')" class="flex-1 py-2.5 text-[10px] font-bold text-gray-500 hover:text-white rounded-xl transition-all">💸 Sultan</button>
+        </div>
+        <div class="p-3 bg-brand-dark/50 shrink-0 border-b border-white/5">
+            <div class="relative">
+                <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-xs"></i>
+                <input type="text" id="leaderboardSearch" placeholder="Cari nama player..." class="w-full bg-black/40 border border-white/10 rounded-xl py-2 pl-9 pr-3 text-xs text-white outline-none focus:border-brand-accent transition-colors">
+            </div>
+        </div>
+        <div id="leaderboard-container-creator" class="flex-1 overflow-y-auto p-3 hide-scroll space-y-2 block pb-6"></div>
+        <div id="leaderboard-container-level" class="flex-1 overflow-y-auto p-3 hide-scroll space-y-2 hidden pb-6"></div>
+        <div id="leaderboard-container-sultan" class="flex-1 overflow-y-auto p-3 hide-scroll space-y-2 hidden pb-6"></div>
+    </div>
+</div>
+
 
 
 </body>
