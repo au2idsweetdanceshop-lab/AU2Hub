@@ -312,52 +312,31 @@ input[type="checkbox"].peer:checked + div::after {
 }
 
 /* ========================================= */
-/* ANIMASI NAVIGASI KIRI (DISCORD STYLE) FIX */
+/* ANIMASI NAVIGASI KIRI (EFEK KAPSUL MEMANJANG) */
 /* ========================================= */
 .nav-item {
     position: relative;
-    border-radius: 50%;
+    border-radius: 50%; /* Awalnya bulat sempurna */
     background-color: rgba(255, 255, 255, 0.03);
-    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    /* Transisi diperhalus agar efek memanjangnya seperti karet (bouncy) */
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
-.nav-item:hover, .nav-item.active {
-    border-radius: 1rem;
+
+.nav-item:hover {
+    border-radius: 1rem; /* Jadi kotak melengkung saat disentuh */
     background-color: rgba(255, 255, 255, 0.1);
 }
+
 .nav-item.active {
+    background-color: rgba(255, 255, 255, 0.1);
     color: #FF007A !important;
+    border-radius: 1.5rem; /* Bentuk melengkung halus seperti kapsul */
+    height: 80px !important; /* INI KUNCINYA: Memanjang ke atas & bawah saat diklik */
 }
+
 .nav-item.active i {
     animation: none;
-    transform: scale(1.1);
-}
-
-/* Garis Indikator Putih di Kiri ala Discord */
-.nav-item::before {
-    content: '';
-    position: absolute;
-    /* Nilai aman dari batas tepi kiri (anti-crop) */
-    left: -10px; 
-    top: 50%;
-    
-    /* Ganti Transform dengan Height Murni */
-    width: 4px;
-    height: 0px; 
-    margin-top: 0px; /* Untuk menjaga posisi selalu di tengah */
-    
-    background-color: white;
-    border-radius: 0 4px 4px 0;
-    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.nav-item:hover::before {
-    height: 10px; /* Muncul kecil saat disentuh */
-    margin-top: -5px; /* Selalu minus separuh dari height agar senter */
-}
-
-.nav-item.active::before {
-    height: 34px !important; /* Memanjang penuh saat aktif */
-    margin-top: -17px !important; /* Minus separuh dari 34px */
+    transform: scale(1.2); /* Ikon sedikit lebih besar saat aktif */
 }
 
 /* Sembunyikan Navigasi ke Kiri saat Nonton Video Penuh */
@@ -369,7 +348,6 @@ body.video-focused nav {
 
 /* Sembunyikan Scrollbar di Menu Kiri */
 nav::-webkit-scrollbar { display: none; }
-
 
 </style> </head>
 <body class="pl-[75px]">
