@@ -7748,36 +7748,40 @@ try {
 // ==========================================
 document.addEventListener('DOMContentLoaded', () => {
 
-// Logika Routing Halaman Utama
-let tabAwal = window.location.hash.substring(1);
-if (!tabAwal) {
-tabAwal = localStorage.getItem('lastTab') || 'home';
-}
-switchTab(tabAwal, null, false);
+  // Logika Routing Halaman Utama
+  let tabAwal = window.location.hash.substring(1);
+  if (!tabAwal) {
+    tabAwal = localStorage.getItem('lastTab') || 'home';
+  }
+  switchTab(tabAwal, null, false);
 
-checkSession();
-muatDataRipper();
-loadInfoLayanan();
-loadDataRekber();
+  checkSession();
+  muatDataRipper();
+  loadInfoLayanan();
+  loadDataRekber();
 
-// Menampilkan Katalog Xoftware, lalu cek apakah URL meminta laci spesifik
-loadProdukXoftware().then(() => {
-    const urlHash = window.location.hash.substring(1); // Mengambil teks setelah tanda #
-    
-    // Deteksi jika link adalah laci detail produk
-    if (urlHash.startsWith('detail?id=')) {
-        const produkIndex = urlHash.split('=')[1];
-        
-        // Pastikan datanya ada, lalu buka lacinya
-        if (produkIndex && xoftwareProdukGlobal[produkIndex]) {
-            setTimeout(() => {
-                openDetailProduk(parseInt(produkIndex));
-            }, 500); // Beri jeda sedikit agar animasi web selesai dulu
-        }
-    }
-});
+  // Menampilkan Katalog Xoftware, lalu cek apakah URL meminta laci spesifik
+  loadProdukXoftware().then(() => {
+      const urlHash = window.location.hash.substring(1); // Mengambil teks setelah tanda #
+      
+      // Deteksi jika link adalah laci detail produk
+      if (urlHash.startsWith('detail?id=')) {
+          const produkIndex = urlHash.split('=')[1];
+          
+          // Pastikan datanya ada, lalu buka lacinya
+          if (produkIndex && xoftwareProdukGlobal[produkIndex]) {
+              setTimeout(() => {
+                  openDetailProduk(parseInt(produkIndex));
+              }, 500); // Beri jeda sedikit agar animasi web selesai dulu
+          }
+      }
+  });
 
-  document.addEventListener("DOMContentLoaded", () => {
+
+  // ==========================================
+  // FITUR PWA & SERVICE WORKER (TIDAK LAGI BERTUMPUK)
+  // ==========================================
+
   // 1. Daftarkan Service Worker
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js')
@@ -7821,8 +7825,7 @@ loadProdukXoftware().then(() => {
         const { outcome } = await deferredPrompt.userChoice;
         console.log('Hasil install:', outcome);
         
-        // Kosongkan prompt, tapi JANGAN sembunyikan tombol di sini 
-        // (biar kalau user klik 'Cancel', tombol masih ada)
+        // Kosongkan prompt
         deferredPrompt = null;
       } else {
         // Fallback untuk iOS / Safari yang tidak mendukung prompt otomatis
@@ -7836,8 +7839,8 @@ loadProdukXoftware().then(() => {
     console.log('Aplikasi sukses terinstal!');
     if (btnInstallContainer) btnInstallContainer.classList.add('hidden');
   });
-});
 
+});
 
 // 🤖 HELPER SAKTI V3: Sistem Lencana Kasta Tertinggi + Rebirth Loop Tanpa Batas 5 Tahun Awet (VERSI IKON SAJA)
 function getBadgeByLevelAndVideos(level, count) {
