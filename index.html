@@ -726,8 +726,11 @@ Satu pintu untuk info update terbaru, panduan pemula, jasa joki profesional, dan
         
         <!-- Nickname & Badge Level -->
         <div class="flex items-center justify-center gap-2 mb-1">
-            <h3 id="profile-nickname" class="text-xl font-extrabold text-white">@Nickname</h3>
-            <span id="profile-level-badge" class="hidden bg-gradient-to-r from-brand-accent to-brand-purple text-white text-[10px] font-extrabold px-2 py-0.5 rounded-md border border-white/20 shadow-[0_0_10px_rgba(255,0,122,0.3)]">Lv. 1</span>
+            <!-- [UBAH] Tambahkan "flex items-center" di h3 agar username dan lencana verified sejajar presisi -->
+            <h3 id="profile-nickname" class="text-xl font-extrabold text-white flex items-center leading-none">@Nickname</h3>
+            
+            <!-- [UBAH] Tambahkan "flex items-center justify-center" agar tulisan Lv di dalam kotaknya tidak miring -->
+            <span id="profile-level-badge" class="hidden bg-gradient-to-r from-brand-accent to-brand-purple text-white text-[10px] font-extrabold px-2 py-1 rounded-md border border-white/20 shadow-[0_0_10px_rgba(255,0,122,0.3)] flex items-center justify-center leading-none">Lv. 1</span>
         </div>
 
         <p id="profile-bio" class="text-[11px] text-gray-300 mt-1 mb-4 px-6 leading-relaxed whitespace-pre-line">Mencari teman main Sweet Dance. Add ID aku ya!</p>
@@ -3890,7 +3893,10 @@ let html = `
 <div class="flex-1">
 <div class="flex justify-between items-start">
 <div class="pr-2">
-<b onclick="viewUserProfile('${comment.user_id}')" class="text-brand-info text-[11px] cursor-pointer hover:underline">${comment.nickname}</b>
+<div class="flex items-center gap-1">
+    <b onclick="viewUserProfile('${comment.user_id}')" class="text-brand-info text-[11px] cursor-pointer hover:underline">${comment.nickname}</b>
+    ${getBadgeByVideoCount(allVideosData.filter(v => String(v.user_id) === String(comment.user_id)).length)}
+</div>
 <p class="text-gray-200 text-xs mt-0.5 leading-relaxed break-words">${formatCaption(comment.message)}</p>
 <div class="flex items-center gap-2 mt-1.5"><span class="text-[9px] text-gray-600">${timeAgo(comment.created_at)}</span><button onclick="setReply('${comment.id}', '${comment.nickname}')" class="text-[10px] text-gray-400 font-bold hover:text-white px-2">Balas</button> ${delBtn} </div>
 </div>
@@ -3917,7 +3923,10 @@ html += `
 <div class="flex-1">
 <div class="flex justify-between items-start">
 <div class="pr-2">
-<b onclick="viewUserProfile('${r.user_id}')" class="text-brand-purple text-[10px] cursor-pointer hover:underline">${r.nickname}</b>
+<div class="flex items-center gap-1">
+    <b onclick="viewUserProfile('${r.user_id}')" class="text-brand-purple text-[10px] cursor-pointer hover:underline">${r.nickname}</b>
+    ${getBadgeByVideoCount(allVideosData.filter(v => String(v.user_id) === String(r.user_id)).length)}
+</div>
 <p class="text-gray-300 text-[11px] mt-0.5 leading-relaxed break-words">${formatCaption(r.message)}</p>
 <div class="flex items-center gap-2 mt-1"><button onclick="setReply('${comment.id}', '${r.nickname}')" class="text-[9px] text-gray-500 font-bold hover:text-white pr-2">Balas</button> ${rDelBtn}</div>
 </div>
@@ -4746,7 +4755,13 @@ document.getElementById('chat-room-view').classList.remove('hidden');
 document.getElementById('chat-room-view').classList.add('flex');
 
 // 2. Ubah profil di header (Atas ruang chat)
-document.getElementById('active-chat-name').innerText = name;
+let headerBadge = '';
+if (!isGroup) {
+    const vidCountHeader = allVideosData.filter(v => String(v.user_id) === String(id)).length;
+    headerBadge = getBadgeByVideoCount(vidCountHeader);
+}
+// Menggunakan innerHTML agar elemen HTML lencana dapat dirender dengan baik
+document.getElementById('active-chat-name').innerHTML = `<div class="flex items-center gap-1">${name} ${headerBadge}</div>`;
 document.getElementById('active-chat-avatar').src = avatar;
 
 // 3. Set ID yang sedang aktif agar fungsi kirim pesan tahu mau dikirim ke mana
@@ -5073,6 +5088,36 @@ const badge = item.unread > 0 ? `<div class="bg-brand-accent text-white text-[9p
 const icon = isGroup ? '<div class="absolute -bottom-1 -right-1 bg-brand-dark p-0.5 rounded-full"><i class="fas fa-users text-[10px] text-brand-info"></i></div>' : '';
 
 const ringClass = item.hasStory ? 'story-ring' : 'border border-white/10';
+const badge = item.unread > 0 ? `<div class="bg-brand-accent text-white text-[9px] font-bold w-4 h-4 flex items-center justify-center rounded-full ml-2">${item.unread}</div>` : '';
+const icon = isGroup ? '<div class="absolute -bottom-1 -right-1 bg-brand-dark p-0.5 rounded-full"><i class="fas fa-users text-[10px] text-brand-info"></i></div>' : '';
+
+// --- TAMBAHAN BADGE INBOX ---
+let badgeKastaInbox = '';
+if (!isGroup) {
+    const vidCountInbox = allVideosData.filter(v => String(v.user_id) === String(item.id)).length;
+    badgeKastaInbox = getBadgeByVideoCount(vidCountInbox);
+}
+
+const ringClass = item.hasStory ? 'story-ring' : 'border border-white/10';
+const avatarClickCode = item.hasStory ? `event.stopPropagation(); viewStory('${item.id}', '${item.name.replace(/'/g, "\\'")}', '${ava}')` : `event.stopPropagation(); viewUserProfile('${item.id}')`;
+
+return `
+<div class="flex items-center p-3 bg-brand-card/50 hover:bg-white/5 cursor-pointer rounded-2xl border border-white/5 transition-all mb-2 relative group" onclick="openChatRoom('${item.id}', '${item.name.replace(/'/g, "\\'")}', '${ava}', ${isGroup})">
+<div class="relative shrink-0" onclick="${isGroup ? '' : avatarClickCode}">
+<div class="${isGroup ? 'border border-brand-accent/30 rounded-full' : ringClass}"><img src="${ava}" loading="lazy" class="w-11 h-11 rounded-full object-cover border-2 border-brand-card"></div>
+${icon}
+</div>
+<div class="flex-1 min-w-0 ml-3 pr-8">
+<div class="flex justify-between items-center mb-1">
+    <div class="flex items-center gap-1 overflow-hidden">
+        <h4 class="font-bold text-white text-[13px] truncate">${item.name}</h4>
+        ${badgeKastaInbox}
+    </div>
+    <div class="flex items-center"><span class="text-[9px] text-gray-500 shrink-0 ml-2">${msg.is_empty ? 'Baru' : timeAgo(msg.created_at)}</span>${badge}</div>
+</div>
+<p class="text-[11px] text-gray-400 truncate">${prefix}${preview}</p>
+</div>
+
 const avatarClickCode = item.hasStory ? `event.stopPropagation(); viewStory('${item.id}', '${item.name.replace(/'/g, "\\'")}', '${ava}')` : `event.stopPropagation(); viewUserProfile('${item.id}')`;
 
 return `
@@ -6972,7 +7017,9 @@ contentHtml = replyHtml + contentHtml;
 // --- TANGANI NAMA PENGIRIM (Khusus di Grup) ---
 let senderNameHtml = '';
 if (!isMe && activeGroupId) {
-senderNameHtml = `<div class="text-[10px] text-[#00F0FF] font-bold mb-1">${msg.profiles?.nickname || 'Anggota'}</div>`;
+    const vidCountBubble = allVideosData.filter(v => String(v.user_id) === String(msg.sender_id)).length;
+    const badgeBubble = getBadgeByVideoCount(vidCountBubble);
+    senderNameHtml = `<div class="text-[10px] text-[#00F0FF] font-bold mb-1 flex items-center gap-1">${msg.profiles?.nickname || 'Anggota'} ${badgeBubble}</div>`;
 }
 
 const html = `
@@ -8996,8 +9043,6 @@ async function copyLinkLaciAktif(btn) {
         </p>
     </div>
 </div>
-
-udhdbdbdbb
 
 <div id="assistive-menu" onclick="closeAssistiveMenu()" class="fixed inset-0 z-[99999] hidden items-center justify-center bg-black/70 backdrop-blur-sm opacity-0 transition-all duration-300">
     <div onclick="event.stopPropagation()" class="bg-[#161B2E]/95 border border-white/10 rounded-[2.5rem] p-5 w-[290px] h-[290px] grid grid-cols-3 gap-3 items-center justify-center backdrop-blur-2xl shadow-[0_25px_50px_-12px_rgba(0,0,0,0.8),0_0_40px_rgba(162,119,255,0.15)] scale-90 transition-all duration-300">
