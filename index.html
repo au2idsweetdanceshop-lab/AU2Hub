@@ -312,23 +312,23 @@ input[type="checkbox"].peer:checked + div::after {
 }
 
 /* ========================================= */
-/* ANIMASI NAVIGASI KIRI (DISCORD STYLE)     */
+/* ANIMASI NAVIGASI KIRI (DISCORD STYLE) FIX */
 /* ========================================= */
 .nav-item {
     position: relative;
-    border-radius: 50%; /* Awalnya bulat bulat */
+    border-radius: 50%;
     background-color: rgba(255, 255, 255, 0.03);
     transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .nav-item:hover, .nav-item.active {
-    border-radius: 1rem; /* Berubah jadi kotak melengkung saat diklik */
+    border-radius: 1rem;
     background-color: rgba(255, 255, 255, 0.1);
 }
 .nav-item.active {
     color: #FF007A !important;
 }
 .nav-item.active i {
-    animation: none; /* Matikan animasi pop lama */
+    animation: none;
     transform: scale(1.1);
 }
 
@@ -336,25 +336,29 @@ input[type="checkbox"].peer:checked + div::after {
 .nav-item::before {
     content: '';
     position: absolute;
-    /* UBAH BAGIAN INI: Kurangi angkanya agar tidak keluar batas nav */
-    left: -11px; 
+    /* Nilai aman dari batas tepi kiri (anti-crop) */
+    left: -10px; 
     top: 50%;
-    transform: translateY(-50%) scaleY(0);
+    
+    /* Ganti Transform dengan Height Murni */
     width: 4px;
-    height: 24px;
+    height: 0px; 
+    margin-top: 0px; /* Untuk menjaga posisi selalu di tengah */
+    
     background-color: white;
     border-radius: 0 4px 4px 0;
-    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .nav-item:hover::before {
-    transform: translateY(-50%) scaleY(0.4); /* Muncul kecil saat disentuh */
+    height: 10px; /* Muncul kecil saat disentuh */
+    margin-top: -5px; /* Selalu minus separuh dari height agar senter */
 }
 
 .nav-item.active::before {
-    transform: translateY(-50%) scaleY(1.4); /* Memanjang saat aktif */
+    height: 34px !important; /* Memanjang penuh saat aktif */
+    margin-top: -17px !important; /* Minus separuh dari 34px */
 }
-
 
 /* Sembunyikan Navigasi ke Kiri saat Nonton Video Penuh */
 body.video-focused nav {
