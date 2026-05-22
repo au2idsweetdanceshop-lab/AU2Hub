@@ -365,25 +365,18 @@ nav::-webkit-scrollbar { display: none; }
 <body>
 
 
-
 <div id="toast-container" class="fixed top-6 left-0 w-full px-4 z-[200] flex flex-col items-center gap-3 pointer-events-auto"></div>
 
-<header class="fixed top-0 left-0 w-full z-40 glass border-b border-white/5 py-4 px-6 shadow-md">
-    <div class="max-w-md mx-auto flex justify-between items-center">
-        <div class="flex items-center gap-4">
-            <button onclick="toggleSideNav()" class="text-white text-xl active:scale-90 transition-transform">
-                <i class="fas fa-bars"></i>
-            </button>
-            <h1 class="font-extrabold text-xl tracking-tight cursor-pointer" onclick="switchTab('home')">
-                <span class="text-brand-info">AU2</span><span class="text-brand-accent">Hub</span>
-            </h1>
-        </div>
-        <div id="header-user">
-            <button onclick="openAuthModal()" class="text-[10px] font-bold bg-white/10 px-4 py-2 rounded-full border border-white/10 uppercase active:scale-95 transition-transform">Login / Daftar</button>
-        </div>
-    </div>
+<header class="fixed top-0 right-0 w-[calc(100%-75px)] z-40 glass border-b border-white/5 py-4 px-6 shadow-md">
+<div class="max-w-md mx-auto flex justify-between items-center">
+<h1 class="font-extrabold text-xl tracking-tight cursor-pointer" onclick="switchTab('home')">
+<span class="text-brand-info">AU2</span><span class="text-brand-accent">Hub</span>
+</h1>
+<div id="header-user">
+<button onclick="openAuthModal()" class="text-[10px] font-bold bg-white/10 px-4 py-2 rounded-full border border-white/10 uppercase active:scale-95 transition-transform">Login / Daftar</button>
+</div>
+</div>
 </header>
-
 
 <main class="max-w-md mx-auto px-5 pt-24">
 <div id="install-container" class="hidden px-5 mb-6">
@@ -1393,14 +1386,8 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
     </div>
 </div>
 
-<div id="nav-overlay" onclick="tutupSideNav()" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-[190] hidden opacity-0 transition-opacity duration-300"></div>
-
-<nav id="side-nav" class="fixed top-0 left-0 h-full w-[75px] glass z-[200] border-r border-white/5 flex flex-col items-center py-6 gap-4 overflow-y-auto shadow-[10px_0_30px_rgba(0,0,0,0.5)] transition-transform duration-300 -translate-x-full">
+<nav class="fixed top-0 left-0 h-full w-[75px] glass z-50 border-r border-white/5 flex flex-col items-center py-6 gap-4 overflow-y-auto shadow-[10px_0_30px_rgba(0,0,0,0.5)] transition-transform duration-300">
     
-    <button onclick="tutupSideNav()" class="text-gray-500 hover:text-white mb-2 active:scale-90 transition-transform">
-        <i class="fas fa-times text-xl"></i>
-    </button>
-
     <a href="#home" onclick="switchTab('home', event)" class="nav-item flex items-center justify-center w-[52px] h-[52px] text-gray-500 mb-2">
         <img src="/app-icon-192.png" onerror="this.src='https://ui-avatars.com/api/?name=AU&background=FF007A&color=fff'" class="w-8 h-8 rounded-full pointer-events-none">
     </a>
@@ -1437,7 +1424,6 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
         <i class="fas fa-user-circle text-xl pointer-events-none"></i>
     </a>
 </nav>
-
 
 
 
@@ -2643,18 +2629,14 @@ if(headerTop) headerTop.style.filter = 'blur(8px) opacity(0.5)';
 function switchTab(tabId, event = null, isPush = true) {
     if (event) event.preventDefault();
 
-    // [TAMBAHAN PENTING] Tutup otomatis navigasi samping saat menu diklik
-    tutupSideNav();
-
     // 🔥 FIX: Mencegah tabrakan layar freeze saat klik AU2Hub dari dalam mode Nonton Video
     if (document.body.classList.contains('video-focused')) {
         toggleGlobalAudio(true);
-    } // <---- KAMU KETINGGALAN KURUNG INI, TAMBAHKAN SEKARANG!
+    }
 
     // 🚀 PRO-FIX 5 TAHUN: PAKSA BALIK PROFIL SENDIRI TANPA SYARAT + CLEAR PARAMS URL
     if (tabId === 'profile' && event !== null && currentUser) {
         viewedUserId = currentUser.id;
-
 
 // Bersihkan sisa query string (?id=...) dari URL biar balik murni mentereng ke #profile
 history.replaceState({ popup: 'my_profile' }, null, '#profile');
@@ -8524,34 +8506,77 @@ function prosesBayarUlang() {
     checkoutRobotDANA(activeOrderNameToPay, activeOrderPriceToPay, "Melanjutkan pembayaran tagihan tertunda.");
 }
 
-});
+// =========================================================
+// LOGIKA GAMEPLAY ASSISTIVETOUCH (IPHONE SMART DRAG & SNAP)
+// =========================================================
+const atBtn = document.getElementById('assistive-touch');
+let isAtDragging = false;
+let atStartX, atStartY, atInitialX, atInitialY;
 
-// FUNGSI UNTUK MEMBUKA MENU NAVIGASI
-function toggleSideNav() {
-    const nav = document.getElementById('side-nav');
-    const overlay = document.getElementById('nav-overlay');
+// 1. Deteksi Sentuhan Pertama Jari
+atBtn.addEventListener('touchstart', (e) => {
+    isAtDragging = false;
+    const touch = e.touches[0];
+    atStartX = touch.clientX;
+    atStartY = touch.clientY;
+    
+    const rect = atBtn.getBoundingClientRect();
+    atInitialX = rect.left;
+    atInitialY = rect.top;
+    
+    atBtn.style.opacity = '1'; // Terangkan tombol saat disentuh
+}, { passive: true });
 
-    if (nav.classList.contains('-translate-x-full')) {
-        // Buka Navigasi
-        nav.classList.remove('-translate-x-full');
-        overlay.classList.remove('hidden');
-        setTimeout(() => overlay.classList.remove('opacity-0'), 10);
+// 2. Seret Tombol Mengikuti Gerakan Jari
+atBtn.addEventListener('touchmove', (e) => {
+    const touch = e.touches[0];
+    let diffX = touch.clientX - startX; // Gunakan variabel let murni
+    let diffY = touch.clientY - startY;
+
+    // Jika jari geser lebih dari 6 pixel, konfirmasi sebagai mode DRAG (Bukan klik biasa)
+    if (Math.abs(touch.clientX - atStartX) > 6 || Math.abs(touch.clientY - atStartY) > 6) {
+        isAtDragging = true;
+    }
+
+    if (isAtDragging) {
+        let newX = atInitialX + (touch.clientX - atStartX);
+        let newY = atInitialY + (touch.clientY - atStartY);
+
+        // Proteksi pagar layar (Biar tombol ga melosot keluar dari HP)
+        newX = Math.max(8, Math.min(window.innerWidth - 56, newX));
+        newY = Math.max(8, Math.min(window.innerHeight - 80, newY));
+
+        atBtn.style.left = `${newX}px`;
+        atBtn.style.top = `${newY}px`;
+        atBtn.style.bottom = 'auto';
+        atBtn.style.right = 'auto';
+    }
+}, { passive: true });
+
+// 3. Jari Dilepas (Buka Menu atau Efek Magnet Snap)
+atBtn.addEventListener('touchend', () => {
+    atBtn.style.opacity = '0.5'; // Redupkan kembali biar ga ganggu pemandangan gacha
+    
+    if (!isAtDragging) {
+        // JIKA HANYA DIKLIK SEKALI -> Buka Control Center
+        openAssistiveMenu();
     } else {
-        tutupSideNav();
+        // JIKA DI-DRAG -> Picu Fungsi Efek Magnet Khas Apple iOS
+        const rect = atBtn.getBoundingClientRect();
+        const batasTengahLayar = window.innerWidth / 2;
+        
+        atBtn.style.transition = 'left 0.4s cubic-bezier(0.16, 1, 0.3, 1), top 0.2s ease';
+        
+        if (rect.left + 24 < batasTengahLayar) {
+            atBtn.style.left = '12px'; // Nempel Magnet ke Kiri
+        } else {
+            atBtn.style.left = `${window.innerWidth - 48 - 12}px`; // Nempel Magnet ke Kanan
+        }
+        
+        // Matikan transisi setelah animasi nempel beres agar pas diseret berikutnya ga delay
+        setTimeout(() => { atBtn.style.transition = 'none'; }, 400);
     }
-}
-
-// FUNGSI UNTUK MENUTUP MENU NAVIGASI
-function tutupSideNav() {
-    const nav = document.getElementById('side-nav');
-    const overlay = document.getElementById('nav-overlay');
-
-    if(nav) nav.classList.add('-translate-x-full');
-    if(overlay) {
-        overlay.classList.add('opacity-0');
-        setTimeout(() => overlay.classList.add('hidden'), 300);
-    }
-}
+});
 
 // FUNCTIONS UNTUK KONTROL ANIMASI BUKA TUTUP LACI MENU
 function openAssistiveMenu() {
