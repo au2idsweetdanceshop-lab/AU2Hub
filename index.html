@@ -333,14 +333,16 @@ input[type="checkbox"].peer:checked + div::after {
 <div id="toast-container" class="fixed top-6 left-0 w-full px-4 z-[200] flex flex-col items-center gap-3 pointer-events-auto"></div>
 
 <header class="fixed top-0 w-full z-40 glass border-b border-white/5 py-4 px-6 shadow-md">
-<div class="max-w-md mx-auto flex justify-between items-center">
-<h1 class="font-extrabold text-xl tracking-tight cursor-pointer" onclick="switchTab('home')">
-<span class="text-brand-info">AU2</span><span class="text-brand-accent">Hub</span>
-</h1>
-<div id="header-user">
-<button onclick="openAuthModal()" class="text-[10px] font-bold bg-white/10 px-4 py-2 rounded-full border border-white/10 uppercase active:scale-95 transition-transform">Login / Daftar</button>
-</div>
-</div>
+    <div class="max-w-md mx-auto flex justify-between items-center">
+        <h1 class="font-extrabold text-xl tracking-tight cursor-pointer" onclick="switchTab('home')">
+            <span class="text-brand-info">AU2</span><span class="text-brand-accent">Hub</span>
+        </h1>
+        
+        <!-- Tambahkan Tombol Grid ini -->
+        <button onclick="toggleGridMenu()" class="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 active:scale-90 transition-all">
+            <i class="fas fa-th-large text-brand-info"></i>
+        </button>
+    </div>
 </header>
 
 <main class="max-w-md mx-auto px-5 pt-24">
@@ -1344,81 +1346,6 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
         <div id="leaderboard-container-sultan" class="flex-1 overflow-y-auto p-3 hide-scroll space-y-2 hidden pb-6"></div>
     </div>
 </div>
-
-<!-- OVERLAY GELAP UNTUK MENU LAINNYA -->
-<div id="more-menu-overlay" onclick="toggleMoreMenu()" class="fixed inset-0 z-[80] bg-black/60 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-300"></div>
-
-<!-- LACI MENU LAINNYA (BOTTOM SHEET) -->
-<div id="more-menu-sheet" class="fixed inset-x-0 bottom-0 z-[90] bg-[#121319]/95 backdrop-blur-2xl border-t border-white/10 rounded-t-[2rem] transition-transform duration-400 translate-y-full flex flex-col max-w-md mx-auto shadow-[0_-10px_40px_rgba(0,0,0,0.8)] pb-28 pt-4 px-6">
-    <div class="w-12 h-1.5 bg-white/20 rounded-full mx-auto mb-6"></div>
-    <h3 class="text-sm font-extrabold text-white mb-4"><i class="fas fa-compass text-brand-info mr-2"></i> Eksplorasi Menu</h3>
-    
-    <div class="grid grid-cols-4 gap-4">
-        <div onclick="pindahDanTutup('layanan')" class="nav-item flex flex-col items-center gap-2 cursor-pointer active:scale-90 transition-all">
-            <div class="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center shadow-lg icon-box">
-                <i class="fas fa-bolt text-xl text-yellow-400"></i>
-            </div>
-            <span class="text-[10px] font-bold text-gray-400">Layanan</span>
-        </div>
-        
-        <div onclick="pindahDanTutup('pesanan')" class="nav-item flex flex-col items-center gap-2 cursor-pointer active:scale-90 transition-all">
-            <div class="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center shadow-lg icon-box">
-                <i class="fas fa-receipt text-xl text-brand-info"></i>
-            </div>
-            <span class="text-[10px] font-bold text-gray-400">Pesanan</span>
-        </div>
-
-        <div onclick="pindahDanTutup('info')" class="nav-item flex flex-col items-center gap-2 cursor-pointer active:scale-90 transition-all">
-            <div class="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center shadow-lg icon-box">
-                <i class="fas fa-bullhorn text-xl text-brand-purple"></i>
-            </div>
-            <span class="text-[10px] font-bold text-gray-400">Info</span>
-        </div>
-
-        <div onclick="pindahDanTutup('ripper')" class="nav-item flex flex-col items-center gap-2 cursor-pointer active:scale-90 transition-all">
-            <div class="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center shadow-lg icon-box">
-                <i class="fas fa-user-ninja text-xl text-red-500"></i>
-            </div>
-            <span class="text-[10px] font-bold text-gray-400">Ripper</span>
-        </div>
-    </div>
-</div>
-
-<!-- MODERN BOTTOM BAR -->
-<nav class="fixed bottom-0 sm:bottom-6 left-0 sm:left-4 right-0 sm:right-4 max-w-md mx-auto z-[100] sm:rounded-3xl glass border-t sm:border border-white/10 shadow-2xl px-6 py-3 flex justify-between items-center transition-all duration-300">
-    
-    <!-- Kiri -->
-    <div class="flex gap-6 sm:gap-8">
-        <div onclick="switchTab('home')" data-target="home" class="nav-item flex flex-col items-center justify-center cursor-pointer transition-all active:scale-90">
-            <i class="fas fa-home text-xl text-gray-500 mb-1 transition-colors"></i>
-            <span class="text-[9px] font-bold text-gray-500 transition-colors">Home</span>
-        </div>
-        <div onclick="switchTab('rekber')" data-target="rekber" class="nav-item flex flex-col items-center justify-center cursor-pointer transition-all active:scale-90">
-            <i class="fas fa-shield-alt text-xl text-gray-500 mb-1 transition-colors"></i>
-            <span class="text-[9px] font-bold text-gray-500 transition-colors">Rekber</span>
-        </div>
-    </div>
-
-    <!-- Tombol Mengapung Tengah (SOSIAL FEED) -->
-    <div class="absolute left-1/2 -translate-x-1/2 -top-6">
-        <div onclick="switchTab('sosial')" data-target="sosial" class="nav-item flex flex-col items-center justify-center w-16 h-16 bg-gradient-to-tr from-brand-accent to-brand-purple rounded-full shadow-[0_10px_25px_rgba(255,0,122,0.4)] cursor-pointer active:scale-95 transition-transform hover:-translate-y-1 border-[3px] border-[#0F0920]">
-            <i class="fas fa-camera-retro text-white text-2xl transition-all"></i>
-        </div>
-    </div>
-
-    <!-- Kanan -->
-    <div class="flex gap-6 sm:gap-8">
-        <div onclick="switchTab('profile')" data-target="profile" class="nav-item flex flex-col items-center justify-center cursor-pointer transition-all active:scale-90">
-            <i class="fas fa-user-circle text-xl text-gray-500 mb-1 transition-colors"></i>
-            <span class="text-[9px] font-bold text-gray-500 transition-colors">Profil</span>
-        </div>
-        <!-- Tombol Menu Ekstra -->
-        <div onclick="toggleMoreMenu()" id="btn-more-menu" class="flex flex-col items-center justify-center cursor-pointer transition-all active:scale-90">
-            <i id="icon-more-menu" class="fas fa-th-large text-xl text-gray-500 mb-1 transition-colors"></i>
-            <span id="text-more-menu" class="text-[9px] font-bold text-gray-500 transition-colors">Menu</span>
-        </div>
-    </div>
-</nav>
 
 
 <script>
@@ -8424,56 +8351,60 @@ function prosesBayarUlang() {
     checkoutRobotDANA(activeOrderNameToPay, activeOrderPriceToPay, "Melanjutkan pembayaran tagihan tertunda.");
 }
 
-// Fungsi membuka/menutup laci menu tambahan
-function toggleMoreMenu() {
-    const sheet = document.getElementById('more-menu-sheet');
-    const overlay = document.getElementById('more-menu-overlay');
-    const btnMenu = document.getElementById('btn-more-menu');
+// Fungsi Buka/Tutup Overlay Grid
+function toggleGridMenu() {
+    const overlay = document.getElementById('grid-menu-overlay');
     
-    if (sheet.classList.contains('translate-y-full')) {
-        // BUKA MENU
-        sheet.classList.remove('translate-y-full');
-        overlay.classList.remove('opacity-0', 'pointer-events-none');
-        btnMenu.classList.add('menu-open');
-        if (navigator.vibrate) navigator.vibrate(10); // Getaran halus
+    if (overlay.classList.contains('hidden')) {
+        // BUKA GRID
+        history.pushState({ popup: 'grid_menu' }, null, '#menu'); // Dukungan tombol back HP
+        overlay.classList.remove('hidden');
+        overlay.classList.add('flex');
+        document.body.style.overflow = 'hidden'; // Kunci layar belakang agar tidak bisa di-scroll
+        
+        setTimeout(() => overlay.classList.remove('opacity-0'), 10);
     } else {
-        // TUTUP MENU
-        sheet.classList.add('translate-y-full');
-        overlay.classList.add('opacity-0', 'pointer-events-none');
-        btnMenu.classList.remove('menu-open');
+        // TUTUP GRID
+        if (window.location.hash === '#menu') history.back();
+        overlay.classList.add('opacity-0');
+        document.body.style.overflow = 'auto'; // Buka kembali kunci scroll
+        
+        setTimeout(() => {
+            overlay.classList.add('hidden');
+            overlay.classList.remove('flex');
+        }, 300);
     }
 }
 
-// Fungsi kombinasi: Pindah tab lalu tutup laci menunya
-function pindahDanTutup(tabId) {
-    switchTab(tabId);
-    toggleMoreMenu();
+// Tangkap tombol back HP khusus untuk Grid Menu
+window.addEventListener('popstate', (e) => {
+    const overlay = document.getElementById('grid-menu-overlay');
+    if (!overlay.classList.contains('hidden') && window.location.hash !== '#menu') {
+        overlay.classList.add('opacity-0');
+        document.body.style.overflow = 'auto';
+        setTimeout(() => {
+            overlay.classList.add('hidden');
+            overlay.classList.remove('flex');
+        }, 300);
+    }
+});
+
+// Fungsi pindah tab dan tutup grid otomatis
+function pindahGrid(tabId) {
+    // Sembunyikan dengan mulus
+    const overlay = document.getElementById('grid-menu-overlay');
+    overlay.classList.add('opacity-0');
+    document.body.style.overflow = 'auto';
+    
+    setTimeout(() => {
+        overlay.classList.add('hidden');
+        overlay.classList.remove('flex');
+        
+        // Pindah halaman
+        if (window.location.hash === '#menu') history.back();
+        switchTab(tabId);
+    }, 250); // Dipercepat sedikit agar user tidak merasa lag
 }
-
-// PERBAIKAN PADA FUNGSI switchTab LU YANG LAMA (Opsional tapi disarankan)
-// Cari bagian di dalam switchTab() lu yang mengurus class "active", dan ganti jadi seperti ini:
-/*
-    // Menghapus semua class active
-    document.querySelectorAll('.nav-item').forEach(n => {
-        n.classList.remove('active');
-        const icon = n.querySelector('i');
-        if (icon) icon.style.animation = 'none';
-    });
-
-    // Menyalakan class active berdasarkan ID Tab yang dipilih (Bebas dari bug Array/Index)
-    const activeNavs = document.querySelectorAll(`.nav-item[onclick*="'${tabId}'"]`);
-    activeNavs.forEach(activeNav => {
-        activeNav.classList.add('active');
-        const icon = activeNav.querySelector('i');
-        if (icon) {
-            void icon.offsetWidth; // Trigger reflow
-            icon.style.animation = 'popBounce 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards';
-        }
-    });
-*/
-
-
-
 
 
 
@@ -8600,6 +8531,51 @@ function pindahDanTutup(tabId) {
         <p id="pesan-status-lain" class="hidden text-[10px] text-gray-500 text-center italic mt-2">
             Pesanan ini sudah diproses atau selesai.
         </p>
+    </div>
+</div>
+
+<!-- Grid Menu Overlay -->
+<div id="grid-menu-overlay" class="fixed inset-0 z-[9999] hidden flex-col items-center justify-center bg-black/90 backdrop-blur-2xl p-6 transition-all duration-300">
+    
+    <!-- Tombol Close -->
+    <button onclick="toggleGridMenu()" class="absolute top-8 right-8 text-white w-12 h-12 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 active:scale-90 transition-all">
+        <i class="fas fa-times text-xl"></i>
+    </button>
+
+    <div class="w-full max-w-sm grid grid-cols-2 sm:grid-cols-4 gap-4 modal-anim">
+        <!-- 8 Navigasi Grid -->
+        <div onclick="pindahGrid('home')" class="aspect-square bg-white/5 border border-white/10 rounded-3xl flex flex-col items-center justify-center gap-3 cursor-pointer hover:bg-brand-info/20 hover:border-brand-info/30 transition-all active:scale-95">
+            <i class="fas fa-home text-2xl text-brand-info"></i>
+            <span class="text-[10px] font-bold text-white uppercase">Home</span>
+        </div>
+        <div onclick="pindahGrid('info')" class="aspect-square bg-white/5 border border-white/10 rounded-3xl flex flex-col items-center justify-center gap-3 cursor-pointer hover:bg-brand-purple/20 hover:border-brand-purple/30 transition-all active:scale-95">
+            <i class="fas fa-bullhorn text-2xl text-brand-purple"></i>
+            <span class="text-[10px] font-bold text-white uppercase">Info</span>
+        </div>
+        <div onclick="pindahGrid('layanan')" class="aspect-square bg-white/5 border border-white/10 rounded-3xl flex flex-col items-center justify-center gap-3 cursor-pointer hover:bg-yellow-500/20 hover:border-yellow-500/30 transition-all active:scale-95">
+            <i class="fas fa-bolt text-2xl text-yellow-400"></i>
+            <span class="text-[10px] font-bold text-white uppercase">Layanan</span>
+        </div>
+        <div onclick="pindahGrid('sosial')" class="aspect-square bg-white/5 border border-white/10 rounded-3xl flex flex-col items-center justify-center gap-3 cursor-pointer hover:bg-brand-accent/20 hover:border-brand-accent/30 transition-all active:scale-95">
+            <i class="fas fa-camera-retro text-2xl text-brand-accent"></i>
+            <span class="text-[10px] font-bold text-white uppercase">Sosial</span>
+        </div>
+        <div onclick="pindahGrid('rekber')" class="aspect-square bg-white/5 border border-white/10 rounded-3xl flex flex-col items-center justify-center gap-3 cursor-pointer hover:bg-brand-success/20 hover:border-brand-success/30 transition-all active:scale-95">
+            <i class="fas fa-shield-alt text-2xl text-brand-success"></i>
+            <span class="text-[10px] font-bold text-white uppercase">Rekber</span>
+        </div>
+        <div onclick="pindahGrid('ripper')" class="aspect-square bg-white/5 border border-white/10 rounded-3xl flex flex-col items-center justify-center gap-3 cursor-pointer hover:bg-red-500/20 hover:border-red-500/30 transition-all active:scale-95">
+            <i class="fas fa-user-ninja text-2xl text-red-500"></i>
+            <span class="text-[10px] font-bold text-white uppercase">Ripper</span>
+        </div>
+        <div onclick="pindahGrid('pesanan')" class="aspect-square bg-white/5 border border-white/10 rounded-3xl flex flex-col items-center justify-center gap-3 cursor-pointer hover:bg-brand-info/20 hover:border-brand-info/30 transition-all active:scale-95">
+            <i class="fas fa-receipt text-2xl text-white"></i>
+            <span class="text-[10px] font-bold text-white uppercase">Pesanan</span>
+        </div>
+        <div onclick="pindahGrid('profile')" class="aspect-square bg-white/5 border border-white/10 rounded-3xl flex flex-col items-center justify-center gap-3 cursor-pointer hover:bg-white/20 hover:border-white/30 transition-all active:scale-95">
+            <i class="fas fa-user-circle text-2xl text-white"></i>
+            <span class="text-[10px] font-bold text-white uppercase">Profil</span>
+        </div>
     </div>
 </div>
 
