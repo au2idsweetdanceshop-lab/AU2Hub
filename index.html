@@ -8654,38 +8654,6 @@ function executeAssistive(target) {
     </div>
 </div>
 
-<div id="assistive-touch" class="fixed bottom-32 right-4 z-[9999] w-12 h-12 bg-black/40 backdrop-blur-md rounded-full border border-white/20 flex items-center justify-center cursor-pointer shadow-xl select-none touch-none opacity-50 transition-opacity duration-300 hover:opacity-100" style="touch-action: none;">
-    <div class="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center border border-white/30">
-        <div class="w-5 h-5 bg-white/80 rounded-full shadow-inner"></div>
-    </div>
-</div>
-
-<div id="modal-leaderboard" class="fixed inset-0 z-[250] hidden items-end sm:items-center justify-center bg-black/90 backdrop-blur-md px-0 sm:px-6 transition-all duration-300">
-    <div class="bg-brand-card w-full max-w-md sm:rounded-3xl rounded-t-[2.5rem] border border-white/10 shadow-2xl relative modal-anim flex flex-col h-[85vh] sm:h-auto sm:max-h-[85vh] overflow-hidden">
-        <div class="flex justify-between items-center p-5 border-b border-white/5 bg-brand-dark/80 backdrop-blur-xl shrink-0">
-            <h3 class="font-extrabold text-white text-sm flex items-center gap-2">
-                <i class="fas fa-trophy text-yellow-400"></i> LEADERBOARD
-            </h3>
-            <button onclick="closeLeaderboardModal()" class="text-gray-400 hover:text-white w-8 h-8 rounded-full bg-white/5 flex items-center justify-center active:scale-95 transition-all"><i class="fas fa-times"></i></button>
-        </div>
-        <div class="flex p-2 bg-black/40 shrink-0 gap-1 border-b border-white/5">
-            <button id="tab-lb-creator" onclick="switchLeaderboardTab('creator')" class="flex-1 py-2.5 text-[10px] font-bold text-white bg-brand-accent rounded-xl shadow-[0_0_15px_rgba(255,0,122,0.4)] transition-all">🎬 Creator</button>
-            <button id="tab-lb-level" onclick="switchLeaderboardTab('level')" class="flex-1 py-2.5 text-[10px] font-bold text-gray-500 hover:text-white rounded-xl transition-all">🏆 Level</button>
-            <button id="tab-lb-sultan" onclick="switchLeaderboardTab('sultan')" class="flex-1 py-2.5 text-[10px] font-bold text-gray-500 hover:text-white rounded-xl transition-all">💸 Sultan</button>
-        </div>
-        <div class="p-3 bg-brand-dark/50 shrink-0 border-b border-white/5">
-            <div class="relative">
-                <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-xs"></i>
-                <input type="text" id="leaderboardSearch" placeholder="Cari nama player..." class="w-full bg-black/40 border border-white/10 rounded-xl py-2 pl-9 pr-3 text-xs text-white outline-none focus:border-brand-accent transition-colors">
-            </div>
-        </div>
-        <div id="leaderboard-container-creator" class="flex-1 overflow-y-auto p-3 hide-scroll space-y-2 block pb-6"></div>
-        <div id="leaderboard-container-level" class="flex-1 overflow-y-auto p-3 hide-scroll space-y-2 hidden pb-6"></div>
-        <div id="leaderboard-container-sultan" class="flex-1 overflow-y-auto p-3 hide-scroll space-y-2 hidden pb-6"></div>
-    </div>
-</div>
-
-
 
 </body>
 </html>
