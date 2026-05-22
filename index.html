@@ -7,7 +7,7 @@
 <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
 <link rel="icon" type="image/png" href="/app-icon-192.png">
 <link rel="apple-touch-icon" href="/app-icon-192.png">
-<link rel="manifest" href="/manifest-v2.json">
+<link rel="manifest" href="/manifest-v2.json?v=3">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#0F0920">
@@ -6350,25 +6350,91 @@ timeIndicator.querySelector('.time-total').innerText = formatTime(video.duration
 // ==========================================
 let deferredPrompt;
 
-// Menangkap sinyal PWA dari browser
+// 1. Menangkap sinyal PWA dari browser secara diam-diam
 window.addEventListener('beforeinstallprompt', (e) => {
-e.preventDefault();
-deferredPrompt = e;
-const btnInstallContainer = document.getElementById('install-container');
-if (btnInstallContainer) {
-btnInstallContainer.classList.remove('hidden');
-}
+    e.preventDefault();
+    deferredPrompt = e;
 });
 
-// Deteksi jika sudah berhasil diinstal
+// 2. Deteksi jika aplikasi sukses terinstal (Tombol otomatis hilang)
 window.addEventListener('appinstalled', () => {
-console.log('AU2Hub sukses terpasang di perangkat!');
-deferredPrompt = null;
-const btnInstallContainer = document.getElementById('install-container');
-if (btnInstallContainer) {
-btnInstallContainer.classList.add('hidden');
-}
+    console.log('AU2Hub sukses terpasang di perangkat!');
+    deferredPrompt = null;
+    const btnInstallContainer = document.getElementById('install-container');
+    if (btnInstallContainer) {
+        btnInstallContainer.classList.add('hidden');
+    }
 });
+
+// 3. Saat Halaman Selesai Dimuat (Pusat Eksekusi)
+document.addEventListener('DOMContentLoaded', () => {
+    // --- Inisialisasi Fungsi Bawaan Aplikasi ---
+    let tabAwal = window.location.hash.substring(1);
+    if (!tabAwal) {
+        tabAwal = localStorage.getItem('lastTab') || 'home';
+    }
+    switchTab(tabAwal, null, false);
+
+    checkSession();
+    muatDataRipper();
+    loadInfoLayanan();
+    loadDataRekber();
+
+    // Memuat Katalog Produk
+    loadProdukXoftware().then(() => {
+        const urlHash = window.location.hash.substring(1);
+        if (urlHash.startsWith('detail?id=')) {
+            const produkIndex = urlHash.split('=')[1];
+            if (produkIndex && xoftwareProdukGlobal[produkIndex]) {
+                setTimeout(() => {
+                    openDetailProduk(parseInt(produkIndex));
+                }, 500);
+            }
+        }
+    });
+
+    // Mendaftarkan Service Worker
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js')
+            .then(() => console.log("Service Worker AU2Hub Aktif!"))
+            .catch(err => console.error("Service Worker Gagal:", err));
+    }
+
+    // --- LOGIKA TOMBOL INSTALASI PAKSA MUNCUL ---
+    const btnInstallManual = document.getElementById('btn-install-manual');
+    const btnInstallContainer = document.getElementById('install-container');
+
+    // Cek layar: Apakah user sedang buka dari Aplikasi (Home Screen) atau Browser biasa?
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+
+    // Jika BUKAN dari aplikasi (berarti dari browser biasa), PAKSA tombol muncul!
+    if (!isStandalone && btnInstallContainer) {
+        btnInstallContainer.classList.remove('hidden');
+    }
+
+    // Aksi ketika tombol install diklik
+    if (btnInstallManual) {
+        btnInstallManual.addEventListener('click', async () => {
+            if (deferredPrompt) {
+                // Jika Chrome sudah mendeteksi kelayakan PWA (Android/Desktop)
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                
+                if (outcome === 'accepted') {
+                    console.log('User menerima instalasi');
+                    btnInstallContainer.classList.add('hidden');
+                } else {
+                    console.log('User menolak instalasi');
+                }
+                deferredPrompt = null;
+            } else {
+                // FALLBACK IPHONE & BROWSER LAIN: Munculkan tutorial manual
+                customAlert("📱 **Cara Instal Manual:**\n\n**Android (Chrome):** Tekan ikon Titik Tiga (⋮) di pojok kanan atas browser, lalu pilih **Instal Aplikasi** atau **Tambahkan ke Layar Utama**.\n\n**iPhone (Safari):** Tekan ikon Share (Bagikan) di tengah bawah, lalu gulir dan pilih **Tambah ke Layar Utama**.");
+            }
+        });
+    }
+});
+
 
 // ==========================================
 // FITUR HAPUS PESAN (Hapus Untukku & Semua)
@@ -8634,7 +8700,47 @@ function copyLinkLaciAktif(btn) {
     });
 }
 
+// ==========================================
+// PUSAT LOGIKA INSTALASI PWA (COPY PASTE INI)
+// ==========================================
+let deferredPrompt;
 
+// 1. Menangkap sinyal dari Chrome bahwa web BISA diinstal
+window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    
+    // Tombol dimunculkan hanya jika Chrome mengizinkan instalasi
+    const btnInstallContainer = document.getElementById('install-container');
+    if (btnInstallContainer) {
+        btnInstallContainer.classList.remove('hidden');
+    }
+});
+
+// 2. Jika user sudah klik install, tombol otomatis hilang
+window.addEventListener('appinstalled', () => {
+    const btnInstallContainer = document.getElementById('install-container');
+    if (btnInstallContainer) btnInstallContainer.classList.add('hidden');
+});
+
+// 3. Menangani klik tombol manual
+document.getElementById('btn-install-manual').addEventListener('click', async () => {
+    if (deferredPrompt) {
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        console.log(`User memilih: ${outcome}`);
+        deferredPrompt = null;
+    } else {
+        // Fallback untuk iPhone/Browser yang tidak otomatis
+        customAlert("📱 **Cara Instal Manual:**\n\n**Android:** Klik Titik Tiga (⋮) > 'Instal Aplikasi'.\n**iPhone:** Klik tombol Share > 'Tambah ke Layar Utama'.");
+    }
+});
+
+// 4. Deteksi apakah sudah terinstal (Sembunyikan tombol jika sudah di mode aplikasi)
+if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
+    const btnInstallContainer = document.getElementById('install-container');
+    if (btnInstallContainer) btnInstallContainer.classList.add('hidden');
+}
 
 
 </script>
