@@ -192,12 +192,22 @@ opacity: 0 !important; /* Buat transparan */
 transition: all 0.3s ease; /* Animasi mulus menghilang */
 }
 
-/* TULISAN "FEED KOMUNITAS" BERBAYANG AGAR JELAS */
+/* TULISAN "FEED KOMUNITAS" BERBAYANG & MENGAMBANG KE POJOK ATAS */
 body.video-focused #sosial-header {
-transform: translateY(0) scale(1) !important;
-filter: drop-shadow(0 4px 10px rgba(0,0,0,0.8));
-z-index: 9999999 !important;
-position: relative;
+    position: fixed !important;
+    top: max(1.5rem, env(safe-area-inset-top)) !important; /* Jarak aman dari poni/notch HP */
+    left: 0 !important;
+    right: 0 !important;
+    margin: 0 auto !important; /* Menjaga agar tetap di tengah pada layar lebar */
+    width: 100% !important;
+    max-width: 450px !important; /* Menyesuaikan batas lebar aplikasi */
+    padding: 0 1.5rem !important; /* Mendorong teks dan logo ke pojok kiri-kanan */
+    
+    transform: translateY(0) scale(1) !important;
+    filter: drop-shadow(0 4px 10px rgba(0,0,0,0.8));
+    z-index: 9999999 !important;
+    pointer-events: auto !important;
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
 
 /* Tombol kamera berdenyut */
