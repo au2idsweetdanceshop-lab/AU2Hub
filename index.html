@@ -2977,7 +2977,7 @@ async function openUserProfile(userId) {
                 // Cek ke database apakah user saat ini sudah follow target
                 const { data: isFollowing } = await supabaseClient
                     .from('follows')
-                    .select('id')
+                    .select('follower_id')
                     .eq('follower_id', currentUser.id)
                     .eq('following_id', userId)
                     .single();
