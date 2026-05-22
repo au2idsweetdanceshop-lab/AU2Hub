@@ -2649,10 +2649,12 @@ function switchTab(tabId, event = null, isPush = true) {
     // 🔥 FIX: Mencegah tabrakan layar freeze saat klik AU2Hub dari dalam mode Nonton Video
     if (document.body.classList.contains('video-focused')) {
         toggleGlobalAudio(true);
+    } // <---- KAMU KETINGGALAN KURUNG INI, TAMBAHKAN SEKARANG!
 
     // 🚀 PRO-FIX 5 TAHUN: PAKSA BALIK PROFIL SENDIRI TANPA SYARAT + CLEAR PARAMS URL
     if (tabId === 'profile' && event !== null && currentUser) {
         viewedUserId = currentUser.id;
+
 
 // Bersihkan sisa query string (?id=...) dari URL biar balik murni mentereng ke #profile
 history.replaceState({ popup: 'my_profile' }, null, '#profile');
@@ -8522,6 +8524,8 @@ function prosesBayarUlang() {
     checkoutRobotDANA(activeOrderNameToPay, activeOrderPriceToPay, "Melanjutkan pembayaran tagihan tertunda.");
 }
 
+});
+
 // FUNGSI UNTUK MEMBUKA MENU NAVIGASI
 function toggleSideNav() {
     const nav = document.getElementById('side-nav');
@@ -8548,8 +8552,6 @@ function tutupSideNav() {
         setTimeout(() => overlay.classList.add('hidden'), 300);
     }
 }
-
-});
 
 // FUNCTIONS UNTUK KONTROL ANIMASI BUKA TUTUP LACI MENU
 function openAssistiveMenu() {
