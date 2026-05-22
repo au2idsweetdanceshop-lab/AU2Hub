@@ -5087,10 +5087,6 @@ else if (preview.startsWith('[AUDIO]')) { preview = '<i class="fas fa-microphone
 const badge = item.unread > 0 ? `<div class="bg-brand-accent text-white text-[9px] font-bold w-4 h-4 flex items-center justify-center rounded-full ml-2">${item.unread}</div>` : '';
 const icon = isGroup ? '<div class="absolute -bottom-1 -right-1 bg-brand-dark p-0.5 rounded-full"><i class="fas fa-users text-[10px] text-brand-info"></i></div>' : '';
 
-const ringClass = item.hasStory ? 'story-ring' : 'border border-white/10';
-const badge = item.unread > 0 ? `<div class="bg-brand-accent text-white text-[9px] font-bold w-4 h-4 flex items-center justify-center rounded-full ml-2">${item.unread}</div>` : '';
-const icon = isGroup ? '<div class="absolute -bottom-1 -right-1 bg-brand-dark p-0.5 rounded-full"><i class="fas fa-users text-[10px] text-brand-info"></i></div>' : '';
-
 // --- TAMBAHAN BADGE INBOX ---
 let badgeKastaInbox = '';
 if (!isGroup) {
@@ -5115,19 +5111,6 @@ ${icon}
     </div>
     <div class="flex items-center"><span class="text-[9px] text-gray-500 shrink-0 ml-2">${msg.is_empty ? 'Baru' : timeAgo(msg.created_at)}</span>${badge}</div>
 </div>
-<p class="text-[11px] text-gray-400 truncate">${prefix}${preview}</p>
-</div>
-
-const avatarClickCode = item.hasStory ? `event.stopPropagation(); viewStory('${item.id}', '${item.name.replace(/'/g, "\\'")}', '${ava}')` : `event.stopPropagation(); viewUserProfile('${item.id}')`;
-
-return `
-<div class="flex items-center p-3 bg-brand-card/50 hover:bg-white/5 cursor-pointer rounded-2xl border border-white/5 transition-all mb-2 relative group" onclick="openChatRoom('${item.id}', '${item.name.replace(/'/g, "\\'")}', '${ava}', ${isGroup})">
-<div class="relative shrink-0" onclick="${isGroup ? '' : avatarClickCode}">
-<div class="${isGroup ? 'border border-brand-accent/30 rounded-full' : ringClass}"><img src="${ava}" loading="lazy" class="w-11 h-11 rounded-full object-cover border-2 border-brand-card"></div>
-${icon}
-</div>
-<div class="flex-1 min-w-0 ml-3 pr-8">
-<div class="flex justify-between items-center mb-1"><h4 class="font-bold text-white text-[13px] truncate">${item.name}</h4><div class="flex items-center"><span class="text-[9px] text-gray-500 shrink-0 ml-2">${msg.is_empty ? 'Baru' : timeAgo(msg.created_at)}</span>${badge}</div></div>
 <p class="text-[11px] text-gray-400 truncate">${prefix}${preview}</p>
 </div>
 <button onclick="event.stopPropagation(); deleteConversation('${item.id}', '${item.name.replace(/'/g, "\\'")}')" class="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-red-500/10 text-red-500 flex items-center justify-center opacity-80 hover:opacity-100 hover:bg-red-500 hover:text-white active:scale-90 transition-all">
