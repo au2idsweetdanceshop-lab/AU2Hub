@@ -8946,8 +8946,15 @@ async function copyLinkLaciAktif(btn) {
             </button>
         </div>
 
+        <!-- [BARU] Tombol Aksi: Hanya Muncul Jika Status "Diproses" -->
+        <div id="action-diproses" class="hidden flex-col gap-2.5">
+            <button onclick="selesaikanPesanan()" class="w-full bg-gradient-to-r from-brand-success to-[#128C7E] text-white py-3.5 rounded-xl font-bold active:scale-95 transition-transform text-sm shadow-[0_0_15px_rgba(37,211,102,0.3)] flex items-center justify-center hover:brightness-110">
+                <i class="fas fa-check-double mr-2"></i> Pesanan Diterima (Selesai)
+            </button>
+        </div>
+
         <!-- Pesan Tambahan untuk status lain (opsional) -->
-        <p id="pesan-status-lain" class="hidden text-[10px] text-gray-500 text-center italic mt-2">
+        <p id="pesan-status-lain" class="hidden text-[10px] text-gray-500 text-center italic mt-3">
             Pesanan ini sudah diproses atau selesai.
         </p>
     </div>
