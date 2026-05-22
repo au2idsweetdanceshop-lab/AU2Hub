@@ -336,7 +336,7 @@ input[type="checkbox"].peer:checked + div::after {
 
 /* KHUSUS MENU BIASA: Memanjang ke atas & bawah */
 .nav-item.active:not([href="#home"]) {
-    height: 80px !important; 
+    height: 64px !important; 
 }
 
 /* KHUSUS LOGO HOME: Jangan memanjang, cukup gambarnya saja yang membesar */
@@ -362,12 +362,12 @@ body.video-focused nav {
 nav::-webkit-scrollbar { display: none; }
 
 </style> </head>
-<body class="pl-[75px]">
+<body class="pl-[60px]">
 
 
 <div id="toast-container" class="fixed top-6 left-0 w-full px-4 z-[200] flex flex-col items-center gap-3 pointer-events-auto"></div>
 
-<header class="fixed top-0 right-0 w-[calc(100%-75px)] z-40 glass border-b border-white/5 py-4 px-6 shadow-md">
+<header class="fixed top-0 right-0 w-[calc(100%-60px)] z-40 glass border-b border-white/5 py-4 px-6 shadow-md">
 <div class="max-w-md mx-auto flex justify-between items-center">
 <h1 class="font-extrabold text-xl tracking-tight cursor-pointer" onclick="switchTab('home')">
 <span class="text-brand-info">AU2</span><span class="text-brand-accent">Hub</span>
@@ -749,11 +749,7 @@ Satu pintu untuk info update terbaru, panduan pemula, jasa joki profesional, dan
 </section>
 
 
-<!-- WIDGET CHAT GLOBAL MENGAMBANG -->
-<button onclick="toggleWidget()" class="fixed bottom-24 right-5 z-50 w-14 h-14 bg-gradient-to-r from-brand-purple to-brand-accent rounded-full shadow-[0_0_20px_rgba(255,0,122,0.4)] flex items-center justify-center text-white text-2xl active:scale-90 transition-transform">
-<i class="fas fa-comment-dots"></i>
-<span id="global-chat-badge" class="hidden absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full border-2 border-brand-dark">0</span>
-</button>
+
 
 <!-- WIDGET CHAT GLOBAL MENGAMBANG (DIPERBARUI) -->
 <div id="floating-widget" class="fixed bottom-24 right-5 sm:right-10 z-[150] w-[90%] max-w-[380px] h-[80vh] max-h-[800px] bg-brand-card border border-white/10 rounded-3xl shadow-2xl opacity-0 pointer-events-none translate-y-8 scale-95 transition-all duration-300 flex flex-col overflow-hidden glass origin-bottom-right">
@@ -1386,44 +1382,51 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
     </div>
 </div>
 
-<nav class="fixed top-0 left-0 h-full w-[75px] glass z-50 border-r border-white/5 flex flex-col items-center py-6 gap-4 overflow-y-auto shadow-[10px_0_30px_rgba(0,0,0,0.5)] transition-transform duration-300">
+<nav class="fixed top-0 left-0 h-full w-[60px] glass z-50 border-r border-white/5 flex flex-col items-center py-6 gap-4 overflow-y-auto shadow-[10px_0_30px_rgba(0,0,0,0.5)] transition-transform duration-300">
     
-    <a href="#home" onclick="switchTab('home', event)" class="nav-item flex items-center justify-center w-[52px] h-[52px] text-gray-500 mb-2">
-        <img src="/app-icon-192.png" onerror="this.src='https://ui-avatars.com/api/?name=AU&background=FF007A&color=fff'" class="w-8 h-8 rounded-full pointer-events-none">
+    <a href="#home" onclick="switchTab('home', event)" class="nav-item flex items-center justify-center w-[44px] h-[44px] text-gray-500 mb-2">
+        <img src="/app-icon-192.png" onerror="this.src='https://ui-avatars.com/api/?name=AU&background=FF007A&color=fff'" class="w-7 h-7 rounded-full pointer-events-none">
     </a>
 
-    <div class="w-8 h-[2px] bg-white/10 rounded-full mb-2"></div>
+    <div class="w-6 h-[2px] bg-white/10 rounded-full mb-2"></div>
     
-    <a href="#info" onclick="switchTab('info', event)" class="nav-item flex items-center justify-center w-[52px] h-[52px] text-gray-500" title="Info">
-        <i class="fas fa-bullhorn text-xl pointer-events-none"></i>
+    <a href="#info" onclick="switchTab('info', event)" class="nav-item flex items-center justify-center w-[44px] h-[44px] text-gray-500" title="Info">
+        <i class="fas fa-bullhorn text-lg pointer-events-none"></i>
     </a>
     
-    <a href="#layanan" onclick="switchTab('layanan', event)" class="nav-item flex items-center justify-center w-[52px] h-[52px] text-gray-500" title="Layanan">
-        <i class="fas fa-bolt text-xl pointer-events-none"></i>
+    <a href="#layanan" onclick="switchTab('layanan', event)" class="nav-item flex items-center justify-center w-[44px] h-[44px] text-gray-500" title="Layanan">
+        <i class="fas fa-bolt text-lg pointer-events-none"></i>
     </a>
     
-    <a href="#sosial" onclick="switchTab('sosial', event)" class="nav-item flex items-center justify-center w-[52px] h-[52px] text-gray-500" title="Sosial">
-        <i class="fas fa-camera-retro text-xl pointer-events-none"></i>
+    <a href="#sosial" onclick="switchTab('sosial', event)" class="nav-item flex items-center justify-center w-[44px] h-[44px] text-gray-500" title="Sosial">
+        <i class="fas fa-camera-retro text-lg pointer-events-none"></i>
     </a>
     
-    <a href="#rekber" onclick="switchTab('rekber', event)" class="nav-item flex items-center justify-center w-[52px] h-[52px] text-gray-500" title="Rekber">
-        <i class="fas fa-shield-alt text-xl pointer-events-none"></i>
+    <a href="#rekber" onclick="switchTab('rekber', event)" class="nav-item flex items-center justify-center w-[44px] h-[44px] text-gray-500" title="Rekber">
+        <i class="fas fa-shield-alt text-lg pointer-events-none"></i>
     </a>
     
-    <a href="#ripper" onclick="switchTab('ripper', event)" class="nav-item flex items-center justify-center w-[52px] h-[52px] text-gray-500" title="Ripper">
-        <i class="fas fa-user-ninja text-xl pointer-events-none"></i>
+    <a href="#ripper" onclick="switchTab('ripper', event)" class="nav-item flex items-center justify-center w-[44px] h-[44px] text-gray-500" title="Ripper">
+        <i class="fas fa-user-ninja text-lg pointer-events-none"></i>
     </a>
     
-    <a href="#pesanan" onclick="switchTab('pesanan', event)" class="nav-item flex items-center justify-center w-[52px] h-[52px] text-gray-500" title="Pesanan">
-        <i class="fas fa-receipt text-xl pointer-events-none"></i>
+    <a href="#pesanan" onclick="switchTab('pesanan', event)" class="nav-item flex items-center justify-center w-[44px] h-[44px] text-gray-500" title="Pesanan">
+        <i class="fas fa-receipt text-lg pointer-events-none"></i>
     </a>
 
-    <div class="w-8 h-[2px] bg-white/10 rounded-full mt-2 mb-2"></div>
+    <button onclick="toggleWidget()" class="nav-item flex items-center justify-center w-[44px] h-[44px] text-gray-500 relative cursor-pointer" title="Chat">
+        <i class="fas fa-comment-dots text-lg pointer-events-none"></i>
+        <span id="global-chat-badge" class="hidden absolute top-0 right-0 bg-red-500 text-white text-[8px] font-bold w-4 h-4 flex items-center justify-center rounded-full border border-brand-dark pointer-events-none">0</span>
+    </button>
+
+    <div class="w-6 h-[2px] bg-white/10 rounded-full mt-2 mb-2"></div>
     
-    <a href="#profile" onclick="switchTab('profile', event)" class="nav-item flex items-center justify-center w-[52px] h-[52px] text-gray-500 mt-auto" title="Profil">
-        <i class="fas fa-user-circle text-xl pointer-events-none"></i>
+    <a href="#profile" onclick="switchTab('profile', event)" class="nav-item flex items-center justify-center w-[44px] h-[44px] text-gray-500 mt-auto" title="Profil">
+        <i class="fas fa-user-circle text-lg pointer-events-none"></i>
     </a>
 </nav>
+
+
 
 
 
@@ -2668,7 +2671,7 @@ if (tabId === 'sosial') {
 loadVideos();
 }
 
-const navMap = { 'home': 0, 'info': 1, 'layanan': 2, 'sosial': 3, 'rekber': 4, 'ripper': 5, 'pesanan': 6, 'profile': 7, 'pembayaran': 2 };
+const navMap = { 'home': 0, 'info': 1, 'layanan': 2, 'sosial': 3, 'rekber': 4, 'ripper': 5, 'pesanan': 6, 'chat': 7, 'profile': 8, 'pembayaran': 2 };
 const activeIndex = navMap[tabId];
 if (activeIndex !== undefined) {
 const activeNav = document.querySelectorAll('.nav-item')[activeIndex];
