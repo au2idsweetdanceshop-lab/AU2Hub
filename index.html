@@ -7976,18 +7976,23 @@ function getBadgeByLevelAndVideos(level, count) {
 
 // 🤖 GAMIFIKASI V2: Logika Papan Peringkat Dual Mode (Top Creator & Top Sultan)
 function openLeaderboardModal() {
-const modal = document.getElementById('modal-leaderboard');
-modal.classList.remove('hidden');
-modal.classList.add('flex');
+    // [BARU] Matikan efek floating video secara halus seperti pada tombol Upload
+    if (document.body.classList.contains('video-focused')) {
+        toggleGlobalAudio(true);
+    }
 
-// 🔥 KUNCI FIX: Sembunyikan tombol chat mengambang biar gak kehalang
-const chatBtn = document.querySelector('button[onclick="toggleWidget()"]');
-if (chatBtn) chatBtn.classList.add('hidden');
+    const modal = document.getElementById('modal-leaderboard');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
 
-history.pushState({ popup: 'leaderboard' }, null, '#leaderboard');
+    // 🔥 KUNCI FIX: Sembunyikan tombol chat mengambang biar gak kehalang
+    const chatBtn = document.querySelector('button[onclick="toggleWidget()"]');
+    if (chatBtn) chatBtn.classList.add('hidden');
 
-// Auto buka tab Creator saat pertama di-klik
-switchLeaderboardTab('creator');
+    history.pushState({ popup: 'leaderboard' }, null, '#leaderboard');
+
+    // Auto buka tab Creator saat pertama di-klik
+    switchLeaderboardTab('creator');
 }
 
 function closeLeaderboardModal() {
@@ -8855,7 +8860,9 @@ async function copyLinkLaciAktif(btn) {
             <button id="btn-beli-detail" onclick="" class="w-full bg-gradient-to-r from-[#00F0FF] via-[#8A2BE2] to-[#FF007A] text-white py-4 rounded-xl font-extrabold text-sm active:scale-95 transition-transform shadow-lg shadow-brand-purple/20 flex justify-center items-center gap-2">
                 <i class="fas fa-shopping-bag"></i> BELI SEKARANG VIA AUTO QRIS
             </button>
-        </div> </div>
+        </div> 
+    </div>
+</div> <!-- [BARU] Ini adalah penutup utama untuk id="modal-detail-produk" -->
 
 <!-- MODAL DETAIL PESANAN (TRACKER) -->
 <div id="modal-detail-pesanan" class="fixed inset-0 z-[600] hidden items-center justify-center bg-black/90 backdrop-blur-md px-6 transition-all duration-300">
