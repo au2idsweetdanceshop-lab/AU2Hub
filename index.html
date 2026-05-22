@@ -777,9 +777,16 @@ Satu pintu untuk info update terbaru, panduan pemula, jasa joki profesional, dan
         <h2 class="text-xl font-extrabold text-white flex items-center gap-2">
             <div class="w-1.5 h-6 bg-brand-info rounded-full"></div> Pesanan Saya
         </h2>
-        <button onclick="if(currentUser) { cekStatusPesanan('riwayat'); } else { openAuthModal(); }" class="text-[10px] bg-brand-info/10 text-brand-info px-3 py-1.5 rounded-lg font-bold border border-brand-info/30 active:scale-95 transition-all">
-            Lihat Semua Riwayat
-        </button>
+        <div class="flex items-center gap-2">
+            <!-- [BARU] Tombol Refresh Pesanan -->
+            <button onclick="if(currentUser) { loadOrderTracker(currentUser.id); showToast('Memperbarui status pesanan...', 'success'); } else { openAuthModal(); }" class="text-brand-info bg-brand-info/10 w-8 h-8 rounded-full flex items-center justify-center active:scale-90 transition-all border border-brand-info/30" title="Refresh Pesanan">
+                <i class="fas fa-sync-alt"></i>
+            </button>
+            
+            <button onclick="if(currentUser) { cekStatusPesanan('riwayat'); } else { openAuthModal(); }" class="text-[10px] bg-brand-info/10 text-brand-info px-3 py-1.5 rounded-lg font-bold border border-brand-info/30 active:scale-95 transition-all">
+                Lihat Semua Riwayat
+            </button>
+        </div>
     </div>
 
     <!-- UI Jika User Sudah Login -->
@@ -7996,14 +8003,19 @@ function openLeaderboardModal() {
 }
 
 function closeLeaderboardModal() {
-if (window.location.hash === '#leaderboard') history.back();
-const modal = document.getElementById('modal-leaderboard');
-modal.classList.add('hidden');
-modal.classList.remove('flex');
+    if (window.location.hash === '#leaderboard') {
+        // Biarkan sistem 'back' HP (popstate) yang mengeksekusi penutupan agar sinkron!
+        history.back(); 
+    } else {
+        // Jika tidak ada di history, baru tutup secara manual
+        const modal = document.getElementById('modal-leaderboard');
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
 
-// 🔥 KUNCI FIX: Munculin balik tombol chat mengambangnya pas ditutup
-const chatBtn = document.querySelector('button[onclick="toggleWidget()"]');
-if (chatBtn) chatBtn.classList.remove('hidden');
+        // 🔥 KUNCI FIX: Munculin balik tombol chat mengambangnya pas ditutup
+        const chatBtn = document.querySelector('button[onclick="toggleWidget()"]');
+        if (chatBtn) chatBtn.classList.remove('hidden');
+    }
 }
 
 // 🧠 MESIN PENARIK DATA LEADERBOARD DUAL-TAB JADI TRIPLE-TAB
