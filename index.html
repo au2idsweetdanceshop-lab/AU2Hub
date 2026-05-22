@@ -429,10 +429,16 @@ Satu pintu untuk info update terbaru, panduan pemula, jasa joki profesional, dan
 </div>
 
 <div class="flex justify-between items-center mb-4">
-<h3 class="text-xl font-extrabold flex items-center gap-2">
-<div class="w-1.5 h-6 bg-brand-accent rounded-full"></div> Katalog Layanan
-</h3>
-<span class="text-[10px] bg-brand-info/20 text-brand-info px-2 py-1.5 rounded-lg font-bold border border-brand-info/30 tracking-wider">AUTO QRIS</span>
+    <h3 class="text-xl font-extrabold flex items-center gap-2">
+        <div class="w-1.5 h-6 bg-brand-accent rounded-full"></div> Katalog Layanan
+    </h3>
+    <div class="flex items-center gap-2">
+        <span class="text-[10px] bg-brand-info/20 text-brand-info px-2 py-1.5 rounded-lg font-bold border border-brand-info/30 tracking-wider hidden sm:inline-block">AUTO QRIS</span>
+        
+        <button onclick="loadProdukXoftware(true)" class="text-brand-accent bg-brand-accent/10 w-8 h-8 rounded-full flex items-center justify-center active:scale-90 transition-all border border-brand-accent/30" title="Refresh Katalog">
+            <i class="fas fa-sync-alt"></i>
+        </button>
+    </div>
 </div>
 
 <div id="kategori-container" class="grid grid-cols-4 gap-x-2 gap-y-5 mb-6 bg-black/20 p-4 rounded-2xl border border-white/5 shadow-inner">
@@ -1934,13 +1940,35 @@ function cariBerdasarkanTagar(tagar) {
         return;
     }
 
-    showToast(`Ditemukan ${videoDitemukan.length} video dengan tagar #${tagar}`, "success");
+    showToast(`Memutar ${videoDitemukan.length} video #${tagar}`, "success");
 
-    // 3. (Opsional) Tampilkan hasil pencarian
-    // Anda bisa memanfaatkan modal daftar user yang sudah ada atau membuat 
-    // container baru khusus untuk menampilkan grid hasil pencarian video.
-    console.log("Hasil pencarian tagar:", videoDitemukan);
+    // 3. BUKA PEMUTAR VIDEO OTOMATIS (Ala TikTok)
+    // Kita pinjam array currentProfileVideos agar dirender oleh pemutar floating
+    currentProfileVideos = [...videoDitemukan].reverse(); // Urutkan dari yang terbaru
+    profileFeedIndex = 0;
+
+    // Bersihkan layar player
+    const container = document.getElementById('floating-feed-container');
+    container.innerHTML = '';
+    container.scrollTop = 0;
+
+    // Hentikan paksa semua video utama di feed background yang sedang menyala
+    document.querySelectorAll('.video-player').forEach(v => v.pause());
+
+    // Tampilkan floating player
+    document.getElementById('floating-video-player').classList.remove('hidden');
+    document.getElementById('floating-video-player').classList.add('flex');
+
+    if(floatObs) floatObs.disconnect();
+    setupFloatVideoObserver();
+
+    // Render batch video (muat 3 video pertama)
+    renderProfileVideoBatch(3);
+
+    // Tambahkan jejak URL agar tombol back/kembali di HP berfungsi dengan baik
+    history.pushState({ popup: 'floating_video' }, null, '#hashtag');
 }
+
 
 
 
@@ -7087,27 +7115,51 @@ kat = p.title.trim().split(' ')[0];
 return kat ? kat.trim().toUpperCase() : 'LAINNYA';
 }
 
-// 1. Tarik Katalog Xoftware
-async function loadProdukXoftware() {
-const container = document.getElementById('service-list');
-if (!container) return;
-container.innerHTML = `<div class="text-center py-10 text-xs text-brand-info animate-pulse col-span-2"><i class="fas fa-sync fa-spin mb-2 text-2xl"></i><br>Menarik Katalog Produk...</div>`;
+// 1. Tarik Katalog Xoftware (DIPERBARUI DENGAN FITUR REFRESH)
+async function loadProdukXoftware(isRefresh = false) {
+    const container = document.getElementById('service-list');
+    const katContainer = document.getElementById('kategori-container');
+    
+    if (!container) return;
+    
+    // Tampilkan animasi loading di daftar produk
+    container.innerHTML = `<div class="text-center py-10 text-xs text-brand-info animate-pulse col-span-2"><i class="fas fa-sync fa-spin mb-2 text-2xl"></i><br>Menarik Katalog Produk...</div>`;
+    
+    // Jika ini adalah refresh manual, beri efek loading juga di laci kategori
+    if (isRefresh && katContainer) {
+        katContainer.innerHTML = `<div class="col-span-4 text-center py-4 text-gray-500 animate-pulse text-[10px] font-bold tracking-widest"><i class="fas fa-spinner fa-spin mr-1"></i> MEMUAT DATA BARU...</div>`;
+    }
 
-try {
-const response = await fetch('/api/get-xoftware?action=produk');
-const result = await response.json();
+    try {
+        const response = await fetch('/api/get-xoftware?action=produk');
+        const result = await response.json();
 
-if (result.status === true && Array.isArray(result.data)) {
-xoftwareProdukGlobal = result.data;
-renderKategoriTabs(xoftwareProdukGlobal);
-renderProdukXoftware(xoftwareProdukGlobal);
-} else {
-container.innerHTML = '<div class="text-center py-10 text-xs text-red-500 col-span-2">Gagal memuat katalog produk.</div>';
+        if (result.status === true && Array.isArray(result.data)) {
+            xoftwareProdukGlobal = result.data;
+            
+            // Reset kategori ke 'Semua' dan bersihkan kolom pencarian saat di-refresh
+            if (isRefresh) {
+                kategoriAktif = 'Semua';
+                const searchInput = document.getElementById('serviceSearch');
+                if (searchInput) searchInput.value = '';
+            }
+
+            renderKategoriTabs(xoftwareProdukGlobal);
+            renderProdukXoftware(xoftwareProdukGlobal);
+            
+            // Munculkan notifikasi hijau jika berhasil
+            if (isRefresh) showToast("Katalog produk & kategori berhasil diperbarui!", "success");
+            
+        } else {
+            container.innerHTML = '<div class="text-center py-10 text-xs text-red-500 col-span-2">Gagal memuat katalog produk.</div>';
+            if (isRefresh) showToast("Gagal memperbarui katalog.", "error");
+        }
+    } catch (error) {
+        container.innerHTML = '<div class="text-center py-10 text-xs text-red-500 col-span-2">Gangguan jaringan katalog.</div>';
+        if (isRefresh) showToast("Gangguan jaringan, silakan coba lagi.", "error");
+    }
 }
-} catch (error) {
-container.innerHTML = '<div class="text-center py-10 text-xs text-red-500 col-span-2">Gangguan jaringan katalog.</div>';
-}
-}
+
 
 // 2. Tancap Dashboard Grid Kategori Gambar Real-PNG (MODEL GOJEK PREMIUM)
 function renderKategoriTabs(data) {
@@ -7728,26 +7780,27 @@ btnInstallContainer.classList.add('hidden');
 });
 
 
-// 🤖 HELPER SAKTI V3: Sistem Lencana Kasta Tertinggi + Rebirth Loop Tanpa Batas 5 Tahun Awet
+// 🤖 HELPER SAKTI V3: Sistem Lencana Kasta Tertinggi + Rebirth Loop Tanpa Batas 5 Tahun Awet (VERSI IKON SAJA)
 function getBadgeByLevelAndVideos(level, count) {
     // Kasta Legend: Level 10 ke atas ATAU 100+ video
     if (level >= 10 || count >= 100) {
-        return `<span class="inline-flex items-center gap-1 bg-gradient-to-r from-yellow-400 via-orange-500 to-yellow-600 text-black px-1.5 py-px rounded text-[8px] font-extrabold ml-1.5 shadow-[0_0_12px_rgba(250,204,21,1)] tracking-widest uppercase border border-yellow-300"><i class="fas fa-crown"></i> LEGEND</span>`;
+        return `<span class="inline-flex items-center justify-center bg-gradient-to-r from-yellow-400 via-orange-500 to-yellow-600 text-black w-[18px] h-[18px] rounded-full text-[10px] ml-1 shadow-[0_0_12px_rgba(250,204,21,1)] border border-yellow-300" title="Legend"><i class="fas fa-crown"></i></span>`;
     }
     // Kasta Master: Level 5 ke atas ATAU 50+ video
     if (level >= 5 || count >= 50) {
-        return '<span class="inline-flex items-center gap-1 bg-gradient-to-r from-brand-accent to-[#ff758c] text-white px-1.5 py-px rounded text-[8px] font-extrabold ml-1.5 shadow-[0_0_10px_rgba(255,0,122,0.8)] tracking-widest uppercase border border-brand-accent"><i class="fas fa-fire"></i> MASTER</span>';
+        return `<span class="inline-flex items-center justify-center bg-gradient-to-r from-brand-accent to-[#ff758c] text-white w-[18px] h-[18px] rounded-full text-[10px] ml-1 shadow-[0_0_10px_rgba(255,0,122,0.8)] border border-brand-accent" title="Master"><i class="fas fa-fire"></i></span>`;
     }
     // Kasta Elite: Level 3 ke atas ATAU 25+ video
     if (level >= 3 || count >= 25) {
-        return '<span class="inline-flex items-center gap-1 bg-gradient-to-r from-brand-purple to-[#c471ed] text-white px-1.5 py-px rounded text-[8px] font-extrabold ml-1.5 shadow-[0_0_10px_rgba(138,43,226,0.8)] tracking-widest uppercase border border-brand-purple"><i class="fas fa-star"></i> ELITE</span>';
+        return `<span class="inline-flex items-center justify-center bg-gradient-to-r from-brand-purple to-[#c471ed] text-white w-[18px] h-[18px] rounded-full text-[10px] ml-1 shadow-[0_0_10px_rgba(138,43,226,0.8)] border border-brand-purple" title="Elite"><i class="fas fa-star"></i></span>`;
     }
     // Kasta Verified: Level 2 ke atas ATAU 10+ video
     if (level >= 2 || count >= 10) {
-        return '<span class="inline-flex items-center gap-1 bg-gradient-to-r from-brand-info to-[#89f7fe] text-brand-dark px-1.5 py-px rounded text-[8px] font-extrabold ml-1.5 shadow-[0_0_10px_rgba(0,240,255,0.8)] tracking-widest uppercase border border-brand-info"><i class="fas fa-check-circle"></i> VERIFIED</span>';
+        return `<span class="inline-flex items-center justify-center bg-gradient-to-r from-brand-info to-[#89f7fe] text-brand-dark w-[18px] h-[18px] rounded-full text-[10px] ml-1 shadow-[0_0_10px_rgba(0,240,255,0.8)] border border-brand-info" title="Verified"><i class="fas fa-check-circle"></i></span>`;
     }
     return '';
 }
+
 
 
 
