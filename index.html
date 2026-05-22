@@ -606,34 +606,8 @@ Satu pintu untuk info update terbaru, panduan pemula, jasa joki profesional, dan
 <div class="flex flex-col items-center"><span id="profile-total-likes" class="font-bold text-white text-base">0</span><span class="text-[9px] text-gray-400 uppercase tracking-widest">Suka</span></div>
 </div>
 
-<div id="order-tracker-section" class="mb-6 bg-black/30 border border-white/5 rounded-2xl p-4 max-w-sm mx-auto text-left">
-<div class="flex justify-between items-center mb-3">
-<span class="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider">Status Pesanan Joki</span>
-<span onclick="cekStatusPesanan('riwayat')" class="text-[9px] font-bold text-brand-info underline cursor-pointer">Lihat Riwayat</span>
-</div>
-<div class="grid grid-cols-3 text-center">
-    
-    <div onclick="cekStatusPesanan('bayar')" class="relative flex flex-col items-center gap-1 cursor-pointer group">
-        <i class="fas fa-wallet text-gray-500 group-hover:text-brand-accent text-lg"></i>
-        <span class="text-[8px] font-bold text-gray-400 group-hover:text-white uppercase tracking-tight">Belum Bayar</span>
-        <span id="badge-track-bayar" class="hidden absolute -top-1 right-3 bg-red-500 text-white text-[8px] font-bold w-4 h-4 flex items-center justify-center rounded-full border border-brand-dark">0</span>
-    </div>
-
-    <div onclick="cekStatusPesanan('proses')" class="relative flex flex-col items-center gap-1 cursor-pointer group">
-        <i class="fas fa-box text-gray-500 group-hover:text-brand-accent text-lg"></i>
-        <span class="text-[8px] font-bold text-gray-400 group-hover:text-white uppercase tracking-tight">Diproses</span>
-        <span id="badge-track-proses" class="hidden absolute -top-1 right-5 bg-red-500 text-white text-[8px] font-bold w-4 h-4 flex items-center justify-center rounded-full border border-brand-dark">0</span>
-    </div>
-
-    <div onclick="cekStatusPesanan('selesai')" class="relative flex flex-col items-center gap-1 cursor-pointer group">
-        <i class="fas fa-check-double text-gray-500 group-hover:text-brand-success text-lg"></i>
-        <span class="text-[8px] font-bold text-gray-400 group-hover:text-white uppercase tracking-tight">Selesai</span>
-        <span id="badge-track-selesai" class="hidden absolute -top-1 right-5 bg-brand-success text-white text-[8px] font-bold w-4 h-4 flex items-center justify-center rounded-full border border-brand-dark">0</span>
-    </div>
 
 </div>
-
-
 
 
 <div id="profile-actions-own" class="flex gap-2 justify-center px-4 mb-6">
@@ -668,6 +642,58 @@ Satu pintu untuk info update terbaru, panduan pemula, jasa joki profesional, dan
 <button onclick="openAuthModal()" class="bg-brand-accent text-white px-8 py-3.5 rounded-xl font-bold active:scale-95 transition-transform">Login Sekarang</button>
 </div>
 </section>
+
+<!-- TAMBAHKAN HALAMAN PESANAN BARU DI SINI -->
+<section id="pesanan" class="tab-content py-5 min-h-[60vh] flex flex-col justify-start relative px-4">
+    <div class="flex justify-between items-center mb-6 mt-2 border-b border-white/5 pb-4">
+        <h2 class="text-xl font-extrabold text-white flex items-center gap-2">
+            <div class="w-1.5 h-6 bg-brand-info rounded-full"></div> Pesanan Saya
+        </h2>
+        <button onclick="if(currentUser) { cekStatusPesanan('riwayat'); } else { openAuthModal(); }" class="text-[10px] bg-brand-info/10 text-brand-info px-3 py-1.5 rounded-lg font-bold border border-brand-info/30 active:scale-95 transition-all">
+            Lihat Semua Riwayat
+        </button>
+    </div>
+
+    <!-- UI Jika User Sudah Login -->
+    <div id="order-tracker-section" class="hidden bg-brand-card/50 border border-white/5 rounded-3xl p-6 w-full text-left shadow-lg">
+        <div class="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider mb-6 text-center">Status Pengerjaan</div>
+        
+        <div class="grid grid-cols-3 gap-2 text-center">
+            <div onclick="cekStatusPesanan('bayar')" class="relative flex flex-col items-center gap-3 cursor-pointer group">
+                <div class="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center group-hover:bg-brand-accent/20 transition-all border border-white/5 group-hover:border-brand-accent/50">
+                    <i class="fas fa-wallet text-gray-400 group-hover:text-brand-accent text-xl"></i>
+                </div>
+                <span class="text-[9px] font-bold text-gray-400 group-hover:text-white uppercase tracking-tight">Belum Bayar</span>
+                <span id="badge-track-bayar" class="hidden absolute -top-2 right-2 bg-red-500 text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full border border-brand-dark shadow-md">0</span>
+            </div>
+
+            <div onclick="cekStatusPesanan('proses')" class="relative flex flex-col items-center gap-3 cursor-pointer group">
+                <div class="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center group-hover:bg-brand-info/20 transition-all border border-white/5 group-hover:border-brand-info/50">
+                    <i class="fas fa-box text-gray-400 group-hover:text-brand-info text-xl"></i>
+                </div>
+                <span class="text-[9px] font-bold text-gray-400 group-hover:text-white uppercase tracking-tight">Diproses</span>
+                <span id="badge-track-proses" class="hidden absolute -top-2 right-4 bg-red-500 text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full border border-brand-dark shadow-md">0</span>
+            </div>
+
+            <div onclick="cekStatusPesanan('selesai')" class="relative flex flex-col items-center gap-3 cursor-pointer group">
+                <div class="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center group-hover:bg-brand-success/20 transition-all border border-white/5 group-hover:border-brand-success/50">
+                    <i class="fas fa-check-double text-gray-400 group-hover:text-brand-success text-xl"></i>
+                </div>
+                <span class="text-[9px] font-bold text-gray-400 group-hover:text-white uppercase tracking-tight">Selesai</span>
+                <span id="badge-track-selesai" class="hidden absolute -top-2 right-4 bg-brand-success text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full border border-brand-dark shadow-md">0</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- UI Jika User Belum Login -->
+    <div id="pesanan-logged-out" class="hidden text-center py-12 mt-4 bg-brand-card/30 rounded-3xl border border-white/5">
+        <i class="fas fa-box-open text-6xl text-gray-700 mb-4"></i>
+        <h3 class="text-xl font-extrabold text-white mb-2">Belum Login</h3>
+        <p class="text-xs text-gray-400 mb-6 px-8">Silakan login untuk melacak status pesanan Joki Anda.</p>
+        <button onclick="openAuthModal()" class="bg-gradient-to-r from-brand-info to-brand-accent text-white px-8 py-3.5 rounded-xl font-bold active:scale-95 transition-transform shadow-[0_0_15px_rgba(0,240,255,0.3)]">Login Sekarang</button>
+    </div>
+</section>
+
 
 <!-- WIDGET CHAT GLOBAL MENGAMBANG -->
 <button onclick="toggleWidget()" class="fixed bottom-24 right-5 z-50 w-14 h-14 bg-gradient-to-r from-brand-purple to-brand-accent rounded-full shadow-[0_0_20px_rgba(255,0,122,0.4)] flex items-center justify-center text-white text-2xl active:scale-90 transition-transform">
@@ -1285,6 +1311,10 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
 <a href="#sosial" onclick="switchTab('sosial', event)" class="nav-item flex flex-col items-center justify-center flex-1 text-gray-500 transition-colors"><i class="fas fa-camera-retro text-xl mb-1"></i><span class="text-[9px] font-bold mt-0.5">Sosial</span></a>
 <a href="#rekber" onclick="switchTab('rekber', event)" class="nav-item flex flex-col items-center justify-center flex-1 text-gray-500 transition-colors"><i class="fas fa-shield-alt text-xl mb-1"></i><span class="text-[9px] font-bold mt-0.5">Rekber</span></a>
 <a href="#ripper" onclick="switchTab('ripper', event)" class="nav-item flex flex-col items-center justify-center flex-1 text-gray-500 transition-colors"><i class="fas fa-user-ninja text-xl mb-1"></i><span class="text-[9px] font-bold mt-0.5">Ripper</span></a>
+<a href="#pesanan" onclick="switchTab('pesanan', event)" class="nav-item flex flex-col items-center justify-center flex-1 text-gray-500 transition-colors">
+    <i class="fas fa-receipt text-xl mb-1"></i>
+    <span class="text-[9px] font-bold mt-0.5">Pesanan</span>
+</a>
 <a href="#profile" onclick="switchTab('profile', event)" class="nav-item flex flex-col items-center justify-center flex-1 text-gray-500 transition-colors"><i class="fas fa-user-circle text-xl mb-1"></i><span class="text-[9px] font-bold mt-0.5">Profil</span></a>
 
 <div id="modal-leaderboard" class="fixed inset-0 z-[250] hidden items-end sm:items-center justify-center bg-black/90 backdrop-blur-md px-0 sm:px-6 transition-all duration-300">
@@ -2053,6 +2083,14 @@ document.getElementById('profile-loading').classList.remove('flex');
 if (user) {
 currentUser = user;
 await fetchProfile();
+// --- KODE BARU UNTUK HALAMAN PESANAN ---
+const tracker = document.getElementById('order-tracker-section');
+if (tracker) { tracker.classList.remove('hidden'); tracker.style.display = 'block'; }
+const pesananOut = document.getElementById('pesanan-logged-out');
+if (pesananOut) pesananOut.classList.add('hidden');
+loadOrderTracker(user.id);
+// --------------------------------------
+
 await fetchBlockedUsers();
 checkGlobalUnreadMessages();
 document.querySelectorAll('#profile-logged-in').forEach(el => el.classList.remove('hidden'));
@@ -2076,6 +2114,13 @@ updateMyLastSeen();
 initGlobalMessageListener();
 } else {
 if (presenceChannel) { supabaseClient.removeChannel(presenceChannel); presenceChannel = null; }
+// --- KODE BARU UNTUK HALAMAN PESANAN ---
+const tracker = document.getElementById('order-tracker-section');
+if (tracker) { tracker.classList.add('hidden'); tracker.style.display = 'none'; }
+const pesananOut = document.getElementById('pesanan-logged-out');
+if (pesananOut) pesananOut.classList.remove('hidden');
+// --------------------------------------
+
 if (globalMessageSubscription) { supabaseClient.removeChannel(globalMessageSubscription); globalMessageSubscription = null; }
 document.querySelectorAll('#profile-logged-in').forEach(el => el.classList.add('hidden'));
 document.getElementById('profile-logged-out').classList.remove('hidden');
@@ -2509,7 +2554,7 @@ if (tabId === 'sosial') {
 loadVideos();
 }
 
-const navMap = { 'home': 0, 'info': 1, 'layanan': 2, 'sosial': 3, 'rekber': 4, 'ripper': 5, 'profile': 6, 'pembayaran': 2 };
+const navMap = { 'home': 0, 'info': 1, 'layanan': 2, 'sosial': 3, 'rekber': 4, 'ripper': 5, 'pesanan': 6, 'profile': 7, 'pembayaran': 2 };
 const activeIndex = navMap[tabId];
 if (activeIndex !== undefined) {
 const activeNav = document.querySelectorAll('.nav-item')[activeIndex];
@@ -2744,8 +2789,6 @@ function kembaliDariProfil() {
 const actionOwn = document.getElementById('profile-actions-own'); if(actionOwn) { actionOwn.classList.remove('hidden'); actionOwn.style.display = 'flex'; }
 const actionOther = document.getElementById('profile-actions-other'); if(actionOther) { actionOther.classList.add('hidden'); actionOther.style.display = 'none'; }
 
-
-        const tracker = document.getElementById('order-tracker-section'); if(tracker) tracker.classList.remove('hidden');
         const btnBack = document.getElementById('btn-back-profile'); if(btnBack) btnBack.classList.add('hidden');
         const btnEditAva = document.getElementById('btn-edit-avatar'); if(btnEditAva) btnEditAva.classList.remove('hidden');
 
@@ -2912,12 +2955,6 @@ async function openUserProfile(userId) {
         } else {
             if(actionOwn) { actionOwn.classList.add('hidden'); actionOwn.style.display = 'none'; }
             if(actionOther) { actionOther.classList.remove('hidden'); actionOther.style.display = 'flex'; }
-        }
-
-        const tracker = document.getElementById('order-tracker-section'); 
-        if(tracker) {
-            if(isOwn) { tracker.classList.remove('hidden'); tracker.style.display = 'block'; }
-            else { tracker.classList.add('hidden'); tracker.style.display = 'none'; }
         }
 
         const btnBack = document.getElementById('btn-back-profile');
