@@ -7777,6 +7777,7 @@ loadProdukXoftware().then(() => {
     }
 });
 
+  document.addEventListener("DOMContentLoaded", () => {
   // 1. Daftarkan Service Worker
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js')
@@ -7784,47 +7785,59 @@ loadProdukXoftware().then(() => {
       .catch((err) => console.log('SW Gagal:', err));
   }
 
-  // 2. Tangkap Event Install PWA
   let deferredPrompt;
   const btnInstallContainer = document.getElementById('install-container');
   const btnInstallManual = document.getElementById('btn-install-manual');
 
+  // 2. Cek apakah sudah diakses dari Aplikasi PWA
+  function isPWAInstalled() {
+      return window.matchMedia('(display-mode: standalone)').matches || 
+             window.navigator.standalone || 
+             document.referrer.includes('android-app://');
+  }
+
+  // Tampilkan tombol HANYA jika dibuka di browser biasa
+  if (btnInstallContainer) {
+      if (isPWAInstalled()) {
+          btnInstallContainer.classList.add('hidden');
+      } else {
+          btnInstallContainer.classList.remove('hidden');
+      }
+  }
+
+  // 3. Tangkap Event Install PWA (Untuk Android/Chrome)
   window.addEventListener('beforeinstallprompt', (e) => {
-    // Cegah Chrome memunculkan pop-up default
     e.preventDefault();
     deferredPrompt = e;
-    
-    // Munculkan tombol install buatan Anda
-    if (btnInstallContainer) {
-      btnInstallContainer.classList.remove('hidden');
-    }
+    if (btnInstallContainer) btnInstallContainer.classList.remove('hidden');
   });
 
-  // 3. Logika Klik Tombol Install
+  // 4. Logika Klik Tombol Install
   if (btnInstallManual) {
     btnInstallManual.addEventListener('click', async () => {
-      if (!deferredPrompt) return;
-      
-      // Munculkan dialog install bawaan HP
-      deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
-      console.log('Hasil install:', outcome);
-      
-      // Sembunyikan tombol setelah diklik
-      deferredPrompt = null;
-      btnInstallContainer.classList.add('hidden');
+      if (deferredPrompt) {
+        // Munculkan dialog bawaan Android
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        console.log('Hasil install:', outcome);
+        
+        // Kosongkan prompt, tapi JANGAN sembunyikan tombol di sini 
+        // (biar kalau user klik 'Cancel', tombol masih ada)
+        deferredPrompt = null;
+      } else {
+        // Fallback untuk iOS / Safari yang tidak mendukung prompt otomatis
+        alert("Untuk menginstal di iPhone/iPad:\n\n1. Ketuk ikon 'Bagikan' (Share) di menu bawah.\n2. Pilih 'Tambahkan ke Layar Utama' (Add to Home Screen).");
+      }
     });
   }
 
-  // 4. Sembunyikan tombol jika sudah berhasil di-install
+  // 5. Sembunyikan tombol HANYA jika benar-benar berhasil di-install
   window.addEventListener('appinstalled', () => {
-    console.log('Aplikasi terinstal!');
-    if (btnInstallContainer) {
-      btnInstallContainer.classList.add('hidden');
-    }
+    console.log('Aplikasi sukses terinstal!');
+    if (btnInstallContainer) btnInstallContainer.classList.add('hidden');
   });
-
 });
+
 
 // 🤖 HELPER SAKTI V3: Sistem Lencana Kasta Tertinggi + Rebirth Loop Tanpa Batas 5 Tahun Awet (VERSI IKON SAJA)
 function getBadgeByLevelAndVideos(level, count) {
