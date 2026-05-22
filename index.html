@@ -379,7 +379,7 @@ nav::-webkit-scrollbar { display: none;
     <div class="relative flex flex-col items-center">
         <div class="absolute inset-0 bg-brand-accent blur-3xl opacity-30 animate-pulse"></div>
         
-        <img src="/app-icon-192.png" alt="AU2Hub" class="w-32 h-32 relative z-10 splash-logo-anim drop-shadow-[0_0_20px_rgba(0,240,255,0.5)]">
+        <img src="https://nos.wjv-1.neo.id/au2hub/Picsart_26-05-22_23-46-22-498.png" alt="AU2Hub" class="w-32 h-32 relative z-10 splash-logo-anim drop-shadow-[0_0_20px_rgba(0,240,255,0.5)]">
         
         <div class="mt-8 flex gap-2 items-center text-brand-info text-xs font-bold tracking-widest animate-pulse">
             <i class="fas fa-circle-notch fa-spin"></i> MEMUAT AU2HUB...
@@ -8725,22 +8725,29 @@ async function copyLinkLaciAktif(btn) {
 }
 
 // Logika Menghilangkan Splash Screen setelah aplikasi siap
-window.addEventListener('load', () => {
-    // Beri jeda 1.5 detik agar player sempat melihat animasi logonya berdenyut
-    setTimeout(() => {
-        const splashScreen = document.getElementById('custom-splash');
-        if (splashScreen) {
-            // Beri efek pudar memudar (fade out)
-            splashScreen.style.opacity = '0';
-            splashScreen.style.transform = 'scale(1.1)'; // Efek sedikit membesar saat hilang
-            
-            // Hapus elemen dari HTML setelah animasi pudar selesai (500ms)
-            setTimeout(() => {
-                splashScreen.remove();
-            }, 500);
-        }
-    }, 1500); 
+function removeSplashScreen() {
+    const splashScreen = document.getElementById('custom-splash');
+    if (splashScreen) {
+        // Beri efek pudar memudar (fade out)
+        splashScreen.style.opacity = '0';
+        splashScreen.style.transform = 'scale(1.1)'; // Efek sedikit membesar saat hilang
+        
+        // Hapus elemen dari HTML setelah animasi pudar selesai (500ms)
+        setTimeout(() => {
+            splashScreen.remove();
+        }, 500);
+    }
+}
+
+// 1. Eksekusi cepat segera setelah struktur HTML terbaca (tidak nunggu gambar/CDN lambat)
+document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(removeSplashScreen, 1500); // Tampil 1.5 detik lalu hilang
 });
+
+// 2. SAFETY NET (Jaring Pengaman)
+// Jika koneksi user super lambat dan DOMContentLoaded tersendat, 
+// paksa splash screen hilang setelah maksimal 4 detik.
+setTimeout(removeSplashScreen, 4000);
 
 
 
