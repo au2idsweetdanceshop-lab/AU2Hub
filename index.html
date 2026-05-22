@@ -773,20 +773,25 @@ Satu pintu untuk info update terbaru, panduan pemula, jasa joki profesional, dan
 
 <!-- TAMBAHKAN HALAMAN PESANAN BARU DI SINI -->
 <section id="pesanan" class="tab-content py-5 min-h-[60vh] flex flex-col justify-start relative px-4">
-    <div class="flex justify-between items-center mb-6 mt-2 border-b border-white/5 pb-4">
-        <h2 class="text-xl font-extrabold text-white flex items-center gap-2">
-            <div class="w-1.5 h-6 bg-brand-info rounded-full"></div> Pesanan Saya
+    <!-- Tambahkan gap-2 agar judul dan tombol tidak terlalu menempel -->
+    <div class="flex justify-between items-center mb-6 mt-2 border-b border-white/5 pb-4 gap-2">
+        
+        <!-- [UBAH] text-lg sm:text-xl, whitespace-nowrap, dan shrink-0 -->
+        <h2 class="text-lg sm:text-xl font-extrabold text-white flex items-center gap-2 whitespace-nowrap shrink-0 tracking-tight">
+            <div class="w-1.5 h-5 sm:h-6 bg-brand-info rounded-full"></div> Pesanan Saya
         </h2>
-        <div class="flex items-center gap-2">
-            <!-- [BARU] Tombol Refresh Pesanan -->
-            <button onclick="if(currentUser) { loadOrderTracker(currentUser.id); showToast('Memperbarui status pesanan...', 'success'); } else { openAuthModal(); }" class="text-brand-info bg-brand-info/10 w-8 h-8 rounded-full flex items-center justify-center active:scale-90 transition-all border border-brand-info/30" title="Refresh Pesanan">
-                <i class="fas fa-sync-alt"></i>
+        
+        <!-- [UBAH] Kecilkan sedikit gap, padding, dan font pada tombol untuk versi HP -->
+        <div class="flex items-center gap-1.5 sm:gap-2">
+            <button onclick="if(currentUser) { loadOrderTracker(currentUser.id); showToast('Memperbarui status pesanan...', 'success'); } else { openAuthModal(); }" class="text-brand-info bg-brand-info/10 w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center active:scale-90 transition-all border border-brand-info/30 shrink-0" title="Refresh Pesanan">
+                <i class="fas fa-sync-alt text-xs sm:text-sm"></i>
             </button>
             
-            <button onclick="if(currentUser) { cekStatusPesanan('riwayat'); } else { openAuthModal(); }" class="text-[10px] bg-brand-info/10 text-brand-info px-3 py-1.5 rounded-lg font-bold border border-brand-info/30 active:scale-95 transition-all">
+            <button onclick="if(currentUser) { cekStatusPesanan('riwayat'); } else { openAuthModal(); }" class="text-[9px] sm:text-[10px] bg-brand-info/10 text-brand-info px-2.5 sm:px-3 py-1.5 rounded-lg font-bold border border-brand-info/30 active:scale-95 transition-all text-center leading-tight">
                 Lihat Semua Riwayat
             </button>
         </div>
+        
     </div>
 
     <!-- UI Jika User Sudah Login -->
