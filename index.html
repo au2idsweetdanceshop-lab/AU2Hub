@@ -304,12 +304,13 @@ input[type="checkbox"].peer:checked + div::after {
 @supports (padding-bottom: env(safe-area-inset-bottom)) {
   nav {
     padding-bottom: env(safe-area-inset-bottom) !important;
-    height: calc(70px + env(safe-area-inset-bottom)) !important;
+    /* Baris height 70px sudah dihapus agar menu tidak buntung */
   }
   header {
     padding-top: max(1rem, env(safe-area-inset-top)) !important;
   }
 }
+
 
 /* ========================================= */
 /* ANIMASI NAVIGASI KIRI (EFEK KAPSUL MEMANJANG) */
