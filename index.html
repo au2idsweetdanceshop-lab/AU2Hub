@@ -555,14 +555,14 @@ Satu pintu untuk info update terbaru, panduan pemula, jasa joki profesional, dan
 </div>
 </section>
 
-<section id="profile" class="tab-content py-5 min-h-[100vh] flex flex-col justify-start relative">
+<section id="profile" class="tab-content py-5 min-h-[calc(100vh-160px)] flex flex-col justify-start relative">
 
     <button id="btn-back-profile" onclick="kembaliDariProfil()" class="hidden absolute top-4 left-4 text-white text-xs bg-black/40 backdrop-blur-md hover:bg-black/60 border border-white/10 px-4 py-2.5 rounded-full transition-all z-10 font-bold flex items-center shadow-lg">
         <i class="fas fa-arrow-left mr-2"></i> Kembali
     </button>
 
     <!-- Loading Skeleton Update -->
-    <div id="profile-loading" class="flex flex-col items-center justify-center py-20 mt-10">
+    <div id="profile-loading" class="flex flex-col items-center justify-center py-20 mt-10 min-h-[50vh]">
         <div class="w-24 h-24 skeleton rounded-full mb-4"></div>
         <div class="w-32 h-6 skeleton rounded-md mb-2"></div>
         <div class="w-48 h-4 skeleton rounded-md"></div>
@@ -1863,7 +1863,7 @@ let typingTimer; // VARIABEL TYPING INDICATOR
         
 
 
-// FORMAT TEKS (Otomatis deteksi @Mention dan #Hashtag)
+// FORMAT TEKS (Otomatis deteksi Link, @Mention dan #Hashtag)
 function formatCaption(text) {
     if(!text) return '';
     let formatted = text
@@ -1873,17 +1873,26 @@ function formatCaption(text) {
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&#39;");
 
-    // 1. Deteksi Hashtag (#tagar) - Warna Biru
+    // 1. [BARU] Deteksi Link URL (http:// atau https://)
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    formatted = formatted.replace(urlRegex, (url) => {
+        // event.stopPropagation() sangat penting agar saat link diklik, 
+        // teks caption tidak malah memanjang/memendek (expand)
+        return `<a href="${url}" target="_blank" onclick="event.stopPropagation()" class="text-brand-info underline hover:text-white transition-colors font-bold">${url}</a>`;
+    });
+
+    // 2. Deteksi Hashtag (#tagar) - Warna Biru
     formatted = formatted.replace(/#(\w+)/g, '<span onclick="event.stopPropagation(); cariBerdasarkanTagar(\'$1\')" class="font-bold text-brand-info hover:underline cursor-pointer">#$1</span>');
 
-    // 2. Deteksi Mention (@username) - Warna Pink/Accent
+    // 3. Deteksi Mention (@username) - Warna Pink/Accent
     formatted = formatted.replace(/@(\w+)/g, '<span onclick="event.stopPropagation(); viewUserProfileByNickname(\'$1\')" class="font-bold text-brand-accent hover:underline cursor-pointer">@$1</span>');
 
-    // 3. Deteksi Enter (Baris baru)
+    // 4. Deteksi Enter (Baris baru)
     formatted = formatted.replace(/\n/g, "<br>");
     
     return formatted;
 }
+
 
 // FUNGSI KLIK MENTION: Mencari User ID berdasarkan Nickname
 async function viewUserProfileByNickname(nickname) {
@@ -2816,8 +2825,17 @@ function kembaliDariProfil() {
             elExpContainer.classList.remove('hidden');
         }
 
-const actionOwn = document.getElementById('profile-actions-own'); if(actionOwn) { actionOwn.classList.remove('hidden'); actionOwn.style.display = 'flex'; }
-const actionOther = document.getElementById('profile-actions-other'); if(actionOther) { actionOther.classList.add('hidden'); actionOther.style.display = 'none'; }
+const actionOwn = document.getElementById('profile-actions-own'); 
+if(actionOwn) { 
+    actionOwn.classList.remove('hidden'); 
+    actionOwn.style.display = ''; 
+}
+
+const actionOther = document.getElementById('profile-actions-other'); 
+if(actionOther) { 
+    actionOther.classList.add('hidden'); 
+    actionOther.style.display = ''; 
+}
 
         const btnBack = document.getElementById('btn-back-profile'); if(btnBack) btnBack.classList.add('hidden');
         const btnEditAva = document.getElementById('btn-edit-avatar'); if(btnEditAva) btnEditAva.classList.remove('hidden');
@@ -3065,11 +3083,14 @@ async function openUserProfile(userId) {
         }
 
         document.getElementById('profile-loading').classList.add('hidden');
-        document.querySelectorAll('#profile-logged-in').forEach(el => {
-            el.classList.remove('hidden');
-            if (el.tagName === 'DIV' && el.id !== 'profile-actions-other' && el.id !== 'profile-actions-own') {
-                el.style.display = 'block';
-            }
+// Cukup hapus class hidden, biarkan Tailwind yang mengatur layoutnya
+const profileContainer = document.getElementById('profile-logged-in');
+if (profileContainer) {
+    profileContainer.classList.remove('hidden');
+    // Hapus inline style jika ada yang nyangkut
+    profileContainer.style.display = ''; 
+}
+
         });
 
         checkBlockStatusUI();
@@ -7480,7 +7501,7 @@ const laci = document.getElementById('modal-detail-produk');
 laci.classList.remove('translate-y-full');
 laci.classList.add('translate-y-0');
 
-history.pushState({ popup: 'detail_produk' }, null, '#detail');
+history.pushState({ popup: 'detail_produk' }, null, '#detail?id=' + index);
 }
 
 // FUNGSI PENUTUP LACI SHOPEE (ANTI-NYANGKUT TOMBOL BACK HP)
@@ -7663,8 +7684,22 @@ muatDataRipper();
 loadInfoLayanan();
 loadDataRekber();
 
-// Menampilkan Katalog Xoftware yang otomatis terhubung ke Robot DANA kamu saat halaman dimuat
-loadProdukXoftware();
+// Menampilkan Katalog Xoftware, lalu cek apakah URL meminta laci spesifik
+loadProdukXoftware().then(() => {
+    const urlHash = window.location.hash.substring(1); // Mengambil teks setelah tanda #
+    
+    // Deteksi jika link adalah laci detail produk
+    if (urlHash.startsWith('detail?id=')) {
+        const produkIndex = urlHash.split('=')[1];
+        
+        // Pastikan datanya ada, lalu buka lacinya
+        if (produkIndex && xoftwareProdukGlobal[produkIndex]) {
+            setTimeout(() => {
+                openDetailProduk(parseInt(produkIndex));
+            }, 500); // Beri jeda sedikit agar animasi web selesai dulu
+        }
+    }
+});
 
 // Mendaftarkan Service Worker PWA
 if ('serviceWorker' in navigator) {
@@ -8479,6 +8514,23 @@ function executeAssistive(target) {
     }
 }
 
+// Fungsi menyalin URL laci yang sedang aktif
+function copyLinkLaciAktif(btn) {
+    const currentUrl = window.location.href; // Mengambil URL yang ada di address bar saat ini
+    
+    navigator.clipboard.writeText(currentUrl).then(() => {
+        showToast("Link laci berhasil disalin!", "success");
+        
+        // Animasi ikon berubah jadi centang
+        const icon = btn.querySelector('i');
+        icon.className = 'fas fa-check text-brand-success';
+        setTimeout(() => {
+            icon.className = 'fas fa-share-alt';
+        }, 2000);
+    }).catch(() => {
+        showToast("Gagal menyalin link otomatis", "error");
+    });
+}
 
 
 
@@ -8522,11 +8574,17 @@ function executeAssistive(target) {
             </div>
         </div>
 
-        <div class="p-5 space-y-4">
-            <div>
-                <div class="text-brand-accent font-extrabold text-2xl tracking-tight mb-2" id="detail-product-price">Rp 0</div>
-                <h3 class="text-lg font-extrabold text-white leading-snug" id="detail-product-title">Nama Produk</h3>
-            </div>
+<div class="flex justify-between items-start">
+    <div>
+        <div class="text-brand-accent font-extrabold text-2xl tracking-tight mb-2" id="detail-product-price">Rp 0</div>
+        <h3 class="text-lg font-extrabold text-white leading-snug" id="detail-product-title">Nama Produk</h3>
+    </div>
+    <!-- Tombol Share Baru -->
+<button onclick="event.stopPropagation(); copyLinkLaciAktif(this)" class="bg-white/10 hover:bg-white/20 border border-white/10 w-10 h-10 rounded-full flex items-center justify-center text-white active:scale-90 transition-all shrink-0 z-10 relative">
+    <i class="fas fa-share-alt"></i>
+</button>
+</div>
+
             
             <div id="detail-variasi-container" class="hidden border-t border-white/5 pt-4">
                 <span class="text-xs font-bold text-gray-300 uppercase tracking-widest mb-2 block">Pilih Variasi</span>
