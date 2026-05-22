@@ -8353,34 +8353,42 @@ const atBtn = document.getElementById('assistive-touch');
 let isAtDragging = false;
 let atStartX, atStartY, atInitialX, atInitialY;
 
-// 1. Deteksi Sentuhan Pertama Jari
-atBtn.addEventListener('touchstart', (e) => {
+// Fungsi pembantu untuk mengambil koordinat (Support Mouse & Touch)
+function getPointerPos(e) {
+    return e.touches ? { x: e.touches[0].clientX, y: e.touches[0].clientY } : { x: e.clientX, y: e.clientY };
+}
+
+function handleAtStart(e) {
     isAtDragging = false;
-    const touch = e.touches[0];
-    atStartX = touch.clientX;
-    atStartY = touch.clientY;
+    const pos = getPointerPos(e);
+    atStartX = pos.x;
+    atStartY = pos.y;
     
     const rect = atBtn.getBoundingClientRect();
     atInitialX = rect.left;
     atInitialY = rect.top;
     
-    atBtn.style.opacity = '1'; // Terangkan tombol saat disentuh
-}, { passive: true });
+    atBtn.style.opacity = '1'; 
+}
 
-// 2. Seret Tombol Mengikuti Gerakan Jari
-atBtn.addEventListener('touchmove', (e) => {
-    const touch = e.touches[0];
+function handleAtMove(e) {
+    // Jika menggunakan mouse tapi tombol tidak sedang ditahan, hentikan
+    if (e.type === 'mousemove' && e.buttons !== 1) return;
 
-    // FIX: Menggunakan atStartX dan atStartY yang benar
-    if (Math.abs(touch.clientX - atStartX) > 6 || Math.abs(touch.clientY - atStartY) > 6) {
+    const pos = getPointerPos(e);
+
+    // Toleransi geser diperbesar sedikit agar jari yang gemetar tidak dianggap drag
+    if (Math.abs(pos.x - atStartX) > 8 || Math.abs(pos.y - atStartY) > 8) {
         isAtDragging = true;
     }
 
     if (isAtDragging) {
-        let newX = atInitialX + (touch.clientX - atStartX);
-        let newY = atInitialY + (touch.clientY - atStartY);
+        if(e.cancelable) e.preventDefault(); // Cegah layar ikut scroll saat tombol diseret
 
-        // Proteksi pagar layar
+        let newX = atInitialX + (pos.x - atStartX);
+        let newY = atInitialY + (pos.y - atStartY);
+
+        // Proteksi agar tombol tidak keluar batas layar
         newX = Math.max(8, Math.min(window.innerWidth - 56, newX));
         newY = Math.max(8, Math.min(window.innerHeight - 80, newY));
 
@@ -8389,17 +8397,16 @@ atBtn.addEventListener('touchmove', (e) => {
         atBtn.style.bottom = 'auto';
         atBtn.style.right = 'auto';
     }
-}, { passive: true });
+}
 
-// 3. Jari Dilepas (Buka Menu atau Efek Magnet Snap)
-atBtn.addEventListener('touchend', () => {
+function handleAtEnd(e) {
     atBtn.style.opacity = '0.5'; 
     
     if (!isAtDragging) {
-        // JIKA HANYA DIKLIK SEKALI
+        // JIKA HANYA DIKLIK/DISENTUH SEKALI
         openAssistiveMenu();
     } else {
-        // JIKA DI-DRAG -> Efek Magnet
+        // JIKA DI-DRAG -> Efek Magnet ke pinggir layar
         const rect = atBtn.getBoundingClientRect();
         const batasTengahLayar = window.innerWidth / 2;
         
@@ -8413,8 +8420,23 @@ atBtn.addEventListener('touchend', () => {
         
         setTimeout(() => { atBtn.style.transition = 'none'; }, 400);
     }
-    isAtDragging = false; // Reset status drag
+    isAtDragging = false; 
+}
+
+// 1. Event Touch (Untuk HP/Mobile)
+atBtn.addEventListener('touchstart', handleAtStart, { passive: true });
+atBtn.addEventListener('touchmove', handleAtMove, { passive: false }); // false agar bisa e.preventDefault()
+atBtn.addEventListener('touchend', handleAtEnd);
+
+// 2. Event Mouse (Untuk PC/Laptop)
+atBtn.addEventListener('mousedown', handleAtStart);
+document.addEventListener('mousemove', handleAtMove); // Taruh di document agar drag tidak patah-patah
+document.addEventListener('mouseup', (e) => {
+    if (e.target.closest('#assistive-touch') || isAtDragging) {
+        handleAtEnd(e);
+    }
 });
+
 
 
 // FUNCTIONS UNTUK KONTROL ANIMASI BUKA TUTUP LACI MENU
