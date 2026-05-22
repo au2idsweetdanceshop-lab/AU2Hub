@@ -1,6 +1,6 @@
-const CACHE_NAME = 'au2hub-cache-v2'; // Dinaikkan versinya agar browser tahu ada update
+const CACHE_NAME = 'au2hub-cache-v3'; // 🚀 NAIKKAN ANGKA INI SETIAP KALI ANDA UPDATE CODINGAN
 
-// Event Install: Langsung aktif tanpa memaksakan download array statis (aman untuk Vercel)
+// Event Install: Langsung aktif tanpa memaksakan download array statis (Aman untuk Vercel)
 self.addEventListener('install', (event) => {
   self.skipWaiting(); 
 });
@@ -22,11 +22,32 @@ self.addEventListener('activate', (event) => {
   event.waitUntil(self.clients.claim());
 });
 
-// Event Fetch: Mengakali error Vercel. Ambil dari jaringan dulu, kalau gagal/offline baru cari di cache
+// Event Fetch: Network-First dengan Dynamic Caching (Bebas Nyangkut + Anti Offline)
 self.addEventListener('fetch', (event) => {
+  // Abaikan request ekstensi browser atau request non-HTTP (mencegah error)
+  if (!event.request.url.startsWith('http')) return;
+
+  // Abaikan request API Supabase atau Google Script agar selalu real-time
+  if (event.request.url.includes('supabase.co') || event.request.url.includes('script.google.com') || event.request.url.includes('/api/')) {
+    return; 
+  }
+
   event.respondWith(
-    fetch(event.request).catch(() => {
-      return caches.match(event.request);
-    })
+    fetch(event.request)
+      .then((networkResponse) => {
+        // 🔥 PERBAIKAN: Jika berhasil ambil dari jaringan, simpan salinannya ke cache!
+        // Jadi brankas cache akan terisi otomatis seiring player membuka aplikasi
+        return caches.open(CACHE_NAME).then((cache) => {
+          // Hanya simpan response yang sukses (status 200 OK)
+          if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
+            cache.put(event.request, networkResponse.clone());
+          }
+          return networkResponse;
+        });
+      })
+      .catch(() => {
+        // Jika jaringan mati/offline, ambil salinan terakhir dari brankas cache
+        return caches.match(event.request);
+      })
   );
 });
