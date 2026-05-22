@@ -39,6 +39,17 @@ tailwind.config = {
 
 
 <style>
+/* Animasi Denyut Jantung Neon untuk Logo Splash */
+@keyframes splashPulse {
+    0% { transform: scale(0.9); opacity: 0.8; filter: drop-shadow(0 0 10px rgba(0, 240, 255, 0.4)); }
+    50% { transform: scale(1.1); opacity: 1; filter: drop-shadow(0 0 30px rgba(255, 0, 122, 0.8)); }
+    100% { transform: scale(0.9); opacity: 0.8; filter: drop-shadow(0 0 10px rgba(0, 240, 255, 0.4)); }
+}
+
+.splash-logo-anim {
+    animation: splashPulse 1.5s infinite ease-in-out;
+}
+
 .story-ring {
 padding: 2px;
 background: linear-gradient(45deg, #FF007A, #8A2BE2, #00F0FF);
@@ -359,10 +370,23 @@ body.video-focused nav {
 }
 
 /* Sembunyikan Scrollbar di Menu Kiri */
-nav::-webkit-scrollbar { display: none; }
+nav::-webkit-scrollbar { display: none; 
 
 </style> </head>
 <body class="pl-[60px]">
+
+<div id="custom-splash" class="fixed inset-0 z-[9999999] bg-[#0F0920] flex flex-col items-center justify-center transition-all duration-500 ease-out pointer-events-none">
+    <div class="relative flex flex-col items-center">
+        <div class="absolute inset-0 bg-brand-accent blur-3xl opacity-30 animate-pulse"></div>
+        
+        <img src="/app-icon-192.png" alt="AU2Hub" class="w-32 h-32 relative z-10 splash-logo-anim drop-shadow-[0_0_20px_rgba(0,240,255,0.5)]">
+        
+        <div class="mt-8 flex gap-2 items-center text-brand-info text-xs font-bold tracking-widest animate-pulse">
+            <i class="fas fa-circle-notch fa-spin"></i> MEMUAT AU2HUB...
+        </div>
+    </div>
+</div>
+
 
 
 <div id="toast-container" class="fixed top-6 left-0 w-full px-4 z-[200] flex flex-col items-center gap-3 pointer-events-auto"></div>
@@ -2208,17 +2232,19 @@ checkGlobalUnreadMessages();
 document.querySelectorAll('#profile-logged-in').forEach(el => el.classList.remove('hidden'));
 document.getElementById('profile-logged-out').classList.add('hidden');
 
-// 🚀 PRO-FIX 5 TAHUN AMAN: Jika data video kosong (direct link/refresh toko), paksa fetch background biar diskon kasta gak zonk!
+// 🚀 PRO-FIX: Jalankan fetch di background tanpa 'await' agar proses Login tidak tersandera
 if (allVideosData.length === 0) {
-try {
-const res = await fetch('/api/get-videos');
-const dataDariSheet = await res.json();
-allVideosData = dataDariSheet.map(v => {
-v.id = v.id || v.video_id || v.ID || 'vid_' + Math.random().toString(36).substr(2, 9);
-return v;
-}).filter(v => !blockedUsersList.includes(v.user_id));
-} catch(e) { console.log("Silent fetch videos failed"); }
+    fetch('/api/get-videos')
+        .then(res => res.json())
+        .then(dataDariSheet => {
+            allVideosData = dataDariSheet.map(v => {
+                v.id = v.id || v.video_id || v.ID || 'vid_' + Math.random().toString(36).substr(2, 9);
+                return v;
+            }).filter(v => !blockedUsersList.includes(v.user_id));
+        })
+        .catch(e => console.log("Silent fetch videos failed", e));
 }
+
 
 updateUIForLoggedIn();
 initPresence();
@@ -2345,20 +2371,23 @@ document.getElementById('modal-auth').classList.add('flex');
 }
 
 function closeAuthModal() {
-const modal = document.getElementById('modal-auth');
-modal.style.transition = 'opacity 0.3s ease';
-modal.style.opacity = '0';
+    const modal = document.getElementById('modal-auth');
+    modal.style.transition = 'opacity 0.3s ease';
+    modal.style.opacity = '0';
 
-setTimeout(() => {
-if (window.location.hash === '#auth') {
-history.back();
-} else {
-modal.classList.add('hidden');
-modal.classList.remove('flex');
+    setTimeout(() => {
+        // PAKSA modal tertutup secara fisik terlebih dahulu
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+        modal.style.opacity = '1';
+
+        // Ganti history.back() dengan replaceState untuk menghindari PWA terjebak di loop hash
+        if (window.location.hash === '#auth') {
+            history.replaceState(null, null, '#home');
+        }
+    }, 300);
 }
-modal.style.opacity = '1';
-}, 300);
-}
+
 
 function toggleAuthMode() {
 isAuthLogin = !isAuthLogin;
@@ -2390,12 +2419,18 @@ document.getElementById('auth-pass').value = '';
 document.getElementById('auth-nick').value = '';
 
 // FITUR IZIN NOTIFIKASI
-if ("Notification" in window && Notification.permission !== "granted") {
-Notification.requestPermission();
+// Bungkus notifikasi dengan try-catch agar jika PWA menolak, login tetap sukses
+try {
+    if ("Notification" in window && Notification.permission !== "granted") {
+        Notification.requestPermission().catch(() => {});
+    }
+} catch (err) {
+    console.log("Notifikasi otomatis diblokir oleh OS.");
 }
 
 await checkSession();
 closeAuthModal();
+
 
 } catch (e) {
 showToast(e.message, "error");
@@ -7779,13 +7814,35 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
   // ==========================================
-  // FITUR PWA & SERVICE WORKER (TIDAK LAGI BERTUMPUK)
+  // FITUR PWA & SERVICE WORKER (AUTO-UPDATE RADAR)
   // ==========================================
 
-  // 1. Daftarkan Service Worker
+  // 1. Daftarkan Service Worker & Pasang Radar Update
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js')
-      .then(() => console.log('SW Berhasil!'))
+      .then((reg) => {
+        console.log('SW Berhasil Terdaftar!');
+
+        // 📡 RADAR DETEKSI UPDATE CODINGAN
+        reg.onupdatefound = () => {
+          const installingWorker = reg.installing;
+          installingWorker.onstatechange = () => {
+            if (installingWorker.state === 'installed') {
+              if (navigator.serviceWorker.controller) {
+                // Jika player sudah punya versi lama, dan versi baru sukses terpasang:
+                if (typeof showToast === 'function') {
+                    showToast("Aplikasi diperbarui! Memuat ulang sistem...", "success");
+                }
+                
+                // Beri jeda 1.5 detik agar notifikasi terbaca, lalu paksa auto-refresh
+                setTimeout(() => {
+                  window.location.reload(true); 
+                }, 1500);
+              }
+            }
+          };
+        };
+      })
       .catch((err) => console.log('SW Gagal:', err));
   }
 
@@ -7839,6 +7896,7 @@ document.addEventListener('DOMContentLoaded', () => {
     console.log('Aplikasi sukses terinstal!');
     if (btnInstallContainer) btnInstallContainer.classList.add('hidden');
   });
+
 
 });
 
@@ -8628,23 +8686,61 @@ function executeAssistive(target) {
     }
 }
 
-// Fungsi menyalin URL laci yang sedang aktif
-function copyLinkLaciAktif(btn) {
-    const currentUrl = window.location.href; // Mengambil URL yang ada di address bar saat ini
+// Fungsi menyalin URL / Membuka menu Share bawaan OS (iOS/Android)
+async function copyLinkLaciAktif(btn) {
+    const currentUrl = window.location.href; 
     
-    navigator.clipboard.writeText(currentUrl).then(() => {
-        showToast("Link laci berhasil disalin!", "success");
-        
-        // Animasi ikon berubah jadi centang
-        const icon = btn.querySelector('i');
-        icon.className = 'fas fa-check text-brand-success';
-        setTimeout(() => {
-            icon.className = 'fas fa-share-alt';
-        }, 2000);
-    }).catch(() => {
-        showToast("Gagal menyalin link otomatis", "error");
-    });
+    // Mengambil nama produk dari laci yang sedang terbuka agar teks share lebih menarik
+    const judulProduk = document.getElementById('detail-product-title').innerText || "Layanan AU2Hub";
+
+    // 1. Cek apakah HP/Browser mendukung fitur Share bawaan sistem
+    if (navigator.share) {
+        try {
+            await navigator.share({
+                title: 'AU2Hub',
+                text: `Cek ${judulProduk} di AU2Hub sekarang!`,
+                url: currentUrl
+            });
+            // Tidak perlu memunculkan toast karena OS HP sudah memunculkan menu sendiri
+        } catch (err) {
+            // Error biasa terjadi kalau user menekan tombol "Batal / Cancel" di menu Share HP-nya
+            console.log("Membagikan dibatalkan.", err);
+        }
+    } 
+    // 2. FALLBACK: Jika dibuka di PC atau browser yang tidak mendukung, kembali ke sistem "Copy Link"
+    else {
+        navigator.clipboard.writeText(currentUrl).then(() => {
+            showToast("Link laci berhasil disalin!", "success");
+            
+            // Animasi ikon berubah jadi centang
+            const icon = btn.querySelector('i');
+            icon.className = 'fas fa-check text-brand-success';
+            setTimeout(() => {
+                icon.className = 'fas fa-share-alt';
+            }, 2000);
+        }).catch(() => {
+            showToast("Gagal menyalin link otomatis", "error");
+        });
+    }
 }
+
+// Logika Menghilangkan Splash Screen setelah aplikasi siap
+window.addEventListener('load', () => {
+    // Beri jeda 1.5 detik agar player sempat melihat animasi logonya berdenyut
+    setTimeout(() => {
+        const splashScreen = document.getElementById('custom-splash');
+        if (splashScreen) {
+            // Beri efek pudar memudar (fade out)
+            splashScreen.style.opacity = '0';
+            splashScreen.style.transform = 'scale(1.1)'; // Efek sedikit membesar saat hilang
+            
+            // Hapus elemen dari HTML setelah animasi pudar selesai (500ms)
+            setTimeout(() => {
+                splashScreen.remove();
+            }, 500);
+        }
+    }, 1500); 
+});
 
 
 
@@ -8821,7 +8917,6 @@ function copyLinkLaciAktif(btn) {
 
     </div>
 </div>
-
 
 </body>
 </html>
