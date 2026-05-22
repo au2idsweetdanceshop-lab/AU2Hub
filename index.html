@@ -8206,8 +8206,9 @@ const { data, error } = await supabaseClient.from('orders').select('status').eq(
 
 if (data && data.length > 0) {
 let countBayar = data.filter(o => o.status === 'PENDING').length;
-let countProses = data.filter(o => o.status === 'proses').length;
+let countProses = data.filter(o => o.status === 'proses' || o.status === 'SUCCESS').length; // [BARU] Tambahkan deteksi SUCCESS
 let countSelesai = data.filter(o => o.status === 'selesai').length;
+
 
 if (countBayar > 0 && bBayar) {
 bBayar.innerText = countBayar; bBayar.classList.remove('hidden');
@@ -8277,12 +8278,13 @@ async function cekStatusPesanan(kategori) {
             query = query.eq('status', 'PENDING');
             headerTitle.innerHTML = '<i class="fas fa-wallet text-red-500"></i> TAGIHAN BELUM BAYAR';
         } else if (kategori === 'proses') {
-            query = query.eq('status', 'proses');
+            query = query.in('status', ['proses', 'SUCCESS']); // [BARU] Tarik juga yang nyangkut di SUCCESS
             headerTitle.innerHTML = '<i class="fas fa-box text-brand-info"></i> PESANAN DIPROSES';
         } else if (kategori === 'selesai') {
             query = query.eq('status', 'selesai');
             headerTitle.innerHTML = '<i class="fas fa-check-circle text-brand-success"></i> PESANAN SELESAI';
         } else {
+
             // Jika klik "Lihat Riwayat" (Semua data)
             headerTitle.innerHTML = '<i class="fas fa-receipt text-brand-info"></i> SEMUA RIWAYAT';
         }
@@ -8299,14 +8301,21 @@ async function cekStatusPesanan(kategori) {
                 if (order.status === 'selesai') {
                     statusColor = 'text-brand-success bg-brand-success/10 border-brand-success/30';
                     icon = 'fa-check-circle';
-                } else if (order.status === 'proses') {
+                } else if (order.status === 'proses' || order.status === 'SUCCESS') { // [BARU] Gabungkan logika SUCCESS
                     statusColor = 'text-brand-info bg-brand-info/10 border-brand-info/30';
                     icon = 'fa-box';
+                    teksStatus = 'DIPROSES'; // Paksa tampilkan teks DIPROSES ke pembeli
+
+                    // 🔥 AUTO-HEAL: Diam-diam perbaiki database yang nyangkut di latar belakang
+                    if (order.status === 'SUCCESS') {
+                        supabaseClient.from('orders').update({status: 'proses'}).eq('id', order.id).then();
+                    }
                 } else if (order.status === 'PENDING') {
                     statusColor = 'text-gray-400 bg-gray-500/10 border-gray-500/30';
                     icon = 'fa-wallet';
                     teksStatus = 'PENDING';
                 }
+
 
                 // 🔥 KUNCI PERUBAHAN: Action klik sekarang berlaku untuk SEMUA status
                 // Status dilempar sebagai parameter ke-4
