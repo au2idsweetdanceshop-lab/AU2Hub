@@ -336,21 +336,25 @@ input[type="checkbox"].peer:checked + div::after {
 .nav-item::before {
     content: '';
     position: absolute;
-    left: -14px;
+    /* UBAH BAGIAN INI: Kurangi angkanya agar tidak keluar batas nav */
+    left: -11px; 
     top: 50%;
     transform: translateY(-50%) scaleY(0);
     width: 4px;
     height: 24px;
     background-color: white;
     border-radius: 0 4px 4px 0;
-    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
+
 .nav-item:hover::before {
     transform: translateY(-50%) scaleY(0.4); /* Muncul kecil saat disentuh */
 }
+
 .nav-item.active::before {
     transform: translateY(-50%) scaleY(1.4); /* Memanjang saat aktif */
 }
+
 
 /* Sembunyikan Navigasi ke Kiri saat Nonton Video Penuh */
 body.video-focused nav {
