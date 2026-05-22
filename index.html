@@ -8584,8 +8584,9 @@ function bukaDetailPesananDinamis(orderId, productName, price, status) {
     document.getElementById('detail-nama-layanan').innerText = productName;
     document.getElementById('detail-harga-layanan').innerText = `Rp ${price.toLocaleString('id-ID')}`;
     
-    const statusBadge = document.getElementById('detail-status-badge');
+        const statusBadge = document.getElementById('detail-status-badge');
     const actionBelumBayar = document.getElementById('action-belum-bayar');
+    const actionDiproses = document.getElementById('action-diproses'); // [BARU] Panggil id tombol hijau
     const pesanStatusLain = document.getElementById('pesan-status-lain');
 
     // LOGIKA TAMPILAN DINAMIS BERDASARKAN STATUS
@@ -8593,25 +8594,29 @@ function bukaDetailPesananDinamis(orderId, productName, price, status) {
         statusBadge.innerText = 'BELUM BAYAR';
         statusBadge.className = 'font-extrabold text-red-500 uppercase tracking-wider';
         
-        actionBelumBayar.classList.replace('hidden', 'flex'); // Munculkan tombol Lanjut Bayar & Batal
-        pesanStatusLain.classList.add('hidden'); // Sembunyikan teks info
+        actionBelumBayar.classList.replace('hidden', 'flex'); // Munculkan tombol Bayar
+        if(actionDiproses) actionDiproses.classList.replace('flex', 'hidden'); // Sembunyikan tombol Selesai
+        pesanStatusLain.classList.add('hidden'); // Sembunyikan teks
         
     } else if (status === 'proses') {
         statusBadge.innerText = 'DIPROSES';
         statusBadge.className = 'font-extrabold text-brand-info uppercase tracking-wider';
         
-        actionBelumBayar.classList.replace('flex', 'hidden'); // Sembunyikan tombol aksi
-        pesanStatusLain.classList.remove('hidden'); // Munculkan teks info
-        pesanStatusLain.innerText = 'Pesanan ini sedang diproses oleh admin.';
+        actionBelumBayar.classList.replace('flex', 'hidden'); // Sembunyikan tombol Bayar
+        if(actionDiproses) actionDiproses.classList.replace('hidden', 'flex'); // [BARU] Munculkan tombol Selesai
+        pesanStatusLain.classList.remove('hidden'); 
+        pesanStatusLain.innerText = 'Pesanan sedang dikerjakan admin. Klik tombol di bawah jika sudah diterima.';
         
     } else if (status === 'selesai') {
         statusBadge.innerText = 'SELESAI';
         statusBadge.className = 'font-extrabold text-brand-success uppercase tracking-wider';
         
-        actionBelumBayar.classList.replace('flex', 'hidden'); // Sembunyikan tombol aksi
-        pesanStatusLain.classList.remove('hidden'); // Munculkan teks info
+        actionBelumBayar.classList.replace('flex', 'hidden'); // Sembunyikan tombol Bayar
+        if(actionDiproses) actionDiproses.classList.replace('flex', 'hidden'); // Sembunyikan tombol Selesai
+        pesanStatusLain.classList.remove('hidden'); 
         pesanStatusLain.innerText = 'Pesanan ini telah selesai. Terima kasih!';
     }
+
 
     modal.classList.replace('hidden', 'flex');
 
@@ -8666,6 +8671,38 @@ async function batalkanPesanan() {
         }
     }
 }
+
+// EKSEKUSI PENYELESAIAN PESANAN DARI PEMBELI
+async function selesaikanPesanan() {
+    if (!activeOrderIdToPay) return;
+    
+    const konfirmasi = await customConfirm("Pesanan sudah dikerjakan dan diterima dengan baik?\n\nJika 'Oke', status pesanan akan diselesaikan.");
+    if (!konfirmasi) return;
+    
+    closeDetailPesanan(); // Tutup popup invoice
+    showToast("Menyelesaikan pesanan...", "info");
+    
+    try {
+        // Update status di Supabase menjadi 'selesai'
+        const { error } = await supabaseClient
+            .from('orders')
+            .update({ status: 'selesai' })
+            .eq('id', activeOrderIdToPay);
+            
+        if (error) throw error;
+        
+        showToast("Pesanan selesai! Terima kasih.", "success");
+        tambahExp(50); // [BONUS] Kasih hadiah EXP karena berhasil transaksi!
+        
+        // Refresh layar List dan Badge secara otomatis
+        cekStatusPesanan('proses'); 
+        loadOrderTracker(currentUser.id); 
+        
+    } catch (err) {
+        showToast("Gagal menyelesaikan pesanan: " + err.message, "error");
+    }
+}
+
 
 // EKSEKUSI LANJUTKAN PEMBAYARAN VIA QRIS DANA
 function prosesBayarUlang() {
@@ -8959,6 +8996,8 @@ async function copyLinkLaciAktif(btn) {
         </p>
     </div>
 </div>
+
+udhdbdbdbb
 
 <div id="assistive-menu" onclick="closeAssistiveMenu()" class="fixed inset-0 z-[99999] hidden items-center justify-center bg-black/70 backdrop-blur-sm opacity-0 transition-all duration-300">
     <div onclick="event.stopPropagation()" class="bg-[#161B2E]/95 border border-white/10 rounded-[2.5rem] p-5 w-[290px] h-[290px] grid grid-cols-3 gap-3 items-center justify-center backdrop-blur-2xl shadow-[0_25px_50px_-12px_rgba(0,0,0,0.8),0_0_40px_rgba(162,119,255,0.15)] scale-90 transition-all duration-300">
