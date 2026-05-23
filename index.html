@@ -7913,23 +7913,38 @@ function openDetailProduk(index) {
     const elQty = document.getElementById('detail-qty');
     if (elQty) elQty.value = "1";
 
-    // 2. DETEKSI VARIASI DARI XOFTWARE
-    let arrVariasi = p.variations || p.variasi || p.variants || [];
+    // 2. DETEKSI VARIASI DARI XOFTWARE (SESUAI DASHBOARD ANDA)
+    let rawVariasi = p.variations || p.variasi || p.variants || p.items || [];
+    let arrVariasi = [];
+
+    // Normalisasi data array variasi agar formatnya seragam
+    if (Array.isArray(rawVariasi)) {
+        rawVariasi.forEach(v => {
+            if (typeof v === 'object' && v !== null) {
+                // Tarik nama variasi dan harga sesuai API Xoftware Anda
+                arrVariasi.push({
+                    name: v.nama_variasi || v.name || v.nama || v.title || "Variasi",
+                    price: parseFloat(v.harga || v.price || 0)
+                });
+            }
+        });
+    }
+
     const variasiContainer = document.getElementById('detail-variasi-container');
     const variasiList = document.getElementById('detail-variasi-list');
 
     if (arrVariasi && arrVariasi.length > 0) {
         variasiContainer.classList.remove('hidden');
         
-        // Auto-Pilih Variasi Pertama
-        currentProductPrice = parseFloat(arrVariasi[0].price);
-        currentSelectedVariation = arrVariasi[0].name || arrVariasi[0].nama || "Variasi 1";
+        // Auto-Pilih Variasi Pertama saat laci dibuka
+        currentProductPrice = arrVariasi[0].price;
+        currentSelectedVariation = arrVariasi[0].name;
 
         // Fungsi Render Tombol Variasi
         window.renderVariasiButtons = function(activeName) {
             variasiList.innerHTML = arrVariasi.map(v => {
-                let vName = (v.name || v.nama || "Variasi").replace(/'/g, "\\'");
-                let vPrice = parseFloat(v.price) || 0;
+                let vName = v.name.replace(/'/g, "\\'");
+                let vPrice = v.price;
                 let isActive = (vName === activeName);
                 
                 let baseClass = "px-4 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ";
@@ -7943,43 +7958,44 @@ function openDetailProduk(index) {
         window.renderVariasiButtons(currentSelectedVariation);
         
     } else {
-        // Kalau Gak Ada Variasi, Pake Harga Asli
+        // Kalau Gak Ada Variasi, Sembunyikan Wadah & Pake Harga Asli
         variasiContainer.classList.add('hidden');
-        currentProductPrice = parseFloat(p.price) || 0;
+        currentProductPrice = parseFloat(p.price || p.harga || 0);
         currentSelectedVariation = "";
     }
 
 
+    // 3. OLAH DESKRIPSI & GAMBAR
     let deskripsiAsli = p.description || "";
+    let daftarGambar = [];
 
-let daftarGambar = [];
+    // Trik Sakti: Ekstrak kode [IMG: ...] dari deskripsi
+    const regexImg = /\[IMG:\s*(.*?)\]/;
+    const match = deskripsiAsli.match(regexImg);
 
-// Trik Sakti: Ekstrak kode [IMG: ...] dari deskripsi
-const regexImg = /\[IMG:\s*(.*?)\]/;
-const match = deskripsiAsli.match(regexImg);
+    let cleanDescription = deskripsiAsli;
+    let linkDariDeskripsi = "";
 
-let cleanDescription = deskripsiAsli;
-let linkDariDeskripsi = "";
+    if (match) {
+        linkDariDeskripsi = match[1];
+        cleanDescription = deskripsiAsli.replace(regexImg, "").trim(); // Hapus text kode biar ga diliat pembeli
+    }
 
-if (match) {
-linkDariDeskripsi = match[1];
-cleanDescription = deskripsiAsli.replace(regexImg, "").trim(); // Hapus text kode biar ga diliat pembeli
-}
+    document.getElementById('detail-product-title').innerText = p.title;
+    updateHargaLayar(); // 🚀 Panggil mesin otomatis biar harga coret langsung nongol di laci
 
-document.getElementById('detail-product-title').innerText = p.title;
-updateHargaLayar(); // 🚀 Panggil mesin otomatis biar harga coret langsung nongol di laci
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    let deskripsiBisaDiklik = cleanDescription.replace(urlRegex, '<a href="$1" target="_blank" class="text-brand-info underline hover:text-white transition-colors font-bold">$1</a>');
+    document.getElementById('detail-product-desc').innerHTML = deskripsiBisaDiklik || "Tidak ada deskripsi tambahan.";
 
-const urlRegex = /(https?:\/\/[^\s]+)/g;
-let deskripsiBisaDiklik = cleanDescription.replace(urlRegex, '<a href="$1" target="_blank" class="text-brand-info underline hover:text-white transition-colors font-bold">$1</a>');
-document.getElementById('detail-product-desc').innerHTML = deskripsiBisaDiklik || "Tidak ada deskripsi tambahan.";
-
-const btnBeli = document.getElementById('btn-beli-detail');
-btnBeli.onclick = () => {
-closeDetailProduk();
-let teksSyarat = p.syarat_ketentuan || p.terms || p.syarat || "";
-let infoLengkap = "";
-if (cleanDescription) infoLengkap += "*Deskripsi:*\n" + cleanDescription + "\n\n";
-if (teksSyarat) infoLengkap += "*Syarat & Ketentuan:*\n" + teksSyarat;
+    // 4. LOGIKA TOMBOL BELI & DISKON KASTA
+    const btnBeli = document.getElementById('btn-beli-detail');
+    btnBeli.onclick = () => {
+        closeDetailProduk();
+        let teksSyarat = p.syarat_ketentuan || p.terms || p.syarat || "";
+        let infoLengkap = "";
+        if (cleanDescription) infoLengkap += "*Deskripsi:*\n" + cleanDescription + "\n\n";
+        if (teksSyarat) infoLengkap += "*Syarat & Ketentuan:*\n" + teksSyarat;
 
         let totalHargaCheckout = currentProductPrice * currentProductQty;
         
@@ -7989,95 +8005,95 @@ if (teksSyarat) infoLengkap += "*Syarat & Ketentuan:*\n" + teksSyarat;
         if (currentProductQty > 1) namaProdukFinal += ` (x${currentProductQty})`;
 
         // 👑 SISTEM VOUCHER POTONGAN HARGA KASTA DEWA OTOMATIS
+        if (currentUser) {
+            const videoSaya = allVideosData.filter(v => v.user_id === currentUser.id).length;
+            if (videoSaya >= 100) {
+                // Kasta Legend Potong 10%
+                totalHargaCheckout = Math.floor(totalHargaCheckout * 0.9);
+                namaProdukFinal += " (Diskon Kasta Legend 10%)";
+                showToast("Selamat! Akun Legend Anda dapet diskon 10% otomatis!", "success");
+            } else if (videoSaya >= 50) {
+                // Kasta Master Potong 5%
+                totalHargaCheckout = Math.floor(totalHargaCheckout * 0.95);
+                namaProdukFinal += " (Diskon Kasta Master 5%)";
+                showToast("Selamat! Akun Master Anda dapet diskon 5% otomatis!", "success");
+            }
+        }
 
-if (currentUser) {
-const videoSaya = allVideosData.filter(v => v.user_id === currentUser.id).length;
-if (videoSaya >= 100) {
-// Kasta Legend Potong 10%
-totalHargaCheckout = Math.floor(totalHargaCheckout * 0.9);
-namaProdukFinal += " (Diskon Kasta Legend 10%)";
-showToast("Selamat! Akun Legend Anda dapet diskon 10% otomatis!", "success");
-} else if (videoSaya >= 50) {
-// Kasta Master Potong 5%
-totalHargaCheckout = Math.floor(totalHargaCheckout * 0.95);
-namaProdukFinal += " (Diskon Kasta Master 5%)";
-showToast("Selamat! Akun Master Anda dapet diskon 5% otomatis!", "success");
-}
-}
-
-checkoutRobotDANA(namaProdukFinal, totalHargaCheckout, infoLengkap);
-};
+        checkoutRobotDANA(namaProdukFinal, totalHargaCheckout, infoLengkap);
+    };
 
 
-const carousel = document.getElementById('detail-image-carousel');
-carousel.innerHTML = '';
+    // 5. RENDER GAMBAR CAROUSEL
+    const carousel = document.getElementById('detail-image-carousel');
+    carousel.innerHTML = '';
 
-const domainXoftware = "https://web.xoftware.id/";
-const folderGambarLokal = {
-"FLIX": "https://nos.wjv-1.neo.id/au2hub/IMG-20260518-WA0208.jpg",
-};
+    const domainXoftware = "https://web.xoftware.id/";
+    const folderGambarLokal = {
+        "FLIX": "https://nos.wjv-1.neo.id/au2hub/IMG-20260518-WA0208.jpg",
+    };
 
-let rawImages = p.images || p.image || p.image_url || p.gambar || p.foto || p.thumbnail || p.logo || p.img || linkDariDeskripsi || folderGambarLokal[p.code] || '';
+    let rawImages = p.images || p.image || p.image_url || p.gambar || p.foto || p.thumbnail || p.logo || p.img || linkDariDeskripsi || folderGambarLokal[p.code] || '';
 
-if (rawImages) {
-let splitImages = rawImages.split(',');
-daftarGambar = splitImages.map(img => {
-let cleanImg = img.trim();
-if (cleanImg && !cleanImg.startsWith('http')) {
-return domainXoftware + (cleanImg.startsWith('/') ? cleanImg.substring(1) : cleanImg);
-}
-return cleanImg;
-}).filter(img => img !== "");
-}
+    if (rawImages) {
+        let splitImages = rawImages.split(',');
+        daftarGambar = splitImages.map(img => {
+            let cleanImg = img.trim();
+            if (cleanImg && !cleanImg.startsWith('http')) {
+                return domainXoftware + (cleanImg.startsWith('/') ? cleanImg.substring(1) : cleanImg);
+            }
+            return cleanImg;
+        }).filter(img => img !== "");
+    }
 
-if (daftarGambar.length === 0) {
-daftarGambar.push('https://placehold.co/400x400/1a1133/ff007a?text=ADT+STORE');
-}
+    if (daftarGambar.length === 0) {
+        daftarGambar.push('https://placehold.co/400x400/1a1133/ff007a?text=ADT+STORE');
+    }
 
-carousel.innerHTML = daftarGambar.map(imgUrl => `
-<div class="w-full h-full flex-shrink-0 snap-center">
-<img src="${imgUrl}" class="w-full h-full object-cover" onerror="this.src='https://placehold.co/400x400/1a1133/ff007a?text=ADT+STORE'">
-</div>
-`).join('');
+    carousel.innerHTML = daftarGambar.map(imgUrl => `
+        <div class="w-full h-full flex-shrink-0 snap-center">
+            <img src="${imgUrl}" class="w-full h-full object-cover" onerror="this.src='https://placehold.co/400x400/1a1133/ff007a?text=ADT+STORE'">
+        </div>
+    `).join('');
 
-const currentTxt = document.getElementById('carousel-current-index');
-const totalTxt = document.getElementById('carousel-total-index');
-const badgeCounter = document.getElementById('carousel-counter-badge');
+    const currentTxt = document.getElementById('carousel-current-index');
+    const totalTxt = document.getElementById('carousel-total-index');
+    const badgeCounter = document.getElementById('carousel-counter-badge');
 
-currentTxt.innerText = "1";
-totalTxt.innerText = daftarGambar.length;
+    currentTxt.innerText = "1";
+    totalTxt.innerText = daftarGambar.length;
 
-// 🔥 LOGIKA BARU: Sembunyikan angka 1/1 kalau gambar cuma sebiji
-if (daftarGambar.length > 1) {
-badgeCounter.classList.remove('hidden');
-} else {
-badgeCounter.classList.add('hidden');
-}
+    // 🔥 LOGIKA BARU: Sembunyikan angka 1/1 kalau gambar cuma sebiji
+    if (daftarGambar.length > 1) {
+        badgeCounter.classList.remove('hidden');
+    } else {
+        badgeCounter.classList.add('hidden');
+    }
 
-carousel.onscroll = () => {
-let page = Math.round(carousel.scrollLeft / carousel.clientWidth) + 1;
-currentTxt.innerText = page;
-};
+    carousel.onscroll = () => {
+        let page = Math.round(carousel.scrollLeft / carousel.clientWidth) + 1;
+        currentTxt.innerText = page;
+    };
 
-const laci = document.getElementById('modal-detail-produk');
-laci.classList.remove('translate-y-full');
-laci.classList.add('translate-y-0');
+    // 6. BUKA LACI MODAL
+    const laci = document.getElementById('modal-detail-produk');
+    laci.classList.remove('translate-y-full');
+    laci.classList.add('translate-y-0');
 
-history.pushState({ popup: 'detail_produk' }, null, '#detail?id=' + index);
+    history.pushState({ popup: 'detail_produk' }, null, '#detail?id=' + index);
 }
 
 // FUNGSI PENUTUP LACI SHOPEE (ANTI-NYANGKUT TOMBOL BACK HP)
 function closeDetailProduk(dariTombolBackHP = false) {
-const laci = document.getElementById('modal-detail-produk');
-laci.classList.remove('translate-y-0');
-laci.classList.add('translate-y-full');
+    const laci = document.getElementById('modal-detail-produk');
+    laci.classList.remove('translate-y-0');
+    laci.classList.add('translate-y-full');
 
-// Mencegah HP narik history back 2 kali kalau asalnya emang udah dari tombol back HP
-if (!dariTombolBackHP && window.location.hash === '#detail') {
-history.back();
+    // Mencegah HP narik history back 2 kali kalau asalnya emang udah dari tombol back HP
+    if (!dariTombolBackHP && window.location.hash === '#detail') {
+        history.back();
+    }
 }
-}
-
 
 
 // 4. Logika Checkout Pembayaran Robot DANA (VERSI SUPABASE SUPER KILAT)
@@ -9368,10 +9384,10 @@ document.addEventListener('DOMContentLoaded', () => {
 <div id="modal-detail-produk" class="fixed inset-x-0 bottom-0 z-[180] max-h-[85vh] min-h-[50vh] bg-[#161B2E]/95 backdrop-blur-xl border-t border-white/10 rounded-t-[2.5rem] flex flex-col max-w-md mx-auto transition-transform duration-300 translate-y-full shadow-[0_-20px_50px_rgba(0,0,0,0.6)]">
     
     <div class="flex justify-center p-3 shrink-0 bg-brand-dark/40 rounded-t-[2.5rem]" onclick="closeDetailProduk()">
-        <div class="w-12 h-1.5 bg-white/20 rounded-full cursor-pointer hover:bg-white/40"></div>
+        <div class="w-12 h-1.5 bg-white/20 rounded-full cursor-pointer hover:bg-white/40 transition-colors"></div>
     </div>
     
-    <div class="overflow-y-auto hide-scroll flex-1 pb-24">
+    <div class="overflow-y-auto hide-scroll flex-1 pb-4">
         
         <div class="relative w-full aspect-[4/3] bg-black/50 border-b border-white/5">
             <div id="detail-image-carousel" class="flex overflow-x-auto hide-scroll snap-x snap-mandatory h-full w-full">
@@ -9381,81 +9397,55 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
         </div>
 
-<div class="p-6 space-y-5">
-    
-    <div class="flex justify-between items-start gap-4">
-        <div class="flex-1 min-w-0">
-            <div class="text-brand-accent font-extrabold text-2xl tracking-tight mb-1" id="detail-product-price">Rp 0</div>
-            <h3 class="text-base font-extrabold text-white leading-snug break-words" id="detail-product-title">Nama Produk</h3>
-        </div>
-        <button onclick="event.stopPropagation(); copyLinkLaciAktif(this)" class="bg-white/5 hover:bg-white/10 border border-white/10 w-10 h-10 rounded-xl flex items-center justify-center text-white active:scale-90 transition-all shrink-0 z-10 relative">
-            <i class="fas fa-share-alt text-sm"></i>
-        </button>
-    </div>
-
-    <div id="detail-variasi-container" class="hidden border-t border-white/5 pt-4">
-        <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2.5 block">Pilih Variasi</span>
-        <div id="detail-variasi-list" class="flex flex-wrap gap-2"></div>
-    </div>
-
-    <div class="flex flex-wrap gap-2 border-y border-white/5 py-3 text-[10px] font-bold uppercase tracking-wider text-gray-400">
-        <span class="text-brand-success bg-brand-success/10 px-2.5 py-1 rounded-md border border-brand-success/20 flex items-center gap-1">
-            <i class="fas fa-bolt text-[9px]"></i> INCLUDE REKBER NIKKY
-        </span>
-        <span id="detail-discount-badge" class="hidden text-brand-info bg-brand-info/10 px-2.5 py-1 rounded-md border border-brand-info/20 flex items-center gap-1"></span>
-    </div>
-
-    <div class="flex justify-between items-center bg-black/20 border border-white/5 p-3 rounded-2xl">
-        <span class="text-xs font-bold text-gray-300 uppercase tracking-wide">Jumlah</span>
-        <div class="flex items-center gap-2 bg-[#0F0920] border border-white/10 rounded-xl p-1 shadow-inner">
-            <button onclick="ubahJumlahPesan(-1)" class="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/5 rounded-lg active:scale-95 transition-all"><i class="fas fa-minus text-xs"></i></button>
-            <input type="tel" id="detail-qty" value="1" oninput="inputJumlahPesan(this.value)" onblur="validasiJumlah(this)" class="text-sm font-extrabold text-white w-10 text-center bg-transparent outline-none border-none p-0 m-0" maxlength="4">
-            <button onclick="ubahJumlahPesan(1)" class="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/5 rounded-lg active:scale-95 transition-all"><i class="fas fa-plus text-xs"></i></button>
-        </div>
-    </div>
-
-    <div class="space-y-1.5 pt-1">
-        <h4 class="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest">Deskripsi Produk</h4>
-        <p class="text-xs text-gray-300 leading-relaxed whitespace-pre-line line-clamp-4 cursor-pointer transition-all duration-300" id="detail-product-desc" onclick="this.classList.toggle('line-clamp-4'); const btn = document.getElementById('btn-toggle-desc'); btn.innerHTML = this.classList.contains('line-clamp-4') ? 'Lihat Selengkapnya ▼' : 'Tutup Selengkapnya ▲';">Detail deskripsi...</p>
-        <button id="btn-toggle-desc" onclick="document.getElementById('detail-product-desc').click()" class="text-[10px] text-brand-info font-bold hover:text-white active:scale-95 transition-all">Lihat Selengkapnya ▼</button>
-    </div>
-
-</div>
-
+        <div class="p-6 space-y-5">
             
+            <div class="flex justify-between items-start gap-4">
+                <div class="flex-1 min-w-0">
+                    <div class="text-brand-accent font-extrabold text-2xl tracking-tight mb-1" id="detail-product-price">Rp 0</div>
+                    <h3 class="text-base font-extrabold text-white leading-snug break-words" id="detail-product-title">Nama Produk</h3>
+                </div>
+                <button onclick="event.stopPropagation(); copyLinkLaciAktif(this)" class="bg-white/5 hover:bg-white/10 border border-white/10 w-10 h-10 rounded-xl flex items-center justify-center text-white active:scale-90 transition-all shrink-0 z-10 relative">
+                    <i class="fas fa-share-alt text-sm"></i>
+                </button>
+            </div>
+
             <div id="detail-variasi-container" class="hidden border-t border-white/5 pt-4">
-                <span class="text-xs font-bold text-gray-300 uppercase tracking-widest mb-2 block">Pilih Variasi</span>
-                <div id="detail-variasi-list" class="flex flex-wrap gap-2">
-                    </div>
+                <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2.5 block">Pilih Variasi</span>
+                <div id="detail-variasi-list" class="flex flex-wrap gap-2"></div>
             </div>
 
-            <div class="flex flex-wrap gap-4 border-y border-white/5 py-3 text-[11px] font-bold uppercase tracking-wider text-gray-400">
-                <span class="text-brand-success flex items-center gap-1"><i class="fas fa-bolt mr-1"></i> INCLUDE REKBER NIKKY</span>
-                <span id="detail-discount-badge" class="hidden text-brand-info flex items-center gap-1"></span>
+            <div class="flex flex-wrap gap-2 border-y border-white/5 py-3 text-[10px] font-bold uppercase tracking-wider text-gray-400">
+                <span class="text-brand-success bg-brand-success/10 px-2.5 py-1 rounded-md border border-brand-success/20 flex items-center gap-1">
+                    <i class="fas fa-bolt text-[9px]"></i> INCLUDE REKBER NIKKY
+                </span>
+                <span id="detail-discount-badge" class="hidden text-brand-info bg-brand-info/10 px-2.5 py-1 rounded-md border border-brand-info/20 flex items-center gap-1"></span>
             </div>
 
-            <div class="flex justify-between items-center border-b border-white/5 pb-4">
-                <span class="text-xs font-bold text-gray-300 uppercase tracking-widest mb-2 block">Jumlah Pembelian</span>
-                <div class="flex items-center gap-3 bg-black/40 border border-white/10 rounded-xl p-1">
-                    <button onclick="ubahJumlahPesan(-1)" class="w-8 h-8 flex items-center justify-center text-white hover:bg-white/10 rounded-lg active:scale-95 transition-all"><i class="fas fa-minus text-xs"></i></button>
+            <div class="flex justify-between items-center bg-black/20 border border-white/5 p-3 rounded-2xl">
+                <span class="text-xs font-bold text-gray-300 uppercase tracking-wide">Jumlah</span>
+                <div class="flex items-center gap-2 bg-[#0F0920] border border-white/10 rounded-xl p-1 shadow-inner">
+                    <button onclick="ubahJumlahPesan(-1)" class="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/5 rounded-lg active:scale-95 transition-all"><i class="fas fa-minus text-xs"></i></button>
                     <input type="tel" id="detail-qty" value="1" oninput="inputJumlahPesan(this.value)" onblur="validasiJumlah(this)" class="text-sm font-extrabold text-white w-10 text-center bg-transparent outline-none border-none p-0 m-0" maxlength="4">
-                    <button onclick="ubahJumlahPesan(1)" class="w-8 h-8 flex items-center justify-center text-white hover:bg-white/10 rounded-lg active:scale-95 transition-all"><i class="fas fa-plus text-xs"></i></button>
+                    <button onclick="ubahJumlahPesan(1)" class="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/5 rounded-lg active:scale-95 transition-all"><i class="fas fa-plus text-xs"></i></button>
                 </div>
             </div>
 
-<div>
-        <h4 class="text-xs font-extrabold text-gray-300 uppercase tracking-widest mb-2">Deskripsi Produk</h4>
-        <p class="text-xs text-gray-400 leading-relaxed whitespace-pre-line line-clamp-4 cursor-pointer transition-all duration-300" id="detail-product-desc" onclick="this.classList.toggle('line-clamp-4'); const btn = document.getElementById('btn-toggle-desc'); btn.innerHTML = this.classList.contains('line-clamp-4') ? 'Lihat Selengkapnya ▼' : 'Tutup Selengkapnya ▲';">Detail deskripsi...</p>
-        <button id="btn-toggle-desc" onclick="document.getElementById('detail-product-desc').click()" class="text-[10px] text-brand-info font-bold mt-1.5 hover:text-white active:scale-95 transition-all">Lihat Selengkapnya ▼</button>
-    </div>
+            <div class="space-y-1.5 pt-1">
+                <h4 class="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest">Deskripsi Produk</h4>
+                <p class="text-xs text-gray-300 leading-relaxed whitespace-pre-line line-clamp-4 cursor-pointer transition-all duration-300" id="detail-product-desc" onclick="this.classList.toggle('line-clamp-4'); const btn = document.getElementById('btn-toggle-desc'); btn.innerHTML = this.classList.contains('line-clamp-4') ? 'Lihat Selengkapnya ▼' : 'Tutup Selengkapnya ▲';">Detail deskripsi...</p>
+                <button id="btn-toggle-desc" onclick="document.getElementById('detail-product-desc').click()" class="text-[10px] text-brand-info font-bold hover:text-white active:scale-95 transition-all">Lihat Selengkapnya ▼</button>
+            </div>
 
-         <div class="w-full glass border-t border-white/5 p-4 shrink-0 pb-6 rounded-t-2xl z-10 mt-auto">
-            <button id="btn-beli-detail" onclick="" class="w-full bg-gradient-to-r from-[#00F0FF] via-[#8A2BE2] to-[#FF007A] text-white py-4 rounded-xl font-extrabold text-sm active:scale-95 transition-transform shadow-lg shadow-brand-purple/20 flex justify-center items-center gap-2">
-                <i class="fas fa-shopping-bag"></i> BELI SEKARANG VIA AUTO QRIS
-            </button>
         </div> 
-    </div>
-</div> <!-- [BARU] Ini adalah penutup utama untuk id="modal-detail-produk" -->
+    </div> 
+    
+    <div class="w-full bg-[#161B2E] border-t border-white/5 p-4 shrink-0 pb-6 rounded-t-2xl z-20 mt-auto shadow-[0_-10px_20px_rgba(0,0,0,0.3)]">
+        <button id="btn-beli-detail" onclick="" class="w-full bg-gradient-to-r from-[#00F0FF] via-[#8A2BE2] to-[#FF007A] text-white py-4 rounded-xl font-extrabold text-sm active:scale-95 transition-transform shadow-lg shadow-brand-purple/20 flex justify-center items-center gap-2">
+            <i class="fas fa-shopping-bag"></i> BELI SEKARANG VIA AUTO QRIS
+        </button>
+    </div> 
+</div>
+
 
 <!-- MODAL DETAIL PESANAN (TRACKER) -->
 <div id="modal-detail-pesanan" class="fixed inset-0 z-[600] hidden items-center justify-center bg-black/90 backdrop-blur-md px-6 transition-all duration-300">
