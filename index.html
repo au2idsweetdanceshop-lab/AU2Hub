@@ -2932,7 +2932,7 @@ if (tabId === 'sosial') {
 loadVideos();
 }
 
-const navMap = { 'home': 0, 'info': 1, 'layanan': 2, 'sosial': 3, 'rekber': 4, 'ripper': 5, 'pesanan': 6, 'chat': 7, 'profile': 8, 'pembayaran': 2 };
+const navMap = { 'home': 0, 'info': 1, 'layanan': 2, 'sosial': 3, 'rekber': 4, 'ripper': 5, 'pesanan': 6, 'chat': 7, 'pasar': 8, 'profile': 9, 'pembayaran': 2 };
 const activeIndex = navMap[tabId];
 if (activeIndex !== undefined) {
 const activeNav = document.querySelectorAll('.nav-item')[activeIndex];
@@ -8092,151 +8092,149 @@ function closeDetailProduk(dariTombolBackHP = false) {
 }
 
 
-// 4. Logika Checkout Pembayaran Robot DANA (VERSI SUPABASE SUPER KILAT)
-async function checkoutRobotDANA(namaProduk, harga, deskripsi) {
-if (!currentUser) return showToast("Silakan login dulu untuk membeli!", "error");
-
-// --- LOGIKA KODE UNIK DISKON (1 - 500) ---
-let kodeUnik = Math.floor(Math.random() * 500) + 1;
-if (harga <= 500) {
-    kodeUnik = Math.floor(Math.random() * (harga - 1)) + 1; 
-}
-
-let hargaDenganKodeUnik = harga - kodeUnik;
-if (hargaDenganKodeUnik < 1) hargaDenganKodeUnik = 1; 
-// -------------------------------------------------------
-
-const konfirmasi = await customConfirm(`Lanjutkan pesanan untuk:\n\n${namaProduk}\n\nTotal: Rp ${hargaDenganKodeUnik.toLocaleString('id-ID')} via DANA Otomatis?`);
-if (!konfirmasi) return;
-
-showToast("Menyiapkan antrean pembayaran...", "info");
-
-try {
 // ==========================================
-// 1. RESTORE HTML UI QRIS (Bawaan Anda, Tetap Sama)
+// 4. Logika Checkout Pembayaran Robot DANA (UPDATE: + DETEKSI PENJUAL)
 // ==========================================
-const wadahPembayaran = document.getElementById('qris-container');
-if (wadahPembayaran && !document.getElementById('pay-total')) {
-    wadahPembayaran.innerHTML = `
-        <div class="absolute -right-10 -top-10 w-32 h-32 bg-brand-accent/10 rounded-full blur-2xl"></div>
-        <div class="text-xs text-gray-500 uppercase tracking-widest mb-1">Total Tagihan</div>
-        <div class="flex justify-between items-end mb-6 relative z-10">
-        <div id="pay-total" class="text-3xl font-extrabold text-brand-accent tracking-tight">Rp 0</div>
-        <button onclick="salinNominal()" id="btn-salin" class="bg-brand-info/10 text-brand-info border border-brand-info/30 text-[10px] font-bold px-3 py-1.5 rounded-lg active:scale-95 transition-all flex items-center h-max">
-        <i class="fas fa-copy mr-1.5"></i> Salin
-        </button>
-        <input type="hidden" id="nominal-asli" value="0">
-        </div>
-        <div class="bg-white p-3 rounded-2xl mb-6 mx-auto w-max shadow-[0_0_20px_rgba(0,240,255,0.15)] relative group z-10">
-        <img src="" alt="QRIS ADT" class="w-44 h-44 object-cover rounded-xl">
-        <div class="absolute inset-0 bg-black/60 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl backdrop-blur-sm">
-        <i class="fas fa-camera text-white text-2xl mb-2"></i>
-        <span class="text-white text-[10px] font-bold">Screenshot & Simpan</span>
-        </div>
-        </div>
-        <div class="text-[11px] font-bold text-center text-white uppercase tracking-widest mb-6 relative z-10">ADT STORE</div>
-        <div class="space-y-3 mb-8 bg-black/30 p-4 rounded-2xl border border-white/5 relative z-10">
-        <div class="flex justify-between text-xs border-b border-white/5 pb-2"><span class="text-gray-400">Paket Pesanan</span><span id="pay-product" class="text-white font-bold text-right pl-4 leading-tight">-</span></div>
-        <div class="flex justify-between text-xs pt-1"><span class="text-gray-400">Admin Rekber NIKKY</span><span class="text-brand-info font-bold">Include (Gratis)</span></div>
-        </div>
-        <a id="wa-confirm" href="#" target="_blank" class="flex justify-center items-center w-full bg-[#25D366] hover:bg-[#20bd5a] active:scale-[0.98] transition-all text-white font-bold py-4 rounded-2xl shadow-[0_8px_20px_rgba(37,211,102,0.25)] text-sm relative z-10">
-        <i class="fab fa-whatsapp text-lg mr-2"></i> Konfirmasi ke Admin
-        </a>
-        <p class="text-center text-[10px] text-gray-500 mt-4 leading-relaxed relative z-10">*Sistem otomatis menyiapkan chat pesanan. Jangan lupa lampirkan screenshot bukti transfer.</p>
-    `;
-}
+async function checkoutRobotDANA(namaProduk, harga, deskripsi, sellerId = null) {
+    if (!currentUser) return showToast("Silakan login dulu untuk membeli!", "error");
 
-// ==========================================
-// 2. SIMPAN ANTREAN KE SUPABASE (MENGGANTIKAN /api/create-deposit)
-// ==========================================
-// Kita simpan status awal sebagai 'PENDING' agar bisa diintai oleh webhook
-const { data: orderData, error: orderError } = await supabaseClient
-    .from('orders')
-    .insert({
-        user_id: currentUser.id,
-        product_name: namaProduk,
-        price: hargaDenganKodeUnik,
-        status: 'PENDING' // <-- Webhook bertugas mengubah ini jadi SUCCESS
-    })
-    .select()
-    .single();
-
-if (orderError) throw orderError;
-
-// ==========================================
-// 3. GENERATE QRIS DAN TAMPILKAN UI
-// ==========================================
-document.getElementById('pay-total').innerText = `Rp ${hargaDenganKodeUnik.toLocaleString('id-ID')}`;
-document.getElementById('pay-product').innerText = namaProduk;
-document.getElementById('nominal-asli').value = hargaDenganKodeUnik;
-
-const teksQRISDinamis = makeDynamicQRIS(hargaDenganKodeUnik);
-const qrImgUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(teksQRISDinamis)}`;
-
-const qrContainerElement = document.querySelector('#pembayaran img');
-if (qrContainerElement) qrContainerElement.src = qrImgUrl;
-
-const noWA = "6283815584661";
-const teksWA = encodeURIComponent(`Halo Admin, pesanan DANA saya sudah otomatis masuk ya untuk:\n\n(Berikut ini saya lampirkan gambar bukti transfer QRIS / screenshot)*${namaProduk}*`);
-document.getElementById('wa-confirm').setAttribute('href', `https://wa.me/${noWA}?text=${teksWA}`);
-
-switchTab('pembayaran');
-showToast("Silakan scan! Sistem sedang memantau pembayaran Anda.", "success");
-
-// ==========================================
-// 4. RADAR PENGECEK STATUS REAL-TIME KE SUPABASE
-// ==========================================
-if(window.cekPembayaranInterval) clearInterval(window.cekPembayaranInterval);
-
-window.cekPembayaranInterval = setInterval(async () => {
-try {
-    // Tembak langsung ke Supabase tanpa perantara
-    const { data: cekData } = await supabaseClient
-        .from('orders')
-        .select('status')
-        .eq('id', orderData.id)
-        .single();
-
-    // Jika MacroDroid & Webhook sudah mengubahnya jadi SUCCESS
-    if(cekData && cekData.status === "SUCCESS") {
-        clearInterval(window.cekPembayaranInterval); // Matikan radar
-
-        // Ubah status jadi 'proses' agar masuk ke riwayat Joki (Sesuai sistem UI Anda)
-        await supabaseClient.from('orders').update({status: 'proses'}).eq('id', orderData.id);
-
-        // Siapkan teks otomatis buat dikirim ke WA pembeli
-        const infoXoftware = deskripsi ? deskripsi.replace(/<[^>]*>?/gm, '') : '';
-        const teksWASukses = encodeURIComponent(`Halo Admin Joki AU2Hub,\n\nPembayaran DANA saya sudah terkonfirmasi sukses otomatis oleh sistem!\n\nPesanan: *${namaProduk}*\nTotal: Rp ${hargaDenganKodeUnik.toLocaleString('id-ID')}\n\n${infoXoftware}\n\n(Berikut ini saya lampirkan gambar bukti transfer QRIS / screenshot)`);
-
-        // UBAH LAYAR JADI CENTANG HIJAU
-        const wadahPembayaran = document.getElementById('qris-container');
-        if (wadahPembayaran) {
-        wadahPembayaran.innerHTML = `
-        <div class="flex flex-col items-center justify-center py-6 text-center modal-anim">
-        <div class="relative w-24 h-24 mb-6">
-        <div class="absolute inset-0 bg-brand-success rounded-full animate-ping opacity-20"></div>
-        <i class="fas fa-check-circle text-7xl text-brand-success relative z-10 drop-shadow-[0_0_20px_rgba(37,211,102,0.8)]"></i>
-        </div>
-        <h2 class="text-2xl font-extrabold text-white mb-2 tracking-tight">Pembayaran Berhasil!</h2>
-        <p class="text-gray-400 text-xs mb-8 leading-relaxed px-4">Dana senilai <strong class="text-brand-success">Rp ${hargaDenganKodeUnik.toLocaleString('id-ID')}</strong> telah diterima sistem.<br>Silakan hubungi Admin untuk proses pesanan Anda.</p>
-        <div class="w-full space-y-3">
-        <a href="https://wa.me/${noWA}?text=${teksWASukses}" target="_blank" class="flex justify-center items-center w-full bg-[#25D366] hover:bg-[#20bd5a] text-white py-4 rounded-xl font-bold shadow-[0_8px_20px_rgba(37,211,102,0.3)] active:scale-95 transition-all uppercase tracking-wider text-xs">
-        <i class="fab fa-whatsapp text-lg mr-2"></i> Chat Admin (Kirim Data)
-        </a>
-        <button onclick="window.location.reload()" class="w-full bg-white/5 text-white py-4 rounded-xl font-bold active:scale-95 transition-all uppercase tracking-wider text-xs border border-white/10 hover:bg-white/10">Selesai & Kembali</button>
-        </div>
-        </div>
-        `;
-        }
+    // --- LOGIKA KODE UNIK DISKON (1 - 500) ---
+    let kodeUnik = Math.floor(Math.random() * 500) + 1;
+    if (harga <= 500) {
+        kodeUnik = Math.floor(Math.random() * (harga - 1)) + 1; 
     }
-} catch(e) { console.log("Radar tertunda..."); }
-}, 1000);
 
-} catch (error) {
-    showToast("Gangguan jaringan / Database.", "error");
-    console.error(error);
+    let hargaDenganKodeUnik = harga - kodeUnik;
+    if (hargaDenganKodeUnik < 1) hargaDenganKodeUnik = 1; 
+    // -------------------------------------------------------
+
+    const konfirmasi = await customConfirm(`Lanjutkan pesanan untuk:\n\n${namaProduk}\n\nTotal: Rp ${hargaDenganKodeUnik.toLocaleString('id-ID')} via DANA Otomatis?`);
+    if (!konfirmasi) return;
+
+    showToast("Menyiapkan antrean pembayaran...", "info");
+
+    try {
+        // ==========================================
+        // 1. RESTORE HTML UI QRIS
+        // ==========================================
+        const wadahPembayaran = document.getElementById('qris-container');
+        if (wadahPembayaran && !document.getElementById('pay-total')) {
+            wadahPembayaran.innerHTML = `
+                <div class="absolute -right-10 -top-10 w-32 h-32 bg-brand-accent/10 rounded-full blur-2xl"></div>
+                <div class="text-xs text-gray-500 uppercase tracking-widest mb-1">Total Tagihan</div>
+                <div class="flex justify-between items-end mb-6 relative z-10">
+                <div id="pay-total" class="text-3xl font-extrabold text-brand-accent tracking-tight">Rp 0</div>
+                <button onclick="salinNominal()" id="btn-salin" class="bg-brand-info/10 text-brand-info border border-brand-info/30 text-[10px] font-bold px-3 py-1.5 rounded-lg active:scale-95 transition-all flex items-center h-max">
+                <i class="fas fa-copy mr-1.5"></i> Salin
+                </button>
+                <input type="hidden" id="nominal-asli" value="0">
+                </div>
+                <div class="bg-white p-3 rounded-2xl mb-6 mx-auto w-max shadow-[0_0_20px_rgba(0,240,255,0.15)] relative group z-10">
+                <img src="" alt="QRIS ADT" class="w-44 h-44 object-cover rounded-xl">
+                <div class="absolute inset-0 bg-black/60 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl backdrop-blur-sm">
+                <i class="fas fa-camera text-white text-2xl mb-2"></i>
+                <span class="text-white text-[10px] font-bold">Screenshot & Simpan</span>
+                </div>
+                </div>
+                <div class="text-[11px] font-bold text-center text-white uppercase tracking-widest mb-6 relative z-10">ADT STORE</div>
+                <div class="space-y-3 mb-8 bg-black/30 p-4 rounded-2xl border border-white/5 relative z-10">
+                <div class="flex justify-between text-xs border-b border-white/5 pb-2"><span class="text-gray-400">Paket Pesanan</span><span id="pay-product" class="text-white font-bold text-right pl-4 leading-tight">-</span></div>
+                <div class="flex justify-between text-xs pt-1"><span class="text-gray-400">Admin Rekber NIKKY</span><span class="text-brand-info font-bold">Include (Gratis)</span></div>
+                </div>
+                <a id="wa-confirm" href="#" target="_blank" class="flex justify-center items-center w-full bg-[#25D366] hover:bg-[#20bd5a] active:scale-[0.98] transition-all text-white font-bold py-4 rounded-2xl shadow-[0_8px_20px_rgba(37,211,102,0.25)] text-sm relative z-10">
+                <i class="fab fa-whatsapp text-lg mr-2"></i> Konfirmasi ke Admin
+                </a>
+                <p class="text-center text-[10px] text-gray-500 mt-4 leading-relaxed relative z-10">*Sistem otomatis menyiapkan chat pesanan. Jangan lupa lampirkan screenshot bukti transfer.</p>
+            `;
+        }
+
+        // ==========================================
+        // 2. SIMPAN ANTREAN KE SUPABASE (DENGAN SELLER_ID)
+        // ==========================================
+        const { data: orderData, error: orderError } = await supabaseClient
+            .from('orders')
+            .insert({
+                user_id: currentUser.id,
+                product_name: namaProduk,
+                price: hargaDenganKodeUnik,
+                status: 'PENDING',
+                seller_id: sellerId // <-- KUNCI: ID Penjual tersimpan di invoice order
+            })
+            .select()
+            .single();
+
+        if (orderError) throw orderError;
+
+        // ==========================================
+        // 3. GENERATE QRIS DAN TAMPILKAN UI
+        // ==========================================
+        document.getElementById('pay-total').innerText = `Rp ${hargaDenganKodeUnik.toLocaleString('id-ID')}`;
+        document.getElementById('pay-product').innerText = namaProduk;
+        document.getElementById('nominal-asli').value = hargaDenganKodeUnik;
+
+        const teksQRISDinamis = makeDynamicQRIS(hargaDenganKodeUnik);
+        const qrImgUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(teksQRISDinamis)}`;
+
+        const qrContainerElement = document.querySelector('#pembayaran img');
+        if (qrContainerElement) qrContainerElement.src = qrImgUrl;
+
+        const noWA = "6283815584661";
+        const teksWA = encodeURIComponent(`Halo Admin, pesanan DANA saya sudah otomatis masuk ya untuk:\n\n(Berikut ini saya lampirkan gambar bukti transfer QRIS / screenshot)*${namaProduk}*`);
+        document.getElementById('wa-confirm').setAttribute('href', `https://wa.me/${noWA}?text=${teksWA}`);
+
+        switchTab('pembayaran');
+        showToast("Silakan scan! Sistem sedang memantau pembayaran Anda.", "success");
+
+        // ==========================================
+        // 4. RADAR PENGECEK STATUS REAL-TIME KE SUPABASE
+        // ==========================================
+        if(window.cekPembayaranInterval) clearInterval(window.cekPembayaranInterval);
+
+        window.cekPembayaranInterval = setInterval(async () => {
+            try {
+                const { data: cekData } = await supabaseClient
+                    .from('orders')
+                    .select('status')
+                    .eq('id', orderData.id)
+                    .single();
+
+                if(cekData && cekData.status === "SUCCESS") {
+                    clearInterval(window.cekPembayaranInterval); 
+
+                    await supabaseClient.from('orders').update({status: 'proses'}).eq('id', orderData.id);
+
+                    const infoXoftware = deskripsi ? deskripsi.replace(/<[^>]*>?/gm, '') : '';
+                    const teksWASukses = encodeURIComponent(`Halo Admin Joki AU2Hub,\n\nPembayaran DANA saya sudah terkonfirmasi sukses otomatis oleh sistem!\n\nPesanan: *${namaProduk}*\nTotal: Rp ${hargaDenganKodeUnik.toLocaleString('id-ID')}\n\n${infoXoftware}\n\n(Berikut ini saya lampirkan gambar bukti transfer QRIS / screenshot)`);
+
+                    const wadahPembayaran = document.getElementById('qris-container');
+                    if (wadahPembayaran) {
+                        wadahPembayaran.innerHTML = `
+                            <div class="flex flex-col items-center justify-center py-6 text-center modal-anim">
+                            <div class="relative w-24 h-24 mb-6">
+                            <div class="absolute inset-0 bg-brand-success rounded-full animate-ping opacity-20"></div>
+                            <i class="fas fa-check-circle text-7xl text-brand-success relative z-10 drop-shadow-[0_0_20px_rgba(37,211,102,0.8)]"></i>
+                            </div>
+                            <h2 class="text-2xl font-extrabold text-white mb-2 tracking-tight">Pembayaran Berhasil!</h2>
+                            <p class="text-gray-400 text-xs mb-8 leading-relaxed px-4">Dana senilai <strong class="text-brand-success">Rp ${hargaDenganKodeUnik.toLocaleString('id-ID')}</strong> telah diterima sistem.<br>Silakan hubungi Admin untuk proses pesanan Anda.</p>
+                            <div class="w-full space-y-3">
+                            <a href="https://wa.me/${noWA}?text=${teksWASukses}" target="_blank" class="flex justify-center items-center w-full bg-[#25D366] hover:bg-[#20bd5a] text-white py-4 rounded-xl font-bold shadow-[0_8px_20px_rgba(37,211,102,0.3)] active:scale-95 transition-all uppercase tracking-wider text-xs">
+                            <i class="fab fa-whatsapp text-lg mr-2"></i> Chat Admin (Kirim Data)
+                            </a>
+                            <button onclick="window.location.reload()" class="w-full bg-white/5 text-white py-4 rounded-xl font-bold active:scale-95 transition-all uppercase tracking-wider text-xs border border-white/10 hover:bg-white/10">Selesai & Kembali</button>
+                            </div>
+                            </div>
+                        `;
+                    }
+                }
+            } catch(e) { console.log("Radar tertunda..."); }
+        }, 1000);
+
+    } catch (error) {
+        showToast("Gangguan jaringan / Database.", "error");
+        console.error(error);
+    }
 }
-}
+
 
 
 
@@ -9066,7 +9064,16 @@ async function selesaikanPesanan() {
     showToast("Menyelesaikan pesanan...", "info");
     
     try {
-        // Update status di Supabase menjadi 'selesai'
+        // 1. Ambil detail data pesanan terlebih dahulu untuk memeriksa data penjual & harga
+        const { data: order, error: fetchOrderErr } = await supabaseClient
+            .from('orders')
+            .select('seller_id, price, product_name')
+            .eq('id', activeOrderIdToPay)
+            .single();
+        
+        if (fetchOrderErr) throw fetchOrderErr;
+
+        // 2. Update status order menjadi 'selesai'
         const { error } = await supabaseClient
             .from('orders')
             .update({ status: 'selesai' })
@@ -9074,6 +9081,37 @@ async function selesaikanPesanan() {
             
         if (error) throw error;
         
+        // 3. MESIN OTOMATIS: Jika pesanan memiliki seller_id (Transaksi Pasar Player)
+        if (order && order.seller_id) {
+            // Ambil saldo berjalan milik penjual saat ini
+            const { data: sellerProfile } = await supabaseClient
+                .from('profiles')
+                .select('balance')
+                .eq('id', order.seller_id)
+                .single();
+                
+            if (sellerProfile) {
+                const saldoLama = Number(sellerProfile.balance || 0);
+                const saldoBaru = saldoLama + Number(order.price);
+                
+                // Suntikkan saldo baru ke akun penjual
+                await supabaseClient
+                    .from('profiles')
+                    .update({ balance: saldoBaru })
+                    .eq('id', order.seller_id);
+                    
+                // Catat mutasi penambahan dana ke riwayat wallet_transactions penjual
+                await supabaseClient
+                    .from('wallet_transactions')
+                    .insert({
+                        user_id: order.seller_id,
+                        amount: order.price,
+                        type: 'INCOME',
+                        description: `Penjualan: ${order.product_name}`
+                    });
+            }
+        }
+
         showToast("Pesanan selesai! Terima kasih.", "success");
         tambahExp(50); // [BONUS] Kasih hadiah EXP karena berhasil transaksi!
         
@@ -9085,6 +9123,7 @@ async function selesaikanPesanan() {
         showToast("Gagal menyelesaikan pesanan: " + err.message, "error");
     }
 }
+
 
 
 // EKSEKUSI LANJUTKAN PEMBAYARAN VIA QRIS DANA
@@ -9671,10 +9710,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 <h2 class="text-xl font-extrabold text-white flex items-center gap-2">
                     <span class="w-1.5 h-6 bg-brand-success rounded-full"></span> Pasar Player
                 </h2>
-                <div class="flex items-center gap-2">
-                    <button onclick="loadPasarPlayer(true)" class="text-brand-success bg-brand-success/10 w-8 h-8 rounded-full flex items-center justify-center active:scale-90 transition-all border border-brand-success/30"><i class="fas fa-sync-alt"></i></button>
-                    <button onclick="bukaModalJualBarang()" class="bg-brand-success/10 text-brand-success px-3 py-1.5 rounded-lg text-[10px] font-bold border border-brand-success/30 active:scale-95 transition-all"><i class="fas fa-plus mr-1"></i> Jual</button>
-                </div>
+<div class="flex items-center gap-2">
+    <button onclick="loadPasarPlayer(true)" class="text-brand-success bg-brand-success/10 w-8 h-8 rounded-full flex items-center justify-center active:scale-90 transition-all border border-brand-success/30"><i class="fas fa-sync-alt"></i></button>
+    <button onclick="bukaModalSaldoDompet()" class="bg-brand-info/10 text-brand-info px-3 py-1.5 rounded-lg text-[10px] font-bold border border-brand-info/30 active:scale-95 transition-all"><i class="fas fa-wallet mr-1"></i> Dompet</button>
+    <button onclick="bukaModalJualBarang()" class="bg-brand-success/10 text-brand-success px-3 py-1.5 rounded-lg text-[10px] font-bold border border-brand-success/30 active:scale-95 transition-all"><i class="fas fa-plus mr-1"></i> Jual</button>
+</div>
+
             </div>
             <div class="relative mb-5">
                 <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 text-xs"></i>
@@ -9717,9 +9758,10 @@ async function loadPasarPlayer(forceRefresh = false) {
     }
 
     try {
+        // [PERBAIKAN] Tambahkan 'exp' di dalam kurung kurawal profiles
         const { data, error } = await supabaseClient
             .from('player_products')
-            .select('*, profiles:user_id(nickname, avatar_url)')
+            .select('*, profiles:user_id(nickname, avatar_url, exp)') 
             .order('created_at', { ascending: false });
 
         if (error) throw error;
@@ -9730,6 +9772,7 @@ async function loadPasarPlayer(forceRefresh = false) {
         gridPasar.innerHTML = '<div class="col-span-2 text-center py-10 text-red-500 text-xs">Gagal menarik data pasar. Cek koneksi.</div>';
     }
 }
+
 
 // FUNGSI GAMBAR KARTU KE LAYAR
 function renderGridPasar(dataList) {
@@ -9746,6 +9789,12 @@ function renderGridPasar(dataList) {
         const sellerName = item.profiles?.nickname || 'Anonim';
         const formatHarga = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(item.price);
 
+        // [PERBAIKAN] Logika pembuat Lencana Kasta Penjual
+        const sellerExp = item.profiles?.exp || 0;
+        const sellerLevel = hitungStatusLevel(sellerExp).level;
+        const sellerVideoCount = allVideosData.filter(v => String(v.user_id) === String(item.user_id)).length;
+        const badgeHtml = getBadgeByLevelAndVideos(sellerLevel, sellerVideoCount);
+
         const cardHtml = `
             <div onclick="bukaDetailPasar('${item.id}')" class="bg-black/40 border border-white/10 rounded-2xl overflow-hidden flex flex-col hover:border-brand-success/50 transition-colors cursor-pointer group shadow-sm">
                 <div class="relative w-full aspect-square bg-brand-dark/50 overflow-hidden">
@@ -9756,14 +9805,15 @@ function renderGridPasar(dataList) {
                     <h4 class="text-xs text-white font-bold line-clamp-2 mb-1.5">${item.title}</h4>
                     <div class="text-brand-success text-sm font-extrabold mb-2">${formatHarga}</div>
                     <div class="mt-auto flex items-center gap-2 border-t border-white/5 pt-2">
-                        <img src="${sellerAvatar}" class="w-5 h-5 rounded-full object-cover border border-white/10">
-                        <span class="text-[9px] text-gray-400 truncate w-full font-medium">${sellerName}</span>
+                        <img src="${sellerAvatar}" class="w-5 h-5 rounded-full object-cover border border-white/10 shrink-0">
+                        <span class="text-[9px] text-gray-400 truncate w-full font-medium flex items-center gap-1">${sellerName} <span class="scale-[0.8] origin-left inline-flex shrink-0">${badgeHtml}</span></span>
                     </div>
                 </div>
             </div>`;
         grid.insertAdjacentHTML('beforeend', cardHtml);
     });
 }
+
 
 // LOGIKA UPLOAD BARANG JUALAN
 function bukaModalJualBarang() {
@@ -9837,7 +9887,13 @@ function bukaDetailPasar(idProduk) {
     const produk = globalDataPasar.find(item => item.id === idProduk);
     if (!produk) return;
 
-    idPenjualAktif = produk.user_id; // Simpan ID penjual untuk tombol profil/chat
+    idPenjualAktif = produk.user_id; 
+
+    // [PERBAIKAN] Logika Lencana untuk Laci Detail
+    const sellerExp = produk.profiles?.exp || 0;
+    const sellerLevel = hitungStatusLevel(sellerExp).level;
+    const sellerVideoCount = allVideosData.filter(v => String(v.user_id) === String(produk.user_id)).length;
+    const badgeHtml = getBadgeByLevelAndVideos(sellerLevel, sellerVideoCount);
 
     document.getElementById('pasar-detail-foto').src = produk.image_url;
     document.getElementById('pasar-detail-kategori').innerText = produk.category;
@@ -9845,7 +9901,9 @@ function bukaDetailPasar(idProduk) {
     document.getElementById('pasar-detail-harga').innerText = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(produk.price);
     document.getElementById('pasar-detail-deskripsi').innerText = produk.description || "-";
     document.getElementById('pasar-detail-avatar').src = produk.profiles?.avatar_url || 'https://placehold.co/100x100/1a1133/2BD975?text=AV';
-    document.getElementById('pasar-detail-penjual').innerText = produk.profiles?.nickname || 'Anonim';
+    
+    // [PERBAIKAN] Suntikkan lencana tepat di sebelah nickname
+    document.getElementById('pasar-detail-penjual').innerHTML = `${produk.profiles?.nickname || 'Anonim'} <span class="scale-[0.85] origin-left inline-flex ml-1">${badgeHtml}</span>`;
 
     const btnBeli = document.getElementById('btn-beli-pasar');
     btnBeli.onclick = () => checkoutPasar(produk.title, produk.price, produk.id);
@@ -9860,6 +9918,7 @@ function bukaDetailPasar(idProduk) {
 
     document.getElementById('modal-detail-pasar').classList.replace('hidden', 'flex');
 }
+
 
 function tutupDetailPasar() {
     document.getElementById('modal-detail-pasar').classList.replace('flex', 'hidden');
@@ -9882,11 +9941,148 @@ function chatPenjualPasar() {
 // LOGIKA BAYAR MELALUI ROBOT DANA (Meminjam fungsi Checkout yang sudah ada)
 function checkoutPasar(nama, harga, id) {
     tutupDetailPasar();
-    // Panggil fungsi robot DANA yang sudah kamu buat sebelumnya di kode utama
-    checkoutRobotDANA("[PASAR] " + nama, harga, "Pembelian item dari Pasar Player.");
+    
+    // Cari data produk untuk mendapatkan user_id milik penjual
+    const produk = globalDataPasar.find(item => item.id === id);
+    const sellerId = produk ? produk.user_id : null;
+    
+    // Lempar parameter sellerId ke dalam fungsi checkoutRobotDANA
+    checkoutRobotDANA("[PASAR] " + nama, harga, "Pembelian item dari Pasar Player.", sellerId);
 }
 </script>
 
+<div id="modal-saldo-dompet" class="fixed inset-0 z-[600] hidden items-end sm:items-center justify-center bg-black/90 backdrop-blur-md px-0 sm:px-6 transition-all duration-300">
+    <div class="bg-brand-card w-full max-w-md sm:rounded-3xl rounded-t-[2.5rem] border border-white/10 shadow-2xl relative modal-anim flex flex-col h-[85vh] sm:h-auto sm:max-h-[85vh] overflow-hidden">
+        
+        <div class="flex justify-between items-center p-5 border-b border-white/5 bg-brand-dark/80 backdrop-blur-xl shrink-0">
+            <h3 class="font-extrabold text-white text-sm flex items-center gap-2">
+                <i class="fas fa-wallet text-brand-info"></i> Dompet Seller
+            </h3>
+            <button onclick="tutupModalSaldoDompet()" class="text-gray-400 hover:text-white w-8 h-8 rounded-full bg-white/5 flex items-center justify-center active:scale-95 transition-all"><i class="fas fa-times"></i></button>
+        </div>
+
+        <div class="p-5 bg-black/20 border-b border-white/5 shrink-0 text-center relative overflow-hidden">
+            <div class="absolute -right-10 -top-10 w-32 h-32 bg-brand-success/10 rounded-full blur-2xl"></div>
+            <span class="text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-1 block">Total Saldo Pendapatan</span>
+            <div id="dompet-angka-saldo" class="text-3xl font-black text-brand-success tracking-tight mb-4">Rp 0</div>
+            
+            <button onclick="prosesTarikSaldo()" class="w-full bg-brand-info hover:bg-[#35a2f2] text-brand-dark py-3 rounded-xl font-extrabold text-xs tracking-wider uppercase active:scale-95 transition-all shadow-[0_4px_15px_rgba(70,179,255,0.2)]">
+                <i class="fas fa-money-bill-wave mr-1"></i> Tarik Saldo (Withdraw)
+            </button>
+        </div>
+
+        <div class="p-4 bg-brand-dark/40 shrink-0 border-b border-white/5">
+            <span class="text-[10px] font-extrabold text-gray-500 uppercase tracking-widest flex items-center gap-1.5">
+                <i class="fas fa-history"></i> Riwayat Mutasi Dompet
+            </span>
+        </div>
+        
+        <div id="dompet-history-list" class="flex-1 overflow-y-auto p-4 hide-scroll space-y-3 bg-black/40 pb-10">
+            </div>
+
+    </div>
+</div>
+
+<script>
+// Fungsi Buka Laci Dompet
+async function bukaModalSaldoDompet() {
+    if (!currentUser) return showToast("Silakan login terlebih dahulu!", "error");
+    
+    document.getElementById('modal-saldo-dompet').classList.replace('hidden', 'flex');
+    fetchSaldoDanMutasi();
+}
+
+// Fungsi Tutup Laci Dompet
+function tutupModalSaldoDompet() {
+    document.getElementById('modal-saldo-dompet').classList.replace('flex', 'hidden');
+}
+
+// Fungsi Tarik Saldo Real-Time dari Server Supabase
+async function fetchSaldoDanMutasi() {
+    const listContainer = document.getElementById('dompet-history-list');
+    listContainer.innerHTML = '<div class="text-center py-10 text-gray-500 text-xs"><i class="fas fa-circle-notch fa-spin text-brand-info text-2xl mb-2"></i><br>Menghubungkan ke Dompet...</div>';
+
+    try {
+        // 1. Ambil data Saldo Murni terbaru dari profil user
+        const { data: profile, error: profErr } = await supabaseClient
+            .from('profiles')
+            .select('balance')
+            .eq('id', currentUser.id)
+            .single();
+
+        if (profErr) throw profErr;
+
+        // Set ke layar utama dompet
+        const saldoSekarang = profile.balance || 0;
+        document.getElementById('dompet-angka-saldo').innerText = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(saldoSekarang);
+
+        // 2. Ambil riwayat mutasi dompet
+        const { data: txData, error: txErr } = await supabaseClient
+            .from('wallet_transactions')
+            .select('*')
+            .eq('user_id', currentUser.id)
+            .order('created_at', { ascending: false });
+
+        if (txErr) throw txErr;
+
+        if (txData && txData.length > 0) {
+            listContainer.innerHTML = txData.map(tx => {
+                const isIncome = tx.type === 'INCOME';
+                const labelWarna = isIncome ? 'text-brand-success bg-brand-success/10 border-brand-success/20' : 'text-red-500 bg-red-500/10 border-red-500/20';
+                const tandaNominal = isIncome ? '+' : '-';
+                const ikonTx = isIncome ? 'fa-arrow-down' : 'fa-arrow-up';
+
+                return `
+                <div class="bg-brand-card border border-white/5 p-3 rounded-xl flex justify-between items-center relative overflow-hidden">
+                    <div class="flex items-center gap-3 min-w-0">
+                        <div class="w-8 h-8 rounded-lg flex items-center justify-center border shrink-0 ${labelWarna}">
+                            <i class="fas ${ikonTx} text-xs"></i>
+                        </div>
+                        <div class="truncate">
+                            <h4 class="text-xs font-bold text-white truncate">${tx.description}</h4>
+                            <p class="text-[9px] text-gray-500 mt-0.5">${timeAgo(tx.created_at)}</p>
+                        </div>
+                    </div>
+                    <span class="text-xs font-black shrink-0 ${isIncome ? 'text-brand-success' : 'text-red-400'}">
+                        ${tandaNominal} Rp ${Number(tx.amount).toLocaleString('id-ID')}
+                    </span>
+                </div>`;
+            }).join('');
+        } else {
+            listContainer.innerHTML = '<div class="text-center py-10 text-gray-500 text-xs"><i class="fas fa-folder-open text-3xl mb-2 opacity-30"></i><br>Belum ada riwayat mutasi dana.</div>';
+        }
+    } catch (err) {
+        listContainer.innerHTML = '<div class="text-center py-10 text-red-500 text-xs">Gagal memuat neraca dompet.</div>';
+    }
+}
+
+// Fungsi Trigger Penarikan Saldo Ke WhatsApp Admin ADT
+async function prosesTarikSaldo() {
+    try {
+        const { data: profile } = await supabaseClient.from('profiles').select('balance, nickname').eq('id', currentUser.id).single();
+        const saldoMurni = profile.balance || 0;
+
+        if (saldoMurni < 10000) {
+            return showToast("Batas minimal penarikan adalah Rp 10.000", "error");
+        }
+
+        const nomorRekeningTujuan = await customPrompt(`Total saldomu: Rp ${saldoMurni.toLocaleString('id-ID')}\n\nMasukkan Nama Bank / E-Wallet & Nomor Rekening Tujuan Pencairan:`, "DANA - 08xxxxxxxxxx");
+        
+        if (!nomorRekeningTujuan) return;
+
+        // Siapkan Teks Pengiriman Pesan WA
+        const noWAAdmin = "6283815584661";
+        const teksPencairan = encodeURIComponent(`Halo Owner ADT Store,\n\nSaya ingin mengajukan Penarikan Saldo Dompet Seller AU2Hub:\n\nUsername: *${profile.nickname}*\nTotal Tarik: *Rp ${saldoMurni.toLocaleString('id-ID')}*\nTujuan: *${nomorRekeningTujuan}*\n\n(Mohon diproses untuk pencairan dana pasar player, terimakasih admin!)`);
+        
+        window.open(`https://wa.me/${noWAAdmin}?text=${teksPencairan}`, '_blank');
+        showToast("Form pencairan terkirim ke WhatsApp Admin!", "success");
+        tutupModalSaldoDompet();
+
+    } catch (e) {
+        showToast("Gagal memproses penarikan.", "error");
+    }
+}
+</script>
 
 
 </body>
