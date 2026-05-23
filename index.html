@@ -4013,8 +4013,8 @@ async function loadComments(videoId, silent = false) {
     cancelReply();
 
     try {
-        const response = await fetch(`/api/comment?video_id=${videoId}`);
-        const data = await response.json();
+const response = await fetch(`/api/comment?video_id=${videoId}&t=${Date.now()}`, { cache: 'no-store' });
+const data = await response.json();
 
         document.getElementById('drawer-comment-count').innerText = data.length || 0;
 
@@ -4151,41 +4151,42 @@ async function deleteComment(cid) {
 
     const cBox = document.getElementById('comment-box-' + cid);
     if (cBox) {
-        cBox.style.opacity = '0.4'; // Beri efek redup menandakan sedang loading hapus
+        cBox.style.opacity = '0.4'; // Beri efek redup menandakan sedang diproses
     }
 
     try {
-        // 1. Eksekusi penghapusan total dari database Supabase
-        const { error } = await supabaseClient.from('comments').delete().eq('id', cid);
+        // 1. Eksekusi penghapusan & paksa Supabase melapor balik dengan .select()
+        const { data, error } = await supabaseClient.from('comments').delete().eq('id', cid).select();
+        
         if (error) throw error;
 
-        // 2. Jika sukses di server, CABUT total elemen dari aplikasi (DOM) agar tidak nyangkut saat dimuat ulang
-        if (cBox) cBox.remove();
-
-        showToast("Komentar berhasil dihapus permanen", "success");
-
-        // 3. Turunkan angka counter di laci atas secara real-time
-        const countEl = document.getElementById('drawer-comment-count');
-        if (countEl) {
-            countEl.innerText = Math.max(0, parseInt(countEl.innerText) - 1);
+        // 🔥 CEK FATAL: Jika array kosong, artinya Supabase diam-diam menolak menghapus karena RLS
+        if (!data || data.length === 0) {
+            throw new Error("Ditolak oleh Server (Cek aturan RLS Supabase-mu).");
         }
 
-        // 4. Update juga angka counter komentar yang melayang di atas video feed utama
+        // 2. Cabut elemen dari HTML secara total
+        if (cBox) cBox.remove();
+        showToast("Komentar berhasil dihapus permanen", "success");
+
+        // 3. Turunkan counter laci
+        const countEl = document.getElementById('drawer-comment-count');
+        if (countEl) countEl.innerText = Math.max(0, parseInt(countEl.innerText) - 1);
+
+        // 4. Update counter di layar utama
         if (activeVideoId) {
             const container = document.querySelector(`.comment-count-container[data-vid="${activeVideoId}"]`);
-            if (container) {
-                updateCommentCountUI(activeVideoId, container);
-            }
+            if (container) updateCommentCountUI(activeVideoId, container);
         }
 
     } catch (e) {
-        console.error("Gagal menghapus komentar:", e);
-        showToast("Gagal menghapus komentar. Cek koneksi/database.", "error");
-        
-        // Kembalikan tampilan komentar jika gagal terhapus di database (Rollback UI)
-        if (cBox) cBox.style.opacity = '1'; 
+        console.error("Gagal menghapus:", e);
+        // Tampilkan pesan error ASLI agar kita tahu penyebabnya
+        showToast(e.message || "Gagal menghapus komentar.", "error");
+        if (cBox) cBox.style.opacity = '1'; // Terangkan kembali jika gagal
     }
 }
+
 
 
 function toggleReplies(id) {
@@ -4342,12 +4343,15 @@ console.error("Gagal update UI like", e);
 }
 
 async function updateCommentCountUI(videoId, containerDiv) {
-try {
-const response = await fetch(`/api/comment?video_id=${videoId}`); const data = await response.json();
-const countSpan = containerDiv.querySelector('.comment-count-display');
-if (countSpan && Array.isArray(data)) countSpan.innerText = data.length;
-} catch(e) {}
+    try {
+        // 🔥 Tambahkan pelindung Cache
+        const response = await fetch(`/api/comment?video_id=${videoId}&t=${Date.now()}`, { cache: 'no-store' }); 
+        const data = await response.json();
+        const countSpan = containerDiv.querySelector('.comment-count-display');
+        if (countSpan && Array.isArray(data)) countSpan.innerText = data.length;
+    } catch(e) {}
 }
+
 
 async function likeVideo(videoId, btn) {
 // Wajib login untuk melike
