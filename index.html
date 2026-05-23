@@ -4006,17 +4006,17 @@ function closeComments() {
 }
 
 async function loadComments(videoId, silent = false) {
-const list = document.getElementById('comment-list');
-if (!silent) {
-list.innerHTML = '<div class="flex justify-center mt-10"><i class="fas fa-spinner fa-spin text-brand-accent text-3xl"></i></div>';
-}
-cancelReply();
+    const list = document.getElementById('comment-list');
+    if (!silent) {
+        list.innerHTML = '<div class="flex justify-center mt-10"><i class="fas fa-spinner fa-spin text-brand-accent text-3xl"></i></div>';
+    }
+    cancelReply();
 
-try {
-const response = await fetch(`/api/comment?video_id=${videoId}`);
-const data = await response.json();
+    try {
+        const response = await fetch(`/api/comment?video_id=${videoId}`);
+        const data = await response.json();
 
-document.getElementById('drawer-comment-count').innerText = data.length || 0;
+        document.getElementById('drawer-comment-count').innerText = data.length || 0;
 
         if (data && data.length > 0) {
             // 🔥 JURUS ANTI GAGAL 1: Paksa semua ID jadi String bersih tanpa spasi tersembunyi
@@ -4024,26 +4024,37 @@ document.getElementById('drawer-comment-count').innerText = data.length || 0;
                 c.user_id = String(c.user_id || c.User_ID || c.userId || c.userid).trim();
             });
 
-            // Ambil kumpulan ID yang valid saja
-            const userIds = [...new Set(data.map(c => c.user_id))].filter(id => id && id !== 'undefined');
+            // Ambil kumpulan ID dan Nickname yang valid untuk jalur cadangan
+            const userIds = [...new Set(data.map(c => c.user_id))].filter(id => id && id !== 'undefined' && id !== 'null');
+            const nicknames = [...new Set(data.map(c => c.nickname))].filter(n => n && n !== 'undefined' && n !== 'null');
 
             let profilesData = [];
-            if (userIds.length > 0) {
-                // Tarik data EXP dari tabel profiles
-                const { data: pData } = await supabaseClient.from('profiles').select('id, exp').in('id', userIds);
+            if (nicknames.length > 0) {
+                // Tarik data EXP dan ID Asli berdasarkan Nickname (Karena Nickname selalu valid di komentar)
+                const { data: pData } = await supabaseClient.from('profiles').select('id, nickname, exp').in('nickname', nicknames);
+                if (pData) profilesData = pData;
+            } else if (userIds.length > 0) {
+                // Fallback jika kebetulan memakai ID
+                const { data: pData } = await supabaseClient.from('profiles').select('id, nickname, exp').in('id', userIds);
                 if (pData) profilesData = pData;
             }
             
-            // 🔥 JURUS ANTI GAGAL 2: Penentuan EXP super akurat!
+            // 🔥 JURUS ANTI GAGAL 2: Penentuan EXP super akurat & Auto-Repair ID
             data.forEach(c => {
-                // Jika komentar ini adalah MILIK KITA SENDIRI, abaikan server dan pakai data HP!
-                if (currentUser && c.user_id === String(currentUser.id).trim()) {
+                // Jika ini komentar MILIK KITA (Cocokkan lewat ID atau Nickname)
+                if (currentUser && (c.user_id === String(currentUser.id).trim() || c.nickname === userProfile?.nickname)) {
                     c.exp = (typeof userProfile !== 'undefined' && userProfile.exp) ? userProfile.exp : 0;
+                    c.user_id = currentUser.id; // PERBAIKI ID SECARA PAKSA agar hitungan video jalan!
                 } 
                 // Jika komentar orang lain, cocokkan dengan data server
                 else {
-                    const p = profilesData.find(x => String(x.id).trim() === c.user_id);
+                    const p = profilesData.find(x => String(x.id).trim() === c.user_id || x.nickname === c.nickname);
                     c.exp = p ? p.exp : 0;
+                    
+                    // PERBAIKI ID orang lain jika terputus dari server, agar lencana videonya ikut jalan!
+                    if (p && (c.user_id === 'undefined' || !c.user_id || c.user_id === 'null')) {
+                        c.user_id = p.id; 
+                    }
                 }
             });
 
@@ -4051,26 +4062,27 @@ document.getElementById('drawer-comment-count').innerText = data.length || 0;
             const replies = data.filter(c => c.parent_id);
 
 
-if(mainComments.length === 0) {
-list.innerHTML = '<p class="text-center text-xs text-gray-500 italic mt-10">Belum ada komentar.</p>';
-return;
+            if(mainComments.length === 0) {
+                list.innerHTML = '<p class="text-center text-xs text-gray-500 italic mt-10">Belum ada komentar.</p>';
+                return;
+            }
+
+            let htmlOutput = '';
+            mainComments.forEach(c => {
+                const childReplies = replies.filter(r => r.parent_id == c.id);
+                htmlOutput += buildCommentHTML(c, childReplies);
+            });
+            list.innerHTML = htmlOutput;
+
+            setTimeout(() => { data.forEach(c => fetchCommentLikes(c.id)); }, 50);
+        } else {
+            list.innerHTML = '<p class="text-center text-xs text-gray-500 italic mt-10">Jadilah yang pertama berkomentar!</p>';
+        }
+    } catch(e) {
+        if(!silent) list.innerHTML = '<p class="text-center text-xs text-red-500 mt-10">Gagal memuat komentar.</p>';
+    }
 }
 
-let htmlOutput = '';
-mainComments.forEach(c => {
-const childReplies = replies.filter(r => r.parent_id == c.id);
-htmlOutput += buildCommentHTML(c, childReplies);
-});
-list.innerHTML = htmlOutput;
-
-setTimeout(() => { data.forEach(c => fetchCommentLikes(c.id)); }, 50);
-} else {
-list.innerHTML = '<p class="text-center text-xs text-gray-500 italic mt-10">Jadilah yang pertama berkomentar!</p>';
-}
-} catch(e) {
-if(!silent) list.innerHTML = '<p class="text-center text-xs text-red-500 mt-10">Gagal memuat komentar.</p>';
-}
-}
 
 function buildCommentHTML(comment, replies = []) {
 const ava = comment.avatar_url || `https://ui-avatars.com/api/?name=${comment.nickname || 'User'}&background=1A1133&color=fff`;
