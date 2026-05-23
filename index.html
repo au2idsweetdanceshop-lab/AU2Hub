@@ -4149,25 +4149,68 @@ async function deleteComment(cid) {
     const konfirmasi = await customConfirm("Yakin ingin menghapus komentar ini?");
     if (!konfirmasi) return;
 
+    // 1. Tangkap elemen kotak komentarnya di layar
+    const commentBox = document.getElementById(`comment-box-${cid}`);
+    
+    // Beri efek redup sedikit saat sedang loading dihapus
+    if (commentBox) commentBox.style.opacity = '0.5';
+
     try {
-        // 1. Hapus dari Supabase
+        // 2. Hapus data dari Supabase
         const { error } = await supabaseClient.from('comments').delete().eq('id', cid);
         
         if (error) throw error;
 
-        // 2. Tampilkan notifikasi sukses
+        // 3. HAPUS LANGSUNG DARI LAYAR (Tanpa perlu reload API)
+        if (commentBox) {
+            // Animasi geser dan menghilang yang mulus
+            commentBox.style.transition = 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)';
+            commentBox.style.transform = 'translateX(-20px)';
+            commentBox.style.opacity = '0';
+            
+            setTimeout(() => {
+                commentBox.remove(); // Hapus fisik HTML-nya
+
+                // Update angka total komentar di Header Laci Komentar
+                const countEl = document.getElementById('drawer-comment-count');
+                if(countEl) {
+                    let currentCount = parseInt(countEl.innerText) || 0;
+                    countEl.innerText = Math.max(0, currentCount - 1);
+                }
+
+                // Update angka jumlah komentar di Feed Video (Kanan Bawah)
+                const feedCountContainer = document.querySelector(`.comment-count-container[data-vid="${activeVideoId}"]`);
+                if (feedCountContainer) {
+                    const feedCountSpan = feedCountContainer.querySelector('.comment-count-display');
+                    if (feedCountSpan) {
+                        let feedCount = parseInt(feedCountSpan.innerText) || 0;
+                        feedCountSpan.innerText = Math.max(0, feedCount - 1);
+                    }
+                }
+                
+                // Cek jika komentar habis, munculkan teks kosong
+                const listContainer = document.getElementById('comment-list');
+                if (listContainer && listContainer.children.length === 0) {
+                    listContainer.innerHTML = '<p class="text-center text-xs text-gray-500 italic mt-10">Belum ada komentar.</p>';
+                }
+
+            }, 300);
+        }
+
+        // 4. Tampilkan notifikasi sukses
         showToast("Komentar berhasil dihapus", "success");
 
-        // 3. 🔥 TRIK PENTING: Refresh data agar UI sinkron dengan DB
-        // Kita panggil ulang fungsi loadComments agar dia fetch data baru dari Supabase
-        // Tanpa cache karena kita sudah tambahkan timestamp di loadComments sebelumnya
-        await loadComments(activeVideoId); 
+        // 🔥 BARIS INI KITA HAPUS/MATIKAN agar tidak menembak API lama
+        // await loadComments(activeVideoId); 
 
     } catch (e) {
         console.error("Gagal hapus:", e);
+        // Jika gagal, kembalikan warna komentar ke normal
+        if (commentBox) commentBox.style.opacity = '1';
         showToast("Gagal menghapus!", "error");
     }
 }
+
 
 
 
