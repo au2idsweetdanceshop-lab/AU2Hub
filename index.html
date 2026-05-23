@@ -4162,21 +4162,28 @@ async function deleteComment(cid) {
     if (commentBox) commentBox.style.opacity = '0.5';
 
     try {
-        // 🔥 KITA GANTI: Tambahkan .select() di akhir untuk mengecek kebenaran database
-        const { data: deletedData, error } = await supabaseClient
+        // 1. Lakukan perintah Hapus (TANPA embel-embel .select() agar tidak bentrok)
+        const { error: deleteError } = await supabaseClient
             .from('comments')
             .delete()
-            .eq('id', cid)
-            .select(); 
+            .eq('id', cid);
         
-        if (error) throw error;
+        if (deleteError) throw deleteError;
 
-        // 🚨 DETEKSI SILENT FAILURE: Jika array kosong, berarti database MENOLAK dihapus
-        if (!deletedData || deletedData.length === 0) {
-            throw new Error("Ditolak! Cek RLS (Row Level Security) 'DELETE' di Supabase kamu.");
+        // 2. CEK MANUAL: Apakah komentar ini MASIH ADA di database?
+        const { data: checkData, error: checkError } = await supabaseClient
+            .from('comments')
+            .select('id')
+            .eq('id', cid);
+
+        if (checkError) throw checkError;
+
+        // 3. DETEKSI: Jika data masih ketemu, berarti Supabase diam-diam memblokir hapusnya!
+        if (checkData && checkData.length > 0) {
+            throw new Error("Gagal! ID Akunmu tidak cocok dengan pembuat komentar ini.");
         }
 
-        // HAPUS LANGSUNG DARI LAYAR
+        // 4. JIKA BENAR-BENAR HILANG DARI DATABASE, HAPUS DARI LAYAR
         if (commentBox) {
             commentBox.style.transition = 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)';
             commentBox.style.transform = 'translateX(-20px)';
@@ -4185,7 +4192,7 @@ async function deleteComment(cid) {
             setTimeout(() => {
                 commentBox.remove(); 
                 
-                // Kurangi angka jumlah komentar di layar
+                // Update angka jumlah komentar
                 const countEl = document.getElementById('drawer-comment-count');
                 if(countEl) countEl.innerText = Math.max(0, (parseInt(countEl.innerText) || 0) - 1);
 
@@ -4202,10 +4209,11 @@ async function deleteComment(cid) {
     } catch (e) {
         console.error("Gagal hapus:", e);
         if (commentBox) commentBox.style.opacity = '1';
-        // Munculkan notifikasi error ke layar agar kamu tahu apa masalah aslinya
+        // Tampilkan alasan kenapa gagal
         showToast(e.message || "Gagal menghapus!", "error");
     }
 }
+
 
 
 
