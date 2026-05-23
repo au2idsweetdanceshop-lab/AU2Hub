@@ -5113,6 +5113,54 @@ showMsgOptions(msgId, senderId);
 }, 500);
 }
 
+// ==========================================
+// FUNGSI RENDER BARIS CHAT DI INBOX
+// ==========================================
+function renderRow(item, isGroup) {
+    // 1. Amankan teks pesan dari tag media
+    let lastMessageText = "Belum ada pesan";
+    if (item.latestMsg && item.latestMsg.message) {
+        lastMessageText = item.latestMsg.message;
+        if (lastMessageText.startsWith('[IMG]')) lastMessageText = "📷 Foto";
+        else if (lastMessageText.startsWith('[VIDEO]')) lastMessageText = "🎥 Video";
+        else if (lastMessageText.startsWith('[AUDIO]')) lastMessageText = "🎙️ Pesan Suara";
+        else if (lastMessageText.startsWith('[SISTEM]')) lastMessageText = "Pemberitahuan Sistem";
+        else if (lastMessageText.startsWith('[REPLY:')) lastMessageText = "Balasan pesan...";
+    }
+
+    // 2. Siapkan badge pesan belum dibaca
+    let unreadBadge = item.unread > 0 
+        ? `<span class="bg-brand-accent text-white text-[8px] font-bold w-4 h-4 flex items-center justify-center rounded-full ml-2 shrink-0 shadow-md">${item.unread > 99 ? '99+' : item.unread}</span>` 
+        : '';
+
+    // 3. Atur URL foto dan efek cincin (story ring)
+    let avatarUrl = item.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(item.name)}&background=1A1133&color=fff`;
+    let ringClass = item.hasStory && !isGroup ? 'story-ring' : '';
+    let imgBorder = item.hasStory && !isGroup ? 'border-2 border-brand-card' : 'border border-white/10';
+
+    // 4. Amankan nama yang memiliki tanda kutip (contoh: Jum'at)
+    let safeName = item.name.replace(/'/g, "\\'");
+    let timeText = item.latestMsg ? timeAgo(item.latestMsg.created_at) : '';
+
+    return `
+    <div onclick="openChatRoom('${item.id}', '${safeName}', '${avatarUrl}', ${isGroup})" class="flex items-center p-3 hover:bg-white/5 cursor-pointer rounded-2xl transition-all border-b border-white/5 last:border-0">
+        <div class="relative shrink-0 ${ringClass}">
+            <img src="${avatarUrl}" class="w-11 h-11 rounded-full object-cover ${imgBorder}">
+        </div>
+        <div class="ml-3 flex-1 min-w-0">
+            <div class="flex justify-between items-center mb-0.5">
+                <h4 class="font-bold text-white text-xs truncate">${item.name}</h4>
+                <span class="text-[9px] text-gray-500 shrink-0 ml-2">${timeText}</span>
+            </div>
+            <div class="flex justify-between items-center">
+                <p class="text-[10px] text-gray-400 truncate leading-snug">${lastMessageText}</p>
+                ${unreadBadge}
+            </div>
+        </div>
+    </div>`;
+}
+
+
 // FUNGSI MENGAMBIL DAFTAR CHAT INBOX (PROTEKSI KEBAL CRASH & SINKRONISASI TOTAL)
 async function loadChatList() {
 const cPersonal = document.getElementById('chat-personal-container');
