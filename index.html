@@ -4166,7 +4166,7 @@ async function deleteComment(cid) {
         const { error: deleteError } = await supabaseClient
             .from('comments')
             .delete()
-            .eq('id', cid);
+            .eq('id', cid)
             .eq('user_id', currentUser.id);
         
         if (deleteError) throw deleteError;
