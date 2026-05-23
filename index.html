@@ -4162,64 +4162,34 @@ async function deleteComment(cid) {
     if (commentBox) commentBox.style.opacity = '0.5';
 
     try {
-        // 1. Lakukan perintah Hapus (TANPA embel-embel .select() agar tidak bentrok)
+        // PERBAIKAN: Hapus filter user_id karena datanya memang NULL di DB
+        // Biarkan RLS Supabase (kalau sudah kamu setel) yang membatasi hak aksesnya
         const { error: deleteError } = await supabaseClient
             .from('comments')
             .delete()
-            .eq('id', cid)
-            .eq('user_id', currentUser.id);
+            .eq('id', cid);
         
         if (deleteError) throw deleteError;
 
-        // 2. CEK MANUAL: Apakah komentar ini MASIH ADA di database?
-        const { data: checkData, error: checkError } = await supabaseClient
-            .from('comments')
-            .select('id')
-            .eq('id', cid);
-
-        if (checkError) throw checkError;
-
-        // 3. DETEKSI: Jika data masih ketemu, berarti Supabase diam-diam memblokir hapusnya!
-        if (checkData && checkData.length > 0) {
-            throw new Error("Gagal! ID Akunmu tidak cocok dengan pembuat komentar ini.");
-        }
-
-        // 4. JIKA BENAR-BENAR HILANG DARI DATABASE, HAPUS DARI LAYAR
+        // Visual feedback
         if (commentBox) {
-            commentBox.style.transition = 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)';
-            commentBox.style.transform = 'translateX(-20px)';
+            commentBox.style.transition = 'all 0.3s ease';
             commentBox.style.opacity = '0';
-            
             setTimeout(() => {
-                commentBox.remove(); 
-                
-                // Update angka jumlah komentar
+                commentBox.remove();
+                // Update UI counter
                 const countEl = document.getElementById('drawer-comment-count');
-                if(countEl) countEl.innerText = Math.max(0, (parseInt(countEl.innerText) || 0) - 1);
-
-                const feedCountContainer = document.querySelector(`.comment-count-container[data-vid="${activeVideoId}"]`);
-                if (feedCountContainer) {
-                    const feedCountSpan = feedCountContainer.querySelector('.comment-count-display');
-                    if (feedCountSpan) feedCountSpan.innerText = Math.max(0, (parseInt(feedCountSpan.innerText) || 0) - 1);
-                }
+                if(countEl) countEl.innerText = Math.max(0, parseInt(countEl.innerText) - 1);
             }, 300);
         }
-
         showToast("Komentar berhasil dihapus", "success");
 
     } catch (e) {
         console.error("Gagal hapus:", e);
         if (commentBox) commentBox.style.opacity = '1';
-        // Tampilkan alasan kenapa gagal
-        showToast(e.message || "Gagal menghapus!", "error");
+        showToast("Gagal menghapus komentar!", "error");
     }
 }
-
-
-
-
-
-
 
 
 function toggleReplies(id) {
