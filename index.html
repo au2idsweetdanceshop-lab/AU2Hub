@@ -4019,23 +4019,37 @@ const data = await response.json();
 document.getElementById('drawer-comment-count').innerText = data.length || 0;
 
         if (data && data.length > 0) {
-            // 🔥 FIX 1: Normalisasi ID (Mencegah bug dari Google Sheets)
+            // 🔥 JURUS ANTI GAGAL 1: Paksa semua ID jadi String bersih tanpa spasi tersembunyi
             data.forEach(c => {
-                c.user_id = c.user_id || c.User_ID || c.userId || c.userid;
+                c.user_id = String(c.user_id || c.User_ID || c.userId || c.userid).trim();
             });
 
-            // [PERBAIKAN] Tambahkan 'await' agar sistem menunggu data EXP sebelum membuat komentar
-            const userIds = [...new Set(data.map(c => c.user_id))];
+            // Ambil kumpulan ID yang valid saja
+            const userIds = [...new Set(data.map(c => c.user_id))].filter(id => id && id !== 'undefined');
 
-    const { data: profilesData } = await supabaseClient.from('profiles').select('id, exp').in('id', userIds);
-    
-    data.forEach(c => {
-        const p = profilesData?.find(x => x.id === c.user_id);
-        c.exp = p ? p.exp : 0;
-    });
+            let profilesData = [];
+            if (userIds.length > 0) {
+                // Tarik data EXP dari tabel profiles
+                const { data: pData } = await supabaseClient.from('profiles').select('id, exp').in('id', userIds);
+                if (pData) profilesData = pData;
+            }
+            
+            // 🔥 JURUS ANTI GAGAL 2: Penentuan EXP super akurat!
+            data.forEach(c => {
+                // Jika komentar ini adalah MILIK KITA SENDIRI, abaikan server dan pakai data HP!
+                if (currentUser && c.user_id === String(currentUser.id).trim()) {
+                    c.exp = (typeof userProfile !== 'undefined' && userProfile.exp) ? userProfile.exp : 0;
+                } 
+                // Jika komentar orang lain, cocokkan dengan data server
+                else {
+                    const p = profilesData.find(x => String(x.id).trim() === c.user_id);
+                    c.exp = p ? p.exp : 0;
+                }
+            });
 
-    const mainComments = data.filter(c => !c.parent_id);
-    const replies = data.filter(c => c.parent_id);
+            const mainComments = data.filter(c => !c.parent_id);
+            const replies = data.filter(c => c.parent_id);
+
 
 if(mainComments.length === 0) {
 list.innerHTML = '<p class="text-center text-xs text-gray-500 italic mt-10">Belum ada komentar.</p>';
