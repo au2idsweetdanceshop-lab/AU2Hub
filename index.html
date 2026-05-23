@@ -2144,8 +2144,19 @@ function cariBerdasarkanTagar(tagar) {
     if (storyModal && !storyModal.classList.contains('hidden')) {
         closeStoryViewer();
     }
-    
-    // 2. Filter data video yang caption-nya mengandung hashtag tersebut
+
+    // [BARU] 2. Tutup mode fokus Feed Utama secara halus jika aktif
+    if (document.body.classList.contains('video-focused')) {
+        toggleGlobalAudio(true); // true = abaikan history agar URL tidak bentrok
+    }
+
+    // [BARU] 3. Tutup Floating Player (Misal jika diklik dari video profil)
+    const floatingPlayer = document.getElementById('floating-video-player');
+    if (floatingPlayer && !floatingPlayer.classList.contains('hidden')) {
+        closeFloatingVideo(true); 
+    }
+
+    // 4. Filter data video yang caption-nya mengandung hashtag tersebut
     const videoDitemukan = allVideosData.filter(v => 
         v.caption && v.caption.toLowerCase().includes('#' + tagar.toLowerCase())
     );
@@ -2155,7 +2166,7 @@ function cariBerdasarkanTagar(tagar) {
         return;
     }
 
-    // 3. TAMPILKAN GRID MODAL HASHTAG (Bukan langsung memutar video)
+    // 5. TAMPILKAN GRID MODAL HASHTAG
     const modal = document.getElementById('modal-hashtag-grid');
     const grid = document.getElementById('hashtag-video-grid');
     const title = document.getElementById('hashtag-grid-title');
@@ -2180,17 +2191,22 @@ function cariBerdasarkanTagar(tagar) {
         `;
     }).join('');
 
-    // Buka Modal dengan efek geser
+    // Hentikan video latar belakang di feed utama agar tidak bocor suaranya
+    document.querySelectorAll('.video-player, .float-video-player').forEach(v => v.pause());
+
+    // Buka Modal
     modal.classList.remove('hidden');
     modal.classList.add('flex');
-    setTimeout(() => modal.classList.remove('translate-x-full'), 10);
     
-    // Hentikan video latar belakang di feed utama agar tidak bocor suaranya
-    document.querySelectorAll('.video-player').forEach(v => v.pause());
+    // [PENTING] Beri delay agar animasi CSS geser laci dapat tereksekusi dengan mulus
+    setTimeout(() => {
+        modal.classList.remove('translate-x-full');
+    }, 50);
 
     // Beri jejak sejarah URL (untuk tombol Back HP)
     history.pushState({ popup: 'hashtag_grid' }, null, '#tagar');
 }
+
 
 // FUNGSI PENUTUP LAYAR GRID
 function closeHashtagGrid(dariTombolBack = false) {
@@ -2228,6 +2244,7 @@ function playHashtagVideo(tagar, startIndex) {
     // Tampilkan floating player
     document.getElementById('floating-video-player').classList.remove('hidden');
     document.getElementById('floating-video-player').classList.add('flex');
+    document.getElementById('floating-video-player').style.opacity = '1'; // <--- TAMBAHKAN BARIS INI
 
     if(floatObs) floatObs.disconnect();
     setupFloatVideoObserver();
@@ -3544,6 +3561,7 @@ function openProfileFeed(userId, startIndex) {
     // Tampilkan floating player
     document.getElementById('floating-video-player').classList.remove('hidden');
     document.getElementById('floating-video-player').classList.add('flex');
+    document.getElementById('floating-video-player').style.opacity = '1'; // <--- TAMBAHKAN BARIS INI
 
     if(floatObs) floatObs.disconnect();
     setupFloatVideoObserver();
@@ -3571,17 +3589,28 @@ function openProfileFeed(userId, startIndex) {
 
 
 function closeFloatingVideo(skipHistory = false) {
-// 1. Matikan video dan bersihkan layar DULU
-const p = document.getElementById('floating-video-player');
-p.classList.add('hidden'); p.classList.remove('flex');
-document.getElementById('floating-feed-container').innerHTML = '';
-if(floatObs) floatObs.disconnect(); // clean up
+    const p = document.getElementById('floating-video-player');
+    
+    // Berikan efek transisi opacity agar menutup dengan halus (fade out)
+    p.style.transition = 'opacity 0.3s ease';
+    p.style.opacity = '0';
 
-// 2. BARU eksekusi history back di bawah, ITU PUN jika tidak di-skip
-if (!skipHistory && window.location.hash === '#profil_video') {
-history.back();
+    setTimeout(() => {
+        // Sembunyikan dan reset elemen setelah efek fade selesai
+        p.classList.add('hidden'); 
+        p.classList.remove('flex');
+        p.style.opacity = '1'; 
+        
+        document.getElementById('floating-feed-container').innerHTML = '';
+        if(floatObs) floatObs.disconnect(); // bersihkan observer
+
+        // Eksekusi fungsi 'back' HP jika tidak di-skip
+        if (!skipHistory && window.location.hash === '#profil_video') {
+            history.back();
+        }
+    }, 300);
 }
-}
+
 
 
 function renderProfileVideoBatch(customAmount = 3) {
