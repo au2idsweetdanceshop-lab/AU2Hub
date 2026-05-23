@@ -4018,9 +4018,15 @@ const data = await response.json();
 
 document.getElementById('drawer-comment-count').innerText = data.length || 0;
 
-if (data && data.length > 0) {
-    // [PERBAIKAN] Tambahkan 'await' agar sistem menunggu data EXP sebelum membuat komentar
-    const userIds = [...new Set(data.map(c => c.user_id))];
+        if (data && data.length > 0) {
+            // 🔥 FIX 1: Normalisasi ID (Mencegah bug dari Google Sheets)
+            data.forEach(c => {
+                c.user_id = c.user_id || c.User_ID || c.userId || c.userid;
+            });
+
+            // [PERBAIKAN] Tambahkan 'await' agar sistem menunggu data EXP sebelum membuat komentar
+            const userIds = [...new Set(data.map(c => c.user_id))];
+
     const { data: profilesData } = await supabaseClient.from('profiles').select('id, exp').in('id', userIds);
     
     data.forEach(c => {
@@ -4186,27 +4192,34 @@ method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stri
 });
 
 if (response.ok) {
-msgInput.value = '';
-await loadComments(activeVideoId, true);
-const container = document.querySelector(`.comment-count-container[data-vid="${activeVideoId}"]`);
-if(container) updateCommentCountUI(activeVideoId, container);
+    msgInput.value = '';
+    cancelReply(); // Pindahkan ke atas biar UI tulisan "Membalas..." langsung hilang
+    
+    // 🔥 FIX 2: Tambah EXP dulu ke database dan tunggu sampai selesai
+    await tambahExp(10); 
+    
+    // BARU muat ulang layar komentar, agar lencana ter-update sesuai EXP yang baru!
+    await loadComments(activeVideoId, true);
+    
+    // Update jumlah komentar di Feed Sosial
+    const container = document.querySelector(`.comment-count-container[data-vid="${activeVideoId}"]`);
+    if(container) updateCommentCountUI(activeVideoId, container);
 
-const floatComment = document.getElementById('float-comment-container');
-if (floatComment && floatComment.dataset.vid === activeVideoId) {
-updateCommentCountUI(activeVideoId, floatComment);
-}
-
-cancelReply();
-tambahExp(10); // <--- SISTEM EXP
+    // Update jumlah komentar di Floating Video (jika sedang terbuka)
+    const floatComment = document.getElementById('float-comment-container');
+    if (floatComment && floatComment.dataset.vid === activeVideoId) {
+        updateCommentCountUI(activeVideoId, floatComment);
+    }
 } else {
-throw new Error("Gagal menyimpan komentar");
+    throw new Error("Gagal menyimpan komentar");
 }
 } catch(e) {
-showToast("Gagal kirim komentar.", "error");
+    showToast("Gagal kirim komentar.", "error");
 } finally {
-btn.innerHTML = iconAsli; btn.disabled = false;
+    btn.innerHTML = iconAsli; btn.disabled = false;
 }
 }
+
 
 async function fetchCommentLikes(cid) {
 try {
