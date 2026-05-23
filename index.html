@@ -1118,16 +1118,6 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
     </div>
 </div>
 
-<span>Membalas <b id="replying-to-name" class="text-brand-info"></b></span>
-<button onclick="cancelReply()" class="hover:text-white bg-white/10 w-4 h-4 rounded-full flex items-center justify-center"><i class="fas fa-times"></i></button>
-</div>
-<div class="flex gap-2">
-<input type="text" id="comment-input" placeholder="Tambahkan komentar..." class="flex-1 bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-brand-accent">
-<button onclick="sendComment(event)" class="bg-brand-accent text-white w-12 h-[42px] rounded-xl active:scale-95 transition-transform flex items-center justify-center"><i class="fas fa-paper-plane"></i></button>
-</div>
-</div>
-</div>
-
 <!-- MENGAMBANG LIGHTBOX FOTO DI CHAT -->
 <div id="lightbox-modal" class="fixed inset-0 z-[400] hidden items-center justify-center bg-black/95 backdrop-blur-md opacity-0 transition-opacity duration-300" onclick="closeLightbox()">
 <button onclick="closeLightbox()" class="absolute top-6 right-6 text-white bg-white/10 w-12 h-12 rounded-full flex items-center justify-center active:scale-90 z-[410]"><i class="fas fa-times text-xl"></i></button>
@@ -5182,106 +5172,42 @@ let clearedChats = JSON.parse(localStorage.getItem('cleared_chats') || '{}');
 let deletedForMe = JSON.parse(localStorage.getItem('deleted_msgs') || '[]');
 
 if (partnerIds.length > 0) {
-const { data: profiles } = await supabaseClient.from('profiles').select('id, nickname, avatar_url').in('id', partnerIds);
-const past24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-const { data: activeStories } = await supabaseClient.from('stories').select('user_id').gte('created_at', past24h);
-let usersWithStory = activeStories ? activeStories.map(s => s.user_id) : [];
+    const { data: profiles } = await supabaseClient.from('profiles').select('id, nickname, avatar_url').in('id', partnerIds);
+    const past24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    const { data: activeStories } = await supabaseClient.from('stories').select('user_id').gte('created_at', past24h);
+    let usersWithStory = activeStories ? activeStories.map(s => s.user_id) : [];
 
-if (profiles) {
-profiles.forEach(p => {
-const msg = personalContacts[p.id];
-const clearTimeStr = clearedChats[p.id];
-if (clearTimeStr && msg && new Date(msg.created_at) <= new Date(clearTimeStr)) return;
-personalList.push({ type: 'personal', id: p.id, name: p.nickname || "Player", avatar: p.avatar_url, latestMsg: msg, unread: unreadCounts[p.id] || 0, hasStory: usersWithStory.includes(p.id) });
-});
-}
+    if (profiles) {
+        profiles.forEach(p => {
+            const msg = personalContacts[p.id];
+            const clearTimeStr = clearedChats[p.id];
+            if (clearTimeStr && msg && new Date(msg.created_at) <= new Date(clearTimeStr)) return;
+            // FIX: Gunakan globalPersonalList
+            globalPersonalList.push({ type: 'personal', id: p.id, name: p.nickname || "Player", avatar: p.avatar_url, latestMsg: msg, unread: unreadCounts[p.id] || 0, hasStory: usersWithStory.includes(p.id) });
+        });
+    }
 }
 
 if (groupIds.length > 0) {
-const { data: groups } = await supabaseClient.from('groups').select('id, name, avatar_url').in('id', groupIds);
-if (groups) {
-groups.forEach(g => {
-const msg = groupContacts[g.id];
-const clearTimeStr = clearedChats[g.id];
-if (clearTimeStr && msg && new Date(msg.created_at) <= new Date(clearTimeStr)) return;
-groupList.push({ type: 'group', id: g.id, name: g.name || "Grup Obrolan", avatar: g.avatar_url, latestMsg: msg, unread: 0 });
-});
-}
-}
-
-personalList.sort((a, b) => new Date(b.latestMsg?.created_at || 0) - new Date(a.latestMsg?.created_at || 0));
-groupList.sort((a, b) => new Date(b.latestMsg?.created_at || 0) - new Date(a.latestMsg?.created_at || 0));
-
-const renderRow = (item, isGroup) => {
-const ava = item.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(item.name)}&background=1A1133&color=fff`;
-const msg = item.latestMsg;
-let prefix = '', preview = msg ? (msg.message || "") : "";
-
-let clearedChats = JSON.parse(localStorage.getItem('cleared_chats') || '{}');
-let clearTimeStr = clearedChats[item.id];
-let isCleared = msg && clearTimeStr && new Date(msg.created_at) <= new Date(clearTimeStr);
-
-if (isCleared || !msg) {
-preview = '<i class="fas fa-comment-slash mr-1"></i> Obrolan kosong';
-prefix = '';
-} else {
-if (preview.startsWith('[SISTEM]')) {
-prefix = '<i class="fas fa-info-circle text-brand-info text-[10px] mr-1"></i> ';
-preview = preview.replace('[SISTEM] ', '');
-} else if (isGroup && !msg.is_empty) {
-prefix = msg.sender_id === currentUser.id ? 'Anda: ' : '<i class="fas fa-user text-[8px] mr-1"></i> ';
-} else if (!isGroup && msg.sender_id === currentUser.id) {
-prefix = (msg.is_read || msg.is_read === 'true') ? '<i class="fas fa-check-double text-brand-info mr-1 text-[10px]"></i>' : '<i class="fas fa-check text-white/60 mr-1 text-[10px]"></i>';
+    const { data: groups } = await supabaseClient.from('groups').select('id, name, avatar_url').in('id', groupIds);
+    if (groups) {
+        groups.forEach(g => {
+            const msg = groupContacts[g.id];
+            const clearTimeStr = clearedChats[g.id];
+            if (clearTimeStr && msg && new Date(msg.created_at) <= new Date(clearTimeStr)) return;
+            // FIX: Gunakan globalGroupList
+            globalGroupList.push({ type: 'group', id: g.id, name: g.name || "Grup Obrolan", avatar: g.avatar_url, latestMsg: msg, unread: 0 });
+        });
+    }
 }
 
-if (preview === '[DELETED]' || deletedForMe.includes(msg.id)) { preview = '<i class="fas fa-ban mr-1"></i> Dihapus'; prefix = ''; }
-else if (preview.startsWith('[IMG]')) { 
-    preview = preview.includes('||CAP||') ? `<i class="fas fa-image mr-1"></i> ${preview.split('||CAP||')[1]}` : '<i class="fas fa-image mr-1"></i> Gambar'; 
-}
-else if (preview.startsWith('[VIDEO]')) { 
-    preview = preview.includes('||CAP||') ? `<i class="fas fa-video mr-1"></i> ${preview.split('||CAP||')[1]}` : '<i class="fas fa-video mr-1"></i> Video'; 
-}
+// FIX: Urutkan menggunakan variabel global
+globalPersonalList.sort((a, b) => new Date(b.latestMsg?.created_at || 0) - new Date(a.latestMsg?.created_at || 0));
+globalGroupList.sort((a, b) => new Date(b.latestMsg?.created_at || 0) - new Date(a.latestMsg?.created_at || 0));
 
-else if (preview.startsWith('[AUDIO]')) { preview = '<i class="fas fa-microphone mr-1"></i> Pesan Suara'; }
-}
-
-const badge = item.unread > 0 ? `<div class="bg-brand-accent text-white text-[9px] font-bold w-4 h-4 flex items-center justify-center rounded-full ml-2">${item.unread}</div>` : '';
-const icon = isGroup ? '<div class="absolute -bottom-1 -right-1 bg-brand-dark p-0.5 rounded-full"><i class="fas fa-users text-[10px] text-brand-info"></i></div>' : '';
-
-// --- TAMBAHAN BADGE INBOX ---
-let badgeKastaInbox = '';
-if (!isGroup) {
-    const vidCountInbox = allVideosData.filter(v => String(v.user_id) === String(item.id)).length;
-    badgeKastaInbox = getBadgeByVideoCount(vidCountInbox);
-}
-
-const ringClass = item.hasStory ? 'story-ring' : 'border border-white/10';
-const avatarClickCode = item.hasStory ? `event.stopPropagation(); viewStory('${item.id}', '${item.name.replace(/'/g, "\\'")}', '${ava}')` : `event.stopPropagation(); viewUserProfile('${item.id}')`;
-
-return `
-<div class="flex items-center p-3 bg-brand-card/50 hover:bg-white/5 cursor-pointer rounded-2xl border border-white/5 transition-all mb-2 relative group" onclick="openChatRoom('${item.id}', '${item.name.replace(/'/g, "\\'")}', '${ava}', ${isGroup})">
-<div class="relative shrink-0" onclick="${isGroup ? '' : avatarClickCode}">
-<div class="${isGroup ? 'border border-brand-accent/30 rounded-full' : ringClass}"><img src="${ava}" loading="lazy" class="w-11 h-11 rounded-full object-cover border-2 border-brand-card"></div>
-${icon}
-</div>
-<div class="flex-1 min-w-0 ml-3 pr-8">
-<div class="flex justify-between items-center mb-1">
-    <div class="flex items-center gap-1 overflow-hidden">
-        <h4 class="font-bold text-white text-[13px] truncate">${item.name}</h4>
-        ${badgeKastaInbox}
-    </div>
-    <div class="flex items-center"><span class="text-[9px] text-gray-500 shrink-0 ml-2">${msg.is_empty ? 'Baru' : timeAgo(msg.created_at)}</span>${badge}</div>
-</div>
-<p class="text-[11px] text-gray-400 truncate">${prefix}${preview}</p>
-</div>
-<button onclick="event.stopPropagation(); deleteConversation('${item.id}', '${item.name.replace(/'/g, "\\'")}')" class="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-red-500/10 text-red-500 flex items-center justify-center opacity-80 hover:opacity-100 hover:bg-red-500 hover:text-white active:scale-90 transition-all">
-<i class="fas fa-trash-alt text-[10px]"></i>
-</button>
-</div>`;
-};
-
-cPersonal.innerHTML = personalList.length ? personalList.map(i => renderRow(i, false)).join('') : '<p class="text-center text-xs text-gray-500 mt-10">Belum ada obrolan.</p>';
-cGroup.innerHTML = groupList.length ? groupList.map(i => renderRow(i, true)).join('') : '<p class="text-center text-xs text-gray-500 mt-10">Belum ada grup.</p>';
+// FIX: Render menggunakan variabel global
+cPersonal.innerHTML = globalPersonalList.length ? globalPersonalList.map(i => renderRow(i, false)).join('') : '<p class="text-center text-xs text-gray-500 mt-10">Belum ada obrolan.</p>';
+cGroup.innerHTML = globalGroupList.length ? globalGroupList.map(i => renderRow(i, true)).join('') : '<p class="text-center text-xs text-gray-500 mt-10">Belum ada grup.</p>';
 
 checkGlobalUnreadMessages();
 } catch (e) {
@@ -8908,78 +8834,6 @@ function prosesBayarUlang() {
     // Tembak langsung ke fungsi Checkout Robot DANA pakai data yang tersimpan
     checkoutRobotDANA(activeOrderNameToPay, activeOrderPriceToPay, "Melanjutkan pembayaran tagihan tertunda.");
 }
-
-// =========================================================
-// LOGIKA GAMEPLAY ASSISTIVETOUCH (IPHONE SMART DRAG & SNAP)
-// =========================================================
-const atBtn = document.getElementById('assistive-touch');
-let isAtDragging = false;
-let atStartX, atStartY, atInitialX, atInitialY;
-
-// 1. Deteksi Sentuhan Pertama Jari
-atBtn.addEventListener('touchstart', (e) => {
-    isAtDragging = false;
-    const touch = e.touches[0];
-    atStartX = touch.clientX;
-    atStartY = touch.clientY;
-    
-    const rect = atBtn.getBoundingClientRect();
-    atInitialX = rect.left;
-    atInitialY = rect.top;
-    
-    atBtn.style.opacity = '1'; // Terangkan tombol saat disentuh
-}, { passive: true });
-
-// 2. Seret Tombol Mengikuti Gerakan Jari
-atBtn.addEventListener('touchmove', (e) => {
-    const touch = e.touches[0];
-    let diffX = touch.clientX - startX; // Gunakan variabel let murni
-    let diffY = touch.clientY - startY;
-
-    // Jika jari geser lebih dari 6 pixel, konfirmasi sebagai mode DRAG (Bukan klik biasa)
-    if (Math.abs(touch.clientX - atStartX) > 6 || Math.abs(touch.clientY - atStartY) > 6) {
-        isAtDragging = true;
-    }
-
-    if (isAtDragging) {
-        let newX = atInitialX + (touch.clientX - atStartX);
-        let newY = atInitialY + (touch.clientY - atStartY);
-
-        // Proteksi pagar layar (Biar tombol ga melosot keluar dari HP)
-        newX = Math.max(8, Math.min(window.innerWidth - 56, newX));
-        newY = Math.max(8, Math.min(window.innerHeight - 80, newY));
-
-        atBtn.style.left = `${newX}px`;
-        atBtn.style.top = `${newY}px`;
-        atBtn.style.bottom = 'auto';
-        atBtn.style.right = 'auto';
-    }
-}, { passive: true });
-
-// 3. Jari Dilepas (Buka Menu atau Efek Magnet Snap)
-atBtn.addEventListener('touchend', () => {
-    atBtn.style.opacity = '0.5'; // Redupkan kembali biar ga ganggu pemandangan gacha
-    
-    if (!isAtDragging) {
-        // JIKA HANYA DIKLIK SEKALI -> Buka Control Center
-        openAssistiveMenu();
-    } else {
-        // JIKA DI-DRAG -> Picu Fungsi Efek Magnet Khas Apple iOS
-        const rect = atBtn.getBoundingClientRect();
-        const batasTengahLayar = window.innerWidth / 2;
-        
-        atBtn.style.transition = 'left 0.4s cubic-bezier(0.16, 1, 0.3, 1), top 0.2s ease';
-        
-        if (rect.left + 24 < batasTengahLayar) {
-            atBtn.style.left = '12px'; // Nempel Magnet ke Kiri
-        } else {
-            atBtn.style.left = `${window.innerWidth - 48 - 12}px`; // Nempel Magnet ke Kanan
-        }
-        
-        // Matikan transisi setelah animasi nempel beres agar pas diseret berikutnya ga delay
-        setTimeout(() => { atBtn.style.transition = 'none'; }, 400);
-    }
-});
 
 // FUNCTIONS UNTUK KONTROL ANIMASI BUKA TUTUP LACI MENU
 function openAssistiveMenu() {
