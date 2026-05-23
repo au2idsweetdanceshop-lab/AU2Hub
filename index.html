@@ -4010,6 +4010,15 @@ const data = await response.json();
 document.getElementById('drawer-comment-count').innerText = data.length || 0;
 
 if (data && data.length > 0) {
+// [BARU] Tarik data EXP dari database agar lencana Level muncul di komentar
+const userIds = [...new Set(data.map(c => c.user_id))];
+supabaseClient.from('profiles').select('id, exp').in('id', userIds).then(({data: profilesData}) => {
+    data.forEach(c => {
+        const p = profilesData?.find(x => x.id === c.user_id);
+        c.exp = p ? p.exp : 0;
+    });
+});
+
 const mainComments = data.filter(c => !c.parent_id);
 const replies = data.filter(c => c.parent_id);
 
@@ -4047,7 +4056,7 @@ let html = `
 <div class="pr-2">
 <div class="flex items-center gap-1">
     <b onclick="viewUserProfile('${comment.user_id}')" class="text-brand-info text-[11px] cursor-pointer hover:underline">${comment.nickname}</b>
-    ${getBadgeByVideoCount(allVideosData.filter(v => String(v.user_id) === String(comment.user_id)).length)}
+    ${getBadgeByLevelAndVideos(hitungStatusLevel(comment.exp || 0).level, allVideosData.filter(v => String(v.user_id) === String(comment.user_id)).length)}
 </div>
 <p class="text-gray-200 text-xs mt-0.5 leading-relaxed break-words">${formatCaption(comment.message)}</p>
 <div class="flex items-center gap-2 mt-1.5"><span class="text-[9px] text-gray-600">${timeAgo(comment.created_at)}</span><button onclick="setReply('${comment.id}', '${comment.nickname}')" class="text-[10px] text-gray-400 font-bold hover:text-white px-2">Balas</button> ${delBtn} </div>
@@ -4077,7 +4086,7 @@ html += `
 <div class="pr-2">
 <div class="flex items-center gap-1">
     <b onclick="viewUserProfile('${r.user_id}')" class="text-brand-purple text-[10px] cursor-pointer hover:underline">${r.nickname}</b>
-    ${getBadgeByVideoCount(allVideosData.filter(v => String(v.user_id) === String(r.user_id)).length)}
+    ${getBadgeByLevelAndVideos(hitungStatusLevel(r.exp || 0).level, allVideosData.filter(v => String(v.user_id) === String(r.user_id)).length)}
 </div>
 <p class="text-gray-300 text-[11px] mt-0.5 leading-relaxed break-words">${formatCaption(r.message)}</p>
 <div class="flex items-center gap-2 mt-1"><button onclick="setReply('${comment.id}', '${r.nickname}')" class="text-[9px] text-gray-500 font-bold hover:text-white pr-2">Balas</button> ${rDelBtn}</div>
@@ -4912,13 +4921,19 @@ document.getElementById('chat-room-view').classList.remove('hidden');
 document.getElementById('chat-room-view').classList.add('flex');
 
 // 2. Ubah profil di header (Atas ruang chat)
-let headerBadge = '';
+document.getElementById('active-chat-name').innerHTML = `<div class="flex items-center gap-1">${name} <span id="header-badge-container"></span></div>`;
+
 if (!isGroup) {
-    const vidCountHeader = allVideosData.filter(v => String(v.user_id) === String(id)).length;
-    headerBadge = getBadgeByVideoCount(vidCountHeader);
+    // Ambil data EXP user secara real-time untuk menampilkan lencana
+    supabaseClient.from('profiles').select('exp').eq('id', id).single().then(({data}) => {
+        const targetLevel = hitungStatusLevel(data?.exp || 0).level;
+        const vidCountHeader = allVideosData.filter(v => String(v.user_id) === String(id)).length;
+        
+        const badgeHTML = getBadgeByLevelAndVideos(targetLevel, vidCountHeader);
+        const badgeContainer = document.getElementById('header-badge-container');
+        if (badgeContainer) badgeContainer.innerHTML = badgeHTML;
+    });
 }
-// Menggunakan innerHTML agar elemen HTML lencana dapat dirender dengan baik
-document.getElementById('active-chat-name').innerHTML = `<div class="flex items-center gap-1">${name} ${headerBadge}</div>`;
 document.getElementById('active-chat-avatar').src = avatar;
 
 // 3. Set ID yang sedang aktif agar fungsi kirim pesan tahu mau dikirim ke mana
@@ -4983,6 +4998,18 @@ loadChatList();
 }
 }
 
+// FUNGSI UNTUK MEMBUKA PROFIL/INFO GRUP DARI HEADER CHAT
+function openChatHeaderInfo() {
+    if (activeGroupId) {
+        loadGroupInfo(activeGroupId);
+    } else if (activeChatUserId) {
+        const widget = document.getElementById('floating-widget');
+        if (widget) widget.classList.add('opacity-0', 'pointer-events-none', 'translate-y-8', 'scale-95');
+        viewUserProfile(activeChatUserId);
+    }
+}
+
+
 // FUNGSI UNTUK SCROLL CHAT KE PALING BAWAH OTOMATIS
 function scrollToBottomChat() {
 const container = document.getElementById('chat-messages-container');
@@ -5008,7 +5035,7 @@ const targetId = isGroup ? activeGroupId : activeChatUserId;
 if(!targetId) return;
 
 try {
-let query = supabaseClient.from('messages').select('*, profiles!messages_sender_id_fkey(nickname, avatar_url)').order('created_at', { ascending: false }).limit(50);
+let query = supabaseClient.from('messages').select('*, profiles!messages_sender_id_fkey(nickname, avatar_url, exp)').order('created_at', { ascending: false }).limit(50);
 
 if (isGroup) {
 query = query.eq('group_id', targetId);
@@ -6374,7 +6401,8 @@ title="Keluarkan Anggota">
 
 html += `
 <div class="flex items-center justify-between p-2 bg-black/30 rounded-xl border border-white/5 mb-2">
-<div class="flex items-center flex-1 min-w-0">
+<!-- Bagian bawah ini yang ditambahin onclick dan cursor-pointer -->
+<div class="flex items-center flex-1 min-w-0 cursor-pointer hover:bg-white/10 p-1.5 rounded-lg transition-colors" onclick="closeGroupInfoModal(); viewUserProfile('${p.id}');">
 <img src="${ava}" class="w-9 h-9 rounded-full object-cover border border-white/10 shrink-0">
 <div class="ml-3 truncate">
 <div class="flex items-center">
@@ -6404,21 +6432,27 @@ form.classList.add('hidden');
 
 // 8. Simpan Editan Info Grup (Hanya Admin)
 async function saveGroupInfo() {
-const name = document.getElementById('input-edit-group-name').value.trim();
-const desc = document.getElementById('input-edit-group-desc').value.trim();
-if(!name) return showToast("Nama tidak boleh kosong!", "error");
+    const name = document.getElementById('input-edit-group-name').value.trim();
+    const desc = document.getElementById('input-edit-group-desc').value.trim();
+    if(!name) return showToast("Nama grup tidak boleh kosong!", "error");
 
-const btn = document.getElementById('btn-save-group-info');
-btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    const btn = document.getElementById('btn-save-group-info');
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan...';
+    btn.disabled = true; // Kunci tombol biar nggak diklik dobel
 
-const { error } = await supabaseClient.from('groups').update({ name: name, description: desc }).eq('id', activeGroupId);
+    try {
+        const { error } = await supabaseClient.from('groups').update({ name: name, description: desc }).eq('id', activeGroupId);
+        if(error) throw error;
 
-btn.innerHTML = 'Simpan Perubahan';
-if(error) return showToast("Gagal update: " + error.message, "error");
-
-showToast("Info grup diperbarui!", "success");
-toggleEditGroupInfo();
-loadGroupInfo(activeGroupId); // Refresh UI
+        showToast("Info grup diperbarui!", "success");
+        toggleEditGroupInfo();
+        loadGroupInfo(activeGroupId); // Refresh UI
+    } catch (err) {
+        showToast("Gagal update: " + err.message, "error");
+    } finally {
+        btn.innerHTML = 'Simpan Perubahan';
+        btn.disabled = false; // Buka kunci tombol lagi
+    }
 }
 
 // 9. Undang Teman Berdasarkan Nickname (Hanya Admin)
@@ -7153,8 +7187,12 @@ function appendMessageBubble(msg) {
     let senderNameHtml = '';
     if (!isMe && activeGroupId) {
         const vidCountBubble = allVideosData.filter(v => String(v.user_id) === String(msg.sender_id)).length;
-        const badgeBubble = getBadgeByVideoCount(vidCountBubble);
-        senderNameHtml = `<div class="text-[10px] text-[#00F0FF] font-bold mb-1 flex items-center gap-1">${msg.profiles?.nickname || 'Anggota'} ${badgeBubble}</div>`;
+        // Ambil exp dari Supabase, hitung levelnya secara otomatis
+        const expData = msg.profiles?.exp || 0;
+        const senderLevel = hitungStatusLevel(expData).level;
+        
+        const badgeBubble = getBadgeByLevelAndVideos(senderLevel, vidCountBubble);
+        senderNameHtml = `<div onclick="const w = document.getElementById('floating-widget'); if(w) w.classList.add('opacity-0', 'pointer-events-none', 'translate-y-8', 'scale-95'); viewUserProfile('${msg.sender_id}')" class="text-[10px] text-[#00F0FF] font-bold mb-1 flex items-center gap-1 cursor-pointer hover:underline w-max">${msg.profiles?.nickname || 'Anggota'} ${badgeBubble}</div>`;
     }
 
     const html = `
@@ -9098,6 +9136,59 @@ function closeForwardModal() {
 // 5. Event Listener Kotak Pencarian Kontak
 document.getElementById('forward-search-input').addEventListener('input', (e) => {
     loadForwardContacts(e.target.value);
+});
+
+// ==========================================
+// FITUR SWIPE (GESER) UNTUK WIDGET CHAT
+// ==========================================
+let chatSwipeStartX = 0;
+let chatSwipeStartY = 0;
+
+document.addEventListener('DOMContentLoaded', () => {
+    const chatListView = document.getElementById('chat-list-view');
+    
+    if (chatListView) {
+        // Tangkap kordinat awal saat layar disentuh
+        chatListView.addEventListener('touchstart', e => {
+            chatSwipeStartX = e.changedTouches[0].screenX;
+            chatSwipeStartY = e.changedTouches[0].screenY;
+        }, {passive: true});
+
+        // Tangkap kordinat saat jari dilepas dan eksekusi geseran
+        chatListView.addEventListener('touchend', e => {
+            let touchEndX = e.changedTouches[0].screenX;
+            let touchEndY = e.changedTouches[0].screenY;
+            
+            let diffX = chatSwipeStartX - touchEndX;
+            let diffY = chatSwipeStartY - touchEndY;
+            
+            // Validasi: Jarak geser horizontal harus > 50px, dan vertikal harus < 50px 
+            // (Ini agar tidak bentrok saat user niatnya scroll list chat ke bawah/atas)
+            if (Math.abs(diffX) > 50 && Math.abs(diffY) < 50) { 
+                const tabs = ['personal', 'group', 'status'];
+                let currentTab = '';
+                
+                // Deteksi tab mana yang sedang terbuka
+                if (!document.getElementById('chat-personal-container').classList.contains('hidden')) {
+                    currentTab = 'personal';
+                } else if (!document.getElementById('chat-group-container').classList.contains('hidden')) {
+                    currentTab = 'group';
+                } else {
+                    currentTab = 'status';
+                }
+
+                let currentIndex = tabs.indexOf(currentTab);
+                
+                if (diffX > 0) { 
+                    // Geser jari ke KIRI = Pindah ke Tab KANAN (Selanjutnya)
+                    if (currentIndex < 2) switchChatTab(tabs[currentIndex + 1]);
+                } else { 
+                    // Geser jari ke KANAN = Pindah ke Tab KIRI (Sebelumnya)
+                    if (currentIndex > 0) switchChatTab(tabs[currentIndex - 1]); 
+                }
+            }
+        }, {passive: true});
+    }
 });
 
 
