@@ -4245,64 +4245,66 @@ if (input.value.startsWith('@')) input.value = '';
 }
 
 async function sendComment(event) {
-if (!currentUser) return openAuthModal();
-const video = allVideosData.find(v => v.id === activeVideoId);
+    if (!currentUser) return openAuthModal();
+    
+    const video = allVideosData.find(v => v.id === activeVideoId);
     const isCommentsAllowed = video ? (video.allow_comments !== false && video.allow_comments !== 'false') : true;
     if (!isCommentsAllowed) {
         return showToast("Komentar dinonaktifkan untuk video ini.", "error");
     }
-const msgInput = document.getElementById('comment-input');
-const msg = msgInput.value.trim();
-if (!msg) {
-showToast("Komentar tidak boleh kosong!", "error");
-return;
-}
 
-const btn = event.currentTarget;
-const iconAsli = btn.innerHTML; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>'; btn.disabled = true;
-
-try {
-const payload = {
-video_id: activeVideoId,
-nickname: userProfile?.nickname || "Player",
-message: msg,
-avatar_url: userProfile?.avatar_url || "",
-user_id: currentUser.id
-};
-if (replyingToId) payload.parent_id = replyingToId;
-
-const response = await fetch('/api/comment', {
-method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
-});
-
-if (response.ok) {
-    msgInput.value = '';
-    cancelReply(); // Pindahkan ke atas biar UI tulisan "Membalas..." langsung hilang
-    
-    // 🔥 FIX 2: Tambah EXP dulu ke database dan tunggu sampai selesai
-    await tambahExp(10); 
-    
-    // BARU muat ulang layar komentar, agar lencana ter-update sesuai EXP yang baru!
-    await loadComments(activeVideoId, true);
-    
-    // Update jumlah komentar di Feed Sosial
-    const container = document.querySelector(`.comment-count-container[data-vid="${activeVideoId}"]`);
-    if(container) updateCommentCountUI(activeVideoId, container);
-
-    // Update jumlah komentar di Floating Video (jika sedang terbuka)
-    const floatComment = document.getElementById('float-comment-container');
-    if (floatComment && floatComment.dataset.vid === activeVideoId) {
-        updateCommentCountUI(activeVideoId, floatComment);
+    const msgInput = document.getElementById('comment-input');
+    const msg = msgInput.value.trim();
+    if (!msg) {
+        showToast("Komentar tidak boleh kosong!", "error");
+        return;
     }
-} else {
-    throw new Error("Gagal menyimpan komentar");
+
+    const btn = event.currentTarget;
+    const iconAsli = btn.innerHTML; 
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>'; 
+    btn.disabled = true;
+
+    try {
+        const payload = {
+            video_id: activeVideoId,
+            nickname: userProfile?.nickname || "Player",
+            message: msg,
+            avatar_url: userProfile?.avatar_url || "",
+            user_id: currentUser.id // User ID wajib masuk agar RLS Supabase tidak menolak saat dihapus
+        };
+        if (replyingToId) payload.parent_id = replyingToId;
+
+        // EKSEKUSI LANGSUNG KE SUPABASE (Tanpa lewat fetch '/api/comment')
+        const { error: insertError } = await supabaseClient
+            .from('comments')
+            .insert(payload);
+
+        if (insertError) throw insertError; 
+
+        msgInput.value = '';
+        cancelReply(); 
+        
+        await tambahExp(10); 
+        await loadComments(activeVideoId, true);
+        
+        // Update angka di UI
+        const container = document.querySelector(`.comment-count-container[data-vid="${activeVideoId}"]`);
+        if(container) updateCommentCountUI(activeVideoId, container);
+
+        const floatComment = document.getElementById('float-comment-container');
+        if (floatComment && floatComment.dataset.vid === activeVideoId) {
+            updateCommentCountUI(activeVideoId, floatComment);
+        }
+    } catch(e) {
+        console.error("Error Kirim Komentar:", e);
+        showToast("Gagal kirim: " + (e.message || "Kesalahan jaringan"), "error");
+    } finally {
+        btn.innerHTML = iconAsli; 
+        btn.disabled = false;
+    }
 }
-} catch(e) {
-    showToast("Gagal kirim komentar.", "error");
-} finally {
-    btn.innerHTML = iconAsli; btn.disabled = false;
-}
-}
+
 
 
 async function fetchCommentLikes(cid) {
@@ -4377,14 +4379,24 @@ console.error("Gagal update UI like", e);
 }
 
 async function updateCommentCountUI(videoId, containerDiv) {
+    if (!containerDiv) return;
     try {
-        // 🔥 Tambahkan pelindung Cache
-        const response = await fetch(`/api/comment?video_id=${videoId}&t=${Date.now()}`, { cache: 'no-store' }); 
-        const data = await response.json();
+        // Hitung langsung ke Supabase dengan akurat (Bypass API Vercel)
+        const { count, error } = await supabaseClient
+            .from('comments')
+            .select('*', { count: 'exact', head: true })
+            .eq('video_id', videoId);
+        
         const countSpan = containerDiv.querySelector('.comment-count-display');
-        if (countSpan && Array.isArray(data)) countSpan.innerText = data.length;
-    } catch(e) {}
+        if (countSpan && !error) {
+            countSpan.innerText = count || 0;
+        }
+    } catch(e) {
+        console.error("Gagal update angka komentar:", e);
+    }
 }
+
+
 
 
 async function likeVideo(videoId, btn) {
