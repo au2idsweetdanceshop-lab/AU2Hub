@@ -9540,12 +9540,112 @@ document.addEventListener('DOMContentLoaded', () => {
     </div>
 </div>
 
-<!-- ========================================== -->
-<!-- FITUR PASAR PLAYER (PASTE DI ATAS </body>) -->
-<!-- ========================================== -->
+<!-- ======================================================== -->
+<!-- 🛒 MEGA KOMPILASI FITUR PASAR PLAYER (LANGKAH 1 SAMPAI 4) -->
+<!-- ======================================================== -->
+
+<!-- 1. MODAL JUAL BARANG -->
+<div id="modal-jual-barang" class="fixed inset-0 z-[600] hidden items-end sm:items-center justify-center bg-black/90 backdrop-blur-md px-0 sm:px-6 transition-all duration-300">
+    <div class="bg-brand-card w-full max-w-md sm:rounded-3xl rounded-t-[2.5rem] border border-white/10 shadow-2xl relative modal-anim flex flex-col h-[90vh] sm:h-auto sm:max-h-[90vh] overflow-hidden">
+        <div class="flex justify-between items-center p-5 border-b border-white/5 bg-brand-dark/80 backdrop-blur-xl shrink-0">
+            <h3 class="font-extrabold text-white text-sm flex items-center gap-2"><i class="fas fa-store text-brand-success"></i> Jual Produk Baru</h3>
+            <button onclick="tutupModalJualBarang()" class="text-gray-400 hover:text-white w-8 h-8 rounded-full bg-white/5 flex items-center justify-center active:scale-95 transition-all"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="flex-1 overflow-y-auto p-5 hide-scroll space-y-4">
+            <div class="flex flex-col items-center justify-center">
+                <label for="input-foto-jualan" class="relative w-32 h-32 rounded-2xl border-2 border-dashed border-brand-success/50 bg-brand-success/5 flex flex-col items-center justify-center cursor-pointer overflow-hidden group hover:border-brand-success transition-colors">
+                    <img id="preview-foto-jualan" src="" class="absolute inset-0 w-full h-full object-cover hidden">
+                    <div id="placeholder-foto-jualan" class="text-center group-hover:scale-110 transition-transform">
+                        <i class="fas fa-camera text-2xl text-brand-success/70 mb-1"></i>
+                        <div class="text-[9px] font-bold text-brand-success uppercase tracking-widest">Pilih Foto</div>
+                    </div>
+                </label>
+                <input type="file" id="input-foto-jualan" accept="image/*" class="hidden" onchange="previewGambarJualan(this)">
+            </div>
+            <div>
+                <label class="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-1.5 block">Nama Produk</label>
+                <input type="text" id="jualan-nama" placeholder="Contoh: Joki GB Level 1-10" class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-brand-success transition-colors">
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-1.5 block">Harga (Rp)</label>
+                    <input type="number" id="jualan-harga" placeholder="10000" class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-brand-success transition-colors">
+                </div>
+                <div>
+                    <label class="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-1.5 block">Kategori</label>
+                    <select id="jualan-kategori" class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-brand-success transition-colors appearance-none">
+                        <option value="Joki" class="bg-brand-dark">Joki</option>
+                        <option value="Akun" class="bg-brand-dark">Akun</option>
+                        <option value="Item" class="bg-brand-dark">Item / Gift</option>
+                        <option value="Top Up" class="bg-brand-dark">Top Up</option>
+                        <option value="Lainnya" class="bg-brand-dark">Lainnya</option>
+                    </select>
+                </div>
+            </div>
+            <div>
+                <label class="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-1.5 block">Deskripsi Lengkap</label>
+                <textarea id="jualan-deskripsi" rows="4" placeholder="Jelaskan detail produk..." class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-brand-success transition-colors resize-none hide-scroll"></textarea>
+            </div>
+        </div>
+        <div class="p-4 border-t border-white/5 bg-brand-dark shrink-0">
+            <button id="btn-submit-jualan" onclick="prosesPostingJualan()" class="w-full bg-brand-success hover:bg-[#20bd5a] text-white py-3.5 rounded-xl font-extrabold active:scale-95 transition-all uppercase tracking-wider text-sm shadow-[0_4px_15px_rgba(37,211,102,0.3)]">Posting Dagangan</button>
+        </div>
+    </div>
+</div>
+
+<!-- 2. MODAL DETAIL PASAR (RENAME DARI modal-detail-produk agar tidak bentrok) -->
+<div id="modal-detail-pasar" class="fixed inset-0 z-[600] hidden items-end sm:items-center justify-center bg-black/90 backdrop-blur-md px-0 sm:px-6 transition-all duration-300">
+    <div class="bg-brand-card w-full max-w-md sm:rounded-3xl rounded-t-[2.5rem] border border-white/10 shadow-2xl relative modal-anim flex flex-col h-[90vh] sm:h-auto sm:max-h-[90vh] overflow-hidden">
+        <div class="flex justify-between items-center p-5 border-b border-white/5 bg-brand-dark/80 backdrop-blur-xl shrink-0 absolute top-0 left-0 right-0 z-20">
+            <h3 class="font-extrabold text-white text-sm flex items-center gap-2"><i class="fas fa-shopping-bag text-brand-success"></i> Detail Produk</h3>
+            <button onclick="tutupDetailPasar()" class="text-gray-400 hover:text-white w-8 h-8 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center active:scale-95 transition-all"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="flex-1 overflow-y-auto hide-scroll pb-24 pt-[68px]">
+            <div class="w-full aspect-square bg-black/50 relative">
+                <img id="pasar-detail-foto" src="" class="w-full h-full object-cover">
+                <div id="pasar-detail-kategori" class="absolute bottom-4 left-4 bg-black/60 backdrop-blur-sm text-[10px] font-bold text-white px-3 py-1.5 rounded-lg border border-white/10 uppercase tracking-widest">Kategori</div>
+            </div>
+            <div class="p-5 space-y-5">
+                <div>
+                    <h2 id="pasar-detail-nama" class="text-lg font-extrabold text-white leading-snug mb-2">Nama Produk</h2>
+                    <div id="pasar-detail-harga" class="text-3xl font-black text-brand-success">Rp 0</div>
+                </div>
+                <div class="bg-black/40 border border-white/5 rounded-2xl p-4 flex items-center justify-between shadow-inner">
+                    <div class="flex items-center gap-3">
+                        <img id="pasar-detail-avatar" src="" class="w-10 h-10 rounded-full object-cover border border-white/10 cursor-pointer" onclick="lihatProfilPenjual()">
+                        <div>
+                            <div class="text-[9px] text-gray-400 font-bold uppercase tracking-wider mb-0.5">Penjual</div>
+                            <div id="pasar-detail-penjual" class="text-sm text-white font-bold cursor-pointer hover:underline" onclick="lihatProfilPenjual()">Nickname</div>
+                        </div>
+                    </div>
+                    <button onclick="chatPenjualPasar()" class="w-9 h-9 rounded-full bg-brand-info/20 text-brand-info flex items-center justify-center border border-brand-info/30 active:scale-95 transition-all"><i class="fas fa-comment-dots"></i></button>
+                </div>
+                <div>
+                    <label class="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-2 block">Deskripsi Lengkap</label>
+                    <p id="pasar-detail-deskripsi" class="text-xs sm:text-sm text-gray-300 leading-relaxed whitespace-pre-wrap"></p>
+                </div>
+                <div class="bg-brand-success/10 p-3 rounded-xl border border-brand-success/20 flex gap-3 items-start">
+                    <i class="fas fa-shield-check text-brand-success mt-0.5 text-lg"></i>
+                    <p class="text-[10px] text-brand-success leading-relaxed font-medium">Pembayaran aman dengan Rekber. Dana ditahan sistem sampai transaksi selesai.</p>
+                </div>
+            </div>
+        </div>
+        <div class="p-4 border-t border-white/5 bg-brand-dark shrink-0 absolute bottom-0 left-0 right-0 z-20">
+            <button id="btn-beli-pasar" class="w-full bg-brand-success hover:bg-[#20bd5a] text-white py-3.5 rounded-xl font-extrabold active:scale-95 transition-all uppercase tracking-wider text-sm shadow-[0_4px_15px_rgba(37,211,102,0.3)] flex justify-center items-center gap-2">
+                <i class="fas fa-shopping-cart"></i> Beli Sekarang
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- 3. JAVASCRIPT LOGIKA PASAR PLAYER -->
 <script>
+// Variabel Global
+let globalDataPasar = [];
+let idPenjualAktif = null;
+
 document.addEventListener('DOMContentLoaded', () => {
-    // 1. Suntik Tombol "Pasar" ke Navigasi Kiri
+    // A. SUNTIK TOMBOL NAVIGASI MENU KIRI
     const navBar = document.querySelector('nav');
     if(navBar) {
         const btnPasar = document.createElement('a');
@@ -9555,13 +9655,12 @@ document.addEventListener('DOMContentLoaded', () => {
         btnPasar.onclick = (e) => switchTab('pasar', e);
         btnPasar.innerHTML = '<i class="fas fa-store text-lg pointer-events-none"></i>';
         
-        // Taruh di atas garis pemisah sebelum ikon Profil
+        // Taruh tepat di bawah menu Pesanan (sebelum border pemisah profil)
         const garisBatas = navBar.querySelectorAll('.bg-white\\/10')[1];
         if(garisBatas) navBar.insertBefore(btnPasar, garisBatas);
-        else navBar.appendChild(btnPasar);
     }
 
-    // 2. Suntik Halaman "Pasar" ke dalam <main>
+    // B. SUNTIK HALAMAN TAB KONTEN KE <main>
     const mainArea = document.querySelector('main');
     if(mainArea) {
         const sectionPasar = document.createElement('section');
@@ -9572,24 +9671,222 @@ document.addEventListener('DOMContentLoaded', () => {
                 <h2 class="text-xl font-extrabold text-white flex items-center gap-2">
                     <span class="w-1.5 h-6 bg-brand-success rounded-full"></span> Pasar Player
                 </h2>
-                <button onclick="bukaModalJualBarang()" class="bg-brand-success/10 text-brand-success px-3 py-1.5 rounded-lg text-[10px] font-bold border border-brand-success/30 active:scale-95 transition-all shadow-sm">
-                    <i class="fas fa-plus mr-1"></i> Jual Barang
-                </button>
+                <div class="flex items-center gap-2">
+                    <button onclick="loadPasarPlayer(true)" class="text-brand-success bg-brand-success/10 w-8 h-8 rounded-full flex items-center justify-center active:scale-90 transition-all border border-brand-success/30"><i class="fas fa-sync-alt"></i></button>
+                    <button onclick="bukaModalJualBarang()" class="bg-brand-success/10 text-brand-success px-3 py-1.5 rounded-lg text-[10px] font-bold border border-brand-success/30 active:scale-95 transition-all"><i class="fas fa-plus mr-1"></i> Jual</button>
+                </div>
             </div>
-            
             <div class="relative mb-5">
                 <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 text-xs"></i>
-                <input type="text" id="cari-pasar" placeholder="Cari akun, item, jasa joki..." class="w-full bg-black/40 border border-white/10 rounded-2xl py-3 pl-10 pr-4 text-xs text-white focus:outline-none focus:border-brand-success transition-all shadow-inner">
+                <input type="text" id="cari-pasar" placeholder="Cari item, joki, atau nama penjual..." class="w-full bg-black/40 border border-white/10 rounded-2xl py-3 pl-10 pr-4 text-xs text-white focus:outline-none focus:border-brand-success transition-all shadow-inner">
             </div>
-            
             <div id="grid-pasar-player" class="grid grid-cols-2 gap-3 pb-10">
-                <div class="col-span-2 text-center py-10 text-gray-500 text-xs"><i class="fas fa-store-slash text-4xl mb-3 opacity-30"></i><br>Sedang memuat data pasar...</div>
+                <div class="col-span-2 text-center py-10 text-brand-success"><i class="fas fa-spinner fa-spin text-3xl mb-3"></i><br><span class="text-xs font-bold tracking-widest uppercase">Memuat Etalase...</span></div>
             </div>
         `;
         mainArea.appendChild(sectionPasar);
+        
+        // Pasang Event Listener untuk Kolom Pencarian
+        setTimeout(() => {
+            const searchInput = document.getElementById('cari-pasar');
+            if (searchInput) {
+                searchInput.addEventListener('input', (e) => {
+                    const keyword = e.target.value.toLowerCase();
+                    const filteredData = globalDataPasar.filter(item => {
+                        return item.title.toLowerCase().includes(keyword) || 
+                               item.category.toLowerCase().includes(keyword) || 
+                               (item.profiles?.nickname || '').toLowerCase().includes(keyword);
+                    });
+                    renderGridPasar(filteredData);
+                });
+            }
+        }, 1000);
     }
+
+    // Auto-load data pasar
+    setTimeout(() => { loadPasarPlayer(); }, 2000);
 });
+
+// FUNGSI TARIK DATA DARI SUPABASE
+async function loadPasarPlayer(forceRefresh = false) {
+    const gridPasar = document.getElementById('grid-pasar-player');
+    if (!gridPasar) return;
+
+    if (forceRefresh) {
+        gridPasar.innerHTML = '<div class="col-span-2 text-center py-10 text-brand-success"><i class="fas fa-spinner fa-spin text-3xl mb-3"></i><br><span class="text-xs font-bold">Memuat Ulang...</span></div>';
+    }
+
+    try {
+        const { data, error } = await supabaseClient
+            .from('player_products')
+            .select('*, profiles:user_id(nickname, avatar_url)')
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        globalDataPasar = data || [];
+        renderGridPasar(globalDataPasar);
+    } catch (err) {
+        gridPasar.innerHTML = '<div class="col-span-2 text-center py-10 text-red-500 text-xs">Gagal menarik data pasar. Cek koneksi.</div>';
+    }
+}
+
+// FUNGSI GAMBAR KARTU KE LAYAR
+function renderGridPasar(dataList) {
+    const grid = document.getElementById('grid-pasar-player');
+    grid.innerHTML = '';
+
+    if (dataList.length === 0) {
+        grid.innerHTML = '<div class="col-span-2 text-center py-10 text-gray-500 text-xs"><i class="fas fa-box-open text-4xl mb-3 opacity-30"></i><br>Belum ada produk.</div>';
+        return;
+    }
+
+    dataList.forEach(item => {
+        const sellerAvatar = item.profiles?.avatar_url || 'https://placehold.co/100x100/1a1133/2BD975?text=AV';
+        const sellerName = item.profiles?.nickname || 'Anonim';
+        const formatHarga = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(item.price);
+
+        const cardHtml = `
+            <div onclick="bukaDetailPasar('${item.id}')" class="bg-black/40 border border-white/10 rounded-2xl overflow-hidden flex flex-col hover:border-brand-success/50 transition-colors cursor-pointer group shadow-sm">
+                <div class="relative w-full aspect-square bg-brand-dark/50 overflow-hidden">
+                    <img src="${item.image_url}" alt="${item.title}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" onerror="this.src='https://placehold.co/400x400/1a1133/2BD975?text=PASAR'">
+                    <div class="absolute top-2 right-2 bg-black/60 backdrop-blur-sm text-[8px] font-bold text-white px-2 py-1 rounded-md border border-white/10 uppercase">${item.category}</div>
+                </div>
+                <div class="p-3 flex flex-col flex-1">
+                    <h4 class="text-xs text-white font-bold line-clamp-2 mb-1.5">${item.title}</h4>
+                    <div class="text-brand-success text-sm font-extrabold mb-2">${formatHarga}</div>
+                    <div class="mt-auto flex items-center gap-2 border-t border-white/5 pt-2">
+                        <img src="${sellerAvatar}" class="w-5 h-5 rounded-full object-cover border border-white/10">
+                        <span class="text-[9px] text-gray-400 truncate w-full font-medium">${sellerName}</span>
+                    </div>
+                </div>
+            </div>`;
+        grid.insertAdjacentHTML('beforeend', cardHtml);
+    });
+}
+
+// LOGIKA UPLOAD BARANG JUALAN
+function bukaModalJualBarang() {
+    if (!currentUser) return showToast("Silakan login dulu untuk berjualan!", "error");
+    document.getElementById('modal-jual-barang').classList.replace('hidden', 'flex');
+}
+function tutupModalJualBarang() {
+    document.getElementById('modal-jual-barang').classList.replace('flex', 'hidden');
+}
+function previewGambarJualan(input) {
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = e => {
+            document.getElementById('preview-foto-jualan').src = e.target.result;
+            document.getElementById('preview-foto-jualan').classList.remove('hidden');
+            document.getElementById('placeholder-foto-jualan').classList.add('hidden');
+        }
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+
+async function prosesPostingJualan() {
+    const nama = document.getElementById('jualan-nama').value.trim();
+    const harga = parseInt(document.getElementById('jualan-harga').value);
+    const kategori = document.getElementById('jualan-kategori').value;
+    const deskripsi = document.getElementById('jualan-deskripsi').value.trim();
+    const fileInput = document.getElementById('input-foto-jualan');
+    const btn = document.getElementById('btn-submit-jualan');
+
+    if (!nama || !harga || isNaN(harga) || !deskripsi) return showToast("Mohon lengkapi formulir!", "error");
+
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memproses...';
+    btn.disabled = true;
+
+    try {
+        let finalImageUrl = "https://placehold.co/400x400/1a1133/2BD975?text=PRODUK";
+        if (fileInput.files && fileInput.files[0]) {
+            const file = fileInput.files[0];
+            const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent('pasar_'+Date.now())}&filetype=${encodeURIComponent(file.type)}`);
+            const dataUrl = await resUrl.json();
+            await fetch(dataUrl.uploadUrl, { method: 'PUT', body: file, headers: { 'Content-Type': file.type, 'x-amz-acl': 'public-read' } });
+            finalImageUrl = dataUrl.finalVideoUrl;
+        }
+
+        const { error } = await supabaseClient.from('player_products').insert({
+            user_id: currentUser.id, title: nama, price: harga, category: kategori, description: deskripsi, image_url: finalImageUrl
+        });
+
+        if (error) throw error;
+
+        showToast("Dagangan berhasil diposting!", "success");
+        tutupModalJualBarang();
+        document.getElementById('jualan-nama').value = '';
+        document.getElementById('jualan-harga').value = '';
+        document.getElementById('jualan-deskripsi').value = '';
+        fileInput.value = '';
+        document.getElementById('preview-foto-jualan').classList.add('hidden');
+        document.getElementById('placeholder-foto-jualan').classList.remove('hidden');
+        loadPasarPlayer(true);
+
+    } catch (err) {
+        showToast("Gagal memposting: " + err.message, "error");
+    } finally {
+        btn.innerHTML = 'Posting Dagangan';
+        btn.disabled = false;
+    }
+}
+
+// LOGIKA BUKA DETAIL & BELI
+function bukaDetailPasar(idProduk) {
+    const produk = globalDataPasar.find(item => item.id === idProduk);
+    if (!produk) return;
+
+    idPenjualAktif = produk.user_id; // Simpan ID penjual untuk tombol profil/chat
+
+    document.getElementById('pasar-detail-foto').src = produk.image_url;
+    document.getElementById('pasar-detail-kategori').innerText = produk.category;
+    document.getElementById('pasar-detail-nama').innerText = produk.title;
+    document.getElementById('pasar-detail-harga').innerText = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(produk.price);
+    document.getElementById('pasar-detail-deskripsi').innerText = produk.description || "-";
+    document.getElementById('pasar-detail-avatar').src = produk.profiles?.avatar_url || 'https://placehold.co/100x100/1a1133/2BD975?text=AV';
+    document.getElementById('pasar-detail-penjual').innerText = produk.profiles?.nickname || 'Anonim';
+
+    const btnBeli = document.getElementById('btn-beli-pasar');
+    btnBeli.onclick = () => checkoutPasar(produk.title, produk.price, produk.id);
+
+    if (currentUser && currentUser.id === produk.user_id) {
+        btnBeli.innerHTML = '<i class="fas fa-ban"></i> Ini Produk Anda';
+        btnBeli.disabled = true; btnBeli.className = "w-full bg-gray-600 text-white py-3.5 rounded-xl font-extrabold uppercase text-sm";
+    } else {
+        btnBeli.innerHTML = '<i class="fas fa-shopping-cart"></i> Beli Sekarang';
+        btnBeli.disabled = false; btnBeli.className = "w-full bg-brand-success hover:bg-[#20bd5a] text-white py-3.5 rounded-xl font-extrabold active:scale-95 transition-all uppercase text-sm shadow-[0_4px_15px_rgba(37,211,102,0.3)]";
+    }
+
+    document.getElementById('modal-detail-pasar').classList.replace('hidden', 'flex');
+}
+
+function tutupDetailPasar() {
+    document.getElementById('modal-detail-pasar').classList.replace('flex', 'hidden');
+}
+
+function lihatProfilPenjual() {
+    if (idPenjualAktif) {
+        tutupDetailPasar();
+        viewUserProfile(idPenjualAktif);
+    }
+}
+
+function chatPenjualPasar() {
+    if (idPenjualAktif) {
+        tutupDetailPasar();
+        kirimPesanPribadi(idPenjualAktif);
+    }
+}
+
+// LOGIKA BAYAR MELALUI ROBOT DANA (Meminjam fungsi Checkout yang sudah ada)
+function checkoutPasar(nama, harga, id) {
+    tutupDetailPasar();
+    // Panggil fungsi robot DANA yang sudah kamu buat sebelumnya di kode utama
+    checkoutRobotDANA("[PASAR] " + nama, harga, "Pembelian item dari Pasar Player.");
+}
 </script>
+
 
 
 </body>
