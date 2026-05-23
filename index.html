@@ -3996,6 +3996,15 @@ function openComments(id) {
     loadComments(id);
 }
 
+function closeComments() {
+    if (window.location.hash === '#comments') {
+        history.back(); // Memancing penangkap popstate (tombol back HP) bawaanmu
+    } else {
+        document.getElementById('comment-drawer').classList.remove('open');
+        if (typeof cancelReply === 'function') cancelReply();
+    }
+}
+
 async function loadComments(videoId, silent = false) {
 const list = document.getElementById('comment-list');
 if (!silent) {
@@ -4010,17 +4019,17 @@ const data = await response.json();
 document.getElementById('drawer-comment-count').innerText = data.length || 0;
 
 if (data && data.length > 0) {
-// [BARU] Tarik data EXP dari database agar lencana Level muncul di komentar
-const userIds = [...new Set(data.map(c => c.user_id))];
-supabaseClient.from('profiles').select('id, exp').in('id', userIds).then(({data: profilesData}) => {
+    // [PERBAIKAN] Tambahkan 'await' agar sistem menunggu data EXP sebelum membuat komentar
+    const userIds = [...new Set(data.map(c => c.user_id))];
+    const { data: profilesData } = await supabaseClient.from('profiles').select('id, exp').in('id', userIds);
+    
     data.forEach(c => {
         const p = profilesData?.find(x => x.id === c.user_id);
         c.exp = p ? p.exp : 0;
     });
-});
 
-const mainComments = data.filter(c => !c.parent_id);
-const replies = data.filter(c => c.parent_id);
+    const mainComments = data.filter(c => !c.parent_id);
+    const replies = data.filter(c => c.parent_id);
 
 if(mainComments.length === 0) {
 list.innerHTML = '<p class="text-center text-xs text-gray-500 italic mt-10">Belum ada komentar.</p>';
@@ -7192,7 +7201,7 @@ function appendMessageBubble(msg) {
         const senderLevel = hitungStatusLevel(expData).level;
         
         const badgeBubble = getBadgeByLevelAndVideos(senderLevel, vidCountBubble);
-        senderNameHtml = `<div onclick="const w = document.getElementById('floating-widget'); if(w) w.classList.add('opacity-0', 'pointer-events-none', 'translate-y-8', 'scale-95'); viewUserProfile('${msg.sender_id}')" class="text-[10px] text-[#00F0FF] font-bold mb-1 flex items-center gap-1 cursor-pointer hover:underline w-max">${msg.profiles?.nickname || 'Anggota'} ${badgeBubble}</div>`;
+        senderNameHtml = `<div onclick="const w = document.getElementById('floating-widget'); if(w) w.classList.add('opacity-0', 'pointer-events-none', 'translate-y-8', 'scale-95'); viewUserProfile('${msg.sender_id}')" class="text-[10px] text-[#00F0FF] font-bold mb-1 flex items-center gap-0.5 cursor-pointer hover:underline w-max">${msg.profiles?.nickname || 'Anggota'} <span class="scale-[0.7] origin-left inline-flex">${badgeBubble}</span></div>`;
     }
 
     const html = `
