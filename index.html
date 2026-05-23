@@ -2933,6 +2933,13 @@ if (isPush && window.location.hash !== `#${tabId}`) history.pushState(null, null
 window.addEventListener('popstate', () => {
     let isPopupClosed = false;
 
+    // 1. TANGKAP INFO GRUP (Tambahkan kode ini)
+    const modalGroupInfo = document.getElementById('modal-group-info');
+    if (modalGroupInfo && !modalGroupInfo.classList.contains('hidden')) {
+        closeGroupInfoModal(true);
+        return;
+    }
+
     const modalPreviewMedia = document.getElementById('modal-preview-media');
     if (modalPreviewMedia && !modalPreviewMedia.classList.contains('hidden')) {
         tutupPreviewMedia(true);
@@ -6276,28 +6283,28 @@ btn.innerHTML = originalText;
 }
 }
 
-// 4. Deteksi Klik Header (Buka Profil Teman atau Buka Info Grup)
-function openChatHeaderInfo() {
-if (activeGroupId) {
-loadGroupInfo(activeGroupId); // Jika ini chat grup
-} else if (activeChatUserId) {
-viewUserProfile(activeChatUserId); // Jika ini chat pribadi
-}
-}
-
-function closeGroupInfoModal() {
-document.getElementById('modal-group-info').classList.add('hidden');
-document.getElementById('modal-group-info').classList.remove('flex');
+// 4. Tutup Modal Info Grup (DIPERBAIKI)
+function closeGroupInfoModal(dariTombolBack = false) {
+    document.getElementById('modal-group-info').classList.add('hidden');
+    document.getElementById('modal-group-info').classList.remove('flex');
+    
+    // Cegah HP menarik history mundur 2 kali jika asalnya dari tombol Back HP
+    if (!dariTombolBack && window.location.hash === '#groupinfo') {
+        history.back();
+    }
 }
 
-// 5. Muat Data Info Grup & Anggota
+// 5. Muat Data Info Grup & Anggota (DIPERBAIKI)
 async function loadGroupInfo(groupId) {
-document.getElementById('modal-group-info').classList.remove('hidden');
-document.getElementById('modal-group-info').classList.add('flex');
+    // 🔥 SUNTIKAN SAKTI: Beri jejak ke browser agar tombol Back HP aktif
+    history.pushState({ popup: 'group_info' }, null, '#groupinfo');
 
-// Ambil data detail grup
-const { data: group } = await supabaseClient.from('groups').select('*').eq('id', groupId).single();
-if(!group) return;
+    document.getElementById('modal-group-info').classList.remove('hidden');
+    document.getElementById('modal-group-info').classList.add('flex');
+
+    // Ambil data detail grup
+    const { data: group } = await supabaseClient.from('groups').select('*').eq('id', groupId).single();
+    if(!group) return;
 
 document.getElementById('info-group-avatar').src = group.avatar_url;
 document.getElementById('info-group-name').innerText = group.name;
@@ -8960,53 +8967,17 @@ async function copyLinkLaciAktif(btn) {
 // FITUR TERUSKAN PESAN (FORWARD) WHATSAPP STYLE
 // ==========================================
 
-// 1. Eksekusi Tombol "Teruskan Pesan" di Modal Opsi
+// 1. Eksekusi Tombol "Teruskan Pesan" di Modal Opsi (Disederhanakan)
 document.getElementById('btn-forward-msg').addEventListener('click', () => {
     if (!selectedMessageId) return;
 
-    // Ambil gelembung chat dari layar berdasarkan ID
-    const msgBubble = document.getElementById(`msg-chat-${selectedMessageId}`);
-    if (!msgBubble) return;
-
-    // Cari letak teks atau medianya
-    const textDiv = msgBubble.querySelector('.text-\\[12px\\]');
-    if (textDiv) {
-        // Kloning elemen agar kita tidak merusak UI chat aslinya saat membedah isi pesannya
-        let clonedDiv = textDiv.cloneNode(true);
-        
-        // Buang kotak balasan (quote reply) jika pesan ini adalah balasan, biar murni pesannya saja yang diforward
-        const innerReply = clonedDiv.querySelector('div[onclick^="jumpToMessage"]');
-        if (innerReply) innerReply.remove();
-
-        // Ekstraksi Logika Media (Gambar / Video / Audio / Teks)
-        if (clonedDiv.innerHTML.includes('<img')) {
-            const imgTag = clonedDiv.querySelector('img');
-            messageToForward = `[IMG]${imgTag.src}`;
-            const capDiv = clonedDiv.querySelector('div.mt-1\\.5');
-            if (capDiv) messageToForward += `||CAP||${capDiv.innerText}`;
-        } else if (clonedDiv.innerHTML.includes('<video')) {
-            const vidTag = clonedDiv.querySelector('video');
-            messageToForward = `[VIDEO]${vidTag.src}`;
-            const capDiv = clonedDiv.querySelector('div.mt-1\\.5');
-            if (capDiv) messageToForward += `||CAP||${capDiv.innerText}`;
-        } else if (clonedDiv.innerHTML.includes('<audio')) {
-            const audTag = clonedDiv.querySelector('source');
-            messageToForward = `[AUDIO]${audTag.src}`;
-        } else {
-            messageToForward = clonedDiv.innerText.trim();
-        }
-    }
-
-    // Tutup modal opsi pesan kecil
+    // Langsung tutup modal opsi dan buka laci kontak (Tanpa pusing membaca HTML layar)
     closeMsgOptions(); 
-    
-    // Buka Laci Kontak untuk Meneruskan
     document.getElementById('modal-forward-msg').classList.remove('hidden');
     document.getElementById('modal-forward-msg').classList.add('flex');
-    
-    // Muat daftar kontak
     loadForwardContacts(); 
 });
+
 
 // 2. Fungsi Me-render Daftar Kontak ke Layar
 function loadForwardContacts(searchQuery = '') {
@@ -9045,9 +9016,8 @@ function loadForwardContacts(searchQuery = '') {
     }).join('');
 }
 
-// 3. Eksekusi Pengiriman Pesan
+// 3. Eksekusi Pengiriman Pesan (Langsung Tarik dari Database)
 async function executeForward(targetId, isGroup, targetName) {
-    // Validasi konfirmasi (Mirip seperti membatalkan pesanan joki di code Anda)
     const confirmSend = await customConfirm(`Teruskan pesan ini ke ${targetName}?`);
     if (!confirmSend) return;
 
@@ -9055,10 +9025,28 @@ async function executeForward(targetId, isGroup, targetName) {
     showToast(`Meneruskan pesan ke ${targetName}...`, "info");
 
     try {
-        // Siapkan Payload Database
+        // 1. Tarik isi pesan asli secara real-time dari database
+        const { data: originalMsg, error: fetchErr } = await supabaseClient
+            .from('messages')
+            .select('message')
+            .eq('id', selectedMessageId)
+            .single();
+
+        if (fetchErr || !originalMsg) throw new Error("Gagal membaca pesan asli dari server.");
+
+        let rawMessage = originalMsg.message;
+
+        // 2. Bersihkan kotak [REPLY:...] jika pesan aslinya adalah sebuah balasan
+        const replyRegex = /^\[REPLY:(.*?)\|\|(.*?)\|\|(.*?)\]\n([\s\S]*)$/;
+        const match = rawMessage.match(replyRegex);
+        if (match) {
+            rawMessage = match[4]; // Ambil murni isi pesannya saja
+        }
+
+        // 3. Siapkan Payload Database untuk dikirim
         const insertData = { 
             sender_id: currentUser.id, 
-            message: messageToForward // Teks/Media yang sudah diserap sebelumnya
+            message: rawMessage 
         };
         
         if (isGroup) {
@@ -9067,19 +9055,19 @@ async function executeForward(targetId, isGroup, targetName) {
             insertData.receiver_id = targetId;
         }
 
-        // Tembak ke Supabase
+        // 4. Tembak ke Supabase
         const { error } = await supabaseClient.from('messages').insert(insertData);
         if (error) throw error;
 
         showToast("Pesan berhasil diteruskan!", "success");
-        
-        // Panggil refresh inbox agar pesan yang diforward naik ke urutan teratas
-        loadChatList();
+        loadChatList(); // Refresh antrean inbox
 
     } catch (err) {
-        showToast("Gagal meneruskan pesan.", "error");
+        showToast(err.message, "error");
     }
 }
+
+
 
 // 4. Fungsi Menutup Modal
 function closeForwardModal() {
