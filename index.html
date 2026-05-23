@@ -4146,46 +4146,29 @@ html += `</div></div>`; return html;
 }
 
 async function deleteComment(cid) {
-    const konfirmasi = await customConfirm("Yakin ingin menghapus komentar ini secara permanen?");
+    const konfirmasi = await customConfirm("Yakin ingin menghapus komentar ini?");
     if (!konfirmasi) return;
 
-    const cBox = document.getElementById('comment-box-' + cid);
-    if (cBox) cBox.style.opacity = '0.4';
-
     try {
-        // Eksekusi DELETE
-        const response = await supabaseClient
-            .from('comments')
-            .delete()
-            .eq('id', cid);
+        // 1. Hapus dari Supabase
+        const { error } = await supabaseClient.from('comments').delete().eq('id', cid);
+        
+        if (error) throw error;
 
-        // Supabase mengembalikan error jika ada masalah. 
-        // Jika error null/undefined, berarti sukses.
-        if (response.error) {
-            console.error("Supabase Error:", response.error);
-            throw new Error(response.error.message || "Gagal dihapus dari database");
-        }
+        // 2. Tampilkan notifikasi sukses
+        showToast("Komentar berhasil dihapus", "success");
 
-        // Jika sukses:
-        if (cBox) cBox.remove();
-        showToast("Komentar berhasil dihapus!", "success");
-
-        // Update Counter
-        const countEl = document.getElementById('drawer-comment-count');
-        if (countEl) countEl.innerText = Math.max(0, parseInt(countEl.innerText) - 1);
-
-        if (activeVideoId) {
-            const container = document.querySelector(`.comment-count-container[data-vid="${activeVideoId}"]`);
-            if (container) updateCommentCountUI(activeVideoId, container);
-        }
+        // 3. 🔥 TRIK PENTING: Refresh data agar UI sinkron dengan DB
+        // Kita panggil ulang fungsi loadComments agar dia fetch data baru dari Supabase
+        // Tanpa cache karena kita sudah tambahkan timestamp di loadComments sebelumnya
+        await loadComments(activeVideoId); 
 
     } catch (e) {
-        console.error("Gagal menghapus:", e);
-        // Tampilkan pesan error yang manusiawi
-        showToast("Gagal: " + (e.message || "Periksa RLS di Supabase!"), "error");
-        if (cBox) cBox.style.opacity = '1';
+        console.error("Gagal hapus:", e);
+        showToast("Gagal menghapus!", "error");
     }
 }
+
 
 
 
