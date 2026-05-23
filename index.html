@@ -9381,15 +9381,45 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
         </div>
 
-<div class="flex justify-between items-start">
-    <div>
-        <div class="text-brand-accent font-extrabold text-2xl tracking-tight mb-2" id="detail-product-price">Rp 0</div>
-        <h3 class="text-lg font-extrabold text-white leading-snug" id="detail-product-title">Nama Produk</h3>
+<div class="p-6 space-y-5">
+    
+    <div class="flex justify-between items-start gap-4">
+        <div class="flex-1 min-w-0">
+            <div class="text-brand-accent font-extrabold text-2xl tracking-tight mb-1" id="detail-product-price">Rp 0</div>
+            <h3 class="text-base font-extrabold text-white leading-snug break-words" id="detail-product-title">Nama Produk</h3>
+        </div>
+        <button onclick="event.stopPropagation(); copyLinkLaciAktif(this)" class="bg-white/5 hover:bg-white/10 border border-white/10 w-10 h-10 rounded-xl flex items-center justify-center text-white active:scale-90 transition-all shrink-0 z-10 relative">
+            <i class="fas fa-share-alt text-sm"></i>
+        </button>
     </div>
-    <!-- Tombol Share Baru -->
-<button onclick="event.stopPropagation(); copyLinkLaciAktif(this)" class="bg-white/10 hover:bg-white/20 border border-white/10 w-10 h-10 rounded-full flex items-center justify-center text-white active:scale-90 transition-all shrink-0 z-10 relative">
-    <i class="fas fa-share-alt"></i>
-</button>
+
+    <div id="detail-variasi-container" class="hidden border-t border-white/5 pt-4">
+        <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2.5 block">Pilih Variasi</span>
+        <div id="detail-variasi-list" class="flex flex-wrap gap-2"></div>
+    </div>
+
+    <div class="flex flex-wrap gap-2 border-y border-white/5 py-3 text-[10px] font-bold uppercase tracking-wider text-gray-400">
+        <span class="text-brand-success bg-brand-success/10 px-2.5 py-1 rounded-md border border-brand-success/20 flex items-center gap-1">
+            <i class="fas fa-bolt text-[9px]"></i> INCLUDE REKBER NIKKY
+        </span>
+        <span id="detail-discount-badge" class="hidden text-brand-info bg-brand-info/10 px-2.5 py-1 rounded-md border border-brand-info/20 flex items-center gap-1"></span>
+    </div>
+
+    <div class="flex justify-between items-center bg-black/20 border border-white/5 p-3 rounded-2xl">
+        <span class="text-xs font-bold text-gray-300 uppercase tracking-wide">Jumlah</span>
+        <div class="flex items-center gap-2 bg-[#0F0920] border border-white/10 rounded-xl p-1 shadow-inner">
+            <button onclick="ubahJumlahPesan(-1)" class="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/5 rounded-lg active:scale-95 transition-all"><i class="fas fa-minus text-xs"></i></button>
+            <input type="tel" id="detail-qty" value="1" oninput="inputJumlahPesan(this.value)" onblur="validasiJumlah(this)" class="text-sm font-extrabold text-white w-10 text-center bg-transparent outline-none border-none p-0 m-0" maxlength="4">
+            <button onclick="ubahJumlahPesan(1)" class="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/5 rounded-lg active:scale-95 transition-all"><i class="fas fa-plus text-xs"></i></button>
+        </div>
+    </div>
+
+    <div class="space-y-1.5 pt-1">
+        <h4 class="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest">Deskripsi Produk</h4>
+        <p class="text-xs text-gray-300 leading-relaxed whitespace-pre-line line-clamp-4 cursor-pointer transition-all duration-300" id="detail-product-desc" onclick="this.classList.toggle('line-clamp-4'); const btn = document.getElementById('btn-toggle-desc'); btn.innerHTML = this.classList.contains('line-clamp-4') ? 'Lihat Selengkapnya ▼' : 'Tutup Selengkapnya ▲';">Detail deskripsi...</p>
+        <button id="btn-toggle-desc" onclick="document.getElementById('detail-product-desc').click()" class="text-[10px] text-brand-info font-bold hover:text-white active:scale-95 transition-all">Lihat Selengkapnya ▼</button>
+    </div>
+
 </div>
 
             
