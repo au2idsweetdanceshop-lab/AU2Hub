@@ -9540,5 +9540,57 @@ document.addEventListener('DOMContentLoaded', () => {
     </div>
 </div>
 
+<!-- ========================================== -->
+<!-- FITUR PASAR PLAYER (PASTE DI ATAS </body>) -->
+<!-- ========================================== -->
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // 1. Suntik Tombol "Pasar" ke Navigasi Kiri
+    const navBar = document.querySelector('nav');
+    if(navBar) {
+        const btnPasar = document.createElement('a');
+        btnPasar.href = "#pasar";
+        btnPasar.className = "nav-item flex items-center justify-center w-[44px] h-[44px] text-gray-500 mb-2";
+        btnPasar.title = "Pasar Player";
+        btnPasar.onclick = (e) => switchTab('pasar', e);
+        btnPasar.innerHTML = '<i class="fas fa-store text-lg pointer-events-none"></i>';
+        
+        // Taruh di atas garis pemisah sebelum ikon Profil
+        const garisBatas = navBar.querySelectorAll('.bg-white\\/10')[1];
+        if(garisBatas) navBar.insertBefore(btnPasar, garisBatas);
+        else navBar.appendChild(btnPasar);
+    }
+
+    // 2. Suntik Halaman "Pasar" ke dalam <main>
+    const mainArea = document.querySelector('main');
+    if(mainArea) {
+        const sectionPasar = document.createElement('section');
+        sectionPasar.id = "pasar";
+        sectionPasar.className = "tab-content py-2";
+        sectionPasar.innerHTML = `
+            <div class="flex justify-between items-center mb-5 mt-2 border-b border-white/5 pb-4">
+                <h2 class="text-xl font-extrabold text-white flex items-center gap-2">
+                    <span class="w-1.5 h-6 bg-brand-success rounded-full"></span> Pasar Player
+                </h2>
+                <button onclick="bukaModalJualBarang()" class="bg-brand-success/10 text-brand-success px-3 py-1.5 rounded-lg text-[10px] font-bold border border-brand-success/30 active:scale-95 transition-all shadow-sm">
+                    <i class="fas fa-plus mr-1"></i> Jual Barang
+                </button>
+            </div>
+            
+            <div class="relative mb-5">
+                <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 text-xs"></i>
+                <input type="text" id="cari-pasar" placeholder="Cari akun, item, jasa joki..." class="w-full bg-black/40 border border-white/10 rounded-2xl py-3 pl-10 pr-4 text-xs text-white focus:outline-none focus:border-brand-success transition-all shadow-inner">
+            </div>
+            
+            <div id="grid-pasar-player" class="grid grid-cols-2 gap-3 pb-10">
+                <div class="col-span-2 text-center py-10 text-gray-500 text-xs"><i class="fas fa-store-slash text-4xl mb-3 opacity-30"></i><br>Sedang memuat data pasar...</div>
+            </div>
+        `;
+        mainArea.appendChild(sectionPasar);
+    }
+});
+</script>
+
+
 </body>
 </html>
