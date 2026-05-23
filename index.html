@@ -3685,7 +3685,7 @@ showToast("Gagal menyalin link otomatis", "error");
 
 
 
-function renderFaqs(data = faqs) {
+function renderFaqs(data = globalFaqData) {
 const container = document.getElementById('faq-container');
 if (data.length === 0) { container.innerHTML = `<div class="text-center text-xs text-gray-400 py-6 border border-white/5 bg-brand-card rounded-2xl"><i class="fas fa-search-minus mb-2 text-lg"></i><br>Pertanyaan tidak ditemukan.</div>`; return; }
 container.innerHTML = data.map(f => `<details class="bg-brand-card rounded-2xl border border-white/5 group"><summary class="flex justify-between items-center font-bold text-xs cursor-pointer text-white p-4">${f.t} <i class="fas fa-chevron-down text-brand-accent transition-transform group-open:rotate-180"></i></summary><div class="px-4 pb-4 text-xs text-gray-400 leading-relaxed border-t border-white/5 pt-3 mt-1">${f.j}</div></details>`).join('');
@@ -3693,7 +3693,8 @@ container.innerHTML = data.map(f => `<details class="bg-brand-card rounded-2xl b
 
 document.getElementById('faqSearch').addEventListener('input', (e) => {
 const val = e.target.value.toLowerCase();
-renderFaqs(faqs.filter(f => f.t.toLowerCase().includes(val) || f.j.toLowerCase().includes(val)));
+// UBAH kata 'faqs' jadi 'globalFaqData' sebelum kata .filter
+renderFaqs(globalFaqData.filter(f => f.t.toLowerCase().includes(val) || f.j.toLowerCase().includes(val)));
 });
 
 
