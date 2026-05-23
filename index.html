@@ -4167,6 +4167,7 @@ async function deleteComment(cid) {
             .from('comments')
             .delete()
             .eq('id', cid);
+            .eq('user_id', currentUser.id);
         
         if (deleteError) throw deleteError;
 
