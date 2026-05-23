@@ -7636,10 +7636,6 @@ async function loadProdukXoftware(isRefresh = false) {
     // Tampilkan animasi loading di daftar produk
     container.innerHTML = `<div class="text-center py-10 text-xs text-brand-info animate-pulse col-span-2"><i class="fas fa-sync fa-spin mb-2 text-2xl"></i><br>Menarik Katalog Produk...</div>`;
     
-    // Jika ini adalah refresh manual, beri efek loading juga di laci kategori
-    if (isRefresh && katContainer) {
-        katContainer.innerHTML = `<div class="col-span-4 text-center py-4 text-gray-500 animate-pulse text-[10px] font-bold tracking-widest"><i class="fas fa-spinner fa-spin mr-1"></i> MEMUAT DATA BARU...</div>`;
-    }
 
     try {
         const response = await fetch('/api/get-xoftware?action=produk');
