@@ -1058,6 +1058,30 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
 
 </main>
 
+<!-- MENGAMBANG: LAYAR GRID HASHTAG -->
+<div id="modal-hashtag-grid" class="fixed inset-0 z-[140] hidden flex-col bg-brand-dark transition-all duration-300 transform translate-x-full">
+    
+    <!-- Header Hashtag -->
+    <div class="flex justify-between items-center p-4 border-b border-white/5 bg-brand-dark/90 backdrop-blur-xl shrink-0 sticky top-0 z-20">
+        <div class="flex items-center gap-4">
+            <button onclick="closeHashtagGrid()" class="text-white w-9 h-9 rounded-full bg-white/10 flex items-center justify-center active:scale-90 transition-colors border border-white/10"><i class="fas fa-arrow-left"></i></button>
+            <div>
+                <h3 id="hashtag-grid-title" class="font-extrabold text-white text-lg tracking-tight">#Hashtag</h3>
+                <p id="hashtag-grid-count" class="text-[10px] text-gray-400 font-bold tracking-widest uppercase mt-0.5">0 Video</p>
+            </div>
+        </div>
+        <div class="w-10 h-10 rounded-full bg-brand-accent/20 text-brand-accent flex items-center justify-center border border-brand-accent/30 shadow-[0_0_15px_rgba(255,0,122,0.3)]">
+            <i class="fas fa-hashtag text-xl"></i>
+        </div>
+    </div>
+    
+    <!-- Grid Container -->
+    <div id="hashtag-video-grid" class="grid grid-cols-3 gap-0.5 overflow-y-auto hide-scroll flex-1 pb-10 content-start bg-black">
+        <!-- Video Grid akan dimuat oleh JS di sini -->
+    </div>
+</div>
+
+
 <!-- MENGAMBANG VIDEO PLAYER (PROFIL FEED SCROLL) -->
 <div id="floating-video-player" class="fixed inset-0 z-[150] hidden flex-col bg-black/95 backdrop-blur-lg">
 <button onclick="closeFloatingVideo()" class="absolute top-6 right-6 text-white bg-white/10 w-12 h-12 rounded-full flex items-center justify-center active:scale-90 z-[160]"><i class="fas fa-times text-xl"></i></button>
@@ -1069,15 +1093,31 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
 </div>
 
 <div id="comment-drawer" class="fixed inset-x-0 bottom-0 z-[160] h-[75vh] glass border-t border-white/10 rounded-t-3xl comment-drawer flex flex-col max-w-md mx-auto">
-<div class="flex justify-between items-center p-5 border-b border-white/5 shrink-0 bg-brand-dark/50 rounded-t-3xl">
-<h4 class="font-bold text-white text-sm">Komentar (<span id="drawer-comment-count">0</span>)</h4>
-<button onclick="closeComments()" class="text-gray-400 text-lg w-8 h-8 rounded-full bg-white/5 flex items-center justify-center active:scale-95 transition-colors"><i class="fas fa-times"></i></button>
+    <div class="flex justify-between items-center p-5 border-b border-white/5 shrink-0 bg-brand-dark/50 rounded-t-3xl">
+        <h4 class="font-bold text-white text-sm">Komentar (<span id="drawer-comment-count">0</span>)</h4>
+        <button onclick="closeComments()" class="text-gray-400 text-lg w-8 h-8 rounded-full bg-white/5 flex items-center justify-center active:scale-95 transition-colors"><i class="fas fa-times"></i></button>
+    </div>
+
+    <div id="comment-list" class="flex-1 overflow-y-auto p-5 space-y-2 hide-scroll"></div>
+
+    <!-- Area Ketik Komentar -->
+    <div id="comment-input-wrapper" class="w-full glass border-t border-white/5 p-4 shrink-0 pb-6 rounded-t-xl z-10 mt-auto">
+        <div id="reply-indicator" class="hidden flex justify-between items-center mb-2 px-1 text-[10px] text-gray-400">
+            <span>Membalas <b id="replying-to-name" class="text-brand-info"></b></span>
+            <button onclick="cancelReply()" class="hover:text-white bg-white/10 w-4 h-4 rounded-full flex items-center justify-center"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="flex gap-2">
+            <input type="text" id="comment-input" placeholder="Tambahkan komentar..." class="flex-1 bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-brand-accent">
+            <button onclick="sendComment(event)" class="bg-brand-accent text-white w-12 h-[42px] rounded-xl active:scale-95 transition-transform flex items-center justify-center"><i class="fas fa-paper-plane"></i></button>
+        </div>
+    </div>
+
+    <!-- Pesan Jika Komentar Dimatikan -->
+    <div id="comment-disabled-msg" class="hidden w-full glass border-t border-white/5 p-4 shrink-0 pb-6 rounded-t-xl z-10 mt-auto text-center">
+        <p class="text-xs text-gray-500 font-bold bg-black/40 py-3 rounded-xl border border-white/5"><i class="fas fa-lock mr-2"></i>Komentar dinonaktifkan oleh kreator.</p>
+    </div>
 </div>
 
-<div id="comment-list" class="flex-1 overflow-y-auto p-5 space-y-2 hide-scroll"></div>
-
-<div class="w-full glass border-t border-white/5 p-4 shrink-0 pb-6 rounded-t-xl z-10 mt-auto">
-<div id="reply-indicator" class="hidden flex justify-between items-center mb-2 px-1 text-[10px] text-gray-400">
 <span>Membalas <b id="replying-to-name" class="text-brand-info"></b></span>
 <button onclick="cancelReply()" class="hover:text-white bg-white/10 w-4 h-4 rounded-full flex items-center justify-center"><i class="fas fa-times"></i></button>
 </div>
@@ -1133,14 +1173,42 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
 <div class="p-4 border-b border-white/5 text-center"><h3 class="text-sm font-bold text-gray-300">Opsi Pesan</h3></div>
 
 <button id="btn-reply-msg" class="w-full text-white py-4 font-bold active:bg-white/5 transition-colors text-sm hover:text-brand-info"><i class="fas fa-reply mr-2"></i> Balas Pesan</button>
+<!-- TOMBOL TERUSKAN BARU -->
+<button id="btn-forward-msg" class="w-full text-white py-4 font-bold border-t border-white/5 active:bg-white/5 transition-colors text-sm hover:text-brand-info"><i class="fas fa-share mr-2"></i> Teruskan Pesan</button>
+
 <button id="btn-del-msg-me" onclick="deleteMsgForMe()" class="w-full text-white py-4 font-bold border-t border-white/5 active:bg-white/5 transition-colors text-sm hover:text-brand-info"><i class="fas fa-trash-alt mr-2"></i> Hapus untuk Saya</button>
 <button id="btn-del-msg-all" onclick="deleteMsgForAll()" class="w-full text-red-500 py-4 font-bold border-t border-white/5 active:bg-white/5 transition-colors text-sm hover:text-red-400"><i class="fas fa-globe mr-2"></i> Hapus untuk Semua</button>
 <button onclick="document.getElementById('modal-msg-option').classList.replace('flex', 'hidden')" class="w-full text-gray-500 py-4 font-bold border-t border-white/5 active:bg-white/5 transition-colors text-sm">Batal</button>
 </div>
 </div>
 
+<!-- MODAL TERUSKAN PESAN -->
+<div id="modal-forward-msg" class="fixed inset-0 z-[400] hidden items-end sm:items-center justify-center bg-black/90 backdrop-blur-md px-0 sm:px-6 transition-all duration-300">
+    <div class="bg-brand-card w-full max-w-md sm:rounded-3xl rounded-t-[2.5rem] border border-white/10 shadow-2xl relative modal-anim flex flex-col h-[85vh] sm:h-auto sm:max-h-[85vh] overflow-hidden">
+        
+        <!-- Header Laci -->
+        <div class="flex justify-between items-center p-5 border-b border-white/5 bg-brand-dark/80 backdrop-blur-xl shrink-0">
+            <h3 class="font-extrabold text-white text-sm flex items-center gap-2">
+                <i class="fas fa-share text-brand-info"></i> Teruskan ke...
+            </h3>
+            <button onclick="closeForwardModal()" class="text-gray-400 hover:text-white w-8 h-8 rounded-full bg-white/5 flex items-center justify-center active:scale-95 transition-all"><i class="fas fa-times"></i></button>
+        </div>
 
+        <!-- Kotak Pencarian Kontak -->
+        <div class="p-3 bg-brand-dark/50 shrink-0 border-b border-white/5">
+            <div class="relative">
+                <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-xs"></i>
+                <input type="text" id="forward-search-input" placeholder="Cari nama kontak atau grup..." class="w-full bg-black/40 border border-white/10 rounded-xl py-2.5 pl-9 pr-3 text-xs text-white outline-none focus:border-brand-info transition-colors">
+            </div>
+        </div>
 
+        <!-- Wadah Daftar Kontak & Grup -->
+        <div id="forward-list-container" class="flex-1 overflow-y-auto p-2 hide-scroll space-y-1 block pb-6">
+            <!-- Data Kontak akan dirender oleh Javascript di Langkah 3 -->
+        </div>
+
+    </div>
+</div>
 
 
 <div id="modal-edit-profile" class="fixed inset-0 z-[200] hidden items-center justify-center bg-black/90 backdrop-blur-md px-6">
@@ -1784,6 +1852,9 @@ let currentUser = null, userProfile = null, isAuthLogin = true;
 let tabSebelumnya = 'home';
 let activeGroupId = null;
 let activeGroupRole = 'member';
+let globalPersonalList = [];
+let globalGroupList = [];
+let messageToForward = "";
 let dataRipperGlobal = [], isRipperExpanded = localStorage.getItem('statusLihatSemua') === 'true';
 let viewedUserId = null;
 
@@ -2078,7 +2149,7 @@ async function viewUserProfileByNickname(nickname) {
 }
 
 function cariBerdasarkanTagar(tagar) {
-    // 1. Tutup popup atau layar yang sedang aktif jika diperlukan
+    // 1. Tutup layar story yang sedang aktif jika ada
     const storyModal = document.getElementById('story-viewer-modal');
     if (storyModal && !storyModal.classList.contains('hidden')) {
         closeStoryViewer();
@@ -2094,20 +2165,75 @@ function cariBerdasarkanTagar(tagar) {
         return;
     }
 
-    showToast(`Memutar ${videoDitemukan.length} video #${tagar}`, "success");
+    // 3. TAMPILKAN GRID MODAL HASHTAG (Bukan langsung memutar video)
+    const modal = document.getElementById('modal-hashtag-grid');
+    const grid = document.getElementById('hashtag-video-grid');
+    const title = document.getElementById('hashtag-grid-title');
+    const count = document.getElementById('hashtag-grid-count');
 
-    // 3. BUKA PEMUTAR VIDEO OTOMATIS (Ala TikTok)
-    // Kita pinjam array currentProfileVideos agar dirender oleh pemutar floating
-    currentProfileVideos = [...videoDitemukan].reverse(); // Urutkan dari yang terbaru
-    profileFeedIndex = 0;
+    // Set Teks Header
+    title.innerText = '#' + tagar;
+    count.innerText = videoDitemukan.length + ' Video Terkait';
+    
+    // Render Grid (dibalik agar yang terbaru di atas)
+    const reversedVideos = [...videoDitemukan].reverse();
+    grid.innerHTML = reversedVideos.map((vid, index) => {
+        return `
+        <div class="aspect-[9/16] bg-black relative rounded-sm overflow-hidden group cursor-pointer border border-white/5" onclick="playHashtagVideo('${tagar}', ${index})">
+            <video class="w-full h-full object-cover" preload="metadata">
+                <source src="${vid.video_url}" type="video/mp4">
+            </video>
+            <div class="absolute bottom-1.5 left-1.5 flex items-center gap-1.5 text-white text-[10px] font-bold z-10 bg-black/50 px-2 py-1 rounded backdrop-blur-sm border border-white/10">
+                <i class="fas fa-play text-[8px]"></i> 
+            </div>
+        </div>
+        `;
+    }).join('');
 
-    // Bersihkan layar player
+    // Buka Modal dengan efek geser
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    setTimeout(() => modal.classList.remove('translate-x-full'), 10);
+    
+    // Hentikan video latar belakang di feed utama agar tidak bocor suaranya
+    document.querySelectorAll('.video-player').forEach(v => v.pause());
+
+    // Beri jejak sejarah URL (untuk tombol Back HP)
+    history.pushState({ popup: 'hashtag_grid' }, null, '#tagar');
+}
+
+// FUNGSI PENUTUP LAYAR GRID
+function closeHashtagGrid(dariTombolBack = false) {
+    const modal = document.getElementById('modal-hashtag-grid');
+    modal.classList.add('translate-x-full');
+    
+    setTimeout(() => {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }, 300);
+
+    if (!dariTombolBack && window.location.hash === '#tagar') {
+        history.back();
+    }
+}
+
+function playHashtagVideo(tagar, startIndex) {
+    // 1. Ambil video dengan hashtag yang sama
+    const videoDitemukan = allVideosData.filter(v => 
+        v.caption && v.caption.toLowerCase().includes('#' + tagar.toLowerCase())
+    );
+    if(videoDitemukan.length === 0) return;
+
+    // 2. Balikkan urutan agar sinkron dengan grid
+    currentProfileVideos = [...videoDitemukan].reverse();
+
+    // 3. Tentukan index target klik
+    let targetIndex = parseInt(startIndex) || 0;
+
+    // Bersihkan layar floating player
     const container = document.getElementById('floating-feed-container');
     container.innerHTML = '';
     container.scrollTop = 0;
-
-    // Hentikan paksa semua video utama di feed background yang sedang menyala
-    document.querySelectorAll('.video-player').forEach(v => v.pause());
 
     // Tampilkan floating player
     document.getElementById('floating-video-player').classList.remove('hidden');
@@ -2116,14 +2242,22 @@ function cariBerdasarkanTagar(tagar) {
     if(floatObs) floatObs.disconnect();
     setupFloatVideoObserver();
 
-    // Render batch video (muat 3 video pertama)
-    renderProfileVideoBatch(3);
+    // 4. Render batch video agar mulus (target yang diklik + 2 di bawahnya)
+    profileFeedIndex = 0;
+    let amountToLoad = targetIndex + 3;
+    renderProfileVideoBatch(amountToLoad);
 
-    // Tambahkan jejak URL agar tombol back/kembali di HP berfungsi dengan baik
-    history.pushState({ popup: 'floating_video' }, null, '#hashtag');
+    // 5. Scroll otomatis tepat ke video yang baru diklik
+    setTimeout(() => {
+        const targetCard = container.children[targetIndex];
+        if (targetCard) {
+            targetCard.scrollIntoView({ behavior: 'auto', block: 'start' });
+        }
+    }, 10);
+
+    // Tambahkan jejak URL agar tombol back HP tahu kalau sedang nonton video hashtag
+    history.pushState({ popup: 'floating_video_hashtag' }, null, '#play_tagar');
 }
-
-
 
 
 
@@ -2954,6 +3088,14 @@ if (chatBtn) chatBtn.classList.remove('hidden');
 
 isPopupClosed = true;
 }
+
+    // TANGKAP LAYAR GRID HASHTAG
+    const hashtagGrid = document.getElementById('modal-hashtag-grid');
+    if (hashtagGrid && !hashtagGrid.classList.contains('hidden') && !hashtagGrid.classList.contains('translate-x-full')) {
+        closeHashtagGrid(true);
+        return;
+    }
+
 
 // 2. SETELAH POP-UP AMAN, BARU TANGKAP LAYAR MENGAMBANG
 if (document.body.classList.contains('video-focused')) {
@@ -3832,19 +3974,29 @@ dots.forEach((dot, index) => { if (index === activeIndex) { dot.className = "dot
 }
 
 function openComments(id) {
-history.pushState({ popup: 'comments' }, null, '#comments');
-activeVideoId = id;
-document.getElementById('comment-drawer').classList.add('open');
-loadComments(id);
-}
+    history.pushState({ popup: 'comments' }, null, '#comments');
+    activeVideoId = id;
+    
+    // 1. CEK STATUS IZINKAN KOMENTAR DARI DATABASE LOKAL
+    const video = allVideosData.find(v => v.id === id);
+    // (Jika data allow_comments tidak ada/kosong untuk video lama, anggap true)
+    const isCommentsAllowed = video ? (video.allow_comments !== false && video.allow_comments !== 'false') : true;
 
-function closeComments() {
-if (window.location.hash === '#comments') {
-history.back();
-} else {
-document.getElementById('comment-drawer').classList.remove('open');
-cancelReply();
-}
+    // 2. KONTROL TAMPILAN LACI KOMENTAR
+    const inputWrapper = document.getElementById('comment-input-wrapper');
+    const disabledMsg = document.getElementById('comment-disabled-msg');
+
+    if (isCommentsAllowed) {
+        if (inputWrapper) inputWrapper.classList.remove('hidden');
+        if (disabledMsg) disabledMsg.classList.add('hidden');
+    } else {
+        if (inputWrapper) inputWrapper.classList.add('hidden');
+        if (disabledMsg) disabledMsg.classList.remove('hidden');
+    }
+
+    // 3. BUKA LACI DAN MUAT ISI KOMENTARNYA
+    document.getElementById('comment-drawer').classList.add('open');
+    loadComments(id);
 }
 
 async function loadComments(videoId, silent = false) {
@@ -3989,6 +4141,11 @@ if (input.value.startsWith('@')) input.value = '';
 
 async function sendComment(event) {
 if (!currentUser) return openAuthModal();
+const video = allVideosData.find(v => v.id === activeVideoId);
+    const isCommentsAllowed = video ? (video.allow_comments !== false && video.allow_comments !== 'false') : true;
+    if (!isCommentsAllowed) {
+        return showToast("Komentar dinonaktifkan untuk video ini.", "error");
+    }
 const msgInput = document.getElementById('comment-input');
 const msg = msgInput.value.trim();
 if (!msg) {
@@ -5017,7 +5174,8 @@ if (!groupContacts[g.group_id]) groupContacts[g.group_id] = { created_at: '1970-
 });
 }
 
-let personalList = [], groupList = [];
+globalPersonalList = [];
+globalGroupList = [];
 const partnerIds = Object.keys(personalContacts), groupIds = Object.keys(groupContacts);
 
 let clearedChats = JSON.parse(localStorage.getItem('cleared_chats') || '{}');
@@ -5530,6 +5688,8 @@ if (!currentUser) return openAuthModal();
 const fileInput = document.getElementById('input-video-file');
 const captionInput = document.getElementById('input-video-caption');
 const file = fileInput.files[0];
+const allowCommentsToggle = document.getElementById('upload-allow-comments');
+const allowComments = allowCommentsToggle ? allowCommentsToggle.checked : true;
 if (!file) return showToast("Pilih video dulu!", "error");
 
 const btn = document.querySelector('button[onclick="prosesUploadVideo()"]');
@@ -5569,7 +5729,8 @@ caption: captionInput.value || "",
 nickname: userProfile?.nickname || "Player",
 avatar_url: userProfile?.avatar_url || "",
 user_id: currentUser.id,
-created_at: new Date().toISOString()
+created_at: new Date().toISOString(), // <--- TAMBAHKAN KOMA DI SINI
+allow_comments: allowComments
 };
 
 // 🔥 PERBAIKAN 2: Masukkan data video baru ke antrean lokal aplikasi biar langsung tayang di feed tanpa nunggu Google Sheets yang lelet
@@ -8892,6 +9053,148 @@ async function copyLinkLaciAktif(btn) {
         });
     }
 }
+
+// ==========================================
+// FITUR TERUSKAN PESAN (FORWARD) WHATSAPP STYLE
+// ==========================================
+
+// 1. Eksekusi Tombol "Teruskan Pesan" di Modal Opsi
+document.getElementById('btn-forward-msg').addEventListener('click', () => {
+    if (!selectedMessageId) return;
+
+    // Ambil gelembung chat dari layar berdasarkan ID
+    const msgBubble = document.getElementById(`msg-chat-${selectedMessageId}`);
+    if (!msgBubble) return;
+
+    // Cari letak teks atau medianya
+    const textDiv = msgBubble.querySelector('.text-\\[12px\\]');
+    if (textDiv) {
+        // Kloning elemen agar kita tidak merusak UI chat aslinya saat membedah isi pesannya
+        let clonedDiv = textDiv.cloneNode(true);
+        
+        // Buang kotak balasan (quote reply) jika pesan ini adalah balasan, biar murni pesannya saja yang diforward
+        const innerReply = clonedDiv.querySelector('div[onclick^="jumpToMessage"]');
+        if (innerReply) innerReply.remove();
+
+        // Ekstraksi Logika Media (Gambar / Video / Audio / Teks)
+        if (clonedDiv.innerHTML.includes('<img')) {
+            const imgTag = clonedDiv.querySelector('img');
+            messageToForward = `[IMG]${imgTag.src}`;
+            const capDiv = clonedDiv.querySelector('div.mt-1\\.5');
+            if (capDiv) messageToForward += `||CAP||${capDiv.innerText}`;
+        } else if (clonedDiv.innerHTML.includes('<video')) {
+            const vidTag = clonedDiv.querySelector('video');
+            messageToForward = `[VIDEO]${vidTag.src}`;
+            const capDiv = clonedDiv.querySelector('div.mt-1\\.5');
+            if (capDiv) messageToForward += `||CAP||${capDiv.innerText}`;
+        } else if (clonedDiv.innerHTML.includes('<audio')) {
+            const audTag = clonedDiv.querySelector('source');
+            messageToForward = `[AUDIO]${audTag.src}`;
+        } else {
+            messageToForward = clonedDiv.innerText.trim();
+        }
+    }
+
+    // Tutup modal opsi pesan kecil
+    closeMsgOptions(); 
+    
+    // Buka Laci Kontak untuk Meneruskan
+    document.getElementById('modal-forward-msg').classList.remove('hidden');
+    document.getElementById('modal-forward-msg').classList.add('flex');
+    
+    // Muat daftar kontak
+    loadForwardContacts(); 
+});
+
+// 2. Fungsi Me-render Daftar Kontak ke Layar
+function loadForwardContacts(searchQuery = '') {
+    const container = document.getElementById('forward-list-container');
+    
+    // Gabungkan Grup dan Personal Chat yang pernah berinteraksi
+    let allContacts = [...globalGroupList, ...globalPersonalList];
+    
+    // Logika Filter (Pencarian Instan)
+    if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        allContacts = allContacts.filter(c => c.name.toLowerCase().includes(query));
+    }
+
+    // Render ke HTML
+    if (allContacts.length === 0) {
+        container.innerHTML = '<p class="text-center text-xs text-gray-500 mt-10">Kontak tidak ditemukan.</p>';
+        return;
+    }
+
+    container.innerHTML = allContacts.map(contact => {
+        const isGroup = contact.type === 'group';
+        return `
+        <div onclick="executeForward('${contact.id}', ${isGroup}, '${contact.name.replace(/'/g, "\\'")}')" class="flex items-center justify-between p-3 hover:bg-white/5 cursor-pointer rounded-2xl transition-all border-b border-white/5">
+            <div class="flex items-center">
+                <img src="${contact.avatar}" class="w-10 h-10 rounded-full object-cover border border-white/10 shrink-0">
+                <div class="ml-3">
+                    <h4 class="font-bold text-white text-xs">${contact.name}</h4>
+                    <p class="text-[9px] text-gray-500">${isGroup ? 'Grup' : 'Chat Pribadi'}</p>
+                </div>
+            </div>
+            <button class="w-8 h-8 rounded-full bg-brand-info/20 text-brand-info flex items-center justify-center active:scale-90 transition-all">
+                <i class="fas fa-share"></i>
+            </button>
+        </div>`;
+    }).join('');
+}
+
+// 3. Eksekusi Pengiriman Pesan
+async function executeForward(targetId, isGroup, targetName) {
+    // Validasi konfirmasi (Mirip seperti membatalkan pesanan joki di code Anda)
+    const confirmSend = await customConfirm(`Teruskan pesan ini ke ${targetName}?`);
+    if (!confirmSend) return;
+
+    closeForwardModal(); 
+    showToast(`Meneruskan pesan ke ${targetName}...`, "info");
+
+    try {
+        // Siapkan Payload Database
+        const insertData = { 
+            sender_id: currentUser.id, 
+            message: messageToForward // Teks/Media yang sudah diserap sebelumnya
+        };
+        
+        if (isGroup) {
+            insertData.group_id = targetId;
+        } else {
+            insertData.receiver_id = targetId;
+        }
+
+        // Tembak ke Supabase
+        const { error } = await supabaseClient.from('messages').insert(insertData);
+        if (error) throw error;
+
+        showToast("Pesan berhasil diteruskan!", "success");
+        
+        // Panggil refresh inbox agar pesan yang diforward naik ke urutan teratas
+        loadChatList();
+
+    } catch (err) {
+        showToast("Gagal meneruskan pesan.", "error");
+    }
+}
+
+// 4. Fungsi Menutup Modal
+function closeForwardModal() {
+    const modal = document.getElementById('modal-forward-msg');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+    
+    // Reset Data
+    document.getElementById('forward-search-input').value = ''; 
+    messageToForward = ""; 
+}
+
+// 5. Event Listener Kotak Pencarian Kontak
+document.getElementById('forward-search-input').addEventListener('input', (e) => {
+    loadForwardContacts(e.target.value);
+});
+
 
 </script>
 
