@@ -28,7 +28,8 @@ export default async function handler(req, res) {
         video_id, 
         nickname, 
         message,
-        avatar_url: avatar_url || "" // Tambahkan foto profil si pengirim
+        avatar_url: avatar_url || "", // Tambahkan foto profil si pengirim
+      user_id: user_id || null
     };
 
     if (parent_id) {
