@@ -3024,6 +3024,11 @@ const commentDrawer = document.getElementById('comment-drawer');
 if (commentDrawer.classList.contains('open')) {
 commentDrawer.classList.remove('open');
 cancelReply();
+
+if (commentSubscription) {
+    supabaseClient.removeChannel(commentSubscription);
+    commentSubscription = null;
+}
 return;
 }
 
@@ -3970,6 +3975,26 @@ let activeIndex = Math.round((carousel.scrollLeft / maxScroll) * (dots.length - 
 dots.forEach((dot, index) => { if (index === activeIndex) { dot.className = "dot-indicator h-1.5 rounded-full transition-all duration-300 w-4 bg-brand-accent"; } else { dot.className = "dot-indicator h-1.5 rounded-full transition-all duration-300 w-1.5 bg-white/40"; } });
 }
 
+let commentSubscription = null;
+
+function setupCommentRealtime(videoId) {
+    if (commentSubscription) supabaseClient.removeChannel(commentSubscription);
+    
+    commentSubscription = supabaseClient.channel(`room_comments_${videoId}`)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'comments', filter: `video_id=eq.${videoId}` }, payload => {
+        const triggerUserId = payload.new ? payload.new.user_id : payload.old?.user_id;
+        
+        // Refresh layar jika ada komentar baru/dihapus oleh orang lain
+        if (triggerUserId !== currentUser?.id) {
+            loadComments(videoId, true);
+            const containerCount = document.querySelector(`.comment-count-container[data-vid="${videoId}"]`);
+            if(containerCount) updateCommentCountUI(videoId, containerCount);
+        }
+    })
+    .subscribe();
+}
+
+
 function openComments(id) {
     history.pushState({ popup: 'comments' }, null, '#comments');
     activeVideoId = id;
@@ -3994,6 +4019,7 @@ function openComments(id) {
     // 3. BUKA LACI DAN MUAT ISI KOMENTARNYA
     document.getElementById('comment-drawer').classList.add('open');
     loadComments(id);
+    setupCommentRealtime(id);
 }
 
 function closeComments() {
@@ -4002,6 +4028,11 @@ function closeComments() {
     } else {
         document.getElementById('comment-drawer').classList.remove('open');
         if (typeof cancelReply === 'function') cancelReply();
+        
+        if (commentSubscription) {
+            supabaseClient.removeChannel(commentSubscription);
+            commentSubscription = null;
+        }
     }
 }
 
