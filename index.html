@@ -10206,6 +10206,32 @@ async function checkoutPasar(nama, harga, id) {
 }
 
 
+// ==========================================
+// FUNGSI BUKA / TUTUP MODAL JUAL BARANG
+// ==========================================
+function bukaModalJualBarang() {
+    if (!currentUser) return showToast("Silakan login dulu untuk berjualan!", "error");
+    document.getElementById('modal-jual-barang').classList.replace('hidden', 'flex');
+}
+
+function tutupModalJualBarang() {
+    document.getElementById('modal-jual-barang').classList.replace('flex', 'hidden');
+    
+    // Reset form jika pengguna batal memposting dan menutup laci
+    document.getElementById('jualan-nama').value = '';
+    document.getElementById('jualan-harga').value = '';
+    document.getElementById('jualan-deskripsi').value = '';
+    document.getElementById('input-foto-jualan').value = '';
+    fileJualanArray = [];
+    
+    const previewContainer = document.getElementById('preview-container-jualan');
+    if (previewContainer) {
+        previewContainer.innerHTML = '';
+        previewContainer.classList.add('hidden');
+    }
+}
+
+
 </script>
 
 <div id="modal-saldo-dompet" class="fixed inset-0 z-[600] hidden items-end sm:items-center justify-center bg-black/90 backdrop-blur-md px-0 sm:px-6 transition-all duration-300">
