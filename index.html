@@ -9793,7 +9793,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <label class="text-[10px] text-brand-info font-bold uppercase tracking-wider mb-1.5 block flex items-center gap-1">
                     <i class="fas fa-robot"></i> Stok Auto-Kirim (Tiap baris = 1 Stok)
                 </label>
-                <textarea id="jualan-stock" rows="3" placeholder="ID/USERNSME | PASSWORD" class="w-full bg-[#0F0920] border border-brand-info/50 rounded-xl px-4 py-3 text-sm text-brand-info outline-none focus:border-brand-info transition-colors resize-none hide-scroll"></textarea>
+                <textarea id="jualan-stock" rows="3" placeholder="USERNAME | PASSWORD" class="w-full bg-[#0F0920] border border-brand-info/50 rounded-xl px-4 py-3 text-sm text-brand-info outline-none focus:border-brand-info transition-colors resize-none hide-scroll"></textarea>
                 <p class="text-[9px] text-gray-400 mt-1.5 italic leading-relaxed">*Sistem akan otomatis mengirimkan baris paling atas kepada pembeli dan mengurangi sisa stok setelah dibayar.</p>
             </div>
 
@@ -10539,18 +10539,34 @@ function loadTokoSaya() {
 async function loadPasarPlayer(forceRefresh = false) {
     const gridPasar = document.getElementById('grid-pasar-player');
     if (!gridPasar) return;
-    if (forceRefresh) gridPasar.innerHTML = '<div class="col-span-2 text-center py-10 text-brand-success"><i class="fas fa-spinner fa-spin text-3xl"></i></div>';
+
+    if (forceRefresh) {
+        gridPasar.innerHTML = '<div class="col-span-2 text-center py-10 text-brand-success"><i class="fas fa-spinner fa-spin text-3xl mb-3"></i><br><span class="text-xs font-bold uppercase tracking-widest">Memuat Ulang...</span></div>';
+    }
 
     try {
         const { data, error } = await supabaseClient
             .from('player_products')
             .select('*, profiles:user_id(nickname, avatar_url, exp)') 
             .order('created_at', { ascending: false });
+
         if (error) throw error;
+
         globalDataPasar = data || [];
-        terapkanFilterPasar();
+        terapkanFilterPasar(); // Gunakan fungsi filter cerdas
+
+        // --- INI LOGIKA PENDETEKSI LINK YANG SEBELUMNYA TERTIMPA ---
+        const urlHash = window.location.hash.substring(1);
+        if (urlHash.startsWith('detailpasar?id=')) {
+            const produkId = urlHash.split('=')[1];
+            if (produkId) {
+                // Beri jeda 800ms agar data selesai dimuat sebelum membuka laci
+                setTimeout(() => { bukaDetailPasar(produkId); }, 800); 
+            }
+        }
+
     } catch (err) {
-        gridPasar.innerHTML = '<div class="col-span-2 text-center py-10 text-red-500 text-xs">Gagal memuat data.</div>';
+        gridPasar.innerHTML = '<div class="col-span-2 text-center py-10 text-red-500 text-xs">Gagal menarik data pasar. Cek koneksi.</div>';
     }
 }
 
