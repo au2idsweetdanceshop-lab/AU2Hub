@@ -1095,6 +1095,36 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
 </div>
 
 
+<!-- HALAMAN PASAR PLAYER -->
+<section id="pasar" class="tab-content py-2">
+    <div class="flex justify-between items-center mb-4 mt-2 border-b border-white/5 pb-4">
+        <h2 class="text-xl font-extrabold text-white flex items-center gap-2">
+            <span class="w-1.5 h-6 bg-brand-success rounded-full"></span> Pasar Player
+        </h2>
+        <div class="flex items-center gap-2">
+            <button onclick="loadPasarPlayer(true)" class="text-brand-success bg-brand-success/10 w-8 h-8 rounded-full flex items-center justify-center active:scale-90 transition-all border border-brand-success/30 shadow-sm"><i class="fas fa-sync-alt"></i></button>
+            <button onclick="bukaModalJualBarang()" class="bg-brand-success text-brand-dark px-4 py-1.5 rounded-lg text-[11px] font-extrabold shadow-[0_4px_10px_rgba(37,211,102,0.3)] active:scale-95 transition-all"><i class="fas fa-plus mr-1"></i> Jual</button>
+        </div>
+    </div>
+
+    <!-- FILTER KATEGORI CEPAT -->
+    <div class="flex overflow-x-auto hide-scroll gap-2 mb-4 pb-1" id="kategori-pasar-chips">
+        <button onclick="filterKategoriPasar('Semua', this)" class="btn-kat-pasar whitespace-nowrap bg-brand-success text-white px-4 py-1.5 rounded-full text-[10px] font-bold shadow-[0_0_10px_rgba(37,211,102,0.3)] transition-all border border-transparent">Semua</button>
+        <button onclick="filterKategoriPasar('Joki', this)" class="btn-kat-pasar whitespace-nowrap bg-white/5 border border-white/10 text-gray-400 px-4 py-1.5 rounded-full text-[10px] font-bold hover:bg-white/10 transition-all">Joki</button>
+        <button onclick="filterKategoriPasar('Akun', this)" class="btn-kat-pasar whitespace-nowrap bg-white/5 border border-white/10 text-gray-400 px-4 py-1.5 rounded-full text-[10px] font-bold hover:bg-white/10 transition-all">Akun</button>
+        <button onclick="filterKategoriPasar('Item', this)" class="btn-kat-pasar whitespace-nowrap bg-white/5 border border-white/10 text-gray-400 px-4 py-1.5 rounded-full text-[10px] font-bold hover:bg-white/10 transition-all">Item / Gift</button>
+        <button onclick="filterKategoriPasar('Top Up', this)" class="btn-kat-pasar whitespace-nowrap bg-white/5 border border-white/10 text-gray-400 px-4 py-1.5 rounded-full text-[10px] font-bold hover:bg-white/10 transition-all">Top Up</button>
+    </div>
+
+    <div class="relative mb-5">
+        <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 text-xs"></i>
+        <input type="text" id="cari-pasar" placeholder="Cari item, joki, atau nama penjual..." class="w-full bg-black/40 border border-white/10 rounded-2xl py-3 pl-10 pr-4 text-xs text-white focus:outline-none focus:border-brand-success transition-all shadow-inner">
+    </div>
+    
+    <div id="grid-pasar-player" class="grid grid-cols-2 gap-3 pb-10">
+        <div class="col-span-2 text-center py-10 text-brand-success"><i class="fas fa-spinner fa-spin text-3xl mb-3"></i><br><span class="text-xs font-bold tracking-widest uppercase">Memuat Etalase...</span></div>
+    </div>
+</section>
 
 
 
@@ -1637,6 +1667,24 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
     <a href="#profile" onclick="switchTab('profile', event)" class="nav-item flex items-center justify-center w-[44px] h-[44px] text-gray-500 mt-auto" title="Profil">
         <i class="fas fa-user-circle text-lg pointer-events-none"></i>
     </a>
+    
+        <!-- ... tombol navigasi lainnya ... -->
+    <a href="#pesanan" onclick="switchTab('pesanan', event)" class="nav-item flex items-center justify-center w-[44px] h-[44px] text-gray-500" title="Pesanan">
+        <i class="fas fa-receipt text-lg pointer-events-none"></i>
+    </a>
+
+    <!-- SUNTIKKAN KODE INI SECARA MANUAL -->
+    <a href="#pasar" onclick="switchTab('pasar', event)" class="nav-item flex items-center justify-center w-[44px] h-[44px] text-gray-500" title="Pasar Player">
+        <i class="fas fa-store text-lg pointer-events-none"></i>
+    </a>
+    <!-- ================================== -->
+
+    <button onclick="toggleWidget()" class="nav-item flex items-center justify-center w-[44px] h-[44px] text-gray-500 relative cursor-pointer" title="Chat">
+        <i class="fas fa-comment-dots text-lg pointer-events-none"></i>
+        <span id="global-chat-badge" class="hidden absolute top-0 right-0 bg-red-500 text-white text-[8px] font-bold w-4 h-4 flex items-center justify-center rounded-full border border-brand-dark pointer-events-none">0</span>
+    </button>
+
+    
 </nav>
 
 
@@ -9847,93 +9895,20 @@ let idPenjualAktif = null;
 let kategoriPasarAktif = 'Semua'; // Variabel baru untuk filter
 
 document.addEventListener('DOMContentLoaded', () => {
-    // A. SUNTIK TOMBOL NAVIGASI MENU KIRI (LEBIH AMAN)
-    const navBar = document.querySelector('nav');
-    if(navBar) {
-        const btnPasar = document.createElement('a');
-        btnPasar.href = "#pasar";
-        btnPasar.className = "nav-item flex items-center justify-center w-[44px] h-[44px] text-gray-500 mb-2";
-        btnPasar.title = "Pasar Player";
-        btnPasar.onclick = (e) => switchTab('pasar', e);
-        btnPasar.innerHTML = '<i class="fas fa-store text-lg pointer-events-none"></i>';
-        
-        // Taruh tepat di bawah menu Pesanan
-        const btnPesanan = navBar.querySelector('a[href="#pesanan"]');
-        if(btnPesanan) {
-            navBar.insertBefore(btnPasar, btnPesanan.nextSibling);
-        } else {
-            navBar.appendChild(btnPasar);
-        }
-    }
+    // Jalankan sistem pembaca input Rupiah dan auto-load data
+    setTimeout(() => {
+        const searchInput = document.getElementById('cari-pasar');
+        if (searchInput) searchInput.addEventListener('input', terapkanFilterPasar);
 
-    // B. SUNTIK HALAMAN TAB KONTEN KE <main> DENGAN FITUR MAXIMIZED
-    const mainArea = document.querySelector('main');
-    if(mainArea) {
-        const sectionPasar = document.createElement('section');
-        sectionPasar.id = "pasar";
-        sectionPasar.className = "tab-content py-2";
-        sectionPasar.innerHTML = `
-            <div class="flex justify-between items-center mb-4 mt-2 border-b border-white/5 pb-4">
-                <h2 class="text-xl font-extrabold text-white flex items-center gap-2">
-                    <span class="w-1.5 h-6 bg-brand-success rounded-full"></span> Pasar Player
-                </h2>
-                <div class="flex items-center gap-2">
-                    <button onclick="loadPasarPlayer(true)" class="text-brand-success bg-brand-success/10 w-8 h-8 rounded-full flex items-center justify-center active:scale-90 transition-all border border-brand-success/30 shadow-sm"><i class="fas fa-sync-alt"></i></button>
-                    <button onclick="bukaModalJualBarang()" class="bg-brand-success text-brand-dark px-4 py-1.5 rounded-lg text-[11px] font-extrabold shadow-[0_4px_10px_rgba(37,211,102,0.3)] active:scale-95 transition-all"><i class="fas fa-plus mr-1"></i> Jual</button>
-                </div>
-            </div>
+        const jualanHarga = document.getElementById('jualan-harga');
+        const editHarga = document.getElementById('edit-produk-harga');
+        if(jualanHarga) jualanHarga.addEventListener('input', formatInputRupiah);
+        if(editHarga) editHarga.addEventListener('input', formatInputRupiah);
+    }, 500);
 
-            <!-- [BARU] FILTER KATEGORI CEPAT -->
-            <div class="flex overflow-x-auto hide-scroll gap-2 mb-4 pb-1" id="kategori-pasar-chips">
-                <button onclick="filterKategoriPasar('Semua', this)" class="btn-kat-pasar whitespace-nowrap bg-brand-success text-white px-4 py-1.5 rounded-full text-[10px] font-bold shadow-[0_0_10px_rgba(37,211,102,0.3)] transition-all border border-transparent">Semua</button>
-                <button onclick="filterKategoriPasar('Joki', this)" class="btn-kat-pasar whitespace-nowrap bg-white/5 border border-white/10 text-gray-400 px-4 py-1.5 rounded-full text-[10px] font-bold hover:bg-white/10 transition-all">Joki</button>
-                <button onclick="filterKategoriPasar('Akun', this)" class="btn-kat-pasar whitespace-nowrap bg-white/5 border border-white/10 text-gray-400 px-4 py-1.5 rounded-full text-[10px] font-bold hover:bg-white/10 transition-all">Akun</button>
-                <button onclick="filterKategoriPasar('Item', this)" class="btn-kat-pasar whitespace-nowrap bg-white/5 border border-white/10 text-gray-400 px-4 py-1.5 rounded-full text-[10px] font-bold hover:bg-white/10 transition-all">Item / Gift</button>
-                <button onclick="filterKategoriPasar('Top Up', this)" class="btn-kat-pasar whitespace-nowrap bg-white/5 border border-white/10 text-gray-400 px-4 py-1.5 rounded-full text-[10px] font-bold hover:bg-white/10 transition-all">Top Up</button>
-            </div>
-
-            <div class="relative mb-5">
-                <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 text-xs"></i>
-                <input type="text" id="cari-pasar" placeholder="Cari item, joki, atau nama penjual..." class="w-full bg-black/40 border border-white/10 rounded-2xl py-3 pl-10 pr-4 text-xs text-white focus:outline-none focus:border-brand-success transition-all shadow-inner">
-            </div>
-            
-            <div id="grid-pasar-player" class="grid grid-cols-2 gap-3 pb-10">
-                <div class="col-span-2 text-center py-10 text-brand-success"><i class="fas fa-spinner fa-spin text-3xl mb-3"></i><br><span class="text-xs font-bold tracking-widest uppercase">Memuat Etalase...</span></div>
-            </div>
-        `;
-        mainArea.appendChild(sectionPasar);
-        
-        // PENTING: Cek jika user merefresh web saat di hash #pasar
-        if (window.location.hash === '#pasar' || localStorage.getItem('lastTab') === 'pasar') {
-            switchTab('pasar', null, false);
-        }
-        
-        // Pasang Event Listener untuk Kolom Pencarian
-        setTimeout(() => {
-            const searchInput = document.getElementById('cari-pasar');
-            if (searchInput) {
-                searchInput.addEventListener('input', (e) => {
-                    terapkanFilterPasar();
-                });
-            }
-
-            // [BARU] Setup Input Rupiah di Laci Form Jual & Edit tanpa mengubah HTML asli
-            const jualanHarga = document.getElementById('jualan-harga');
-            const editHarga = document.getElementById('edit-produk-harga');
-            if(jualanHarga) {
-                jualanHarga.type = 'text'; // Paksa ubah type agar mendukung string (titik)
-                jualanHarga.addEventListener('input', formatInputRupiah);
-            }
-            if(editHarga) {
-                editHarga.type = 'text';
-                editHarga.addEventListener('input', formatInputRupiah);
-            }
-        }, 1000);
-    }
-
-    // Auto-load data pasar saat web dimuat
-    loadPasarPlayer(); 
+    loadPasarPlayer();
 });
+
 
 // [BARU] FUNGSI FILTER KATEGORI GANDA
 function filterKategoriPasar(kat, btnEl) {
