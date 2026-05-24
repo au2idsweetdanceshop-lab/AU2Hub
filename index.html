@@ -10428,6 +10428,134 @@ async function bukaModalSaldoDompet() {
     fetchSaldoDanMutasi();
 }
 
+// --- KODE PEMULIHAN (Fungsi yang hilang) ---
+
+function switchTokoTab(tab) {
+    const btnProduk = document.getElementById('tab-toko-produk');
+    const btnPesanan = document.getElementById('tab-toko-pesanan');
+    const contProduk = document.getElementById('toko-produk-container');
+    const contPesanan = document.getElementById('toko-pesanan-container');
+    if(!btnProduk || !btnPesanan || !contProduk || !contPesanan) return;
+
+    const activeClassBtn = 'flex-1 py-2.5 text-xs font-bold text-brand-dark bg-yellow-500 rounded-lg shadow-[0_0_15px_rgba(234,179,8,0.4)] transition-all';
+    const inactiveClassBtn = 'flex-1 py-2.5 text-xs font-bold text-gray-500 hover:text-white rounded-lg transition-all border border-transparent';
+
+    if (tab === 'produk') {
+        btnProduk.className = activeClassBtn;
+        btnPesanan.className = inactiveClassBtn;
+        contProduk.classList.replace('hidden', 'block');
+        contPesanan.classList.replace('block', 'hidden');
+        if(currentUser) loadProdukSaya();
+    } else {
+        btnPesanan.className = activeClassBtn;
+        btnProduk.className = inactiveClassBtn;
+        contPesanan.classList.replace('hidden', 'block');
+        contProduk.classList.replace('block', 'hidden');
+        if(currentUser) loadPesananMasuk();
+    }
+}
+
+async function loadProdukSaya() {
+    const container = document.getElementById('toko-produk-container');
+    if(!container) return;
+    container.innerHTML = '<div class="text-center py-10 text-xs text-gray-500"><i class="fas fa-spinner fa-spin text-2xl mb-2 text-yellow-500"></i><br>Memuat produk...</div>';
+    try {
+        const { data } = await supabaseClient.from('player_products').select('*').eq('user_id', currentUser.id).order('created_at', { ascending: false });
+        if (data && data.length > 0) {
+            container.innerHTML = data.map(item => {
+                const hargaAsli = Number(item.price);
+                const pendapatanBersih = hargaAsli - Math.floor(hargaAsli * 0.05);
+                return `
+                <div class="bg-black/40 border border-white/5 p-3 rounded-2xl flex items-center gap-3">
+                    <img src="${(item.image_url || '').split(',')[0]}" class="w-16 h-16 rounded-xl object-cover" onerror="this.src='https://placehold.co/100/1a1133/2BD975?text=PRODUK'">
+                    <div class="flex-1 min-w-0">
+                        <h4 class="text-xs font-bold text-white line-clamp-1">${item.title}</h4>
+                        <div class="text-brand-success font-extrabold text-[11px] mt-0.5">Bersih: Rp ${pendapatanBersih.toLocaleString('id-ID')}</div>
+                    </div>
+                    <div class="flex flex-col gap-1.5 shrink-0">
+                        <button onclick="bukaModalEditProduk('${item.id}')" class="w-8 h-8 rounded-full bg-brand-info/20 text-brand-info flex items-center justify-center"><i class="fas fa-pen text-[10px]"></i></button>
+                        <button onclick="hapusProdukSaya('${item.id}', '${item.title}')" class="w-8 h-8 rounded-full bg-red-500/20 text-red-500 flex items-center justify-center"><i class="fas fa-trash-alt text-[10px]"></i></button>
+                    </div>
+                </div>`;
+            }).join('');
+        } else {
+            container.innerHTML = '<div class="text-center py-10 text-gray-500 text-xs">Belum ada produk.</div>';
+        }
+    } catch (e) { container.innerHTML = '<div class="text-center py-10 text-red-500 text-xs">Gagal memuat produk.</div>'; }
+}
+
+async function loadPesananMasuk() {
+    const container = document.getElementById('toko-pesanan-container');
+    if(!container) return;
+    container.innerHTML = '<div class="text-center py-10 text-xs text-gray-500"><i class="fas fa-spinner fa-spin text-2xl mb-2 text-brand-info"></i><br>Memuat pesanan...</div>';
+    try {
+        const { data } = await supabaseClient.from('orders_player').select('*, profiles:user_id(nickname, avatar_url)').eq('seller_id', currentUser.id).order('created_at', { ascending: false });
+        if (data && data.length > 0) {
+            container.innerHTML = data.map(order => `
+                <div class="bg-brand-dark/50 border border-white/5 p-4 rounded-2xl">
+                    <h4 class="text-xs font-bold text-white">${order.product_name}</h4>
+                    <span class="text-[9px] font-extrabold text-${order.status === 'selesai' ? 'brand-success' : 'brand-info'}">${order.status.toUpperCase()}</span>
+                </div>`).join('');
+        } else {
+            container.innerHTML = '<div class="text-center py-10 text-gray-500 text-xs">Belum ada pesanan.</div>';
+        }
+    } catch (e) { container.innerHTML = '<div class="text-center py-10 text-red-500 text-xs">Gagal memuat pesanan.</div>'; }
+}
+
+function bukaModalSaldoDompet() {
+    if (!currentUser) return showToast("Login dulu!", "error");
+    document.getElementById('modal-saldo-dompet').classList.replace('hidden', 'flex');
+    fetchSaldoDanMutasi();
+}
+
+function bukaGalleryPasar(idProduk, startIndex) {
+    const produk = globalDataPasar.find(item => item.id === idProduk);
+    if (!produk) return;
+    let arrFoto = produk.image_url ? produk.image_url.split(',').map(img => img.trim()).filter(img => img !== "") : [];
+    if (arrFoto.length === 0) arrFoto.push('https://placehold.co/400x400/1a1133/2BD975?text=PASAR');
+    let galleryModal = document.getElementById('modal-gallery-pasar');
+    if (!galleryModal) {
+        galleryModal = document.createElement('div');
+        galleryModal.id = 'modal-gallery-pasar';
+        galleryModal.className = 'fixed inset-0 z-[9999] hidden items-center justify-center bg-black/95 backdrop-blur-md opacity-0 transition-opacity duration-300';
+        document.body.appendChild(galleryModal);
+    }
+    history.pushState({ popup: 'gallery' }, null, '#gallery');
+    galleryModal.innerHTML = `
+        <button onclick="tutupGalleryPasar()" class="absolute top-6 right-6 text-white bg-white/10 backdrop-blur-md w-12 h-12 rounded-full flex items-center justify-center active:scale-90 z-[9999] shadow-lg border border-white/20"><i class="fas fa-times text-xl"></i></button>
+        <div id="gallery-slider" class="w-full h-full flex overflow-x-auto hide-scroll snap-x snap-mandatory items-center relative z-[9990]">
+            ${arrFoto.map(img => `<div class="w-full h-full flex-shrink-0 snap-center flex items-center justify-center p-2 relative"><img src="${img}" class="max-w-full max-h-[85vh] object-contain rounded-xl shadow-2xl transition-transform duration-300"></div>`).join('')}
+        </div>
+        ${arrFoto.length > 1 ? `<div class="absolute bottom-10 left-1/2 -translate-x-1/2 bg-black/60 backdrop-blur-md text-white text-[10px] font-bold px-5 py-2 rounded-full border border-white/10 shadow-lg z-[9999]"><span id="gallery-current">${startIndex + 1}</span> / ${arrFoto.length}</div>` : ''}
+    `;
+    galleryModal.classList.remove('hidden');
+    galleryModal.classList.add('flex');
+    setTimeout(() => {
+        galleryModal.classList.remove('opacity-0');
+        const slider = document.getElementById('gallery-slider');
+        if (slider) {
+            slider.scrollLeft = slider.clientWidth * startIndex;
+            slider.onscroll = () => {
+                let page = Math.round(slider.scrollLeft / slider.clientWidth) + 1;
+                const currCounter = document.getElementById('gallery-current');
+                if (currCounter) currCounter.innerText = page;
+            };
+        }
+    }, 10);
+}
+
+function tutupGalleryPasar(dariTombolBack = false) {
+    const modal = document.getElementById('modal-gallery-pasar');
+    if (!modal) return;
+    modal.classList.add('opacity-0');
+    const modalDetail = document.getElementById('modal-detail-pasar');
+    if (modalDetail && modalDetail.classList.contains('hidden')) {
+        modalDetail.classList.replace('hidden', 'flex');
+    }
+    if (!dariTombolBack && window.location.hash === '#gallery') history.back();
+    setTimeout(() => { modal.classList.add('hidden'); modal.classList.remove('flex'); modal.innerHTML = ''; }, 300);
+}
+
 
 
 </script>
