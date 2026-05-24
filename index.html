@@ -3010,6 +3010,13 @@ if (isPush && window.location.hash !== `#${tabId}`) history.pushState(null, null
 window.addEventListener('popstate', () => {
     let isPopupClosed = false;
 
+    // TANGKAP LACI DOMPET
+    const modalDompet = document.getElementById('modal-saldo-dompet');
+    if (modalDompet && !modalDompet.classList.contains('hidden')) {
+        tutupModalSaldoDompet(true);
+        return;
+    }
+
     // 1. TANGKAP INFO GRUP (Tambahkan kode ini)
     const modalGroupInfo = document.getElementById('modal-group-info');
     if (modalGroupInfo && !modalGroupInfo.classList.contains('hidden')) {
@@ -8209,17 +8216,20 @@ async function checkoutRobotDANA(namaProduk, harga, deskripsi, sellerId = null) 
         }
 
         // ==========================================
-        // 2. SIMPAN ANTREAN KE SUPABASE (DENGAN SELLER_ID)
+        // 2. SIMPAN ANTREAN KE SUPABASE (DINAMIS 2 TABEL)
         // ==========================================
+        const targetTabel = sellerId ? 'orders_player' : 'orders';
+        const dataInsert = {
+            user_id: currentUser.id,
+            product_name: namaProduk,
+            price: hargaDenganKodeUnik,
+            status: 'PENDING'
+        };
+        if (sellerId) dataInsert.seller_id = sellerId; // Hanya masukkan seller_id jika ada
+
         const { data: orderData, error: orderError } = await supabaseClient
-            .from('orders')
-            .insert({
-                user_id: currentUser.id,
-                product_name: namaProduk,
-                price: hargaDenganKodeUnik,
-                status: 'PENDING',
-                seller_id: sellerId // <-- KUNCI: ID Penjual tersimpan di invoice order
-            })
+            .from(targetTabel)
+            .insert(dataInsert)
             .select()
             .single();
 
@@ -8253,7 +8263,7 @@ async function checkoutRobotDANA(namaProduk, harga, deskripsi, sellerId = null) 
         window.cekPembayaranInterval = setInterval(async () => {
             try {
                 const { data: cekData } = await supabaseClient
-                    .from('orders')
+                    .from(targetTabel)
                     .select('status')
                     .eq('id', orderData.id)
                     .single();
@@ -8261,7 +8271,7 @@ async function checkoutRobotDANA(namaProduk, harga, deskripsi, sellerId = null) 
                 if(cekData && cekData.status === "SUCCESS") {
                     clearInterval(window.cekPembayaranInterval); 
 
-                    await supabaseClient.from('orders').update({status: 'proses'}).eq('id', orderData.id);
+                    await supabaseClient.from(targetTabel).update({status: 'proses'}).eq('id', orderData.id);
 
                     const infoXoftware = deskripsi ? deskripsi.replace(/<[^>]*>?/gm, '') : '';
                     const teksWASukses = encodeURIComponent(`Halo Admin Joki AU2Hub,\n\nPembayaran DANA saya sudah terkonfirmasi sukses otomatis oleh sistem!\n\nPesanan: *${namaProduk}*\nTotal: Rp ${hargaDenganKodeUnik.toLocaleString('id-ID')}\n\n${infoXoftware}\n\n(Berikut ini saya lampirkan gambar bukti transfer QRIS / screenshot)`);
@@ -8677,28 +8687,27 @@ const bProses = document.getElementById('badge-track-proses'); if(bProses) bPros
 const bSelesai = document.getElementById('badge-track-selesai'); if(bSelesai) bSelesai.classList.add('hidden');
 
 try {
-// Narik data dari tabel 'orders' di Supabase (Pastikan lu bikin tabel ini nanti)
-const { data, error } = await supabaseClient.from('orders').select('status').eq('user_id', userId);
+    // Tarik data dari DUA tabel sekaligus
+    const req1 = supabaseClient.from('orders').select('status').eq('user_id', userId);
+    const req2 = supabaseClient.from('orders_player').select('status').eq('user_id', userId);
+    
+    // Gabungkan hasilnya
+    const [res1, res2] = await Promise.all([req1, req2]);
+    const data = [...(res1.data || []), ...(res2.data || [])];
 
-if (data && data.length > 0) {
-let countBayar = data.filter(o => o.status === 'PENDING').length;
-let countProses = data.filter(o => o.status === 'proses' || o.status === 'SUCCESS').length; // [BARU] Tambahkan deteksi SUCCESS
-let countSelesai = data.filter(o => o.status === 'selesai').length;
+    if (data && data.length > 0) {
+        let countBayar = data.filter(o => o.status === 'PENDING').length;
+        let countProses = data.filter(o => o.status === 'proses' || o.status === 'SUCCESS').length; 
+        let countSelesai = data.filter(o => o.status === 'selesai').length;
 
-
-if (countBayar > 0 && bBayar) {
-bBayar.innerText = countBayar; bBayar.classList.remove('hidden');
-}
-if (countProses > 0 && bProses) {
-bProses.innerText = countProses; bProses.classList.remove('hidden');
-}
-if (countSelesai > 0 && bSelesai) {
-bSelesai.innerText = countSelesai; bSelesai.classList.remove('hidden');
-}
-}
+        if (countBayar > 0 && bBayar) { bBayar.innerText = countBayar; bBayar.classList.remove('hidden'); }
+        if (countProses > 0 && bProses) { bProses.innerText = countProses; bProses.classList.remove('hidden'); }
+        if (countSelesai > 0 && bSelesai) { bSelesai.innerText = countSelesai; bSelesai.classList.remove('hidden'); }
+    }
 } catch (err) {
-console.log("Tabel orders belum siap, abaikan tracker.");
+    console.log("Tabel orders belum siap, abaikan tracker.");
 }
+
 }
 
 function closeRiwayatPesanan(dariTombolBackHP = false) {
@@ -8728,6 +8737,7 @@ function closeRiwayatPesanan(dariTombolBackHP = false) {
 let activeOrderIdToPay = null;
 let activeOrderPriceToPay = 0;
 let activeOrderNameToPay = "";
+let activeOrderTable = 'orders';
 
 async function cekStatusPesanan(kategori) {
     if (!currentUser) return showToast("Silakan login terlebih dahulu.", "error");
@@ -8746,64 +8756,55 @@ async function cekStatusPesanan(kategori) {
     container.innerHTML = '<div class="flex flex-col items-center justify-center mt-20"><i class="fas fa-spinner fa-spin text-brand-info text-4xl mb-3"></i><p class="text-[10px] text-gray-500 font-bold tracking-widest uppercase">Memuat Database...</p></div>';
 
     try {
-        // Query dasar: Tarik pesanan milik user ini, urutkan dari yang terbaru
-        let query = supabaseClient.from('orders').select('*').eq('user_id', currentUser.id).order('created_at', { ascending: false });
+        // Query untuk DUA Tabel
+        let q1 = supabaseClient.from('orders').select('*').eq('user_id', currentUser.id);
+        let q2 = supabaseClient.from('orders_player').select('*').eq('user_id', currentUser.id);
 
-        // Filter status berdasarkan tombol yang diklik & ubah Judul Modal
         if (kategori === 'bayar') {
-            query = query.eq('status', 'PENDING');
+            q1 = q1.eq('status', 'PENDING');
+            q2 = q2.eq('status', 'PENDING');
             headerTitle.innerHTML = '<i class="fas fa-wallet text-red-500"></i> TAGIHAN BELUM BAYAR';
         } else if (kategori === 'proses') {
-            query = query.in('status', ['proses', 'SUCCESS']); // [BARU] Tarik juga yang nyangkut di SUCCESS
+            q1 = q1.in('status', ['proses', 'SUCCESS']);
+            q2 = q2.in('status', ['proses', 'SUCCESS']);
             headerTitle.innerHTML = '<i class="fas fa-box text-brand-info"></i> PESANAN DIPROSES';
         } else if (kategori === 'selesai') {
-            query = query.eq('status', 'selesai');
+            q1 = q1.eq('status', 'selesai');
+            q2 = q2.eq('status', 'selesai');
             headerTitle.innerHTML = '<i class="fas fa-check-circle text-brand-success"></i> PESANAN SELESAI';
         } else {
-
-            // Jika klik "Lihat Riwayat" (Semua data)
             headerTitle.innerHTML = '<i class="fas fa-receipt text-brand-info"></i> SEMUA RIWAYAT';
         }
 
-        const { data, error } = await query;
+        const [res1, res2] = await Promise.all([q1, q2]);
+        
+        // Beri tanda ini data dari tabel mana
+        let data1 = (res1.data || []).map(o => ({...o, table_source: 'orders'}));
+        let data2 = (res2.data || []).map(o => ({...o, table_source: 'orders_player'}));
 
-        if (data && data.length > 0) {
-            container.innerHTML = data.map(order => {
-                // Konfigurasi Warna & Ikon Sesuai Status
-                let statusColor = '';
-                let icon = '';
-                let teksStatus = order.status.toUpperCase();
+        // Gabungkan dan urutkan dari yang terbaru
+        let combinedData = [...data1, ...data2];
+        combinedData.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
-                if (order.status === 'selesai') {
-                    statusColor = 'text-brand-success bg-brand-success/10 border-brand-success/30';
-                    icon = 'fa-check-circle';
-                } else if (order.status === 'proses' || order.status === 'SUCCESS') { // [BARU] Gabungkan logika SUCCESS
-                    statusColor = 'text-brand-info bg-brand-info/10 border-brand-info/30';
-                    icon = 'fa-box';
-                    teksStatus = 'DIPROSES'; // Paksa tampilkan teks DIPROSES ke pembeli
+        if (combinedData.length > 0) {
+            container.innerHTML = combinedData.map(order => {
+                let statusColor = ''; let icon = ''; let teksStatus = order.status.toUpperCase();
 
-                    // 🔥 AUTO-HEAL: Diam-diam perbaiki database yang nyangkut di latar belakang
-                    if (order.status === 'SUCCESS') {
-                        supabaseClient.from('orders').update({status: 'proses'}).eq('id', order.id).then();
-                    }
-                } else if (order.status === 'PENDING') {
-                    statusColor = 'text-gray-400 bg-gray-500/10 border-gray-500/30';
-                    icon = 'fa-wallet';
-                    teksStatus = 'PENDING';
-                }
+                if (order.status === 'selesai') { statusColor = 'text-brand-success bg-brand-success/10 border-brand-success/30'; icon = 'fa-check-circle'; } 
+                else if (order.status === 'proses' || order.status === 'SUCCESS') { 
+                    statusColor = 'text-brand-info bg-brand-info/10 border-brand-info/30'; icon = 'fa-box'; teksStatus = 'DIPROSES'; 
+                    if (order.status === 'SUCCESS') supabaseClient.from(order.table_source).update({status: 'proses'}).eq('id', order.id).then();
+                } 
+                else if (order.status === 'PENDING') { statusColor = 'text-gray-400 bg-gray-500/10 border-gray-500/30'; icon = 'fa-wallet'; teksStatus = 'PENDING'; }
 
-
-                // 🔥 KUNCI PERUBAHAN: Action klik sekarang berlaku untuk SEMUA status
-                // Status dilempar sebagai parameter ke-4
-                let clickAction = `onclick="bukaDetailPesananDinamis('${order.id}', '${order.product_name.replace(/'/g, "\\'")}', ${order.price}, '${order.status}')" class="cursor-pointer hover:border-brand-accent/50"`;
+                // Kirim table_source ke popup
+                let clickAction = `onclick="bukaDetailPesananDinamis('${order.id}', '${order.product_name.replace(/'/g, "\\'")}', ${order.price}, '${order.status}', '${order.table_source}')" class="cursor-pointer hover:border-brand-accent/50"`;
 
                 return `
                 <div ${clickAction} class="bg-brand-dark/50 border border-white/5 p-4 rounded-2xl flex flex-col gap-2 relative overflow-hidden transition-all hover:border-white/10 ${order.status === 'PENDING' ? 'border-red-500/20 shadow-[0_0_10px_rgba(239,68,68,0.1)]' : ''}">
                     <div class="flex justify-between items-start z-10">
                         <h4 class="text-xs font-bold text-white line-clamp-2 pr-3">${order.product_name}</h4>
-                        <span class="text-[9px] font-extrabold px-2 py-1 rounded-md border whitespace-nowrap flex items-center gap-1 ${statusColor} shrink-0 shadow-sm">
-                            <i class="fas ${icon}"></i> ${teksStatus}
-                        </span>
+                        <span class="text-[9px] font-extrabold px-2 py-1 rounded-md border whitespace-nowrap flex items-center gap-1 ${statusColor} shrink-0 shadow-sm"><i class="fas ${icon}"></i> ${teksStatus}</span>
                     </div>
                     <div class="flex justify-between items-end mt-2 z-10 border-t border-white/5 pt-2.5">
                         <span class="text-[9px] text-gray-400"><i class="far fa-clock mr-1"></i>${timeAgo(order.created_at)}</span>
@@ -8817,6 +8818,7 @@ async function cekStatusPesanan(kategori) {
     } catch (e) {
         container.innerHTML = '<div class="text-center mt-20 text-red-500 text-xs">Gagal menarik data dari server.</div>';
     }
+
 }
 
 
@@ -9018,6 +9020,7 @@ function bukaDetailPesananDinamis(orderId, productName, price, status) {
     activeOrderIdToPay = orderId;
     activeOrderPriceToPay = price;
     activeOrderNameToPay = productName;
+    activeOrderTable = tableSource;
 
     const modal = document.getElementById('modal-detail-pesanan');
     
@@ -10047,13 +10050,24 @@ function checkoutPasar(nama, harga, id) {
 async function bukaModalSaldoDompet() {
     if (!currentUser) return showToast("Silakan login terlebih dahulu!", "error");
     
+    // [BARU] Tambahkan jejak URL agar tombol Back HP aktif
+    history.pushState({ popup: 'dompet' }, null, '#dompet');
+    
     document.getElementById('modal-saldo-dompet').classList.replace('hidden', 'flex');
     fetchSaldoDanMutasi();
 }
 
-// Fungsi Tutup Laci Dompet
-function tutupModalSaldoDompet() {
-    document.getElementById('modal-saldo-dompet').classList.replace('flex', 'hidden');
+// Fungsi Tutup Laci Dompet (Dilengkapi deteksi Back HP)
+function tutupModalSaldoDompet(dariTombolBackHP = false) {
+    const modal = document.getElementById('modal-saldo-dompet');
+    
+    // Jika ditutup pakai tombol (X) manual, pancing sistem Back HP
+    if (!dariTombolBackHP && window.location.hash === '#dompet') {
+        history.back(); 
+    } else {
+        // Jika asalnya murni dari tombol Back HP, langsung tutup UI-nya
+        modal.classList.replace('flex', 'hidden');
+    }
 }
 
 // Fungsi Tarik Saldo Real-Time dari Server Supabase
@@ -10252,7 +10266,7 @@ async function loadPesananMasuk() {
         // Tarik data order dimana kita adalah penjualnya (seller_id = id kita)
         // Sekaligus tarik data pembeli (user_id) dari tabel profiles
         const { data, error } = await supabaseClient
-            .from('orders')
+            .from('orders_player')
             .select('*, profiles:user_id(nickname, avatar_url)')
             .eq('seller_id', currentUser.id)
             .order('created_at', { ascending: false });
