@@ -2543,6 +2543,8 @@ async function checkSession() {
         checkGlobalUnreadMessages();
         document.querySelectorAll('#profile-logged-in').forEach(el => el.classList.remove('hidden'));
         document.getElementById('profile-logged-out').classList.add('hidden');
+        prosesAutoDeliveryTertunda(); // Panggil jaring pengaman setiap kali web dibuka
+
 
         // 🚀 PRO-FIX: Jalankan fetch di background tanpa 'await' agar proses Login tidak tersandera
         if (allVideosData.length === 0) {
@@ -8226,7 +8228,7 @@ function closeDetailProduk(dariTombolBackHP = false) {
 // ==========================================
 // 4. Logika Checkout Pembayaran Robot DANA (UPDATE: + DETEKSI PENJUAL)
 // ==========================================
-async function checkoutRobotDANA(namaProduk, harga, deskripsi, sellerId = null) {
+async function checkoutRobotDANA(namaProduk, harga, deskripsi, sellerId = null, productId = null) {
     if (!currentUser) return showToast("Silakan login dulu untuk membeli!", "error");
 
     // --- LOGIKA KODE UNIK DISKON (1 - 500) ---
@@ -8287,7 +8289,8 @@ async function checkoutRobotDANA(namaProduk, harga, deskripsi, sellerId = null) 
             user_id: currentUser.id,
             product_name: namaProduk,
             price: hargaDenganKodeUnik,
-            status: 'PENDING'
+            status: 'PENDING',
+            product_id: productId
         };
         if (sellerId) dataInsert.seller_id = sellerId; // Hanya masukkan seller_id jika ada
 
@@ -8331,94 +8334,39 @@ async function checkoutRobotDANA(namaProduk, harga, deskripsi, sellerId = null) 
         showToast("Silakan scan! Sistem sedang memantau pembayaran Anda.", "success");
 
         // ==========================================
-        // 4. RADAR PENGECEK STATUS REAL-TIME KE SUPABASE
+        // 4. RADAR PENGECEK STATUS REAL-TIME KE SUPABASE (VERSI AMAN)
         // ==========================================
-        if(window.cekPembayaranInterval) clearInterval(window.cekPembayaranInterval);
-
-        window.cekPembayaranInterval = setInterval(async () => {
-            try {
-                const { data: cekData } = await supabaseClient
-                    .from(targetTabel)
-                    .select('status')
-                    .eq('id', orderData.id)
-                    .single();
-
-                if(cekData && cekData.status === "SUCCESS") {
-                    clearInterval(window.cekPembayaranInterval); 
-
-                    let newStatus = 'proses';
-                    let autoDeliveryData = "";
-
-                    // === SISTEM AUTO-DELIVERY MULAI BEKERJA ===
-                    if (productId) {
-                        const { data: prodData } = await supabaseClient.from('player_products').select('stock_list, category').eq('id', productId).single();
-                        
-                        if (prodData && (prodData.category === 'Akun' || prodData.category === 'Item') && prodData.stock_list) {
-                            let lines = prodData.stock_list.split(/\r?\n/).filter(l => l.trim() !== '');
-                            
-                            if (lines.length > 0) {
-                                autoDeliveryData = lines.shift(); // Ambil baris pertama
-                                const newStockList = lines.join('\n'); // Gabungkan sisa stok
-                                
-                                // 1. Kurangi stok di database seketika
-                                await supabaseClient.from('player_products').update({stock_list: newStockList}).eq('id', productId);
-                                
-                                // 2. Tandai pesanan otomatis selesai
-                                newStatus = 'selesai'; 
-                                
-                                // 3. Kirim data ke Inbox Chat Pembeli
-                                await supabaseClient.from('messages').insert({
-                                    sender_id: sellerId,
-                                    receiver_id: currentUser.id,
-                                    message: `[SISTEM] Transaksi berhasil! Berikut detail pesanan *${namaProduk}* Anda:\n\n${autoDeliveryData}`
-                                });
-
-                                // 4. Langsung Masukkan Uang ke Saldo Penjual
-                                const pajakAdmin = Math.floor(hargaDenganKodeUnik * 0.05);
-                                const pendapatanBersih = hargaDenganKodeUnik - pajakAdmin;
-                                await supabaseClient.rpc('tambah_saldo', { user_id_target: sellerId, jumlah: pendapatanBersih });
-                                await supabaseClient.from('wallet_transactions').insert({
-                                    user_id: sellerId,
-                                    amount: pendapatanBersih,
-                                    type: 'INCOME',
-                                    description: `Penjualan (Auto): ${namaProduk}`
-                                });
-                            }
+        const channelPembayaran = supabaseClient
+            .channel('tunggu-pembayaran')
+            .on(
+                'postgres_changes',
+                { event: 'UPDATE', schema: 'public', table: targetTabel, filter: `id=eq.${orderData.id}` },
+                (payload) => {
+                    // Jika MacroDroid sukses ngubah status di latar belakang
+                    if (payload.new.status === 'selesai' || payload.new.status === 'SUCCESS' || payload.new.status === 'proses') {
+                        const wadahPembayaran = document.getElementById('qris-container');
+                        if (wadahPembayaran) {
+                            wadahPembayaran.innerHTML = `
+                                <div class="flex flex-col items-center justify-center py-6 text-center modal-anim">
+                                    <div class="relative w-24 h-24 mb-6">
+                                        <div class="absolute inset-0 bg-brand-success rounded-full animate-ping opacity-20"></div>
+                                        <i class="fas fa-check-circle text-7xl text-brand-success relative z-10 drop-shadow-[0_0_20px_rgba(37,211,102,0.8)]"></i>
+                                    </div>
+                                    <h2 class="text-2xl font-extrabold text-white mb-2 mt-4 tracking-tight">Pembayaran Berhasil!</h2>
+                                    <p class="text-gray-400 text-xs mb-8 leading-relaxed px-4">Dana Rp ${hargaDenganKodeUnik.toLocaleString('id-ID')} telah diterima. Silakan cek menu Pesanan/Chat.</p>
+                                    <button onclick="window.location.reload()" class="w-full bg-white/5 text-white py-4 rounded-xl font-bold active:scale-95 transition-all uppercase tracking-wider text-xs border border-white/10 hover:bg-white/10">Selesai & Kembali</button>
+                                </div>
+                            `;
                         }
-                    }
-                    // === SISTEM AUTO-DELIVERY SELESAI ===
-
-                    await supabaseClient.from(targetTabel).update({status: newStatus}).eq('id', orderData.id);
-
-                    const noWA = "6283815584661";
-                    const infoXoftware = deskripsi ? deskripsi.replace(/<[^>]*>?/gm, '') : '';
-                    const teksWASukses = encodeURIComponent(`Halo Admin Joki AU2Hub,\n\nPembayaran DANA saya sudah terkonfirmasi otomatis!\n\nPesanan: *${namaProduk}*\nTotal: Rp ${hargaDenganKodeUnik.toLocaleString('id-ID')}\n\n(Berikut screenshot bukti)`);
-
-                    let teksTambahanUI = autoDeliveryData ? 
-                        `<div class="bg-brand-dark p-3 rounded-lg border border-brand-info mt-3 text-left"><p class="text-brand-info text-[10px] font-bold mb-1"><i class="fas fa-check-circle mr-1"></i> PENGIRIMAN OTOMATIS BERHASIL</p><p class="text-white text-xs font-mono break-words bg-black/50 p-2 rounded">${autoDeliveryData}</p><p class="text-[9px] text-brand-success mt-2">*Data ini juga telah dikirimkan ke kotak masuk Chat Anda.</p></div>` 
-                        : `<br>Silakan hubungi Admin untuk proses pesanan Anda.`;
-
-                    const wadahPembayaran = document.getElementById('qris-container');
-                    if (wadahPembayaran) {
-                        wadahPembayaran.innerHTML = `
-                            <div class="flex flex-col items-center justify-center py-6 text-center modal-anim">
-                            <div class="relative w-24 h-24 mb-6">
-                            <div class="absolute inset-0 bg-brand-success rounded-full animate-ping opacity-20"></div>
-                            <i class="fas fa-check-circle text-7xl text-brand-success relative z-10 drop-shadow-[0_0_20px_rgba(37,211,102,0.8)]"></i>
-                            </div>
-                            <h2 class="text-2xl font-extrabold text-white mb-2 tracking-tight">Pembayaran Berhasil!</h2>
-                            <p class="text-gray-400 text-xs mb-8 leading-relaxed px-4">Dana senilai <strong class="text-brand-success">Rp ${hargaDenganKodeUnik.toLocaleString('id-ID')}</strong> telah diterima sistem.${teksTambahanUI}</p>
-                            <div class="w-full space-y-3 mt-4">
-                            ${!autoDeliveryData ? `<a href="https://wa.me/${noWA}?text=${teksWASukses}" target="_blank" class="flex justify-center items-center w-full bg-[#25D366] hover:bg-[#20bd5a] text-white py-4 rounded-xl font-bold shadow-[0_8px_20px_rgba(37,211,102,0.3)] active:scale-95 transition-all uppercase tracking-wider text-xs">
-                            <i class="fab fa-whatsapp text-lg mr-2"></i> Chat Admin (Kirim Data)</a>` : ''}
-                            <button onclick="window.location.reload()" class="w-full bg-white/5 text-white py-4 rounded-xl font-bold active:scale-95 transition-all uppercase tracking-wider text-xs border border-white/10 hover:bg-white/10">Selesai & Kembali</button>
-                            </div>
-                            </div>
-                        `;
+                        supabaseClient.removeChannel(channelPembayaran);
+                        
+                        // Eksekusi pengiriman barang jika layar masih terbuka
+                        prosesAutoDeliveryTertunda();
                     }
                 }
-            } catch(e) { console.log("Radar tertunda..."); }
-        }, 1000);
+            )
+            .subscribe();
+
 
     } catch (error) {
         showToast("Gangguan jaringan / Database.", "error");
@@ -11107,6 +11055,66 @@ async function hapusProdukSaya(productId, productName) {
         loadPasarPlayer(true);
     } catch (e) { showToast("Gagal menghapus.", "error"); }
 }
+
+async function prosesAutoDeliveryTertunda() {
+    if (!currentUser) return;
+
+    // Cari pesanan Pasar Player berstatus 'SUCCESS' (sudah dibayar via MacroDroid tapi barang belum dikirim)
+    const { data: pendingOrders } = await supabaseClient
+        .from('orders_player')
+        .select('*')
+        .eq('user_id', currentUser.id)
+        .eq('status', 'SUCCESS');
+
+    if (pendingOrders && pendingOrders.length > 0) {
+        for (let order of pendingOrders) {
+            let autoDeliveryData = "";
+            
+            if (order.product_id) {
+                const { data: prodData } = await supabaseClient
+                    .from('player_products')
+                    .select('stock_list, category')
+                    .eq('id', order.product_id)
+                    .single();
+
+                if (prodData && (prodData.category === 'Akun' || prodData.category === 'Item') && prodData.stock_list) {
+                    let lines = prodData.stock_list.split(/\r?\n/).filter(l => l.trim() !== '');
+                    
+                    if (lines.length > 0) {
+                        autoDeliveryData = lines.shift();
+                        const newStockList = lines.join('\n');
+                        
+                        // 1. Kurangi stok di database etalase
+                        await supabaseClient.from('player_products').update({stock_list: newStockList}).eq('id', order.product_id);
+                        
+                        // 2. Kirim pesan inbox ke pembeli berisi item-nya
+                        await supabaseClient.from('messages').insert({
+                            sender_id: order.seller_id,
+                            receiver_id: order.user_id,
+                            message: `[SISTEM] Transaksi berhasil! Berikut detail pesanan *${order.product_name}* Anda:\n\n${autoDeliveryData}`
+                        });
+
+                        // 3. Masukkan uang ke saldo dompet penjual
+                        const pajakAdmin = Math.floor(order.price * 0.05);
+                        const pendapatanBersih = order.price - pajakAdmin;
+                        await supabaseClient.rpc('tambah_saldo', { user_id_target: order.seller_id, jumlah: pendapatanBersih });
+                        await supabaseClient.from('wallet_transactions').insert({
+                            user_id: order.seller_id,
+                            amount: pendapatanBersih,
+                            type: 'INCOME',
+                            description: `Penjualan (Auto): ${order.product_name}`
+                        });
+                    }
+                }
+            }
+
+            // 4. Ubah status jadi selesai agar tidak dikirim dobel
+            const finalStatus = autoDeliveryData ? 'selesai' : 'proses';
+            await supabaseClient.from('orders_player').update({ status: finalStatus }).eq('id', order.id);
+        }
+    }
+}
+
 
 </script>
 
