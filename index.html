@@ -10171,10 +10171,8 @@ carousel.innerHTML = arrFoto.map((imgUrl, index) => `
         return `<a href="${url}" target="_blank" onclick="event.stopPropagation()" class="text-brand-info underline font-bold hover:text-white transition-colors">${url}</a>`;
     });
 
-    // 3. Render ke layar dengan innerHTML, lalu ubah enter/baris baru (
-) menjadi <br> agar susunan teks tetap rapi
-    document.getElementById('pasar-detail-deskripsi').innerHTML = deskripsiBisaDiklik.replace(/
-/g, '<br>');
+    // 3. Render ke layar dengan innerHTML, lalu ubah enter/baris baru (\n) menjadi <br> agar susunan teks tetap rapi
+    document.getElementById('pasar-detail-deskripsi').innerHTML = deskripsiBisaDiklik.replace(/\n/g, '<br>');
     document.getElementById('pasar-detail-avatar').src = produk.profiles?.avatar_url || 'https://placehold.co/100x100/1a1133/2BD975?text=AV';
     document.getElementById('pasar-detail-penjual').innerHTML = `${produk.profiles?.nickname || 'Anonim'} <span class="scale-[0.85] origin-left inline-flex ml-1">${badgeHtml}</span>`;
 
