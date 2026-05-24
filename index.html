@@ -9762,40 +9762,42 @@ document.addEventListener('DOMContentLoaded', () => {
                 <input type="text" id="jualan-nama" placeholder="Contoh: Joki GB Level 1-10" class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-brand-success transition-colors">
             </div>
             <div class="grid grid-cols-2 gap-3">
-<div>
-    <label class="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-1.5 block">Harga (Rp)</label>
-    <input type="text" id="jualan-harga" placeholder="10.000" class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-brand-success transition-colors">
-    <p class="text-[8px] text-brand-success mt-1.5 italic">*Pendapatan bersih akan dipotong pajak layanan 5%</p>
-</div>
+                <div>
+                    <label class="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-1.5 block">Harga (Rp)</label>
+                    <input type="text" id="jualan-harga" placeholder="10.000" class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-brand-success transition-colors">
+                    <p class="text-[8px] text-brand-success mt-1.5 italic">*Pendapatan bersih akan dipotong pajak layanan 5%</p>
+                </div>
 
-<div>
-    <label class="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-1.5 block">Kategori</label>
-    <select id="jualan-kategori" onchange="toggleStockInput(this.value, 'wadah-stock-jualan')" class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-brand-success transition-colors appearance-none">
-        <option value="Joki" class="bg-brand-dark">Joki</option>
-        <option value="Akun" class="bg-brand-dark">Akun</option>
-        <option value="Item" class="bg-brand-dark">Item / Gift</option>
-        <option value="Top Up" class="bg-brand-dark">Top Up</option>
-        <option value="Lainnya" class="bg-brand-dark">Lainnya</option>
-    </select>
-</div>
-</div> <div id="wadah-stock-jualan" class="hidden mt-3">
-    <label class="text-[10px] text-brand-info font-bold uppercase tracking-wider mb-1.5 block flex items-center gap-1">
-        <i class="fas fa-robot"></i> Stok Auto-Kirim (Tiap baris = 1 Stok)
-    </label>
-    <textarea id="jualan-stock" rows="3" placeholder="Contoh format:\nID: 12345 | Pass: aaaa\nID: 67890 | Pass: bbbb" class="w-full bg-[#0F0920] border border-brand-info/50 rounded-xl px-4 py-3 text-sm text-brand-info outline-none focus:border-brand-info transition-colors resize-none hide-scroll"></textarea>
-    <p class="text-[9px] text-gray-400 mt-1.5 italic leading-relaxed">*Sistem akan otomatis mengirimkan baris paling atas kepada pembeli dan mengurangi sisa stok setelah dibayar.</p>
-</div>
+                <div>
+                    <label class="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-1.5 block">Kategori</label>
+                    <select id="jualan-kategori" onchange="toggleStockInput(this.value, 'wadah-stock-jualan')" class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-brand-success transition-colors appearance-none">
+                        <option value="Joki" class="bg-brand-dark">Joki</option>
+                        <option value="Akun" class="bg-brand-dark">Akun</option>
+                        <option value="Item" class="bg-brand-dark">Item / Gift</option>
+                        <option value="Top Up" class="bg-brand-dark">Top Up</option>
+                        <option value="Lainnya" class="bg-brand-dark">Lainnya</option>
+                    </select>
+                </div>
+            </div> 
+
+            <div id="wadah-stock-jualan" class="hidden mt-3">
+                <label class="text-[10px] text-brand-info font-bold uppercase tracking-wider mb-1.5 block flex items-center gap-1">
+                    <i class="fas fa-robot"></i> Stok Auto-Kirim (Tiap baris = 1 Stok)
+                </label>
+                <textarea id="jualan-stock" rows="3" placeholder="Contoh format:\nID: 12345 | Pass: aaaa\nID: 67890 | Pass: bbbb" class="w-full bg-[#0F0920] border border-brand-info/50 rounded-xl px-4 py-3 text-sm text-brand-info outline-none focus:border-brand-info transition-colors resize-none hide-scroll"></textarea>
+                <p class="text-[9px] text-gray-400 mt-1.5 italic leading-relaxed">*Sistem akan otomatis mengirimkan baris paling atas kepada pembeli dan mengurangi sisa stok setelah dibayar.</p>
             </div>
+
             <div>
                 <label class="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-1.5 block">Deskripsi Lengkap</label>
                 <textarea id="jualan-deskripsi" rows="4" placeholder="Jelaskan detail produk..." class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-brand-success transition-colors resize-none hide-scroll"></textarea>
             </div>
-        </div>
-        <div class="p-4 border-t border-white/5 bg-brand-dark shrink-0">
+        </div> <div class="p-4 border-t border-white/5 bg-brand-dark shrink-0">
             <button id="btn-submit-jualan" onclick="prosesPostingJualan()" class="w-full bg-brand-success hover:bg-[#20bd5a] text-white py-3.5 rounded-xl font-extrabold active:scale-95 transition-all uppercase tracking-wider text-sm shadow-[0_4px_15px_rgba(37,211,102,0.3)]">Posting Dagangan</button>
         </div>
     </div>
 </div>
+
 
 <!-- [BARU] MODAL EDIT PRODUK DENGAN FITUR EDIT FOTO -->
 <div id="modal-edit-produk" class="fixed inset-0 z-[600] hidden items-end sm:items-center justify-center bg-black/90 backdrop-blur-md px-0 sm:px-6 transition-all duration-300">
@@ -9824,41 +9826,42 @@ document.addEventListener('DOMContentLoaded', () => {
             <div>
                 <label class="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-1.5 block">Nama Produk</label>
                 <input type="text" id="edit-produk-nama" class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-brand-info transition-colors">
-            </div>
             <div class="grid grid-cols-2 gap-3">
-<div>
-    <label class="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-1.5 block">Harga (Rp)</label>
-    <input type="text" id="edit-produk-harga" class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-brand-info transition-colors">
-    <p class="text-[8px] text-brand-info mt-1.5 italic">*Pendapatan bersih akan dipotong pajak layanan 5%</p>
-</div>
+                <div>
+                    <label class="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-1.5 block">Harga (Rp)</label>
+                    <input type="text" id="edit-produk-harga" class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-brand-info transition-colors">
+                    <p class="text-[8px] text-brand-info mt-1.5 italic">*Pendapatan bersih akan dipotong pajak layanan 5%</p>
+                </div>
 
-<div>
-    <label class="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-1.5 block">Kategori</label>
-    <select id="edit-produk-kategori" onchange="toggleStockInput(this.value, 'wadah-stock-edit')" class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-brand-info transition-colors appearance-none">
-        <option value="Joki" class="bg-brand-dark">Joki</option>
-        <option value="Akun" class="bg-brand-dark">Akun</option>
-        <option value="Item" class="bg-brand-dark">Item / Gift</option>
-        <option value="Top Up" class="bg-brand-dark">Top Up</option>
-        <option value="Lainnya" class="bg-brand-dark">Lainnya</option>
-    </select>
-</div>
-</div> <div id="wadah-stock-edit" class="hidden mt-3">
-    <label class="text-[10px] text-brand-info font-bold uppercase tracking-wider mb-1.5 block flex items-center gap-1">
-        <i class="fas fa-robot"></i> Edit Stok Auto-Kirim
-    </label>
-    <textarea id="edit-produk-stock" rows="3" placeholder="Masukkan 1 stok per baris..." class="w-full bg-[#0F0920] border border-brand-info/50 rounded-xl px-4 py-3 text-sm text-brand-info outline-none focus:border-brand-info transition-colors resize-none hide-scroll"></textarea>
-</div>
+                <div>
+                    <label class="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-1.5 block">Kategori</label>
+                    <select id="edit-produk-kategori" onchange="toggleStockInput(this.value, 'wadah-stock-edit')" class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-brand-info transition-colors appearance-none">
+                        <option value="Joki" class="bg-brand-dark">Joki</option>
+                        <option value="Akun" class="bg-brand-dark">Akun</option>
+                        <option value="Item" class="bg-brand-dark">Item / Gift</option>
+                        <option value="Top Up" class="bg-brand-dark">Top Up</option>
+                        <option value="Lainnya" class="bg-brand-dark">Lainnya</option>
+                    </select>
+                </div>
+            </div> 
+
+            <div id="wadah-stock-edit" class="hidden mt-3">
+                <label class="text-[10px] text-brand-info font-bold uppercase tracking-wider mb-1.5 block flex items-center gap-1">
+                    <i class="fas fa-robot"></i> Edit Stok Auto-Kirim
+                </label>
+                <textarea id="edit-produk-stock" rows="3" placeholder="Masukkan 1 stok per baris..." class="w-full bg-[#0F0920] border border-brand-info/50 rounded-xl px-4 py-3 text-sm text-brand-info outline-none focus:border-brand-info transition-colors resize-none hide-scroll"></textarea>
             </div>
+
             <div>
                 <label class="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-1.5 block">Deskripsi Lengkap</label>
                 <textarea id="edit-produk-deskripsi" rows="4" class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-brand-info transition-colors resize-none hide-scroll"></textarea>
             </div>
-        </div>
-        <div class="p-4 border-t border-white/5 bg-brand-dark shrink-0">
+        </div> <div class="p-4 border-t border-white/5 bg-brand-dark shrink-0">
             <button id="btn-submit-edit-produk" onclick="prosesEditProduk()" class="w-full bg-brand-info hover:bg-[#35a2f2] text-brand-dark py-3.5 rounded-xl font-extrabold active:scale-95 transition-all uppercase tracking-wider text-sm shadow-[0_4px_15px_rgba(70,179,255,0.3)]">Simpan Perubahan</button>
         </div>
     </div>
 </div>
+
 
 
 
