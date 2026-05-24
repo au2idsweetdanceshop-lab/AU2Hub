@@ -4671,6 +4671,25 @@ if (urlHash.includes('?vid=')) {
 }
 
 allVideosData = dataDariSheet;
+
+// ========================================================
+// [KODE BARU] DETEKSI LINK SHARE & LANGSUNG BUKA POP-UP
+// ========================================================
+const urlHash = window.location.hash;
+if (urlHash.includes('sosial?vid=')) {
+    // Ambil ID video dari URL
+    const params = new URLSearchParams(urlHash.split('?')[1]);
+    const targetVidId = params.get('vid');
+    
+    if (targetVidId) {
+        // Beri jeda 800ms agar data beranda selesai dimuat sebelum pop-up muncul
+        setTimeout(() => {
+            bukaVideoShare(targetVidId);
+        }, 800); 
+    }
+}
+// ========================================================
+
 currentVideoIndex = 0;
 container.innerHTML = '';
 
@@ -9571,6 +9590,58 @@ document.addEventListener('DOMContentLoaded', () => {
         }, {passive: true});
     }
 });
+
+// ========================================================
+// FUNGSI KHUSUS UNTUK MEMBUKA VIDEO DARI LINK SHARE
+// ========================================================
+function bukaVideoShare(vidId) {
+    // 1. Cari data videonya dari database lokal
+    const targetVideo = allVideosData.find(v => v.id === vidId);
+    if (!targetVideo) {
+        showToast("Video yang dibagikan tidak ditemukan atau sudah dihapus.", "error");
+        return;
+    }
+
+    // 2. Kumpulkan semua video milik kreator yang sama (agar user bisa lanjut swipe ke bawah)
+    currentProfileVideos = allVideosData.filter(v => v.user_id === targetVideo.user_id).reverse();
+    
+    // Cari urutan ke berapa video ini di profil kreator tersebut
+    let targetIndex = currentProfileVideos.findIndex(v => v.id === vidId);
+    if (targetIndex === -1) targetIndex = 0;
+
+    // 3. Bersihkan layar floating player (Layar Hitam)
+    const container = document.getElementById('floating-feed-container');
+    container.innerHTML = '';
+    container.scrollTop = 0;
+
+    // 4. Hentikan suara/video di feed utama agar tidak bocor (bentrok)
+    document.querySelectorAll('.video-player').forEach(v => v.pause());
+
+    // 5. Munculkan Layar Hitam (Floating Player) secara instan!
+    const floatingPlayer = document.getElementById('floating-video-player');
+    floatingPlayer.classList.remove('hidden');
+    floatingPlayer.classList.add('flex');
+    floatingPlayer.style.opacity = '1';
+
+    if (floatObs) floatObs.disconnect();
+    setupFloatVideoObserver();
+
+    // 6. Render Video (Tampilkan video target + 2 video di bawahnya untuk cadangan scroll)
+    profileFeedIndex = 0;
+    renderProfileVideoBatch(targetIndex + 3);
+
+    // 7. Paksa scroll layar agar langsung tertuju ke video yang dibagikan
+    setTimeout(() => {
+        const targetCard = container.children[targetIndex];
+        if (targetCard) {
+            targetCard.scrollIntoView({ behavior: 'auto', block: 'start' });
+        }
+    }, 100);
+
+    // 8. Tanamkan URL history agar tombol 'Back' (Kembali) di HP berfungsi normal untuk menutup video
+    history.pushState({ popup: 'floating_video' }, null, '#profil_video');
+}
+
 
 
 </script>
