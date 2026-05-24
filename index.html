@@ -10270,6 +10270,73 @@ function tutupModalJualBarang(dariTombolBackHP = false) {
     }, 300); 
 }
 
+async function loadTokoSaya() {
+    const loggedOut = document.getElementById('toko-logged-out');
+    const loggedIn = document.getElementById('toko-logged-in');
+    
+    if (!currentUser) {
+        loggedOut.classList.remove('hidden');
+        loggedIn.classList.add('hidden');
+        return;
+    }
+    
+    loggedOut.classList.add('hidden');
+    loggedIn.classList.remove('hidden');
+    
+    // Buka tab produk sebagai tampilan awal
+    switchTokoTab('produk');
+    
+    // Fungsi untuk memuat data produk ke dalam tabel
+    await loadProdukSaya();
+}
+
+async function loadProdukSaya() {
+    const container = document.getElementById('toko-produk-container');
+    container.innerHTML = '<div class="text-center py-10 text-xs text-gray-500"><i class="fas fa-spinner fa-spin text-2xl mb-2 text-yellow-500"></i><br>Memuat produk Anda...</div>';
+
+    try {
+        const { data, error } = await supabaseClient
+            .from('player_products')
+            .select('*')
+            .eq('user_id', currentUser.id)
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        if (data && data.length > 0) {
+            container.innerHTML = data.map(item => {
+                const hargaAsli = Number(item.price);
+                const pajakAdmin = Math.floor(hargaAsli * 0.05);
+                const pendapatanBersih = hargaAsli - pajakAdmin;
+
+                return `
+                <div class="bg-black/40 border border-white/5 p-3 rounded-2xl flex items-center gap-3 relative overflow-hidden">
+                    <img src="${(item.image_url || '').split(',')[0]}" class="w-16 h-16 rounded-xl object-cover border border-white/10 shrink-0" onerror="this.src='https://placehold.co/100/1a1133/2BD975?text=PRODUK'">
+                    <div class="flex-1 min-w-0">
+                        <h4 class="text-xs font-bold text-white line-clamp-1">${item.title}</h4>
+                        <div class="text-gray-400 text-[10px] mt-1 line-through decoration-red-500">Harga Jual: Rp ${hargaAsli.toLocaleString('id-ID')}</div>
+                        <div class="text-brand-success font-extrabold text-[11px] mt-0.5">Bersih: Rp ${pendapatanBersih.toLocaleString('id-ID')}</div>
+                        <div class="text-[9px] text-gray-400 mt-1"><i class="fas fa-tag"></i> ${item.category}</div>
+                    </div>
+                    
+                    <div class="flex flex-col gap-1.5 shrink-0">
+                        <button onclick="bukaModalEditProduk('${item.id}')" class="w-8 h-8 rounded-full bg-brand-info/20 text-brand-info flex items-center justify-center hover:bg-brand-info hover:text-brand-dark transition-all shadow-sm">
+                            <i class="fas fa-pen text-[10px]"></i>
+                        </button>
+                        <button onclick="hapusProdukSaya('${item.id}', '${item.title.replace(/'/g, "\\'")}')" class="w-8 h-8 rounded-full bg-red-500/20 text-red-500 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all shadow-sm">
+                            <i class="fas fa-trash-alt text-[10px]"></i>
+                        </button>
+                    </div>
+                </div>
+            `}).join('');
+        } else {
+            container.innerHTML = '<div class="text-center py-10 text-gray-500 text-xs"><i class="fas fa-box-open text-4xl mb-3 opacity-30"></i><br>Anda belum menjual produk apapun.</div>';
+        }
+    } catch (err) {
+        container.innerHTML = '<div class="text-center py-10 text-red-500 text-xs">Gagal menarik data produk.</div>';
+    }
+}
+
 
 </script>
 
