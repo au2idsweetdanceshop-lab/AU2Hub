@@ -10790,6 +10790,8 @@ async function prosesEditProduk() {
     const deskripsi = document.getElementById('edit-produk-deskripsi').value.trim();
     const btn = document.getElementById('btn-submit-edit-produk');
 
+    // Mencegah tembakan data kosong
+    if (!idProduk) return showToast("Gagal mengidentifikasi ID produk!", "error");
     if (!nama || !harga || isNaN(harga) || !deskripsi) return showToast("Mohon lengkapi formulir!", "error");
     if (existingImagesEdit.length === 0 && editFileArray.length === 0) return showToast("Wajib menyertakan minimal 1 foto produk!", "error");
 
@@ -10815,31 +10817,42 @@ async function prosesEditProduk() {
         const finalImageArray = [...existingImagesEdit, ...uploadedUrls];
         const finalImageUrl = finalImageArray.join(',');
 
-        // Update record di tabel player_products
-        const { error } = await supabaseClient.from('player_products').update({
-            title: nama, 
-            price: harga, 
-            category: kategori, 
-            description: deskripsi, 
-            image_url: finalImageUrl
-        }).eq('id', idProduk);
+        // 🔥 PERBAIKAN: Tambahkan user_id & .select() untuk memaksa Supabase merespons perubahan
+        const { data: updatedData, error } = await supabaseClient.from('player_products')
+            .update({
+                title: nama, 
+                price: harga, 
+                category: kategori, 
+                description: deskripsi, 
+                image_url: finalImageUrl,
+                user_id: currentUser.id // Tambahan keamanan RLS
+            })
+            .eq('id', idProduk)
+            .select();
 
         if (error) throw error;
+        
+        // 🔥 PENANGKAP SILENT BUG: Jika data kosong, berarti RLS Supabase memblokir Update-nya
+        if (!updatedData || updatedData.length === 0) {
+            throw new Error("Izin ditolak oleh server (RLS UPDATE belum aktif di Supabase Anda).");
+        }
 
         showToast("Produk berhasil diperbarui!", "success");
         tutupModalEditProduk();
         
-        // Refresh tabel Toko Saya dan Etalase Pasar
-        loadProdukSaya();
-        loadPasarPlayer(true);
+        // 🔥 PERBAIKAN: Tambahkan await agar layar me-refresh setelah data benar-benar tersimpan
+        await loadProdukSaya();
+        await loadPasarPlayer(true);
 
     } catch (err) {
-        showToast("Gagal memperbarui: " + err.message, "error");
+        showToast("Gagal: " + err.message, "error");
+        console.error("Error Edit Produk:", err);
     } finally {
         btn.innerHTML = 'Simpan Perubahan';
         btn.disabled = false;
     }
 }
+
 
 
 async function hapusProdukSaya(productId, productName) {
