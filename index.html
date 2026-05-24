@@ -237,15 +237,8 @@ contain: none !important;
 transform: none !important;
 }
 
-/* 7. SEMBUNYIKAN WIDGET CHAT SAAT VIDEO DIKLIK AGAR LEGA */
-body.video-focused button[onclick="toggleWidget()"] {
-opacity: 0 !important;
-transform: scale(0.5) !important;
-pointer-events: none !important;
-transition: all 0.3s ease !important;
-}
 
-/* 8. KEMBALIKAN POSISI VIDEO INNER KE AWAL */
+/* 7. KEMBALIKAN POSISI VIDEO INNER KE AWAL */
 .video-inner-wrap {
 position: relative;
 z-index: 10;
@@ -1620,10 +1613,6 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
     </div>
 </div>
 
-    <a href="#toko" onclick="switchTab('toko', event)" class="nav-item flex items-center justify-center w-[44px] h-[44px] text-gray-500" title="Toko Saya">
-        <i class="fas fa-store-alt text-lg pointer-events-none"></i>
-    </a>
-
 <nav class="fixed top-0 left-0 h-full w-[60px] glass z-50 border-r border-white/5 flex flex-col items-center py-6 gap-4 overflow-y-auto shadow-[10px_0_30px_rgba(0,0,0,0.5)] transition-transform duration-300">
     
 <a href="#home" onclick="switchTab('home', event)" class="nav-item flex items-center justify-center w-[44px] h-[44px] text-gray-500 mb-2">
@@ -1653,20 +1642,17 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
         <i class="fas fa-user-ninja text-lg pointer-events-none"></i>
     </a>
     
-    <a href="#pesanan" onclick="switchTab('pesanan', event)" class="nav-item flex items-center justify-center w-[44px] h-[44px] text-gray-500" title="Pesanan">
-        <i class="fas fa-receipt text-lg pointer-events-none"></i>
-    </a>
-
-    <button onclick="toggleWidget()" class="nav-item flex items-center justify-center w-[44px] h-[44px] text-gray-500 relative cursor-pointer" title="Chat">
-        <i class="fas fa-comment-dots text-lg pointer-events-none"></i>
-        <span id="global-chat-badge" class="hidden absolute top-0 right-0 bg-red-500 text-white text-[8px] font-bold w-4 h-4 flex items-center justify-center rounded-full border border-brand-dark pointer-events-none">0</span>
-    </button>
 
     <div class="w-6 h-[2px] bg-white/10 rounded-full mt-2 mb-2"></div>
     
     <a href="#profile" onclick="switchTab('profile', event)" class="nav-item flex items-center justify-center w-[44px] h-[44px] text-gray-500 mt-auto" title="Profil">
         <i class="fas fa-user-circle text-lg pointer-events-none"></i>
     </a>
+    
+        <a href="#toko" onclick="switchTab('toko', event)" class="nav-item flex items-center justify-center w-[44px] h-[44px] text-gray-500" title="Toko Saya">
+        <i class="fas fa-store-alt text-lg pointer-events-none"></i>
+    </a>
+
     
         <!-- ... tombol navigasi lainnya ... -->
     <a href="#pesanan" onclick="switchTab('pesanan', event)" class="nav-item flex items-center justify-center w-[44px] h-[44px] text-gray-500" title="Pesanan">
@@ -4671,24 +4657,6 @@ if (vid.readyState >= 3) onVideoReady(); else { vid.addEventListener('canplay', 
 } catch (e) { container.innerHTML = '<p class="text-center py-20 text-gray-500">Gagal memuat video.</p>'; }
 }
 
-// Fungsi Helper untuk memunculkan Badge Kasta di Feed & Leaderboard
-function getBadgeByVideoCount(count) {
-    if (count >= 100) {
-        return `<span class="inline-flex items-center gap-1 bg-gradient-to-r from-yellow-400 via-orange-500 to-yellow-600 text-black px-1.5 py-px rounded text-[8px] font-extrabold ml-1.5 shadow-[0_0_12px_rgba(250,204,21,1)] tracking-widest uppercase border border-yellow-300"><i class="fas fa-crown"></i> LEGEND</span>`;
-    }
-    if (count >= 50) {
-        return '<span class="inline-flex items-center gap-1 bg-gradient-to-r from-brand-accent to-[#ff758c] text-white px-1.5 py-px rounded text-[8px] font-extrabold ml-1.5 shadow-[0_0_10px_rgba(255,0,122,0.8)] tracking-widest uppercase border border-brand-accent"><i class="fas fa-fire"></i> MASTER</span>';
-    }
-    if (count >= 25) {
-        return '<span class="inline-flex items-center gap-1 bg-gradient-to-r from-brand-purple to-[#c471ed] text-white px-1.5 py-px rounded text-[8px] font-extrabold ml-1.5 shadow-[0_0_10px_rgba(138,43,226,0.8)] tracking-widest uppercase border border-brand-purple"><i class="fas fa-star"></i> ELITE</span>';
-    }
-    if (count >= 10) {
-        return '<span class="inline-flex items-center gap-1 bg-gradient-to-r from-brand-info to-[#89f7fe] text-brand-dark px-1.5 py-px rounded text-[8px] font-extrabold ml-1.5 shadow-[0_0_10px_rgba(0,240,255,0.8)] tracking-widest uppercase border border-brand-info"><i class="fas fa-check-circle"></i> VERIFIED</span>';
-    }
-    return '';
-}
-
-
 function renderVideoBatch() {
 const container = document.getElementById('feed-container');
 
@@ -4996,12 +4964,6 @@ throw error;
 
 await fetchProfile();
 updateUIForLoggedIn();
-closeEditProfileModal();
-showToast("Profil berhasil diperbarui!", "success");
-
-await fetchProfile();
-updateUIForLoggedIn();
-
 closeEditProfileModal();
 showToast("Profil berhasil diperbarui!", "success");
 
@@ -7691,30 +7653,6 @@ try { const respon = await fetch(linkAPI); const dataBaru = await respon.json();
 catch (error) { if (!dataTersimpan) { container.innerHTML = '<div class="text-center py-10 text-xs text-red-500"><i class="fas fa-exclamation-triangle mb-2 text-2xl"></i><br>Gagal terhubung ke database.</div>'; } }
 }
 
-function renderRippers(data, isSearch = false) {
-const container = document.getElementById('ripper-container');
-document.getElementById('ripper-count').innerText = `${dataRipperGlobal.length} Total Data`;
-if(data.length === 0) { container.innerHTML = `<div class="text-center py-10 px-4"><i class="fas fa-check-circle text-brand-success text-3xl mb-2"></i><div class="text-xs text-gray-400">Pencarian aman.<br>(Tetap waspada & gunakan Rekber)</div></div>`; return; }
-const limitBatas = (!isSearch && !isRipperExpanded) ? 5 : data.length;
-const dataYangDitampilkan = data.slice(0, limitBatas);
-let htmlString = dataYangDitampilkan.map(r => `<div class="p-4 border-b border-white/5 last:border-0 hover:bg-white/5 transition-colors"><div class="flex justify-between items-start mb-1"><div class="font-bold text-xs text-white">${r["Nama / Keterangan"] || r.nama || r.Nama || "Tanpa Nama"}</div><div class="text-[9px] text-red-500 font-bold bg-red-500/10 px-2 py-0.5 rounded border border-red-500/20 whitespace-nowrap ml-2"><i class="fas fa-ban mr-1"></i> RIPPER</div></div><div class="text-[10px] text-brand-info font-mono mb-1">ID: ${r["ID"] || r.id || "-"}</div><div class="text-[10px] text-gray-400"><i class="fas fa-credit-card mr-1"></i> ${r["Rekening / Kontak (WA/Dana)"] || r.rekening || r.Rekening || "-"}</div></div>`).join('');
-container.innerHTML = htmlString;
-if (!isSearch && !isRipperExpanded && data.length > 5) { container.innerHTML += `<div id="wadah-tombol-semua" class="p-5 text-center bg-black/20 mt-1 border-t border-white/5"><button onclick="tampilkanSemuaRipper(this)" class="bg-brand-accent/20 border border-brand-accent/40 text-brand-accent text-xs font-bold py-2.5 px-6 rounded-full active:scale-95 transition-all w-full flex items-center justify-center"><i class="fas fa-list-ul mr-2"></i> Tampilkan Semua Laporan</button></div>`; }
-}
-
-function tampilkanSemuaRipper(tombol) {
-isRipperExpanded = true; localStorage.setItem('statusLihatSemua', 'true');
-tombol.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Membuka Data...'; tombol.classList.add('opacity-70', 'scale-95');
-setTimeout(() => {
-const wadahTombol = document.getElementById('wadah-tombol-semua'); if (wadahTombol) wadahTombol.remove();
-const sisaData = dataRipperGlobal.slice(5);
-let htmlSisa = sisaData.map((r, index) => `<div class="p-4 border-b border-white/5 last:border-0 hover:bg-white/5 transition-colors smooth-reveal" style="animation-delay: ${index < 5 ? (index * 0.05) : 0}s; opacity: 0;"><div class="flex justify-between items-start mb-1"><div class="font-bold text-xs text-white">${r["Nama / Keterangan"] || r.nama || r.Nama || "Tanpa Nama"}</div><div class="text-[9px] text-red-500 font-bold bg-red-500/10 px-2 py-0.5 rounded border border-red-500/20 whitespace-nowrap ml-2"><i class="fas fa-ban mr-1"></i> RIPPER</div></div><div class="text-[10px] text-brand-info font-mono mb-1">ID: ${r["ID"] || r.id || "-"}</div><div class="text-[10px] text-gray-400"><i class="fas fa-credit-card mr-1"></i> ${r["Rekening / Kontak (WA/Dana)"] || r.rekening || r.Rekening || "-"}</div></div>`).join('');
-document.getElementById('ripper-container').insertAdjacentHTML('beforeend', htmlSisa);
-}, 150);
-}
-
-
-
 let xoftwareProdukGlobal = [];
 let kategoriAktif = 'Semua';
 
@@ -8925,7 +8863,6 @@ loadChatList(); // Refresh daftar pesan masuk di latar belakang
 showToast("Gagal memperbarui foto grup.", "error");
 }
 }
-
 
         
         function getBadgeByVideoCount(count) {
