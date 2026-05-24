@@ -3049,6 +3049,35 @@ setTimeout(() => { window.scrollTo({ top: 0, behavior: 'auto' }); }, 10);
 if (isPush && window.location.hash !== `#${tabId}`) history.pushState(null, null, `#${tabId}`);
 }
 
+    // ==========================================
+    // TANGKAP SEMUA MODAL PASAR PLAYER
+    // ==========================================
+    const modalGalleryPasar = document.getElementById('modal-gallery-pasar');
+    if (modalGalleryPasar && !modalGalleryPasar.classList.contains('hidden')) {
+        tutupGalleryPasar(true);
+        return;
+    }
+
+    const modalDetailPasar = document.getElementById('modal-detail-pasar');
+    if (modalDetailPasar && !modalDetailPasar.classList.contains('hidden')) {
+        tutupDetailPasar(true);
+        return;
+    }
+
+    const modalJual = document.getElementById('modal-jual-barang');
+    if (modalJual && !modalJual.classList.contains('hidden')) {
+        tutupModalJualBarang(true);
+        return;
+    }
+
+    const modalEditProduk = document.getElementById('modal-edit-produk');
+    if (modalEditProduk && !modalEditProduk.classList.contains('hidden')) {
+        tutupModalEditProduk(true);
+        return;
+    }
+    // ==========================================
+
+
 window.addEventListener('popstate', () => {
     let isPopupClosed = false;
 
@@ -8327,6 +8356,19 @@ document.addEventListener('DOMContentLoaded', () => {
   switchTab(tabAwal, null, false);
 
   checkSession();
+supabaseClient.auth.onAuthStateChange((event, session) => {
+      // Jika token gagal diperbarui atau kadaluarsa
+      if (event === 'TOKEN_REFRESHED' && !session) {
+          handleLogout(); 
+          showToast("Sesi kamu telah berakhir. Silakan login kembali.", "error");
+      } 
+      // Jika user terdeteksi logout (misal dari tab browser lain)
+      else if (event === 'SIGNED_OUT') {
+          currentUser = null;
+          userProfile = null;
+          checkSession(); 
+      }
+  });
   muatDataRipper();
   loadInfoLayanan();
   loadDataRekber();
@@ -10515,8 +10557,10 @@ function bukaModalSaldoDompet() {
 function bukaGalleryPasar(idProduk, startIndex) {
     const produk = globalDataPasar.find(item => item.id === idProduk);
     if (!produk) return;
+    
     let arrFoto = produk.image_url ? produk.image_url.split(',').map(img => img.trim()).filter(img => img !== "") : [];
     if (arrFoto.length === 0) arrFoto.push('https://placehold.co/400x400/1a1133/2BD975?text=PASAR');
+    
     let galleryModal = document.getElementById('modal-gallery-pasar');
     if (!galleryModal) {
         galleryModal = document.createElement('div');
@@ -10524,7 +10568,15 @@ function bukaGalleryPasar(idProduk, startIndex) {
         galleryModal.className = 'fixed inset-0 z-[9999] hidden items-center justify-center bg-black/95 backdrop-blur-md opacity-0 transition-opacity duration-300';
         document.body.appendChild(galleryModal);
     }
+
+    // 1. SEMBUNYIKAN LACI DETAIL PRODUK SEMENTARA
+    const modalDetail = document.getElementById('modal-detail-pasar');
+    if (modalDetail && !modalDetail.classList.contains('hidden')) {
+        modalDetail.classList.replace('flex', 'hidden');
+    }
+
     history.pushState({ popup: 'gallery' }, null, '#gallery');
+    
     galleryModal.innerHTML = `
         <button onclick="tutupGalleryPasar()" class="absolute top-6 right-6 text-white bg-white/10 backdrop-blur-md w-12 h-12 rounded-full flex items-center justify-center active:scale-90 z-[9999] shadow-lg border border-white/20"><i class="fas fa-times text-xl"></i></button>
         <div id="gallery-slider" class="w-full h-full flex overflow-x-auto hide-scroll snap-x snap-mandatory items-center relative z-[9990]">
@@ -10532,8 +10584,10 @@ function bukaGalleryPasar(idProduk, startIndex) {
         </div>
         ${arrFoto.length > 1 ? `<div class="absolute bottom-10 left-1/2 -translate-x-1/2 bg-black/60 backdrop-blur-md text-white text-[10px] font-bold px-5 py-2 rounded-full border border-white/10 shadow-lg z-[9999]"><span id="gallery-current">${startIndex + 1}</span> / ${arrFoto.length}</div>` : ''}
     `;
+    
     galleryModal.classList.remove('hidden');
     galleryModal.classList.add('flex');
+    
     setTimeout(() => {
         galleryModal.classList.remove('opacity-0');
         const slider = document.getElementById('gallery-slider');
@@ -10547,6 +10601,7 @@ function bukaGalleryPasar(idProduk, startIndex) {
         }
     }, 10);
 }
+
 
 function tutupGalleryPasar(dariTombolBack = false) {
     const modal = document.getElementById('modal-gallery-pasar');
@@ -10604,29 +10659,188 @@ async function prosesTarikSaldo() {
     } catch (e) { showToast("Gagal memproses.", "error"); }
 }
 
+// === 1. Variabel Global untuk Mode Edit ===
+let editFileArray = []; // Untuk menampung file foto baru dari HP
+let existingImagesEdit = []; // Untuk menampung URL foto lama dari database
+
+// === 2. Modifikasi Fungsi Buka & Tutup Modal Edit ===
 async function bukaModalEditProduk(idProduk) {
     showToast("Mengambil data...", "info");
     try {
         const { data, error } = await supabaseClient.from('player_products').select('*').eq('id', idProduk).single();
         if (error || !data) throw new Error("Produk tidak ditemukan.");
+        
         document.getElementById('edit-produk-id').value = data.id;
         document.getElementById('edit-produk-nama').value = data.title;
         document.getElementById('edit-produk-harga').value = data.price;
         document.getElementById('edit-produk-kategori').value = data.category;
         document.getElementById('edit-produk-deskripsi').value = data.description;
         
+        // Reset array foto setiap kali modal dibuka
         editFileArray = [];
-        if (data.image_url) editFileArray.push(...data.image_url.split(',').map(u => u.trim()));
-        renderPreviewEditProduk(); 
+        existingImagesEdit = [];
         
+        // Pisahkan koma dan masukkan URL lama ke array
+        if (data.image_url) {
+            existingImagesEdit = data.image_url.split(',').map(u => u.trim()).filter(u => u !== "");
+        }
+        
+        renderPreviewEditProduk(); 
         document.getElementById('modal-edit-produk').classList.replace('hidden', 'flex');
-    } catch(err) { showToast("Gagal memuat form edit", "error"); }
+                // Mendaftarkan popup ke history HP
+        history.pushState({ popup: 'edit_produk' }, null, '#editproduk');
+    } catch(err) { 
+        showToast("Gagal memuat form edit", "error"); 
+    }
 }
 
-function tutupModalEditProduk() {
+function tutupModalEditProduk(dariTombolBackHP = false) {
     document.getElementById('modal-edit-produk').classList.replace('flex', 'hidden');
     editFileArray = [];
+    existingImagesEdit = [];
+    document.getElementById('input-foto-edit').value = '';
+    
+    // Mencegah looping history jika ditutup dari tombol Back HP
+    if (!dariTombolBackHP && window.location.hash === '#editproduk') {
+        history.back();
+    }
 }
+
+
+// === 3. Fungsi Preview Foto Mode Edit ===
+function previewGambarEdit(input) {
+    if (input.files && input.files.length > 0) {
+        const newFiles = Array.from(input.files);
+        let isSizeError = false;
+
+        newFiles.forEach((file) => {
+            if (file.size > 5 * 1024 * 1024) isSizeError = true;
+            else editFileArray.push(file); 
+        });
+
+        if (isSizeError) showToast("Beberapa foto berukuran > 5MB diabaikan.", "error");
+
+        renderPreviewEditProduk();
+        input.value = ''; 
+    }
+}
+
+function renderPreviewEditProduk() {
+    const previewContainer = document.getElementById('preview-container-edit');
+    previewContainer.innerHTML = '';
+    
+    if (existingImagesEdit.length === 0 && editFileArray.length === 0) {
+        previewContainer.classList.add('hidden');
+        return;
+    }
+
+    let htmlContent = '';
+
+    // Render foto lama (dari URL) dengan label "LAMA"
+    existingImagesEdit.forEach((url, index) => {
+        htmlContent += `
+            <div class="relative w-20 h-20 sm:w-24 sm:h-24 shrink-0 rounded-xl overflow-hidden border border-brand-info/50 shadow-md">
+                <img src="${url}" class="w-full h-full object-cover">
+                <button onclick="hapusFotoLamaEdit(${index})" class="absolute top-1 right-1 bg-red-500/80 text-white rounded-full w-6 h-6 flex items-center justify-center backdrop-blur-md active:scale-90 transition-transform shadow-md z-10">
+                    <i class="fas fa-times text-xs"></i>
+                </button>
+                <div class="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-[8px] text-center py-0.5">LAMA</div>
+            </div>
+        `;
+    });
+
+    // Render foto baru (dari HP) dengan label "BARU"
+    editFileArray.forEach((file, index) => {
+        const tempUrl = URL.createObjectURL(file);
+        htmlContent += `
+            <div class="relative w-20 h-20 sm:w-24 sm:h-24 shrink-0 rounded-xl overflow-hidden border border-brand-success/50 shadow-md">
+                <img src="${tempUrl}" class="w-full h-full object-cover">
+                <button onclick="hapusFotoBaruEdit(${index})" class="absolute top-1 right-1 bg-red-500/80 text-white rounded-full w-6 h-6 flex items-center justify-center backdrop-blur-md active:scale-90 transition-transform shadow-md z-10">
+                    <i class="fas fa-times text-xs"></i>
+                </button>
+                <div class="absolute bottom-0 left-0 right-0 bg-brand-success/80 text-white text-[8px] text-center py-0.5">BARU</div>
+            </div>
+        `;
+    });
+
+    previewContainer.innerHTML = htmlContent;
+    previewContainer.classList.remove('hidden');
+}
+
+function hapusFotoLamaEdit(index) {
+    existingImagesEdit.splice(index, 1);
+    renderPreviewEditProduk();
+}
+
+function hapusFotoBaruEdit(index) {
+    editFileArray.splice(index, 1);
+    renderPreviewEditProduk();
+}
+
+// === 4. Eksekusi Simpan ke Database (Fungsi yang hilang) ===
+async function prosesEditProduk() {
+    const idProduk = document.getElementById('edit-produk-id').value;
+    const nama = document.getElementById('edit-produk-nama').value.trim();
+    
+    // Bersihkan titik ribuan sebelum dikirim ke database
+    const hargaInputClean = document.getElementById('edit-produk-harga').value.replace(/\./g, '');
+    const harga = parseInt(hargaInputClean);
+    
+    const kategori = document.getElementById('edit-produk-kategori').value;
+    const deskripsi = document.getElementById('edit-produk-deskripsi').value.trim();
+    const btn = document.getElementById('btn-submit-edit-produk');
+
+    if (!nama || !harga || isNaN(harga) || !deskripsi) return showToast("Mohon lengkapi formulir!", "error");
+    if (existingImagesEdit.length === 0 && editFileArray.length === 0) return showToast("Wajib menyertakan minimal 1 foto produk!", "error");
+
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan...';
+    btn.disabled = true;
+
+    try {
+        let uploadedUrls = [];
+        
+        // Upload foto baru ke Biznet Storage (jika user menambahkan foto baru)
+        if (editFileArray.length > 0) {
+            showToast(`Mengunggah ${editFileArray.length} foto baru...`, "info");
+            const uploadPromises = editFileArray.map(async (file, index) => {
+                const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent('pasar_edit_'+index+'_'+Date.now())}&filetype=${encodeURIComponent(file.type)}`);
+                const dataUrl = await resUrl.json();
+                await fetch(dataUrl.uploadUrl, { method: 'PUT', body: file, headers: { 'Content-Type': file.type, 'x-amz-acl': 'public-read' } });
+                return dataUrl.finalVideoUrl;
+            });
+            uploadedUrls = await Promise.all(uploadPromises);
+        }
+
+        // Gabungkan URL foto lama (yang tidak dihapus) dengan URL foto baru yang sukses diupload
+        const finalImageArray = [...existingImagesEdit, ...uploadedUrls];
+        const finalImageUrl = finalImageArray.join(',');
+
+        // Update record di tabel player_products
+        const { error } = await supabaseClient.from('player_products').update({
+            title: nama, 
+            price: harga, 
+            category: kategori, 
+            description: deskripsi, 
+            image_url: finalImageUrl
+        }).eq('id', idProduk);
+
+        if (error) throw error;
+
+        showToast("Produk berhasil diperbarui!", "success");
+        tutupModalEditProduk();
+        
+        // Refresh tabel Toko Saya dan Etalase Pasar
+        loadProdukSaya();
+        loadPasarPlayer(true);
+
+    } catch (err) {
+        showToast("Gagal memperbarui: " + err.message, "error");
+    } finally {
+        btn.innerHTML = 'Simpan Perubahan';
+        btn.disabled = false;
+    }
+}
+
 
 async function hapusProdukSaya(productId, productName) {
     const konfirmasi = await customConfirm("Yakin hapus produk: " + productName + "?");
