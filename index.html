@@ -9132,37 +9132,76 @@ async function batalkanPesanan() {
     }
 }
 
-// EKSEKUSI PENYELESAIAN PESANAN DARI PEMBELI
+// EKSEKUSI PENYELESAIAN PESANAN DARI PEMBELI (VERSI FINAL - QRIS PRIBADI ADMIN)
 async function selesaikanPesanan() {
     if (!activeOrderIdToPay) return;
     
     const konfirmasi = await customConfirm("Pesanan sudah dikerjakan dan diterima dengan baik?\n\nJika 'Oke', status pesanan akan diselesaikan.");
     if (!konfirmasi) return;
     
-    closeDetailPesanan(); // Tutup popup invoice
+    closeDetailPesanan(); 
     showToast("Menyelesaikan pesanan...", "info");
     
     try {
-        // Panggil fungsi RPC (Remote Procedure Call) di Supabase yang sudah kita buat tadi
-        const { error } = await supabaseClient.rpc('selesaikan_pesanan_aman', {
-            p_order_id: activeOrderIdToPay,
-            p_tabel_sumber: activeOrderTable
-        });
+        // 1. Tarik seller_id dan nama produk dari database
+        const { data: orderData, error: fetchErr } = await supabaseClient
+            .from(activeOrderTable)
+            .select('seller_id, product_name')
+            .eq('id', activeOrderIdToPay)
+            .single();
             
-        if (error) throw error;
+        if (fetchErr) throw fetchErr;
+
+        const sellerId = orderData.seller_id;
+        const hargaAsli = activeOrderPriceToPay;
+        const namaProduk = orderData.product_name;
+
+        // 2. Update Status Order menjadi 'selesai'
+        const { error: orderError } = await supabaseClient
+            .from(activeOrderTable) 
+            .update({ status: 'selesai' })
+            .eq('id', activeOrderIdToPay);
+
+        if (orderError) throw orderError;
+
+        // 3. JIKA INI PRODUK PASAR PLAYER (Bukan produk Anda sendiri)
+        if (activeOrderTable === 'orders_player' && sellerId) {
+            // Hitung Potongan 5%
+            const pajakAdmin = Math.floor(hargaAsli * 0.05);
+            const pendapatanBersih = hargaAsli - pajakAdmin;
+
+            // Tambah saldo ke Penjual via RPC
+            await supabaseClient.rpc('tambah_saldo', { 
+                user_id_target: sellerId, 
+                jumlah: pendapatanBersih 
+            });
+
+            // Catat Riwayat Mutasi Dompet agar Penjual bisa melihatnya
+            await supabaseClient.from('wallet_transactions').insert({
+                user_id: sellerId,
+                amount: pendapatanBersih,
+                type: 'INCOME',
+                description: `Penjualan: ${namaProduk}`
+            });
+
+            showToast(`Pesanan selesai! Saldo diteruskan ke Penjual.`, "success");
+        } else {
+            // JIKA INI PRODUK ADMIN
+            showToast("Pesanan selesai! Terima kasih.", "success");
+        }
+
+        // 4. Bonus EXP untuk pembeli
+        tambahExp(50);
         
-        showToast("Pesanan selesai! Terima kasih.", "success");
-        tambahExp(50); // [BONUS] Kasih hadiah EXP karena berhasil transaksi!
-        
-        // Refresh layar List dan Badge secara otomatis
+        // Refresh layar riwayat dan tracker
         cekStatusPesanan('proses'); 
         loadOrderTracker(currentUser.id); 
         
     } catch (err) {
+        console.error("Gagal memproses transaksi:", err);
         showToast("Gagal menyelesaikan pesanan: " + err.message, "error");
     }
 }
-
 
 
 // EKSEKUSI LANJUTKAN PEMBAYARAN VIA QRIS DANA
@@ -9650,10 +9689,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 <input type="text" id="jualan-nama" placeholder="Contoh: Joki GB Level 1-10" class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-brand-success transition-colors">
             </div>
             <div class="grid grid-cols-2 gap-3">
-                <div>
-                    <label class="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-1.5 block">Harga (Rp)</label>
-                    <input type="number" id="jualan-harga" placeholder="10000" class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-brand-success transition-colors">
-                </div>
+<div>
+    <label class="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-1.5 block">Harga (Rp)</label>
+    <input type="text" id="jualan-harga" placeholder="10.000" class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-brand-success transition-colors">
+    <p class="text-[8px] text-brand-success mt-1.5 italic">*Pendapatan bersih akan dipotong pajak layanan 5%</p>
+</div>
+
                 <div>
                     <label class="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-1.5 block">Kategori</label>
                     <select id="jualan-kategori" class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-brand-success transition-colors appearance-none">
@@ -9705,10 +9746,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 <input type="text" id="edit-produk-nama" class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-brand-info transition-colors">
             </div>
             <div class="grid grid-cols-2 gap-3">
-                <div>
-                    <label class="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-1.5 block">Harga (Rp)</label>
-                    <input type="number" id="edit-produk-harga" class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-brand-info transition-colors">
-                </div>
+<div>
+    <label class="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-1.5 block">Harga (Rp)</label>
+    <input type="text" id="edit-produk-harga" class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-brand-info transition-colors">
+    <p class="text-[8px] text-brand-info mt-1.5 italic">*Pendapatan bersih akan dipotong pajak layanan 5%</p>
+</div>
+
                 <div>
                     <label class="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-1.5 block">Kategori</label>
                     <select id="edit-produk-kategori" class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-brand-info transition-colors appearance-none">
@@ -10204,7 +10247,22 @@ carousel.innerHTML = arrFoto.map((imgUrl, index) => `
     document.getElementById('pasar-detail-kategori').innerText = produk.category;
     document.getElementById('pasar-detail-nama').innerText = produk.title;
     document.getElementById('pasar-detail-harga').innerText = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(produk.price);
-    document.getElementById('pasar-detail-deskripsi').innerText = produk.description || "-";
+    // 1. Ambil deskripsi dan amankan dari kode jahat (Anti-XSS)
+    let deskripsiAman = (produk.description || "-")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+
+    // 2. Deteksi link (http / https) dan ubah jadi elemen <a> yang bisa diklik
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    let deskripsiBisaDiklik = deskripsiAman.replace(urlRegex, function(url) {
+        return `<a href="${url}" target="_blank" onclick="event.stopPropagation()" class="text-brand-info underline font-bold hover:text-white transition-colors">${url}</a>`;
+    });
+
+    // 3. Render ke layar dengan innerHTML, lalu ubah enter/baris baru (
+) menjadi <br> agar susunan teks tetap rapi
+    document.getElementById('pasar-detail-deskripsi').innerHTML = deskripsiBisaDiklik.replace(/
+/g, '<br>');
     document.getElementById('pasar-detail-avatar').src = produk.profiles?.avatar_url || 'https://placehold.co/100x100/1a1133/2BD975?text=AV';
     document.getElementById('pasar-detail-penjual').innerHTML = `${produk.profiles?.nickname || 'Anonim'} <span class="scale-[0.85] origin-left inline-flex ml-1">${badgeHtml}</span>`;
 
@@ -10495,7 +10553,7 @@ function loadTokoSaya() {
     switchTokoTab('produk');
 }
 
-// 1. TIMPA FUNGSI INI AGAR MUNCUL TOMBOL EDIT BERWARNA BIRU
+// 1. TIMPA FUNGSI INI AGAR MUNCUL INFO PENDAPATAN BERSIH
 async function loadProdukSaya() {
     const container = document.getElementById('toko-produk-container');
     container.innerHTML = '<div class="text-center py-10 text-xs text-gray-500"><i class="fas fa-spinner fa-spin text-2xl mb-2 text-yellow-500"></i><br>Memuat produk Anda...</div>';
@@ -10510,16 +10568,22 @@ async function loadProdukSaya() {
         if (error) throw error;
 
         if (data && data.length > 0) {
-            container.innerHTML = data.map(item => `
+            container.innerHTML = data.map(item => {
+                // [BARU] Hitung Potongan Admin 5% untuk di layar
+                const hargaAsli = Number(item.price);
+                const pajakAdmin = Math.floor(hargaAsli * 0.05);
+                const pendapatanBersih = hargaAsli - pajakAdmin;
+
+                return `
                 <div class="bg-black/40 border border-white/5 p-3 rounded-2xl flex items-center gap-3 relative overflow-hidden">
                     <img src="${(item.image_url || '').split(',')[0]}" class="w-16 h-16 rounded-xl object-cover border border-white/10 shrink-0" onerror="this.src='https://placehold.co/100/1a1133/2BD975?text=PRODUK'">
                     <div class="flex-1 min-w-0">
                         <h4 class="text-xs font-bold text-white line-clamp-1">${item.title}</h4>
-                        <div class="text-brand-success font-extrabold text-[11px] mt-1">Rp ${item.price.toLocaleString('id-ID')}</div>
+                        <div class="text-gray-400 text-[10px] mt-1 line-through decoration-red-500">Harga Jual: Rp ${hargaAsli.toLocaleString('id-ID')}</div>
+                        <div class="text-brand-success font-extrabold text-[11px] mt-0.5">Bersih: Rp ${pendapatanBersih.toLocaleString('id-ID')}</div>
                         <div class="text-[9px] text-gray-400 mt-1"><i class="fas fa-tag"></i> ${item.category}</div>
                     </div>
                     
-                    <!-- [BARU] DUA TOMBOL: EDIT DAN HAPUS -->
                     <div class="flex flex-col gap-1.5 shrink-0">
                         <button onclick="bukaModalEditProduk('${item.id}')" class="w-8 h-8 rounded-full bg-brand-info/20 text-brand-info flex items-center justify-center hover:bg-brand-info hover:text-brand-dark transition-all shadow-sm">
                             <i class="fas fa-pen text-[10px]"></i>
@@ -10529,7 +10593,7 @@ async function loadProdukSaya() {
                         </button>
                     </div>
                 </div>
-            `).join('');
+            `}).join('');
         } else {
             container.innerHTML = '<div class="text-center py-10 text-gray-500 text-xs"><i class="fas fa-box-open text-4xl mb-3 opacity-30"></i><br>Anda belum menjual produk apapun.</div>';
         }
@@ -10537,6 +10601,7 @@ async function loadProdukSaya() {
         container.innerHTML = '<div class="text-center py-10 text-red-500 text-xs">Gagal menarik data produk.</div>';
     }
 }
+
 
 
 // Array Global Penyimpan Foto Saat Mode Edit (Campuran antara URL foto lama & File foto baru)
@@ -10767,8 +10832,6 @@ async function loadPesananMasuk() {
     container.innerHTML = '<div class="text-center py-10 text-xs text-gray-500"><i class="fas fa-spinner fa-spin text-2xl mb-2 text-brand-info"></i><br>Memuat pesanan masuk...</div>';
 
     try {
-        // Tarik data order dimana kita adalah penjualnya (seller_id = id kita)
-        // Sekaligus tarik data pembeli (user_id) dari tabel profiles
         const { data, error } = await supabaseClient
             .from('orders_player')
             .select('*, profiles:user_id(nickname, avatar_url)')
@@ -10782,7 +10845,6 @@ async function loadPesananMasuk() {
                 let statusColor = '';
                 let teksStatus = order.status.toUpperCase();
 
-                // Pewarnaan status
                 if (order.status === 'selesai') {
                     statusColor = 'text-brand-success bg-brand-success/10 border-brand-success/30';
                 } else if (order.status === 'proses') {
@@ -10794,6 +10856,11 @@ async function loadPesananMasuk() {
 
                 const buyerName = order.profiles?.nickname || 'Pembeli';
                 const buyerAvatar = order.profiles?.avatar_url || 'https://ui-avatars.com/api/?name=User&background=1A1133&color=fff';
+
+                // [BARU] Hitung Potongan Admin 5% untuk Rincian Nota
+                const hargaAsli = Number(order.price);
+                const pajakAdmin = Math.floor(hargaAsli * 0.05);
+                const pendapatanBersih = hargaAsli - pajakAdmin;
 
                 return `
                 <div class="bg-brand-dark/50 border border-white/5 p-4 rounded-2xl flex flex-col gap-2 relative overflow-hidden transition-all hover:border-white/10">
@@ -10807,13 +10874,29 @@ async function loadPesananMasuk() {
                         <img src="${buyerAvatar}" class="w-5 h-5 rounded-full object-cover border border-white/10">
                         <span class="text-[10px] text-gray-400">Pembeli: <span class="font-bold text-brand-info cursor-pointer hover:underline" onclick="viewUserProfile('${order.user_id}')">@${buyerName}</span></span>
                     </div>
-                    <div class="flex justify-between items-end mt-2 z-10 border-t border-white/5 pt-2.5">
-                        <span class="text-[9px] text-gray-400"><i class="far fa-clock mr-1"></i>${timeAgo(order.created_at)}</span>
-                        <span class="text-[13px] font-extrabold text-brand-accent">Rp ${Number(order.price).toLocaleString('id-ID')}</span>
+                    
+                    <div class="bg-black/30 rounded-xl p-3 mt-2 border border-white/5 space-y-1.5">
+                        <div class="flex justify-between text-[10px] text-gray-400">
+                            <span>Harga Jual:</span>
+                            <span>Rp ${hargaAsli.toLocaleString('id-ID')}</span>
+                        </div>
+                        <div class="flex justify-between text-[10px] text-red-400">
+                            <span>Pajak Admin (5%):</span>
+                            <span>- Rp ${pajakAdmin.toLocaleString('id-ID')}</span>
+                        </div>
+                        <div class="flex justify-between text-xs font-extrabold text-brand-success pt-1.5 border-t border-white/5 mt-1.5">
+                            <span>Diterima Bersih:</span>
+                            <span>Rp ${pendapatanBersih.toLocaleString('id-ID')}</span>
+                        </div>
                     </div>
+
+                    <div class="flex justify-between items-center mt-1 z-10">
+                        <span class="text-[9px] text-gray-500"><i class="far fa-clock mr-1"></i>${timeAgo(order.created_at)}</span>
+                    </div>
+                    
                     ${order.status === 'proses' ? `
-                    <button onclick="kirimPesanPribadi('${order.user_id}')" class="w-full mt-3 bg-brand-info/10 border border-brand-info/30 text-brand-info py-2.5 rounded-xl text-[10px] font-bold active:scale-95 transition-all shadow-sm">
-                        <i class="fas fa-comment-dots mr-1"></i> Chat Pembeli Sekarang
+                    <button onclick="kirimPesanPribadi('${order.user_id}')" class="w-full mt-2 bg-brand-info/10 border border-brand-info/30 text-brand-info py-2.5 rounded-xl text-[10px] font-bold active:scale-95 transition-all shadow-sm">
+                        <i class="fas fa-comment-dots mr-1"></i> Chat Pembeli
                     </button>
                     ` : ''}
                 </div>`;
@@ -10825,6 +10908,7 @@ async function loadPesananMasuk() {
         container.innerHTML = '<div class="text-center py-10 text-red-500 text-xs">Gagal menarik data pesanan.</div>';
     }
 }
+
 
 // PENANGKAP TOMBOL BACK HP (KHUSUS PASAR & LIGHTBOX)
 window.addEventListener('popstate', () => {
