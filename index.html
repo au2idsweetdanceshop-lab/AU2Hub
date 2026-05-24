@@ -8234,6 +8234,17 @@ async function checkoutRobotDANA(namaProduk, harga, deskripsi, sellerId = null) 
             .single();
 
         if (orderError) throw orderError;
+        
+        // [FITUR BARU] Hapus barang dari etalase jika kategorinya Akun/Item agar tidak dibeli orang lain
+        if (sellerId) {
+            const namaAsli = namaProduk.replace("[PASAR] ", "");
+            const produkTerjual = globalDataPasar.find(p => p.title === namaAsli && p.user_id === sellerId);
+            
+            if (produkTerjual && (produkTerjual.category === 'Akun' || produkTerjual.category === 'Item')) {
+                await supabaseClient.from('player_products').delete().eq('id', produkTerjual.id);
+            }
+        }
+
 
         // ==========================================
         // 3. GENERATE QRIS DAN TAMPILKAN UI
@@ -9015,12 +9026,12 @@ lbModal.addEventListener('touchend', e => {
 
 
 // 🔥 FUNGSI PEMBUKA MODAL INVOICE (DIPERBARUI DENGAN BACK DETECTION)
-function bukaDetailPesananDinamis(orderId, productName, price, status) {
+function bukaDetailPesananDinamis(orderId, productName, price, status, tableSource) {
     // Simpan ke variabel global agar bisa dipakai untuk membatalkan/bayar ulang
     activeOrderIdToPay = orderId;
     activeOrderPriceToPay = price;
     activeOrderNameToPay = productName;
-    activeOrderTable = tableSource;
+    activeOrderTable = tableSource; // Sekarang tabel sumber (orders / orders_player) tersimpan akurat
 
     const modal = document.getElementById('modal-detail-pesanan');
     
@@ -9028,9 +9039,9 @@ function bukaDetailPesananDinamis(orderId, productName, price, status) {
     document.getElementById('detail-nama-layanan').innerText = productName;
     document.getElementById('detail-harga-layanan').innerText = `Rp ${price.toLocaleString('id-ID')}`;
     
-        const statusBadge = document.getElementById('detail-status-badge');
+    const statusBadge = document.getElementById('detail-status-badge');
     const actionBelumBayar = document.getElementById('action-belum-bayar');
-    const actionDiproses = document.getElementById('action-diproses'); // [BARU] Panggil id tombol hijau
+    const actionDiproses = document.getElementById('action-diproses');
     const pesanStatusLain = document.getElementById('pesan-status-lain');
 
     // LOGIKA TAMPILAN DINAMIS BERDASARKAN STATUS
@@ -9038,16 +9049,16 @@ function bukaDetailPesananDinamis(orderId, productName, price, status) {
         statusBadge.innerText = 'BELUM BAYAR';
         statusBadge.className = 'font-extrabold text-red-500 uppercase tracking-wider';
         
-        actionBelumBayar.classList.replace('hidden', 'flex'); // Munculkan tombol Bayar
-        if(actionDiproses) actionDiproses.classList.replace('flex', 'hidden'); // Sembunyikan tombol Selesai
-        pesanStatusLain.classList.add('hidden'); // Sembunyikan teks
+        actionBelumBayar.classList.replace('hidden', 'flex'); 
+        if(actionDiproses) actionDiproses.classList.replace('flex', 'hidden'); 
+        pesanStatusLain.classList.add('hidden'); 
         
     } else if (status === 'proses') {
         statusBadge.innerText = 'DIPROSES';
         statusBadge.className = 'font-extrabold text-brand-info uppercase tracking-wider';
         
-        actionBelumBayar.classList.replace('flex', 'hidden'); // Sembunyikan tombol Bayar
-        if(actionDiproses) actionDiproses.classList.replace('hidden', 'flex'); // [BARU] Munculkan tombol Selesai
+        actionBelumBayar.classList.replace('flex', 'hidden'); 
+        if(actionDiproses) actionDiproses.classList.replace('hidden', 'flex'); 
         pesanStatusLain.classList.remove('hidden'); 
         pesanStatusLain.innerText = 'Pesanan sedang dikerjakan admin. Klik tombol di bawah jika sudah diterima.';
         
@@ -9055,16 +9066,13 @@ function bukaDetailPesananDinamis(orderId, productName, price, status) {
         statusBadge.innerText = 'SELESAI';
         statusBadge.className = 'font-extrabold text-brand-success uppercase tracking-wider';
         
-        actionBelumBayar.classList.replace('flex', 'hidden'); // Sembunyikan tombol Bayar
-        if(actionDiproses) actionDiproses.classList.replace('flex', 'hidden'); // Sembunyikan tombol Selesai
+        actionBelumBayar.classList.replace('flex', 'hidden'); 
+        if(actionDiproses) actionDiproses.classList.replace('flex', 'hidden'); 
         pesanStatusLain.classList.remove('hidden'); 
         pesanStatusLain.innerText = 'Pesanan ini telah selesai. Terima kasih!';
     }
 
-
     modal.classList.replace('hidden', 'flex');
-
-    // 🔥 KUNCI UTAMA 1: Tambahkan jejak URL ke browser HP
     history.pushState({ popup: 'detail_pesanan' }, null, '#invoice');
 }
 
@@ -9127,54 +9135,14 @@ async function selesaikanPesanan() {
     showToast("Menyelesaikan pesanan...", "info");
     
     try {
-        // 1. Ambil detail data pesanan terlebih dahulu untuk memeriksa data penjual & harga
-        const { data: order, error: fetchOrderErr } = await supabaseClient
-            .from('orders')
-            .select('seller_id, price, product_name')
-            .eq('id', activeOrderIdToPay)
-            .single();
-        
-        if (fetchOrderErr) throw fetchOrderErr;
-
-        // 2. Update status order menjadi 'selesai'
-        const { error } = await supabaseClient
-            .from('orders')
-            .update({ status: 'selesai' })
-            .eq('id', activeOrderIdToPay);
+        // Panggil fungsi RPC (Remote Procedure Call) di Supabase yang sudah kita buat tadi
+        const { error } = await supabaseClient.rpc('selesaikan_pesanan_aman', {
+            p_order_id: activeOrderIdToPay,
+            p_tabel_sumber: activeOrderTable
+        });
             
         if (error) throw error;
         
-        // 3. MESIN OTOMATIS: Jika pesanan memiliki seller_id (Transaksi Pasar Player)
-        if (order && order.seller_id) {
-            // Ambil saldo berjalan milik penjual saat ini
-            const { data: sellerProfile } = await supabaseClient
-                .from('profiles')
-                .select('balance')
-                .eq('id', order.seller_id)
-                .single();
-                
-            if (sellerProfile) {
-                const saldoLama = Number(sellerProfile.balance || 0);
-                const saldoBaru = saldoLama + Number(order.price);
-                
-                // Suntikkan saldo baru ke akun penjual
-                await supabaseClient
-                    .from('profiles')
-                    .update({ balance: saldoBaru })
-                    .eq('id', order.seller_id);
-                    
-                // Catat mutasi penambahan dana ke riwayat wallet_transactions penjual
-                await supabaseClient
-                    .from('wallet_transactions')
-                    .insert({
-                        user_id: order.seller_id,
-                        amount: order.price,
-                        type: 'INCOME',
-                        description: `Penjualan: ${order.product_name}`
-                    });
-            }
-        }
-
         showToast("Pesanan selesai! Terima kasih.", "success");
         tambahExp(50); // [BONUS] Kasih hadiah EXP karena berhasil transaksi!
         
@@ -10001,16 +9969,28 @@ function chatPenjualPasar() {
 }
 
 // LOGIKA BAYAR MELALUI ROBOT DANA (Meminjam fungsi Checkout yang sudah ada)
-function checkoutPasar(nama, harga, id) {
+async function checkoutPasar(nama, harga, id) {
     tutupDetailPasar();
+    showToast("Memverifikasi harga ke server...", "info");
     
-    // Cari data produk untuk mendapatkan user_id milik penjual
-    const produk = globalDataPasar.find(item => item.id === id);
-    const sellerId = produk ? produk.user_id : null;
-    
-    // Lempar parameter sellerId ke dalam fungsi checkoutRobotDANA
-    checkoutRobotDANA("[PASAR] " + nama, harga, "Pembelian item dari Pasar Player.", sellerId);
+    try {
+        // TARIK HARGA ASLI DARI DATABASE (Abaikan harga dari layar HP/HTML yang rawan di-hack)
+        const { data: produkAsli, error } = await supabaseClient
+            .from('player_products')
+            .select('price, user_id')
+            .eq('id', id)
+            .single();
+            
+        if (error || !produkAsli) throw new Error("Barang tidak ditemukan di server.");
+        
+        // Lempar ke Robot DANA menggunakan harga murni dari Supabase
+        checkoutRobotDANA("[PASAR] " + nama, produkAsli.price, "Pembelian item dari Pasar Player.", produkAsli.user_id);
+        
+    } catch (err) {
+        showToast("Gagal memverifikasi keamanan: " + err.message, "error");
+    }
 }
+
 </script>
 
 <div id="modal-saldo-dompet" class="fixed inset-0 z-[600] hidden items-end sm:items-center justify-center bg-black/90 backdrop-blur-md px-0 sm:px-6 transition-all duration-300">
