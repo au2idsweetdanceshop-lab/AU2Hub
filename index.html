@@ -2828,7 +2828,8 @@ async function renderProfileVideos(targetUserId = null) {
     const elLikes = document.getElementById('profile-total-likes');
     if (elLikes) elLikes.innerText = (userVideos.length * 3);
 
-    const reversedVideos = [...userVideos].reverse();
+    const reversedVideos = [...userVideos].sort((a, b) => {
+        return new Date(b.created_at) - new Date(a.created_at);
 
     if (reversedVideos.length === 0) {
         grid.innerHTML = '<div class="col-span-3 text-center text-xs text-gray-500 py-8 bg-black/20 rounded-xl border border-white/5"><i class="fas fa-film text-2xl mb-2 opacity-50"></i><br>Belum ada video yang diupload.</div>';
@@ -3682,8 +3683,10 @@ function openProfileFeed(userId, startIndex) {
     currentProfileVideos = allVideosData.filter(v => v.user_id === userId);
     if(currentProfileVideos.length === 0) return;
 
-    // 2. Balikkan urutan agar yang terbaru ada di atas (Sama persis seperti grid)
-    currentProfileVideos = [...currentProfileVideos].reverse();
+    // 2. KODE YANG DIUBAH: Paksa urutkan berdasarkan waktu agar sinkron dengan Grid
+    currentProfileVideos = [...currentProfileVideos].sort((a, b) => {
+        return new Date(b.created_at) - new Date(a.created_at);
+    });
 
     // 3. Tentukan index target
     let targetIndex = parseInt(startIndex) || 0;
