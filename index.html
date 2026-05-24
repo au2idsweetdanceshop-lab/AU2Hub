@@ -3859,35 +3859,45 @@ function renderProfileVideoBatch(customAmount = 3) {
 
 // FUNGSI KHUSUS UNTUK MENGONTROL SUARA DI VIDEO PROFIL (KLIK 1 KALI)
 function toggleProfileVideoAudio(video) {
-// Ubah status suara
-video.muted = !video.muted;
-isGlobalMuted = video.muted; // Sinkronisasi dengan sistem suara global aplikasimu
+    // Ubah status suara
+    video.muted = !video.muted;
+    isGlobalMuted = video.muted; // Sinkronisasi dengan sistem suara global aplikasimu
 
-// Sinkronkan video lain agar ikut mute/unmute jika ada yang menyala
-document.querySelectorAll('.video-player, .float-video-player').forEach(v => {
-v.muted = isGlobalMuted;
-});
+    // CEK APAKAH POP-UP FLOATING SEDANG TERBUKA
+    const isFloatingOpen = !document.getElementById('floating-video-player').classList.contains('hidden');
 
-// Tampilkan animasi pop-up ikon suara di tengah layar
-const container = video.closest('.relative');
-const indicator = container.querySelector('.volume-indicator');
+    // Sinkronkan video lain agar ikut mute/unmute jika ada yang menyala
+    document.querySelectorAll('.video-player, .float-video-player').forEach(v => {
+        // JIKA pop-up terbuka, biarkan video background (.video-player) tetap mati/bisu
+        if (isFloatingOpen && v.classList.contains('video-player')) {
+            v.muted = true;
+            v.pause();
+        } else {
+            v.muted = isGlobalMuted;
+        }
+    });
 
-if(indicator) {
-indicator.innerHTML = video.muted
-? '<i class="fas fa-volume-mute text-2xl text-gray-300"></i>'
-: '<i class="fas fa-volume-up text-2xl text-brand-info"></i>';
+    // Tampilkan animasi pop-up ikon suara di tengah layar
+    const container = video.closest('.relative');
+    const indicator = container.querySelector('.volume-indicator');
 
-// Munculkan membesar
-indicator.classList.remove('opacity-0', 'scale-150');
-indicator.classList.add('opacity-100', 'scale-100');
+    if(indicator) {
+        indicator.innerHTML = video.muted
+        ? '<i class="fas fa-volume-mute text-2xl text-gray-300"></i>'
+        : '<i class="fas fa-volume-up text-2xl text-brand-info"></i>';
 
-// Hilangkan lagi setelah 0.8 detik
-setTimeout(() => {
-indicator.classList.remove('opacity-100', 'scale-100');
-indicator.classList.add('opacity-0', 'scale-150');
-}, 800);
+        // Munculkan membesar
+        indicator.classList.remove('opacity-0', 'scale-150');
+        indicator.classList.add('opacity-100', 'scale-100');
+
+        // Hilangkan lagi setelah 0.8 detik
+        setTimeout(() => {
+            indicator.classList.remove('opacity-100', 'scale-100');
+            indicator.classList.add('opacity-0', 'scale-150');
+        }, 800);
+    }
 }
-}
+
 
 function handleFloatVideoClick(event, videoElement, vidId) {
     const now = Date.now();
@@ -9595,7 +9605,7 @@ function bukaVideoShare(vidId) {
         return;
     }
 
-    // 2. Kumpulkan semua video milik kreator yang sama (agar user bisa lanjut swipe ke bawah)
+    // 2. Kumpulkan semua video milik kreator yang sama
     currentProfileVideos = allVideosData.filter(v => v.user_id === targetVideo.user_id).reverse();
     
     // Cari urutan ke berapa video ini di profil kreator tersebut
@@ -9607,8 +9617,19 @@ function bukaVideoShare(vidId) {
     container.innerHTML = '';
     container.scrollTop = 0;
 
-    // 4. Hentikan suara/video di feed utama agar tidak bocor (bentrok)
-    document.querySelectorAll('.video-player').forEach(v => v.pause());
+    // 4. HENTIKAN DAN CABUT SRC VIDEO DI FEED UTAMA AGAR BENAR-BENAR MATI (FIX DOUBLE AUDIO)
+    document.querySelectorAll('.video-player').forEach(v => {
+        v.pause();
+        v.muted = true;
+        // Simpan URL sebelum dihapus agar bisa dimuat lagi nanti saat pop-up ditutup
+        let currentUrl = v.currentSrc || v.src || (v.querySelector('source') ? v.querySelector('source').src : '');
+        if (currentUrl && currentUrl.length > 5) {
+            v.dataset.savedSrc = currentUrl;
+        }
+        v.removeAttribute('src'); 
+        if (v.querySelector('source')) v.querySelector('source').removeAttribute('src');
+        v.load(); // Paksa browser membuang video dari memori saat itu juga
+    });
 
     // 5. Munculkan Layar Hitam (Floating Player) secara instan!
     const floatingPlayer = document.getElementById('floating-video-player');
@@ -9619,11 +9640,11 @@ function bukaVideoShare(vidId) {
     if (floatObs) floatObs.disconnect();
     setupFloatVideoObserver();
 
-    // 6. Render Video (Tampilkan video target + 2 video di bawahnya untuk cadangan scroll)
+    // 6. Render Video
     profileFeedIndex = 0;
     renderProfileVideoBatch(targetIndex + 3);
 
-    // 7. Paksa scroll layar agar langsung tertuju ke video yang dibagikan
+    // 7. Paksa scroll layar
     setTimeout(() => {
         const targetCard = container.children[targetIndex];
         if (targetCard) {
@@ -9631,9 +9652,10 @@ function bukaVideoShare(vidId) {
         }
     }, 100);
 
-    // 8. Tanamkan URL history agar tombol 'Back' (Kembali) di HP berfungsi normal untuk menutup video
+    // 8. Tanamkan URL history
     history.pushState({ popup: 'floating_video' }, null, '#profil_video');
 }
+
 
 
 
