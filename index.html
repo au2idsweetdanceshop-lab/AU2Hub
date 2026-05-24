@@ -857,6 +857,47 @@ Satu pintu untuk info update terbaru, panduan pemula, jasa joki profesional, dan
 </section>
 
 
+<section id="toko" class="tab-content py-5 min-h-[60vh] flex flex-col justify-start relative px-4">
+    <div class="flex justify-between items-center mb-6 mt-2 border-b border-white/5 pb-4 gap-2">
+        <h2 class="text-lg sm:text-xl font-extrabold text-white flex items-center gap-2 whitespace-nowrap shrink-0 tracking-tight">
+            <div class="w-1.5 h-5 sm:h-6 bg-yellow-500 rounded-full"></div> Manajemen Toko
+        </h2>
+        <div class="flex items-center gap-1.5 sm:gap-2">
+            <button onclick="if(currentUser) { loadTokoSaya(); showToast('Memperbarui toko...', 'success'); } else { openAuthModal(); }" class="text-yellow-500 bg-yellow-500/10 w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center active:scale-90 transition-all border border-yellow-500/30 shrink-0" title="Refresh Toko">
+                <i class="fas fa-sync-alt text-xs sm:text-sm"></i>
+            </button>
+        </div>
+    </div>
+
+    <div id="toko-container" class="w-full">
+        <!-- UI Jika User Belum Login di Toko -->
+        <div id="toko-logged-out" class="hidden text-center py-12 mt-4 bg-brand-card/30 rounded-3xl border border-white/5">
+            <i class="fas fa-store-slash text-6xl text-gray-700 mb-4"></i>
+            <h3 class="text-xl font-extrabold text-white mb-2">Belum Login</h3>
+            <p class="text-xs text-gray-400 mb-6 px-8">Silakan login untuk mengelola toko dan produk Anda.</p>
+            <button onclick="openAuthModal()" class="bg-gradient-to-r from-yellow-500 to-orange-500 text-white px-8 py-3.5 rounded-xl font-bold active:scale-95 transition-transform shadow-[0_0_15px_rgba(234,179,8,0.3)]">Login Sekarang</button>
+        </div>
+
+        <!-- UI Jika User Sudah Login di Toko -->
+        <div id="toko-logged-in" class="w-full hidden">
+            <!-- Tab Navigasi Toko -->
+            <div class="flex p-1 bg-black/40 shrink-0 gap-1 border border-white/5 rounded-xl mb-4">
+                <button id="tab-toko-produk" onclick="switchTokoTab('produk')" class="flex-1 py-2.5 text-xs font-bold text-brand-dark bg-yellow-500 rounded-lg shadow-[0_0_15px_rgba(234,179,8,0.4)] transition-all">📦 Produk Saya</button>
+                <button id="tab-toko-pesanan" onclick="switchTokoTab('pesanan')" class="flex-1 py-2.5 text-xs font-bold text-gray-500 hover:text-white rounded-lg transition-all border border-transparent">🛒 Pesanan Masuk</button>
+            </div>
+
+            <!-- Kontainer Produk Saya -->
+            <div id="toko-produk-container" class="space-y-3 block">
+                <div class="text-center py-10 text-xs text-gray-500"><i class="fas fa-spinner fa-spin text-2xl mb-2 text-yellow-500"></i><br>Memuat produk Anda...</div>
+            </div>
+
+            <!-- Kontainer Pesanan Masuk -->
+            <div id="toko-pesanan-container" class="space-y-3 hidden">
+                <div class="text-center py-10 text-xs text-gray-500"><i class="fas fa-spinner fa-spin text-2xl mb-2 text-brand-info"></i><br>Memuat pesanan masuk...</div>
+            </div>
+        </div>
+    </div>
+</section>
 
 
 <!-- WIDGET CHAT GLOBAL MENGAMBANG (DIPERBARUI) -->
@@ -1547,6 +1588,10 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
         <div id="leaderboard-container-sultan" class="flex-1 overflow-y-auto p-3 hide-scroll space-y-2 hidden pb-6"></div>
     </div>
 </div>
+
+    <a href="#toko" onclick="switchTab('toko', event)" class="nav-item flex items-center justify-center w-[44px] h-[44px] text-gray-500" title="Toko Saya">
+        <i class="fas fa-store-alt text-lg pointer-events-none"></i>
+    </a>
 
 <nav class="fixed top-0 left-0 h-full w-[60px] glass z-50 border-r border-white/5 flex flex-col items-center py-6 gap-4 overflow-y-auto shadow-[10px_0_30px_rgba(0,0,0,0.5)] transition-transform duration-300">
     
@@ -2693,6 +2738,9 @@ renderProfileVideos();
 
 if(currentUser) {
 fetchFollowStats(currentUser.id);
+    if (document.getElementById('toko') && document.getElementById('toko').classList.contains('active')) {
+        loadTokoSaya();
+    }
 }
 }
 
@@ -2931,6 +2979,11 @@ targetSection.classList.add('active');
 if (tabId === 'sosial') {
 loadVideos();
 }
+
+if (tabId === 'toko') {
+    loadTokoSaya();
+}
+
 
 const navMap = { 'home': 0, 'info': 1, 'layanan': 2, 'sosial': 3, 'rekber': 4, 'ripper': 5, 'pesanan': 6, 'chat': 7, 'pasar': 8, 'profile': 9, 'pembayaran': 2 };
 const activeIndex = navMap[tabId];
@@ -10082,6 +10135,174 @@ async function prosesTarikSaldo() {
         showToast("Gagal memproses penarikan.", "error");
     }
 }
+</script>
+
+<script>
+// ==========================================
+// LOGIKA UI MANAJEMEN TOKO SAYA
+// ==========================================
+function switchTokoTab(tab) {
+    const btnProduk = document.getElementById('tab-toko-produk');
+    const btnPesanan = document.getElementById('tab-toko-pesanan');
+    const contProduk = document.getElementById('toko-produk-container');
+    const contPesanan = document.getElementById('toko-pesanan-container');
+
+    const activeClassBtn = 'flex-1 py-2.5 text-xs font-bold text-brand-dark bg-yellow-500 rounded-lg shadow-[0_0_15px_rgba(234,179,8,0.4)] transition-all';
+    const inactiveClassBtn = 'flex-1 py-2.5 text-xs font-bold text-gray-500 hover:text-white rounded-lg transition-all border border-transparent';
+
+    if (tab === 'produk') {
+        btnProduk.className = activeClassBtn;
+        btnPesanan.className = inactiveClassBtn;
+        contProduk.classList.replace('hidden', 'block');
+        contPesanan.classList.replace('block', 'hidden');
+        if(currentUser) loadProdukSaya(); // Nanti kita buat fungsi ini
+    } else {
+        btnPesanan.className = activeClassBtn;
+        btnProduk.className = inactiveClassBtn;
+        contPesanan.classList.replace('hidden', 'block');
+        contProduk.classList.replace('block', 'hidden');
+        if(currentUser) loadPesananMasuk(); // Nanti kita buat fungsi ini
+    }
+}
+
+// FUNGSI INISIALISASI TOKO
+function loadTokoSaya() {
+    const loggedOut = document.getElementById('toko-logged-out');
+    const loggedIn = document.getElementById('toko-logged-in');
+    
+    if (!currentUser) {
+        loggedOut.classList.remove('hidden');
+        loggedIn.classList.add('hidden');
+        return;
+    }
+    
+    loggedOut.classList.add('hidden');
+    loggedIn.classList.remove('hidden');
+    
+    // Buka tab produk sebagai tampilan awal
+    switchTokoTab('produk');
+}
+
+// FUNGSI TARIK DATA PRODUK SAYA
+async function loadProdukSaya() {
+    const container = document.getElementById('toko-produk-container');
+    container.innerHTML = '<div class="text-center py-10 text-xs text-gray-500"><i class="fas fa-spinner fa-spin text-2xl mb-2 text-yellow-500"></i><br>Memuat produk Anda...</div>';
+
+    try {
+        const { data, error } = await supabaseClient
+            .from('player_products')
+            .select('*')
+            .eq('user_id', currentUser.id)
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        if (data && data.length > 0) {
+            container.innerHTML = data.map(item => `
+                <div class="bg-black/40 border border-white/5 p-3 rounded-2xl flex items-center gap-3 relative overflow-hidden">
+                    <img src="${item.image_url}" class="w-16 h-16 rounded-xl object-cover border border-white/10 shrink-0" onerror="this.src='https://placehold.co/100/1a1133/2BD975?text=PRODUK'">
+                    <div class="flex-1 min-w-0">
+                        <h4 class="text-xs font-bold text-white line-clamp-1">${item.title}</h4>
+                        <div class="text-brand-success font-extrabold text-[11px] mt-1">Rp ${item.price.toLocaleString('id-ID')}</div>
+                        <div class="text-[9px] text-gray-400 mt-1"><i class="fas fa-tag"></i> ${item.category}</div>
+                    </div>
+                    <button onclick="hapusProdukSaya('${item.id}', '${item.title.replace(/'/g, "\\'")}')" class="w-8 h-8 rounded-full bg-red-500/20 text-red-500 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all shrink-0">
+                        <i class="fas fa-trash-alt text-xs"></i>
+                    </button>
+                </div>
+            `).join('');
+        } else {
+            container.innerHTML = '<div class="text-center py-10 text-gray-500 text-xs"><i class="fas fa-box-open text-4xl mb-3 opacity-30"></i><br>Anda belum menjual produk apapun.</div>';
+        }
+    } catch (err) {
+        container.innerHTML = '<div class="text-center py-10 text-red-500 text-xs">Gagal menarik data produk.</div>';
+    }
+}
+
+// FUNGSI HAPUS PRODUK
+async function hapusProdukSaya(productId, productName) {
+    const konfirmasi = await customConfirm("Yakin ingin menghapus produk ini:\\n" + productName + "?");
+    if (!konfirmasi) return;
+
+    showToast("Menghapus produk...", "info");
+    try {
+        const { error } = await supabaseClient.from('player_products').delete().eq('id', productId);
+        if (error) throw error;
+
+        showToast("Produk berhasil dihapus!", "success");
+        loadProdukSaya(); // Refresh daftar toko
+        if (typeof loadPasarPlayer === 'function') loadPasarPlayer(); // Refresh pasar global
+    } catch (e) {
+        showToast("Gagal menghapus: " + e.message, "error");
+    }
+}
+
+// FUNGSI TARIK DATA PESANAN MASUK (UNTUK PENJUAL)
+async function loadPesananMasuk() {
+    const container = document.getElementById('toko-pesanan-container');
+    container.innerHTML = '<div class="text-center py-10 text-xs text-gray-500"><i class="fas fa-spinner fa-spin text-2xl mb-2 text-brand-info"></i><br>Memuat pesanan masuk...</div>';
+
+    try {
+        // Tarik data order dimana kita adalah penjualnya (seller_id = id kita)
+        // Sekaligus tarik data pembeli (user_id) dari tabel profiles
+        const { data, error } = await supabaseClient
+            .from('orders')
+            .select('*, profiles:user_id(nickname, avatar_url)')
+            .eq('seller_id', currentUser.id)
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        if (data && data.length > 0) {
+            container.innerHTML = data.map(order => {
+                let statusColor = '';
+                let teksStatus = order.status.toUpperCase();
+
+                // Pewarnaan status
+                if (order.status === 'selesai') {
+                    statusColor = 'text-brand-success bg-brand-success/10 border-brand-success/30';
+                } else if (order.status === 'proses') {
+                    statusColor = 'text-brand-info bg-brand-info/10 border-brand-info/30';
+                } else if (order.status === 'PENDING') {
+                    statusColor = 'text-red-500 bg-red-500/10 border-red-500/30';
+                    teksStatus = 'BELUM DIBAYAR';
+                }
+
+                const buyerName = order.profiles?.nickname || 'Pembeli';
+                const buyerAvatar = order.profiles?.avatar_url || 'https://ui-avatars.com/api/?name=User&background=1A1133&color=fff';
+
+                return `
+                <div class="bg-brand-dark/50 border border-white/5 p-4 rounded-2xl flex flex-col gap-2 relative overflow-hidden transition-all hover:border-white/10">
+                    <div class="flex justify-between items-start z-10">
+                        <h4 class="text-xs font-bold text-white pr-3 line-clamp-2">${order.product_name}</h4>
+                        <span class="text-[9px] font-extrabold px-2 py-1 rounded-md border whitespace-nowrap flex items-center gap-1 ${statusColor} shrink-0 shadow-sm">
+                            ${teksStatus}
+                        </span>
+                    </div>
+                    <div class="flex items-center gap-2 mt-1 z-10">
+                        <img src="${buyerAvatar}" class="w-5 h-5 rounded-full object-cover border border-white/10">
+                        <span class="text-[10px] text-gray-400">Pembeli: <span class="font-bold text-brand-info cursor-pointer hover:underline" onclick="viewUserProfile('${order.user_id}')">@${buyerName}</span></span>
+                    </div>
+                    <div class="flex justify-between items-end mt-2 z-10 border-t border-white/5 pt-2.5">
+                        <span class="text-[9px] text-gray-400"><i class="far fa-clock mr-1"></i>${timeAgo(order.created_at)}</span>
+                        <span class="text-[13px] font-extrabold text-brand-accent">Rp ${Number(order.price).toLocaleString('id-ID')}</span>
+                    </div>
+                    ${order.status === 'proses' ? `
+                    <button onclick="kirimPesanPribadi('${order.user_id}')" class="w-full mt-3 bg-brand-info/10 border border-brand-info/30 text-brand-info py-2.5 rounded-xl text-[10px] font-bold active:scale-95 transition-all shadow-sm">
+                        <i class="fas fa-comment-dots mr-1"></i> Chat Pembeli Sekarang
+                    </button>
+                    ` : ''}
+                </div>`;
+            }).join('');
+        } else {
+            container.innerHTML = '<div class="text-center py-10 text-gray-500 text-xs"><i class="fas fa-receipt text-4xl mb-3 opacity-30"></i><br>Belum ada pesanan masuk.</div>';
+        }
+    } catch (err) {
+        container.innerHTML = '<div class="text-center py-10 text-red-500 text-xs">Gagal menarik data pesanan.</div>';
+    }
+}
+
+
 </script>
 
 
