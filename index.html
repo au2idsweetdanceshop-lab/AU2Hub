@@ -10337,6 +10337,98 @@ async function loadProdukSaya() {
     }
 }
 
+// --- FUNGSI MANAJEMEN TOKO & PASAR ---
+
+function switchTokoTab(tab) {
+    const btnProduk = document.getElementById('tab-toko-produk');
+    const btnPesanan = document.getElementById('tab-toko-pesanan');
+    const contProduk = document.getElementById('toko-produk-container');
+    const contPesanan = document.getElementById('toko-pesanan-container');
+
+    const activeClassBtn = 'flex-1 py-2.5 text-xs font-bold text-brand-dark bg-yellow-500 rounded-lg shadow-[0_0_15px_rgba(234,179,8,0.4)] transition-all';
+    const inactiveClassBtn = 'flex-1 py-2.5 text-xs font-bold text-gray-500 hover:text-white rounded-lg transition-all border border-transparent';
+
+    if (tab === 'produk') {
+        btnProduk.className = activeClassBtn;
+        btnPesanan.className = inactiveClassBtn;
+        contProduk.classList.replace('hidden', 'block');
+        contPesanan.classList.replace('block', 'hidden');
+        if(currentUser) loadProdukSaya();
+    } else {
+        btnPesanan.className = activeClassBtn;
+        btnProduk.className = inactiveClassBtn;
+        contPesanan.classList.replace('hidden', 'block');
+        contProduk.classList.replace('hidden', 'block'); // Pastikan ini tidak hidden
+        contProduk.classList.replace('block', 'hidden');
+        if(currentUser) loadPesananMasuk();
+    }
+}
+
+function loadTokoSaya() {
+    const loggedOut = document.getElementById('toko-logged-out');
+    const loggedIn = document.getElementById('toko-logged-in');
+    
+    if (!currentUser) {
+        loggedOut.classList.remove('hidden');
+        loggedIn.classList.add('hidden');
+        return;
+    }
+    loggedOut.classList.add('hidden');
+    loggedIn.classList.remove('hidden');
+    switchTokoTab('produk');
+}
+
+async function loadPasarPlayer(forceRefresh = false) {
+    const gridPasar = document.getElementById('grid-pasar-player');
+    if (!gridPasar) return;
+    if (forceRefresh) gridPasar.innerHTML = '<div class="col-span-2 text-center py-10 text-brand-success"><i class="fas fa-spinner fa-spin text-3xl"></i></div>';
+
+    try {
+        const { data, error } = await supabaseClient
+            .from('player_products')
+            .select('*, profiles:user_id(nickname, avatar_url, exp)') 
+            .order('created_at', { ascending: false });
+        if (error) throw error;
+        globalDataPasar = data || [];
+        terapkanFilterPasar();
+    } catch (err) {
+        gridPasar.innerHTML = '<div class="col-span-2 text-center py-10 text-red-500 text-xs">Gagal memuat data.</div>';
+    }
+}
+
+function filterKategoriPasar(kat, btnEl) {
+    kategoriPasarAktif = kat;
+    document.querySelectorAll('.btn-kat-pasar').forEach(btn => {
+        btn.className = "btn-kat-pasar whitespace-nowrap bg-white/5 border border-white/10 text-gray-400 px-4 py-1.5 rounded-full text-[10px] font-bold hover:bg-white/10 transition-all";
+    });
+    btnEl.className = "btn-kat-pasar whitespace-nowrap bg-brand-success border border-transparent text-white px-4 py-1.5 rounded-full text-[10px] font-bold shadow-[0_0_10px_rgba(37,211,102,0.3)] transition-all";
+    terapkanFilterPasar();
+}
+
+function terapkanFilterPasar() {
+    const keyword = (document.getElementById('cari-pasar')?.value || '').toLowerCase();
+    const filteredData = globalDataPasar.filter(item => {
+        const matchSearch = item.title.toLowerCase().includes(keyword) || 
+                            item.category.toLowerCase().includes(keyword) || 
+                            (item.profiles?.nickname || '').toLowerCase().includes(keyword);
+        const matchKat = (kategoriPasarAktif === 'Semua') ? true : (item.category === kategoriPasarAktif);
+        return matchSearch && matchKat;
+    });
+    renderGridPasar(filteredData);
+}
+
+function bukaModalJualBarang() {
+    if (!currentUser) return showToast("Silakan login dulu!", "error");
+    document.getElementById('modal-jual-barang').classList.replace('hidden', 'flex');
+}
+
+async function bukaModalSaldoDompet() {
+    if (!currentUser) return showToast("Silakan login dulu!", "error");
+    document.getElementById('modal-saldo-dompet').classList.replace('hidden', 'flex');
+    fetchSaldoDanMutasi();
+}
+
+
 
 </script>
 
