@@ -3788,8 +3788,9 @@ function renderProfileVideoBatch(customAmount = 3) {
     </div>
 
     <div class="absolute bottom-0 left-0 w-full p-6 flex justify-between items-end z-20 pointer-events-none bg-gradient-to-t from-black/80 to-transparent pb-10 sm:pb-6">
-    <div class="text-white drop-shadow-lg w-[75%] pointer-events-auto">
-    <p class="font-bold text-[15px] shadow-black drop-shadow-md mb-1.5">@${vid.nickname || "Player"}</p>
+<div class="text-white drop-shadow-lg w-[75%] pointer-events-auto">
+<p onclick="event.stopPropagation(); viewUserProfile('${vid.user_id}')" class="font-bold text-[15px] shadow-black drop-shadow-md mb-1.5 cursor-pointer hover:text-brand-info transition-colors">@${vid.nickname || "Player"}</p>
+
     <div onclick="this.classList.toggle('expanded')" class="caption-text text-[13px] opacity-90 shadow-black drop-shadow-md cursor-pointer pr-2 leading-relaxed">${formatCaption(vid.caption)}</div>
     </div>
 
