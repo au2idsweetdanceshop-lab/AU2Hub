@@ -9667,6 +9667,50 @@ document.addEventListener('DOMContentLoaded', () => {
     </div>
 </div>
 
+<!-- [BARU] MODAL EDIT PRODUK -->
+<div id="modal-edit-produk" class="fixed inset-0 z-[600] hidden items-end sm:items-center justify-center bg-black/90 backdrop-blur-md px-0 sm:px-6 transition-all duration-300">
+    <div class="bg-brand-card w-full max-w-md sm:rounded-3xl rounded-t-[2.5rem] border border-white/10 shadow-2xl relative modal-anim flex flex-col h-[85vh] sm:h-auto sm:max-h-[90vh] overflow-hidden">
+        <div class="flex justify-between items-center p-5 border-b border-white/5 bg-brand-dark/80 backdrop-blur-xl shrink-0">
+            <h3 class="font-extrabold text-white text-sm flex items-center gap-2"><i class="fas fa-pen text-brand-info"></i> Edit Produk</h3>
+            <button onclick="tutupModalEditProduk()" class="text-gray-400 hover:text-white w-8 h-8 rounded-full bg-white/5 flex items-center justify-center active:scale-95 transition-all"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="flex-1 overflow-y-auto p-5 hide-scroll space-y-4">
+            <!-- Input tersembunyi untuk menyimpan ID produk yang sedang diedit -->
+            <input type="hidden" id="edit-produk-id">
+            
+            <div>
+                <label class="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-1.5 block">Nama Produk</label>
+                <input type="text" id="edit-produk-nama" class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-brand-info transition-colors">
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-1.5 block">Harga (Rp)</label>
+                    <input type="number" id="edit-produk-harga" class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-brand-info transition-colors">
+                </div>
+                <div>
+                    <label class="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-1.5 block">Kategori</label>
+                    <select id="edit-produk-kategori" class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-brand-info transition-colors appearance-none">
+                        <option value="Joki" class="bg-brand-dark">Joki</option>
+                        <option value="Akun" class="bg-brand-dark">Akun</option>
+                        <option value="Item" class="bg-brand-dark">Item / Gift</option>
+                        <option value="Top Up" class="bg-brand-dark">Top Up</option>
+                        <option value="Lainnya" class="bg-brand-dark">Lainnya</option>
+                    </select>
+                </div>
+            </div>
+            <div>
+                <label class="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-1.5 block">Deskripsi Lengkap</label>
+                <textarea id="edit-produk-deskripsi" rows="4" class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-brand-info transition-colors resize-none hide-scroll"></textarea>
+            </div>
+            <p class="text-[9px] text-brand-info italic text-center mt-2">*Catatan: Untuk mengganti foto produk, silakan hapus dan posting ulang.</p>
+        </div>
+        <div class="p-4 border-t border-white/5 bg-brand-dark shrink-0">
+            <button id="btn-submit-edit-produk" onclick="prosesEditProduk()" class="w-full bg-brand-info hover:bg-[#35a2f2] text-brand-dark py-3.5 rounded-xl font-extrabold active:scale-95 transition-all uppercase tracking-wider text-sm shadow-[0_4px_15px_rgba(70,179,255,0.3)]">Simpan Perubahan</button>
+        </div>
+    </div>
+</div>
+
+
 <!-- 2. MODAL DETAIL PASAR (DIPERBARUI UNTUK CAROUSEL FOTO) -->
 <div id="modal-detail-pasar" class="fixed inset-0 z-[600] hidden items-end sm:items-center justify-center bg-black/90 backdrop-blur-md px-0 sm:px-6 transition-all duration-300">
     <div class="bg-brand-card w-full max-w-md sm:rounded-3xl rounded-t-[2.5rem] border border-white/10 shadow-2xl relative modal-anim flex flex-col h-[90vh] sm:h-auto sm:max-h-[90vh] overflow-hidden">
@@ -9894,48 +9938,81 @@ function renderGridPasar(dataList) {
     });
 }
 
-// 2. PREVIEW BANYAK FOTO SAAT JUAL BARANG
+// 2. PREVIEW BANYAK FOTO SAAT JUAL BARANG (DIPERBAIKI: BISA NAMBAH SATU PER SATU)
 function previewGambarJualan(input) {
-    const previewContainer = document.getElementById('preview-container-jualan');
-    
     if (input.files && input.files.length > 0) {
-        if (input.files.length > 5) {
-            showToast("Maksimal pilih 5 foto!", "error");
+        const newFiles = Array.from(input.files);
+        
+        // Cek apakah total foto (yang lama + yang baru dipilih) melebihi batas 5
+        if (fileJualanArray.length + newFiles.length > 5) {
+            showToast("Maksimal total 5 foto ya!", "error");
             input.value = '';
             return;
         }
 
-        fileJualanArray = Array.from(input.files);
-        previewContainer.innerHTML = ''; 
         let isSizeError = false;
 
-        fileJualanArray.forEach((file) => {
+        // Cek ukuran dan masukkan ke dalam array global (TIDAK DITIMPA, TAPI DITAMBAH)
+        newFiles.forEach((file) => {
             if (file.size > 5 * 1024 * 1024) {
                 isSizeError = true;
             } else {
-                const reader = new FileReader();
-                reader.onload = e => {
-                    previewContainer.innerHTML += `
-                        <div class="relative w-20 h-20 sm:w-24 sm:h-24 shrink-0 rounded-xl overflow-hidden border border-white/20 shadow-md">
-                            <img src="${e.target.result}" class="w-full h-full object-cover">
-                        </div>
-                    `;
-                }
-                reader.readAsDataURL(file);
+                fileJualanArray.push(file); // <-- Ini kuncinya: Menambah, bukan menimpa
             }
         });
 
         if (isSizeError) {
-            showToast("Ada foto yang ukurannya melebihi 5MB, silakan ganti.", "error");
-            fileJualanArray = [];
-            input.value = '';
-            previewContainer.classList.add('hidden');
-            return;
+            showToast("Beberapa foto berukuran lebih dari 5MB tidak dimasukkan.", "error");
         }
 
-        previewContainer.classList.remove('hidden');
+        // Render ulang tampilan layar
+        renderPreviewJualan();
+        
+        // Reset input agar bisa diklik lagi untuk nambah foto berikutnya
+        input.value = ''; 
     }
 }
+
+// [BARU] FUNGSI CETAK GAMBAR KE LAYAR DENGAN TOMBOL HAPUS (X)
+function renderPreviewJualan() {
+    const previewContainer = document.getElementById('preview-container-jualan');
+    previewContainer.innerHTML = '';
+    
+    // Jika tidak ada foto, sembunyikan wadah preview-nya
+    if (fileJualanArray.length === 0) {
+        previewContainer.classList.add('hidden');
+        return;
+    }
+
+    // Looping semua file yang ada di memori dan cetak ke layar
+    fileJualanArray.forEach((file, index) => {
+        const reader = new FileReader();
+        reader.onload = e => {
+            previewContainer.innerHTML += `
+                <div class="relative w-20 h-20 sm:w-24 sm:h-24 shrink-0 rounded-xl overflow-hidden border border-white/20 shadow-md">
+                    <img src="${e.target.result}" class="w-full h-full object-cover">
+                    <!-- Tombol Silang Merah -->
+                    <button onclick="hapusPreviewJualan(${index})" class="absolute top-1 right-1 bg-red-500/80 text-white rounded-full w-6 h-6 flex items-center justify-center backdrop-blur-md active:scale-90 transition-transform shadow-md z-10">
+                        <i class="fas fa-times text-xs"></i>
+                    </button>
+                </div>
+            `;
+        }
+        reader.readAsDataURL(file);
+    });
+
+    previewContainer.classList.remove('hidden');
+}
+
+// [BARU] FUNGSI MENGHAPUS FOTO SPESIFIK
+function hapusPreviewJualan(index) {
+    // Hapus 1 foto dari array berdasarkan index (urutan) yang di-klik
+    fileJualanArray.splice(index, 1);
+    
+    // Render ulang layarnya
+    renderPreviewJualan();
+}
+
 
 // 3. PROSES UPLOAD MULTI FOTO SEKALIGUS
 async function prosesPostingJualan() {
@@ -10424,7 +10501,7 @@ function loadTokoSaya() {
     switchTokoTab('produk');
 }
 
-// FUNGSI TARIK DATA PRODUK SAYA
+// 1. TIMPA FUNGSI INI AGAR MUNCUL TOMBOL EDIT BERWARNA BIRU
 async function loadProdukSaya() {
     const container = document.getElementById('toko-produk-container');
     container.innerHTML = '<div class="text-center py-10 text-xs text-gray-500"><i class="fas fa-spinner fa-spin text-2xl mb-2 text-yellow-500"></i><br>Memuat produk Anda...</div>';
@@ -10441,15 +10518,22 @@ async function loadProdukSaya() {
         if (data && data.length > 0) {
             container.innerHTML = data.map(item => `
                 <div class="bg-black/40 border border-white/5 p-3 rounded-2xl flex items-center gap-3 relative overflow-hidden">
-                    <img src="${item.image_url}" class="w-16 h-16 rounded-xl object-cover border border-white/10 shrink-0" onerror="this.src='https://placehold.co/100/1a1133/2BD975?text=PRODUK'">
+                    <img src="${(item.image_url || '').split(',')[0]}" class="w-16 h-16 rounded-xl object-cover border border-white/10 shrink-0" onerror="this.src='https://placehold.co/100/1a1133/2BD975?text=PRODUK'">
                     <div class="flex-1 min-w-0">
                         <h4 class="text-xs font-bold text-white line-clamp-1">${item.title}</h4>
                         <div class="text-brand-success font-extrabold text-[11px] mt-1">Rp ${item.price.toLocaleString('id-ID')}</div>
                         <div class="text-[9px] text-gray-400 mt-1"><i class="fas fa-tag"></i> ${item.category}</div>
                     </div>
-                    <button onclick="hapusProdukSaya('${item.id}', '${item.title.replace(/'/g, "\\'")}')" class="w-8 h-8 rounded-full bg-red-500/20 text-red-500 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all shrink-0">
-                        <i class="fas fa-trash-alt text-xs"></i>
-                    </button>
+                    
+                    <!-- [BARU] DUA TOMBOL: EDIT DAN HAPUS -->
+                    <div class="flex flex-col gap-1.5 shrink-0">
+                        <button onclick="bukaModalEditProduk('${item.id}')" class="w-8 h-8 rounded-full bg-brand-info/20 text-brand-info flex items-center justify-center hover:bg-brand-info hover:text-brand-dark transition-all shadow-sm">
+                            <i class="fas fa-pen text-[10px]"></i>
+                        </button>
+                        <button onclick="hapusProdukSaya('${item.id}', '${item.title.replace(/'/g, "\\'")}')" class="w-8 h-8 rounded-full bg-red-500/20 text-red-500 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all shadow-sm">
+                            <i class="fas fa-trash-alt text-[10px]"></i>
+                        </button>
+                    </div>
                 </div>
             `).join('');
         } else {
@@ -10459,6 +10543,79 @@ async function loadProdukSaya() {
         container.innerHTML = '<div class="text-center py-10 text-red-500 text-xs">Gagal menarik data produk.</div>';
     }
 }
+
+
+// 2. TAMBAHKAN FUNGSI LOGIKA EDIT PRODUK INI DI BAWAHNYA
+async function bukaModalEditProduk(idProduk) {
+    showToast("Mengambil data produk...", "info");
+    
+    try {
+        // Ambil data terbaru langsung dari server
+        const { data, error } = await supabaseClient
+            .from('player_products')
+            .select('*')
+            .eq('id', idProduk)
+            .single();
+
+        if (error || !data) throw new Error("Produk tidak ditemukan.");
+
+        // Isi form otomatis dengan data yang ada
+        document.getElementById('edit-produk-id').value = data.id;
+        document.getElementById('edit-produk-nama').value = data.title;
+        document.getElementById('edit-produk-harga').value = data.price;
+        document.getElementById('edit-produk-kategori').value = data.category;
+        document.getElementById('edit-produk-deskripsi').value = data.description;
+        
+        // Buka laci edit
+        document.getElementById('modal-edit-produk').classList.replace('hidden', 'flex');
+    } catch(err) {
+        showToast("Gagal memuat form edit", "error");
+    }
+}
+
+function tutupModalEditProduk() {
+    document.getElementById('modal-edit-produk').classList.replace('flex', 'hidden');
+}
+
+async function prosesEditProduk() {
+    const id = document.getElementById('edit-produk-id').value;
+    const nama = document.getElementById('edit-produk-nama').value.trim();
+    const harga = parseInt(document.getElementById('edit-produk-harga').value);
+    const kategori = document.getElementById('edit-produk-kategori').value;
+    const deskripsi = document.getElementById('edit-produk-deskripsi').value.trim();
+    const btn = document.getElementById('btn-submit-edit-produk');
+
+    if (!nama || !harga || isNaN(harga) || !deskripsi) return showToast("Mohon lengkapi formulir!", "error");
+    if (harga < 1000) return showToast("Harga minimal adalah Rp 1.000", "error");
+
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan...';
+    btn.disabled = true;
+
+    try {
+        // Update data ke Supabase tanpa menyentuh foto
+        const { error } = await supabaseClient.from('player_products').update({
+            title: nama,
+            price: harga,
+            category: kategori,
+            description: deskripsi
+        }).eq('id', id);
+
+        if (error) throw error;
+
+        showToast("Produk berhasil diperbarui!", "success");
+        tutupModalEditProduk();
+        
+        // Refresh daftar toko dan pasar utama secara instan
+        loadProdukSaya(); 
+        loadPasarPlayer(true); 
+    } catch(e) {
+        showToast("Gagal mengedit: " + e.message, "error");
+    } finally {
+        btn.innerHTML = 'Simpan Perubahan';
+        btn.disabled = false;
+    }
+}
+
 
 // FUNGSI HAPUS PRODUK
 async function hapusProdukSaya(productId, productName) {
