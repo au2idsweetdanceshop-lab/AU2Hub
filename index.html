@@ -10428,6 +10428,10 @@ async function bukaModalSaldoDompet() {
     fetchSaldoDanMutasi();
 }
 
+function tutupModalSaldoDompet() {
+    document.getElementById('modal-saldo-dompet').classList.replace('flex', 'hidden');
+}
+
 // --- KODE PEMULIHAN (Fungsi yang hilang) ---
 
 function switchTokoTab(tab) {
@@ -10598,6 +10602,41 @@ async function prosesTarikSaldo() {
         window.open(`https://wa.me/6283815584661?text=${teks}`, '_blank');
         tutupModalSaldoDompet();
     } catch (e) { showToast("Gagal memproses.", "error"); }
+}
+
+async function bukaModalEditProduk(idProduk) {
+    showToast("Mengambil data...", "info");
+    try {
+        const { data, error } = await supabaseClient.from('player_products').select('*').eq('id', idProduk).single();
+        if (error || !data) throw new Error("Produk tidak ditemukan.");
+        document.getElementById('edit-produk-id').value = data.id;
+        document.getElementById('edit-produk-nama').value = data.title;
+        document.getElementById('edit-produk-harga').value = data.price;
+        document.getElementById('edit-produk-kategori').value = data.category;
+        document.getElementById('edit-produk-deskripsi').value = data.description;
+        
+        editFileArray = [];
+        if (data.image_url) editFileArray.push(...data.image_url.split(',').map(u => u.trim()));
+        renderPreviewEditProduk(); 
+        
+        document.getElementById('modal-edit-produk').classList.replace('hidden', 'flex');
+    } catch(err) { showToast("Gagal memuat form edit", "error"); }
+}
+
+function tutupModalEditProduk() {
+    document.getElementById('modal-edit-produk').classList.replace('flex', 'hidden');
+    editFileArray = [];
+}
+
+async function hapusProdukSaya(productId, productName) {
+    const konfirmasi = await customConfirm("Yakin hapus produk: " + productName + "?");
+    if (!konfirmasi) return;
+    try {
+        await supabaseClient.from('player_products').delete().eq('id', productId);
+        showToast("Produk dihapus!", "success");
+        loadProdukSaya();
+        loadPasarPlayer(true);
+    } catch (e) { showToast("Gagal menghapus.", "error"); }
 }
 
 </script>
