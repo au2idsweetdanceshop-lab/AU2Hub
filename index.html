@@ -4644,10 +4644,30 @@ dataDariSheet.push(newVid);
 
 dataDariSheet = dataDariSheet.filter(v => !blockedUsersList.includes(v.user_id));
 
-
+// 1. Biarkan pengacakan (shuffle) bawaan Anda berjalan dulu
 for (let i = dataDariSheet.length - 1; i > 0; i--) {
-const j = Math.floor(Math.random() * (i + 1));
-[dataDariSheet[i], dataDariSheet[j]] = [dataDariSheet[j], dataDariSheet[i]];
+    const j = Math.floor(Math.random() * (i + 1));
+    [dataDariSheet[i], dataDariSheet[j]] = [dataDariSheet[j], dataDariSheet[i]];
+}
+
+// 2. [FITUR BARU] Cek apakah URL memiliki parameter '?vid='
+const urlHash = window.location.hash;
+if (urlHash.includes('?vid=')) {
+    // Ambil ID video dari URL
+    const params = new URLSearchParams(urlHash.split('?')[1]);
+    const targetVidId = params.get('vid');
+
+    if (targetVidId) {
+        // Cari posisi video target di dalam array yang sudah diacak tadi
+        const targetIndex = dataDariSheet.findIndex(v => v.id === targetVidId);
+        
+        if (targetIndex !== -1) {
+            // Cabut video target dari posisinya...
+            const targetVideo = dataDariSheet.splice(targetIndex, 1)[0];
+            // ...lalu suntikkan secara paksa ke urutan paling atas (index 0)
+            dataDariSheet.unshift(targetVideo);
+        }
+    }
 }
 
 allVideosData = dataDariSheet;
