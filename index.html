@@ -9796,11 +9796,12 @@ document.addEventListener('DOMContentLoaded', () => {
 </div>
 
 
-<!-- 3. JAVASCRIPT LOGIKA PASAR PLAYER -->
+<!-- 3. JAVASCRIPT LOGIKA PASAR PLAYER (MAXIMIZED VERSION) -->
 <script>
 // Variabel Global
 let globalDataPasar = [];
 let idPenjualAktif = null;
+let kategoriPasarAktif = 'Semua'; // Variabel baru untuk filter
 
 document.addEventListener('DOMContentLoaded', () => {
     // A. SUNTIK TOMBOL NAVIGASI MENU KIRI (LEBIH AMAN)
@@ -9813,7 +9814,7 @@ document.addEventListener('DOMContentLoaded', () => {
         btnPasar.onclick = (e) => switchTab('pasar', e);
         btnPasar.innerHTML = '<i class="fas fa-store text-lg pointer-events-none"></i>';
         
-        // Taruh tepat di bawah menu Pesanan dengan selector yang pasti
+        // Taruh tepat di bawah menu Pesanan
         const btnPesanan = navBar.querySelector('a[href="#pesanan"]');
         if(btnPesanan) {
             navBar.insertBefore(btnPasar, btnPesanan.nextSibling);
@@ -9822,26 +9823,37 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // B. SUNTIK HALAMAN TAB KONTEN KE <main>
+    // B. SUNTIK HALAMAN TAB KONTEN KE <main> DENGAN FITUR MAXIMIZED
     const mainArea = document.querySelector('main');
     if(mainArea) {
         const sectionPasar = document.createElement('section');
         sectionPasar.id = "pasar";
         sectionPasar.className = "tab-content py-2";
         sectionPasar.innerHTML = `
-            <div class="flex justify-between items-center mb-5 mt-2 border-b border-white/5 pb-4">
+            <div class="flex justify-between items-center mb-4 mt-2 border-b border-white/5 pb-4">
                 <h2 class="text-xl font-extrabold text-white flex items-center gap-2">
                     <span class="w-1.5 h-6 bg-brand-success rounded-full"></span> Pasar Player
                 </h2>
                 <div class="flex items-center gap-2">
-                    <button onclick="loadPasarPlayer(true)" class="text-brand-success bg-brand-success/10 w-8 h-8 rounded-full flex items-center justify-center active:scale-90 transition-all border border-brand-success/30"><i class="fas fa-sync-alt"></i></button>
-                    <button onclick="bukaModalJualBarang()" class="bg-brand-success/10 text-brand-success px-3 py-1.5 rounded-lg text-[10px] font-bold border border-brand-success/30 active:scale-95 transition-all"><i class="fas fa-plus mr-1"></i> Jual</button>
+                    <button onclick="loadPasarPlayer(true)" class="text-brand-success bg-brand-success/10 w-8 h-8 rounded-full flex items-center justify-center active:scale-90 transition-all border border-brand-success/30 shadow-sm"><i class="fas fa-sync-alt"></i></button>
+                    <button onclick="bukaModalJualBarang()" class="bg-brand-success text-brand-dark px-4 py-1.5 rounded-lg text-[11px] font-extrabold shadow-[0_4px_10px_rgba(37,211,102,0.3)] active:scale-95 transition-all"><i class="fas fa-plus mr-1"></i> Jual</button>
                 </div>
             </div>
+
+            <!-- [BARU] FILTER KATEGORI CEPAT -->
+            <div class="flex overflow-x-auto hide-scroll gap-2 mb-4 pb-1" id="kategori-pasar-chips">
+                <button onclick="filterKategoriPasar('Semua', this)" class="btn-kat-pasar whitespace-nowrap bg-brand-success text-white px-4 py-1.5 rounded-full text-[10px] font-bold shadow-[0_0_10px_rgba(37,211,102,0.3)] transition-all border border-transparent">Semua</button>
+                <button onclick="filterKategoriPasar('Joki', this)" class="btn-kat-pasar whitespace-nowrap bg-white/5 border border-white/10 text-gray-400 px-4 py-1.5 rounded-full text-[10px] font-bold hover:bg-white/10 transition-all">Joki</button>
+                <button onclick="filterKategoriPasar('Akun', this)" class="btn-kat-pasar whitespace-nowrap bg-white/5 border border-white/10 text-gray-400 px-4 py-1.5 rounded-full text-[10px] font-bold hover:bg-white/10 transition-all">Akun</button>
+                <button onclick="filterKategoriPasar('Item', this)" class="btn-kat-pasar whitespace-nowrap bg-white/5 border border-white/10 text-gray-400 px-4 py-1.5 rounded-full text-[10px] font-bold hover:bg-white/10 transition-all">Item / Gift</button>
+                <button onclick="filterKategoriPasar('Top Up', this)" class="btn-kat-pasar whitespace-nowrap bg-white/5 border border-white/10 text-gray-400 px-4 py-1.5 rounded-full text-[10px] font-bold hover:bg-white/10 transition-all">Top Up</button>
+            </div>
+
             <div class="relative mb-5">
                 <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 text-xs"></i>
                 <input type="text" id="cari-pasar" placeholder="Cari item, joki, atau nama penjual..." class="w-full bg-black/40 border border-white/10 rounded-2xl py-3 pl-10 pr-4 text-xs text-white focus:outline-none focus:border-brand-success transition-all shadow-inner">
             </div>
+            
             <div id="grid-pasar-player" class="grid grid-cols-2 gap-3 pb-10">
                 <div class="col-span-2 text-center py-10 text-brand-success"><i class="fas fa-spinner fa-spin text-3xl mb-3"></i><br><span class="text-xs font-bold tracking-widest uppercase">Memuat Etalase...</span></div>
             </div>
@@ -9858,14 +9870,20 @@ document.addEventListener('DOMContentLoaded', () => {
             const searchInput = document.getElementById('cari-pasar');
             if (searchInput) {
                 searchInput.addEventListener('input', (e) => {
-                    const keyword = e.target.value.toLowerCase();
-                    const filteredData = globalDataPasar.filter(item => {
-                        return item.title.toLowerCase().includes(keyword) || 
-                               item.category.toLowerCase().includes(keyword) || 
-                               (item.profiles?.nickname || '').toLowerCase().includes(keyword);
-                    });
-                    renderGridPasar(filteredData);
+                    terapkanFilterPasar();
                 });
+            }
+
+            // [BARU] Setup Input Rupiah di Laci Form Jual & Edit tanpa mengubah HTML asli
+            const jualanHarga = document.getElementById('jualan-harga');
+            const editHarga = document.getElementById('edit-produk-harga');
+            if(jualanHarga) {
+                jualanHarga.type = 'text'; // Paksa ubah type agar mendukung string (titik)
+                jualanHarga.addEventListener('input', formatInputRupiah);
+            }
+            if(editHarga) {
+                editHarga.type = 'text';
+                editHarga.addEventListener('input', formatInputRupiah);
             }
         }, 1000);
     }
@@ -9874,6 +9892,53 @@ document.addEventListener('DOMContentLoaded', () => {
     loadPasarPlayer(); 
 });
 
+// [BARU] FUNGSI FILTER KATEGORI GANDA
+function filterKategoriPasar(kat, btnEl) {
+    kategoriPasarAktif = kat;
+    
+    // Reset warna semua tombol
+    document.querySelectorAll('.btn-kat-pasar').forEach(btn => {
+        btn.className = "btn-kat-pasar whitespace-nowrap bg-white/5 border border-white/10 text-gray-400 px-4 py-1.5 rounded-full text-[10px] font-bold hover:bg-white/10 transition-all";
+    });
+    
+    // Warnai tombol yang aktif
+    btnEl.className = "btn-kat-pasar whitespace-nowrap bg-brand-success border border-transparent text-white px-4 py-1.5 rounded-full text-[10px] font-bold shadow-[0_0_10px_rgba(37,211,102,0.3)] transition-all";
+
+    terapkanFilterPasar();
+}
+
+function terapkanFilterPasar() {
+    const keyword = (document.getElementById('cari-pasar')?.value || '').toLowerCase();
+    
+    const filteredData = globalDataPasar.filter(item => {
+        const matchSearch = item.title.toLowerCase().includes(keyword) || 
+                            item.category.toLowerCase().includes(keyword) || 
+                            (item.profiles?.nickname || '').toLowerCase().includes(keyword);
+                            
+        // Jika pilih "Semua", maka lolos. Jika pilih kategori lain, harus cocok.
+        const matchKat = (kategoriPasarAktif === 'Semua') ? true : (item.category === kategoriPasarAktif || item.category.includes(kategoriPasarAktif));
+        
+        return matchSearch && matchKat;
+    });
+    
+    renderGridPasar(filteredData);
+}
+
+// [BARU] FUNGSI HELPER FORMAT RUPIAH SAAT MENGETIK
+function formatInputRupiah(e) {
+    let val = e.target.value.replace(/[^,\d]/g, '').toString();
+    let split = val.split(',');
+    let sisa = split[0].length % 3;
+    let rupiah = split[0].substr(0, sisa);
+    let ribuan = split[0].substr(sisa).match(/\d{3}/gi);
+
+    if (ribuan) {
+        let separator = sisa ? '.' : '';
+        rupiah += separator + ribuan.join('.');
+    }
+    e.target.value = split[1] != undefined ? rupiah + ',' + split[1] : rupiah;
+}
+
 
 // FUNGSI TARIK DATA DARI SUPABASE
 async function loadPasarPlayer(forceRefresh = false) {
@@ -9881,7 +9946,7 @@ async function loadPasarPlayer(forceRefresh = false) {
     if (!gridPasar) return;
 
     if (forceRefresh) {
-        gridPasar.innerHTML = '<div class="col-span-2 text-center py-10 text-brand-success"><i class="fas fa-spinner fa-spin text-3xl mb-3"></i><br><span class="text-xs font-bold">Memuat Ulang...</span></div>';
+        gridPasar.innerHTML = '<div class="col-span-2 text-center py-10 text-brand-success"><i class="fas fa-spinner fa-spin text-3xl mb-3"></i><br><span class="text-xs font-bold uppercase tracking-widest">Memuat Ulang...</span></div>';
     }
 
     try {
@@ -9893,17 +9958,14 @@ async function loadPasarPlayer(forceRefresh = false) {
         if (error) throw error;
 
         globalDataPasar = data || [];
-        renderGridPasar(globalDataPasar);
+        terapkanFilterPasar(); // Gunakan fungsi filter cerdas
 
-        // [BARU] DETEKSI SMART DEEP-LINKING (AUTO-OPEN LACI DARI LINK SHARE)
+        // DETEKSI SMART DEEP-LINKING (AUTO-OPEN LACI DARI LINK SHARE)
         const urlHash = window.location.hash.substring(1);
         if (urlHash.startsWith('detailpasar?id=')) {
             const produkId = urlHash.split('=')[1];
             if (produkId) {
-                // Beri jeda 500ms agar UI terender sempurna sebelum popup muncul
-                setTimeout(() => {
-                    bukaDetailPasar(produkId);
-                }, 500); 
+                setTimeout(() => { bukaDetailPasar(produkId); }, 500); 
             }
         }
 
@@ -9922,7 +9984,7 @@ function renderGridPasar(dataList) {
     grid.innerHTML = '';
 
     if (dataList.length === 0) {
-        grid.innerHTML = '<div class="col-span-2 text-center py-10 text-gray-500 text-xs"><i class="fas fa-box-open text-4xl mb-3 opacity-30"></i><br>Belum ada produk.</div>';
+        grid.innerHTML = '<div class="col-span-2 text-center py-10 text-gray-500 text-xs flex flex-col items-center"><i class="fas fa-store-slash text-4xl mb-3 opacity-30"></i><span>Tidak ada produk di kategori ini.</span></div>';
         return;
     }
 
@@ -9936,7 +9998,6 @@ function renderGridPasar(dataList) {
         const sellerVideoCount = allVideosData.filter(v => String(v.user_id) === String(item.user_id)).length;
         const badgeHtml = getBadgeByLevelAndVideos(sellerLevel, sellerVideoCount);
 
-        // [BARU] Ambil URL foto pertama saja (karena sekarang bentuknya url1,url2,url3)
         let rawThumb = item.image_url || '';
         let fotoPertama = rawThumb.split(',')[0].trim();
         if (!fotoPertama) fotoPertama = 'https://placehold.co/400x400/1a1133/2BD975?text=PASAR';
@@ -9960,49 +10021,39 @@ function renderGridPasar(dataList) {
     });
 }
 
-// 2. PREVIEW BANYAK FOTO SAAT JUAL BARANG (TANPA BATAS)
+// 2. PREVIEW BANYAK FOTO SAAT JUAL BARANG
 function previewGambarJualan(input) {
     if (input.files && input.files.length > 0) {
         const newFiles = Array.from(input.files);
         let isSizeError = false;
 
-        // Cek ukuran dan masukkan semua file ke array tanpa membatasi jumlahnya
         newFiles.forEach((file) => {
-            if (file.size > 5 * 1024 * 1024) {
-                isSizeError = true;
-            } else {
-                fileJualanArray.push(file); 
-            }
+            if (file.size > 5 * 1024 * 1024) isSizeError = true;
+            else fileJualanArray.push(file); 
         });
 
-        if (isSizeError) {
-            showToast("Beberapa foto berukuran lebih dari 5MB diabaikan.", "error");
-        }
+        if (isSizeError) showToast("Beberapa foto berukuran > 5MB diabaikan.", "error");
 
         renderPreviewJualan();
         input.value = ''; 
     }
 }
 
-// [BARU] FUNGSI CETAK GAMBAR KE LAYAR DENGAN TOMBOL HAPUS (X)
 function renderPreviewJualan() {
     const previewContainer = document.getElementById('preview-container-jualan');
     previewContainer.innerHTML = '';
     
-    // Jika tidak ada foto, sembunyikan wadah preview-nya
     if (fileJualanArray.length === 0) {
         previewContainer.classList.add('hidden');
         return;
     }
 
-    // Looping semua file yang ada di memori dan cetak ke layar
     fileJualanArray.forEach((file, index) => {
         const reader = new FileReader();
         reader.onload = e => {
             previewContainer.innerHTML += `
                 <div class="relative w-20 h-20 sm:w-24 sm:h-24 shrink-0 rounded-xl overflow-hidden border border-white/20 shadow-md">
                     <img src="${e.target.result}" class="w-full h-full object-cover">
-                    <!-- Tombol Silang Merah -->
                     <button onclick="hapusPreviewJualan(${index})" class="absolute top-1 right-1 bg-red-500/80 text-white rounded-full w-6 h-6 flex items-center justify-center backdrop-blur-md active:scale-90 transition-transform shadow-md z-10">
                         <i class="fas fa-times text-xs"></i>
                     </button>
@@ -10015,20 +10066,19 @@ function renderPreviewJualan() {
     previewContainer.classList.remove('hidden');
 }
 
-// [BARU] FUNGSI MENGHAPUS FOTO SPESIFIK
 function hapusPreviewJualan(index) {
-    // Hapus 1 foto dari array berdasarkan index (urutan) yang di-klik
     fileJualanArray.splice(index, 1);
-    
-    // Render ulang layarnya
     renderPreviewJualan();
 }
-
 
 // 3. PROSES UPLOAD MULTI FOTO SEKALIGUS
 async function prosesPostingJualan() {
     const nama = document.getElementById('jualan-nama').value.trim();
-    const harga = parseInt(document.getElementById('jualan-harga').value);
+    
+    // 🔥 PERBAIKAN: Bersihkan titik ribuan sebelum diparse ke Integer
+    const hargaInputClean = document.getElementById('jualan-harga').value.replace(/\./g, '');
+    const harga = parseInt(hargaInputClean);
+    
     const kategori = document.getElementById('jualan-kategori').value;
     const deskripsi = document.getElementById('jualan-deskripsi').value.trim();
     const btn = document.getElementById('btn-submit-jualan');
@@ -10044,7 +10094,6 @@ async function prosesPostingJualan() {
         let uploadedUrls = [];
         showToast(`Mengunggah ${fileJualanArray.length} foto ke satelit...`, "info");
 
-        // Upload semua foto berbarengan secara Paralel biar cepat (Promise.all)
         const uploadPromises = fileJualanArray.map(async (file, index) => {
             const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent('pasar_'+index+'_'+Date.now())}&filetype=${encodeURIComponent(file.type)}`);
             const dataUrl = await resUrl.json();
@@ -10053,8 +10102,6 @@ async function prosesPostingJualan() {
         });
 
         uploadedUrls = await Promise.all(uploadPromises);
-        
-        // Gabungkan semua URL dengan koma
         const finalImageUrl = uploadedUrls.join(',');
 
         const { error } = await supabaseClient.from('player_products').insert({
@@ -10066,7 +10113,6 @@ async function prosesPostingJualan() {
         showToast("Dagangan berhasil diposting!", "success");
         tutupModalJualBarang();
         
-        // Bersihkan Form
         document.getElementById('jualan-nama').value = '';
         document.getElementById('jualan-harga').value = '';
         document.getElementById('jualan-deskripsi').value = '';
@@ -10085,13 +10131,12 @@ async function prosesPostingJualan() {
     }
 }
 
-// [BARU] FUNGSI SMART SHARE (IOS / ANDROID BULT-IN)
+// SMART SHARE
 async function shareProdukPasar(btn) {
     const currentUrl = window.location.href;
     const judulProduk = document.getElementById('pasar-detail-nama').innerText || "Produk Pasar Player";
     const hargaProduk = document.getElementById('pasar-detail-harga').innerText || "";
 
-    // Cek apakah HP/Browser mendukung fitur Share bawaan sistem operasi
     if (navigator.share) {
         try {
             await navigator.share({
@@ -10099,24 +10144,18 @@ async function shareProdukPasar(btn) {
                 text: `Cek ${judulProduk} seharga ${hargaProduk} di AU2Hub sekarang! Aman via Rekber.`,
                 url: currentUrl
             });
-        } catch (err) {
-            console.log("Membagikan dibatalkan oleh pengguna.", err);
-        }
-    } 
-    // FALLBACK: Untuk PC atau browser jadul, salin teks ke clipboard
-    else {
+        } catch (err) { console.log("Membagikan dibatalkan."); }
+    } else {
         navigator.clipboard.writeText(currentUrl).then(() => {
             showToast("Link produk berhasil disalin!", "success");
             const icon = btn.querySelector('i');
             icon.className = 'fas fa-check text-brand-success';
             setTimeout(() => { icon.className = 'fas fa-share-alt text-sm'; }, 2000);
-        }).catch(() => {
-            showToast("Gagal menyalin link otomatis", "error");
-        });
+        }).catch(() => { showToast("Gagal menyalin link", "error"); });
     }
 }
 
-// 4. BUKA DETAIL DENGAN CAROUSEL (DIPERBARUI DENGAN SMART LINK)
+// 4. BUKA DETAIL DENGAN CAROUSEL
 function bukaDetailPasar(idProduk) {
     const produk = globalDataPasar.find(item => item.id === idProduk);
     if (!produk) return;
@@ -10132,20 +10171,18 @@ function bukaDetailPasar(idProduk) {
     let rawImages = produk.image_url || '';
     let arrFoto = [];
     
-    // Pecah koma jadi Array
     if (rawImages) {
         arrFoto = rawImages.split(',').map(img => img.trim()).filter(img => img !== "");
     }
     if (arrFoto.length === 0) arrFoto.push('https://placehold.co/400x400/1a1133/2BD975?text=PASAR');
 
-    // Cetak Gambar ke dalam slide
-    carousel.innerHTML = arrFoto.map(imgUrl => `
+carousel.innerHTML = arrFoto.map((imgUrl, index) => `
         <div class="w-full h-full flex-shrink-0 snap-center relative">
-            <img src="${imgUrl}" class="w-full h-full object-cover cursor-pointer" onclick="openLightbox('${imgUrl}')" onerror="this.src='https://placehold.co/400x400/1a1133/2BD975?text=PASAR'">
+            <!-- [PERUBAHAN]: onclick diubah agar memanggil bukaGalleryPasar dengan mengirimkan ID dan Index urutan fotonya -->
+            <img src="${imgUrl}" class="w-full h-full object-cover cursor-pointer" onclick="bukaGalleryPasar('${produk.id}', ${index})" onerror="this.src='https://placehold.co/400x400/1a1133/2BD975?text=PASAR'">
         </div>
     `).join('');
 
-    // Setup Counter Badge (1/3, 2/3, dst)
     const counterBadge = document.getElementById('pasar-carousel-counter');
     const currentTxt = document.getElementById('pasar-current-idx');
     const totalTxt = document.getElementById('pasar-total-idx');
@@ -10155,14 +10192,13 @@ function bukaDetailPasar(idProduk) {
         currentTxt.innerText = "1";
         totalTxt.innerText = arrFoto.length;
         
-        // Deteksi Scroll
         carousel.onscroll = () => {
             let page = Math.round(carousel.scrollLeft / carousel.clientWidth) + 1;
             currentTxt.innerText = page;
         };
     } else {
         counterBadge.classList.add('hidden');
-        carousel.onscroll = null; // Matikan deteksi scroll kalau cuma 1 foto
+        carousel.onscroll = null; 
     }
 
     document.getElementById('pasar-detail-kategori').innerText = produk.category;
@@ -10184,61 +10220,9 @@ function bukaDetailPasar(idProduk) {
     }
 
     document.getElementById('modal-detail-pasar').classList.replace('hidden', 'flex');
-    
-    // [BARU] Pancing tombol kembali HP sambil menyimpan ID Produk ke Link
     history.pushState({ popup: 'detail_pasar' }, null, '#detailpasar?id=' + produk.id);
 }
 
-
-
-function lihatProfilPenjual() {
-    if (idPenjualAktif) {
-        tutupDetailPasar();
-        viewUserProfile(idPenjualAktif);
-    }
-}
-
-function chatPenjualPasar() {
-    if (idPenjualAktif) {
-        tutupDetailPasar();
-        kirimPesanPribadi(idPenjualAktif);
-    }
-}
-
-// LOGIKA BAYAR MELALUI ROBOT DANA (Meminjam fungsi Checkout yang sudah ada)
-async function checkoutPasar(nama, harga, id) {
-    const btnBeli = document.getElementById('btn-beli-pasar');
-    
-    // Kunci tombol mencegah double klik
-    btnBeli.disabled = true;
-    btnBeli.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memverifikasi...';
-
-    showToast("Memverifikasi harga ke server...", "info");
-    
-    try {
-        // TARIK HARGA ASLI DARI DATABASE
-        const { data: produkAsli, error } = await supabaseClient
-            .from('player_products')
-            .select('price, user_id')
-            .eq('id', id)
-            .single();
-            
-        if (error || !produkAsli) throw new Error("Barang tidak ditemukan di server.");
-        
-        tutupDetailPasar(); // Tutup setelah sukses verifikasi
-        // Lempar ke Robot DANA menggunakan harga murni dari Supabase
-        checkoutRobotDANA("[PASAR] " + nama, produkAsli.price, "Pembelian item dari Pasar Player.", produkAsli.user_id);
-        
-    } catch (err) {
-        showToast("Gagal memverifikasi keamanan: " + err.message, "error");
-    } finally {
-        // Kembalikan tombol ke keadaan semula jika gagal
-        btnBeli.disabled = false;
-        btnBeli.innerHTML = '<i class="fas fa-shopping-cart"></i> Beli Sekarang';
-    }
-}
-
-// 5. TUTUP DETAIL & FUNGSI AKSI PASAR
 function tutupDetailPasar(dariTombolBackHP = false) {
     document.getElementById('modal-detail-pasar').classList.replace('flex', 'hidden');
     if (!dariTombolBackHP && window.location.hash === '#detailpasar') {
@@ -10262,39 +10246,27 @@ function chatPenjualPasar() {
 
 async function checkoutPasar(nama, harga, id) {
     const btnBeli = document.getElementById('btn-beli-pasar');
-    
-    // Kunci tombol mencegah double klik
     btnBeli.disabled = true;
     btnBeli.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memverifikasi...';
 
     showToast("Memverifikasi harga ke server...", "info");
     
     try {
-        // TARIK HARGA ASLI DARI DATABASE
-        const { data: produkAsli, error } = await supabaseClient
-            .from('player_products')
-            .select('price, user_id')
-            .eq('id', id)
-            .single();
-            
+        const { data: produkAsli, error } = await supabaseClient.from('player_products').select('price, user_id').eq('id', id).single();
         if (error || !produkAsli) throw new Error("Barang tidak ditemukan di server.");
         
-        tutupDetailPasar(); // Tutup setelah sukses verifikasi
-        
-        // Lempar ke Robot DANA menggunakan harga murni dari Supabase
+        tutupDetailPasar(); 
         checkoutRobotDANA("[PASAR] " + nama, produkAsli.price, "Pembelian item dari Pasar Player.", produkAsli.user_id);
         
     } catch (err) {
         showToast("Gagal memverifikasi keamanan: " + err.message, "error");
     } finally {
-        // Kembalikan tombol ke keadaan semula jika gagal
         btnBeli.disabled = false;
         btnBeli.innerHTML = '<i class="fas fa-shopping-cart"></i> Beli Sekarang';
     }
 }
 
-
-// --- 1. LACI JUAL BARANG ---
+// --- LACI JUAL BARANG ---
 function bukaModalJualBarang() {
     if (!currentUser) return showToast("Silakan login dulu untuk berjualan!", "error");
     history.pushState({ popup: 'jual_barang' }, null, '#jualbarang');
@@ -10307,7 +10279,7 @@ function bukaModalJualBarang() {
 
 function tutupModalJualBarang(dariTombolBackHP = false) {
     const modal = document.getElementById('modal-jual-barang');
-    modal.style.opacity = '0'; // Animasi memudar
+    modal.style.opacity = '0'; 
     
     if (!dariTombolBackHP && window.location.hash === '#jualbarang') {
         history.back();
@@ -10315,7 +10287,7 @@ function tutupModalJualBarang(dariTombolBackHP = false) {
 
     setTimeout(() => {
         modal.classList.replace('flex', 'hidden');
-        modal.style.opacity = '1'; // Reset
+        modal.style.opacity = '1'; 
         
         document.getElementById('jualan-nama').value = '';
         document.getElementById('jualan-harga').value = '';
@@ -10327,7 +10299,7 @@ function tutupModalJualBarang(dariTombolBackHP = false) {
             previewContainer.innerHTML = '';
             previewContainer.classList.add('hidden');
         }
-    }, 300); // Jeda 300ms agar animasi selesai
+    }, 300); 
 }
 
 
@@ -10697,7 +10669,11 @@ function hapusPreviewEdit(index) {
 async function prosesEditProduk() {
     const id = document.getElementById('edit-produk-id').value;
     const nama = document.getElementById('edit-produk-nama').value.trim();
-    const harga = parseInt(document.getElementById('edit-produk-harga').value);
+    
+    // 🔥 PERBAIKAN: Bersihkan titik ribuan dari harga sebelum upload
+    const hargaInputClean = document.getElementById('edit-produk-harga').value.replace(/\./g, '');
+    const harga = parseInt(hargaInputClean);
+    
     const kategori = document.getElementById('edit-produk-kategori').value;
     const deskripsi = document.getElementById('edit-produk-deskripsi').value.trim();
     const btn = document.getElementById('btn-submit-edit-produk');
@@ -10710,7 +10686,6 @@ async function prosesEditProduk() {
     btn.disabled = true;
 
     try {
-        // Pisahkan mana yang foto lama (URL) dan mana foto baru (File)
         let existingUrls = [];
         let newFilesToUpload = [];
 
@@ -10721,7 +10696,6 @@ async function prosesEditProduk() {
 
         let uploadedUrls = [];
 
-        // JIKA ADA FOTO BARU, UPLOAD SECARA PARALEL KE STORAGE BIZNET DULU!
         if (newFilesToUpload.length > 0) {
             showToast(`Mengunggah ${newFilesToUpload.length} foto baru...`, "info");
             
@@ -10735,16 +10709,10 @@ async function prosesEditProduk() {
             uploadedUrls = await Promise.all(uploadPromises);
         }
 
-        // GABUNGKAN KEMBALI: URL foto lama + URL foto baru (Pisahkan dengan koma)
         const finalAllUrls = [...existingUrls, ...uploadedUrls].join(',');
 
-        // 🚀 TEMBAK KE DATABASE SUPABASE
         const { error } = await supabaseClient.from('player_products').update({
-            title: nama,
-            price: harga,
-            category: kategori,
-            description: deskripsi,
-            image_url: finalAllUrls // <-- Timpa dengan gabungan gambar baru
+            title: nama, price: harga, category: kategori, description: deskripsi, image_url: finalAllUrls 
         }).eq('id', id);
 
         if (error) throw error;
@@ -10752,7 +10720,6 @@ async function prosesEditProduk() {
         showToast("Produk berhasil diperbarui!", "success");
         tutupModalEditProduk();
         
-        // Langsung refresh layar Toko & Pasar
         loadProdukSaya(); 
         loadPasarPlayer(true); 
     } catch(e) {
@@ -10886,7 +10853,100 @@ window.addEventListener('popstate', () => {
     if (modalEdit && !modalEdit.classList.contains('hidden') && hash !== '#editproduk') {
         tutupModalEditProduk(true);
     }
+    
+        // [BARU] Tangkap Gallery Pasar
+    const modalGallery = document.getElementById('modal-gallery-pasar');
+    if (modalGallery && !modalGallery.classList.contains('hidden') && hash !== '#gallery') {
+        tutupGalleryPasar(true);
+    }
+
 });
+
+// ==========================================
+// [BARU] FITUR GALLERY FULLSCREEN SLIDER
+// ==========================================
+function bukaGalleryPasar(idProduk, startIndex) {
+    const produk = globalDataPasar.find(item => item.id === idProduk);
+    if (!produk) return;
+
+    let arrFoto = [];
+    if (produk.image_url) {
+        arrFoto = produk.image_url.split(',').map(img => img.trim()).filter(img => img !== "");
+    }
+    if (arrFoto.length === 0) arrFoto.push('https://placehold.co/400x400/1a1133/2BD975?text=PASAR');
+
+    // 1. TUTUP MODAL DETAIL PRODUK OTOMATIS (Aman, pasti kepanggil!)
+    document.getElementById('modal-detail-pasar').classList.replace('flex', 'hidden');
+
+    // 2. CEK APAKAH MODAL GALLERY SUDAH DIBUAT SEBELUMNYA DI HTML
+    let galleryModal = document.getElementById('modal-gallery-pasar');
+    if (!galleryModal) {
+        galleryModal = document.createElement('div');
+        galleryModal.id = 'modal-gallery-pasar';
+        // z-[9999] agar berada paling atas
+        galleryModal.className = 'fixed inset-0 z-[9999] hidden items-center justify-center bg-black/95 backdrop-blur-md opacity-0 transition-opacity duration-300';
+        document.body.appendChild(galleryModal);
+    }
+
+    // 3. DAFTARKAN URL KE HISTORY AGAR BISA DI-BACK HP
+    history.pushState({ popup: 'gallery' }, null, '#gallery');
+
+    // 4. RENDER STRUKTUR CAROUSEL LAYAR PENUH
+    galleryModal.innerHTML = `
+        <button onclick="tutupGalleryPasar()" class="absolute top-6 right-6 text-white bg-white/10 backdrop-blur-md w-12 h-12 rounded-full flex items-center justify-center active:scale-90 z-[9999] shadow-lg border border-white/20"><i class="fas fa-times text-xl"></i></button>
+        
+        <div id="gallery-slider" class="w-full h-full flex overflow-x-auto hide-scroll snap-x snap-mandatory items-center relative z-[9990]">
+            ${arrFoto.map(img => `
+                <div class="w-full h-full flex-shrink-0 snap-center flex items-center justify-center p-2 relative">
+                    <img src="${img}" class="max-w-full max-h-[85vh] object-contain rounded-xl shadow-2xl transition-transform duration-300">
+                </div>
+            `).join('')}
+        </div>
+        
+        ${arrFoto.length > 1 ? `
+        <div class="absolute bottom-10 left-1/2 -translate-x-1/2 bg-black/60 backdrop-blur-md text-white text-[10px] font-bold px-5 py-2 rounded-full border border-white/10 shadow-lg z-[9999]">
+            <span id="gallery-current">${startIndex + 1}</span> / ${arrFoto.length}
+        </div>` : ''}
+    `;
+
+    galleryModal.classList.remove('hidden');
+    galleryModal.classList.add('flex');
+    
+    // 5. JALANKAN ANIMASI & GULIRKAN KE FOTO YANG DI-KLIK
+    setTimeout(() => {
+        galleryModal.classList.remove('opacity-0');
+        const slider = document.getElementById('gallery-slider');
+        if (slider) {
+            // Langsung geser ke index foto yang diklik
+            slider.scrollLeft = slider.clientWidth * startIndex;
+            // Dengarkan pergeseran untuk ubah angka 1/3, 2/3 dst.
+            slider.onscroll = () => {
+                let page = Math.round(slider.scrollLeft / slider.clientWidth) + 1;
+                const currCounter = document.getElementById('gallery-current');
+                if (currCounter) currCounter.innerText = page;
+            };
+        }
+    }, 10);
+}
+
+// Fungsi Penutup Layar Gallery
+function tutupGalleryPasar(dariTombolBack = false) {
+    const modal = document.getElementById('modal-gallery-pasar');
+    if (!modal) return;
+    
+    modal.classList.add('opacity-0');
+    
+    if (!dariTombolBack && window.location.hash === '#gallery') {
+        history.back();
+    }
+    
+    setTimeout(() => {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+        modal.innerHTML = ''; // Bersihkan memori agar HP tidak lemot
+    }, 300);
+}
+
 
 </script>
 
