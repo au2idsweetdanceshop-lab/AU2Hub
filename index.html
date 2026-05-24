@@ -9693,7 +9693,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <label for="input-foto-edit" class="relative w-full h-16 rounded-2xl border-2 border-dashed border-brand-info/50 bg-brand-info/5 flex flex-col items-center justify-center cursor-pointer overflow-hidden group hover:border-brand-info transition-colors mt-1">
                     <div class="text-center group-hover:scale-110 transition-transform flex items-center gap-2">
                         <i class="fas fa-plus-circle text-brand-info/70"></i>
-                        <span class="text-[10px] font-bold text-brand-info uppercase tracking-widest">Tambah Foto (Maks 5)</span>
+                        <span class="text-[10px] font-bold text-brand-info uppercase tracking-widest">Tambahkan Foto Produk</span>
                     </div>
                 </label>
                 <!-- Atribut multiple agar bisa nambah banyak file -->
@@ -10863,7 +10863,7 @@ window.addEventListener('popstate', () => {
 });
 
 // ==========================================
-// [BARU] FITUR GALLERY FULLSCREEN SLIDER
+// [PERBAIKAN] FITUR GALLERY FULLSCREEN SLIDER
 // ==========================================
 function bukaGalleryPasar(idProduk, startIndex) {
     const produk = globalDataPasar.find(item => item.id === idProduk);
@@ -10875,23 +10875,22 @@ function bukaGalleryPasar(idProduk, startIndex) {
     }
     if (arrFoto.length === 0) arrFoto.push('https://placehold.co/400x400/1a1133/2BD975?text=PASAR');
 
-    // 1. TUTUP MODAL DETAIL PRODUK OTOMATIS (Aman, pasti kepanggil!)
-    document.getElementById('modal-detail-pasar').classList.replace('flex', 'hidden');
+    // [PERBAIKAN KUNCI]: Kode yang menyembunyikan laci detail telah dihapus.
+    // Laci detail dibiarkan tetap ada di belakang layar hitam gallery agar saat di-back tidak terlempar ke Home.
 
-    // 2. CEK APAKAH MODAL GALLERY SUDAH DIBUAT SEBELUMNYA DI HTML
     let galleryModal = document.getElementById('modal-gallery-pasar');
     if (!galleryModal) {
         galleryModal = document.createElement('div');
         galleryModal.id = 'modal-gallery-pasar';
-        // z-[9999] agar berada paling atas
+        // z-[9999] memastikan layar ini menutupi apapun di bawahnya
         galleryModal.className = 'fixed inset-0 z-[9999] hidden items-center justify-center bg-black/95 backdrop-blur-md opacity-0 transition-opacity duration-300';
         document.body.appendChild(galleryModal);
     }
 
-    // 3. DAFTARKAN URL KE HISTORY AGAR BISA DI-BACK HP
+    // Daftarkan URL ke history agar deteksi tombol back HP bekerja
     history.pushState({ popup: 'gallery' }, null, '#gallery');
 
-    // 4. RENDER STRUKTUR CAROUSEL LAYAR PENUH
+    // Render struktur carousel layar penuh
     galleryModal.innerHTML = `
         <button onclick="tutupGalleryPasar()" class="absolute top-6 right-6 text-white bg-white/10 backdrop-blur-md w-12 h-12 rounded-full flex items-center justify-center active:scale-90 z-[9999] shadow-lg border border-white/20"><i class="fas fa-times text-xl"></i></button>
         
@@ -10912,14 +10911,12 @@ function bukaGalleryPasar(idProduk, startIndex) {
     galleryModal.classList.remove('hidden');
     galleryModal.classList.add('flex');
     
-    // 5. JALANKAN ANIMASI & GULIRKAN KE FOTO YANG DI-KLIK
+    // Jalankan animasi & geser langsung ke foto yang diklik
     setTimeout(() => {
         galleryModal.classList.remove('opacity-0');
         const slider = document.getElementById('gallery-slider');
         if (slider) {
-            // Langsung geser ke index foto yang diklik
             slider.scrollLeft = slider.clientWidth * startIndex;
-            // Dengarkan pergeseran untuk ubah angka 1/3, 2/3 dst.
             slider.onscroll = () => {
                 let page = Math.round(slider.scrollLeft / slider.clientWidth) + 1;
                 const currCounter = document.getElementById('gallery-current');
@@ -10936,6 +10933,12 @@ function tutupGalleryPasar(dariTombolBack = false) {
     
     modal.classList.add('opacity-0');
     
+    // [PERBAIKAN KUNCI]: Memastikan laci Detail Produk dijamin berstatus aktif/terlihat
+    const modalDetail = document.getElementById('modal-detail-pasar');
+    if (modalDetail && modalDetail.classList.contains('hidden')) {
+        modalDetail.classList.replace('hidden', 'flex');
+    }
+    
     if (!dariTombolBack && window.location.hash === '#gallery') {
         history.back();
     }
@@ -10943,9 +10946,10 @@ function tutupGalleryPasar(dariTombolBack = false) {
     setTimeout(() => {
         modal.classList.add('hidden');
         modal.classList.remove('flex');
-        modal.innerHTML = ''; // Bersihkan memori agar HP tidak lemot
+        modal.innerHTML = ''; // Bersihkan memori dari DOM
     }, 300);
 }
+
 
 
 </script>
