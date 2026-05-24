@@ -8176,7 +8176,7 @@ function closeDetailProduk(dariTombolBackHP = false) {
     laci.classList.add('translate-y-full');
 
     // Mencegah HP narik history back 2 kali kalau asalnya emang udah dari tombol back HP
-    if (!dariTombolBackHP && window.location.hash === '#detail') {
+    if (!dariTombolBackHP && window.location.hash.startsWith('#detail')) {
         history.back();
     }
 }
@@ -8399,7 +8399,16 @@ document.addEventListener('DOMContentLoaded', () => {
   if (!tabAwal) {
     tabAwal = localStorage.getItem('lastTab') || 'home';
   }
-  switchTab(tabAwal, null, false);
+
+  // --- LOGIKA BARU: Pisahkan parameter dan atur tab background yang benar ---
+  let tabMurni = tabAwal.split('?')[0]; // Membuang "?id=..." agar sistem tidak bingung
+
+  // Mengarahkan background ke tab aslinya agar tidak nyasar ke home saat link laci dibuka
+  if (tabMurni === 'detailpasar') tabMurni = 'pasar';
+  if (tabMurni === 'detail') tabMurni = 'layanan';
+  if (tabMurni === 'invoice') tabMurni = 'pesanan';
+
+  switchTab(tabMurni, null, false);
 
   checkSession();
 supabaseClient.auth.onAuthStateChange((event, session) => {
@@ -9784,7 +9793,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <label class="text-[10px] text-brand-info font-bold uppercase tracking-wider mb-1.5 block flex items-center gap-1">
                     <i class="fas fa-robot"></i> Stok Auto-Kirim (Tiap baris = 1 Stok)
                 </label>
-                <textarea id="jualan-stock" rows="3" placeholder="Contoh format:ID/USERNAME | PASSWORDA ADT | NIKKY" class="w-full bg-[#0F0920] border border-brand-info/50 rounded-xl px-4 py-3 text-sm text-brand-info outline-none focus:border-brand-info transition-colors resize-none hide-scroll"></textarea>
+                <textarea id="jualan-stock" rows="3" placeholder="ID/USERNSME | PASSWORD" class="w-full bg-[#0F0920] border border-brand-info/50 rounded-xl px-4 py-3 text-sm text-brand-info outline-none focus:border-brand-info transition-colors resize-none hide-scroll"></textarea>
                 <p class="text-[9px] text-gray-400 mt-1.5 italic leading-relaxed">*Sistem akan otomatis mengirimkan baris paling atas kepada pembeli dan mengurangi sisa stok setelah dibayar.</p>
             </div>
 
@@ -10326,7 +10335,7 @@ function bukaDetailPasar(idProduk) {
 
 function tutupDetailPasar(dariTombolBackHP = false) {
     document.getElementById('modal-detail-pasar').classList.replace('flex', 'hidden');
-    if (!dariTombolBackHP && window.location.hash === '#detailpasar') {
+    if (!dariTombolBackHP && window.location.hash.startsWith('#detailpasar')) {
         history.back();
     }
 }
@@ -10662,7 +10671,7 @@ function bukaModalSaldoDompet() {
 }
 
 function bukaGalleryPasar(idProduk, startIndex) {
-    const produk = globalDataPasar.find(item => item.id === idProduk);
+    const produk = globalDataPasar.find(item => String(item.id) === String(idProduk));
     if (!produk) return;
     
     let arrFoto = produk.image_url ? produk.image_url.split(',').map(img => img.trim()).filter(img => img !== "") : [];
