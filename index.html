@@ -3049,7 +3049,11 @@ setTimeout(() => { window.scrollTo({ top: 0, behavior: 'auto' }); }, 10);
 if (isPush && window.location.hash !== `#${tabId}`) history.pushState(null, null, `#${tabId}`);
 }
 
-    // ==========================================
+
+window.addEventListener('popstate', () => {
+    let isPopupClosed = false;
+    
+        // ==========================================
     // TANGKAP SEMUA MODAL PASAR PLAYER
     // ==========================================
     const modalGalleryPasar = document.getElementById('modal-gallery-pasar');
@@ -3076,10 +3080,6 @@ if (isPush && window.location.hash !== `#${tabId}`) history.pushState(null, null
         return;
     }
     // ==========================================
-
-
-window.addEventListener('popstate', () => {
-    let isPopupClosed = false;
 
     // TANGKAP LACI DOMPET
     const modalDompet = document.getElementById('modal-saldo-dompet');
