@@ -8305,10 +8305,57 @@ async function checkoutRobotDANA(namaProduk, harga, deskripsi, sellerId = null) 
                 if(cekData && cekData.status === "SUCCESS") {
                     clearInterval(window.cekPembayaranInterval); 
 
-                    await supabaseClient.from(targetTabel).update({status: 'proses'}).eq('id', orderData.id);
+                    let newStatus = 'proses';
+                    let autoDeliveryData = "";
 
+                    // === SISTEM AUTO-DELIVERY MULAI BEKERJA ===
+                    if (productId) {
+                        const { data: prodData } = await supabaseClient.from('player_products').select('stock_list, category').eq('id', productId).single();
+                        
+                        if (prodData && (prodData.category === 'Akun' || prodData.category === 'Item') && prodData.stock_list) {
+                            let lines = prodData.stock_list.split(/\r?\n/).filter(l => l.trim() !== '');
+                            
+                            if (lines.length > 0) {
+                                autoDeliveryData = lines.shift(); // Ambil baris pertama
+                                const newStockList = lines.join('\n'); // Gabungkan sisa stok
+                                
+                                // 1. Kurangi stok di database seketika
+                                await supabaseClient.from('player_products').update({stock_list: newStockList}).eq('id', productId);
+                                
+                                // 2. Tandai pesanan otomatis selesai
+                                newStatus = 'selesai'; 
+                                
+                                // 3. Kirim data ke Inbox Chat Pembeli
+                                await supabaseClient.from('messages').insert({
+                                    sender_id: sellerId,
+                                    receiver_id: currentUser.id,
+                                    message: `[SISTEM] Transaksi berhasil! Berikut detail pesanan *${namaProduk}* Anda:\n\n${autoDeliveryData}`
+                                });
+
+                                // 4. Langsung Masukkan Uang ke Saldo Penjual
+                                const pajakAdmin = Math.floor(hargaDenganKodeUnik * 0.05);
+                                const pendapatanBersih = hargaDenganKodeUnik - pajakAdmin;
+                                await supabaseClient.rpc('tambah_saldo', { user_id_target: sellerId, jumlah: pendapatanBersih });
+                                await supabaseClient.from('wallet_transactions').insert({
+                                    user_id: sellerId,
+                                    amount: pendapatanBersih,
+                                    type: 'INCOME',
+                                    description: `Penjualan (Auto): ${namaProduk}`
+                                });
+                            }
+                        }
+                    }
+                    // === SISTEM AUTO-DELIVERY SELESAI ===
+
+                    await supabaseClient.from(targetTabel).update({status: newStatus}).eq('id', orderData.id);
+
+                    const noWA = "6283815584661";
                     const infoXoftware = deskripsi ? deskripsi.replace(/<[^>]*>?/gm, '') : '';
-                    const teksWASukses = encodeURIComponent(`Halo Admin Joki AU2Hub,\n\nPembayaran DANA saya sudah terkonfirmasi sukses otomatis oleh sistem!\n\nPesanan: *${namaProduk}*\nTotal: Rp ${hargaDenganKodeUnik.toLocaleString('id-ID')}\n\n${infoXoftware}\n\n(Berikut ini saya lampirkan gambar bukti transfer QRIS / screenshot)`);
+                    const teksWASukses = encodeURIComponent(`Halo Admin Joki AU2Hub,\n\nPembayaran DANA saya sudah terkonfirmasi otomatis!\n\nPesanan: *${namaProduk}*\nTotal: Rp ${hargaDenganKodeUnik.toLocaleString('id-ID')}\n\n(Berikut screenshot bukti)`);
+
+                    let teksTambahanUI = autoDeliveryData ? 
+                        `<div class="bg-brand-dark p-3 rounded-lg border border-brand-info mt-3 text-left"><p class="text-brand-info text-[10px] font-bold mb-1"><i class="fas fa-check-circle mr-1"></i> PENGIRIMAN OTOMATIS BERHASIL</p><p class="text-white text-xs font-mono break-words bg-black/50 p-2 rounded">${autoDeliveryData}</p><p class="text-[9px] text-brand-success mt-2">*Data ini juga telah dikirimkan ke kotak masuk Chat Anda.</p></div>` 
+                        : `<br>Silakan hubungi Admin untuk proses pesanan Anda.`;
 
                     const wadahPembayaran = document.getElementById('qris-container');
                     if (wadahPembayaran) {
@@ -8319,11 +8366,10 @@ async function checkoutRobotDANA(namaProduk, harga, deskripsi, sellerId = null) 
                             <i class="fas fa-check-circle text-7xl text-brand-success relative z-10 drop-shadow-[0_0_20px_rgba(37,211,102,0.8)]"></i>
                             </div>
                             <h2 class="text-2xl font-extrabold text-white mb-2 tracking-tight">Pembayaran Berhasil!</h2>
-                            <p class="text-gray-400 text-xs mb-8 leading-relaxed px-4">Dana senilai <strong class="text-brand-success">Rp ${hargaDenganKodeUnik.toLocaleString('id-ID')}</strong> telah diterima sistem.<br>Silakan hubungi Admin untuk proses pesanan Anda.</p>
-                            <div class="w-full space-y-3">
-                            <a href="https://wa.me/${noWA}?text=${teksWASukses}" target="_blank" class="flex justify-center items-center w-full bg-[#25D366] hover:bg-[#20bd5a] text-white py-4 rounded-xl font-bold shadow-[0_8px_20px_rgba(37,211,102,0.3)] active:scale-95 transition-all uppercase tracking-wider text-xs">
-                            <i class="fab fa-whatsapp text-lg mr-2"></i> Chat Admin (Kirim Data)
-                            </a>
+                            <p class="text-gray-400 text-xs mb-8 leading-relaxed px-4">Dana senilai <strong class="text-brand-success">Rp ${hargaDenganKodeUnik.toLocaleString('id-ID')}</strong> telah diterima sistem.${teksTambahanUI}</p>
+                            <div class="w-full space-y-3 mt-4">
+                            ${!autoDeliveryData ? `<a href="https://wa.me/${noWA}?text=${teksWASukses}" target="_blank" class="flex justify-center items-center w-full bg-[#25D366] hover:bg-[#20bd5a] text-white py-4 rounded-xl font-bold shadow-[0_8px_20px_rgba(37,211,102,0.3)] active:scale-95 transition-all uppercase tracking-wider text-xs">
+                            <i class="fab fa-whatsapp text-lg mr-2"></i> Chat Admin (Kirim Data)</a>` : ''}
                             <button onclick="window.location.reload()" class="w-full bg-white/5 text-white py-4 rounded-xl font-bold active:scale-95 transition-all uppercase tracking-wider text-xs border border-white/10 hover:bg-white/10">Selesai & Kembali</button>
                             </div>
                             </div>
@@ -10012,11 +10058,18 @@ function renderGridPasar(dataList) {
         let fotoPertama = rawThumb.split(',')[0].trim();
         if (!fotoPertama) fotoPertama = 'https://placehold.co/400x400/1a1133/2BD975?text=PASAR';
 
+        // [BARU] Hitung Sisa Stok Otomatis
+        const isAutoItem = item.category === 'Akun' || item.category === 'Item';
+        const sisaStok = isAutoItem && item.stock_list ? item.stock_list.split(/\r?\n/).filter(s=>s.trim() !== '').length : 0;
+        const badgeStok = isAutoItem 
+            ? `<div class="absolute top-2 left-2 bg-black/60 backdrop-blur-sm text-[8px] font-bold ${sisaStok > 0 ? 'text-brand-info border-brand-info/50' : 'text-red-500 border-red-500/50'} px-2 py-0.5 rounded-md border uppercase shadow-md">Stok: ${sisaStok}</div>` 
+            : `<div class="absolute top-2 left-2 bg-black/60 backdrop-blur-sm text-[8px] font-bold text-white px-2 py-0.5 rounded-md border border-white/10 uppercase shadow-md">${item.category}</div>`;
+
         const cardHtml = `
             <div onclick="bukaDetailPasar('${item.id}')" class="bg-black/40 border border-white/10 rounded-2xl overflow-hidden flex flex-col hover:border-brand-success/50 transition-colors cursor-pointer group shadow-sm">
                 <div class="relative w-full aspect-square bg-brand-dark/50 overflow-hidden">
                     <img src="${fotoPertama}" alt="${item.title}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" onerror="this.src='https://placehold.co/400x400/1a1133/2BD975?text=PASAR'">
-                    <div class="absolute top-2 right-2 bg-black/60 backdrop-blur-sm text-[8px] font-bold text-white px-2 py-1 rounded-md border border-white/10 uppercase">${item.category}</div>
+                    ${badgeStok}
                 </div>
                 <div class="p-3 flex flex-col flex-1">
                     <h4 class="text-xs text-white font-bold line-clamp-2 mb-1.5">${item.title}</h4>
@@ -10030,6 +10083,7 @@ function renderGridPasar(dataList) {
         grid.insertAdjacentHTML('beforeend', cardHtml);
     });
 }
+
 
 // 2. PREVIEW BANYAK FOTO SAAT JUAL BARANG
 function previewGambarJualan(input) {
@@ -10084,18 +10138,24 @@ function hapusPreviewJualan(index) {
 // 3. PROSES UPLOAD MULTI FOTO SEKALIGUS
 async function prosesPostingJualan() {
     const nama = document.getElementById('jualan-nama').value.trim();
-    
-    // 🔥 PERBAIKAN: Bersihkan titik ribuan sebelum diparse ke Integer
     const hargaInputClean = document.getElementById('jualan-harga').value.replace(/\./g, '');
     const harga = parseInt(hargaInputClean);
-    
     const kategori = document.getElementById('jualan-kategori').value;
     const deskripsi = document.getElementById('jualan-deskripsi').value.trim();
+    
+    // [BARU] Ambil isi data stok dari textbox
+    const stockList = document.getElementById('jualan-stock').value.trim();
+    
     const btn = document.getElementById('btn-submit-jualan');
 
     if (!nama || !harga || isNaN(harga) || !deskripsi) return showToast("Mohon lengkapi formulir!", "error");
     if (harga < 1000) return showToast("Harga minimal adalah Rp 1.000", "error");
     if (fileJualanArray.length === 0) return showToast("Wajib menyertakan minimal 1 foto produk!", "error");
+    
+    // [BARU] Cegah user nge-post kalau kategori Akun/Item tapi stoknya kosong
+    if ((kategori === 'Akun' || kategori === 'Item') && !stockList) {
+        return showToast("Wajib mengisi List Stok untuk kategori ini!", "error");
+    }
 
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memproses Upload...';
     btn.disabled = true;
@@ -10114,8 +10174,15 @@ async function prosesPostingJualan() {
         uploadedUrls = await Promise.all(uploadPromises);
         const finalImageUrl = uploadedUrls.join(',');
 
+        // [BARU] Masukkan stock_list ke dalam payload Supabase
         const { error } = await supabaseClient.from('player_products').insert({
-            user_id: currentUser.id, title: nama, price: harga, category: kategori, description: deskripsi, image_url: finalImageUrl
+            user_id: currentUser.id, 
+            title: nama, 
+            price: harga, 
+            category: kategori, 
+            description: deskripsi, 
+            image_url: finalImageUrl,
+            stock_list: (kategori === 'Akun' || kategori === 'Item') ? stockList : null
         });
 
         if (error) throw error;
@@ -10127,6 +10194,8 @@ async function prosesPostingJualan() {
         document.getElementById('jualan-harga').value = '';
         document.getElementById('jualan-deskripsi').value = '';
         document.getElementById('input-foto-jualan').value = '';
+        document.getElementById('jualan-stock').value = ''; // [BARU] Kosongkan form stok
+        
         fileJualanArray = [];
         document.getElementById('preview-container-jualan').innerHTML = '';
         document.getElementById('preview-container-jualan').classList.add('hidden');
@@ -10140,6 +10209,7 @@ async function prosesPostingJualan() {
         btn.disabled = false;
     }
 }
+
 
 // SMART SHARE
 async function shareProdukPasar(btn) {
@@ -10211,22 +10281,21 @@ function bukaDetailPasar(idProduk) {
         carousel.onscroll = null; 
     }
 
-    document.getElementById('pasar-detail-kategori').innerText = produk.category;
+    // [BARU] Hitung Stok di Laci Detail
+    const isAutoItem = produk.category === 'Akun' || produk.category === 'Item';
+    const sisaStok = isAutoItem && produk.stock_list ? produk.stock_list.split(/\r?\n/).filter(s=>s.trim() !== '').length : 0;
+
+    // Ganti jadi .innerHTML agar teks Sisa Stok bisa masuk
+    document.getElementById('pasar-detail-kategori').innerHTML = `${produk.category} ${isAutoItem ? ` &bull; Sisa: ${sisaStok}` : ''}`;
     document.getElementById('pasar-detail-nama').innerText = produk.title;
     document.getElementById('pasar-detail-harga').innerText = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(produk.price);
-    // 1. Ambil deskripsi dan amankan dari kode jahat (Anti-XSS)
-    let deskripsiAman = (produk.description || "-")
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;");
-
-    // 2. Deteksi link (http / https) dan ubah jadi elemen <a> yang bisa diklik
+    
+    let deskripsiAman = (produk.description || "-").replace(/&/g, "&").replace(/</g, "<").replace(/>/g, ">");
     const urlRegex = /(https?:\/\/[^\s]+)/g;
     let deskripsiBisaDiklik = deskripsiAman.replace(urlRegex, function(url) {
         return `<a href="${url}" target="_blank" onclick="event.stopPropagation()" class="text-brand-info underline font-bold hover:text-white transition-colors">${url}</a>`;
     });
 
-    // 3. Render ke layar dengan innerHTML, lalu ubah enter/baris baru (\n) menjadi <br> agar susunan teks tetap rapi
     document.getElementById('pasar-detail-deskripsi').innerHTML = deskripsiBisaDiklik.replace(/\n/g, '<br>');
     document.getElementById('pasar-detail-avatar').src = produk.profiles?.avatar_url || 'https://placehold.co/100x100/1a1133/2BD975?text=AV';
     document.getElementById('pasar-detail-penjual').innerHTML = `${produk.profiles?.nickname || 'Anonim'} <span class="scale-[0.85] origin-left inline-flex ml-1">${badgeHtml}</span>`;
@@ -10234,9 +10303,13 @@ function bukaDetailPasar(idProduk) {
     const btnBeli = document.getElementById('btn-beli-pasar');
     btnBeli.onclick = () => checkoutPasar(produk.title, produk.price, produk.id);
 
+    // [BARU] Logika Tombol Stok Habis
     if (currentUser && currentUser.id === produk.user_id) {
         btnBeli.innerHTML = '<i class="fas fa-ban"></i> Ini Produk Anda';
         btnBeli.disabled = true; btnBeli.className = "w-full bg-gray-600 text-white py-3.5 rounded-xl font-extrabold uppercase text-sm z-30 relative";
+    } else if (isAutoItem && sisaStok === 0) {
+        btnBeli.innerHTML = '<i class="fas fa-box-open"></i> Stok Habis';
+        btnBeli.disabled = true; btnBeli.className = "w-full bg-red-500/50 text-white py-3.5 rounded-xl font-extrabold uppercase text-sm z-30 relative cursor-not-allowed border border-red-500/30";
     } else {
         btnBeli.innerHTML = '<i class="fas fa-shopping-cart"></i> Beli Sekarang';
         btnBeli.disabled = false; btnBeli.className = "w-full bg-brand-success hover:bg-[#20bd5a] text-white py-3.5 rounded-xl font-extrabold active:scale-95 transition-all uppercase text-sm shadow-[0_4px_15px_rgba(37,211,102,0.3)] z-30 relative";
@@ -10245,6 +10318,7 @@ function bukaDetailPasar(idProduk) {
     document.getElementById('modal-detail-pasar').classList.replace('hidden', 'flex');
     history.pushState({ popup: 'detail_pasar' }, null, '#detailpasar?id=' + produk.id);
 }
+
 
 function tutupDetailPasar(dariTombolBackHP = false) {
     document.getElementById('modal-detail-pasar').classList.replace('flex', 'hidden');
@@ -10279,7 +10353,9 @@ async function checkoutPasar(nama, harga, id) {
         if (error || !produkAsli) throw new Error("Barang tidak ditemukan di server.");
         
         tutupDetailPasar(); 
-        checkoutRobotDANA("[PASAR] " + nama, produkAsli.price, "Pembelian item dari Pasar Player.", produkAsli.user_id);
+        
+        // [BARU] Menambahkan 'id' di paling ujung agar Mesin DANA mengenali ID Produknya
+        checkoutRobotDANA("[PASAR] " + nama, produkAsli.price, "Pembelian item dari Pasar Player.", produkAsli.user_id, id);
         
     } catch (err) {
         showToast("Gagal memverifikasi keamanan: " + err.message, "error");
@@ -10288,6 +10364,7 @@ async function checkoutPasar(nama, harga, id) {
         btnBeli.innerHTML = '<i class="fas fa-shopping-cart"></i> Beli Sekarang';
     }
 }
+
 
 // --- LACI JUAL BARANG ---
 function bukaModalJualBarang() {
@@ -10702,23 +10779,25 @@ async function bukaModalEditProduk(idProduk) {
         document.getElementById('edit-produk-kategori').value = data.category;
         document.getElementById('edit-produk-deskripsi').value = data.description;
         
-        // Reset array foto setiap kali modal dibuka
+        // [BARU] Masukkan data stok lama ke form, lalu atur tampilannya (muncul/sembunyi)
+        document.getElementById('edit-produk-stock').value = data.stock_list || '';
+        toggleStockInput(data.category, 'wadah-stock-edit');
+        
         editFileArray = [];
         existingImagesEdit = [];
         
-        // Pisahkan koma dan masukkan URL lama ke array
         if (data.image_url) {
             existingImagesEdit = data.image_url.split(',').map(u => u.trim()).filter(u => u !== "");
         }
         
         renderPreviewEditProduk(); 
         document.getElementById('modal-edit-produk').classList.replace('hidden', 'flex');
-                // Mendaftarkan popup ke history HP
         history.pushState({ popup: 'edit_produk' }, null, '#editproduk');
     } catch(err) { 
         showToast("Gagal memuat form edit", "error"); 
     }
 }
+
 
 function tutupModalEditProduk(dariTombolBackHP = false) {
     document.getElementById('modal-edit-produk').classList.replace('flex', 'hidden');
@@ -10807,19 +10886,24 @@ function hapusFotoBaruEdit(index) {
 async function prosesEditProduk() {
     const idProduk = document.getElementById('edit-produk-id').value;
     const nama = document.getElementById('edit-produk-nama').value.trim();
-    
-    // Bersihkan titik ribuan sebelum dikirim ke database
     const hargaInputClean = document.getElementById('edit-produk-harga').value.replace(/\./g, '');
     const harga = parseInt(hargaInputClean);
-    
     const kategori = document.getElementById('edit-produk-kategori').value;
     const deskripsi = document.getElementById('edit-produk-deskripsi').value.trim();
+    
+    // [BARU] Ambil data stok hasil editan
+    const stockList = document.getElementById('edit-produk-stock').value.trim();
+    
     const btn = document.getElementById('btn-submit-edit-produk');
 
-    // Mencegah tembakan data kosong
     if (!idProduk) return showToast("Gagal mengidentifikasi ID produk!", "error");
     if (!nama || !harga || isNaN(harga) || !deskripsi) return showToast("Mohon lengkapi formulir!", "error");
     if (existingImagesEdit.length === 0 && editFileArray.length === 0) return showToast("Wajib menyertakan minimal 1 foto produk!", "error");
+    
+    // [BARU] Cegah user simpan kalau kategori Akun/Item tapi stoknya dikosongkan
+    if ((kategori === 'Akun' || kategori === 'Item') && !stockList) {
+        return showToast("Wajib mengisi List Stok untuk kategori ini!", "error");
+    }
 
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan...';
     btn.disabled = true;
@@ -10827,7 +10911,6 @@ async function prosesEditProduk() {
     try {
         let uploadedUrls = [];
         
-        // Upload foto baru ke Biznet Storage (jika user menambahkan foto baru)
         if (editFileArray.length > 0) {
             showToast(`Mengunggah ${editFileArray.length} foto baru...`, "info");
             const uploadPromises = editFileArray.map(async (file, index) => {
@@ -10839,11 +10922,10 @@ async function prosesEditProduk() {
             uploadedUrls = await Promise.all(uploadPromises);
         }
 
-        // Gabungkan URL foto lama (yang tidak dihapus) dengan URL foto baru yang sukses diupload
         const finalImageArray = [...existingImagesEdit, ...uploadedUrls];
         const finalImageUrl = finalImageArray.join(',');
 
-        // 🔥 PERBAIKAN: Tambahkan user_id & .select() untuk memaksa Supabase merespons perubahan
+        // [BARU] Update kolom stock_list ke Supabase
         const { data: updatedData, error } = await supabaseClient.from('player_products')
             .update({
                 title: nama, 
@@ -10851,22 +10933,21 @@ async function prosesEditProduk() {
                 category: kategori, 
                 description: deskripsi, 
                 image_url: finalImageUrl,
-                user_id: currentUser.id // Tambahan keamanan RLS
+                stock_list: (kategori === 'Akun' || kategori === 'Item') ? stockList : null,
+                user_id: currentUser.id 
             })
             .eq('id', idProduk)
             .select();
 
         if (error) throw error;
         
-        // 🔥 PENANGKAP SILENT BUG: Jika data kosong, berarti RLS Supabase memblokir Update-nya
         if (!updatedData || updatedData.length === 0) {
-            throw new Error("Izin ditolak oleh server (RLS UPDATE belum aktif di Supabase Anda).");
+            throw new Error("Izin ditolak oleh server (RLS UPDATE belum aktif).");
         }
 
         showToast("Produk berhasil diperbarui!", "success");
         tutupModalEditProduk();
         
-        // 🔥 PERBAIKAN: Tambahkan await agar layar me-refresh setelah data benar-benar tersimpan
         await loadProdukSaya();
         await loadPasarPlayer(true);
 
@@ -10878,6 +10959,7 @@ async function prosesEditProduk() {
         btn.disabled = false;
     }
 }
+
 
 
 
