@@ -10150,6 +10150,62 @@ async function checkoutPasar(nama, harga, id) {
     }
 }
 
+// 5. TUTUP DETAIL & FUNGSI AKSI PASAR
+function tutupDetailPasar(dariTombolBackHP = false) {
+    document.getElementById('modal-detail-pasar').classList.replace('flex', 'hidden');
+    if (!dariTombolBackHP && window.location.hash === '#detailpasar') {
+        history.back();
+    }
+}
+
+function lihatProfilPenjual() {
+    if (idPenjualAktif) {
+        tutupDetailPasar();
+        viewUserProfile(idPenjualAktif);
+    }
+}
+
+function chatPenjualPasar() {
+    if (idPenjualAktif) {
+        tutupDetailPasar();
+        kirimPesanPribadi(idPenjualAktif);
+    }
+}
+
+async function checkoutPasar(nama, harga, id) {
+    const btnBeli = document.getElementById('btn-beli-pasar');
+    
+    // Kunci tombol mencegah double klik
+    btnBeli.disabled = true;
+    btnBeli.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memverifikasi...';
+
+    showToast("Memverifikasi harga ke server...", "info");
+    
+    try {
+        // TARIK HARGA ASLI DARI DATABASE
+        const { data: produkAsli, error } = await supabaseClient
+            .from('player_products')
+            .select('price, user_id')
+            .eq('id', id)
+            .single();
+            
+        if (error || !produkAsli) throw new Error("Barang tidak ditemukan di server.");
+        
+        tutupDetailPasar(); // Tutup setelah sukses verifikasi
+        
+        // Lempar ke Robot DANA menggunakan harga murni dari Supabase
+        checkoutRobotDANA("[PASAR] " + nama, produkAsli.price, "Pembelian item dari Pasar Player.", produkAsli.user_id);
+        
+    } catch (err) {
+        showToast("Gagal memverifikasi keamanan: " + err.message, "error");
+    } finally {
+        // Kembalikan tombol ke keadaan semula jika gagal
+        btnBeli.disabled = false;
+        btnBeli.innerHTML = '<i class="fas fa-shopping-cart"></i> Beli Sekarang';
+    }
+}
+
+
 </script>
 
 <div id="modal-saldo-dompet" class="fixed inset-0 z-[600] hidden items-end sm:items-center justify-center bg-black/90 backdrop-blur-md px-0 sm:px-6 transition-all duration-300">
