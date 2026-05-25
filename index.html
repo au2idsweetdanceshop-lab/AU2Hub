@@ -517,7 +517,7 @@ Satu pintu untuk info update terbaru, panduan pemula, jasa joki profesional, dan
                 </div>
                 <div onclick="switchTab('rekber')" class="bg-gradient-to-br from-brand-card to-[#0A0615] p-4 rounded-2xl border border-white/5 flex flex-col items-center justify-center text-center cursor-pointer active:scale-95 transition-all group hover:border-brand-info/50 shadow-lg">
                     <div class="w-10 h-10 rounded-full bg-brand-info/20 text-brand-info flex items-center justify-center mb-2 group-hover:scale-110 transition-transform"><i class="fas fa-shield-alt"></i></div>
-                    <span class="text-[10px] font-bold text-gray-300 group-hover:text-white transition-colors">Aturan Rekber</span>
+                    <span class="text-[10px] font-bold text-gray-300 group-hover:text-white transition-colors">Admin AU2Hub</span>
                 </div>
                 <div onclick="switchTab('ripper')" class="bg-gradient-to-br from-brand-card to-[#0A0615] p-4 rounded-2xl border border-white/5 flex flex-col items-center justify-center text-center cursor-pointer active:scale-95 transition-all group hover:border-red-500/50 shadow-lg">
                     <div class="w-10 h-10 rounded-full bg-red-500/20 text-red-500 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform"><i class="fas fa-user-ninja"></i></div>
@@ -1634,7 +1634,7 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
         <i class="fas fa-camera-retro text-lg pointer-events-none"></i>
     </a>
     
-    <a href="#rekber" onclick="switchTab('rekber', event)" class="nav-item flex items-center justify-center w-[44px] h-[44px] text-gray-500" title="Rekber">
+    <a href="#rekber" onclick="switchTab('rekber', event)" class="nav-item flex items-center justify-center w-[44px] h-[44px] text-gray-500" title="Admin">
         <i class="fas fa-shield-alt text-lg pointer-events-none"></i>
     </a>
     
@@ -4096,7 +4096,7 @@ document.getElementById('leaderboardSearch').addEventListener('input', function(
 function renderRippers(data, isSearch = false) {
 const container = document.getElementById('ripper-container');
 document.getElementById('ripper-count').innerText = `${dataRipperGlobal.length} Total Data`;
-if(data.length === 0) { container.innerHTML = `<div class="text-center py-10 px-4"><i class="fas fa-check-circle text-brand-success text-3xl mb-2"></i><div class="text-xs text-gray-400">Pencarian aman.<br>(Tetap waspada & gunakan Rekber)</div></div>`; return; }
+if(data.length === 0) { container.innerHTML = `<div class="text-center py-10 px-4"><i class="fas fa-check-circle text-brand-success text-3xl mb-2"></i><div class="text-xs text-gray-400">Pencarian aman.<br>(Tetap waspada & gunakan Admin)</div></div>`; return; }
 const limitBatas = (!isSearch && !isRipperExpanded) ? 5 : data.length;
 const dataYangDitampilkan = data.slice(0, limitBatas);
 let htmlString = dataYangDitampilkan.map(r => `<div class="p-4 border-b border-white/5 last:border-0 hover:bg-white/5 transition-colors"><div class="flex justify-between items-start mb-1"><div class="font-bold text-xs text-white">${r["Nama / Keterangan"] || r.nama || r.Nama || "Tanpa Nama"}</div><div class="text-[9px] text-red-500 font-bold bg-red-500/10 px-2 py-0.5 rounded border border-red-500/20 whitespace-nowrap ml-2"><i class="fas fa-ban mr-1"></i> RIPPER</div></div><div class="text-[10px] text-brand-info font-mono mb-1">ID: ${r["ID"] || r.id || "-"}</div><div class="text-[10px] text-gray-400"><i class="fas fa-credit-card mr-1"></i> ${r["Rekening / Kontak (WA/Dana)"] || r.rekening || r.Rekening || "-"}</div></div>`).join('');
@@ -9711,7 +9711,7 @@ function bukaVideoShare(vidId) {
 
             <div class="flex flex-wrap gap-2 border-y border-white/5 py-3 text-[10px] font-bold uppercase tracking-wider text-gray-400">
                 <span class="text-brand-success bg-brand-success/10 px-2.5 py-1 rounded-md border border-brand-success/20 flex items-center gap-1">
-                    <i class="fas fa-bolt text-[9px]"></i> INCLUDE REKBER NIKKY
+                    <i class="fas fa-bolt text-[9px]"></i> INCLUDE Admin NIKKY
                 </span>
                 <span id="detail-discount-badge" class="hidden text-brand-info bg-brand-info/10 px-2.5 py-1 rounded-md border border-brand-info/20 flex items-center gap-1"></span>
             </div>
@@ -10024,7 +10024,7 @@ function bukaVideoShare(vidId) {
                 </div>
                 <div class="bg-brand-success/10 p-3 rounded-xl border border-brand-success/20 flex gap-3 items-start">
                     <i class="fas fa-shield-check text-brand-success mt-0.5 text-lg"></i>
-                    <p class="text-[10px] text-brand-success leading-relaxed font-medium">Pembayaran aman dengan Rekber. Dana ditahan sistem sampai transaksi selesai.</p>
+                    <p class="text-[10px] text-brand-success leading-relaxed font-medium">Pembayaran aman dengan Admin. Dana ditahan sistem sampai transaksi selesai.</p>
                 </div>
             </div>
             
@@ -10334,7 +10334,7 @@ async function shareProdukPasar(btn) {
         try {
             await navigator.share({
                 title: 'AU2Hub Pasar Player',
-                text: `Cek ${judulProduk} seharga ${hargaProduk} di AU2Hub sekarang! Aman via Rekber.`,
+                text: `Cek ${judulProduk} seharga ${hargaProduk} di AU2Hub sekarang! Aman via Admin.`,
                 url: currentUrl
             });
         } catch (err) { console.log("Membagikan dibatalkan."); }
