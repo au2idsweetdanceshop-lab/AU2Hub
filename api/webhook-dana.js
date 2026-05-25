@@ -35,30 +35,51 @@ export default async function handler(req, res) {
     const nominalTarget = parseInt(nominal.replace(/\D/g, '')) || 0;
     console.log("Nominal angka hasil ekstraksi:", nominalTarget);
 
-    // 🚀 Eksekusi Update ke Supabase
-    const { data, error } = await supabase
+    // 🚀 1. Coba cari dan update di tabel 'orders' (Layanan Utama)
+    let { data, error } = await supabase
       .from('orders')
       .update({ status: 'SUCCESS' })
       .eq('price', nominalTarget)
       .eq('status', 'PENDING')
       .select();
 
+    if (error) {
+      console.log("Error di tabel orders:", error.message);
+      return res.status(200).json({ Laporan: "ERROR_DATABASE_ORDERS", Pesan: error.message });
+    }
+
+    // 🚀 2. Jika tidak ketemu di 'orders', cari di tabel 'orders_player' (Pasar Player)
+    if (!data || data.length === 0) {
+      console.log("Nominal tidak ada di 'orders', beralih mencari di 'orders_player'...");
+      
+      const { data: dataPlayer, error: errorPlayer } = await supabase
+        .from('orders_player')
+        .update({ status: 'SUCCESS' })
+        .eq('price', nominalTarget)
+        .eq('status', 'PENDING')
+        .select();
+
+      if (errorPlayer) {
+        console.log("Error di tabel orders_player:", errorPlayer.message);
+        return res.status(200).json({ Laporan: "ERROR_DATABASE_PLAYER", Pesan: errorPlayer.message });
+      }
+
+      // Timpa hasil data dengan data dari tabel player agar bisa terbaca oleh validasi di bawah
+      data = dataPlayer; 
+    }
+
     // 🔍 [LOG DARI VERCEL] Cetak hasil pencarian database ke log Vercel
-    console.log("=== DEBUG HASIL SUPABASE ===");
-    console.log("Database Error:", error ? error.message : "TIDAK ADA ERROR");
+    console.log("=== DEBUG HASIL SUPABASE FINAL ===");
     console.log("Jumlah baris yang berhasil diubah:", data ? data.length : 0);
     console.log("Data baris yang diubah:", JSON.stringify(data));
 
-    if (error) {
-      return res.status(200).json({ Laporan: "ERROR_DATABASE", Pesan: error.message });
-    }
-
+    // Validasi akhir untuk respon ke MacroDroid
     if (data && data.length > 0) {
       return res.status(200).json({ Laporan: "BERHASIL_SEMPURNA", Nominal: nominalTarget });
     } else {
       return res.status(200).json({ 
         Laporan: "TIDAK_ADA_YANG_TERUPDATE", 
-        Pesan: `Gagal mengubah data. Kemungkinan nominal ${nominalTarget} tidak ada yang berstatus PENDING atau terblokir aturan RLS Supabase.`
+        Pesan: `Gagal mengubah data. Nominal ${nominalTarget} tidak berstatus PENDING di tabel manapun.`
       });
     }
 
