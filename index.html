@@ -8829,6 +8829,8 @@ let activeOrderIdToPay = null;
 let activeOrderPriceToPay = 0;
 let activeOrderNameToPay = "";
 let activeOrderTable = 'orders';
+let activeOrderSellerId = null; // <--- WAJIB DITAMBAHKAN
+let activeOrderProductId = null; // <--- WAJIB DITAMBAHKAN
 
 async function cekStatusPesanan(kategori) {
     if (!currentUser) return showToast("Silakan login terlebih dahulu.", "error");
@@ -8889,7 +8891,7 @@ async function cekStatusPesanan(kategori) {
                 else if (order.status === 'PENDING') { statusColor = 'text-gray-400 bg-gray-500/10 border-gray-500/30'; icon = 'fa-wallet'; teksStatus = 'PENDING'; }
 
                 // Kirim table_source ke popup
-                let clickAction = `onclick="bukaDetailPesananDinamis('${order.id}', '${order.product_name.replace(/'/g, "\\'")}', ${order.price}, '${order.status}', '${order.table_source}')" class="cursor-pointer hover:border-brand-accent/50"`;
+                let clickAction = `onclick="bukaDetailPesananDinamis('${order.id}', '${order.product_name.replace(/'/g, "\\'")}', ${order.price}, '${order.status}', '${order.table_source}', '${order.seller_id || ''}', '${order.product_id || ''}')" class="cursor-pointer hover:border-brand-accent/50"`;
 
                 return `
                 <div ${clickAction} class="bg-brand-dark/50 border border-white/5 p-4 rounded-2xl flex flex-col gap-2 relative overflow-hidden transition-all hover:border-white/10 ${order.status === 'PENDING' ? 'border-red-500/20 shadow-[0_0_10px_rgba(239,68,68,0.1)]' : ''}">
@@ -9104,17 +9106,18 @@ lbModal.addEventListener('touchend', e => {
 }, {passive: true});
 
 
-// 🔥 FUNGSI PEMBUKA MODAL INVOICE (DIPERBARUI DENGAN BACK DETECTION)
-function bukaDetailPesananDinamis(orderId, productName, price, status, tableSource) {
+// 🔥 FUNGSI PEMBUKA MODAL INVOICE (DIPERBARUI)
+function bukaDetailPesananDinamis(orderId, productName, price, status, tableSource, sellerId, productId) {
     // Simpan ke variabel global agar bisa dipakai untuk membatalkan/bayar ulang
     activeOrderIdToPay = orderId;
     activeOrderPriceToPay = price;
     activeOrderNameToPay = productName;
-    activeOrderTable = tableSource; // Sekarang tabel sumber (orders / orders_player) tersimpan akurat
+    activeOrderTable = tableSource; 
+    activeOrderSellerId = sellerId || null; // <--- MENYIMPAN ID PENJUAL
+    activeOrderProductId = productId || null; // <--- MENYIMPAN ID PRODUK
 
     const modal = document.getElementById('modal-detail-pesanan');
     
-    // Suntikkan data asli dari database ke layar HTML
     document.getElementById('detail-nama-layanan').innerText = productName;
     document.getElementById('detail-harga-layanan').innerText = `Rp ${price.toLocaleString('id-ID')}`;
     
@@ -9123,28 +9126,22 @@ function bukaDetailPesananDinamis(orderId, productName, price, status, tableSour
     const actionDiproses = document.getElementById('action-diproses');
     const pesanStatusLain = document.getElementById('pesan-status-lain');
 
-    // LOGIKA TAMPILAN DINAMIS BERDASARKAN STATUS
     if (status === 'PENDING') {
         statusBadge.innerText = 'BELUM BAYAR';
         statusBadge.className = 'font-extrabold text-red-500 uppercase tracking-wider';
-        
         actionBelumBayar.classList.replace('hidden', 'flex'); 
         if(actionDiproses) actionDiproses.classList.replace('flex', 'hidden'); 
         pesanStatusLain.classList.add('hidden'); 
-        
     } else if (status === 'proses') {
         statusBadge.innerText = 'DIPROSES';
         statusBadge.className = 'font-extrabold text-brand-info uppercase tracking-wider';
-        
         actionBelumBayar.classList.replace('flex', 'hidden'); 
         if(actionDiproses) actionDiproses.classList.replace('hidden', 'flex'); 
         pesanStatusLain.classList.remove('hidden'); 
         pesanStatusLain.innerText = 'Pesanan sedang dikerjakan admin. Klik tombol di bawah jika sudah diterima.';
-        
     } else if (status === 'selesai') {
         statusBadge.innerText = 'SELESAI';
         statusBadge.className = 'font-extrabold text-brand-success uppercase tracking-wider';
-        
         actionBelumBayar.classList.replace('flex', 'hidden'); 
         if(actionDiproses) actionDiproses.classList.replace('flex', 'hidden'); 
         pesanStatusLain.classList.remove('hidden'); 
@@ -9154,6 +9151,7 @@ function bukaDetailPesananDinamis(orderId, productName, price, status, tableSour
     modal.classList.replace('hidden', 'flex');
     history.pushState({ popup: 'detail_pesanan' }, null, '#invoice');
 }
+
 
 
 
@@ -9282,9 +9280,10 @@ function prosesBayarUlang() {
     closeDetailPesanan(); // Tutup popup invoice
     closeRiwayatPesanan(); // Tutup list riwayat
     
-    // Tembak langsung ke fungsi Checkout Robot DANA pakai data yang tersimpan
-    checkoutRobotDANA(activeOrderNameToPay, activeOrderPriceToPay, "Melanjutkan pembayaran tagihan tertunda.");
+    // Tembak langsung ke fungsi Checkout Robot DANA pakai data yang tersimpan, lengkap dengan ID penjual & produk
+    checkoutRobotDANA(activeOrderNameToPay, activeOrderPriceToPay, "Melanjutkan pembayaran tagihan tertunda.", activeOrderSellerId, activeOrderProductId);
 }
+
 
 // FUNCTIONS UNTUK KONTROL ANIMASI BUKA TUTUP LACI MENU
 function openAssistiveMenu() {
