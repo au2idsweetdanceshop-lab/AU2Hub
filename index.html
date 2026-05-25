@@ -601,7 +601,7 @@ Satu pintu untuk info update terbaru, panduan pemula, jasa joki profesional, dan
 <section id="rekber" class="tab-content py-2">
     <div class="flex justify-between items-center mb-5">
         <h2 class="text-xl font-extrabold text-white flex items-center gap-2">
-            <span class="w-1.5 h-6 bg-brand-purple rounded-full"></span> Rekber & Kontak
+            <span class="w-1.5 h-6 bg-brand-purple rounded-full"></span> Admin AU2Hub
         </h2>
         <button onclick="loadDataRekber(true)" class="text-brand-purple bg-brand-purple/10 w-8 h-8 rounded-full flex items-center justify-center active:scale-90 transition-all border border-brand-purple/30" title="Refresh Rekber">
             <i class="fas fa-sync-alt"></i>
@@ -9036,7 +9036,7 @@ async function loadDataRekber(forceRefresh = false) {
 
             container.innerHTML = htmlOutput;
             isRekberLoaded = true;
-            if(forceRefresh) showToast("Data Rekber & Kontak berhasil diperbarui!", "success");
+            if(forceRefresh) showToast("Data Admin AU2Hub berhasil diperbarui!", "success");
 
         } else {
             throw new Error("Data Kosong");
@@ -9820,7 +9820,7 @@ function bukaVideoShare(vidId) {
         </div>
         <div onclick="executeAssistive('rekber')" class="flex flex-col items-center justify-center bg-white/5 hover:bg-white/10 border border-white/5 w-18 h-18 rounded-2xl cursor-pointer active:scale-90 transition-all">
             <i class="fas fa-shield-alt text-lg text-brand-success shadow-[0_0_10px_rgba(43,217,117,0.4)]"></i>
-            <span class="text-[9px] font-bold text-gray-300 mt-1">Rekber</span>
+            <span class="text-[9px] font-bold text-gray-300 mt-1">Admin</span>
         </div>
 
         <div onclick="executeAssistive('ripper')" class="flex flex-col items-center justify-center bg-white/5 hover:bg-white/10 border border-white/5 w-18 h-18 rounded-2xl cursor-pointer active:scale-90 transition-all">
