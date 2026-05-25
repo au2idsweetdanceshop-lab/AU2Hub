@@ -9273,16 +9273,64 @@ async function selesaikanPesanan() {
 }
 
 
-// EKSEKUSI LANJUTKAN PEMBAYARAN VIA QRIS DANA
+// EKSEKUSI LANJUTKAN PEMBAYARAN VIA QRIS DANA (DIPERBAIKI)
 function prosesBayarUlang() {
     if (!activeOrderIdToPay) return;
     
     closeDetailPesanan(); // Tutup popup invoice
     closeRiwayatPesanan(); // Tutup list riwayat
     
-    // Tembak langsung ke fungsi Checkout Robot DANA pakai data yang tersimpan, lengkap dengan ID penjual & produk
-    checkoutRobotDANA(activeOrderNameToPay, activeOrderPriceToPay, "Melanjutkan pembayaran tagihan tertunda.", activeOrderSellerId, activeOrderProductId);
+    // 1. Tampilkan ulang UI QRIS menggunakan data harga ASLI dari database
+    document.getElementById('pay-total').innerText = `Rp ${activeOrderPriceToPay.toLocaleString('id-ID')}`;
+    document.getElementById('pay-product').innerText = activeOrderNameToPay;
+    document.getElementById('nominal-asli').value = activeOrderPriceToPay;
+
+    // Generate ulang gambar QRIS
+    const teksQRISDinamis = makeDynamicQRIS(activeOrderPriceToPay);
+    const qrImgUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(teksQRISDinamis)}`;
+
+    const qrContainerElement = document.querySelector('#pembayaran img');
+    if (qrContainerElement) qrContainerElement.src = qrImgUrl;
+
+    // Update link WhatsApp Admin
+    const noWA = "6283815584661";
+    const teksWA = encodeURIComponent(`Halo Admin, pesanan DANA saya sudah otomatis masuk ya untuk:\n\n(Berikut ini saya lampirkan gambar bukti transfer QRIS / screenshot)*${activeOrderNameToPay}*`);
+    document.getElementById('wa-confirm').setAttribute('href', `https://wa.me/${noWA}?text=${teksWA}`);
+
+    // Buka tab pembayaran
+    switchTab('pembayaran');
+    showToast("Melanjutkan pembayaran. Silakan scan QRIS.", "info");
+
+    // 2. Pasang kembali radar pemantau Supabase KHUSUS untuk ID pesanan ini
+    const channelPembayaran = supabaseClient
+        .channel('tunggu-pembayaran-ulang')
+        .on(
+            'postgres_changes',
+            { event: 'UPDATE', schema: 'public', table: activeOrderTable, filter: `id=eq.${activeOrderIdToPay}` },
+            (payload) => {
+                if (payload.new.status === 'selesai' || payload.new.status === 'SUCCESS' || payload.new.status === 'proses') {
+                    const wadahPembayaran = document.getElementById('qris-container');
+                    if (wadahPembayaran) {
+                        wadahPembayaran.innerHTML = `
+                            <div class="flex flex-col items-center justify-center py-6 text-center modal-anim">
+                                <div class="relative w-24 h-24 mb-6">
+                                    <div class="absolute inset-0 bg-brand-success rounded-full animate-ping opacity-20"></div>
+                                    <i class="fas fa-check-circle text-7xl text-brand-success relative z-10 drop-shadow-[0_0_20px_rgba(37,211,102,0.8)]"></i>
+                                </div>
+                                <h2 class="text-2xl font-extrabold text-white mb-2 mt-4 tracking-tight">Pembayaran Berhasil!</h2>
+                                <p class="text-gray-400 text-xs mb-8 leading-relaxed px-4">Dana Rp ${activeOrderPriceToPay.toLocaleString('id-ID')} telah diterima. Silakan cek menu Pesanan/Chat.</p>
+                                <button onclick="window.location.reload()" class="w-full bg-white/5 text-white py-4 rounded-xl font-bold active:scale-95 transition-all uppercase tracking-wider text-xs border border-white/10 hover:bg-white/10">Selesai & Kembali</button>
+                            </div>
+                        `;
+                    }
+                    supabaseClient.removeChannel(channelPembayaran);
+                    prosesAutoDeliveryTertunda();
+                }
+            }
+        )
+        .subscribe();
 }
+
 
 
 // FUNCTIONS UNTUK KONTROL ANIMASI BUKA TUTUP LACI MENU
