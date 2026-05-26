@@ -2425,50 +2425,107 @@ setTimeout(() => loadChatList(), 300);
 }
 
 async function showUserList(type) {
-if (!currentUser && viewedUserId === null) return;
-const targetId = viewedUserId || currentUser.id;
+    if (!currentUser && viewedUserId === null) return;
+    const targetId = viewedUserId || currentUser.id;
 
-const modal = document.getElementById('modal-user-list');
-const container = document.getElementById('user-list-container');
-const title = document.getElementById('user-list-title');
+    // [BARU] Cek apakah ini profil sendiri dan sedang membuka tab "pengikut"
+    const isOwnProfile = currentUser && targetId === currentUser.id;
+    const isFollowerList = type === 'pengikut';
 
-title.innerText = type === 'mengikuti' ? 'Mengikuti' : 'Pengikut';
-modal.classList.remove('hidden');
-modal.classList.add('flex');
-document.getElementById('userListSearch').value = '';
-container.innerHTML = '<div class="flex justify-center mt-10"><i class="fas fa-spinner fa-spin text-brand-accent text-xl"></i></div>';
+    const modal = document.getElementById('modal-user-list');
+    const container = document.getElementById('user-list-container');
+    const title = document.getElementById('user-list-title');
 
-let query = supabaseClient.from('follows').select(type === 'mengikuti' ? 'following_id' : 'follower_id').eq(type === 'mengikuti' ? 'follower_id' : 'following_id', targetId);
-const { data: follows } = await query;
+    title.innerText = type === 'mengikuti' ? 'Mengikuti' : 'Pengikut';
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    document.getElementById('userListSearch').value = '';
+    container.innerHTML = '<div class="flex justify-center mt-10"><i class="fas fa-spinner fa-spin text-brand-accent text-xl"></i></div>';
 
-if (!follows || follows.length === 0) {
-container.innerHTML = `<p class="text-center text-xs text-gray-500 mt-10">Belum ada ${type}.</p>`;
-return;
+    let query = supabaseClient.from('follows').select(type === 'mengikuti' ? 'following_id' : 'follower_id').eq(type === 'mengikuti' ? 'follower_id' : 'following_id', targetId);
+    const { data: follows } = await query;
+
+    if (!follows || follows.length === 0) {
+        container.innerHTML = `<p class="text-center text-xs text-gray-500 mt-10">Belum ada ${type}.</p>`;
+        return;
+    }
+
+    const ids = follows.map(f => type === 'mengikuti' ? f.following_id : f.follower_id);
+    const { data: profiles } = await supabaseClient.from('profiles').select('id, nickname, avatar_url, bio').in('id', ids);
+
+    if (profiles && profiles.length > 0) {
+        container.innerHTML = profiles.map(p => {
+            const ava = p.avatar_url || `https://ui-avatars.com/api/?name=${p.nickname}&background=1A1133&color=fff`;
+            
+            // [BARU] TOMBOL HAPUS PENGIKUT
+            // Tombol hanya digambar jika isOwnProfile (profil sendiri) & isFollowerList (tab pengikut)
+            let removeBtn = '';
+            if (isOwnProfile && isFollowerList) {
+                // event.stopPropagation() ditambahkan agar saat tombol dihapus diklik, 
+                // sistem tidak malah membuka profil orang tersebut
+                removeBtn = `
+                <button onclick="event.stopPropagation(); removeFollower('${p.id}', '${p.nickname.replace(/'/g, "\\'")}')" 
+                    class="ml-auto w-8 h-8 rounded-full bg-red-500/10 text-red-500 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all active:scale-90 shrink-0"
+                    title="Hapus Pengikut">
+                    <i class="fas fa-user-times text-[10px]"></i>
+                </button>`;
+            }
+
+            return `
+            <div onclick="viewUserProfile('${p.id}'); closeUserList();" class="flex items-center p-3 hover:bg-white/5 cursor-pointer rounded-2xl transition-all border-b border-white/5 last:border-0">
+                <img src="${ava}" class="w-10 h-10 rounded-full object-cover border border-white/10 shrink-0">
+                <div class="ml-3 flex-1 min-w-0 pr-2">
+                    <h4 class="font-bold text-white text-xs truncate">${p.nickname}</h4>
+                    <p class="text-[10px] text-gray-400 truncate w-full">${p.bio || ''}</p>
+                </div>
+                ${removeBtn}
+            </div>`;
+        }).join('');
+    }
 }
 
-const ids = follows.map(f => type === 'mengikuti' ? f.following_id : f.follower_id);
-const { data: profiles } = await supabaseClient.from('profiles').select('id, nickname, avatar_url, bio').in('id', ids);
-
-if (profiles && profiles.length > 0) {
-container.innerHTML = profiles.map(p => {
-const ava = p.avatar_url || `https://ui-avatars.com/api/?name=${p.nickname}&background=1A1133&color=fff`;
-return `
-<div onclick="viewUserProfile('${p.id}'); closeUserList();" class="flex items-center p-3 hover:bg-white/5 cursor-pointer rounded-2xl transition-all border-b border-white/5 last:border-0">
-<img src="${ava}" class="w-10 h-10 rounded-full object-cover border border-white/10 shrink-0">
-<div class="ml-3">
-<h4 class="font-bold text-white text-xs">${p.nickname}</h4>
-<p class="text-[10px] text-gray-400 truncate w-48">${p.bio || ''}</p>
-</div>
-</div>`;
-}).join('');
-}
-}
 
 function closeUserList() {
 const modal = document.getElementById('modal-user-list');
 modal.classList.add('hidden');
 modal.classList.remove('flex');
 }
+
+// ==========================================
+// FUNGSI BARU: HAPUS PENGIKUT
+// ==========================================
+async function removeFollower(followerId, nickname) {
+    if (!currentUser) return;
+    
+    // Konfirmasi sebelum menghapus
+    const konfirmasi = await customConfirm(`Yakin ingin menghapus ${nickname} dari daftar pengikut Anda?`);
+    if (!konfirmasi) return;
+
+    try {
+        showToast(`Menghapus ${nickname}...`, "info");
+
+        // Proses hapus dari Supabase: 
+        // follower_id adalah ID orang yang mengikuti, following_id adalah ID kita
+        const { error } = await supabaseClient
+            .from('follows')
+            .delete()
+            .eq('follower_id', followerId)
+            .eq('following_id', currentUser.id);
+
+        if (error) throw error;
+
+        showToast(`${nickname} berhasil dihapus dari pengikut.`, "success");
+        
+        // Refresh statistik angka di profil dan muat ulang daftar modal
+        fetchFollowStats(currentUser.id);
+        showUserList('pengikut'); 
+        
+    } catch (err) {
+        console.error(err);
+        showToast("Gagal menghapus pengikut: " + err.message, "error");
+    }
+}
+
 
 async function toggleBlockUser(userId) {
 if(!currentUser) return openAuthModal();
