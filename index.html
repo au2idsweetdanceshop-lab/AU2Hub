@@ -1287,6 +1287,13 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
 </div>
 </div>
 <button onclick="saveProfileInfo()" class="w-full bg-gradient-to-r from-brand-accent to-brand-purple text-white py-3.5 rounded-xl font-bold active:scale-95 transition-transform mt-2 shadow-[0_0_15px_rgba(255,0,122,0.3)]">Simpan Perubahan</button>
+<button onclick="saveProfileInfo()" class="w-full bg-gradient-to-r from-brand-accent to-brand-purple text-white py-3.5 rounded-xl font-bold active:scale-95 transition-transform mt-2 shadow-[0_0_15px_rgba(255,0,122,0.3)]">Simpan Perubahan</button>
+
+<div class="mt-6 pt-4 border-t border-red-500/20">
+    <button onclick="hapusAkunPermanen()" class="w-full bg-red-500/10 border border-red-500/30 text-red-500 py-3 rounded-xl font-bold active:scale-95 transition-transform text-xs flex items-center justify-center hover:bg-red-500 hover:text-white">
+        <i class="fas fa-skull-crossbones mr-2"></i> Hapus Akun Permanen
+    </button>
+</div>
 </div>
 </div>
 </div>
@@ -5224,6 +5231,42 @@ btn.innerHTML = originalText;
 btn.disabled = false;
 }
 }
+
+// ==========================================
+// FUNGSI HAPUS AKUN PERMANEN
+// ==========================================
+async function hapusAkunPermanen() {
+    if (!currentUser) return;
+
+    // Gunakan prompt yang sudah Anda buat untuk keamanan ekstra
+    const konfirmasi = await customPrompt("PERINGATAN! Semua data (Video, Follower, Saldo) akan hangus.\n\nKetik 'HAPUS AKUN' huruf besar semua untuk melanjutkan:");
+    
+    // Validasi ketat agar tidak kepencet secara tidak sengaja
+    if (konfirmasi === 'HAPUS AKUN') {
+        showToast("Sedang menghancurkan akun...", "info");
+        
+        try {
+            // Kita memanggil fungsi khusus (RPC) yang akan kita buat di database Supabase nanti
+            const { error } = await supabaseClient.rpc('hapus_akun_saya');
+            
+            if (error) throw error;
+
+            showToast("Akun berhasil dihapus secara permanen.", "success");
+            
+            // Tutup laci dan paksa logout
+            closeEditProfileModal();
+            await handleLogout();
+            
+        } catch (err) {
+            console.error(err);
+            showToast("Gagal menghapus akun. Pastikan Anda terhubung ke internet.", "error");
+        }
+    } else if (konfirmasi !== null) {
+        // Jika user salah ngetik
+        showToast("Kata kunci salah. Penghapusan dibatalkan.", "error");
+    }
+}
+
 
 async function fetchFollowStats(targetUserId) {
 const { count: followers } = await supabaseClient.from('follows').select('*', { count: 'exact', head: true }).eq('following_id', targetUserId);
