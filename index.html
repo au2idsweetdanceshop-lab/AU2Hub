@@ -10879,35 +10879,51 @@ async function prosesTarikSaldo() {
         const { data: profile } = await supabaseClient.from('profiles').select('balance, nickname').eq('id', currentUser.id).single();
         const saldoMurni = profile.balance || 0;
         
-        // 2. Validasi minimal penarikan
+        // 2. Cek apakah saldo total akun bahkan mencapai batas minimal awal
         if (saldoMurni < 10000) return showToast("Min. penarikan Rp 10.000", "error");
         
-        // 3. Minta rekening tujuan
-        const rek = await customPrompt("Masukkan Nama Bank & Nomor Rekening:", "DANA - 08xxxxxxxxxx");
-        if (!rek) return; // Batal jika kosong
+        // 3. [BARU] Minta nominal yang ingin ditarik secara spesifik
+        const nominalInput = await customPrompt(`Masukkan nominal yang ingin ditarik (Saldo: Rp ${saldoMurni.toLocaleString('id-ID')}):`, "10000");
+        if (!nominalInput) return; // Batal jika di-cancel / kosong
+        
+        // Bersihkan inputan dari huruf atau titik jika user tidak sengaja mengetiknya
+        const nominalTarik = parseInt(nominalInput.replace(/[^0-9]/g, ''));
+        
+        // 4. [BARU] Validasi nominal inputan user
+        if (isNaN(nominalTarik) || nominalTarik < 10000) {
+            return showToast("Minimal penarikan adalah Rp 10.000", "error");
+        }
+        if (nominalTarik > saldoMurni) {
+            return showToast("Saldo Anda tidak mencukupi untuk nominal tersebut!", "error");
+        }
 
-        // 4. POTONG SALDO & CATAT RIWAYAT KE DATABASE (Panggil Manajer Bank)
+        // 5. Minta rekening tujuan
+        const rek = await customPrompt("Masukkan Nama Bank & Nomor Rekening:", "DANA - 08xxxxxxxxxx");
+        if (!rek) return;
+
+        // 6. POTONG SALDO & CATAT RIWAYAT (Sekarang mengirim nominalTarik, bukan semua saldo)
         const { error: rpcError } = await supabaseClient.rpc('proses_tarik_saldo', {
             p_user_id: currentUser.id,
-            p_jumlah: saldoMurni,
+            p_jumlah: nominalTarik, // <--- Sekarang dinamis sesuai ketikan seller!
             p_rekening: rek
         });
 
         if (rpcError) throw rpcError;
 
-        // 5. Arahkan ke WhatsApp Admin sebagai pemberitahuan
-        const teks = encodeURIComponent(`Halo Admin, saya ${profile.nickname} ingin tarik saldo Rp ${saldoMurni.toLocaleString('id-ID')} ke ${rek}`);
+        // 7. Arahkan ke WhatsApp Admin dengan nominal yang dicairkan saja
+        const teks = encodeURIComponent(`Halo Admin, saya ${profile.nickname} ingin tarik saldo Rp ${nominalTarik.toLocaleString('id-ID')} ke ${rek}`);
         window.open(`https://wa.me/6283815584661?text=${teks}`, '_blank');
         
-        // 6. Tutup layar dan refresh angka dompet di background
+        // 8. Tutup laci dan refresh
         tutupModalSaldoDompet();
-        showToast("Penarikan diproses! Saldo berhasil dipotong.", "success");
+        showToast(`Penarikan Rp ${nominalTarik.toLocaleString('id-ID')} berhasil diproses!`, "success");
         
     } catch (e) { 
         console.error(e);
         showToast("Gagal memproses penarikan saldo.", "error"); 
     }
 }
+
 
 
 // === 1. Variabel Global untuk Mode Edit ===
