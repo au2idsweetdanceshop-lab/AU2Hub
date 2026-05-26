@@ -2993,6 +2993,13 @@ function switchTab(tabId, event = null, isPush = true) {
         toggleGlobalAudio(true);
     }
 
+    // Matikan pemutar video secara paksa jika user meninggalkan tab Sosial
+    if (tabId !== 'sosial') {
+        document.querySelectorAll('.video-player, .float-video-player').forEach(v => {
+            v.pause();
+        });
+    }
+
     // 🚀 PRO-FIX 5 TAHUN: PAKSA BALIK PROFIL SENDIRI TANPA SYARAT + CLEAR PARAMS URL
     if (tabId === 'profile' && event !== null && currentUser) {
         viewedUserId = currentUser.id;
@@ -3735,6 +3742,14 @@ function closeFloatingVideo(skipHistory = false) {
     p.style.transition = 'opacity 0.3s ease';
     p.style.opacity = '0';
 
+    // 🚨 PERBAIKAN: Paksa pause dan kosongkan memori video sebelum dihapus
+    document.querySelectorAll('.float-video-player').forEach(v => {
+        v.pause();
+        v.removeAttribute('src');
+        if (v.querySelector('source')) v.querySelector('source').removeAttribute('src');
+        v.load(); // Buang dari RAM HP
+    });
+
     setTimeout(() => {
         // Sembunyikan dan reset elemen setelah efek fade selesai
         p.classList.add('hidden'); 
@@ -3750,6 +3765,7 @@ function closeFloatingVideo(skipHistory = false) {
         }
     }, 300);
 }
+
 
 
 
@@ -4503,60 +4519,122 @@ console.error("Gagal mengambil like komentar", e);
 }
 
 async function likeComment(cid, btn) {
-// Wajib login untuk melike komentar
-if (!currentUser) {
-showToast("Silakan login untuk menyukai komentar!", "error");
-return openAuthModal();
+    // Wajib login untuk melike komentar
+    if (!currentUser) {
+        showToast("Silakan login untuk menyukai komentar!", "error");
+        return openAuthModal();
+    }
+
+    // Cegah spam klik (double click cepat)
+    if (btn.disabled) return;
+    btn.disabled = true;
+
+    const icon = btn.querySelector('i');
+    
+    // Deteksi warna: jika pink berarti sedang di-like, jika abu-abu berarti belum
+    const isLiked = icon.classList.contains('text-brand-accent');
+
+    // Animasi denyut
+    icon.classList.add('animate-ping');
+    setTimeout(() => icon.classList.remove('animate-ping'), 500);
+
+    try {
+        if (isLiked) {
+            // === PROSES UNLIKE (BATAL SUKA) ===
+            icon.classList.replace('text-brand-accent', 'text-gray-500');
+            
+            const { error } = await supabaseClient
+                .from('comment_likes')
+                .delete()
+                .eq('comment_id', cid)
+                .eq('user_id', currentUser.id);
+
+            if(error) throw error;
+            localStorage.removeItem('comment_liked_'+cid);
+            
+        } else {
+            // === PROSES LIKE (MENYUKAI) ===
+            icon.classList.replace('text-gray-500', 'text-brand-accent');
+            
+            const { error } = await supabaseClient
+                .from('comment_likes')
+                .insert({
+                    comment_id: cid,
+                    user_id: currentUser.id
+                });
+
+            // Abaikan error duplikat jika di DB memang sudah ter-like
+            if(error && error.code !== '23505') throw error;
+            localStorage.setItem('comment_liked_'+cid, 'true');
+        }
+        
+        // Update angka like di layar
+        fetchCommentLikes(cid);
+
+    } catch(e) {
+        console.error("Comment Like Error:", e);
+        
+        // ROLLBACK: Kembalikan warna jika database gagal merespons
+        if (isLiked) {
+            icon.classList.replace('text-gray-500', 'text-brand-accent');
+        } else {
+            icon.classList.replace('text-brand-accent', 'text-gray-500');
+        }
+        showToast(isLiked ? "Gagal membatalkan like." : "Gagal menyukai komentar.", "error");
+    } finally {
+        btn.disabled = false;
+    }
 }
 
-if(localStorage.getItem('comment_liked_'+cid)) return;
-
-localStorage.setItem('comment_liked_'+cid, 'pending');
-
-const icon = btn.querySelector('i');
-icon.classList.remove('text-gray-500');
-icon.classList.add('text-brand-accent', 'animate-ping');
-setTimeout(() => icon.classList.remove('animate-ping'), 500);
-
-try {
-// Insert data like komentar ke Supabase
-const { error } = await supabaseClient.from('comment_likes').insert({
-comment_id: cid,
-user_id: currentUser.id
-});
-
-if(!error) {
-localStorage.setItem('comment_liked_'+cid, 'true');
-fetchCommentLikes(cid);
-} else {
-throw error;
-}
-} catch(e) {
-localStorage.removeItem('comment_liked_'+cid);
-icon.classList.add('text-gray-500'); icon.classList.remove('text-brand-accent');
-showToast("Gagal menyukai komentar.", "error");
-}
-}
 
 async function updateLikeCountUI(videoId, containerDiv) {
-if (!containerDiv) return;
-try {
-// Hitung jumlah like langsung dari Supabase
-const { count, error } = await supabaseClient
-.from('video_likes')
-.select('*', { count: 'exact', head: true })
-.eq('video_id', videoId);
+    if (!containerDiv) return;
+    try {
+        // 1. Dapatkan total jumlah like dari Supabase
+        const { count, error } = await supabaseClient
+            .from('video_likes')
+            .select('*', { count: 'exact', head: true })
+            .eq('video_id', videoId);
 
-const countSpan = containerDiv.querySelector('.like-count-display');
-if (countSpan && !error) countSpan.innerText = count || 0;
+        const countSpan = containerDiv.querySelector('.like-count-display');
+        if (countSpan && !error) countSpan.innerText = count || 0;
 
-if(localStorage.getItem(`liked_${videoId}`)) {
-containerDiv.querySelector('i').classList.replace('text-white', 'text-brand-accent');
+        // 2. Cek status LIKE Akurat dari Database untuk User yang sedang login
+        const icon = containerDiv.querySelector('i');
+        
+        if (currentUser) {
+            const { data: isLikedDB } = await supabaseClient
+                .from('video_likes')
+                .select('id')
+                .eq('video_id', videoId)
+                .eq('user_id', currentUser.id)
+                .single();
+
+            if (isLikedDB) {
+                // Jika di database sudah di-like, ubah merah dan sinkronkan memori lokal
+                icon.classList.replace('text-white', 'text-brand-accent');
+                localStorage.setItem(`liked_${videoId}`, 'true');
+            } else {
+                // Jika belum, pastikan ikon putih
+                icon.classList.replace('text-brand-accent', 'text-white');
+                localStorage.removeItem(`liked_${videoId}`);
+            }
+        } else {
+            // Jika belum login, gunakan deteksi memori HP sementara
+            if(localStorage.getItem(`liked_${videoId}`)) {
+                icon.classList.replace('text-white', 'text-brand-accent');
+            }
+        }
+
+    } catch(e) {
+        // Fallback jika query database gagal / koneksi lambat
+        if(localStorage.getItem(`liked_${videoId}`)) {
+            containerDiv.querySelector('i').classList.replace('text-white', 'text-brand-accent');
+        }
+        console.error("Gagal update UI like", e);
+    }
 }
-} catch(e) {
-console.error("Gagal update UI like", e);
-}
-}
+
 
 async function updateCommentCountUI(videoId, containerDiv) {
     if (!containerDiv) return;
@@ -4580,40 +4658,83 @@ async function updateCommentCountUI(videoId, containerDiv) {
 
 
 async function likeVideo(videoId, btn) {
-// Wajib login untuk melike
-if (!currentUser) {
-showToast("Silakan login untuk menyukai video!", "error");
-return openAuthModal();
+    // Wajib login untuk melike
+    if (!currentUser) {
+        showToast("Silakan login untuk menyukai video!", "error");
+        return openAuthModal();
+    }
+
+    // Cegah spam klik (double click cepat) yang bikin error database
+    if (btn.disabled) return;
+    btn.disabled = true;
+
+    const icon = btn.querySelector('i');
+    
+    // Deteksi apakah saat ini video SEDANG di-like berdasarkan warna ikon (Optimistic UI)
+    const isLiked = icon.classList.contains('text-brand-accent'); 
+
+    // Berikan efek animasi denyut saat ditekan
+    icon.classList.add('animate-ping');
+    setTimeout(() => icon.classList.remove('animate-ping'), 500);
+
+    try {
+        if (isLiked) {
+            // ==========================================
+            // PROSES UNLIKE (BATAL SUKA)
+            // ==========================================
+            icon.classList.replace('text-brand-accent', 'text-white'); // Ubah warna jadi putih instan
+            
+            const { error } = await supabaseClient
+                .from('video_likes')
+                .delete()
+                .eq('video_id', videoId)
+                .eq('user_id', currentUser.id);
+
+            if (error) throw error;
+            
+            // Hapus jejak dari memori HP
+            localStorage.removeItem(`liked_${videoId}`);
+
+        } else {
+            // ==========================================
+            // PROSES LIKE (MENYUKAI)
+            // ==========================================
+            icon.classList.replace('text-white', 'text-brand-accent'); // Ubah warna jadi pink instan
+            
+            const { error } = await supabaseClient
+                .from('video_likes')
+                .insert({
+                    video_id: videoId,
+                    user_id: currentUser.id
+                });
+
+            // Abaikan error dengan kode '23505' (Duplicate) jika ternyata di DB sudah ter-like sebelumnya
+            if (error && error.code !== '23505') throw error;
+            
+            // Simpan jejak di memori HP
+            localStorage.setItem(`liked_${videoId}`, 'true');
+        }
+
+        // Perbarui angka jumlah like di layar secara real-time
+        updateLikeCountUI(videoId, btn.closest('.like-container') || document.getElementById('float-like-container'));
+
+    } catch (e) {
+        console.error("Video Like Error:", e);
+        
+        // ROLLBACK: Jika database gagal, kembalikan warna ikon seperti semula
+        if (isLiked) {
+            icon.classList.replace('text-white', 'text-brand-accent');
+        } else {
+            icon.classList.replace('text-brand-accent', 'text-white');
+        }
+        
+        showToast(isLiked ? "Gagal membatalkan like." : "Gagal menyukai video.", "error");
+    } finally {
+        // Buka kembali kunci tombol setelah proses selesai
+        btn.disabled = false;
+    }
 }
 
-if(localStorage.getItem(`liked_${videoId}`)) return;
-
-localStorage.setItem(`liked_${videoId}`, 'pending');
-
-const icon = btn.querySelector('i');
-icon.classList.replace('text-white', 'text-brand-accent');
-icon.classList.add('animate-ping');
-setTimeout(() => icon.classList.remove('animate-ping'), 500);
-
-try {
-// Insert data like ke Supabase
-const { error } = await supabaseClient.from('video_likes').insert({
-video_id: videoId,
-user_id: currentUser.id
-});
-
-if (!error) {
-localStorage.setItem(`liked_${videoId}`, 'true');
-updateLikeCountUI(videoId, btn.closest('.like-container') || document.getElementById('float-like-container'));
-} else {
-throw error;
-}
-} catch (e) {
-localStorage.removeItem(`liked_${videoId}`);
-icon.classList.replace('text-brand-accent', 'text-white');
-showToast("Gagal menyukai video.", "error");
-}
-}
 
 function handleVideoError(videoElement) { const container = videoElement.closest('.snap-start'); if (container) container.remove(); }
 
@@ -7150,12 +7271,12 @@ if (isGroup) insertData.group_id = targetId; else insertData.receiver_id = targe
 const { error: dbErr } = await supabaseClient.from('messages').insert(insertData);
 if (dbErr) throw new Error("Gagal simpan DB");
 
-const oldBubble = document.querySelector(`[ontouchstart*="${tempId}"]`);
-if (oldBubble) oldBubble.closest('.message-anim')?.remove();
+const oldBubble = document.getElementById(`msg-chat-${tempId}`);
+if (oldBubble) oldBubble.remove();
 
 } catch(err) {
-const oldBubble = document.querySelector(`[ontouchstart*="${tempId}"]`);
-if (oldBubble) oldBubble.closest('.message-anim')?.remove();
+const oldBubble = document.getElementById(`msg-chat-${tempId}`);
+if (oldBubble) oldBubble.remove();
 showToast("Error VN: " + err.message, "error");
 }
 };
@@ -7356,10 +7477,9 @@ supabaseClient.from('messages').update({ is_read: true }).eq('id', msg.id).then(
 } else {
 // --- JIKA PESAN DARI KITA SENDIRI ---
 // Hapus balon sementara agar tidak dobel
-const tempBubble = document.querySelector('[ontouchstart*="temp-"]');
+const tempBubble = document.querySelector('[id^="msg-chat-temp-"]');
 if (tempBubble) {
-const wrapper = tempBubble.closest('.message-anim');
-if (wrapper) wrapper.remove();
+    tempBubble.remove();
 }
 
 // Pasang pesan asli dari database
