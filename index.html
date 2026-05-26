@@ -10875,16 +10875,40 @@ async function fetchSaldoDanMutasi() {
 
 async function prosesTarikSaldo() {
     try {
+        // 1. Ambil data saldo saat ini
         const { data: profile } = await supabaseClient.from('profiles').select('balance, nickname').eq('id', currentUser.id).single();
         const saldoMurni = profile.balance || 0;
+        
+        // 2. Validasi minimal penarikan
         if (saldoMurni < 10000) return showToast("Min. penarikan Rp 10.000", "error");
+        
+        // 3. Minta rekening tujuan
         const rek = await customPrompt("Masukkan Nama Bank & Nomor Rekening:", "DANA - 08xxxxxxxxxx");
-        if (!rek) return;
+        if (!rek) return; // Batal jika kosong
+
+        // 4. POTONG SALDO & CATAT RIWAYAT KE DATABASE (Panggil Manajer Bank)
+        const { error: rpcError } = await supabaseClient.rpc('proses_tarik_saldo', {
+            p_user_id: currentUser.id,
+            p_jumlah: saldoMurni,
+            p_rekening: rek
+        });
+
+        if (rpcError) throw rpcError;
+
+        // 5. Arahkan ke WhatsApp Admin sebagai pemberitahuan
         const teks = encodeURIComponent(`Halo Admin, saya ${profile.nickname} ingin tarik saldo Rp ${saldoMurni.toLocaleString('id-ID')} ke ${rek}`);
         window.open(`https://wa.me/6283815584661?text=${teks}`, '_blank');
+        
+        // 6. Tutup layar dan refresh angka dompet di background
         tutupModalSaldoDompet();
-    } catch (e) { showToast("Gagal memproses.", "error"); }
+        showToast("Penarikan diproses! Saldo berhasil dipotong.", "success");
+        
+    } catch (e) { 
+        console.error(e);
+        showToast("Gagal memproses penarikan saldo.", "error"); 
+    }
 }
+
 
 // === 1. Variabel Global untuk Mode Edit ===
 let editFileArray = []; // Untuk menampung file foto baru dari HP
