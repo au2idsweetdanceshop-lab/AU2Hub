@@ -1103,6 +1103,7 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
     <!-- FILTER KATEGORI CEPAT -->
     <div class="flex overflow-x-auto hide-scroll gap-2 mb-4 pb-1" id="kategori-pasar-chips">
         <button onclick="filterKategoriPasar('Semua', this)" class="btn-kat-pasar whitespace-nowrap bg-brand-success text-white px-4 py-1.5 rounded-full text-[10px] font-bold shadow-[0_0_10px_rgba(37,211,102,0.3)] transition-all border border-transparent">Semua</button>
+        <button onclick="filterKategoriPasar('APK Premium', this)" class="btn-kat-pasar whitespace-nowrap bg-white/5 border border-white/10 text-gray-400 px-4 py-1.5 rounded-full text-[10px] font-bold hover:bg-white/10 transition-all">APK Premium</button>
         <button onclick="filterKategoriPasar('Joki', this)" class="btn-kat-pasar whitespace-nowrap bg-white/5 border border-white/10 text-gray-400 px-4 py-1.5 rounded-full text-[10px] font-bold hover:bg-white/10 transition-all">Joki</button>
         <button onclick="filterKategoriPasar('Akun', this)" class="btn-kat-pasar whitespace-nowrap bg-white/5 border border-white/10 text-gray-400 px-4 py-1.5 rounded-full text-[10px] font-bold hover:bg-white/10 transition-all">Akun</button>
         <button onclick="filterKategoriPasar('Item', this)" class="btn-kat-pasar whitespace-nowrap bg-white/5 border border-white/10 text-gray-400 px-4 py-1.5 rounded-full text-[10px] font-bold hover:bg-white/10 transition-all">Item / Gift</button>
@@ -10094,6 +10095,7 @@ function bukaVideoShare(vidId) {
                     <label class="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-1.5 block">Kategori</label>
                     <select id="jualan-kategori" onchange="toggleStockInput(this.value, 'wadah-stock-jualan')" class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-brand-success transition-colors appearance-none">
                         <option value="Joki" class="bg-brand-dark">Joki</option>
+                        <option value="APK Premium" class="bg-brand-dark">APK Premium</option>
                         <option value="Akun" class="bg-brand-dark">Akun</option>
                         <option value="Item" class="bg-brand-dark">Item / Gift</option>
                         <option value="Top Up" class="bg-brand-dark">Top Up</option>
@@ -10161,6 +10163,7 @@ function bukaVideoShare(vidId) {
                     <select id="edit-produk-kategori" onchange="toggleStockInput(this.value, 'wadah-stock-edit')" class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-brand-info transition-colors appearance-none">
                         <option value="Joki" class="bg-brand-dark">Joki</option>
                         <option value="Akun" class="bg-brand-dark">Akun</option>
+                        <option value="APK Premium" class="bg-brand-dark">APK Premium</option>
                         <option value="Item" class="bg-brand-dark">Item / Gift</option>
                         <option value="Top Up" class="bg-brand-dark">Top Up</option>
                         <option value="Lainnya" class="bg-brand-dark">Lainnya</option>
@@ -10385,7 +10388,7 @@ function renderGridPasar(dataList) {
         if (!fotoPertama) fotoPertama = 'https://placehold.co/400x400/1a1133/2BD975?text=PASAR';
 
         // [BARU] Hitung Sisa Stok Otomatis
-        const isAutoItem = item.category === 'Akun' || item.category === 'Item';
+        const isAutoItem = item.category === 'Akun' || item.category === 'Item' || item.category === 'APK Premium';
         const sisaStok = isAutoItem && item.stock_list ? item.stock_list.split(/\r?\n/).filter(s=>s.trim() !== '').length : 0;
         const badgeStok = isAutoItem 
             ? `<div class="absolute top-2 left-2 bg-black/60 backdrop-blur-sm text-[8px] font-bold ${sisaStok > 0 ? 'text-brand-info border-brand-info/50' : 'text-red-500 border-red-500/50'} px-2 py-0.5 rounded-md border uppercase shadow-md">Stok: ${sisaStok}</div>` 
@@ -10479,7 +10482,7 @@ async function prosesPostingJualan() {
     if (fileJualanArray.length === 0) return showToast("Wajib menyertakan minimal 1 foto produk!", "error");
     
     // [BARU] Cegah user nge-post kalau kategori Akun/Item tapi stoknya kosong
-    if ((kategori === 'Akun' || kategori === 'Item') && !stockList) {
+    if ((kategori === 'Akun' || kategori === 'Item' || kategori === 'APK Premium') && !stockList) {
         return showToast("Wajib mengisi List Stok untuk kategori ini!", "error");
     }
 
@@ -10508,7 +10511,7 @@ async function prosesPostingJualan() {
             category: kategori, 
             description: deskripsi, 
             image_url: finalImageUrl,
-            stock_list: (kategori === 'Akun' || kategori === 'Item') ? stockList : null
+            stock_list: (kategori === 'Akun' || kategori === 'Item' || kategori === 'APK Premium') ? stockList : null
         });
 
         if (error) throw error;
@@ -10608,7 +10611,7 @@ function bukaDetailPasar(idProduk) {
     }
 
     // [BARU] Hitung Stok di Laci Detail
-    const isAutoItem = produk.category === 'Akun' || produk.category === 'Item';
+    const isAutoItem = produk.category === 'Akun' || produk.category === 'Item' || produk.category === 'APK Premium';
     const sisaStok = isAutoItem && produk.stock_list ? produk.stock_list.split(/\r?\n/).filter(s=>s.trim() !== '').length : 0;
 
     // Ganti jadi .innerHTML agar teks Sisa Stok bisa masuk
@@ -10731,7 +10734,7 @@ function tutupModalJualBarang(dariTombolBackHP = false) {
 // FUNGSI UNTUK MEMUNCULKAN/MENYEMBUNYIKAN KOTAK STOK
 function toggleStockInput(kategori, wadahId) {
     const wadah = document.getElementById(wadahId);
-    if (kategori === 'Akun' || kategori === 'Item') {
+    if (kategori === 'Akun' || kategori === 'Item' || kategori === 'APK Premium') {
         wadah.classList.remove('hidden');
         wadah.classList.add('block');
     } else {
@@ -11283,7 +11286,7 @@ async function prosesEditProduk() {
     if (existingImagesEdit.length === 0 && editFileArray.length === 0) return showToast("Wajib menyertakan minimal 1 foto produk!", "error");
     
     // [BARU] Cegah user simpan kalau kategori Akun/Item tapi stoknya dikosongkan
-    if ((kategori === 'Akun' || kategori === 'Item') && !stockList) {
+    if ((kategori === 'Akun' || kategori === 'Item' || kategori === 'APK Premium') && !stockList) {
         return showToast("Wajib mengisi List Stok untuk kategori ini!", "error");
     }
 
@@ -11315,7 +11318,7 @@ async function prosesEditProduk() {
                 category: kategori, 
                 description: deskripsi, 
                 image_url: finalImageUrl,
-                stock_list: (kategori === 'Akun' || kategori === 'Item') ? stockList : null,
+                stock_list: (kategori === 'Akun' || kategori === 'Item' || kategori === 'APK Premium') ? stockList : null,
                 user_id: currentUser.id 
             })
             .eq('id', idProduk)
@@ -11377,7 +11380,7 @@ async function prosesAutoDeliveryTertunda() {
                     .eq('id', order.product_id)
                     .single();
 
-                if (prodData && (prodData.category === 'Akun' || prodData.category === 'Item') && prodData.stock_list) {
+                if (prodData && (prodData.category === 'Akun' || prodData.category === 'Item' || prodData.category === 'APK Premium') && prodData.stock_list) {
                     let lines = prodData.stock_list.split(/\r?\n/).filter(l => l.trim() !== '');
                     
                     if (lines.length > 0) {
