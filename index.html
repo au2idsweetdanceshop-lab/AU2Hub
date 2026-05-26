@@ -9239,19 +9239,14 @@ async function selesaikanPesanan() {
             const pajakAdmin = Math.floor(hargaAsli * 0.05);
             const pendapatanBersih = hargaAsli - pajakAdmin;
 
-            // Tambah saldo ke Penjual via RPC
-            await supabaseClient.rpc('tambah_saldo', { 
-                user_id_target: sellerId, 
-                jumlah: pendapatanBersih 
+            // Panggil Fungsi Supabase (Update Saldo & Riwayat sekaligus kebal RLS)
+            const { error: rpcError } = await supabaseClient.rpc('proses_pencairan_otomatis', {
+                p_seller_id: sellerId,
+                p_jumlah: pendapatanBersih,
+                p_deskripsi: `Penjualan: ${namaProduk}`
             });
 
-            // Catat Riwayat Mutasi Dompet agar Penjual bisa melihatnya
-            await supabaseClient.from('wallet_transactions').insert({
-                user_id: sellerId,
-                amount: pendapatanBersih,
-                type: 'INCOME',
-                description: `Penjualan: ${namaProduk}`
-            });
+            if (rpcError) throw rpcError;
 
             showToast(`Pesanan selesai! Saldo diteruskan ke Penjual.`, "success");
         } else {
