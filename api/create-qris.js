@@ -15,34 +15,40 @@ export default async function handler(req, res) {
     try {
         // 2. SUSUN PAYLOAD SESUAI DOKUMENTASI
         const payload = {
-            merchant_id: parseInt(merchantId), // Wajib format Int64
-            channel_code: "QRIS", // Identifier untuk e-wallet/QRIS
-            amount: parseInt(amount), // Wajib angka utuh (min. 1000)
-            ref_id: order_id, // Referensi unik maksimum 50 karakter
-            fee_direction: "merchant", // Memotong biaya MDR/layanan dari saldo admin
-            notify_url: "https://www.au2idsweetdance.com/api/webhook", // Sesuai domain kamu di screenshot
-            note: `Pembayaran: ${product_name}`, // Internal remark opsional
+            merchant_id: parseInt(merchantId), 
+            channel_code: "QRIS", 
+            amount: parseInt(amount), 
+            ref_id: order_id, 
+            fee_direction: "merchant", 
+            notify_url: "https://www.au2idsweetdance.com/api/webhook", 
+            note: `Pembayaran: ${product_name}`, 
             metadata: {
                 customer: {
-                    name: customer_name || "Player AU2Hub" // Info detail dari schema metadata
+                    name: customer_name || "Player AU2Hub" 
                 }
             }
         };
 
-        // 3. BUAT SIGNATURE (HMAC-SHA256)
         const payloadString = JSON.stringify(payload);
+        
+        // --- 3. BUAT TIMESTAMP SAAT INI (TAMBAHAN BARU) ---
+        // Membuat waktu saat ini dengan format ISO 8601 (Standar API)
+        const timestamp = new Date().toISOString(); 
+
+        // 4. BUAT SIGNATURE (HMAC-SHA256)
         const signature = crypto
             .createHmac('sha256', apiKey)
             .update(payloadString)
             .digest('hex');
 
-        // 4. TEMBAK KE SERVER XOFTWARE
+        // 5. TEMBAK KE SERVER XOFTWARE
         const response = await fetch(`${baseUrl}/v1/api/transactions`, { 
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-API-Key': apiKey,             // <--- FIX: Xoftware meminta API Key ditaruh di sini
-                'X-Signature': signature,        // Header HMAC-SHA256
+                'X-API-Key': apiKey,             
+                'X-Timestamp': timestamp,        // <--- FIX: Tambahkan Header X-Timestamp di sini!
+                'X-Signature': signature,        
                 'Authorization': `Bearer ${apiKey}` 
             },
             body: payloadString
@@ -53,19 +59,17 @@ export default async function handler(req, res) {
         try {
             dataXoftware = await response.json();
         } catch (err) {
-            // Jaga-jaga kalau server Xoftware down dan mengembalikan teks HTML, bukan JSON
             const textErr = await response.text();
             throw new Error(`Respons server Xoftware tidak valid: ${textErr}`);
         }
 
-        // 5. KEMBALIKAN STRING QRIS KE FRONTEND
+        // 6. KEMBALIKAN STRING QRIS KE FRONTEND
         if (response.ok && dataXoftware.status === "PENDING") { 
             return res.status(200).json({
                 success: true,
-                qris_string: dataXoftware.qris_text // String QRIS mentah dari response payload Xoftware
+                qris_string: dataXoftware.qris_text 
             });
         } else {
-            // Tampilkan error detail dari Xoftware jika ditolak
             throw new Error(dataXoftware.message || JSON.stringify(dataXoftware) || 'Gagal membuat QRIS dari Gateway Xoftware');
         }
 
