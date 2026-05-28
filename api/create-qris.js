@@ -5,40 +5,32 @@ export default async function handler(req, res) {
         return res.status(405).json({ success: false, message: 'Method Not Allowed' });
     }
 
-    const { order_id, amount, product_name, customer_name } = req.body;
+    const { order_id, amount, product_name } = req.body;
 
+    // 1. TARIK DATA DARI VERCEL
+    const merchantId = process.env.XOFTWARE_MERCHANT_ID;
     const baseUrl = process.env.XOFTWARE_BASE_URL;       
     const apiKey = process.env.XOFTWARE_API_KEY;         
 
     try {
+        // 2. SUSUN PAYLOAD INTI (Tanpa Metadata biar lolos sensor)
         const payload = {
-            merchant_id: 129, 
+            merchant_id: 129, // Sesuai ID kamu
             channel_code: "QRIS", 
             amount: parseInt(amount), 
             ref_id: order_id, 
             fee_direction: "merchant", 
             notify_url: "https://www.au2idsweetdance.com/api/webhook", 
-            note: `Pembayaran: ${product_name}`, 
-            metadata: {
-                customer: {
-                    name: customer_name || "Player AU2Hub" 
-                },
-                // --- FIX: TAMBAHKAN RINCIAN ITEM PRODUK DI SINI ---
-                products: [
-                    {
-                        product_code: "ITEM-001", // Kode unik bebas
-                        product_name: product_name || "Produk AU2Hub"
-                    }
-                ]
-            }
+            note: `Pembayaran: ${product_name}`
+            // Blok metadata sepenuhnya dihapus!
         };
 
         const payloadString = JSON.stringify(payload);
         
-        // WAKTU UNIX DALAM DETIK
+        // 3. WAKTU UNIX DALAM DETIK
         const timestamp = Math.floor(Date.now() / 1000).toString();
 
-        // RUMUS RAHASIA SIGNATURE XOFTWARE
+        // 4. RUMUS RAHASIA SIGNATURE XOFTWARE
         const method = 'POST';
         const path = '/v1/api/transactions';
         const messageToSign = `${timestamp}\n${method}\n${path}\n${payloadString}`;
@@ -48,7 +40,7 @@ export default async function handler(req, res) {
             .update(messageToSign, 'utf8')
             .digest('base64'); 
 
-        // TEMBAK KE SERVER XOFTWARE
+        // 5. TEMBAK KE SERVER XOFTWARE
         const response = await fetch(`${baseUrl}${path}`, { 
             method: 'POST',
             headers: {
@@ -69,7 +61,7 @@ export default async function handler(req, res) {
             throw new Error(`Respons server Xoftware tidak valid: ${textErr}`);
         }
 
-        // KEMBALIKAN STRING QRIS KE FRONTEND
+        // 6. KEMBALIKAN STRING QRIS KE FRONTEND
         if (response.ok && dataXoftware.status === "PENDING") { 
             return res.status(200).json({
                 success: true,
