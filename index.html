@@ -9406,46 +9406,64 @@ const teksWA = encodeURIComponent(`Halo Admin, pesanan saya sudah masuk via QRIS
         document.getElementById('qris-image-target').src = qrImgUrl;
         showToast("QRIS berhasil dibuat. Silakan scan!", "success");
 
-        // 5. Radar Supabase tetap jalan
-        const channelPembayaran = supabaseClient
-            .channel(`tunggu-pembayaran-${orderData.id}`)
-            .on(
-                'postgres_changes',
-                { event: 'UPDATE', schema: 'public', table: targetTabel, filter: `id=eq.${orderData.id}` },
-                (payload) => {
-                    if (payload.new.status === 'selesai' || payload.new.status === 'SUCCESS' || payload.new.status === 'proses') {
-                        const wadahPembayaran = document.getElementById('qris-container');
-                        if (wadahPembayaran) {
-                            wadahPembayaran.innerHTML = `
-                                <div class="flex flex-col items-center justify-center py-6 text-center modal-anim">
-                                    <div class="relative w-24 h-24 mb-6">
-                                        <div class="absolute inset-0 bg-brand-success rounded-full animate-ping opacity-20"></div>
-                                        <i class="fas fa-check-circle text-7xl text-brand-success relative z-10 drop-shadow-[0_0_20px_rgba(37,211,102,0.8)]"></i>
-                                    </div>
-<h2 class="text-2xl font-extrabold text-white mb-2 mt-4 tracking-tight">Pembayaran Berhasil!</h2>
-<p class="text-gray-400 text-xs mb-4 leading-relaxed px-4">Dana Rp ${harga.toLocaleString('id-ID')} telah diterima.</p>
+        // --- KODINGAN UI SUKSES ---
+        const tampilkanLayarSukses = () => {
+            const wadahPembayaran = document.getElementById('qris-container');
+            if (wadahPembayaran) {
+                wadahPembayaran.innerHTML = `
+                    <div class="flex flex-col items-center justify-center py-6 text-center modal-anim">
+                        <div class="relative w-24 h-24 mb-6">
+                            <div class="absolute inset-0 bg-brand-success rounded-full animate-ping opacity-20"></div>
+                            <i class="fas fa-check-circle text-7xl text-brand-success relative z-10 drop-shadow-[0_0_20px_rgba(37,211,102,0.8)]"></i>
+                        </div>
+                        <h2 class="text-2xl font-extrabold text-white mb-2 mt-4 tracking-tight">Pembayaran Berhasil!</h2>
+                        <p class="text-gray-400 text-xs mb-4 leading-relaxed px-4">Dana Rp ${harga.toLocaleString('id-ID')} telah diterima.</p>
+                        <div class="bg-black/40 border border-white/10 rounded-xl py-3 px-4 mb-6 w-full max-w-[280px] select-all cursor-pointer hover:border-brand-info/50 transition-colors" title="Tahan teks untuk menyalin">
+                            <p class="text-[9px] text-gray-500 mb-1 uppercase tracking-widest font-bold">ID Transaksi (Provider Ref)</p>
+                            <p class="text-[11px] font-mono text-brand-info break-all">NIKKY - ${orderData.id}</p>
+                        </div>
+                        <button onclick="window.location.reload()" class="w-full bg-white/5 text-white py-4 rounded-xl font-bold uppercase text-xs border border-white/10 hover:bg-white/10">Selesai & Kembali</button>
+                    </div>
+                `;
+            }
+            prosesAutoDeliveryTertunda();
+        };
 
-<div class="bg-black/40 border border-white/10 rounded-xl py-3 px-4 mb-6 w-full max-w-[280px] select-all cursor-pointer hover:border-brand-info/50 transition-colors" title="Tahan teks untuk menyalin">
-    <p class="text-[9px] text-gray-500 mb-1 uppercase tracking-widest font-bold">ID Transaksi (Provider Ref)</p>
-    <p class="text-[11px] font-mono text-brand-info break-all">NIKKY - ${orderData.id}</p>
-</div>
-
-<button onclick="window.location.reload()" class="w-full bg-white/5 text-white py-4 rounded-xl font-bold uppercase text-xs border border-white/10 hover:bg-white/10">Selesai & Kembali</button>
-
-                                </div>
-                            `;
-                        }
-                        supabaseClient.removeChannel(channelPembayaran);
-                        prosesAutoDeliveryTertunda();
-                    }
+        // 5. Radar Supabase Tetap Jalan (Menunggu Webhook)
+        const channelPembayaran = supabaseClient.channel(`tunggu-pembayaran-${orderData.id}`)
+            .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: targetTabel, filter: `id=eq.${orderData.id}` }, (payload) => {
+                if (payload.new.status === 'selesai' || payload.new.status === 'SUCCESS' || payload.new.status === 'proses') {
+                    tampilkanLayarSukses();
+                    supabaseClient.removeChannel(channelPembayaran);
+                    clearInterval(intervalJemputBola); // Matikan radar jemput bola
                 }
-            ).subscribe();
+            }).subscribe();
+
+        // 6. [BARU] RADAR JEMPUT BOLA (Cek ke server tiap 3 detik!)
+        const intervalJemputBola = setInterval(async () => {
+            try {
+                const res = await fetch(`/api/check-status?order_id=${orderData.id}&table=${targetTabel}`);
+                const data = await res.json();
+                
+                if (data.status === 'SUCCESS') {
+                    clearInterval(intervalJemputBola); // Matikan radar
+                    supabaseClient.removeChannel(channelPembayaran);
+                    tampilkanLayarSukses(); // Ubah layar jadi ijo!
+                }
+            } catch (e) {
+                console.log("Radar gagal ngecek status");
+            }
+        }, 3000); // 3000ms = 3 detik
+
+        // Jaring pengaman: Matikan radar jemput bola setelah 10 menit biar HP pembeli gak panas
+        setTimeout(() => clearInterval(intervalJemputBola), 600000);
 
     } catch (error) {
         showToast("Gangguan Server/Koneksi.", "error");
         console.error(error);
     }
 }
+
 
 
 async function prosesBayarUlang() {
