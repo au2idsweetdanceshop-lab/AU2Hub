@@ -10815,22 +10815,36 @@ async function prosesPostingJualan() {
 }
 
 
-// SMART SHARE
+// SMART SHARE (DENGAN FORMAT HARGA CORET)
 async function shareProdukPasar(btn) {
     const currentUrl = window.location.href;
     const judulProduk = document.getElementById('pasar-detail-nama').innerText || "Produk Pasar Player";
-    const hargaProduk = document.getElementById('pasar-detail-harga').innerText || "";
+
+    // 1. Kalkulasi Harga Asli dan Harga Coret secara dinamis
+    let totalPrice = currentPasarPrice * currentPasarQty;
+    let baseHargaCoret = Math.ceil((currentPasarPrice * 1.3) / 1000) * 1000;
+    if (currentPasarPrice > 100000) baseHargaCoret = Math.ceil((currentPasarPrice * 1.2) / 5000) * 5000;
+    if (currentPasarPrice <= 5000) baseHargaCoret = currentPasarPrice + 2500;
+    let totalHargaCoret = baseHargaCoret * currentPasarQty;
+
+    // 2. Format ke Rupiah
+    const formatHarga = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(totalPrice);
+    const formatHargaCoret = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(totalHargaCoret);
+
+    // 3. Rangkai teks sesuai format yang Anda inginkan
+    const teksShare = `Cek ${judulProduk} seharga ${formatHargaCoret}(dicoret) hanya menjadi ${formatHarga} di AU2Hub sekarang! Aman via Admin.`;
 
     if (navigator.share) {
         try {
             await navigator.share({
                 title: 'AU2Hub Pasar Player',
-                text: `Cek ${judulProduk} seharga ${hargaProduk} di AU2Hub sekarang! Aman via Admin.`,
+                text: teksShare,
                 url: currentUrl
             });
         } catch (err) { console.log("Membagikan dibatalkan."); }
     } else {
-        navigator.clipboard.writeText(currentUrl).then(() => {
+        // Fallback untuk perangkat PC
+        navigator.clipboard.writeText(`${teksShare} ${currentUrl}`).then(() => {
             showToast("Link produk berhasil disalin!", "success");
             const icon = btn.querySelector('i');
             icon.className = 'fas fa-check text-brand-success';
@@ -10838,6 +10852,7 @@ async function shareProdukPasar(btn) {
         }).catch(() => { showToast("Gagal menyalin link", "error"); });
     }
 }
+
 
 // ==========================================
 // VARIABEL GLOBAL PASAR (UNTUK VARIASI & QTY)
