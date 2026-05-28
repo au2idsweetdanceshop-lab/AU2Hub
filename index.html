@@ -9401,7 +9401,7 @@ async function checkoutXoftwarePay(namaProduk, harga, deskripsi, sellerId = null
 
         // 5. Radar Supabase tetap jalan
         const channelPembayaran = supabaseClient
-            .channel('tunggu-pembayaran')
+            .channel(`tunggu-pembayaran-${orderData.id}`)
             .on(
                 'postgres_changes',
                 { event: 'UPDATE', schema: 'public', table: targetTabel, filter: `id=eq.${orderData.id}` },
@@ -9478,7 +9478,7 @@ async function prosesBayarUlang() {
 
         // Radar Supabase
         const channelPembayaran = supabaseClient
-            .channel('tunggu-pembayaran-ulang')
+            .channel(`tunggu-pembayaran-ulang-${activeOrderIdToPay}`)
             .on(
                 'postgres_changes',
                 { event: 'UPDATE', schema: 'public', table: activeOrderTable, filter: `id=eq.${activeOrderIdToPay}` },
