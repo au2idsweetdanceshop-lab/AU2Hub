@@ -1,65 +1,66 @@
-// api/create-qris.js
 import crypto from 'crypto';
 
 export default async function handler(req, res) {
-    // Pastikan cuma nerima request POST dari frontend
     if (req.method !== 'POST') {
         return res.status(405).json({ success: false, message: 'Method Not Allowed' });
     }
 
-    // Data yang dikirim dari frontend kamu (fungsi checkoutXoftwarePay)
     const { order_id, amount, product_name, customer_name } = req.body;
 
-    // 1. TARIK KUNCI RAHASIA DARI VERCEL (Sesuai gambar 61615.jpg)
-    const merchantId = process.env.XOFTWARE_MERCHANT_ID; // Isinya: 129
-    const baseUrl = process.env.XOFTWARE_BASE_URL;       // Isinya: https://payment1.xoftware.id
-    const apiKey = process.env.XOFTWARE_API_KEY;         // Isinya: MDKhu...
+    // 1. TARIK DATA DARI VERCEL ENVIRONMENT VARIABLES
+    const merchantId = process.env.XOFTWARE_MERCHANT_ID;
+    const baseUrl = process.env.XOFTWARE_BASE_URL;       
+    const apiKey = process.env.XOFTWARE_API_KEY;         
 
     try {
-        // 2. BUAT SIGNATURE (Nah, ini kamu harus cek di dokumentasi Xoftware)
-        // Rumus di bawah ini cuma CONTOH UMUM. Xoftware pasti punya rumusnya sendiri.
-        // Bisa jadi pakai md5(merchantId + order_id + amount + apiKey)
-        const signatureString = `${merchantId}${order_id}${amount}${apiKey}`;
-        const signature = crypto.createHash('md5').update(signatureString).digest('hex');
-
-        // 3. SUSUN PAYLOAD SESUAI DOKUMENTASI XOFTWARE
-        // Nama-nama variabel di kiri (seperti 'amount', 'buyer_name') HARUS sama persis dengan kemauan API Xoftware.
+        // 2. SUSUN PAYLOAD SESUAI DOKUMENTASI
         const payload = {
-            merchant_id: merchantId,
-            transaction_id: order_id, // atau 'merchant_ref' (cek API docs)
-            amount: amount,
-            buyer_name: customer_name,
-            signature: signature,
-            // ... (tambahkan parameter lain jika diwajibkan oleh Xoftware)
+            merchant_id: parseInt(merchantId), // Wajib format Int64
+            channel_code: "QRIS", // Identifier untuk e-wallet/QRIS
+            amount: parseInt(amount), // Wajib angka utuh (min. 1000)
+            ref_id: order_id, // Referensi unik maksimum 50 karakter
+            fee_direction: "merchant", // Memotong biaya MDR/layanan dari saldo admin (ubah jadi "user" jika pembeli yang bayar admin)
+            notify_url: "https://au2hub.com/api/webhook", // WAJIB GANTI: Link endpoint webhook vercel kamu nanti
+            note: `Pembayaran: ${product_name}`, // Internal remark opsional
+            metadata: {
+                customer: {
+                    name: customer_name || "Player AU2Hub" // Info detail dari schema metadata
+                }
+            }
         };
 
+        // 3. BUAT SIGNATURE (HMAC-SHA256)
+        // Dokumentasi meminta HMAC-SHA256.
+        // (Pastikan mengecek detail spesifik di menu "Authentication & Signature" jika mereka punya rumus penggabungan string yang unik).
+        const payloadString = JSON.stringify(payload);
+        const signature = crypto
+            .createHmac('sha256', apiKey)
+            .update(payloadString)
+            .digest('hex');
+
         // 4. TEMBAK KE SERVER XOFTWARE
-        // Ingat, endpoint-nya gabungan Base URL + Path Endpoint-nya
-        // Contoh Path: /api/v1/qris/create (Cek di API Docs!)
-        const response = await fetch(`${baseUrl}/api/v1/qris/create`, { 
+        const response = await fetch(`${baseUrl}/v1/api/transactions`, { // Endpoint Transaction API
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                // Cek dokumentasi: Apakah Xoftware butuh Bearer token atau cuma naruh API Key di payload/header lain?
-                'Authorization': `Bearer ${apiKey}` 
+                'Authorization': `Bearer ${apiKey}`, // Format standar pengiriman kunci API
+                'X-Signature': signature // Header HMAC-SHA256 (sesuaikan jika Xoftware meminta nama header spesifik)
             },
-            body: JSON.stringify(payload)
+            body: payloadString
         });
 
-        // Tangkap balasan dari Xoftware
         const dataXoftware = await response.json();
 
-        // 5. KEMBALIKAN HASIL KE FRONTEND
-        // Cek struktur JSON balasan Xoftware, biasanya ada status/success dan data QR-nya
-        if (dataXoftware.status === true || dataXoftware.success === true) {
+        // 5. KEMBALIKAN STRING QRIS KE FRONTEND
+        // Jika sukses, status awalnya adalah 'PENDING'
+        if (response.ok && dataXoftware.status === "PENDING") { 
             return res.status(200).json({
                 success: true,
-                // Sesuaikan 'dataXoftware.data.qr_string' dengan nama kunci dari Xoftware
-                qris_string: dataXoftware.data.qr_string 
+                qris_string: dataXoftware.qris_text // String QRIS mentah dari response payload Xoftware
             });
         } else {
-            // Kalau error dari Xoftware (misal saldo kurang, signature salah)
-            throw new Error(dataXoftware.message || 'Gagal membuat QRIS dari Gateway');
+            // Jika ditolak (misal: nominal < 1000 atau signature salah)
+            throw new Error(dataXoftware.message || 'Gagal membuat QRIS dari Gateway Xoftware');
         }
 
     } catch (error) {
