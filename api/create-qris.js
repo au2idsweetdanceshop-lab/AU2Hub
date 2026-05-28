@@ -13,7 +13,6 @@ export default async function handler(req, res) {
     const apiKey = process.env.XOFTWARE_API_KEY;         
 
     try {
-        // 2. SUSUN PAYLOAD SESUAI DOKUMENTASI
         const payload = {
             merchant_id: parseInt(merchantId), 
             channel_code: "QRIS", 
@@ -31,30 +30,28 @@ export default async function handler(req, res) {
 
         const payloadString = JSON.stringify(payload);
         
-        // --- 3. FIX TIMESTAMP: Format Standar ISO tanpa milidetik ---
-        // Hasilnya akan jadi seperti: "2026-05-28T04:22:04Z"
-        const timestamp = new Date().toISOString().split('.')[0] + "Z"; 
+        // --- FIX: Gunakan format waktu ISO 8601 lengkap standar API ---
+        const timestamp = new Date().toISOString(); 
 
-        // 4. BUAT SIGNATURE (HMAC-SHA256)
+        // BUAT SIGNATURE
         const signature = crypto
             .createHmac('sha256', apiKey)
             .update(payloadString)
             .digest('hex');
 
-        // 5. TEMBAK KE SERVER XOFTWARE
+        // TEMBAK KE SERVER XOFTWARE
         const response = await fetch(`${baseUrl}/v1/api/transactions`, { 
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'X-API-Key': apiKey,             
-                'X-TIMESTAMP': timestamp,        // <--- FIX: Huruf besar untuk standar keamanan perbankan
-                'X-SIGNATURE': signature,        
+                'X-Timestamp': timestamp,        // <--- FIX: Kapital di X dan T
+                'X-Signature': signature,        // <--- FIX: Kapital di X dan S
                 'Authorization': `Bearer ${apiKey}` 
             },
             body: payloadString
         });
 
-        // Tangkap response dari Xoftware
         let dataXoftware;
         try {
             dataXoftware = await response.json();
@@ -63,7 +60,7 @@ export default async function handler(req, res) {
             throw new Error(`Respons server Xoftware tidak valid: ${textErr}`);
         }
 
-        // 6. KEMBALIKAN STRING QRIS KE FRONTEND
+        // KEMBALIKAN STRING QRIS KE FRONTEND
         if (response.ok && dataXoftware.status === "PENDING") { 
             return res.status(200).json({
                 success: true,
