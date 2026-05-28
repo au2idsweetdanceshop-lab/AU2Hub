@@ -10815,7 +10815,7 @@ async function prosesPostingJualan() {
 }
 
 
-// SMART SHARE (DENGAN FORMAT HARGA CORET)
+// SMART SHARE (FINAL: TAMBAH TITIK SETELAH RP, FIX BOLD WA)
 async function shareProdukPasar(btn) {
     const currentUrl = window.location.href;
     const judulProduk = document.getElementById('pasar-detail-nama').innerText || "Produk Pasar Player";
@@ -10827,12 +10827,19 @@ async function shareProdukPasar(btn) {
     if (currentPasarPrice <= 5000) baseHargaCoret = currentPasarPrice + 2500;
     let totalHargaCoret = baseHargaCoret * currentPasarQty;
 
-    // 2. Format ke Rupiah
-    const formatHarga = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(totalPrice);
-    const formatHargaCoret = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(totalHargaCoret);
+    // 2. Format ke Rupiah, buang spasi, LALU tambah titik setelah "Rp"
+    const formatHarga = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 })
+        .format(totalPrice)
+        .replace(/\s|\u00A0/g, '') // Buang spasi gaib
+        .replace('Rp', 'Rp.');     // Tambahkan titik
+        
+    const formatHargaCoret = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 })
+        .format(totalHargaCoret)
+        .replace(/\s|\u00A0/g, '') // Buang spasi gaib
+        .replace('Rp', 'Rp.');     // Tambahkan titik
 
-    // 3. Rangkai teks sesuai format yang Anda inginkan
-    const teksShare = `Cek ${judulProduk} seharga ${formatHargaCoret}(dicoret) hanya menjadi ${formatHarga} di AU2Hub sekarang! Aman via Admin.`;
+    // 3. Gunakan tanda ~ untuk coret dan * untuk tebal (bold) di WhatsApp
+    const teksShare = `Cek ${judulProduk} seharga ~${formatHargaCoret}~ hanya menjadi *${formatHarga}* di AU2Hub sekarang! Aman via Admin.`;
 
     if (navigator.share) {
         try {
