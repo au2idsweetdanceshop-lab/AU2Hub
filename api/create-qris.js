@@ -1,4 +1,11 @@
 import crypto from 'crypto';
+import { createClient } from '@supabase/supabase-js';
+
+// Inisialisasi Supabase di sisi Server (Backend)
+// WAJIB: Tambahkan variabel ini di menu "Environment Variables" Vercel Anda!
+const supabaseUrl = process.env.SUPABASE_URL; 
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY; // Disarankan pakai Service Role Key agar punya akses penuh
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 export default async function handler(req, res) {
     if (req.method !== 'POST') {
@@ -11,14 +18,59 @@ export default async function handler(req, res) {
     const apiKey = process.env.XOFTWARE_API_KEY;         
 
     try {
-        // SUSUN PAYLOAD
+        // =================================================================
+        // 🛡️ FITUR KEAMANAN: VALIDASI HARGA LANGSUNG DARI DATABASE
+        // =================================================================
+        let realPrice = 0;
+        let orderData = null;
+
+        // 1. Coba cari pesanan di tabel Pasar Player
+        const { data: orderPlayer, error: errPlayer } = await supabase
+            .from('orders_player')
+            .select('price')
+            .eq('id', order_id)
+            .single();
+
+        if (orderPlayer) {
+            orderData = orderPlayer;
+        } else {
+            // 2. Jika tidak ada, cari di tabel Layanan Admin
+            const { data: orderAdmin, error: errAdmin } = await supabase
+                .from('orders')
+                .select('price')
+                .eq('id', order_id)
+                .single();
+                
+            if (orderAdmin) orderData = orderAdmin;
+        }
+
+        // Jika ID Pesanan fiktif (tidak ditemukan di kedua tabel)
+        if (!orderData) {
+            console.error(`[SECURITY] Pesanan ${order_id} tidak ditemukan di Database!`);
+            return res.status(404).json({ success: false, message: 'Pesanan tidak ditemukan.' });
+        }
+
+        realPrice = parseInt(orderData.price);
+
+        // 3. Bandingkan Harga dari Browser vs Harga di Database
+        if (parseInt(amount) !== realPrice) {
+            console.error(`[HACK ATTEMPT!] Order: ${order_id} | User ngirim: ${amount} | Aslinya di DB: ${realPrice}`);
+            // TOLAK TRANSAKSI SECARA PAKSA!
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Validasi gagal. Terdeteksi percobaan manipulasi harga!' 
+            });
+        }
+        // =================================================================
+
+
+        // SUSUN PAYLOAD KE XOFTWARE
         const payload = {
             merchant_id: 129, 
             channel_code: "QRIS", 
-            amount: parseInt(amount), 
+            amount: realPrice, // Menggunakan harga asli dari database (bukan dari input browser)
             ref_id: order_id, 
             fee_direction: "merchant", 
-            // 👇 INI KUNCINYA: Link webhook sudah bersih dari www
             notify_url: "https://au2idsweetdance.com/api/webhook", 
             note: `Pembayaran: ${product_name}`, 
             metadata: {
@@ -33,7 +85,6 @@ export default async function handler(req, res) {
                         product_code: "ITEM-001",
                         product_name: product_name || "Produk AU2Hub",
                         product_thumbnail: "https://placehold.co/100x100/1a1133/ff007a?text=Item",
-                        // 👇 Link ini juga sudah dibersihkan dari www
                         product_url: "https://au2idsweetdance.com"
                     }
                 ]
@@ -70,7 +121,6 @@ export default async function handler(req, res) {
         const dataXoftware = await response.json();
 
         // --- FIX FINAL: PENANGKAP RESPONS ANTI-GAGAL ---
-        // Kita cari string QRIS-nya, entah itu ditaruh di luar atau dibungkus di dalam "data"
         const qrisString = dataXoftware.qris_text || (dataXoftware.data && dataXoftware.data.qris_text);
 
         // Jika string QRIS-nya ketemu, kirim ke frontend!
@@ -80,7 +130,6 @@ export default async function handler(req, res) {
                 qris_string: qrisString 
             });
         } else {
-            // Kalau misal QRIS tetep ga ketemu, munculin wujud asli JSON-nya biar kita tau letaknya di mana
             throw new Error(`Berhasil masuk, tapi QRIS ngumpet: ${JSON.stringify(dataXoftware)}`);
         }
 
