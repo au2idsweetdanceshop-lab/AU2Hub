@@ -8412,155 +8412,6 @@ function closeDetailProduk(dariTombolBackHP = false) {
     }
 }
 
-// ==========================================
-// 4. Logika Checkout Pembayaran Robot DANA (UPDATE: + DETEKSI PENJUAL)
-// ==========================================
-async function checkoutRobotDANA(namaProduk, harga, deskripsi, sellerId = null, productId = null) {
-    if (!currentUser) return showToast("Silakan login dulu untuk membeli!", "error");
-
-    // --- LOGIKA KODE UNIK DISKON (1 - 500) ---
-    let kodeUnik = Math.floor(Math.random() * 500) + 1;
-    if (harga <= 500) {
-        kodeUnik = Math.floor(Math.random() * (harga - 1)) + 1; 
-    }
-
-    let hargaDenganKodeUnik = harga - kodeUnik;
-    if (hargaDenganKodeUnik < 1) hargaDenganKodeUnik = 1; 
-    // -------------------------------------------------------
-
-    const konfirmasi = await customConfirm(`Lanjutkan pesanan untuk:\n\n${namaProduk}\n\nTotal: Rp ${hargaDenganKodeUnik.toLocaleString('id-ID')} via DANA Otomatis?`);
-    if (!konfirmasi) return;
-
-    showToast("Menyiapkan antrean pembayaran...", "info");
-
-    try {
-        // ==========================================
-        // 1. RESTORE HTML UI QRIS
-        // ==========================================
-        const wadahPembayaran = document.getElementById('qris-container');
-        if (wadahPembayaran && !document.getElementById('pay-total')) {
-            wadahPembayaran.innerHTML = `
-                <div class="absolute -right-10 -top-10 w-32 h-32 bg-brand-accent/10 rounded-full blur-2xl"></div>
-                <div class="text-xs text-gray-500 uppercase tracking-widest mb-1">Total Tagihan</div>
-                <div class="flex justify-between items-end mb-6 relative z-10">
-                <div id="pay-total" class="text-3xl font-extrabold text-brand-accent tracking-tight">Rp 0</div>
-                <button onclick="salinNominal()" id="btn-salin" class="bg-brand-info/10 text-brand-info border border-brand-info/30 text-[10px] font-bold px-3 py-1.5 rounded-lg active:scale-95 transition-all flex items-center h-max">
-                <i class="fas fa-copy mr-1.5"></i> Salin
-                </button>
-                <input type="hidden" id="nominal-asli" value="0">
-                </div>
-                <div class="bg-white p-3 rounded-2xl mb-6 mx-auto w-max shadow-[0_0_20px_rgba(0,240,255,0.15)] relative group z-10">
-                <img src="" alt="QRIS ADT" class="w-44 h-44 object-cover rounded-xl">
-                <div class="absolute inset-0 bg-black/60 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl backdrop-blur-sm">
-                <i class="fas fa-camera text-white text-2xl mb-2"></i>
-                <span class="text-white text-[10px] font-bold">Screenshot & Simpan</span>
-                </div>
-                </div>
-                <div class="text-[11px] font-bold text-center text-white uppercase tracking-widest mb-6 relative z-10">ADT STORE</div>
-                <div class="space-y-3 mb-8 bg-black/30 p-4 rounded-2xl border border-white/5 relative z-10">
-                <div class="flex justify-between text-xs border-b border-white/5 pb-2"><span class="text-gray-400">Paket Pesanan</span><span id="pay-product" class="text-white font-bold text-right pl-4 leading-tight">-</span></div>
-                <div class="flex justify-between text-xs pt-1"><span class="text-gray-400">Admin Rekber NIKKY</span><span class="text-brand-info font-bold">Include (Gratis)</span></div>
-                </div>
-                <a id="wa-confirm" href="#" target="_blank" class="flex justify-center items-center w-full bg-[#25D366] hover:bg-[#20bd5a] active:scale-[0.98] transition-all text-white font-bold py-4 rounded-2xl shadow-[0_8px_20px_rgba(37,211,102,0.25)] text-sm relative z-10">
-                <i class="fab fa-whatsapp text-lg mr-2"></i> Konfirmasi ke Admin
-                </a>
-                <p class="text-center text-[10px] text-gray-500 mt-4 leading-relaxed relative z-10">*Sistem otomatis menyiapkan chat pesanan. Jangan lupa lampirkan screenshot bukti transfer.</p>
-            `;
-        }
-
-        // ==========================================
-        // 2. SIMPAN ANTREAN KE SUPABASE (DINAMIS 2 TABEL)
-        // ==========================================
-        const targetTabel = sellerId ? 'orders_player' : 'orders';
-        const dataInsert = {
-            user_id: currentUser.id,
-            product_name: namaProduk,
-            price: hargaDenganKodeUnik,
-            status: 'PENDING',
-            product_id: productId
-        };
-        if (sellerId) dataInsert.seller_id = sellerId; // Hanya masukkan seller_id jika ada
-
-        const { data: orderData, error: orderError } = await supabaseClient
-            .from(targetTabel)
-            .insert(dataInsert)
-            .select()
-            .single();
-
-        if (orderError) throw orderError;
-        
-        // [FITUR BARU] Hapus barang dari etalase jika kategorinya Akun/Item agar tidak dibeli orang lain
-        if (sellerId) {
-            const namaAsli = namaProduk.replace("[PASAR] ", "");
-            const produkTerjual = globalDataPasar.find(p => p.title === namaAsli && p.user_id === sellerId);
-            
-            if (produkTerjual && (produkTerjual.category === 'Akun' || produkTerjual.category === 'Item')) {
-                await supabaseClient.from('player_products').delete().eq('id', produkTerjual.id);
-            }
-        }
-
-
-        // ==========================================
-        // 3. GENERATE QRIS DAN TAMPILKAN UI
-        // ==========================================
-        document.getElementById('pay-total').innerText = `Rp ${hargaDenganKodeUnik.toLocaleString('id-ID')}`;
-        document.getElementById('pay-product').innerText = namaProduk;
-        document.getElementById('nominal-asli').value = hargaDenganKodeUnik;
-
-        const teksQRISDinamis = makeDynamicQRIS(hargaDenganKodeUnik);
-        const qrImgUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(teksQRISDinamis)}`;
-
-        const qrContainerElement = document.querySelector('#pembayaran img');
-        if (qrContainerElement) qrContainerElement.src = qrImgUrl;
-
-        const noWA = "6283815584661";
-        const teksWA = encodeURIComponent(`Halo Admin, pesanan DANA saya sudah otomatis masuk ya untuk:\n\n(Berikut ini saya lampirkan gambar bukti transfer QRIS / screenshot)*${namaProduk}*`);
-        document.getElementById('wa-confirm').setAttribute('href', `https://wa.me/${noWA}?text=${teksWA}`);
-
-        switchTab('pembayaran');
-        showToast("Silakan scan! Sistem sedang memantau pembayaran Anda.", "success");
-
-        // ==========================================
-        // 4. RADAR PENGECEK STATUS REAL-TIME KE SUPABASE (VERSI AMAN)
-        // ==========================================
-        const channelPembayaran = supabaseClient
-            .channel('tunggu-pembayaran')
-            .on(
-                'postgres_changes',
-                { event: 'UPDATE', schema: 'public', table: targetTabel, filter: `id=eq.${orderData.id}` },
-                (payload) => {
-                    // Jika MacroDroid sukses ngubah status di latar belakang
-                    if (payload.new.status === 'selesai' || payload.new.status === 'SUCCESS' || payload.new.status === 'proses') {
-                        const wadahPembayaran = document.getElementById('qris-container');
-                        if (wadahPembayaran) {
-                            wadahPembayaran.innerHTML = `
-                                <div class="flex flex-col items-center justify-center py-6 text-center modal-anim">
-                                    <div class="relative w-24 h-24 mb-6">
-                                        <div class="absolute inset-0 bg-brand-success rounded-full animate-ping opacity-20"></div>
-                                        <i class="fas fa-check-circle text-7xl text-brand-success relative z-10 drop-shadow-[0_0_20px_rgba(37,211,102,0.8)]"></i>
-                                    </div>
-                                    <h2 class="text-2xl font-extrabold text-white mb-2 mt-4 tracking-tight">Pembayaran Berhasil!</h2>
-                                    <p class="text-gray-400 text-xs mb-8 leading-relaxed px-4">Dana Rp ${hargaDenganKodeUnik.toLocaleString('id-ID')} telah diterima. Silakan cek menu Pesanan/Chat.</p>
-                                    <button onclick="window.location.reload()" class="w-full bg-white/5 text-white py-4 rounded-xl font-bold active:scale-95 transition-all uppercase tracking-wider text-xs border border-white/10 hover:bg-white/10">Selesai & Kembali</button>
-                                </div>
-                            `;
-                        }
-                        supabaseClient.removeChannel(channelPembayaran);
-                        
-                        // Eksekusi pengiriman barang jika layar masih terbuka
-                        prosesAutoDeliveryTertunda();
-                    }
-                }
-            )
-            .subscribe();
-
-
-    } catch (error) {
-        showToast("Gangguan jaringan / Database.", "error");
-        console.error(error);
-    }
-}
-
 
 // ==========================================
 // INISIALISASI HALAMAN (WAJIB ADA AGAR WEB BERJALAN)
@@ -9451,6 +9302,137 @@ async function selesaikanPesanan() {
     }
 }
 
+async function checkoutXoftwarePay(namaProduk, harga, deskripsi, sellerId = null, productId = null) {
+    if (!currentUser) return showToast("Silakan login dulu untuk membeli!", "error");
+
+    const konfirmasi = await customConfirm(`Lanjutkan pesanan untuk:\n\n${namaProduk}\n\nTotal: Rp ${harga.toLocaleString('id-ID')} via QRIS Otomatis?`);
+    if (!konfirmasi) return;
+
+    showToast("Menyiapkan tagihan pembayaran...", "info");
+
+    try {
+        // 1. Tampilkan UI Pembayaran dengan mode Loading
+        const wadahPembayaran = document.getElementById('qris-container');
+        if (wadahPembayaran && !document.getElementById('pay-total')) {
+            wadahPembayaran.innerHTML = `
+                <div class="absolute -right-10 -top-10 w-32 h-32 bg-brand-accent/10 rounded-full blur-2xl"></div>
+                <div class="text-xs text-gray-500 uppercase tracking-widest mb-1">Total Tagihan</div>
+                <div class="flex justify-between items-end mb-6 relative z-10">
+                <div id="pay-total" class="text-3xl font-extrabold text-brand-accent tracking-tight">Rp 0</div>
+                <button onclick="salinNominal()" id="btn-salin" class="bg-brand-info/10 text-brand-info border border-brand-info/30 text-[10px] font-bold px-3 py-1.5 rounded-lg active:scale-95 transition-all flex items-center h-max">
+                <i class="fas fa-copy mr-1.5"></i> Salin
+                </button>
+                <input type="hidden" id="nominal-asli" value="0">
+                </div>
+                <div class="bg-white p-3 rounded-2xl mb-6 mx-auto w-max shadow-[0_0_20px_rgba(0,240,255,0.15)] relative group z-10">
+                <img id="qris-image-target" src="https://placehold.co/400x400/1a1133/ff007a?text=Loading+QRIS..." alt="QRIS Xoftware" class="w-44 h-44 object-cover rounded-xl">
+                <div class="absolute inset-0 bg-black/60 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl backdrop-blur-sm">
+                <i class="fas fa-camera text-white text-2xl mb-2"></i>
+                <span class="text-white text-[10px] font-bold">Screenshot & Simpan</span>
+                </div>
+                </div>
+                <div class="text-[11px] font-bold text-center text-white uppercase tracking-widest mb-6 relative z-10">XOFTWARE PAY</div>
+                <div class="space-y-3 mb-8 bg-black/30 p-4 rounded-2xl border border-white/5 relative z-10">
+                <div class="flex justify-between text-xs border-b border-white/5 pb-2"><span class="text-gray-400">Paket Pesanan</span><span id="pay-product" class="text-white font-bold text-right pl-4 leading-tight">-</span></div>
+                <div class="flex justify-between text-xs pt-1"><span class="text-gray-400">Admin Rekber NIKKY</span><span class="text-brand-info font-bold">Include (Gratis)</span></div>
+                </div>
+                <a id="wa-confirm" href="#" target="_blank" class="flex justify-center items-center w-full bg-[#25D366] hover:bg-[#20bd5a] active:scale-[0.98] transition-all text-white font-bold py-4 rounded-2xl shadow-[0_8px_20px_rgba(37,211,102,0.25)] text-sm relative z-10">
+                <i class="fab fa-whatsapp text-lg mr-2"></i> Konfirmasi ke Admin
+                </a>
+            `;
+        }
+
+        // 2. Simpan antrean ke Supabase
+        const targetTabel = sellerId ? 'orders_player' : 'orders';
+        const dataInsert = {
+            user_id: currentUser.id,
+            product_name: namaProduk,
+            price: harga,
+            status: 'PENDING',
+            product_id: productId
+        };
+        if (sellerId) dataInsert.seller_id = sellerId;
+
+        const { data: orderData, error: orderError } = await supabaseClient
+            .from(targetTabel)
+            .insert(dataInsert)
+            .select()
+            .single();
+
+        if (orderError) throw orderError;
+        
+        if (sellerId) {
+            const namaAsli = namaProduk.replace("[PASAR] ", "");
+            const produkTerjual = globalDataPasar.find(p => p.title === namaAsli && p.user_id === sellerId);
+            if (produkTerjual && (produkTerjual.category === 'Akun' || produkTerjual.category === 'Item')) {
+                await supabaseClient.from('player_products').delete().eq('id', produkTerjual.id);
+            }
+        }
+
+        document.getElementById('pay-total').innerText = `Rp ${harga.toLocaleString('id-ID')}`;
+        document.getElementById('pay-product').innerText = namaProduk;
+        document.getElementById('nominal-asli').value = harga;
+        
+        const noWA = "6283815584661";
+        const teksWA = encodeURIComponent(`Halo Admin, pesanan saya sudah masuk ya via QRIS Otomatis untuk:\n\n(Berikut screenshot bukti transfernya)*${namaProduk}*`);
+        document.getElementById('wa-confirm').setAttribute('href', `https://wa.me/${noWA}?text=${teksWA}`);
+
+        switchTab('pembayaran');
+
+        // 3. Minta QRIS Xoftware ke Backend Vercel Anda
+        const responsePG = await fetch('/api/create-qris', { 
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                order_id: orderData.id,
+                amount: harga,
+                product_name: namaProduk,
+                customer_name: userProfile?.nickname || 'Player'
+            })
+        });
+
+        const dataPG = await responsePG.json();
+        if (!dataPG.success) throw new Error("Gagal mengambil tagihan Xoftware");
+
+        // 4. Ubah gambar loading jadi QRIS asli
+        const qrImgUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(dataPG.qris_string)}`;
+        document.getElementById('qris-image-target').src = qrImgUrl;
+        showToast("QRIS berhasil dibuat. Silakan scan!", "success");
+
+        // 5. Radar Supabase tetap jalan
+        const channelPembayaran = supabaseClient
+            .channel('tunggu-pembayaran')
+            .on(
+                'postgres_changes',
+                { event: 'UPDATE', schema: 'public', table: targetTabel, filter: `id=eq.${orderData.id}` },
+                (payload) => {
+                    if (payload.new.status === 'selesai' || payload.new.status === 'SUCCESS' || payload.new.status === 'proses') {
+                        const wadahPembayaran = document.getElementById('qris-container');
+                        if (wadahPembayaran) {
+                            wadahPembayaran.innerHTML = `
+                                <div class="flex flex-col items-center justify-center py-6 text-center modal-anim">
+                                    <div class="relative w-24 h-24 mb-6">
+                                        <div class="absolute inset-0 bg-brand-success rounded-full animate-ping opacity-20"></div>
+                                        <i class="fas fa-check-circle text-7xl text-brand-success relative z-10 drop-shadow-[0_0_20px_rgba(37,211,102,0.8)]"></i>
+                                    </div>
+                                    <h2 class="text-2xl font-extrabold text-white mb-2 mt-4 tracking-tight">Pembayaran Berhasil!</h2>
+                                    <p class="text-gray-400 text-xs mb-8 leading-relaxed px-4">Dana Rp ${harga.toLocaleString('id-ID')} telah diterima.</p>
+                                    <button onclick="window.location.reload()" class="w-full bg-white/5 text-white py-4 rounded-xl font-bold uppercase text-xs border border-white/10 hover:bg-white/10">Selesai & Kembali</button>
+                                </div>
+                            `;
+                        }
+                        supabaseClient.removeChannel(channelPembayaran);
+                        prosesAutoDeliveryTertunda();
+                    }
+                }
+            ).subscribe();
+
+    } catch (error) {
+        showToast("Gangguan Server/Koneksi.", "error");
+        console.error(error);
+    }
+}
+
 
 async function prosesBayarUlang() {
     if (!activeOrderIdToPay) return;
@@ -9462,11 +9444,19 @@ async function prosesBayarUlang() {
     document.getElementById('pay-product').innerText = activeOrderNameToPay;
     document.getElementById('nominal-asli').value = activeOrderPriceToPay;
 
+    // Reset gambar ke Loading
+    const qrContainerElement = document.querySelector('#pembayaran img');
+    if (qrContainerElement) qrContainerElement.src = "https://placehold.co/400x400/1a1133/ff007a?text=Loading+QRIS...";
+
+    const noWA = "6283815584661";
+    const teksWA = encodeURIComponent(`Halo Admin, pesanan saya sudah masuk ya via QRIS Otomatis untuk:\n\n(Berikut screenshot bukti transfernya)*${activeOrderNameToPay}*`);
+    document.getElementById('wa-confirm').setAttribute('href', `https://wa.me/${noWA}?text=${teksWA}`);
+
     switchTab('pembayaran');
     showToast("Mengambil ulang data QRIS...", "info");
 
     try {
-        // Tembak lagi ke Backend untuk mendapatkan QRIS yang tertunda
+        // Tembak API Backend Vercel lagi
         const responsePG = await fetch('/api/create-qris', { 
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -9481,12 +9471,12 @@ async function prosesBayarUlang() {
         const dataPG = await responsePG.json();
         if (!dataPG.success) throw new Error("Gagal mengambil QRIS");
 
+        // Update gambar ke QRIS Xoftware
         const qrImgUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(dataPG.qris_string)}`;
-        
-        const qrContainerElement = document.querySelector('#pembayaran img');
         if (qrContainerElement) qrContainerElement.src = qrImgUrl;
         showToast("Silakan scan QRIS untuk melanjutkan.", "success");
 
+        // Radar Supabase
         const channelPembayaran = supabaseClient
             .channel('tunggu-pembayaran-ulang')
             .on(
@@ -9494,7 +9484,6 @@ async function prosesBayarUlang() {
                 { event: 'UPDATE', schema: 'public', table: activeOrderTable, filter: `id=eq.${activeOrderIdToPay}` },
                 (payload) => {
                     if (payload.new.status === 'selesai' || payload.new.status === 'SUCCESS' || payload.new.status === 'proses') {
-                        // ... logika sukses sama seperti sebelumnya ...
                         window.location.reload(); 
                     }
                 }
@@ -9504,6 +9493,7 @@ async function prosesBayarUlang() {
         showToast("Gagal memuat ulang QRIS", "error");
     }
 }
+
 
 
 
