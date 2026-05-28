@@ -679,7 +679,7 @@ Satu pintu untuk info update terbaru, panduan pemula, jasa joki profesional, dan
 <span class="text-white text-[10px] font-bold">Screenshot & Simpan</span>
 </div>
 </div>
-<div class="text-[11px] font-bold text-center text-white uppercase tracking-widest mb-6 relative z-10">ADT STORE</div>
+<div class="text-[11px] font-bold text-center text-white uppercase tracking-widest mb-6 relative z-10">XOFTWARE</div>
 
 <div class="space-y-3 mb-8 bg-black/30 p-4 rounded-2xl border border-white/5 relative z-10">
 <div class="flex justify-between text-xs border-b border-white/5 pb-2"><span class="text-gray-400">Paket Pesanan</span><span id="pay-product" class="text-white font-bold text-right pl-4 leading-tight">-</span></div>
@@ -8918,11 +8918,17 @@ async function cekStatusPesanan(kategori) {
             container.innerHTML = combinedData.map(order => {
                 let statusColor = ''; let icon = ''; let teksStatus = order.status.toUpperCase();
 
-else if (order.status === 'DIBATALKAN') { 
-    statusColor = 'text-gray-500 bg-gray-600/10 border-gray-600/30'; 
-    icon = 'fa-times-circle'; 
-    teksStatus = 'DIBATALKAN'; 
-}
+                if (order.status === 'selesai') { statusColor = 'text-brand-success bg-brand-success/10 border-brand-success/30'; icon = 'fa-check-circle'; } 
+                else if (order.status === 'proses' || order.status === 'SUCCESS') { 
+                    statusColor = 'text-brand-info bg-brand-info/10 border-brand-info/30'; icon = 'fa-box'; teksStatus = 'DIPROSES'; 
+                    if (order.status === 'SUCCESS') supabaseClient.from(order.table_source).update({status: 'proses'}).eq('id', order.id).then();
+                } 
+                else if (order.status === 'PENDING') { statusColor = 'text-gray-400 bg-gray-500/10 border-gray-500/30'; icon = 'fa-wallet'; teksStatus = 'PENDING'; }
+                else if (order.status === 'DIBATALKAN') { 
+                    statusColor = 'text-gray-500 bg-gray-600/10 border-gray-600/30'; 
+                    icon = 'fa-times-circle'; 
+                    teksStatus = 'DIBATALKAN'; 
+                }
 
                 // Kirim table_source ke popup
                 let clickAction = `onclick="bukaDetailPesananDinamis('${order.id}', '${order.product_name.replace(/'/g, "\\'")}', ${order.price}, '${order.status}', '${order.table_source}', '${order.seller_id || ''}', '${order.product_id || ''}')" class="cursor-pointer hover:border-brand-accent/50"`;
