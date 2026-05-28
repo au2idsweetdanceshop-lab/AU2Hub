@@ -13,6 +13,7 @@ export default async function handler(req, res) {
     const apiKey = process.env.XOFTWARE_API_KEY;         
 
     try {
+        // 2. SUSUN PAYLOAD
         const payload = {
             merchant_id: parseInt(merchantId), 
             channel_code: "QRIS", 
@@ -30,28 +31,33 @@ export default async function handler(req, res) {
 
         const payloadString = JSON.stringify(payload);
         
-        // --- FIX: Gunakan format waktu ISO 8601 lengkap standar API ---
-        const timestamp = new Date().toISOString(); 
+        // 3. ATURAN BARU: WAKTU UNIX DALAM DETIK
+        const timestamp = Math.floor(Date.now() / 1000).toString();
 
-        // BUAT SIGNATURE
+        // 4. ATURAN BARU: RUMUS RAHASIA SIGNATURE XOFTWARE
+        const method = 'POST';
+        const path = '/v1/api/transactions';
+        // Format gabungan: TIMESTAMP \n HTTP_METHOD \n REQUEST_PATH \n RAW_JSON_BODY
+        const messageToSign = `${timestamp}\n${method}\n${path}\n${payloadString}`;
+
         const signature = crypto
             .createHmac('sha256', apiKey)
-            .update(payloadString)
-            .digest('hex');
+            .update(messageToSign, 'utf8')
+            .digest('base64'); // <--- Diubah jadi base64 sesuai dokumen
 
-        // TEMBAK KE SERVER XOFTWARE
-        const response = await fetch(`${baseUrl}/v1/api/transactions`, { 
+        // 5. TEMBAK KE SERVER XOFTWARE
+        const response = await fetch(`${baseUrl}${path}`, { 
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'X-API-Key': apiKey,             
-                'X-Timestamp': timestamp,        // <--- FIX: Kapital di X dan T
-                'X-Signature': signature,        // <--- FIX: Kapital di X dan S
-                'Authorization': `Bearer ${apiKey}` 
+                'X-Timestamp': timestamp,        // Menggunakan Unix Timestamp (Detik)
+                'X-Signature': signature         // Menggunakan Base64 Hash
             },
             body: payloadString
         });
 
+        // Tangkap response dari Xoftware
         let dataXoftware;
         try {
             dataXoftware = await response.json();
@@ -60,7 +66,7 @@ export default async function handler(req, res) {
             throw new Error(`Respons server Xoftware tidak valid: ${textErr}`);
         }
 
-        // KEMBALIKAN STRING QRIS KE FRONTEND
+        // 6. KEMBALIKAN STRING QRIS KE FRONTEND
         if (response.ok && dataXoftware.status === "PENDING") { 
             return res.status(200).json({
                 success: true,
