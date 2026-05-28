@@ -10672,10 +10672,10 @@ function renderGridPasar(dataList) {
                     </div>
                 </div>
                 
-                <div class="mt-auto w-full overflow-hidden">
-                    <div class="text-[8px] sm:text-[9px] ${isAutoItem ? 'text-brand-success' : 'text-brand-info'} font-extrabold mb-1 flex items-center gap-1 whitespace-nowrap w-full tracking-tight">
-                        <i class="fas ${isAutoItem ? 'fa-bolt' : 'fa-shield-check'} shrink-0 text-[10px]"></i> 
-                        <span class="truncate">${isAutoItem ? 'Instan 1 Detik' : 'INCLUDE REKBER NIKKY'}</span>
+                <div class="mt-auto">
+                    <div class="text-[9px] ${isAutoItem ? 'text-brand-success' : 'text-brand-info'} font-bold mb-0.5 flex items-center gap-1">
+                        <i class="fas ${isAutoItem ? 'fa-bolt text-[8px]' : 'fa-user-shield text-[8px]'}"></i> 
+                        ${isAutoItem ? 'Instan 1 Detik' : 'incREKBER NIKKY'}
                     </div>
                     <div class="flex flex-col items-start gap-px">
                         <div class="text-gray-500 line-through text-[9px] font-medium opacity-60">Rp ${hargaCoret.toLocaleString('id-ID')}</div>
