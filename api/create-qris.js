@@ -7,7 +7,7 @@ export default async function handler(req, res) {
 
     const { order_id, amount, product_name, customer_name } = req.body;
 
-    // 1. TARIK DATA DARI VERCEL ENVIRONMENT VARIABLES
+    // 1. TARIK DATA DARI VERCEL
     const merchantId = process.env.XOFTWARE_MERCHANT_ID;
     const baseUrl = process.env.XOFTWARE_BASE_URL;       
     const apiKey = process.env.XOFTWARE_API_KEY;         
@@ -31,9 +31,9 @@ export default async function handler(req, res) {
 
         const payloadString = JSON.stringify(payload);
         
-        // --- 3. BUAT TIMESTAMP SAAT INI (TAMBAHAN BARU) ---
-        // Membuat waktu saat ini dengan format ISO 8601 (Standar API)
-        const timestamp = new Date().toISOString(); 
+        // --- 3. FIX TIMESTAMP: Format Standar ISO tanpa milidetik ---
+        // Hasilnya akan jadi seperti: "2026-05-28T04:22:04Z"
+        const timestamp = new Date().toISOString().split('.')[0] + "Z"; 
 
         // 4. BUAT SIGNATURE (HMAC-SHA256)
         const signature = crypto
@@ -47,8 +47,8 @@ export default async function handler(req, res) {
             headers: {
                 'Content-Type': 'application/json',
                 'X-API-Key': apiKey,             
-                'X-Timestamp': timestamp,        // <--- FIX: Tambahkan Header X-Timestamp di sini!
-                'X-Signature': signature,        
+                'X-TIMESTAMP': timestamp,        // <--- FIX: Huruf besar untuk standar keamanan perbankan
+                'X-SIGNATURE': signature,        
                 'Authorization': `Bearer ${apiKey}` 
             },
             body: payloadString
