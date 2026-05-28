@@ -10456,12 +10456,26 @@ function bukaVideoShare(vidId) {
                 <!-- [BARU] WADAH JUDUL, HARGA, DAN TOMBOL SHARE -->
                 <div class="flex justify-between items-start gap-4">
                     <div class="flex-1 min-w-0">
-                        <h2 id="pasar-detail-nama" class="text-lg font-extrabold text-white leading-snug mb-1">Nama Produk</h2>
-                        <div id="pasar-detail-harga" class="text-3xl font-black text-brand-success tracking-tight">Rp 0</div>
+                        <div id="pasar-detail-harga" class="text-3xl font-black text-brand-success tracking-tight mb-1">Rp 0</div>
+                        <h2 id="pasar-detail-nama" class="text-base font-extrabold text-white leading-snug break-words">Nama Produk</h2>
                     </div>
-                    <button onclick="event.stopPropagation(); shareProdukPasar(this)" class="bg-white/5 hover:bg-white/10 border border-white/10 w-10 h-10 rounded-xl flex items-center justify-center text-white active:scale-90 transition-all shrink-0 z-10 relative shadow-sm">
+                    <button onclick="event.stopPropagation(); shareProdukPasar(this)" class="bg-white/5 hover:bg-white/10 border border-white/10 w-10 h-10 rounded-xl flex items-center justify-center text-white active:scale-90 transition-all shrink-0 z-10 relative shadow-sm mt-1">
                         <i class="fas fa-share-alt text-sm"></i>
                     </button>
+                </div>
+
+                <div id="pasar-variasi-container" class="hidden border-t border-white/5 pt-4">
+                    <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2.5 block">Pilih Variasi</span>
+                    <div id="pasar-variasi-list" class="flex flex-wrap gap-2"></div>
+                </div>
+
+                <div id="pasar-qty-container" class="flex justify-between items-center bg-black/20 border border-white/5 p-3 rounded-2xl shadow-inner">
+                    <span class="text-xs font-bold text-gray-300 uppercase tracking-wide">Jumlah</span>
+                    <div class="flex items-center gap-2 bg-[#0F0920] border border-white/10 rounded-xl p-1 shadow-inner">
+                        <button onclick="ubahJumlahPasar(-1)" class="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/5 rounded-lg active:scale-95 transition-all"><i class="fas fa-minus text-xs"></i></button>
+                        <input type="tel" id="pasar-detail-qty" value="1" oninput="inputJumlahPasar(this.value)" onblur="validasiJumlahPasar(this)" class="text-sm font-extrabold text-white w-10 text-center bg-transparent outline-none border-none p-0 m-0" maxlength="4">
+                        <button onclick="ubahJumlahPasar(1)" class="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/5 rounded-lg active:scale-95 transition-all"><i class="fas fa-plus text-xs"></i></button>
+                    </div>
                 </div>
                 
                 <div class="bg-black/40 border border-white/5 rounded-2xl p-4 flex items-center justify-between shadow-inner">
@@ -10474,9 +10488,14 @@ function bukaVideoShare(vidId) {
                     </div>
                     <button onclick="chatPenjualPasar()" class="w-9 h-9 rounded-full bg-brand-info/20 text-brand-info flex items-center justify-center border border-brand-info/30 active:scale-95 transition-all"><i class="fas fa-comment-dots"></i></button>
                 </div>
-                <div>
-                    <label class="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-2 block">Deskripsi Lengkap</label>
-                    <p id="pasar-detail-deskripsi" class="text-xs sm:text-sm text-gray-300 leading-relaxed whitespace-pre-wrap"></p>
+                <div class="space-y-1.5 pt-1">
+                    <label class="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-1 block">Deskripsi Lengkap</label>
+                    
+                    <!-- Paragraf dengan line-clamp dan fungsi klik -->
+                    <p id="pasar-detail-deskripsi" class="text-xs sm:text-sm text-gray-300 leading-relaxed whitespace-pre-line line-clamp-4 cursor-pointer transition-all duration-300" onclick="this.classList.toggle('line-clamp-4'); const btn = document.getElementById('btn-toggle-desc-pasar'); btn.innerHTML = this.classList.contains('line-clamp-4') ? 'Lihat Selengkapnya ▼' : 'Tutup Selengkapnya ▲';"></p>
+                    
+                    <!-- Tombol manual di bawahnya -->
+                    <button id="btn-toggle-desc-pasar" onclick="document.getElementById('pasar-detail-deskripsi').click()" class="text-[10px] text-brand-info font-bold hover:text-white active:scale-95 transition-all mt-1">Lihat Selengkapnya ▼</button>
                 </div>
                 <div class="bg-brand-success/10 p-3 rounded-xl border border-brand-success/20 flex gap-3 items-start">
                     <i class="fas fa-shield-check text-brand-success mt-0.5 text-lg"></i>
@@ -10653,10 +10672,10 @@ function renderGridPasar(dataList) {
                     </div>
                 </div>
                 
-                <div class="mt-auto">
-                    <div class="text-[9px] ${isAutoItem ? 'text-brand-success' : 'text-brand-info'} font-bold mb-0.5 flex items-center gap-1">
-                        <i class="fas ${isAutoItem ? 'fa-bolt text-[8px]' : 'fa-user-shield text-[8px]'}"></i> 
-                        ${isAutoItem ? 'Instan 1 Detik' : 'INCLUDE REKBER NIKKY'}
+                <div class="mt-auto w-full overflow-hidden">
+                    <div class="text-[8px] sm:text-[9px] ${isAutoItem ? 'text-brand-success' : 'text-brand-info'} font-extrabold mb-1 flex items-center gap-1 whitespace-nowrap w-full tracking-tight">
+                        <i class="fas ${isAutoItem ? 'fa-bolt' : 'fa-shield-check'} shrink-0 text-[10px]"></i> 
+                        <span class="truncate">${isAutoItem ? 'Instan 1 Detik' : 'INCLUDE REKBER NIKKY'}</span>
                     </div>
                     <div class="flex flex-col items-start gap-px">
                         <div class="text-gray-500 line-through text-[9px] font-medium opacity-60">Rp ${hargaCoret.toLocaleString('id-ID')}</div>
@@ -10820,26 +10839,122 @@ async function shareProdukPasar(btn) {
     }
 }
 
-// 4. BUKA DETAIL DENGAN CAROUSEL
+// ==========================================
+// VARIABEL GLOBAL PASAR (UNTUK VARIASI & QTY)
+// ==========================================
+let currentPasarPrice = 0;
+let currentPasarQty = 1;
+let currentPasarVariation = "";
+
+function ubahJumlahPasar(delta) {
+    currentPasarQty = Math.max(1, currentPasarQty + delta);
+    document.getElementById('pasar-detail-qty').value = currentPasarQty;
+    updateHargaPasarLayar();
+}
+
+function inputJumlahPasar(val) {
+    let parsed = parseInt(val);
+    if (!isNaN(parsed) && parsed >= 1) { currentPasarQty = parsed; updateHargaPasarLayar(); }
+}
+
+function validasiJumlahPasar(el) {
+    let parsed = parseInt(el.value);
+    if (isNaN(parsed) || parsed < 1) { parsed = 1; el.value = 1; }
+    currentPasarQty = parsed; updateHargaPasarLayar();
+}
+
+function pilihVariasiPasar(namaVariasi, hargaVariasi) {
+    currentPasarVariation = namaVariasi;
+    currentPasarPrice = parseFloat(hargaVariasi) || 0;
+    if (window.renderVariasiPasarButtons) window.renderVariasiPasarButtons(namaVariasi);
+    updateHargaPasarLayar();
+}
+
+function updateHargaPasarLayar() {
+    let totalPrice = currentPasarPrice * currentPasarQty;
+
+    // Harga Coret Marketing
+    let baseHargaCoret = Math.ceil((currentPasarPrice * 1.3) / 1000) * 1000;
+    if (currentPasarPrice > 100000) baseHargaCoret = Math.ceil((currentPasarPrice * 1.2) / 5000) * 5000;
+    if (currentPasarPrice <= 5000) baseHargaCoret = currentPasarPrice + 2500;
+    let totalHargaCoret = baseHargaCoret * currentPasarQty;
+
+    const formatHarga = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(totalPrice);
+    const formatHargaCoret = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(totalHargaCoret);
+
+    document.getElementById('pasar-detail-harga').innerHTML = `<span class="text-gray-500 line-through text-sm font-medium mr-2">${formatHargaCoret}</span>${formatHarga}`;
+}
+
+
+// ==========================================
+// 4. BUKA DETAIL PASAR (VERSI FINAL & SEMPURNA)
+// ==========================================
 function bukaDetailPasar(idProduk) {
     const produk = globalDataPasar.find(item => item.id === idProduk);
     if (!produk) return;
 
     idPenjualAktif = produk.user_id; 
-
-    const sellerExp = produk.profiles?.exp || 0;
-    const sellerLevel = hitungStatusLevel(sellerExp).level;
-    const sellerVideoCount = allVideosData.filter(v => String(v.user_id) === String(produk.user_id)).length;
-    const badgeHtml = getBadgeByLevelAndVideos(sellerLevel, sellerVideoCount);
-
-    const carousel = document.getElementById('pasar-detail-carousel');
-    let rawImages = produk.image_url || '';
-    let arrFoto = [];
     
-    if (rawImages) {
-        arrFoto = rawImages.split(',').map(img => img.trim()).filter(img => img !== "");
+    // Reset Data Laci
+    currentPasarQty = 1;
+    currentPasarVariation = "";
+    document.getElementById('pasar-detail-qty').value = "1";
+
+    const isAutoItem = produk.category === 'Akun' || produk.category === 'Item' || produk.category === 'APK Premium';
+    const sisaStok = isAutoItem && produk.stock_list ? produk.stock_list.split(/\r?\n/).filter(s=>s.trim() !== '').length : 0;
+    
+    // Keamanan Pintar: Sembunyikan Input Jumlah jika produk pengiriman otomatis
+    const wadahQty = document.getElementById('pasar-qty-container');
+    if (wadahQty) {
+        if (isAutoItem) wadahQty.classList.replace('flex', 'hidden');
+        else wadahQty.classList.replace('hidden', 'flex');
     }
-    if (arrFoto.length === 0) arrFoto.push('https://placehold.co/400x400/1a1133/2BD975?text=PASAR');
+
+    // Harga Markup Customer (+ 500 + 0.7%)
+    const hargaCustomer = Math.floor(produk.price + 500 + (produk.price * 0.007));
+    currentPasarPrice = hargaCustomer;
+
+    // LOGIKA VARIASI
+    let rawVariasi = produk.variations || produk.variasi || [];
+    let arrVariasi = [];
+
+    if (Array.isArray(rawVariasi)) {
+        rawVariasi.forEach(v => {
+            if (typeof v === 'object' && v !== null) {
+                let hargaVarAsli = parseFloat(v.harga || v.price || 0);
+                let hargaVarMarkup = Math.floor(hargaVarAsli + 500 + (hargaVarAsli * 0.007));
+                arrVariasi.push({ name: v.nama_variasi || v.name, price: hargaVarMarkup });
+            }
+        });
+    }
+
+    const variasiContainer = document.getElementById('pasar-variasi-container');
+    const variasiList = document.getElementById('pasar-variasi-list');
+
+    if (variasiContainer && variasiList) {
+        if (arrVariasi.length > 0) {
+            variasiContainer.classList.remove('hidden');
+            currentPasarPrice = arrVariasi[0].price;
+            currentPasarVariation = arrVariasi[0].name;
+
+            window.renderVariasiPasarButtons = function(activeName) {
+                variasiList.innerHTML = arrVariasi.map(v => {
+                    let vName = v.name.replace(/'/g, "\\'");
+                    let isActive = (vName === activeName);
+                    let baseClass = "px-4 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ";
+                    let activeClass = isActive ? "bg-brand-success/20 border-brand-success text-brand-success shadow-[0_0_10px_rgba(37,211,102,0.3)]" : "bg-black/30 border-white/10 text-gray-400 hover:border-brand-info/50 hover:text-white";
+                    return `<div onclick="pilihVariasiPasar('${vName}', ${v.price})" class="${baseClass} ${activeClass}">${vName}</div>`;
+                }).join('');
+            };
+            window.renderVariasiPasarButtons(currentPasarVariation);
+        } else {
+            variasiContainer.classList.add('hidden');
+        }
+    }
+
+    // Render Gambar Carousel
+    const carousel = document.getElementById('pasar-detail-carousel');
+    let arrFoto = produk.image_url ? produk.image_url.split(',').map(img => img.trim()).filter(img => img !== "") : ['https://placehold.co/400x400/1a1133/2BD975?text=PASAR'];
 
     carousel.innerHTML = arrFoto.map((imgUrl, index) => `
         <div class="w-full h-full flex-shrink-0 snap-center relative cursor-pointer" onclick="bukaGalleryPasar('${produk.id}', ${index})">
@@ -10847,60 +10962,54 @@ function bukaDetailPasar(idProduk) {
         </div>
     `).join('');
 
-
     const counterBadge = document.getElementById('pasar-carousel-counter');
-    const currentTxt = document.getElementById('pasar-current-idx');
-    const totalTxt = document.getElementById('pasar-total-idx');
-
     if (arrFoto.length > 1) {
         counterBadge.classList.remove('hidden');
-        currentTxt.innerText = "1";
-        totalTxt.innerText = arrFoto.length;
-        
-        carousel.onscroll = () => {
-            let page = Math.round(carousel.scrollLeft / carousel.clientWidth) + 1;
-            currentTxt.innerText = page;
-        };
-    } else {
-        counterBadge.classList.add('hidden');
-        carousel.onscroll = null; 
-    }
+        document.getElementById('pasar-total-idx').innerText = arrFoto.length;
+        carousel.onscroll = () => { document.getElementById('pasar-current-idx').innerText = Math.round(carousel.scrollLeft / carousel.clientWidth) + 1; };
+    } else { counterBadge.classList.add('hidden'); carousel.onscroll = null; }
 
-    // [BARU] Hitung Stok di Laci Detail
-    const isAutoItem = produk.category === 'Akun' || produk.category === 'Item' || produk.category === 'APK Premium';
-    const sisaStok = isAutoItem && produk.stock_list ? produk.stock_list.split(/\r?\n/).filter(s=>s.trim() !== '').length : 0;
-    
-    // 🔥 LOGIKA BARU: Harga Markup Customer (+ 500 + 0.7%)
-    const hargaCustomer = Math.floor(produk.price + 500 + (produk.price * 0.007));
-
-    // Ganti jadi .innerHTML agar teks Sisa Stok bisa masuk
+    // Render Teks & Panggil Harga Pertama Kali
+    updateHargaPasarLayar(); 
     document.getElementById('pasar-detail-kategori').innerHTML = `${produk.category} ${isAutoItem ? ` &bull; Sisa: ${sisaStok}` : ''}`;
     document.getElementById('pasar-detail-nama').innerText = produk.title;
-    document.getElementById('pasar-detail-harga').innerText = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(produk.price);
     
-    let deskripsiAman = (produk.description || "-").replace(/&/g, "&").replace(/</g, "<").replace(/>/g, ">");
-    const urlRegex = /(https?:\/\/[^\s]+)/g;
-    let deskripsiBisaDiklik = deskripsiAman.replace(urlRegex, function(url) {
-        return `<a href="${url}" target="_blank" onclick="event.stopPropagation()" class="text-brand-info underline font-bold hover:text-white transition-colors">${url}</a>`;
-    });
+    let deskripsiBisaDiklik = (produk.description || "-").replace(/&/g, "&").replace(/</g, "<").replace(/>/g, ">").replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" onclick="event.stopPropagation()" class="text-brand-info underline font-bold hover:text-white transition-colors">$1</a>');
 
-    document.getElementById('pasar-detail-deskripsi').innerHTML = deskripsiBisaDiklik.replace(/\n/g, '<br>');
+    // --- PERBAIKAN RESET LIHAT SELENGKAPNYA ---
+    const pDescPasar = document.getElementById('pasar-detail-deskripsi');
+    const btnDescPasar = document.getElementById('btn-toggle-desc-pasar');
+    pDescPasar.innerHTML = deskripsiBisaDiklik.replace(/\n/g, '<br>');
+    if(pDescPasar && btnDescPasar) { 
+        pDescPasar.classList.add('line-clamp-4'); 
+        btnDescPasar.innerHTML = 'Lihat Selengkapnya ▼'; 
+    }
+    // -----------------------------------------
+    
+    const sellerVideoCount = allVideosData.filter(v => String(v.user_id) === String(produk.user_id)).length;
+    const sellerExp = produk.profiles?.exp || 0;
+    const badgeHtml = getBadgeByLevelAndVideos(hitungStatusLevel(sellerExp).level, sellerVideoCount);
+
     document.getElementById('pasar-detail-avatar').src = produk.profiles?.avatar_url || 'https://placehold.co/100x100/1a1133/2BD975?text=AV';
     document.getElementById('pasar-detail-penjual').innerHTML = `${produk.profiles?.nickname || 'Anonim'} <span class="scale-[0.85] origin-left inline-flex ml-1">${badgeHtml}</span>`;
 
+    // Tombol Beli Dinamis (Dengan Qty & Variasi)
     const btnBeli = document.getElementById('btn-beli-pasar');
-    btnBeli.onclick = () => checkoutPasar(produk.title, produk.price, produk.id);
+    btnBeli.onclick = () => {
+        let namaProdukFinal = produk.title;
+        if (currentPasarVariation !== "") namaProdukFinal += ` - ${currentPasarVariation}`;
+        if (currentPasarQty > 1) namaProdukFinal += ` (x${currentPasarQty})`;
+        let totalHargaCheckout = currentPasarPrice * currentPasarQty;
+        checkoutPasar(namaProdukFinal, totalHargaCheckout, produk.id);
+    };
 
-    // [BARU] Logika Tombol Stok Habis
+    // Logika Tombol Sesuai Status Stok / Kepemilikan
     if (currentUser && currentUser.id === produk.user_id) {
-        btnBeli.innerHTML = '<i class="fas fa-ban"></i> Ini Produk Anda';
-        btnBeli.disabled = true; btnBeli.className = "w-full bg-gray-600 text-white py-3.5 rounded-xl font-extrabold uppercase text-sm z-30 relative";
+        btnBeli.innerHTML = '<i class="fas fa-ban"></i> Ini Produk Anda'; btnBeli.disabled = true; btnBeli.className = "w-full bg-gray-600 text-white py-3.5 rounded-xl font-extrabold uppercase text-sm z-30 relative";
     } else if (isAutoItem && sisaStok === 0) {
-        btnBeli.innerHTML = '<i class="fas fa-box-open"></i> Stok Habis';
-        btnBeli.disabled = true; btnBeli.className = "w-full bg-red-500/50 text-white py-3.5 rounded-xl font-extrabold uppercase text-sm z-30 relative cursor-not-allowed border border-red-500/30";
+        btnBeli.innerHTML = '<i class="fas fa-box-open"></i> Stok Habis'; btnBeli.disabled = true; btnBeli.className = "w-full bg-red-500/50 text-white py-3.5 rounded-xl font-extrabold uppercase text-sm z-30 relative cursor-not-allowed border border-red-500/30";
     } else {
-        btnBeli.innerHTML = '<i class="fas fa-shopping-cart"></i> Beli Sekarang';
-        btnBeli.disabled = false; btnBeli.className = "w-full bg-brand-success hover:bg-[#20bd5a] text-white py-3.5 rounded-xl font-extrabold active:scale-95 transition-all uppercase text-sm shadow-[0_4px_15px_rgba(37,211,102,0.3)] z-30 relative";
+        btnBeli.innerHTML = '<i class="fas fa-shopping-cart"></i> Beli Sekarang'; btnBeli.disabled = false; btnBeli.className = "w-full bg-brand-success hover:bg-[#20bd5a] text-white py-3.5 rounded-xl font-extrabold active:scale-95 transition-all uppercase text-sm shadow-[0_4px_15px_rgba(37,211,102,0.3)] z-30 relative";
     }
 
     document.getElementById('modal-detail-pasar').classList.replace('hidden', 'flex');
@@ -10929,24 +11038,21 @@ function chatPenjualPasar() {
     }
 }
 
-async function checkoutPasar(nama, harga, id) {
+async function checkoutPasar(namaFinal, totalHarga, id) {
     const btnBeli = document.getElementById('btn-beli-pasar');
     btnBeli.disabled = true;
     btnBeli.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memverifikasi...';
 
-    showToast("Memverifikasi harga ke server...", "info");
+    showToast("Memverifikasi pesanan ke server...", "info");
     
     try {
-        const { data: produkAsli, error } = await supabaseClient.from('player_products').select('price, user_id').eq('id', id).single();
+        const { data: produkAsli, error } = await supabaseClient.from('player_products').select('user_id').eq('id', id).single();
         if (error || !produkAsli) throw new Error("Barang tidak ditemukan di server.");
         
         tutupDetailPasar(); 
         
-        // 🔥 LOGIKA BARU: Kalkulasi ulang harga final ke API
-        const hargaCustomer = Math.floor(produkAsli.price + 500 + (produkAsli.price * 0.007));
-
-        // Lempar hargaCustomer ke fungsi pembayaran
-        checkoutXoftwarePay("[PASAR] " + nama, hargaCustomer, "Pembelian item dari Pasar Player.", produkAsli.user_id, id);
+        // Lempar ke fungsi pembayaran XoftwarePay Anda yang asli
+        checkoutXoftwarePay("[PASAR] " + namaFinal, totalHarga, "Pembelian item dari Pasar Player.", produkAsli.user_id, id);
         
     } catch (err) {
         showToast("Gagal memverifikasi keamanan: " + err.message, "error");
@@ -10955,8 +11061,6 @@ async function checkoutPasar(nama, harga, id) {
         btnBeli.innerHTML = '<i class="fas fa-shopping-cart"></i> Beli Sekarang';
     }
 }
-
-
 
 // --- LACI JUAL BARANG ---
 function bukaModalJualBarang() {
