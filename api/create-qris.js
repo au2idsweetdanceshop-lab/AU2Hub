@@ -18,7 +18,8 @@ export default async function handler(req, res) {
             amount: parseInt(amount), 
             ref_id: order_id, 
             fee_direction: "merchant", 
-            notify_url: "https://www.au2idsweetdance.com/api/webhook", 
+            // 👇 INI KUNCINYA: Link webhook sudah bersih dari www
+            notify_url: "https://au2idsweetdance.com/api/webhook", 
             note: `Pembayaran: ${product_name}`, 
             metadata: {
                 customer: {
@@ -32,7 +33,8 @@ export default async function handler(req, res) {
                         product_code: "ITEM-001",
                         product_name: product_name || "Produk AU2Hub",
                         product_thumbnail: "https://placehold.co/100x100/1a1133/ff007a?text=Item",
-                        product_url: "https://www.au2idsweetdance.com"
+                        // 👇 Link ini juga sudah dibersihkan dari www
+                        product_url: "https://au2idsweetdance.com"
                     }
                 ]
             }
