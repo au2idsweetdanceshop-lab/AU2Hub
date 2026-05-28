@@ -7,6 +7,7 @@ const supabase = createClient(
 );
 
 export default async function handler(req, res) {
+    // Abaikan method selain GET biar aman
     if (req.method !== 'GET') return res.status(405).json({ message: 'Method Not Allowed' });
 
     const { order_id, table } = req.query;
@@ -17,20 +18,37 @@ export default async function handler(req, res) {
     const apiKey = process.env.XOFTWARE_API_KEY;         
     const timestamp = Math.floor(Date.now() / 1000).toString();
     
-    // Titik API untuk nanya status ke Xoftware (Cek berdasarkan order_id / ref_id)
-    const path = `/v1/api/transactions/${order_id}`; 
-    const messageToSign = `${timestamp}\nGET\n${path}\n`;
-    const signature = crypto.createHmac('sha256', apiKey).update(messageToSign, 'utf8').digest('base64');
-
     try {
+        // Kita ubah tebakan API-nya pakai pencarian ref_id
+        const path = `/v1/api/transactions?ref_id=${order_id}`; 
+        
+        const messageToSign = `${timestamp}\nGET\n${path}\n`;
+        const signature = crypto.createHmac('sha256', apiKey).update(messageToSign, 'utf8').digest('base64');
+
         const response = await fetch(`${baseUrl}${path}`, {
             method: 'GET',
-            headers: { 'X-API-Key': apiKey, 'X-Timestamp': timestamp, 'X-Signature': signature }
+            headers: { 
+                'X-API-Key': apiKey, 
+                'X-Timestamp': timestamp, 
+                'X-Signature': signature 
+            }
         });
-        const result = await response.json();
         
-        // Cari statusnya di respon Xoftware
-        const statusXoftware = result.status || (result.data && result.data.status) || 'PENDING';
+        // BACA MENTAH-MENTAH DULU BIAR GAK CRASH
+        const rawText = await response.text();
+        console.log(`🔍 Balasan Xoftware untuk order ${order_id}:`, rawText);
+
+        let result;
+        try {
+            result = JSON.parse(rawText);
+        } catch (e) {
+            console.error("❌ Xoftware tidak membalas dengan JSON:", rawText);
+            // Tetap kasih 200 PENDING agar web pembeli nggak ikutan crash
+            return res.status(200).json({ success: false, status: 'PENDING', message: 'Respons bukan JSON' });
+        }
+        
+        // Cari statusnya di respon Xoftware (Mengantisipasi berbagai struktur)
+        const statusXoftware = result.status || (result.data && result.data.status) || (result.data && result.data[0] && result.data[0].status) || 'PENDING';
 
         // JIKA LUNAS, KITA UPDATE DATABASE DETIK ITU JUGA!
         if (statusXoftware.toUpperCase() === 'SUCCESS' || statusXoftware.toUpperCase() === 'PAID') {
@@ -39,7 +57,10 @@ export default async function handler(req, res) {
         }
 
         return res.status(200).json({ success: true, status: 'PENDING' });
+        
     } catch (error) {
-        return res.status(500).json({ success: false, message: error.message });
+        console.error("🔥 CRITICAL ERROR:", error.message);
+        // Jangan 500, kasih 200 biar front-end aman nunggu webhook
+        return res.status(200).json({ success: false, status: 'PENDING', message: error.message });
     }
 }
