@@ -7,7 +7,7 @@ const supabase = createClient(
 );
 
 export default async function handler(req, res) {
-    // Abaikan method selain GET biar aman
+    // API ini dipanggil oleh frontend kamu pakai GET
     if (req.method !== 'GET') return res.status(405).json({ message: 'Method Not Allowed' });
 
     const { order_id, table } = req.query;
@@ -19,48 +19,57 @@ export default async function handler(req, res) {
     const timestamp = Math.floor(Date.now() / 1000).toString();
     
     try {
-        // Kita ubah tebakan API-nya pakai pencarian ref_id
-        const path = `/v1/api/transactions?ref_id=${order_id}`; 
+        // 1. SESUAIKAN ALAMAT & DATA DENGAN DOKUMEN XOFTWARE
+        const path = '/v1/api/transactions/status';
+        const payloadObject = { ref_id: order_id };
+        const payloadString = JSON.stringify(payloadObject);
         
-        const messageToSign = `${timestamp}\nGET\n${path}\n`;
+        // 2. BUAT SIGNATURE (KARENA POST, PAYLOAD HARUS IKUT DIENKRIPSI)
+        const method = 'POST';
+        const messageToSign = `${timestamp}\n${method}\n${path}\n${payloadString}`;
         const signature = crypto.createHmac('sha256', apiKey).update(messageToSign, 'utf8').digest('base64');
 
+        // 3. TEMBAK SERVER XOFTWARE MENGGUNAKAN POST
         const response = await fetch(`${baseUrl}${path}`, {
-            method: 'GET',
+            method: 'POST',
             headers: { 
+                'Content-Type': 'application/json',
                 'X-API-Key': apiKey, 
                 'X-Timestamp': timestamp, 
                 'X-Signature': signature 
-            }
+            },
+            body: payloadString
         });
         
-        // BACA MENTAH-MENTAH DULU BIAR GAK CRASH
+        // BACA RESPON MENTAH BIAR GAK CRASH KALAU ADA ERROR
         const rawText = await response.text();
-        console.log(`🔍 Balasan Xoftware untuk order ${order_id}:`, rawText);
+        console.log(`🔍 Balasan Xoftware untuk ${order_id}:`, rawText);
 
         let result;
         try {
             result = JSON.parse(rawText);
         } catch (e) {
             console.error("❌ Xoftware tidak membalas dengan JSON:", rawText);
-            // Tetap kasih 200 PENDING agar web pembeli nggak ikutan crash
             return res.status(200).json({ success: false, status: 'PENDING', message: 'Respons bukan JSON' });
         }
         
-        // Cari statusnya di respon Xoftware (Mengantisipasi berbagai struktur)
-        const statusXoftware = result.status || (result.data && result.data.status) || (result.data && result.data[0] && result.data[0].status) || 'PENDING';
+        // 4. BACA STATUS TRANSAKSI
+        // Sesuai dokumen, status utamanya ada di field "status" atau "payment_status"
+        const statusUtama = result.status || '';
+        const statusPembayaran = result.payment_status || '';
 
-        // JIKA LUNAS, KITA UPDATE DATABASE DETIK ITU JUGA!
-        if (statusXoftware.toUpperCase() === 'SUCCESS' || statusXoftware.toUpperCase() === 'PAID') {
+        // 5. JIKA SUKSES, LANGSUNG JEBOL DATABASE SUPABASE
+        if (statusUtama.toUpperCase() === 'SUCCESS' || statusPembayaran.toUpperCase() === 'SUCCEEDED') {
             await supabase.from(targetTable).update({ status: 'SUCCESS' }).eq('id', order_id);
             return res.status(200).json({ success: true, status: 'SUCCESS' });
         }
 
-        return res.status(200).json({ success: true, status: 'PENDING' });
+        // Kalau masih PENDING atau REQUIRES_PAYMENT, suruh frontend nunggu lagi
+        return res.status(200).json({ success: true, status: 'PENDING', detail: statusUtama });
         
     } catch (error) {
         console.error("🔥 CRITICAL ERROR:", error.message);
-        // Jangan 500, kasih 200 biar front-end aman nunggu webhook
+        // Tetap balas 200 PENDING agar frontend pembeli tidak crash
         return res.status(200).json({ success: false, status: 'PENDING', message: error.message });
     }
 }
