@@ -9406,28 +9406,38 @@ const teksWA = encodeURIComponent(`Halo Admin, pesanan saya sudah masuk via QRIS
         document.getElementById('qris-image-target').src = qrImgUrl;
         showToast("QRIS berhasil dibuat. Silakan scan!", "success");
 
-        // --- KODINGAN UI SUKSES ---
-        const tampilkanLayarSukses = () => {
-            const wadahPembayaran = document.getElementById('qris-container');
-            if (wadahPembayaran) {
-                wadahPembayaran.innerHTML = `
-                    <div class="flex flex-col items-center justify-center py-6 text-center modal-anim">
-                        <div class="relative w-24 h-24 mb-6">
-                            <div class="absolute inset-0 bg-brand-success rounded-full animate-ping opacity-20"></div>
-                            <i class="fas fa-check-circle text-7xl text-brand-success relative z-10 drop-shadow-[0_0_20px_rgba(37,211,102,0.8)]"></i>
-                        </div>
-                        <h2 class="text-2xl font-extrabold text-white mb-2 mt-4 tracking-tight">Pembayaran Berhasil!</h2>
-                        <p class="text-gray-400 text-xs mb-4 leading-relaxed px-4">Dana Rp ${harga.toLocaleString('id-ID')} telah diterima.</p>
-                        <div class="bg-black/40 border border-white/10 rounded-xl py-3 px-4 mb-6 w-full max-w-[280px] select-all cursor-pointer hover:border-brand-info/50 transition-colors" title="Tahan teks untuk menyalin">
-                            <p class="text-[9px] text-gray-500 mb-1 uppercase tracking-widest font-bold">ID Transaksi (Provider Ref)</p>
-                            <p class="text-[11px] font-mono text-brand-info break-all">NIKKY - ${orderData.id}</p>
-                        </div>
-                        <button onclick="window.location.reload()" class="w-full bg-white/5 text-white py-4 rounded-xl font-bold uppercase text-xs border border-white/10 hover:bg-white/10">Selesai & Kembali</button>
-                    </div>
-                `;
-            }
-            prosesAutoDeliveryTertunda();
-        };
+// --- KODINGAN UI SUKSES ---
+const tampilkanLayarSukses = () => {
+    const wadahPembayaran = document.getElementById('qris-container');
+    if (wadahPembayaran) {
+        // Mendefinisikan ulang link WA untuk layar sukses
+        const noWA = "6283815584661";
+        const teksWA = encodeURIComponent(`Halo Admin, pesanan saya sudah BERHASIL DIBAYAR via QRIS Otomatis untuk:\n\n*${namaProduk}*\nID: NIKKY - ${orderData.id}\n\n(Mohon segera diproses ya)`);
+
+        wadahPembayaran.innerHTML = `
+            <div class="flex flex-col items-center justify-center py-6 text-center modal-anim">
+                <div class="relative w-24 h-24 mb-6">
+                    <div class="absolute inset-0 bg-brand-success rounded-full animate-ping opacity-20"></div>
+                    <i class="fas fa-check-circle text-7xl text-brand-success relative z-10 drop-shadow-[0_0_20px_rgba(37,211,102,0.8)]"></i>
+                </div>
+                <h2 class="text-2xl font-extrabold text-white mb-2 mt-4 tracking-tight">Pembayaran Berhasil!</h2>
+                <p class="text-gray-400 text-xs mb-4 leading-relaxed px-4">Dana Rp ${harga.toLocaleString('id-ID')} telah diterima.</p>
+                <div class="bg-black/40 border border-white/10 rounded-xl py-3 px-4 mb-6 w-full max-w-[280px] select-all cursor-pointer hover:border-brand-info/50 transition-colors" title="Tahan teks untuk menyalin">
+                    <p class="text-[9px] text-gray-500 mb-1 uppercase tracking-widest font-bold">ID Transaksi (Provider Ref)</p>
+                    <p class="text-[11px] font-mono text-brand-info break-all">NIKKY - ${orderData.id}</p>
+                </div>
+
+                <a href="https://wa.me/${noWA}?text=${teksWA}" target="_blank" class="w-full mb-3 bg-[#25D366] hover:bg-[#20bd5a] text-white py-4 rounded-xl font-bold uppercase text-xs shadow-[0_8px_20px_rgba(37,211,102,0.25)] flex justify-center items-center active:scale-95 transition-all">
+                    <i class="fab fa-whatsapp text-lg mr-2"></i> Konfirmasi ke Admin
+                </a>
+
+                <button onclick="window.location.reload()" class="w-full bg-white/5 text-white py-4 rounded-xl font-bold uppercase text-xs border border-white/10 hover:bg-white/10 active:scale-95 transition-all">Selesai & Kembali</button>
+            </div>
+        `;
+    }
+    prosesAutoDeliveryTertunda();
+};
+
 
         // 5. Radar Supabase Tetap Jalan (Menunggu Webhook)
         const channelPembayaran = supabaseClient.channel(`tunggu-pembayaran-${orderData.id}`)
@@ -9480,8 +9490,16 @@ async function prosesBayarUlang() {
     const qrContainerElement = document.querySelector('#pembayaran img');
     if (qrContainerElement) qrContainerElement.src = "https://placehold.co/400x400/1a1133/ff007a?text=Loading+QRIS...";
 
+    // [PERBAIKAN VARIABEL] Gunakan activeOrderNameToPay & activeOrderIdToPay
     const noWA = "6283815584661";
-const teksWA = encodeURIComponent(`Halo Admin, pesanan saya sudah masuk via QRIS Otomatis untuk:\n\n*${namaProduk}*\nID: NIKKY - ${orderData.id}\n\n(Berikut screenshot bukti transfernya)`);
+    const teksWA = encodeURIComponent(`Halo Admin, pesanan saya sudah masuk via QRIS Otomatis untuk:\n\n*${activeOrderNameToPay}*\nID: NIKKY - ${activeOrderIdToPay}\n\n(Berikut screenshot bukti transfernya)`);
+    
+    // Perbarui link tombol WA di tampilan awal sebelum bayar
+    const waConfirmBtn = document.getElementById('wa-confirm');
+    if (waConfirmBtn) {
+        waConfirmBtn.setAttribute('href', `https://wa.me/${noWA}?text=${teksWA}`);
+    }
+
     switchTab('pembayaran');
     showToast("Mengambil ulang data QRIS...", "info");
 
@@ -9516,6 +9534,10 @@ const teksWA = encodeURIComponent(`Halo Admin, pesanan saya sudah masuk via QRIS
                     if (payload.new.status === 'selesai' || payload.new.status === 'SUCCESS' || payload.new.status === 'proses') {
                         const wadahPembayaran = document.getElementById('qris-container');
                         if (wadahPembayaran) {
+                            
+                            // [BARU] Deklarasi link WA untuk kondisi SUKSES
+                            const teksWASukses = encodeURIComponent(`Halo Admin, pesanan saya sudah BERHASIL DIBAYAR via QRIS Otomatis untuk:\n\n*${activeOrderNameToPay}*\nID: NIKKY - ${activeOrderIdToPay}\n\n(Mohon segera diproses ya)`);
+
                             wadahPembayaran.innerHTML = `
                                 <div class="flex flex-col items-center justify-center py-6 text-center modal-anim">
                                     <div class="relative w-24 h-24 mb-6">
@@ -9530,7 +9552,11 @@ const teksWA = encodeURIComponent(`Halo Admin, pesanan saya sudah masuk via QRIS
                                         <p class="text-[11px] font-mono text-brand-info break-all">NIKKY - ${activeOrderIdToPay}</p>
                                     </div>
 
-                                    <button onclick="window.location.reload()" class="w-full bg-white/5 text-white py-4 rounded-xl font-bold uppercase text-xs border border-white/10 hover:bg-white/10">Selesai & Kembali</button>
+                                    <a href="https://wa.me/${noWA}?text=${teksWASukses}" target="_blank" class="w-full mb-3 bg-[#25D366] hover:bg-[#20bd5a] text-white py-4 rounded-xl font-bold uppercase text-xs shadow-[0_8px_20px_rgba(37,211,102,0.25)] flex justify-center items-center active:scale-95 transition-all">
+                                        <i class="fab fa-whatsapp text-lg mr-2"></i> Konfirmasi ke Admin
+                                    </a>
+
+                                    <button onclick="window.location.reload()" class="w-full bg-white/5 text-white py-4 rounded-xl font-bold uppercase text-xs border border-white/10 hover:bg-white/10 active:scale-95 transition-all">Selesai & Kembali</button>
                                 </div>
                             `;
                         }
@@ -9544,9 +9570,6 @@ const teksWA = encodeURIComponent(`Halo Admin, pesanan saya sudah masuk via QRIS
         showToast("Gagal memuat ulang QRIS", "error");
     }
 }
-
-
-
 
 
 // FUNCTIONS UNTUK KONTROL ANIMASI BUKA TUTUP LACI MENU
