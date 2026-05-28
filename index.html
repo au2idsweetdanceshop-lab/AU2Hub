@@ -40,6 +40,16 @@ tailwind.config = {
 
 
 <style>
+/* Animasi Smooth Accordion untuk FAQ */
+details[open] > div {
+    animation: accordionSlideDown 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    transform-origin: top;
+}
+@keyframes accordionSlideDown {
+    from { opacity: 0; transform: translateY(-10px) scaleY(0.95); }
+    to { opacity: 1; transform: translateY(0) scaleY(1); }
+}
+
 /* Animasi Denyut Jantung Neon untuk Logo Splash */
 @keyframes splashPulse {
     0% { transform: scale(0.9); opacity: 0.8; filter: drop-shadow(0 0 10px rgba(0, 240, 255, 0.4)); }
@@ -62,25 +72,40 @@ body { background-color: #0F0920; color: #E2E8F0; -webkit-tap-highlight-color: t
 @keyframes slideUpFade { from { opacity: 0; transform: translateY(20px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
 @keyframes popBounce { 0% { transform: scale(1) translateY(0); } 40% { transform: scale(0.7) translateY(2px); } 100% { transform: scale(1.1) translateY(-4px); } }
 @keyframes modalIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
-.modal-anim { animation: modalIn 0.3s ease-out forwards; will-change: transform, opacity; }
+.modal-anim { animation: modalIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; will-change: transform, opacity; }
 @keyframes smoothReveal { 0% { opacity: 0; transform: translateY(15px); } 100% { opacity: 1; transform: translateY(0); } }
 .smooth-reveal { animation: smoothReveal 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; will-change: transform, opacity; }
 .heart-pop { position: fixed; color: #FF007A; font-size: 100px; pointer-events: none; z-index: 9999; animation: heartAnim 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; text-shadow: 0 0 30px rgba(255, 0, 122, 0.8); transform: translate(-50%, -50%); }
 @keyframes heartAnim { 0% { transform: translate(-50%, -50%) scale(0) rotate(-15deg); opacity: 0; } 20% { transform: translate(-50%, -50%) scale(1.2) rotate(0deg); opacity: 0.9; } 40% { transform: translate(-50%, -50%) scale(1) rotate(5deg); opacity: 0.9; } 100% { transform: translate(-50%, -150%) scale(1.5) rotate(0deg); opacity: 0; } }
 
-/* Toast Animation */
-@keyframes toastIn { from { opacity: 0; transform: translateY(-20px) scale(0.9); } to { opacity: 1; transform: translateY(0) scale(1); } }
-.toast-anim { animation: toastIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-
-/* SKELETON LOADING ANIMATION */
-@keyframes skeleton-loading {
-0% { background-color: rgba(255, 255, 255, 0.05); }
-50% { background-color: rgba(255, 255, 255, 0.12); }
-100% { background-color: rgba(255, 255, 255, 0.05); }
+/* Toast Animation Modern (Spring Bouncy) */
+@keyframes toastIn { 
+    0% { opacity: 0; transform: translateY(-40px) scale(0.85); } 
+    60% { opacity: 1; transform: translateY(5px) scale(1.02); } 
+    100% { opacity: 1; transform: translateY(0) scale(1); } 
 }
-.skeleton { animation: skeleton-loading 1.5s infinite linear; border-radius: 0.5rem; }
+.toast-anim { animation: toastIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
 
-.glass { background: rgba(26, 17, 51, 0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-top: 1px solid rgba(255, 255, 255, 0.05); }
+/* SKELETON LOADING ANIMATION (SHIMMER MODERN) */
+@keyframes shimmer {
+    100% { transform: translateX(100%); }
+}
+.skeleton {
+    position: relative;
+    overflow: hidden;
+    background-color: rgba(255, 255, 255, 0.05);
+    border-radius: 0.5rem;
+}
+.skeleton::after {
+    content: '';
+    position: absolute;
+    top: 0; right: 0; bottom: 0; left: 0;
+    transform: translateX(-100%);
+    background-image: linear-gradient(90deg, rgba(255,255,255, 0) 0, rgba(255,255,255, 0.05) 20%, rgba(255,255,255, 0.15) 60%, rgba(255,255,255, 0));
+    animation: shimmer 1.5s infinite;
+}
+
+.glass { background: rgba(15, 9, 32, 0.65); backdrop-filter: blur(24px) saturate(150%); -webkit-backdrop-filter: blur(24px) saturate(150%); border-top: 1px solid rgba(255, 255, 255, 0.08); }
 details > summary { list-style: none; }
 details > summary::-webkit-details-marker { display: none; }
 .ripper-list::-webkit-scrollbar { width: 4px; }
@@ -892,7 +917,7 @@ Satu pintu untuk info update terbaru, panduan pemula, jasa joki profesional, dan
 
 
 <!-- WIDGET CHAT GLOBAL MENGAMBANG (DIPERBARUI) -->
-<div id="floating-widget" class="fixed bottom-24 right-5 sm:right-10 z-[150] w-[90%] max-w-[380px] h-[80vh] max-h-[800px] bg-brand-card border border-white/10 rounded-3xl shadow-2xl opacity-0 pointer-events-none translate-y-8 scale-95 transition-all duration-300 flex flex-col overflow-hidden glass origin-bottom-right">
+<div id="floating-widget" class="fixed bottom-24 right-5 sm:right-10 z-[150] w-[90%] max-w-[380px] h-[80vh] max-h-[800px] bg-brand-card border border-white/10 rounded-3xl shadow-2xl opacity-0 pointer-events-none translate-y-8 scale-95 flex flex-col overflow-hidden glass origin-bottom-right" style="transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);">
 
 <!-- Tampilan Daftar Obrolan -->
 <div id="chat-list-view" class="flex flex-col h-full">
@@ -997,7 +1022,7 @@ Satu pintu untuk info update terbaru, panduan pemula, jasa joki profesional, dan
 <label for="chat-image-input" class="w-12 h-12 rounded-2xl bg-white/5 hover:bg-brand-info/20 hover:text-brand-info flex items-center justify-center text-gray-400 cursor-pointer transition-all border border-white/10 active:scale-90"><i class="fas fa-paperclip text-lg"></i></label>
 </div>
 <div class="flex-1 relative">
-<textarea id="chat-room-input" rows="1" oninput="handleTyping(this)" onkeydown="handleEnter(event)" placeholder="Ketik pesan..." class="w-full bg-white/5 border border-white/10 rounded-[1.5rem] py-3 px-6 text-sm text-white outline-none focus:border-brand-accent/50 focus:bg-white/10 transition-all pr-12 resize-none overflow-hidden max-h-[120px] block leading-snug" style="min-height: 48px;"></textarea>
+<textarea id="chat-room-input" rows="1" oninput="handleTyping(this)" onkeydown="handleEnter(event)" placeholder="Ketik pesan..." class="w-full bg-black/40 border border-white/10 rounded-[1.5rem] py-3 px-6 text-sm text-white outline-none focus:border-brand-accent focus:bg-white/10 focus:ring-4 focus:ring-brand-accent/20 transition-all duration-300 pr-12 resize-none overflow-hidden max-h-[120px] block leading-snug" style="min-height: 48px;"></textarea>
 </div>
 <button id="btn-send-room" class="w-12 h-12 rounded-2xl bg-brand-accent text-white flex items-center justify-center shadow-lg shadow-brand-accent/20 active:scale-90 transition-all hover:rotate-12"><i class="fas fa-paper-plane"></i></button>
 
@@ -1071,7 +1096,7 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
 <i class="fas fa-chevron-up text-white/50 text-xs mt-2 animate-bounce"></i>
 </div>
 
-<div id="modal-story-stats" class="absolute inset-x-0 bottom-0 z-[700] h-[65vh] glass border-t border-white/10 rounded-t-3xl transition-transform duration-300 translate-y-full flex flex-col max-w-md mx-auto pointer-events-auto">
+<div id="modal-story-stats" class="absolute inset-x-0 bottom-0 z-[700] h-[65vh] glass border-t border-white/10 rounded-t-3xl transition-transform translate-y-full flex flex-col max-w-md mx-auto pointer-events-auto" style="transition-duration: 0.5s; transition-timing-function: cubic-bezier(0.32, 0.72, 0, 1);">
 <div class="flex justify-between items-center p-5 border-b border-white/5 shrink-0 bg-brand-dark/80 rounded-t-3xl backdrop-blur-xl">
 <div class="flex gap-4">
 <button id="tab-views" onclick="switchStoryStatTab('views')" class="font-bold text-brand-info text-sm border-b-2 border-brand-info pb-1 transition-colors"><i class="fas fa-eye mr-1"></i> Dilihat (<span id="modal-view-count">0</span>)</button>
@@ -1103,7 +1128,7 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
 
     <div class="relative mb-5">
         <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 text-xs"></i>
-        <input type="text" id="cari-pasar" placeholder="Cari item, joki, atau nama penjual..." class="w-full bg-black/40 border border-white/10 rounded-2xl py-3 pl-10 pr-4 text-xs text-white focus:outline-none focus:border-brand-success transition-all shadow-inner">
+        <input type="text" id="cari-pasar" placeholder="Cari item, joki, atau nama penjual..." class="w-full bg-black/40 border border-white/10 rounded-2xl py-3 pl-10 pr-4 text-xs text-white outline-none focus:border-brand-success focus:bg-white/5 focus:ring-4 focus:ring-brand-success/20 transition-all duration-300 shadow-inner">
     </div>
     
     <div id="grid-pasar-player" class="grid grid-cols-2 gap-3 pb-10">
@@ -1164,7 +1189,7 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
             <button onclick="cancelReply()" class="hover:text-white bg-white/10 w-4 h-4 rounded-full flex items-center justify-center"><i class="fas fa-times"></i></button>
         </div>
         <div class="flex gap-2">
-            <input type="text" id="comment-input" placeholder="Tambahkan komentar..." class="flex-1 bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-brand-accent">
+            <input type="text" id="comment-input" placeholder="Tambahkan komentar..." class="flex-1 bg-black/40 border border-white/10 rounded-2xl px-4 py-2.5 text-sm text-white outline-none focus:border-brand-accent focus:bg-white/5 focus:ring-4 focus:ring-brand-accent/20 transition-all duration-300">
             <button onclick="sendComment(event)" class="bg-brand-accent text-white w-12 h-[42px] rounded-xl active:scale-95 transition-transform flex items-center justify-center"><i class="fas fa-paper-plane"></i></button>
         </div>
     </div>
@@ -1181,38 +1206,63 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
 <img id="lightbox-img" src="" class="max-w-[90%] max-h-[80vh] object-contain rounded-lg shadow-2xl scale-95 transition-transform duration-300">
 </div>
 
-<div id="modal-prompt" class="fixed inset-0 z-[9999] hidden items-center justify-center bg-black/90 backdrop-blur-md px-6">
-<div class="bg-brand-card w-full max-w-sm rounded-3xl border border-white/10 p-6 shadow-2xl relative modal-anim">
-<h3 id="prompt-title" class="text-lg font-extrabold mb-2 text-white">Judul</h3>
-<input type="text" id="prompt-input" class="w-full bg-black/30 border border-brand-accent/30 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-brand-accent mb-4">
-<div class="flex gap-3">
-<button id="prompt-cancel" class="flex-1 bg-white/10 text-white py-3 rounded-xl font-bold active:scale-95 transition-transform text-sm">Batal</button>
-<button id="prompt-ok" class="flex-1 bg-brand-accent text-white py-3 rounded-xl font-bold active:scale-95 transition-transform text-sm">Simpan</button>
-</div>
-</div>
-</div>
-
-<div id="modal-confirm" class="fixed inset-0 z-[9999] hidden items-center justify-center bg-black/90 backdrop-blur-md px-6">
-<div class="bg-brand-card w-full max-w-sm rounded-3xl border border-white/10 p-6 shadow-2xl relative modal-anim text-center">
-<div class="mx-auto mb-4 bg-brand-accent/10 w-12 h-12 rounded-full flex items-center justify-center border border-brand-accent/20">
-<i class="fas fa-question-circle text-brand-accent text-xl"></i>
-</div>
-<h3 id="confirm-title" class="text-sm font-bold text-gray-200 mb-6 leading-relaxed">Pertanyaan konfirmasi...</h3>
-<div class="flex gap-3">
-<button id="confirm-cancel" class="flex-1 bg-white/10 text-white py-3 rounded-xl font-bold active:scale-95 transition-transform text-xs uppercase tracking-wider">Batal</button>
-<button id="confirm-ok" class="flex-1 bg-brand-accent text-white py-3 rounded-xl font-bold active:scale-95 transition-transform text-xs uppercase tracking-wider">Oke</button>
-</div>
-</div>
+<div id="modal-prompt" class="fixed inset-0 z-[9999] hidden items-center justify-center bg-black/90 backdrop-blur-md px-6 transition-all duration-300">
+    <div class="bg-[#161B2E] w-full max-w-sm rounded-[2rem] border border-white/10 p-6 shadow-2xl relative modal-anim text-center overflow-hidden">
+        <div class="absolute -top-10 left-1/2 -translate-x-1/2 w-32 h-32 bg-brand-purple/20 rounded-full blur-3xl pointer-events-none"></div>
+        
+        <div class="mx-auto mb-5 relative w-16 h-16 flex items-center justify-center">
+            <div class="absolute inset-0 bg-brand-purple/20 rounded-full animate-pulse"></div>
+            <div class="w-12 h-12 bg-brand-purple/20 rounded-full flex items-center justify-center border border-brand-purple/40 backdrop-blur-sm relative z-10 shadow-[0_0_15px_rgba(162,119,255,0.4)]">
+                <i class="fas fa-keyboard text-brand-purple text-xl"></i>
+            </div>
+        </div>
+        
+        <h3 id="prompt-title" class="text-sm font-bold text-white mb-4 leading-relaxed relative z-10">Judul</h3>
+        <input type="text" id="prompt-input" class="w-full bg-black/40 border border-white/10 rounded-2xl px-4 py-3.5 text-sm text-white outline-none focus:border-brand-purple focus:bg-white/5 focus:ring-4 focus:ring-brand-purple/20 transition-all duration-300 mb-6 relative z-10">
+        
+        <div class="flex flex-col gap-2 relative z-10">
+            <button id="prompt-ok" class="w-full bg-brand-purple text-white py-3.5 rounded-2xl font-extrabold active:scale-95 transition-all text-sm shadow-[0_4px_15px_rgba(162,119,255,0.3)] hover:bg-[#8e5cff]">Simpan</button>
+            <button id="prompt-cancel" class="w-full bg-transparent border border-white/5 hover:bg-white/5 text-gray-400 hover:text-white py-3.5 rounded-2xl font-bold active:scale-95 transition-all text-sm">Batal</button>
+        </div>
+    </div>
 </div>
 
-<div id="modal-alert" class="fixed inset-0 z-[9999] hidden items-center justify-center bg-black/90 backdrop-blur-md px-6">
-<div class="bg-brand-card w-full max-w-sm rounded-3xl border border-white/10 p-6 shadow-2xl relative modal-anim text-center">
-<div class="mx-auto mb-4 bg-brand-info/10 w-12 h-12 rounded-full flex items-center justify-center border border-brand-info/20">
-<i class="fas fa-info-circle text-brand-info text-xl"></i>
+<div id="modal-confirm" class="fixed inset-0 z-[9999] hidden items-center justify-center bg-black/90 backdrop-blur-md px-6 transition-all duration-300">
+    <div class="bg-[#161B2E] w-full max-w-sm rounded-[2rem] border border-white/10 p-6 shadow-2xl relative modal-anim text-center overflow-hidden">
+        <div class="absolute -top-10 left-1/2 -translate-x-1/2 w-32 h-32 bg-brand-accent/20 rounded-full blur-3xl pointer-events-none"></div>
+        
+        <div class="mx-auto mb-5 relative w-16 h-16 flex items-center justify-center">
+            <div class="absolute inset-0 bg-brand-accent/20 rounded-full animate-pulse"></div>
+            <div class="w-12 h-12 bg-brand-accent/20 rounded-full flex items-center justify-center border border-brand-accent/40 backdrop-blur-sm relative z-10 shadow-[0_0_15px_rgba(255,0,122,0.4)]">
+                <i class="fas fa-question text-brand-accent text-xl"></i>
+            </div>
+        </div>
+        
+        <h3 id="confirm-title" class="text-sm font-bold text-white mb-6 leading-relaxed relative z-10">Pertanyaan konfirmasi...</h3>
+        
+        <div class="flex flex-col gap-2 relative z-10">
+            <button id="confirm-ok" class="w-full bg-brand-accent text-white py-3.5 rounded-2xl font-extrabold active:scale-95 transition-all text-sm shadow-[0_4px_15px_rgba(255,0,122,0.3)] hover:bg-[#ff1a8c]">Ya, Lanjutkan</button>
+            <button id="confirm-cancel" class="w-full bg-transparent border border-white/5 hover:bg-white/5 text-gray-400 hover:text-white py-3.5 rounded-2xl font-bold active:scale-95 transition-all text-sm">Batal</button>
+        </div>
+    </div>
 </div>
-<h3 id="alert-title" class="text-sm font-bold text-gray-200 mb-6 leading-relaxed">Pemberitahuan penting...</h3>
-<button id="alert-ok" class="w-full bg-brand-info text-brand-dark py-3 rounded-xl font-extrabold active:scale-95 transition-transform text-xs uppercase tracking-wider">Dimengerti</button>
-</div>
+
+
+<div id="modal-alert" class="fixed inset-0 z-[9999] hidden items-center justify-center bg-black/90 backdrop-blur-md px-6 transition-all duration-300">
+    <div class="bg-[#161B2E] w-full max-w-sm rounded-[2rem] border border-white/10 p-6 shadow-2xl relative modal-anim text-center overflow-hidden">
+        <div class="absolute -top-10 left-1/2 -translate-x-1/2 w-32 h-32 bg-brand-info/20 rounded-full blur-3xl pointer-events-none"></div>
+        
+        <div class="mx-auto mb-5 relative w-16 h-16 flex items-center justify-center">
+            <div class="absolute inset-0 bg-brand-info/20 rounded-full animate-pulse"></div>
+            <div class="w-12 h-12 bg-brand-info/20 rounded-full flex items-center justify-center border border-brand-info/40 backdrop-blur-sm relative z-10 shadow-[0_0_15px_rgba(70,179,255,0.4)]">
+                <i class="fas fa-info text-brand-info text-xl"></i>
+            </div>
+        </div>
+        
+        <h3 id="alert-title" class="text-sm font-bold text-gray-200 mb-6 leading-relaxed relative z-10">Pemberitahuan penting...</h3>
+        
+        <button id="alert-ok" class="w-full bg-brand-info text-brand-dark py-3.5 rounded-2xl font-extrabold active:scale-95 transition-all text-sm uppercase tracking-wider shadow-[0_4px_15px_rgba(70,179,255,0.3)] hover:bg-[#32a2f2] relative z-10">Dimengerti</button>
+    </div>
 </div>
 
 <div id="modal-msg-option" class="fixed inset-0 z-[300] hidden items-end sm:items-center justify-center bg-black/90 backdrop-blur-md px-4 pb-6 transition-all">
@@ -1464,10 +1514,10 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
                         <div class="w-7 h-7 rounded-full bg-white/5 flex items-center justify-center text-gray-300"><i class="fas fa-comment-dots text-xs"></i></div>
                         <span class="text-xs font-semibold text-gray-200">Izinkan Komentar</span>
                     </div>
-                    <label class="relative inline-flex items-center cursor-pointer select-none">
-                        <input type="checkbox" checked class="sr-only peer" id="upload-allow-comments">
-                        <div class="w-9 h-5 bg-white/10 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-brand-success"></div>
-                    </label>
+<label class="relative inline-flex items-center cursor-pointer select-none">
+    <input type="checkbox" checked class="sr-only peer" id="upload-allow-comments">
+    <div class="w-11 h-6 bg-white/10 rounded-full peer peer-checked:after:translate-x-[125%] after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:shadow-[0_2px_5px_rgba(0,0,0,0.5)] after:transition-all after:duration-300 peer-checked:bg-brand-success"></div>
+</label>
                 </div>
             </div>
 
@@ -1482,7 +1532,7 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
     </div>
 </div>
 
-<div id="modal-privasi-video" class="fixed inset-x-0 bottom-0 z-[700] bg-[#121319] border-t border-white/10 rounded-t-3xl transition-transform duration-300 translate-y-full flex flex-col pointer-events-auto shadow-[0_-10px_40px_rgba(0,0,0,0.8)] hidden">
+<div id="modal-privasi-video" class="fixed inset-x-0 bottom-0 z-[700] bg-[#121319] border-t border-white/10 rounded-t-3xl transition-transform translate-y-full flex flex-col pointer-events-auto shadow-[0_-10px_40px_rgba(0,0,0,0.8)] hidden" style="transition-duration: 0.5s; transition-timing-function: cubic-bezier(0.32, 0.72, 0, 1);">
     <div class="flex justify-between items-center p-5 border-b border-white/5">
         <h4 class="font-bold text-white text-sm mx-auto">Siapa yang dapat melihat</h4>
         <button onclick="tutupPilihanPrivasi()" class="absolute right-5 text-gray-400 w-8 h-8 flex items-center justify-center bg-white/5 rounded-full active:scale-95"><i class="fas fa-times"></i></button>
@@ -4115,6 +4165,44 @@ else { let tempInput = document.createElement("textarea"); tempInput.value = nom
 btnSalin.innerHTML = '<i class="fas fa-check mr-1.5"></i> Tersalin';
 btnSalin.classList.replace('text-brand-info', 'text-brand-success'); btnSalin.classList.replace('bg-brand-info/10', 'bg-brand-success/10'); btnSalin.classList.replace('border-brand-info/30', 'border-brand-success/30');
 setTimeout(() => { btnSalin.innerHTML = teksAsli; btnSalin.classList.replace('text-brand-success', 'text-brand-info'); btnSalin.classList.replace('bg-brand-success/10', 'bg-brand-info/10'); btnSalin.classList.replace('border-brand-success/30', 'border-brand-info/30'); }, 2000);
+}
+
+// FUNGSI UNTUK MENYALIN ID TRANSAKSI DARI STRUK
+function salinIdTransaksi() {
+    const idText = document.getElementById('detail-ref-id').innerText;
+    const btnSalin = document.getElementById('btn-copy-ref');
+    const icon = btnSalin.querySelector('i');
+
+    // Proses salin ke clipboard HP/PC
+    if (navigator.clipboard && window.isSecureContext) { 
+        navigator.clipboard.writeText(idText); 
+    } else { 
+        let tempInput = document.createElement("textarea"); 
+        tempInput.value = idText; 
+        tempInput.style.position = "fixed"; 
+        tempInput.style.left = "-9999px"; 
+        document.body.appendChild(tempInput); 
+        tempInput.select(); 
+        try { document.execCommand("copy"); } catch (err) {} 
+        document.body.removeChild(tempInput); 
+    }
+
+    // Ubah Ikon dan Warna jadi Hijau Sukses
+    icon.className = 'fas fa-check text-xs';
+    btnSalin.classList.replace('text-brand-info', 'text-brand-success'); 
+    btnSalin.classList.replace('bg-brand-info/10', 'bg-brand-success/10'); 
+    btnSalin.classList.replace('border-brand-info/20', 'border-brand-success/20');
+    
+    // Munculkan notifikasi Toast bawaan Anda
+    showToast("ID Transaksi berhasil disalin!", "success");
+
+    // Kembalikan ke ikon copy semula setelah 2 detik
+    setTimeout(() => { 
+        icon.className = 'fas fa-copy text-xs';
+        btnSalin.classList.replace('text-brand-success', 'text-brand-info'); 
+        btnSalin.classList.replace('bg-brand-success/10', 'bg-brand-info/10'); 
+        btnSalin.classList.replace('border-brand-success/20', 'border-brand-info/20'); 
+    }, 2000);
 }
 
 
@@ -7624,7 +7712,7 @@ function appendMessageBubble(msg) {
     const date = new Date(msg.created_at);
     const time = date.getHours().toString().padStart(2, '0') + ':' + date.getMinutes().toString().padStart(2, '0');
 
-    let bubbleColor = isMe ? 'bg-brand-accent text-white rounded-br-none' : 'bg-white/10 text-white border border-white/10 rounded-bl-none';
+    let bubbleColor = isMe ? 'bg-gradient-to-br from-brand-accent to-[#d61a7f] text-white rounded-br-none shadow-[0_4px_12px_rgba(255,0,122,0.25)]' : 'bg-white/10 text-white border border-white/10 rounded-bl-none backdrop-blur-sm shadow-sm';
     let align = isMe ? 'justify-end' : 'justify-start';
 
     let rawMessage = msg.message || '';
@@ -8926,7 +9014,17 @@ async function cekStatusPesanan(kategori) {
                 </div>`;
             }).join('');
         } else {
-            container.innerHTML = `<div class="text-center mt-20 text-gray-500"><i class="fas fa-box-open text-5xl mb-3 opacity-30"></i><p class="text-xs font-bold uppercase tracking-wider">TIDAK ADA DATA</p></div>`;
+            container.innerHTML = `
+<div class="flex flex-col items-center justify-center mt-24 text-center px-6">
+    <div class="relative w-24 h-24 mb-5 flex items-center justify-center">
+        <div class="absolute inset-0 bg-brand-info/10 rounded-full blur-xl"></div>
+        <div class="w-20 h-20 bg-brand-info/10 rounded-full flex items-center justify-center border border-brand-info/20 backdrop-blur-md relative z-10 shadow-lg">
+            <i class="fas fa-box-open text-4xl text-brand-info/70"></i>
+        </div>
+    </div>
+    <h4 class="text-white font-extrabold text-base mb-1 tracking-tight">Belum Ada Transaksi</h4>
+    <p class="text-xs text-gray-500 leading-relaxed">Sepertinya kamu belum memiliki data pesanan di kategori ini.</p>
+</div>`;
         }
     } catch (e) {
         container.innerHTML = '<div class="text-center mt-20 text-red-500 text-xs">Gagal menarik data dari server.</div>';
@@ -9989,7 +10087,7 @@ function bukaVideoShare(vidId) {
     </div>
 </div>
 
-<div id="modal-detail-produk" class="fixed inset-x-0 bottom-0 z-[180] max-h-[85vh] min-h-[50vh] bg-[#161B2E]/95 backdrop-blur-xl border-t border-white/10 rounded-t-[2.5rem] flex flex-col max-w-md mx-auto transition-transform duration-300 translate-y-full shadow-[0_-20px_50px_rgba(0,0,0,0.6)]">
+<div id="modal-detail-produk" class="fixed inset-x-0 bottom-0 z-[180] max-h-[85vh] min-h-[50vh] bg-[#161B2E]/95 backdrop-blur-xl border-t border-white/10 rounded-t-[2.5rem] flex flex-col max-w-md mx-auto transition-transform translate-y-full shadow-[0_-20px_50px_rgba(0,0,0,0.6)]" style="transition-duration: 0.5s; transition-timing-function: cubic-bezier(0.32, 0.72, 0, 1);">
     
     <div class="flex justify-center p-3 shrink-0 bg-brand-dark/40 rounded-t-[2.5rem]" onclick="closeDetailProduk()">
         <div class="w-12 h-1.5 bg-white/20 rounded-full cursor-pointer hover:bg-white/40 transition-colors"></div>
@@ -10048,9 +10146,10 @@ function bukaVideoShare(vidId) {
     </div> 
     
     <div class="w-full bg-[#161B2E] border-t border-white/5 p-4 shrink-0 pb-6 rounded-t-2xl z-20 mt-auto shadow-[0_-10px_20px_rgba(0,0,0,0.3)]">
-        <button id="btn-beli-detail" onclick="" class="w-full bg-gradient-to-r from-[#00F0FF] via-[#8A2BE2] to-[#FF007A] text-white py-4 rounded-xl font-extrabold text-sm active:scale-95 transition-transform shadow-lg shadow-brand-purple/20 flex justify-center items-center gap-2">
-            <i class="fas fa-shopping-bag"></i> BELI SEKARANG VIA AUTO QRIS
-        </button>
+<button id="btn-beli-detail" onclick="" class="relative w-full bg-gradient-to-r from-[#00F0FF] via-[#8A2BE2] to-[#FF007A] text-white py-4 rounded-2xl font-extrabold text-sm active:scale-95 transition-all duration-300 hover:shadow-[0_0_20px_rgba(138,43,226,0.6)] overflow-hidden group flex justify-center items-center gap-2">
+    <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]"></div>
+    <i class="fas fa-shopping-bag relative z-10"></i> <span class="relative z-10">BELI SEKARANG VIA AUTO QRIS</span>
+</button>
     </div> 
 </div>
 
@@ -10111,12 +10210,18 @@ function bukaVideoShare(vidId) {
                         <div class="text-[10px] text-gray-500 mb-1">Nama Produk</div>
                         <div id="detail-nama-layanan" class="text-xs font-bold text-white leading-snug break-words">Memuat...</div>
                     </div>
-                    <div>
-                        <div class="text-[10px] text-gray-500 mb-1">ID Transaksi (Provider Ref)</div>
-                        <div id="detail-ref-id" class="text-[11px] font-mono text-brand-info font-bold select-all cursor-pointer bg-brand-info/10 w-max px-2 py-0.5 rounded border border-brand-info/20" title="Tahan untuk menyalin">NIKKY - </div>
+<div>
+    <div class="text-[10px] text-gray-500 mb-1">ID Transaksi (Provider Ref)</div>
+    <div class="flex items-center gap-2">
+        <div id="detail-ref-id" class="text-[10px] sm:text-[11px] font-mono text-brand-info font-bold select-all bg-brand-info/10 px-2.5 py-1.5 rounded-lg border border-brand-info/20 flex-1 break-all leading-relaxed">NIKKY - </div>
+        
+        <button onclick="salinIdTransaksi()" id="btn-copy-ref" class="w-8 h-8 rounded-lg bg-brand-info/10 border border-brand-info/20 text-brand-info flex items-center justify-center hover:bg-brand-info hover:text-white transition-all active:scale-95 shrink-0" title="Salin ID">
+            <i class="fas fa-copy text-xs"></i>
+        </button>
+    </div>
+</div>
                     </div>
                 </div>
-            </div>
 
             <!-- 3. AREA TOMBOL AKSI -->
             <div id="action-belum-bayar" class="hidden flex-col gap-3">
@@ -10217,18 +10322,18 @@ function bukaVideoShare(vidId) {
 
             <div>
                 <label class="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-1.5 block">Nama Produk</label>
-                <input type="text" id="jualan-nama" placeholder="Contoh: Joki GB Level 1-10" class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-brand-success transition-colors">
+                <input type="text" id="jualan-nama" placeholder="Contoh: Joki GB Level 1-10" class="w-full bg-black/40 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white outline-none focus:border-brand-success focus:bg-white/5 focus:ring-4 focus:ring-brand-success/20 transition-all duration-300">
             </div>
             <div class="grid grid-cols-2 gap-3">
                 <div>
                     <label class="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-1.5 block">Harga (Rp)</label>
-                    <input type="text" id="jualan-harga" placeholder="10.000" class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-brand-success transition-colors">
+                    <input type="text" id="jualan-harga" placeholder="10.000" class="w-full bg-black/40 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white outline-none focus:border-brand-success focus:bg-white/5 focus:ring-4 focus:ring-brand-success/20 transition-all duration-300">
                     <p class="text-[8px] text-brand-success mt-1.5 italic">*Pendapatan bersih akan dipotong pajak layanan 5%</p>
                 </div>
 
                 <div>
                     <label class="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-1.5 block">Kategori</label>
-                    <select id="jualan-kategori" onchange="toggleStockInput(this.value, 'wadah-stock-jualan')" class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-brand-success transition-colors appearance-none">
+                    <select id="jualan-kategori" onchange="toggleStockInput(this.value, 'wadah-stock-jualan')" class="w-full bg-black/40 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white outline-none focus:border-brand-success focus:bg-white/5 focus:ring-4 focus:ring-brand-success/20 transition-all duration-300 appearance-none">
                         <option value="Joki" class="bg-brand-dark">Joki</option>
                         <option value="APK Premium" class="bg-brand-dark">APK Premium</option>
                         <option value="Akun" class="bg-brand-dark">Akun</option>
@@ -10249,7 +10354,7 @@ function bukaVideoShare(vidId) {
 
             <div>
                 <label class="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-1.5 block">Deskripsi Lengkap</label>
-                <textarea id="jualan-deskripsi" rows="4" placeholder="Jelaskan detail produk..." class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-brand-success transition-colors resize-none hide-scroll"></textarea>
+                <textarea id="jualan-deskripsi" rows="4" placeholder="Jelaskan detail produk..." class="w-full bg-black/40 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white outline-none focus:border-brand-success focus:bg-white/5 focus:ring-4 focus:ring-brand-success/20 transition-all duration-300 resize-none hide-scroll"></textarea>
             </div>
         </div> <div class="p-4 border-t border-white/5 bg-brand-dark shrink-0">
             <button id="btn-submit-jualan" onclick="prosesPostingJualan()" class="w-full bg-brand-success hover:bg-[#20bd5a] text-white py-3.5 rounded-xl font-extrabold active:scale-95 transition-all uppercase tracking-wider text-sm shadow-[0_4px_15px_rgba(37,211,102,0.3)]">Posting Dagangan</button>
@@ -10284,12 +10389,12 @@ function bukaVideoShare(vidId) {
 
             <div>
                 <label class="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-1.5 block">Nama Produk</label>
-                <input type="text" id="edit-produk-nama" class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-brand-info transition-colors">
+                <input type="text" id="edit-produk-nama" class="w-full bg-black/40 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white outline-none focus:border-brand-info focus:bg-white/5 focus:ring-4 focus:ring-brand-info/20 transition-all duration-300">
                 </div>
             <div class="grid grid-cols-2 gap-3">
                 <div>
                     <label class="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-1.5 block">Harga (Rp)</label>
-                    <input type="text" id="edit-produk-harga" class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-brand-info transition-colors">
+                    <input type="text" id="edit-produk-harga" class="w-full bg-black/40 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white outline-none focus:border-brand-info focus:bg-white/5 focus:ring-4 focus:ring-brand-info/20 transition-all duration-300">
                     <p class="text-[8px] text-brand-info mt-1.5 italic">*Pendapatan bersih akan dipotong pajak layanan 5%</p>
                 </div>
 
@@ -10930,8 +11035,9 @@ function switchTokoTab(tab) {
     const contProduk = document.getElementById('toko-produk-container');
     const contPesanan = document.getElementById('toko-pesanan-container');
 
-    const activeClassBtn = 'flex-1 py-2.5 text-xs font-bold text-brand-dark bg-yellow-500 rounded-lg shadow-[0_0_15px_rgba(234,179,8,0.4)] transition-all';
-    const inactiveClassBtn = 'flex-1 py-2.5 text-xs font-bold text-gray-500 hover:text-white rounded-lg transition-all border border-transparent';
+const activeClassBtn = 'flex-1 py-2.5 text-xs font-bold text-brand-dark bg-yellow-500 rounded-[10px] shadow-[0_4px_12px_rgba(234,179,8,0.4)] transition-all duration-300 transform scale-100';
+const inactiveClassBtn = 'flex-1 py-2.5 text-xs font-bold text-gray-400 hover:text-white hover:bg-white/5 rounded-[10px] transition-all duration-300 transform scale-[0.98] border border-transparent';
+
 
     if (tab === 'produk') {
         btnProduk.className = activeClassBtn;
@@ -11043,8 +11149,9 @@ function switchTokoTab(tab) {
     const contPesanan = document.getElementById('toko-pesanan-container');
     if(!btnProduk || !btnPesanan || !contProduk || !contPesanan) return;
 
-    const activeClassBtn = 'flex-1 py-2.5 text-xs font-bold text-brand-dark bg-yellow-500 rounded-lg shadow-[0_0_15px_rgba(234,179,8,0.4)] transition-all';
-    const inactiveClassBtn = 'flex-1 py-2.5 text-xs font-bold text-gray-500 hover:text-white rounded-lg transition-all border border-transparent';
+const activeClassBtn = 'flex-1 py-2.5 text-xs font-bold text-brand-dark bg-yellow-500 rounded-[10px] shadow-[0_4px_12px_rgba(234,179,8,0.4)] transition-all duration-300 transform scale-100';
+const inactiveClassBtn = 'flex-1 py-2.5 text-xs font-bold text-gray-400 hover:text-white hover:bg-white/5 rounded-[10px] transition-all duration-300 transform scale-[0.98] border border-transparent';
+
 
     if (tab === 'produk') {
         btnProduk.className = activeClassBtn;
