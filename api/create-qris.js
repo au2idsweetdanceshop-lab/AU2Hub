@@ -11,7 +11,7 @@ export default async function handler(req, res) {
     const apiKey = process.env.XOFTWARE_API_KEY;         
 
     try {
-        // 2. SUSUN PAYLOAD
+        // SUSUN PAYLOAD
         const payload = {
             merchant_id: 129, 
             channel_code: "QRIS", 
@@ -20,20 +20,19 @@ export default async function handler(req, res) {
             fee_direction: "merchant", 
             notify_url: "https://www.au2idsweetdance.com/api/webhook", 
             note: `Pembayaran: ${product_name}`, 
-            // --- FIX FINAL: METADATA LENGKAP (Customer + Products) ---
             metadata: {
                 customer: {
-                    id: "CUST-" + Date.now().toString().slice(-6), // ID Customer acak
+                    id: "CUST-" + Date.now().toString().slice(-6),
                     name: customer_name || "Player AU2Hub",
-                    phone: "081234567890",   // Nomor HP dummy (wajib diisi buat beberapa Gateway)
-                    email: "buyer@au2hub.com" // Email dummy (wajib diisi buat beberapa Gateway)
+                    phone: "081234567890",
+                    email: "buyer@au2hub.com"
                 },
                 products: [
                     {
                         product_code: "ITEM-001",
                         product_name: product_name || "Produk AU2Hub",
-                        product_thumbnail: "https://placehold.co/100x100/1a1133/ff007a?text=Item", // Link dummy
-                        product_url: "https://www.au2idsweetdance.com" // Link dummy
+                        product_thumbnail: "https://placehold.co/100x100/1a1133/ff007a?text=Item",
+                        product_url: "https://www.au2idsweetdance.com"
                     }
                 ]
             }
@@ -41,10 +40,10 @@ export default async function handler(req, res) {
 
         const payloadString = JSON.stringify(payload);
         
-        // WAKTU UNIX DALAM DETIK
+        // WAKTU UNIX
         const timestamp = Math.floor(Date.now() / 1000).toString();
 
-        // RUMUS RAHASIA SIGNATURE XOFTWARE
+        // SIGNATURE
         const method = 'POST';
         const path = '/v1/api/transactions';
         const messageToSign = `${timestamp}\n${method}\n${path}\n${payloadString}`;
@@ -54,7 +53,7 @@ export default async function handler(req, res) {
             .update(messageToSign, 'utf8')
             .digest('base64'); 
 
-        // TEMBAK KE SERVER XOFTWARE
+        // TEMBAK API
         const response = await fetch(`${baseUrl}${path}`, { 
             method: 'POST',
             headers: {
@@ -66,22 +65,21 @@ export default async function handler(req, res) {
             body: payloadString
         });
 
-        let dataXoftware;
-        try {
-            dataXoftware = await response.json();
-        } catch (err) {
-            const textErr = await response.text();
-            throw new Error(`Respons server Xoftware tidak valid: ${textErr}`);
-        }
+        const dataXoftware = await response.json();
 
-        // KEMBALIKAN STRING QRIS KE FRONTEND
-        if (response.ok && dataXoftware.status === "PENDING") { 
+        // --- FIX FINAL: PENANGKAP RESPONS ANTI-GAGAL ---
+        // Kita cari string QRIS-nya, entah itu ditaruh di luar atau dibungkus di dalam "data"
+        const qrisString = dataXoftware.qris_text || (dataXoftware.data && dataXoftware.data.qris_text);
+
+        // Jika string QRIS-nya ketemu, kirim ke frontend!
+        if (qrisString) {
             return res.status(200).json({
                 success: true,
-                qris_string: dataXoftware.qris_text 
+                qris_string: qrisString 
             });
         } else {
-            throw new Error(dataXoftware.message || JSON.stringify(dataXoftware) || 'Gagal membuat QRIS');
+            // Kalau misal QRIS tetep ga ketemu, munculin wujud asli JSON-nya biar kita tau letaknya di mana
+            throw new Error(`Berhasil masuk, tapi QRIS ngumpet: ${JSON.stringify(dataXoftware)}`);
         }
 
     } catch (error) {
