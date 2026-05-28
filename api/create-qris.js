@@ -12,7 +12,7 @@ export default async function handler(req, res) {
 
     try {
         const payload = {
-            merchant_id: 129, // <--- FIX: KITA HARDCODE LANGSUNG ANGKA 129 DI SINI!
+            merchant_id: 129, 
             channel_code: "QRIS", 
             amount: parseInt(amount), 
             ref_id: order_id, 
@@ -22,7 +22,14 @@ export default async function handler(req, res) {
             metadata: {
                 customer: {
                     name: customer_name || "Player AU2Hub" 
-                }
+                },
+                // --- FIX: TAMBAHKAN RINCIAN ITEM PRODUK DI SINI ---
+                products: [
+                    {
+                        product_code: "ITEM-001", // Kode unik bebas
+                        product_name: product_name || "Produk AU2Hub"
+                    }
+                ]
             }
         };
 
