@@ -2706,7 +2706,8 @@ async function checkSession() {
     document.querySelectorAll('#profile-logged-in').forEach(el => el.classList.add('hidden'));
     document.getElementById('profile-logged-out').classList.add('hidden');
 
-    const { data: { user } } = await supabaseClient.auth.getUser();
+    const { data: { session }, error } = await supabaseClient.auth.getSession();
+    const user = session?.user;
 
     document.getElementById('profile-loading').classList.add('hidden');
     document.getElementById('profile-loading').classList.remove('flex');
@@ -8509,7 +8510,7 @@ function autoCleanLocalStorage() {
 // ==========================================
 // INISIALISASI HALAMAN (WAJIB ADA AGAR WEB BERJALAN)
 // ==========================================
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   autoCleanLocalStorage(); // Eksekusi pembersih memori saat buka web
 
   // Logika Routing Halaman Utama
@@ -8528,7 +8529,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   switchTab(tabMurni, null, false);
 
-  checkSession();
+  await checkSession();
+  loadPasarPlayer();
+
 supabaseClient.auth.onAuthStateChange((event, session) => {
       // Jika token gagal diperbarui atau kadaluarsa
       if (event === 'TOKEN_REFRESHED' && !session) {
@@ -10520,8 +10523,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if(jualanHarga) jualanHarga.addEventListener('input', formatInputRupiah);
         if(editHarga) editHarga.addEventListener('input', formatInputRupiah);
     }, 500);
-
-    loadPasarPlayer();
 });
 
 
