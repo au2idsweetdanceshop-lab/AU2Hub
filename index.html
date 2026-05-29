@@ -11656,7 +11656,13 @@ function bukaGalleryPasar(idProduk, startIndex) {
     galleryModal.innerHTML = `
         <button onclick="tutupGalleryPasar()" class="absolute top-6 right-6 text-white bg-white/10 backdrop-blur-md w-12 h-12 rounded-full flex items-center justify-center active:scale-90 z-[9999] shadow-lg border border-white/20"><i class="fas fa-times text-xl"></i></button>
         <div id="gallery-slider" class="w-full h-full flex overflow-x-auto hide-scroll snap-x snap-mandatory items-center relative z-[9990]">
-            ${arrFoto.map(img => `<div class="w-full h-full flex-shrink-0 snap-center flex items-center justify-center p-2 relative"><img src="${img}" draggable="false" class="max-w-full max-h-[85vh] object-contain rounded-xl shadow-2xl pointer-events-none"></div>`).join('')}
+            ${arrFoto.map(img => `
+                <div class="w-full h-full flex-shrink-0 snap-center flex items-center justify-center p-2 relative">
+                    <img src="${img}" draggable="false" class="max-w-full max-h-[85vh] object-contain rounded-xl shadow-2xl pointer-events-none relative z-0">
+                    <!-- Watermark AU2Hub untuk Full Screen -->
+                    <img src="https://nos.wjv-1.neo.id/au2hub/Picsart_26-05-22_23-46-22-498.png" class="absolute inset-0 m-auto w-48 h-48 object-contain opacity-[0.25] pointer-events-none z-10 drop-shadow-lg">
+                </div>
+            `).join('')}
         </div>
         ${arrFoto.length > 1 ? `<div class="absolute bottom-10 left-1/2 -translate-x-1/2 bg-black/60 backdrop-blur-md text-white text-[10px] font-bold px-5 py-2 rounded-full border border-white/10 shadow-lg z-[9999]"><span id="gallery-current">${startIndex + 1}</span> / ${arrFoto.length}</div>` : ''}
     `;
@@ -12054,7 +12060,17 @@ async function prosesAutoDeliveryTertunda() {
     }
 }
 
-
+// ==========================================
+// SISTEM ANTI KLIK KANAN PADA GAMBAR
+// ==========================================
+document.addEventListener('contextmenu', function(e) {
+    // Jika yang diklik kanan adalah gambar (IMG), matikan fungsinya
+    if (e.target.tagName === 'IMG') {
+        e.preventDefault();
+        // Opsional: Kamu bisa memunculkan toast jika mau
+        // showToast("Gambar dilindungi oleh sistem.", "info");
+    }
+});
 
 
 </script>
@@ -12085,18 +12101,6 @@ async function prosesAutoDeliveryTertunda() {
         <div id="riwayat-pesanan-list" class="flex-1 overflow-y-auto p-4 hide-scroll space-y-3 bg-black/40 pb-10"></div>
     </div>
 </div>
-
-// ==========================================
-// SISTEM ANTI KLIK KANAN PADA GAMBAR
-// ==========================================
-document.addEventListener('contextmenu', function(e) {
-    // Jika yang diklik kanan adalah gambar (IMG), matikan fungsinya
-    if (e.target.tagName === 'IMG') {
-        e.preventDefault();
-        // Opsional: Kamu bisa memunculkan toast jika mau
-        // showToast("Gambar dilindungi oleh sistem.", "info");
-    }
-});
 
 
 </body>
