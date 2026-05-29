@@ -10,7 +10,9 @@ export default async function handler(req, res) {
         return res.status(405).json({ success: false, message: 'Method Not Allowed' });
     }
 
-    const { order_id, amount, product_name, customer_name } = req.body;
+    // Mengabaikan 'amount' dari frontend untuk keamanan ekstra. 
+    // Kita hanya akan menggunakan harga yang diverifikasi oleh server.
+    const { order_id, product_name, customer_name } = req.body; 
     const baseUrl = process.env.XOFTWARE_BASE_URL;       
     const apiKey = process.env.XOFTWARE_API_KEY;         
 
@@ -33,20 +35,14 @@ export default async function handler(req, res) {
             return res.status(404).json({ success: false, message: 'Pesanan tidak ditemukan.' });
         }
 
-        const claimedPrice = parseInt(orderData.price); // Harga yang dikirim frontend ke DB
-        const payloadAmount = parseInt(amount);         // Harga yang dikirim frontend ke API
-
-        // 2. VALIDASI DASAR: Samakan payload API dengan data Order DB
-        if (payloadAmount !== claimedPrice) {
-            return res.status(400).json({ success: false, message: 'Data payload tidak valid.' });
-        }
+        let finalVerifiedPrice = parseInt(orderData.price); // Harga awal dari DB yang disimpan frontend
 
         // =================================================================
         // 🛡️ FITUR KEAMANAN MUTLAK: VALIDASI HARGA ASLI (SOURCE OF TRUTH)
         // =================================================================
         
         if (isPasarPlayer && orderData.product_id) {
-            // JIKA DARI PASAR PLAYER: Cek harga asli produk dari etalase penjual!
+            // Cek harga asli produk dari etalase penjual
             const { data: productMaster, error: errMaster } = await supabase
                 .from('player_products')
                 .select('price')
@@ -57,46 +53,48 @@ export default async function handler(req, res) {
                 return res.status(400).json({ success: false, message: 'Produk asli tidak ditemukan.' });
             }
 
-            // Hitung ulang rumus harga Customer (Base Price + Rp 500 + 0.7%) di Server!
+            // Rumus Harga Final Server: Harga Asli + Untung (500) + Fee Xoftware (150) + Fee Persen (0.7%)
             const basePrice = parseInt(productMaster.price);
-            const expectedPrice = Math.floor(basePrice + 500 + (basePrice * 0.007));
+            const expectedPrice = Math.floor(basePrice + 650 + (basePrice * 0.007));
 
-            // JIKA HARGA YANG DI-CHECKOUT FRONTEND TIDAK SAMA DENGAN RUMUS SERVER = HACKER!
-            if (claimedPrice !== expectedPrice) {
-                console.error(`[HACK ATTEMPT!] User: ${orderData.user_id} mengubah harga pasar dari ${expectedPrice} menjadi ${claimedPrice}`);
+            // JIKA HARGA CHECKOUT FRONTEND TIDAK SAMA DENGAN RUMUS SERVER = HACKER ATAU RUMUS FRONTEND BELUM DIUPDATE!
+            if (finalVerifiedPrice !== expectedPrice) {
+                console.error(`[HACK ATTEMPT!] User: ${orderData.user_id} mengubah harga pasar dari ${expectedPrice} menjadi ${finalVerifiedPrice}`);
                 
                 // Hapus order palsu dari database agar tidak nyangkut
                 await supabase.from('orders_player').delete().eq('id', order_id);
                 
                 return res.status(400).json({ success: false, message: 'Terdeteksi manipulasi harga! Transaksi digagalkan.' });
             }
-        } else {
-            // JIKA LAYANAN ADMIN (XOFTWARE):
-            // Karena kita tidak menyimpan harga Xoftware di Supabase (harga ditarik dari API Xoftware ke Frontend),
-            // Setidaknya kita pasang Hard-Limit agar Hacker tidak bisa beli barang seharga Rp 1.
             
-            // Batas minimal harga beli produk admin adalah Rp 1.000 (Sesuaikan dengan produk termurah kamu)
-            if (claimedPrice < 1000) {
-                console.error(`[HACK ATTEMPT!] Order Admin tidak wajar. Harga: Rp ${claimedPrice}`);
+            // Set harga mutlak yang akan dikirim ke API
+            finalVerifiedPrice = expectedPrice;
+
+        } else {
+            // JIKA LAYANAN ADMIN: Batas minimal harga beli produk admin adalah Rp 1.000
+            if (finalVerifiedPrice < 1000) {
+                console.error(`[HACK ATTEMPT!] Order Admin tidak wajar. Harga: Rp ${finalVerifiedPrice}`);
                 await supabase.from('orders').delete().eq('id', order_id);
                 return res.status(400).json({ success: false, message: 'Harga di bawah batas minimal sistem!' });
             }
         }
         // =================================================================
 
+        // Mencegah crash jika user_id kosong atau bukan string
+        const safeCustomerId = orderData.user_id ? String(orderData.user_id).slice(0, 8) : "UNKNOWN";
 
         // SUSUN PAYLOAD KE XOFTWARE
         const payload = {
             merchant_id: 129, 
-            channel_code: "QRIS", 
-            amount: claimedPrice, // Sudah tervalidasi aman
+            channel_code: "REALTIME", // Sudah diubah ke Instan H+0 sesuai instruksi Xoftware
+            amount: finalVerifiedPrice, // Menggunakan harga yang sudah tervalidasi aman
             ref_id: order_id, 
             fee_direction: "merchant", 
             notify_url: "https://au2idsweetdance.com/api/webhook", 
             note: `Pembayaran: ${product_name}`, 
             metadata: {
                 customer: {
-                    id: "CUST-" + orderData.user_id.slice(0, 8), // Ambil 8 digit ID Supabase
+                    id: `CUST-${safeCustomerId}`, 
                     name: customer_name || "Player AU2Hub",
                     phone: "081234567890",
                     email: "buyer@au2hub.com"
@@ -136,11 +134,12 @@ export default async function handler(req, res) {
                 qris_string: qrisString 
             });
         } else {
-            throw new Error(`Gagal mendapatkan QRIS dari Provider: ${JSON.stringify(dataXoftware)}`);
+            console.error("Xoftware API Error:", dataXoftware);
+            return res.status(502).json({ success: false, message: 'Gagal mendapatkan QRIS dari Provider.' });
         }
 
     } catch (error) {
         console.error("QRIS Error:", error);
-        return res.status(500).json({ success: false, message: error.message });
+        return res.status(500).json({ success: false, message: "Terjadi kesalahan pada server." });
     }
 }
