@@ -5812,8 +5812,14 @@ function renderRow(item, isGroup) {
         else if (lastMessageText.startsWith('[VIDEO]')) lastMessageText = "🎥 Video";
         else if (lastMessageText.startsWith('[AUDIO]')) lastMessageText = "🎙️ Pesan Suara";
         else if (lastMessageText.startsWith('[SISTEM]')) lastMessageText = "Pemberitahuan Sistem";
-        else if (lastMessageText.startsWith('[REPLY:')) lastMessageText = "Balasan pesan...";
+        else if (lastMessageText.startsWith('[REPLY:]')) lastMessageText = "Balasan pesan...";
+        else if (lastMessageText.startsWith('[STORY_REPLY:]')) {
+            let cleanText = lastMessageText.replace(/^\[STORY_REPLY:.*?\]\n/, '');
+            lastMessageText = "Membalas status: " + cleanText;
+        }
     }
+
+
 
     // 2. Siapkan badge pesan belum dibaca
     let unreadBadge = item.unread > 0 
@@ -6673,10 +6679,12 @@ showToast("Mengirim balasan...", "info");
 try {
 // Ekstrak info story (apakah dia membalas gambar atau video)
 const storyTipe = story.media_type === 'video' ? 'Video' : 'Foto';
+let storyCaption = story.caption || "Pembaruan Status";
+// Potong caption jika terlalu panjang untuk preview
+if (storyCaption.length > 30) storyCaption = storyCaption.substring(0, 30) + '...';
 
-// Format Teks Balasan (Khas seperti mengutip pesan)
-const finalMessage = `[SISTEM] Membalas Status ${storyTipe}:\n"${message}"`;
-
+// Gunakan tag khusus [STORY_REPLY] agar sistem merendernya sebagai kotak kutipan
+const finalMessage = `[STORY_REPLY:${storyTipe}||${storyCaption}]\n${message}`;
 const { error } = await supabaseClient.from('messages').insert({
 sender_id: currentUser.id,
 receiver_id: targetId,
@@ -7810,6 +7818,24 @@ function appendMessageBubble(msg) {
         <div class="text-[10px] text-gray-300 truncate max-w-[200px] line-clamp-1">${replyText}</div>
         </div>`;
     }
+    
+        // --- BACA FORMAT BALASAN STORY (STORY REPLY) ---
+    const storyReplyRegex = /^\[STORY_REPLY:(.*?)\|\|(.*?)\]\n([\s\S]*)$/;
+    const matchStory = rawMessage.match(storyReplyRegex);
+
+    if (matchStory) {
+        const mediaType = escapeHTML(matchStory[1]);
+        const storyText = escapeHTML(matchStory[2]);
+        rawMessage = matchStory[3]; // Sisa pesan yang diketik pembeli
+
+        // Buat kotak balasan story (warna pink/accent biar beda dikit sama reply biasa)
+        replyHtml = `
+        <div class="bg-black/30 border-l-[3px] border-brand-accent p-2 mb-1.5 rounded-md cursor-default">
+            <div class="text-[10px] font-bold text-brand-accent mb-0.5"><i class="fas fa-history mr-1"></i> Membalas Status ${mediaType}</div>
+            <div class="text-[10px] text-gray-300 truncate max-w-[200px] line-clamp-1 italic">"${storyText}"</div>
+        </div>`;
+    }
+
 
     // --- TANGANI TEKS, GAMBAR, ATAU AUDIO ---
     let contentHtml = '';
