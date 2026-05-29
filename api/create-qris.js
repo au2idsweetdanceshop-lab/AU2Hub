@@ -92,13 +92,12 @@ export default async function handler(req, res) {
             fee_direction: "merchant", 
             notify_url: "https://au2idsweetdance.com/api/webhook", 
             note: `Pembayaran: ${product_name}`, 
+            // 🛠️ PERBAIKAN: Format metadata diratakan (flat object) agar tidak terbaca 0 item oleh Xoftware
             metadata: {
-                customer: {
-                    id: `CUST-${safeCustomerId}`, 
-                    name: customer_name || "Player AU2Hub",
-                    phone: "081234567890",
-                    email: "buyer@au2hub.com"
-                }
+                customer_id: `CUST-${safeCustomerId}`, 
+                customer_name: customer_name || "Player AU2Hub",
+                phone: "081234567890",
+                email: "buyer@au2hub.com"
             }
         };
 
