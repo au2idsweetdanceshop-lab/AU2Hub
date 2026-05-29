@@ -80,9 +80,6 @@ export default async function handler(req, res) {
         }
         // =================================================================
 
-        // Mencegah crash jika user_id kosong atau bukan string
-        const safeCustomerId = orderData.user_id ? String(orderData.user_id).slice(0, 8) : "UNKNOWN";
-
         // SUSUN PAYLOAD KE XOFTWARE
         const payload = {
             merchant_id: 129, 
@@ -91,14 +88,8 @@ export default async function handler(req, res) {
             ref_id: order_id, 
             fee_direction: "merchant", 
             notify_url: "https://au2idsweetdance.com/api/webhook", 
-            note: `Pembayaran: ${product_name}`, 
-            // 🛠️ PERBAIKAN: Format metadata diratakan (flat object) agar tidak terbaca 0 item oleh Xoftware
-            metadata: {
-                customer_id: `CUST-${safeCustomerId}`, 
-                customer_name: customer_name || "Player AU2Hub",
-                phone: "081234567890",
-                email: "buyer@au2hub.com"
-            }
+            note: `Pembayaran: ${product_name}`
+            // 🛠️ PERBAIKAN FINAL: Blok 'metadata' dihapus total agar tidak ditolak oleh validasi Xoftware
         };
 
         const payloadString = JSON.stringify(payload);
