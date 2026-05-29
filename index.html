@@ -1471,7 +1471,7 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
                 </div>
 
                 <input type="file" id="input-video-file" accept="video/*" class="hidden" onchange="handleVideoSelect(this)">
-                <label XR-Style for="input-video-file" id="drop-zone" class="w-24 aspect-[3/4] rounded-xl border border-dashed border-white/20 bg-white/5 flex flex-col items-center justify-center cursor-pointer overflow-hidden shrink-0 group relative hover:border-brand-accent/50 transition-colors">
+                <label data-xr-style="true" for="input-video-file" id="drop-zone" class="w-24 aspect-[3/4] rounded-xl border border-dashed border-white/20 bg-white/5 flex flex-col items-center justify-center cursor-pointer overflow-hidden shrink-0 group relative hover:border-brand-accent/50 transition-colors">
                     
                     <div id="upload-placeholder" class="text-center p-2 flex flex-col items-center justify-center">
                         <i class="fas fa-cloud-upload-alt text-xl text-gray-400 mb-1 group-hover:scale-110 transition-transform"></i>
@@ -1973,7 +1973,19 @@ const SUPABASE_URL = "https://divckiqkodtqudcoxkjz.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRpdmNraXFrb2R0cXVkY294a2p6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgzNDY0MzIsImV4cCI6MjA5MzkyMjQzMn0.z_FIS_rpDQPQ7nNWpuvabH7qDYgu7uq6TlYj9LSOcJQ";
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+// FUNGSI PEMBERSIH XSS GLOBAL
+function escapeHTML(str) {
+    if (!str) return '';
+    return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+}
+
 let currentUser = null, userProfile = null, isAuthLogin = true;
+
 let tabSebelumnya = 'home';
 let activeGroupId = null;
 let activeGroupRole = 'member';
@@ -2446,9 +2458,33 @@ globalMessageSubscription = supabaseClient
 .on('postgres_changes', {
 event: 'INSERT',
 schema: 'public',
-table: 'messages',
-filter: `receiver_id=eq.${currentUser.id}`
+table: 'messages'
+// HAPUS BARIS FILTER DI SINI AGAR BISA MENANGKAP PESAN GRUP JUGA
 }, payload => {
+    // Validasi tambahan: Pastikan pesan ini ditujukan untuk kita ATAU grup kita
+    const msg = payload.new;
+    const isForMe = msg.receiver_id === currentUser.id;
+    const isForMyGroup = msg.group_id && globalGroupList.some(g => g.id === msg.group_id);
+
+    if ((isForMe || isForMyGroup) && msg.sender_id !== currentUser.id && !blockedUsersList.includes(msg.sender_id)) {
+        showToast("Ada pesan baru masuk!", "info");
+        // FITUR NOTIFIKASI WEB
+        if ("Notification" in window && Notification.permission === "granted" && document.hidden) {
+            new Notification("AU2Hub", {
+                body: isForMyGroup ? "Ada pesan baru di Grup!" : "Anda menerima pesan baru!",
+                icon: "/app-icon-192.png"
+            });
+        }
+        checkGlobalUnreadMessages();
+        
+        const widget = document.getElementById('floating-widget');
+        const chatList = document.getElementById('chat-list-view');
+        if (!widget.classList.contains('opacity-0') && chatList.classList.contains('flex')) {
+            setTimeout(() => loadChatList(), 300);
+        }
+    }
+})
+.subscribe();
 checkGlobalUnreadMessages();
 
 if (activeChatUserId !== payload.new.sender_id && !blockedUsersList.includes(payload.new.sender_id)) {
@@ -2510,8 +2546,9 @@ async function showUserList(type) {
             if (isOwnProfile && isFollowerList) {
                 // event.stopPropagation() ditambahkan agar saat tombol dihapus diklik, 
                 // sistem tidak malah membuka profil orang tersebut
+                let namaAman = escapeHTML(p.nickname).replace(/'/g, "\\'");
                 removeBtn = `
-                <button onclick="event.stopPropagation(); removeFollower('${p.id}', '${p.nickname.replace(/'/g, "\\'")}')" 
+                <button onclick="event.stopPropagation(); removeFollower('${p.id}', '${namaAman}')"
                     class="ml-auto w-8 h-8 rounded-full bg-red-500/10 text-red-500 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all active:scale-90 shrink-0"
                     title="Hapus Pengikut">
                     <i class="fas fa-user-times text-[10px]"></i>
@@ -2699,24 +2736,29 @@ function hitungStatusLevel(totalExp) {
     return { level, exp, targetNextLevel, persentase };
 }
 
-// Fungsi Penambah EXP Otomatis (Background)
+// Fungsi Penambah EXP Otomatis (Aman via Server RPC)
 async function tambahExp(jumlah) {
     if (!currentUser || !userProfile) return;
+
+    // Batasi maksimal request dari frontend 
+    const jumlahAman = Math.min(jumlah, 100); 
     
-    // Hitung level sebelum ditambah
     const expLama = userProfile.exp || 0;
     const levelLama = hitungStatusLevel(expLama).level;
     
-    // Hitung exp & level baru
-    const expBaru = expLama + jumlah;
-    const levelBaru = hitungStatusLevel(expBaru).level;
-    
-    // Update data lokal
-    userProfile.exp = expBaru;
-
     try {
-        // Tembak pembaruan ke Database
-        await supabaseClient.from('profiles').update({ exp: expBaru }).eq('id', currentUser.id);
+        // 🚀 Tembak ke RPC Supabase (Backend yang menghitung dan memvalidasi)
+        const { error } = await supabaseClient.rpc('tambah_exp_aman', { 
+            p_user_id: currentUser.id, 
+            p_jumlah: jumlahAman 
+        });
+
+        if (error) throw error;
+
+        // Prediksi lokal untuk UI (biar layar langsung berubah tanpa loading)
+        const expBaru = expLama + jumlahAman;
+        userProfile.exp = expBaru;
+        const levelBaru = hitungStatusLevel(expBaru).level;
         
         // Munculkan notifikasi jika Naik Level!
         if (levelBaru > levelLama) {
@@ -3564,7 +3606,14 @@ function closeUploadModal() {
     
     if (placeholder) placeholder.classList.remove('hidden');
     if (previewContainer) previewContainer.classList.add('hidden');
-    if (previewVideo) { previewVideo.pause(); previewVideo.src = ''; }
+    if (previewVideo) { 
+        // BONGKAR MEMORI: Hapus Object URL agar RAM lega
+        if (previewVideo.src.startsWith('blob:')) {
+            URL.revokeObjectURL(previewVideo.src);
+        }
+        previewVideo.pause(); 
+        previewVideo.src = ''; 
+    }
     if (fileInput) fileInput.value = '';
     if (captionInput) captionInput.value = '';
 }
@@ -5090,6 +5139,15 @@ Suara Asli - @${vid.nickname || "Player"} 🎵 Original Audio
 </div>
 </div>`).join('');
 
+// --- SISTEM ANTI DOM BLOAT (MENCEGAH HP CRASH) ---
+if (container.children.length > 40) {
+    const tinggiVideo = container.firstElementChild.clientHeight;
+    // Hapus 5 video teratas yang sudah kelewat
+    for (let i = 0; i < 5; i++) container.firstElementChild.remove();
+    // Tarik scroll ke atas agar layar tidak lompat tiba-tiba
+    container.scrollBy({ top: -(tinggiVideo * 5), behavior: 'instant' });
+}
+
 container.insertAdjacentHTML('beforeend', htmlString);
 currentVideoIndex += BATCH_SIZE;
 
@@ -5767,12 +5825,28 @@ function renderRow(item, isGroup) {
     let ringClass = item.hasStory && !isGroup ? 'story-ring' : '';
     let imgBorder = item.hasStory && !isGroup ? 'border-2 border-brand-card' : 'border border-white/10';
 
-    // 4. Amankan nama yang memiliki tanda kutip (contoh: Jum'at)
-    let safeName = item.name.replace(/'/g, "\\'");
+    // 4. Amankan nama dan pesan dari XSS & tanda kutip
+    let safeNameDisplay = escapeHTML(item.name);
+    let safeNameJS = safeNameDisplay.replace(/'/g, "\\'");
+    let safeMessageDisplay = escapeHTML(lastMessageText);
     let timeText = item.latestMsg ? timeAgo(item.latestMsg.created_at) : '';
 
     return `
-    <div onclick="openChatRoom('${item.id}', '${safeName}', '${avatarUrl}', ${isGroup})" class="flex items-center p-3 hover:bg-white/5 cursor-pointer rounded-2xl transition-all border-b border-white/5 last:border-0">
+    <div onclick="openChatRoom('${item.id}', '${safeNameJS}', '${avatarUrl}', ${isGroup})" class="flex items-center p-3 hover:bg-white/5 cursor-pointer rounded-2xl transition-all border-b border-white/5 last:border-0">
+        <div class="relative shrink-0 ${ringClass}">
+            <img src="${avatarUrl}" class="w-11 h-11 rounded-full object-cover ${imgBorder}">
+        </div>
+        <div class="ml-3 flex-1 min-w-0">
+            <div class="flex justify-between items-center mb-0.5">
+                <h4 class="font-bold text-white text-xs truncate">${safeNameDisplay}</h4>
+                <span class="text-[9px] text-gray-500 shrink-0 ml-2">${timeText}</span>
+            </div>
+            <div class="flex justify-between items-center">
+                <p class="text-[10px] text-gray-400 truncate leading-snug">${safeMessageDisplay}</p>
+                ${unreadBadge}
+            </div>
+        </div>
+    </div>`;
         <div class="relative shrink-0 ${ringClass}">
             <img src="${avatarUrl}" class="w-11 h-11 rounded-full object-cover ${imgBorder}">
         </div>
@@ -6470,9 +6544,17 @@ function tutupPreviewMedia(dariTombolBack = false) {
     setTimeout(() => {
         modal.classList.add('hidden');
         modal.classList.remove('flex');
-        document.getElementById('preview-media-vid').pause();
-        document.getElementById('preview-media-vid').src = '';
-        document.getElementById('preview-media-img').src = '';
+        
+        const vidEl = document.getElementById('preview-media-vid');
+        const imgEl = document.getElementById('preview-media-img');
+        
+        // BONGKAR MEMORI: Hapus Object URL
+        if (vidEl.src.startsWith('blob:')) URL.revokeObjectURL(vidEl.src);
+        if (imgEl.src.startsWith('blob:')) URL.revokeObjectURL(imgEl.src);
+
+        vidEl.pause();
+        vidEl.src = '';
+        imgEl.src = '';
         mediaPreviewFile = null;
     }, 300);
 }
@@ -7730,9 +7812,9 @@ function appendMessageBubble(msg) {
     const match = rawMessage.match(replyRegex);
 
     if (match) {
-        const replyId = match[1];
-        const replyName = match[2];
-        const replyText = match[3];
+        const replyId = escapeHTML(match[1]);
+        const replyName = escapeHTML(match[2]);
+        const replyText = escapeHTML(match[3]);
         rawMessage = match[4]; // Sisa pesan setelah dipotong format reply
 
         // Buat kotak balasan yang bisa diklik
@@ -7786,7 +7868,8 @@ function appendMessageBubble(msg) {
         const senderLevel = hitungStatusLevel(expData).level;
         
         const badgeBubble = getBadgeByLevelAndVideos(senderLevel, vidCountBubble);
-        senderNameHtml = `<div onclick="const w = document.getElementById('floating-widget'); if(w) w.classList.add('opacity-0', 'pointer-events-none', 'translate-y-8', 'scale-95'); viewUserProfile('${msg.sender_id}')" class="text-[10px] text-[#00F0FF] font-bold mb-1 flex items-center gap-0.5 cursor-pointer hover:underline w-max">${msg.profiles?.nickname || 'Anggota'} <span class="scale-[0.7] origin-left inline-flex">${badgeBubble}</span></div>`;
+        const safeNickname = escapeHTML(msg.profiles?.nickname || 'Anggota');
+        senderNameHtml = `<div onclick="const w = document.getElementById('floating-widget'); if(w) w.classList.add('opacity-0', 'pointer-events-none', 'translate-y-8', 'scale-95'); viewUserProfile('${msg.sender_id}')" class="text-[10px] text-[#00F0FF] font-bold mb-1 flex items-center gap-0.5 cursor-pointer hover:underline w-max">${safeNickname} <span class="scale-[0.7] origin-left inline-flex">${badgeBubble}</span></div>`;
     }
 
     const html = `
@@ -8236,11 +8319,25 @@ updateHargaLayar();
 
 // 2. Fungsi Diketik Manual (Real-time)
 function inputJumlahPesan(val) {
-let parsed = parseInt(val);
-if (!isNaN(parsed) && parsed >= 1) {
-currentProductQty = parsed;
-updateHargaLayar();
+    let parsed = parseInt(val);
+    // Jika kosong / dihapus, anggap sementara jumlahnya 1 agar tidak NaN
+    if (isNaN(parsed) || parsed < 1) {
+        currentProductQty = 1;
+    } else {
+        currentProductQty = parsed;
+    }
+    updateHargaLayar();
 }
+
+// Lakukan hal yang persis sama pada fungsi inputJumlahPasar(val)
+function inputJumlahPasar(val) {
+    let parsed = parseInt(val);
+    if (isNaN(parsed) || parsed < 1) {
+        currentPasarQty = 1; 
+    } else {
+        currentPasarQty = parsed; 
+    }
+    updateHargaPasarLayar();
 }
 
 // 3. Fungsi Mencegah User Ngetik Huruf Aneh / Dikosongin
@@ -8482,9 +8579,31 @@ function closeDetailProduk(dariTombolBackHP = false) {
 
 
 // ==========================================
+// SISTEM PEMBERSIH MEMORI OTOMATIS (ANTI QUOTA EXCEEDED)
+// ==========================================
+function autoCleanLocalStorage() {
+    let keysToRemove = [];
+    let likeCount = 0;
+
+    for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && (key.startsWith('liked_') || key.startsWith('comment_liked_') || key.startsWith('story_liked_'))) {
+            likeCount++;
+            keysToRemove.push(key);
+        }
+    }
+    // Jika jumlah riwayat Like di HP sudah lebih dari 300, bersihkan untuk mencegah memori penuh
+    if (likeCount > 300) {
+        keysToRemove.forEach(k => localStorage.removeItem(k));
+        console.log(`[System] ${likeCount} Cache memori dibersihkan.`);
+    }
+}
+
+// ==========================================
 // INISIALISASI HALAMAN (WAJIB ADA AGAR WEB BERJALAN)
 // ==========================================
 document.addEventListener('DOMContentLoaded', () => {
+  autoCleanLocalStorage(); // Eksekusi pembersih memori saat buka web
 
   // Logika Routing Halaman Utama
   let tabAwal = window.location.hash.substring(1);
@@ -8822,14 +8941,25 @@ async function switchLeaderboardTab(tab) {
         containerSultan.innerHTML = '<div class="text-center py-10"><i class="fas fa-spinner fa-spin text-yellow-400 text-2xl"></i></div>';
 
         try {
-            const { data: orders, error } = await supabaseClient.from('orders').select('user_id, price').eq('status', 'selesai');
-            if (error || !orders || orders.length === 0) {
+            // 1. Tarik data dari Layanan Admin (orders)
+            const reqAdmin = supabaseClient.from('orders').select('user_id, price').eq('status', 'selesai');
+            // 2. Tarik data dari Pasar Player (orders_player)
+            const reqPlayer = supabaseClient.from('orders_player').select('user_id, price').eq('status', 'selesai');
+            
+            // Eksekusi berbarengan agar cepat
+            const [resAdmin, resPlayer] = await Promise.all([reqAdmin, reqPlayer]);
+            
+            // Gabungkan kedua data pesanan
+            const allOrders = [...(resAdmin.data || []), ...(resPlayer.data || [])];
+
+            if (allOrders.length === 0) {
                 containerSultan.innerHTML = '<p class="text-center text-xs text-gray-500 py-10">Belum ada data sultan yang memborong.</p>';
                 return;
             }
 
+            // Hitung total gabungan pengeluaran
             const sultanStats = {};
-            orders.forEach(o => {
+            allOrders.forEach(o => {
                 if (!sultanStats[o.user_id]) sultanStats[o.user_id] = { user_id: o.user_id, totalSpent: 0 };
                 sultanStats[o.user_id].totalSpent += Number(o.price);
             });
@@ -8934,6 +9064,7 @@ let activeOrderNameToPay = "";
 let activeOrderTable = 'orders';
 let activeOrderSellerId = null; // <--- WAJIB DITAMBAHKAN
 let activeOrderProductId = null; // <--- WAJIB DITAMBAHKAN
+let intervalJemputBola = null; // <--- VAR GLOBAL UNTUK MENCEGAH KEBOCORAN MEMORI
 
 async function cekStatusPesanan(kategori) {
     if (!currentUser) return showToast("Silakan login terlebih dahulu.", "error");
@@ -8998,8 +9129,9 @@ async function cekStatusPesanan(kategori) {
                     teksStatus = 'DIBATALKAN'; 
                 }
 
-                // Kirim table_source ke popup
-                let clickAction = `onclick="bukaDetailPesananDinamis('${order.id}', '${order.product_name.replace(/'/g, "\\'")}', ${order.price}, '${order.status}', '${order.table_source}', '${order.seller_id || ''}', '${order.product_id || ''}')" class="cursor-pointer hover:border-brand-accent/50"`;
+                // Gunakan escapeHTML dan escape kutip tunggal agar HTML tidak patah
+                let namaAman = escapeHTML(order.product_name).replace(/'/g, "\\'");
+                let clickAction = `onclick="bukaDetailPesananDinamis('${order.id}', '${namaAman}', ${order.price}, '${order.status}', '${order.table_source}', '${order.seller_id || ''}', '${order.product_id || ''}')" class="cursor-pointer hover:border-brand-accent/50"`;
 
                 return `
                 <div ${clickAction} class="bg-brand-dark/50 border border-white/5 p-4 rounded-2xl flex flex-col gap-2 relative overflow-hidden transition-all hover:border-white/10 ${order.status === 'PENDING' ? 'border-red-500/20 shadow-[0_0_10px_rgba(239,68,68,0.1)]' : ''}">
@@ -9322,6 +9454,12 @@ function bukaDetailPesananDinamis(orderId, productName, price, status, tableSour
 function closeDetailPesanan(dariTombolBackHP = false) {
     const modal = document.getElementById('modal-detail-pesanan');
     
+    // HENTIKAN PENCARIAN API SAAT LACI DITUTUP AGAR SERVER TIDAK DDOS
+    if (intervalJemputBola) {
+        clearInterval(intervalJemputBola);
+        intervalJemputBola = null;
+    }
+
     if (!dariTombolBackHP && window.location.hash === '#invoice') {
         // Jika dari tombol (X) atau Batal, biarkan history.back() memanggil popstate
         history.back();
@@ -9572,7 +9710,7 @@ async function checkoutXoftwarePay(namaProduk, harga, deskripsi, sellerId = null
             }).subscribe();
 
         // 6. Radar Jemput Bola API
-        const intervalJemputBola = setInterval(async () => {
+        intervalJemputBola = setInterval(async () => {
             try {
                 const res = await fetch(`/api/check-status?order_id=${orderData.id}&table=${targetTabel}`);
                 const data = await res.json();
@@ -9722,7 +9860,7 @@ async function prosesBayarUlang() {
             ).subscribe();
             
         // Radar Jemput Bola API
-        const intervalJemputBola = setInterval(async () => {
+        intervalJemputBola = setInterval(async () => {
             try {
                 const res = await fetch(`/api/check-status?order_id=${activeOrderIdToPay}&table=${activeOrderTable}`);
                 const data = await res.json();
@@ -10876,7 +11014,8 @@ function ubahJumlahPasar(delta) {
 
 function inputJumlahPasar(val) {
     let parsed = parseInt(val);
-    if (!isNaN(parsed) && parsed >= 1) { currentPasarQty = parsed; updateHargaPasarLayar(); }
+    currentPasarQty = (isNaN(parsed) || parsed < 1) ? 1 : parsed; 
+    updateHargaPasarLayar();
 }
 
 function validasiJumlahPasar(el) {
@@ -11181,20 +11320,6 @@ const inactiveClassBtn = 'flex-1 py-2.5 text-xs font-bold text-gray-400 hover:te
     }
 }
 
-function loadTokoSaya() {
-    const loggedOut = document.getElementById('toko-logged-out');
-    const loggedIn = document.getElementById('toko-logged-in');
-    
-    if (!currentUser) {
-        loggedOut.classList.remove('hidden');
-        loggedIn.classList.add('hidden');
-        return;
-    }
-    loggedOut.classList.add('hidden');
-    loggedIn.classList.remove('hidden');
-    switchTokoTab('produk');
-}
-
 async function loadPasarPlayer(forceRefresh = false) {
     const gridPasar = document.getElementById('grid-pasar-player');
     if (!gridPasar) return;
@@ -11268,32 +11393,6 @@ function tutupModalSaldoDompet() {
 
 // --- KODE PEMULIHAN (Fungsi yang hilang) ---
 
-function switchTokoTab(tab) {
-    const btnProduk = document.getElementById('tab-toko-produk');
-    const btnPesanan = document.getElementById('tab-toko-pesanan');
-    const contProduk = document.getElementById('toko-produk-container');
-    const contPesanan = document.getElementById('toko-pesanan-container');
-    if(!btnProduk || !btnPesanan || !contProduk || !contPesanan) return;
-
-const activeClassBtn = 'flex-1 py-2.5 text-xs font-bold text-brand-dark bg-yellow-500 rounded-[10px] shadow-[0_4px_12px_rgba(234,179,8,0.4)] transition-all duration-300 transform scale-100';
-const inactiveClassBtn = 'flex-1 py-2.5 text-xs font-bold text-gray-400 hover:text-white hover:bg-white/5 rounded-[10px] transition-all duration-300 transform scale-[0.98] border border-transparent';
-
-
-    if (tab === 'produk') {
-        btnProduk.className = activeClassBtn;
-        btnPesanan.className = inactiveClassBtn;
-        contProduk.classList.replace('hidden', 'block');
-        contPesanan.classList.replace('block', 'hidden');
-        if(currentUser) loadProdukSaya();
-    } else {
-        btnPesanan.className = activeClassBtn;
-        btnProduk.className = inactiveClassBtn;
-        contPesanan.classList.replace('hidden', 'block');
-        contProduk.classList.replace('block', 'hidden');
-        if(currentUser) loadPesananMasuk();
-    }
-}
-
 async function loadProdukSaya() {
     const container = document.getElementById('toko-produk-container');
     if(!container) return;
@@ -11332,7 +11431,7 @@ async function loadProdukSaya() {
                         <button onclick="bukaModalEditProduk('${item.id}')" class="w-8 h-8 rounded-lg bg-white/5 text-brand-info flex items-center justify-center hover:bg-brand-info hover:text-white transition-all">
                             <i class="fas fa-pen text-[10px]"></i>
                         </button>
-                        <button onclick="hapusProdukSaya('${item.id}', '${item.title.replace(/'/g, "\\'")}')" class="w-8 h-8 rounded-lg bg-white/5 text-red-500 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all">
+                        <button onclick="hapusProdukSaya('${item.id}', '${escapeHTML(item.title).replace(/'/g, "\\'")}')" class="w-8 h-8 rounded-lg bg-white/5 text-red-500 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all">
                             <i class="fas fa-trash-alt text-[10px]"></i>
                         </button>
                     </div>
@@ -11381,12 +11480,6 @@ async function loadPesananMasuk() {
     } catch (e) {
         container.innerHTML = '<div class="text-center py-10 text-red-500 text-xs">Gagal menarik data pesanan.</div>';
     }
-}
-
-function bukaModalSaldoDompet() {
-    if (!currentUser) return showToast("Login dulu!", "error");
-    document.getElementById('modal-saldo-dompet').classList.replace('hidden', 'flex');
-    fetchSaldoDanMutasi();
 }
 
 function bukaGalleryPasar(idProduk, startIndex) {
