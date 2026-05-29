@@ -860,59 +860,74 @@ Satu pintu untuk info update terbaru, panduan pemula, jasa joki profesional, dan
 
 
 <section id="toko" class="tab-content py-5 min-h-[60vh] flex flex-col justify-start relative px-4">
-    
-    <div class="absolute top-0 right-0 w-40 h-40 bg-yellow-500/5 rounded-full blur-3xl pointer-events-none"></div>
+    <div class="absolute top-0 right-0 w-40 h-40 bg-[#FF5722]/10 rounded-full blur-3xl pointer-events-none"></div>
 
-    <div class="flex justify-between items-center mb-6 mt-2 border-b border-white/5 pb-4 gap-2 relative z-10">
-        <h2 class="text-lg sm:text-xl font-extrabold text-white flex items-center gap-2 whitespace-nowrap shrink-0 tracking-tight">
-            <div class="w-1.5 h-5 sm:h-6 bg-yellow-400 rounded-full shadow-[0_0_10px_rgba(250,204,21,0.8)]"></div> 
-            Dashboard Seller
-        </h2>
-        <div class="flex items-center gap-1.5 sm:gap-2">
-            <button onclick="if(currentUser) { loadTokoSaya(); showToast('Memperbarui toko...', 'success'); } else { openAuthModal(); }" class="text-yellow-400 bg-yellow-400/10 hover:bg-yellow-400/20 w-8 h-8 rounded-full flex items-center justify-center active:scale-90 transition-all border border-yellow-400/30 shrink-0 shadow-sm" title="Refresh Toko">
-                <i class="fas fa-sync-alt text-sm"></i>
-            </button>
-        </div>
+    <div class="flex justify-between items-center mb-6 mt-2 relative z-10">
+        <h2 class="text-xl font-extrabold text-white tracking-tight">Seller Center</h2>
+        <button onclick="if(currentUser) { loadTokoSaya(); showToast('Memperbarui toko...', 'success'); } else { openAuthModal(); }" class="text-[#FF5722] bg-[#FF5722]/10 w-8 h-8 rounded-full flex items-center justify-center active:scale-90 transition-all border border-[#FF5722]/30 shadow-sm"><i class="fas fa-sync-alt text-sm"></i></button>
     </div>
 
     <div id="toko-container" class="w-full relative z-10">
         
         <div id="toko-logged-out" class="hidden flex-col items-center justify-center py-16 mt-4 bg-gradient-to-b from-brand-card/50 to-transparent rounded-[2rem] border border-white/5 shadow-inner">
-            <div class="w-24 h-24 bg-yellow-400/10 rounded-full flex items-center justify-center mb-5 border border-yellow-400/20 shadow-[0_0_30px_rgba(250,204,21,0.2)]">
-                <i class="fas fa-store-slash text-5xl text-yellow-400/50"></i>
+            <div class="w-24 h-24 bg-[#FF5722]/10 rounded-full flex items-center justify-center mb-5 border border-[#FF5722]/20 shadow-[0_0_30px_rgba(255,87,34,0.2)]">
+                <i class="fas fa-store-slash text-5xl text-[#FF5722]/50"></i>
             </div>
             <h3 class="text-xl font-black text-white mb-2 tracking-tight">Akses Tertutup</h3>
             <p class="text-xs text-gray-400 mb-8 px-8 text-center leading-relaxed">Silakan login untuk mulai mengelola etalase toko dan melacak pesanan masuk Anda.</p>
-            <button onclick="openAuthModal()" class="bg-gradient-to-r from-yellow-400 to-yellow-600 text-black px-8 py-3.5 rounded-xl font-extrabold active:scale-95 transition-all shadow-[0_8px_20px_rgba(250,204,21,0.3)] uppercase tracking-wider text-xs">
+            <button onclick="openAuthModal()" class="bg-gradient-to-r from-[#FF5722] to-[#FF007A] text-white px-8 py-3.5 rounded-xl font-extrabold active:scale-95 transition-all shadow-[0_8px_20px_rgba(255,87,34,0.3)] uppercase tracking-wider text-xs">
                 Login Sekarang
             </button>
         </div>
 
         <div id="toko-logged-in" class="w-full hidden">
             
-            <div class="flex p-1.5 bg-[#0A0615] shrink-0 gap-1.5 border border-white/5 rounded-2xl mb-6 shadow-inner">
-                <button id="tab-toko-produk" onclick="switchTokoTab('produk')" class="flex-1 py-3 text-[10px] sm:text-xs font-bold text-black bg-gradient-to-r from-yellow-400 to-yellow-500 rounded-xl shadow-[0_4px_10px_rgba(250,204,21,0.3)] transition-all whitespace-nowrap flex justify-center items-center gap-1.5">
-                    <i class="fas fa-box-open"></i> Etalase
-                </button>
-                <button id="tab-toko-pesanan" onclick="switchTokoTab('pesanan')" class="flex-1 py-3 text-[10px] sm:text-xs font-bold text-gray-400 hover:text-white rounded-xl transition-all border border-transparent whitespace-nowrap flex justify-center items-center gap-1.5">
-                    <i class="fas fa-clipboard-list"></i> Pesanan
-                </button>
-                <button onclick="bukaModalSaldoDompet()" class="flex-1 py-3 text-[10px] sm:text-xs font-bold text-gray-400 hover:text-white rounded-xl transition-all border border-transparent whitespace-nowrap flex justify-center items-center gap-1.5">
-                    <i class="fas fa-wallet"></i> Dompet
-                </button>
+            <div class="bg-gradient-to-br from-[#FF5722] to-[#FF007A] rounded-3xl p-5 shadow-[0_10px_30px_rgba(255,87,34,0.3)] mb-6 relative overflow-hidden">
+                <div class="relative z-10">
+                    <div class="flex justify-between items-start mb-1">
+                        <p class="text-[10px] text-white/90 font-extrabold uppercase tracking-widest">Saldo Aktif (Bisa Ditarik)</p>
+                        <i class="fas fa-wallet text-white/50 text-xl"></i>
+                    </div>
+                    <div class="text-3xl font-black text-white mb-4 tracking-tighter" id="toko-saldo-aktif">Rp 0</div>
+                    
+                    <div class="flex items-center justify-between border-t border-white/20 pt-4">
+                        <div>
+                            <p class="text-[9px] text-white/70 font-bold uppercase tracking-widest flex items-center gap-1"><i class="fas fa-clock"></i> Saldo Tertahan (H+1)</p>
+                            <p class="text-sm font-extrabold text-white mt-0.5" id="toko-saldo-tertahan">Rp 0</p>
+                        </div>
+                        <button onclick="bukaModalSaldoDompet()" class="bg-white text-[#FF5722] text-[10px] font-black px-5 py-2.5 rounded-full shadow-lg active:scale-95 transition-transform tracking-wider">TARIK DANA</button>
+                    </div>
+                </div>
+                <div class="absolute -bottom-10 -right-10 w-40 h-40 bg-white/10 rounded-full blur-2xl"></div>
             </div>
 
-            <div id="toko-produk-container" class="space-y-4 block pb-10">
-                <div class="text-center py-10 text-xs text-gray-500 flex flex-col items-center"><i class="fas fa-circle-notch fa-spin text-3xl mb-3 text-yellow-400"></i><span class="tracking-widest font-bold uppercase">Memuat Etalase...</span></div>
+            <div class="grid grid-cols-3 gap-3 mb-6">
+                <div id="menu-toko-pesanan" onclick="switchTokoTab('pesanan')" class="bg-brand-card border border-white/5 p-4 rounded-2xl flex flex-col items-center gap-2 cursor-pointer transition-all active:scale-95 hover:bg-white/5 shadow-sm">
+                    <div class="w-10 h-10 rounded-full bg-blue-500/10 text-blue-500 flex items-center justify-center text-lg"><i class="fas fa-clipboard-list"></i></div>
+                    <span class="text-[10px] font-bold text-gray-300">Pesanan Masuk</span>
+                </div>
+                <div id="menu-toko-produk" onclick="switchTokoTab('produk')" class="bg-brand-card border border-white/5 p-4 rounded-2xl flex flex-col items-center gap-2 cursor-pointer transition-all active:scale-95 hover:bg-white/5 shadow-sm">
+                    <div class="w-10 h-10 rounded-full bg-orange-500/10 text-orange-500 flex items-center justify-center text-lg"><i class="fas fa-box-open"></i></div>
+                    <span class="text-[10px] font-bold text-gray-300">Etalase Saya</span>
+                </div>
+                <div onclick="bukaModalJualBarang()" class="bg-brand-card border border-white/5 p-4 rounded-2xl flex flex-col items-center gap-2 cursor-pointer transition-all active:scale-95 hover:bg-white/5 shadow-sm">
+                    <div class="w-10 h-10 rounded-full bg-green-500/10 text-green-500 flex items-center justify-center text-lg"><i class="fas fa-plus"></i></div>
+                    <span class="text-[10px] font-bold text-gray-300">Tambah Produk</span>
+                </div>
             </div>
 
-            <div id="toko-pesanan-container" class="space-y-4 hidden pb-10">
-                <div class="text-center py-10 text-xs text-gray-500 flex flex-col items-center"><i class="fas fa-circle-notch fa-spin text-3xl mb-3 text-brand-info"></i><span class="tracking-widest font-bold uppercase">Memuat Pesanan...</span></div>
+            <div class="flex items-center gap-2 mb-4">
+                <div class="w-1 h-5 bg-[#FF5722] rounded-full"></div>
+                <h3 id="toko-section-title" class="text-sm font-extrabold text-white tracking-wide">Daftar Pesanan Masuk</h3>
             </div>
+            
+            <div id="toko-produk-container" class="space-y-3 hidden pb-10"></div>
+            <div id="toko-pesanan-container" class="space-y-3 block pb-10"></div>
             
         </div>
     </div>
 </section>
+
 
 
 
@@ -9478,72 +9493,34 @@ async function batalkanPesanan() {
 async function selesaikanPesanan() {
     if (!activeOrderIdToPay) return;
     
-    const konfirmasi = await customConfirm("Pesanan sudah dikerjakan dan diterima dengan baik?\n\nJika 'Oke', status pesanan akan diselesaikan.");
+    const konfirmasi = await customConfirm("Pesanan sudah dikerjakan dan diterima dengan baik?\n\nDana akan masuk ke Saldo Tertahan Penjual dan cair dalam 24 jam.");
     if (!konfirmasi) return;
     
     closeDetailPesanan(); 
     showToast("Menyelesaikan pesanan...", "info");
     
     try {
-        // 1. Tarik seller_id dan nama produk dari database
-        const { data: orderData, error: fetchErr } = await supabaseClient
-            .from(activeOrderTable)
-            .select('seller_id, product_name')
-            .eq('id', activeOrderIdToPay)
-            .single();
-            
-        if (fetchErr) throw fetchErr;
-
-        const sellerId = orderData.seller_id;
-        const hargaAsli = activeOrderPriceToPay;
-        const namaProduk = orderData.product_name;
-
-        // 2. Update Status Order menjadi 'selesai'
+        const waktuSekarang = new Date().toISOString();
+        
+        // Update Status Order menjadi 'selesai' dan rekam jamnya, uang JANGAN dicairkan dulu!
         const { error: orderError } = await supabaseClient
             .from(activeOrderTable) 
-            .update({ status: 'selesai' })
+            .update({ status: 'selesai', waktu_selesai: waktuSekarang, dana_cair: false })
             .eq('id', activeOrderIdToPay);
 
         if (orderError) throw orderError;
 
-        // 3. JIKA INI PRODUK PASAR PLAYER (Bukan produk Anda sendiri)
-        if (activeOrderTable === 'orders_player' && sellerId) {
-            
-            // 🔥 LOGIKA BARU: Reverse Math (Balikin ke harga dasar Seller)
-            // Rumus balik dikurangi 650 agar uang penjual tidak terpotong fee xoftware
-            const hargaBaseSeller = Math.round((hargaAsli - 650) / 1.007);
-
-            // Hitung Potongan Pajak Admin (5% HANYA dari harga Base Seller)
-            const pajakAdmin = Math.floor(hargaBaseSeller * 0.05);
-            const pendapatanBersih = hargaBaseSeller - pajakAdmin;
-
-            // Panggil Fungsi Supabase (Update Saldo & Riwayat sekaligus kebal RLS)
-            const { error: rpcError } = await supabaseClient.rpc('proses_pencairan_otomatis', {
-                p_seller_id: sellerId,
-                p_jumlah: pendapatanBersih,
-                p_deskripsi: `Penjualan: ${namaProduk}`
-            });
-
-            if (rpcError) throw rpcError;
-
-            showToast(`Pesanan selesai! Saldo diteruskan ke Penjual.`, "success");
-        } else {
-            // JIKA INI PRODUK ADMIN
-            showToast("Pesanan selesai! Terima kasih.", "success");
-        }
-
-        // 4. Bonus EXP untuk pembeli
+        showToast("Pesanan selesai! Dana masuk ke Saldo Tertahan (H+1).", "success");
         tambahExp(50);
         
-        // Refresh layar riwayat dan tracker
         cekStatusPesanan('proses'); 
         loadOrderTracker(currentUser.id); 
         
     } catch (err) {
-        console.error("Gagal memproses transaksi:", err);
         showToast("Gagal menyelesaikan pesanan: " + err.message, "error");
     }
 }
+
 
 async function checkoutXoftwarePay(namaProduk, harga, deskripsi, sellerId = null, productId = null) {
     if (!currentUser) return showToast("Silakan login dulu untuk membeli!", "error");
@@ -11253,41 +11230,128 @@ async function loadTokoSaya() {
     
     loggedOut.classList.add('hidden');
     loggedIn.classList.remove('hidden');
+
+    // 1. Cek & Cairkan Dana H+1 secara Otomatis saat Seller buka Dashboard
+    await cekPencairanDanaH1();
+
+    // 2. Hitung Live Saldo Tertahan & Saldo Aktif
+    await updateUiSaldoSeller();
     
-    // Buka tab produk sebagai tampilan awal
-    switchTokoTab('produk');
-    
-    // Fungsi untuk memuat data produk ke dalam tabel
-    await loadProdukSaya();
+    switchTokoTab('pesanan');
 }
+
+async function updateUiSaldoSeller() {
+    try {
+        // Tarik Saldo Aktif
+        const { data: profile } = await supabaseClient.from('profiles').select('balance').eq('id', currentUser.id).single();
+        document.getElementById('toko-saldo-aktif').innerText = 'Rp ' + (profile?.balance || 0).toLocaleString('id-ID');
+
+        // Tarik Saldo Tertahan (Pesanan selesai yang dana_cair = false)
+        const { data: pendingFunds } = await supabaseClient
+            .from('orders_player')
+            .select('price')
+            .eq('seller_id', currentUser.id)
+            .eq('status', 'selesai')
+            .eq('dana_cair', false);
+        
+        let totalTertahan = 0;
+        if(pendingFunds && pendingFunds.length > 0) {
+            pendingFunds.forEach(p => {
+                const hargaBase = Math.round((p.price - 650) / 1.007);
+                const bersih = hargaBase - Math.floor(hargaBase * 0.05);
+                totalTertahan += bersih;
+            });
+        }
+        document.getElementById('toko-saldo-tertahan').innerText = 'Rp ' + totalTertahan.toLocaleString('id-ID');
+    } catch(e) {}
+}
+
+async function cekPencairanDanaH1() {
+    try {
+        // Cari semua order milik Seller ini yang statusnya 'selesai' TAPI 'dana_cair' masih false
+        const { data: ordersToClear } = await supabaseClient
+            .from('orders_player')
+            .select('id, price, product_name, waktu_selesai')
+            .eq('seller_id', currentUser.id)
+            .eq('status', 'selesai')
+            .eq('dana_cair', false);
+
+        if (!ordersToClear || ordersToClear.length === 0) return;
+
+        const sekarang = new Date();
+        let danaCairBaru = 0;
+        
+        for (let order of ordersToClear) {
+            // Jika bot gagal mencatat waktu_selesai, pasang otomatis ke waktu sekarang
+            if (!order.waktu_selesai) {
+                await supabaseClient.from('orders_player').update({ waktu_selesai: sekarang.toISOString() }).eq('id', order.id);
+                continue;
+            }
+
+            const waktuSelesai = new Date(order.waktu_selesai);
+            const selisihJam = Math.abs(sekarang - waktuSelesai) / 36e5; // Mengubah milidetik jadi Jam
+
+            // JIKA UMURNYA SUDAH LEBIH DARI 24 JAM (H+1)
+            if (selisihJam >= 24) {
+                const hargaBase = Math.round((order.price - 650) / 1.007);
+                const pendapatanBersih = hargaBase - Math.floor(hargaBase * 0.05);
+
+                // 1. Tembak RPC Cairkan Saldo
+                await supabaseClient.rpc('proses_pencairan_otomatis', {
+                    p_seller_id: currentUser.id,
+                    p_jumlah: pendapatanBersih,
+                    p_deskripsi: `Pencairan H+1: ${order.product_name}`
+                });
+
+                // 2. Gembok order ini agar tidak dicairkan dua kali
+                await supabaseClient.from('orders_player').update({ dana_cair: true }).eq('id', order.id);
+                
+                danaCairBaru += pendapatanBersih;
+            }
+        }
+
+        if (danaCairBaru > 0) {
+            showToast(`Dana tertahan sebesar Rp ${danaCairBaru.toLocaleString('id-ID')} telah cair ke Saldo Aktif Anda!`, "success");
+        }
+
+    } catch(e) {
+        console.error("Gagal menjalankan cron pencairan H+1", e);
+    }
+}
+
+
 
 // --- FUNGSI MANAJEMEN TOKO & PASAR ---
 
 function switchTokoTab(tab) {
-    const btnProduk = document.getElementById('tab-toko-produk');
-    const btnPesanan = document.getElementById('tab-toko-pesanan');
     const contProduk = document.getElementById('toko-produk-container');
     const contPesanan = document.getElementById('toko-pesanan-container');
+    const menuProduk = document.getElementById('menu-toko-produk');
+    const menuPesanan = document.getElementById('menu-toko-pesanan');
+    const title = document.getElementById('toko-section-title');
 
-const activeClassBtn = 'flex-1 py-2.5 text-xs font-bold text-brand-dark bg-yellow-500 rounded-[10px] shadow-[0_4px_12px_rgba(234,179,8,0.4)] transition-all duration-300 transform scale-100';
-const inactiveClassBtn = 'flex-1 py-2.5 text-xs font-bold text-gray-400 hover:text-white hover:bg-white/5 rounded-[10px] transition-all duration-300 transform scale-[0.98] border border-transparent';
-
+    const activeClass = 'bg-white/10 border-white/20 shadow-md ring-1 ring-white/10';
+    const inactiveClass = 'bg-brand-card border-white/5 shadow-sm';
 
     if (tab === 'produk') {
-        btnProduk.className = activeClassBtn;
-        btnPesanan.className = inactiveClassBtn;
+        title.innerText = "Etalase Produk Saya";
+        menuProduk.className = `p-4 rounded-2xl flex flex-col items-center gap-2 cursor-pointer transition-all active:scale-95 ${activeClass}`;
+        menuPesanan.className = `p-4 rounded-2xl flex flex-col items-center gap-2 cursor-pointer transition-all active:scale-95 hover:bg-white/5 ${inactiveClass}`;
+        
         contProduk.classList.replace('hidden', 'block');
         contPesanan.classList.replace('block', 'hidden');
         if(currentUser) loadProdukSaya();
     } else {
-        btnPesanan.className = activeClassBtn;
-        btnProduk.className = inactiveClassBtn;
+        title.innerText = "Daftar Pesanan Masuk";
+        menuPesanan.className = `p-4 rounded-2xl flex flex-col items-center gap-2 cursor-pointer transition-all active:scale-95 ${activeClass}`;
+        menuProduk.className = `p-4 rounded-2xl flex flex-col items-center gap-2 cursor-pointer transition-all active:scale-95 hover:bg-white/5 ${inactiveClass}`;
+        
         contPesanan.classList.replace('hidden', 'block');
-        contProduk.classList.replace('hidden', 'block'); // Pastikan ini tidak hidden
         contProduk.classList.replace('block', 'hidden');
         if(currentUser) loadPesananMasuk();
     }
 }
+
 
 async function loadPasarPlayer(forceRefresh = false) {
     const gridPasar = document.getElementById('grid-pasar-player');
@@ -11811,7 +11875,7 @@ async function hapusProdukSaya(productId, productName) {
 async function prosesAutoDeliveryTertunda() {
     if (!currentUser) return;
 
-    // Cari pesanan Pasar Player berstatus 'SUCCESS' (sudah dibayar via MacroDroid tapi barang belum dikirim)
+    // Cari pesanan Pasar Player berstatus 'SUCCESS' (sudah dibayar via Xoftware tapi barang belum dikirim)
     const { data: pendingOrders } = await supabaseClient
         .from('orders_player')
         .select('*')
@@ -11846,28 +11910,36 @@ async function prosesAutoDeliveryTertunda() {
                             message: `[SISTEM] Transaksi berhasil! Berikut detail pesanan *${order.product_name}* Anda:\n\n${autoDeliveryData}`
                         });
 
-                        // 3. Masukkan uang ke saldo dompet penjual (🔥 UPDATE REVERSE MATH)
-                        const hargaBaseSeller = Math.round((order.price - 650) / 1.007);
-                        const pajakAdmin = Math.floor(hargaBaseSeller * 0.05);
-                        const pendapatanBersih = hargaBaseSeller - pajakAdmin;
-                        
-                        await supabaseClient.rpc('tambah_saldo', { user_id_target: order.seller_id, jumlah: pendapatanBersih });
-                        await supabaseClient.from('wallet_transactions').insert({
-                            user_id: order.seller_id,
-                            amount: pendapatanBersih,
-                            type: 'INCOME',
-                            description: `Penjualan (Auto): ${order.product_name}`
-                        });
+                        // ⚠️ PENTING: Fitur pencairan instan (tambah_saldo) telah dihapus dari sini.
+                        // Dana kini menjadi "Saldo Tertahan" dan akan dicairkan oleh sistem H+1.
                     }
                 }
             }
 
-            // 4. Ubah status jadi selesai agar tidak dikirim dobel
+            // 4. Ubah status jadi selesai dan catat WAKTU SELESAI agar argo H+1 mulai berjalan
             const finalStatus = autoDeliveryData ? 'selesai' : 'proses';
-            await supabaseClient.from('orders_player').update({ status: finalStatus }).eq('id', order.id);
+            
+            if (finalStatus === 'selesai') {
+                const waktuSelesaiBot = new Date().toISOString();
+                
+                await supabaseClient.from('orders_player')
+                    .update({ 
+                        status: finalStatus, 
+                        waktu_selesai: waktuSelesaiBot, 
+                        dana_cair: false 
+                    })
+                    .eq('id', order.id);
+            } else {
+                // Jika gagal auto-delivery, biarkan status "proses" tanpa menahan dana dulu
+                await supabaseClient.from('orders_player')
+                    .update({ status: finalStatus })
+                    .eq('id', order.id);
+            }
         }
     }
 }
+
+
 
 
 </script>
