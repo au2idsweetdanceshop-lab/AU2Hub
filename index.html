@@ -578,57 +578,33 @@ Satu pintu untuk info update terbaru, panduan pemula, jasa joki profesional, dan
 
 
 <section id="layanan" class="tab-content py-2">
-    <div class="flex justify-between items-center mb-6 mt-2 border-b border-white/5 pb-4">
-        <h2 class="text-xl font-extrabold text-white flex items-center gap-2">
-            <span class="w-1.5 h-6 bg-brand-accent rounded-full"></span> Pendaftaran Seller
-        </h2>
-    </div>
+<div class="relative mb-5 mt-2">
+<i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-brand-accent/70"></i>
+<input type="text" id="serviceSearch" placeholder="Cari layanan produk..." class="w-full bg-brand-card border border-brand-accent/30 rounded-2xl py-3.5 pl-12 pr-4 text-sm text-white focus:outline-none focus:border-brand-accent transition-all shadow-[0_0_10px_rgba(255,0,122,0.1)]">
+</div>
 
-    <div class="bg-brand-card rounded-3xl border border-white/5 overflow-hidden shadow-2xl relative mb-6">
-        <div class="absolute top-0 right-0 w-32 h-32 bg-brand-accent/10 rounded-full blur-3xl pointer-events-none"></div>
+<div class="flex justify-between items-center mb-4">
+    <h3 class="text-xl font-extrabold flex items-center gap-2">
+        <div class="w-1.5 h-6 bg-brand-accent rounded-full"></div> Katalog Layanan
+    </h3>
+    <div class="flex items-center gap-2">
+        <span class="text-[10px] bg-brand-info/20 text-brand-info px-2 py-1.5 rounded-lg font-bold border border-brand-info/30 tracking-wider hidden sm:inline-block">AUTO QRIS</span>
         
-        <div class="p-6 text-center border-b border-white/5 relative z-10">
-            <div class="w-20 h-20 bg-brand-accent/20 rounded-full flex items-center justify-center mx-auto mb-4 border border-brand-accent/30 shadow-[0_0_20px_rgba(255,0,122,0.3)]">
-                <i class="fas fa-store text-3xl text-brand-accent"></i>
-            </div>
-            <h3 class="text-xl font-black text-white mb-2 tracking-tight">Jadilah Seller Resmi!</h3>
-            <p class="text-xs text-gray-400 leading-relaxed px-4">Buka etalase tokomu sendiri di Pasar Player dan raih keuntungan tanpa batas dari komunitas AU2Hub.</p>
-        </div>
-
-        <div class="p-6 space-y-4 relative z-10 bg-black/20">
-            <div class="flex items-center gap-3">
-                <i class="fas fa-check-circle text-brand-success text-lg"></i>
-                <div>
-                    <div class="text-sm font-bold text-white">Etalase Pribadi</div>
-                    <div class="text-[10px] text-gray-500">Pajang akun, item, atau jasa joki kamu kapan saja.</div>
-                </div>
-            </div>
-            <div class="flex items-center gap-3">
-                <i class="fas fa-check-circle text-brand-success text-lg"></i>
-                <div>
-                    <div class="text-sm font-bold text-white">Sistem Escrow Otomatis</div>
-                    <div class="text-[10px] text-gray-500">Keamanan transaksi & pencairan dana otomatis H+1.</div>
-                </div>
-            </div>
-            <div class="flex items-center gap-3">
-                <i class="fas fa-check-circle text-brand-success text-lg"></i>
-                <div>
-                    <div class="text-sm font-bold text-white">Akses Fitur Manajemen</div>
-                    <div class="text-[10px] text-gray-500">Akses penuh ke laci Seller Center untuk atur produk.</div>
-                </div>
-            </div>
-        </div>
-
-        <div class="p-6 border-t border-white/5 relative z-10">
-            <div class="flex justify-between items-center mb-4">
-                <span class="text-xs font-bold text-gray-400 uppercase tracking-widest">Biaya Registrasi</span>
-                <span class="text-2xl font-black text-brand-accent">Rp 10.000</span>
-            </div>
-            <button onclick="daftarJadiSeller()" class="w-full bg-gradient-to-r from-brand-accent to-brand-purple hover:opacity-90 text-white py-4 rounded-xl font-extrabold active:scale-95 transition-all uppercase tracking-wider text-sm shadow-[0_4px_15px_rgba(255,0,122,0.4)] flex justify-center items-center gap-2">
-                <i class="fas fa-rocket"></i> Daftar Sekarang
-            </button>
-        </div>
+        <button onclick="loadProdukXoftware(true)" class="text-brand-accent bg-brand-accent/10 w-8 h-8 rounded-full flex items-center justify-center active:scale-90 transition-all border border-brand-accent/30" title="Refresh Katalog">
+            <i class="fas fa-sync-alt"></i>
+        </button>
     </div>
+</div>
+
+<div id="kategori-container" class="grid grid-cols-4 gap-x-2 gap-y-5 mb-6 bg-black/20 p-4 rounded-2xl border border-white/5 shadow-inner">
+</div>
+
+<div id="service-list" class="grid grid-cols-2 gap-3 mb-6"></div>
+
+<div class="bg-brand-info/5 rounded-2xl p-4 border border-brand-info/20 mb-8">
+<h3 class="font-bold text-sm text-brand-info mb-2 flex items-center"><i class="fas fa-info-circle mr-2"></i> Cara Memesan:</h3>
+<p class="text-xs text-gray-400 leading-relaxed">Klik tombol <strong>"BELI"</strong>. Anda akan diarahkan ke halaman pembayaran otomatis QRIS DANA. Setelah bayar, sistem kasir akan konfirmasi dalam 1 detik.</p>
+</div>
 </section>
 
 
@@ -2706,8 +2682,7 @@ async function checkSession() {
     document.querySelectorAll('#profile-logged-in').forEach(el => el.classList.add('hidden'));
     document.getElementById('profile-logged-out').classList.add('hidden');
 
-    const { data: { session }, error } = await supabaseClient.auth.getSession();
-    const user = session?.user;
+    const { data: { user } } = await supabaseClient.auth.getUser();
 
     document.getElementById('profile-loading').classList.add('hidden');
     document.getElementById('profile-loading').classList.remove('flex');
@@ -8148,6 +8123,200 @@ try { const respon = await fetch(linkAPI); const dataBaru = await respon.json();
 catch (error) { if (!dataTersimpan) { container.innerHTML = '<div class="text-center py-10 text-xs text-red-500"><i class="fas fa-exclamation-triangle mb-2 text-2xl"></i><br>Gagal terhubung ke database.</div>'; } }
 }
 
+let xoftwareProdukGlobal = [];
+let kategoriAktif = 'Semua';
+
+// 🤖 HELPER 1: Generator Link Gambar PNG dari Biznet GIO Storage Lu Om
+function getKategoriLogoURL(name) {
+name = name.toLowerCase().trim().replace(/\s+/g, '-'); // Ubah "AU2 ID" jadi "au2-id" biar aman di URL
+
+// 📢 GANTI LINK DI BAWAH INI pake link folder storage Biznet lu tempat nyimpen ikon-ikonnya ya Om!
+const folderStorageLu = "https://nos.wjv-1.neo.id/au2hub/icons/";
+
+return `${folderStorageLu}${name}.png`;
+}
+
+
+// 🤖 HELPER 2: Scanner Otomatis Warna Neon Ikon biar berwarna layaknya Gojek
+function getIconColorClass(name, isActive) {
+if (isActive) return '!text-white'; // Kalau aktif, ikonnya dipaksa putih bersih
+name = name.toLowerCase();
+if (name === 'semua') return 'text-brand-info';
+if (name.includes('joki')) return 'text-yellow-400';
+if (name.includes('netflix') || name.includes('flix')) return 'text-red-500';
+if (name.includes('game') || name.includes('dance') || name.includes('bingo')) return 'text-brand-purple';
+return 'text-brand-accent';
+}
+
+// 🤖 FUNGSI SAKTI: Pendeteksi Kategori Otomatis lewat Judul Produk
+function getCategoryName(p) {
+let kat = p.category_name || p.brand_name || p.group_name || p.category || p.kategori || p.brand || p.type;
+if (!kat && p.title) {
+kat = p.title.trim().split(' ')[0];
+}
+return kat ? kat.trim().toUpperCase() : 'LAINNYA';
+}
+
+// 1. Tarik Katalog Xoftware (DIPERBARUI DENGAN FITUR REFRESH)
+async function loadProdukXoftware(isRefresh = false) {
+    const container = document.getElementById('service-list');
+    const katContainer = document.getElementById('kategori-container');
+    
+    if (!container) return;
+    
+    // Tampilkan animasi loading di daftar produk
+    container.innerHTML = `<div class="text-center py-10 text-xs text-brand-info animate-pulse col-span-2"><i class="fas fa-sync fa-spin mb-2 text-2xl"></i><br>Menarik Katalog Produk...</div>`;
+    
+
+    try {
+        const response = await fetch('/api/get-xoftware?action=produk');
+        const result = await response.json();
+
+        if (result.status === true && Array.isArray(result.data)) {
+            xoftwareProdukGlobal = result.data;
+            
+            // Reset kategori ke 'Semua' dan bersihkan kolom pencarian saat di-refresh
+            if (isRefresh) {
+                kategoriAktif = 'Semua';
+                const searchInput = document.getElementById('serviceSearch');
+                if (searchInput) searchInput.value = '';
+            }
+
+            renderKategoriTabs(xoftwareProdukGlobal);
+            renderProdukXoftware(xoftwareProdukGlobal);
+            
+            // Munculkan notifikasi hijau jika berhasil
+            if (isRefresh) showToast("Katalog produk & kategori berhasil diperbarui!", "success");
+            
+        } else {
+            container.innerHTML = '<div class="text-center py-10 text-xs text-red-500 col-span-2">Gagal memuat katalog produk.</div>';
+            if (isRefresh) showToast("Gagal memperbarui katalog.", "error");
+        }
+    } catch (error) {
+        container.innerHTML = '<div class="text-center py-10 text-xs text-red-500 col-span-2">Gangguan jaringan katalog.</div>';
+        if (isRefresh) showToast("Gangguan jaringan, silakan coba lagi.", "error");
+    }
+}
+
+
+// 2. Tancap Dashboard Grid Kategori Gambar Real-PNG (MODEL GOJEK PREMIUM)
+function renderKategoriTabs(data) {
+const container = document.getElementById('kategori-container');
+if (!container) return;
+
+let categories = new Set();
+data.forEach(p => {
+categories.add(getCategoryName(p));
+});
+
+let arrKategori = ['Semua', ...Array.from(categories).sort()];
+
+container.innerHTML = arrKategori.map(k => {
+const isActive = k === kategoriAktif;
+const logoUrl = getKategoriLogoURL(k);
+
+return `
+<div onclick="pilihKategori('${k}')" class="flex flex-col items-center gap-2 cursor-pointer text-center group active:scale-95 transition-all">
+<div class="w-12 h-12 rounded-[1.2rem] flex items-center justify-center transition-all border ${isActive ? 'bg-brand-accent border-brand-accent shadow-lg shadow-brand-accent/30' : 'bg-brand-card border-white/5 shadow-md group-hover:border-brand-info'}">
+
+<img src="${logoUrl}" alt="${k}" class="w-7 h-7 object-contain ${isActive ? 'brightness-100' : 'opacity-80 group-hover:opacity-100 transition-opacity'}"
+onerror="this.src='https://img.icons8.com/neon/96/folder-invoices.png'">
+
+</div>
+<span class="text-[9px] font-extrabold tracking-wide truncate w-full uppercase leading-tight ${isActive ? 'text-brand-accent' : 'text-gray-400 group-hover:text-white'}">
+${k}
+</span>
+</div>
+`;
+}).join('');
+}
+
+
+function pilihKategori(kat) {
+kategoriAktif = kat;
+document.getElementById('serviceSearch').value = '';
+renderKategoriTabs(xoftwareProdukGlobal); // Refresh status tombol aktif
+
+let dataFiltered = xoftwareProdukGlobal;
+if (kat !== 'Semua') {
+dataFiltered = xoftwareProdukGlobal.filter(p => getCategoryName(p) === kat);
+}
+renderProdukXoftware(dataFiltered);
+}
+
+// 3. Tampilkan Katalog Produk ke Grid Layar
+function renderProdukXoftware(data) {
+const container = document.getElementById('service-list');
+if (data.length === 0) {
+container.innerHTML = '<div class="col-span-2 text-center py-10 text-gray-400"><i class="fas fa-search-minus mb-2 text-lg"></i><br>Produk tidak ditemukan.</div>';
+return;
+}
+
+const folderGambarLokal = { "FLIX": "https://nos.wjv-1.neo.id/au2hub/IMG-20260518-WA0208.jpg" };
+
+container.innerHTML = data.map((p, index) => {
+const domainXoftware = "https://web.xoftware.id/";
+let rawImage = p.image || p.image_url || p.gambar || p.foto || p.thumbnail || p.logo || p.images || '';
+let deskripsiTeks = p.description || "";
+let linkDariDeskripsi = "";
+const regexImg = /\[IMG:\s*(.*?)\]/;
+const match = deskripsiTeks.match(regexImg);
+
+if (match) linkDariDeskripsi = match[1];
+
+let fotoFinal = rawImage || linkDariDeskripsi || folderGambarLokal[p.code] || '';
+if (typeof fotoFinal === 'string' && fotoFinal.includes(',')) fotoFinal = fotoFinal.split(',')[0].trim();
+if (fotoFinal && !fotoFinal.startsWith('http')) fotoFinal = domainXoftware + (fotoFinal.startsWith('/') ? fotoFinal.substring(1) : fotoFinal);
+else if (!fotoFinal) fotoFinal = 'https://placehold.co/400x400/1a1133/ff007a?text=ADT+STORE';
+
+const realIndex = xoftwareProdukGlobal.findIndex(item => item === p);
+const delayAnimasi = Math.min(index * 0.02, 0.4);
+
+// 🔥 LOGIKA HARGA CORET MARKETING AUTOMATIC
+let hargaCoret = Math.ceil((p.price * 1.3) / 1000) * 1000; // Markup 30%, buletin ke ribuan terdekat
+if (p.price > 100000) hargaCoret = Math.ceil((p.price * 1.2) / 5000) * 5000; // Kalau ratusan ribu nambah 20% biar wajar
+if (p.price <= 5000) hargaCoret = p.price + 2500; // Kalau produk murah di bawah 5rb
+
+return `
+<div onclick="openDetailProduk(${realIndex})" style="animation-delay: ${delayAnimasi}s; opacity: 0;" class="bg-brand-card rounded-2xl border border-white/5 overflow-hidden flex flex-col hover:border-brand-accent/30 transition-all smooth-reveal shadow-lg cursor-pointer">
+<div class="relative w-full aspect-square bg-black/40 overflow-hidden group">
+<img src="${fotoFinal}" alt="${p.title}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onerror="this.src='https://placehold.co/400x400/1a1133/ff007a?text=ADT+STORE'">
+<span class="absolute top-2 left-2 bg-brand-accent/90 text-white text-[8px] font-extrabold px-2 py-0.5 rounded-md backdrop-blur-sm border border-white/10 shadow-md">
+READY
+</span>
+</div>
+<div class="p-3 flex-1 flex flex-col justify-between gap-1">
+<div>
+<div class="font-extrabold text-xs text-white leading-snug line-clamp-2 mb-1 min-h-[2.4rem]">${p.title}</div>
+<div class="text-[10px] text-gray-400 truncate mb-1">${deskripsiTeks.replace(regexImg, '').trim() || 'Proses cepat via WA.'}</div>
+</div>
+                    <div class="mt-auto">
+                        <div class="text-[9px] text-brand-success font-bold mb-0.5 flex items-center gap-1"><i class="fas fa-bolt text-[8px]"></i> Instan 1 Detik</div>
+                        <div class="flex flex-col items-start gap-px">
+                            <div class="text-gray-500 line-through text-[9px] font-medium opacity-60">Rp ${hargaCoret.toLocaleString('id-ID')}</div>
+                            <div class="text-brand-accent font-extrabold text-sm tracking-tight">Rp ${p.price.toLocaleString('id-ID')}</div>
+                        </div>
+                    </div>
+
+</div>
+</div>
+`;
+}).join('');
+}
+
+// 4. Fungsi Fitur Pencarian Gabungan
+document.getElementById('serviceSearch').addEventListener('input', (e) => {
+const val = e.target.value.toLowerCase();
+const hasilFilter = xoftwareProdukGlobal.filter(p => {
+let cocokKataKunci = p.title.toLowerCase().includes(val) || (p.description && p.description.toLowerCase().includes(val));
+let cocokKategori = (kategoriAktif === 'Semua') ? true : (getCategoryName(p) === kategoriAktif);
+return cocokKataKunci && cocokKategori;
+});
+renderProdukXoftware(hasilFilter);
+});
+
+
+
 // 🔥 VARIABEL GLOBAL UNTUK KALKULASI HARGA & VARIASI
 let currentProductPrice = 0;
 let currentProductQty = 1;
@@ -8438,53 +8607,6 @@ function closeDetailProduk(dariTombolBackHP = false) {
     }
 }
 
-// ==========================================
-// LOGIKA PENDAFTARAN SELLER BARU
-// ==========================================
-async function daftarJadiSeller() {
-    if (!currentUser) {
-        showToast("Silakan login terlebih dahulu!", "error");
-        return openAuthModal();
-    }
-
-    // Ubah tombol jadi loading
-    const btn = document.querySelector('button[onclick="daftarJadiSeller()"]');
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memeriksa...';
-    btn.disabled = true;
-    
-    try {
-        // Cek dulu apakah dia sudah bayar/jadi seller sebelumnya (Cari Product ID: REG-SELLER)
-        const { data, error } = await supabaseClient
-            .from('orders')
-            .select('status')
-            .eq('user_id', currentUser.id)
-            .eq('product_id', 'REG-SELLER')
-            .in('status', ['SUCCESS', 'proses', 'selesai']);
-
-        if (data && data.length > 0) {
-            showToast("Anda sudah terdaftar sebagai Seller!", "success");
-            switchTab('pasar'); // Langsung arahkan ke pasar
-            return;
-        }
-
-        // Jika belum bayar, arahkan ke gateway pembayaran QRIS Otomatis
-        // Memanfaatkan fungsi checkoutXoftwarePay yang sudah ada
-        checkoutXoftwarePay(
-            "Pendaftaran Seller AU2Hub", 
-            10000, 
-            "Biaya registrasi untuk membuka etalase toko di Pasar Player.", 
-            null, 
-            "REG-SELLER"
-        );
-
-    } catch (e) {
-        showToast("Gagal memverifikasi data server.", "error");
-    } finally {
-        btn.innerHTML = '<i class="fas fa-rocket"></i> Daftar Sekarang';
-        btn.disabled = false;
-    }
-}
-
 
 // ==========================================
 // SISTEM PEMBERSIH MEMORI OTOMATIS (ANTI QUOTA EXCEEDED)
@@ -8510,7 +8632,7 @@ function autoCleanLocalStorage() {
 // ==========================================
 // INISIALISASI HALAMAN (WAJIB ADA AGAR WEB BERJALAN)
 // ==========================================
-document.addEventListener('DOMContentLoaded', async () => {
+document.addEventListener('DOMContentLoaded', () => {
   autoCleanLocalStorage(); // Eksekusi pembersih memori saat buka web
 
   // Logika Routing Halaman Utama
@@ -8529,9 +8651,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   switchTab(tabMurni, null, false);
 
-  await checkSession();
-  loadPasarPlayer();
-
+  checkSession();
 supabaseClient.auth.onAuthStateChange((event, session) => {
       // Jika token gagal diperbarui atau kadaluarsa
       if (event === 'TOKEN_REFRESHED' && !session) {
@@ -8548,6 +8668,23 @@ supabaseClient.auth.onAuthStateChange((event, session) => {
   muatDataRipper();
   loadInfoLayanan();
   loadDataRekber();
+
+  // Menampilkan Katalog Xoftware, lalu cek apakah URL meminta laci spesifik
+  loadProdukXoftware().then(() => {
+      const urlHash = window.location.hash.substring(1); // Mengambil teks setelah tanda #
+      
+      // Deteksi jika link adalah laci detail produk
+      if (urlHash.startsWith('detail?id=')) {
+          const produkIndex = urlHash.split('=')[1];
+          
+          // Pastikan datanya ada, lalu buka lacinya
+          if (produkIndex && xoftwareProdukGlobal[produkIndex]) {
+              setTimeout(() => {
+                  openDetailProduk(parseInt(produkIndex));
+              }, 500); // Beri jeda sedikit agar animasi web selesai dulu
+          }
+      }
+  });
 
 
   // ==========================================
@@ -10523,6 +10660,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if(jualanHarga) jualanHarga.addEventListener('input', formatInputRupiah);
         if(editHarga) editHarga.addEventListener('input', formatInputRupiah);
     }, 500);
+
+    loadPasarPlayer();
 });
 
 
@@ -10649,9 +10788,7 @@ function renderGridPasar(dataList) {
         return `
         <div onclick="bukaDetailPasar('${item.id}')" style="animation-delay: ${delayAnimasi}s; opacity: 0;" class="bg-brand-card rounded-2xl border border-white/5 overflow-hidden flex flex-col hover:border-brand-success/30 transition-all smooth-reveal shadow-lg cursor-pointer group">
             <div class="relative w-full aspect-square bg-black/40 overflow-hidden">
-                <img src="${fotoPertama}" alt="${item.title}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 relative z-0" onerror="this.src='https://placehold.co/400x400/1a1133/2BD975?text=PASAR'">
-                <!-- Watermark AU2Hub Thumbnail -->
-                <img src="https://nos.wjv-1.neo.id/au2hub/Picsart_26-05-22_23-46-22-498.png" class="absolute inset-0 m-auto w-20 h-20 object-contain opacity-[0.25] pointer-events-none z-10 drop-shadow-lg group-hover:scale-105 transition-transform duration-300">
+                <img src="${fotoPertama}" alt="${item.title}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onerror="this.src='https://placehold.co/400x400/1a1133/2BD975?text=PASAR'">
                 ${badgeStok}
             </div>
             <div class="p-3 flex-1 flex flex-col justify-between gap-1">
@@ -11080,39 +11217,15 @@ async function checkoutPasar(namaFinal, totalHarga, id) {
 }
 
 // --- LACI JUAL BARANG ---
-async function bukaModalJualBarang() {
+function bukaModalJualBarang() {
     if (!currentUser) return showToast("Silakan login dulu untuk berjualan!", "error");
-    
-    showToast("Memverifikasi akses Seller...", "info");
-    
-    try {
-        // Cek ke database apakah user ini sudah membeli tiket "REG-SELLER"
-        const { data, error } = await supabaseClient
-            .from('orders')
-            .select('status')
-            .eq('user_id', currentUser.id)
-            .eq('product_id', 'REG-SELLER')
-            .in('status', ['SUCCESS', 'proses', 'selesai']);
-
-        if (!data || data.length === 0) {
-            showToast("Akses ditolak! Anda harus mendaftar sebagai Seller.", "error");
-            switchTab('layanan'); // Paksa user pindah ke halaman pendaftaran
-            return;
-        }
-
-        // Jika lulus pengecekan, buka laci jualan
-        history.pushState({ popup: 'jual_barang' }, null, '#jualbarang');
-        const modal = document.getElementById('modal-jual-barang');
-        modal.classList.replace('hidden', 'flex');
-        modal.style.opacity = '0';
-        modal.style.transition = 'opacity 0.3s ease';
-        setTimeout(() => modal.style.opacity = '1', 10);
-
-    } catch (err) {
-        showToast("Gagal memverifikasi akses.", "error");
-    }
+    history.pushState({ popup: 'jual_barang' }, null, '#jualbarang');
+    const modal = document.getElementById('modal-jual-barang');
+    modal.classList.replace('hidden', 'flex');
+    modal.style.opacity = '0';
+    modal.style.transition = 'opacity 0.3s ease';
+    setTimeout(() => modal.style.opacity = '1', 10);
 }
-
 
 function tutupModalJualBarang(dariTombolBackHP = false) {
     const modal = document.getElementById('modal-jual-barang');
