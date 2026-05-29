@@ -511,9 +511,6 @@ Satu pintu untuk info update terbaru, panduan pemula, jasa joki profesional, dan
 <button onclick="switchTab('info', event)" class="flex justify-center items-center w-full bg-brand-card hover:bg-white/5 border border-white/10 font-bold py-3.5 px-6 rounded-2xl active:scale-95 transition-all text-sm">
 <i class="fas fa-bullhorn text-brand-info mr-3"></i> Info & FAQ Terbaru
 </button>
-<button onclick="switchTab('layanan', event)" class="flex justify-center items-center w-full bg-gradient-to-r from-brand-accent to-brand-purple text-white font-bold py-3.5 px-6 rounded-2xl shadow-[0_0_15px_rgba(255,0,122,0.3)] active:scale-95 transition-all text-sm">
-<i class="fas fa-bolt mr-3"></i> Lihat Layanan
-</button>
 <button onclick="switchTab('sosial', event)" class="flex justify-center items-center w-full bg-gradient-to-r from-[#25D366] to-[#128C7E] text-white font-bold py-3.5 px-6 rounded-2xl shadow-[0_0_15px_rgba(37,211,102,0.3)] active:scale-95 transition-all text-sm">
 <i class="fas fa-camera-retro mr-3"></i> Feed & Grup Komunitas
 </button>
@@ -575,37 +572,6 @@ Satu pintu untuk info update terbaru, panduan pemula, jasa joki profesional, dan
                 <div class="text-center py-6"><i class="fas fa-spinner fa-spin text-brand-info text-2xl"></i></div>
             </div>
         </section>
-
-
-<section id="layanan" class="tab-content py-2">
-<div class="relative mb-5 mt-2">
-<i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-brand-accent/70"></i>
-<input type="text" id="serviceSearch" placeholder="Cari layanan produk..." class="w-full bg-brand-card border border-brand-accent/30 rounded-2xl py-3.5 pl-12 pr-4 text-sm text-white focus:outline-none focus:border-brand-accent transition-all shadow-[0_0_10px_rgba(255,0,122,0.1)]">
-</div>
-
-<div class="flex justify-between items-center mb-4">
-    <h3 class="text-xl font-extrabold flex items-center gap-2">
-        <div class="w-1.5 h-6 bg-brand-accent rounded-full"></div> Katalog Layanan
-    </h3>
-    <div class="flex items-center gap-2">
-        <span class="text-[10px] bg-brand-info/20 text-brand-info px-2 py-1.5 rounded-lg font-bold border border-brand-info/30 tracking-wider hidden sm:inline-block">AUTO QRIS</span>
-        
-        <button onclick="loadProdukXoftware(true)" class="text-brand-accent bg-brand-accent/10 w-8 h-8 rounded-full flex items-center justify-center active:scale-90 transition-all border border-brand-accent/30" title="Refresh Katalog">
-            <i class="fas fa-sync-alt"></i>
-        </button>
-    </div>
-</div>
-
-<div id="kategori-container" class="grid grid-cols-4 gap-x-2 gap-y-5 mb-6 bg-black/20 p-4 rounded-2xl border border-white/5 shadow-inner">
-</div>
-
-<div id="service-list" class="grid grid-cols-2 gap-3 mb-6"></div>
-
-<div class="bg-brand-info/5 rounded-2xl p-4 border border-brand-info/20 mb-8">
-<h3 class="font-bold text-sm text-brand-info mb-2 flex items-center"><i class="fas fa-info-circle mr-2"></i> Cara Memesan:</h3>
-<p class="text-xs text-gray-400 leading-relaxed">Klik tombol <strong>"BELI"</strong>. Anda akan diarahkan ke halaman pembayaran otomatis QRIS DANA. Setelah bayar, sistem kasir akan konfirmasi dalam 1 detik.</p>
-</div>
-</section>
 
 
 <section id="sosial" class="tab-content py-2">
@@ -1703,10 +1669,6 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
     
     <a href="#info" onclick="switchTab('info', event)" class="nav-item flex items-center justify-center w-[44px] h-[44px] text-gray-500" title="Info">
         <i class="fas fa-bullhorn text-lg pointer-events-none"></i>
-    </a>
-    
-    <a href="#layanan" onclick="switchTab('layanan', event)" class="nav-item flex items-center justify-center w-[44px] h-[44px] text-gray-500" title="Layanan">
-        <i class="fas fa-bolt text-lg pointer-events-none"></i>
     </a>
     
     <a href="#sosial" onclick="switchTab('sosial', event)" class="nav-item flex items-center justify-center w-[44px] h-[44px] text-gray-500" title="Sosial">
@@ -3274,13 +3236,6 @@ window.addEventListener('popstate', () => {
         return;
     }
 
-    // 1. TANGKAP LACI SHOPEE DULUAN (Kuncian Anti-Nyangkut)
-    const laciShopee = document.getElementById('modal-detail-produk');
-    if (laciShopee && !laciShopee.classList.contains('translate-y-full')) {
-        closeDetailProduk(true); 
-        return;
-    }
-
     // 2. TANGKAP MODAL INVOICE (KARENA INI MENUMPUK DI ATAS RIWAYAT) 👇
     const modalInvoice = document.getElementById('modal-detail-pesanan');
     if (modalInvoice && !modalInvoice.classList.contains('hidden')) {
@@ -4204,21 +4159,6 @@ document.getElementById('faqSearch').addEventListener('input', (e) => {
 const val = e.target.value.toLowerCase();
 // UBAH kata 'faqs' jadi 'globalFaqData' sebelum kata .filter
 renderFaqs(globalFaqData.filter(f => f.t.toLowerCase().includes(val) || f.j.toLowerCase().includes(val)));
-});
-
-
-
-document.getElementById('serviceSearch').addEventListener('input', (e) => {
-const val = e.target.value.toLowerCase();
-
-// Memfilter data berdasarkan Judul atau Deskripsi produk Xoftware
-const hasilFilter = xoftwareProdukGlobal.filter(p =>
-p.title.toLowerCase().includes(val) ||
-(p.description && p.description.toLowerCase().includes(val))
-);
-
-// Render ulang layar dengan hasil filter Xoftware yang baru
-renderProdukXoftware(hasilFilter);
 });
 
 function salinNominal() {
@@ -8123,9 +8063,6 @@ try { const respon = await fetch(linkAPI); const dataBaru = await respon.json();
 catch (error) { if (!dataTersimpan) { container.innerHTML = '<div class="text-center py-10 text-xs text-red-500"><i class="fas fa-exclamation-triangle mb-2 text-2xl"></i><br>Gagal terhubung ke database.</div>'; } }
 }
 
-let xoftwareProdukGlobal = [];
-let kategoriAktif = 'Semua';
-
 // 🤖 HELPER 1: Generator Link Gambar PNG dari Biznet GIO Storage Lu Om
 function getKategoriLogoURL(name) {
 name = name.toLowerCase().trim().replace(/\s+/g, '-'); // Ubah "AU2 ID" jadi "au2-id" biar aman di URL
@@ -8157,80 +8094,6 @@ kat = p.title.trim().split(' ')[0];
 return kat ? kat.trim().toUpperCase() : 'LAINNYA';
 }
 
-// 1. Tarik Katalog Xoftware (DIPERBARUI DENGAN FITUR REFRESH)
-async function loadProdukXoftware(isRefresh = false) {
-    const container = document.getElementById('service-list');
-    const katContainer = document.getElementById('kategori-container');
-    
-    if (!container) return;
-    
-    // Tampilkan animasi loading di daftar produk
-    container.innerHTML = `<div class="text-center py-10 text-xs text-brand-info animate-pulse col-span-2"><i class="fas fa-sync fa-spin mb-2 text-2xl"></i><br>Menarik Katalog Produk...</div>`;
-    
-
-    try {
-        const response = await fetch('/api/get-xoftware?action=produk');
-        const result = await response.json();
-
-        if (result.status === true && Array.isArray(result.data)) {
-            xoftwareProdukGlobal = result.data;
-            
-            // Reset kategori ke 'Semua' dan bersihkan kolom pencarian saat di-refresh
-            if (isRefresh) {
-                kategoriAktif = 'Semua';
-                const searchInput = document.getElementById('serviceSearch');
-                if (searchInput) searchInput.value = '';
-            }
-
-            renderKategoriTabs(xoftwareProdukGlobal);
-            renderProdukXoftware(xoftwareProdukGlobal);
-            
-            // Munculkan notifikasi hijau jika berhasil
-            if (isRefresh) showToast("Katalog produk & kategori berhasil diperbarui!", "success");
-            
-        } else {
-            container.innerHTML = '<div class="text-center py-10 text-xs text-red-500 col-span-2">Gagal memuat katalog produk.</div>';
-            if (isRefresh) showToast("Gagal memperbarui katalog.", "error");
-        }
-    } catch (error) {
-        container.innerHTML = '<div class="text-center py-10 text-xs text-red-500 col-span-2">Gangguan jaringan katalog.</div>';
-        if (isRefresh) showToast("Gangguan jaringan, silakan coba lagi.", "error");
-    }
-}
-
-
-// 2. Tancap Dashboard Grid Kategori Gambar Real-PNG (MODEL GOJEK PREMIUM)
-function renderKategoriTabs(data) {
-const container = document.getElementById('kategori-container');
-if (!container) return;
-
-let categories = new Set();
-data.forEach(p => {
-categories.add(getCategoryName(p));
-});
-
-let arrKategori = ['Semua', ...Array.from(categories).sort()];
-
-container.innerHTML = arrKategori.map(k => {
-const isActive = k === kategoriAktif;
-const logoUrl = getKategoriLogoURL(k);
-
-return `
-<div onclick="pilihKategori('${k}')" class="flex flex-col items-center gap-2 cursor-pointer text-center group active:scale-95 transition-all">
-<div class="w-12 h-12 rounded-[1.2rem] flex items-center justify-center transition-all border ${isActive ? 'bg-brand-accent border-brand-accent shadow-lg shadow-brand-accent/30' : 'bg-brand-card border-white/5 shadow-md group-hover:border-brand-info'}">
-
-<img src="${logoUrl}" alt="${k}" class="w-7 h-7 object-contain ${isActive ? 'brightness-100' : 'opacity-80 group-hover:opacity-100 transition-opacity'}"
-onerror="this.src='https://img.icons8.com/neon/96/folder-invoices.png'">
-
-</div>
-<span class="text-[9px] font-extrabold tracking-wide truncate w-full uppercase leading-tight ${isActive ? 'text-brand-accent' : 'text-gray-400 group-hover:text-white'}">
-${k}
-</span>
-</div>
-`;
-}).join('');
-}
-
 
 function pilihKategori(kat) {
 kategoriAktif = kat;
@@ -8243,80 +8106,6 @@ dataFiltered = xoftwareProdukGlobal.filter(p => getCategoryName(p) === kat);
 }
 renderProdukXoftware(dataFiltered);
 }
-
-// 3. Tampilkan Katalog Produk ke Grid Layar
-function renderProdukXoftware(data) {
-const container = document.getElementById('service-list');
-if (data.length === 0) {
-container.innerHTML = '<div class="col-span-2 text-center py-10 text-gray-400"><i class="fas fa-search-minus mb-2 text-lg"></i><br>Produk tidak ditemukan.</div>';
-return;
-}
-
-const folderGambarLokal = { "FLIX": "https://nos.wjv-1.neo.id/au2hub/IMG-20260518-WA0208.jpg" };
-
-container.innerHTML = data.map((p, index) => {
-const domainXoftware = "https://web.xoftware.id/";
-let rawImage = p.image || p.image_url || p.gambar || p.foto || p.thumbnail || p.logo || p.images || '';
-let deskripsiTeks = p.description || "";
-let linkDariDeskripsi = "";
-const regexImg = /\[IMG:\s*(.*?)\]/;
-const match = deskripsiTeks.match(regexImg);
-
-if (match) linkDariDeskripsi = match[1];
-
-let fotoFinal = rawImage || linkDariDeskripsi || folderGambarLokal[p.code] || '';
-if (typeof fotoFinal === 'string' && fotoFinal.includes(',')) fotoFinal = fotoFinal.split(',')[0].trim();
-if (fotoFinal && !fotoFinal.startsWith('http')) fotoFinal = domainXoftware + (fotoFinal.startsWith('/') ? fotoFinal.substring(1) : fotoFinal);
-else if (!fotoFinal) fotoFinal = 'https://placehold.co/400x400/1a1133/ff007a?text=ADT+STORE';
-
-const realIndex = xoftwareProdukGlobal.findIndex(item => item === p);
-const delayAnimasi = Math.min(index * 0.02, 0.4);
-
-// 🔥 LOGIKA HARGA CORET MARKETING AUTOMATIC
-let hargaCoret = Math.ceil((p.price * 1.3) / 1000) * 1000; // Markup 30%, buletin ke ribuan terdekat
-if (p.price > 100000) hargaCoret = Math.ceil((p.price * 1.2) / 5000) * 5000; // Kalau ratusan ribu nambah 20% biar wajar
-if (p.price <= 5000) hargaCoret = p.price + 2500; // Kalau produk murah di bawah 5rb
-
-return `
-<div onclick="openDetailProduk(${realIndex})" style="animation-delay: ${delayAnimasi}s; opacity: 0;" class="bg-brand-card rounded-2xl border border-white/5 overflow-hidden flex flex-col hover:border-brand-accent/30 transition-all smooth-reveal shadow-lg cursor-pointer group">
-<div class="relative w-full aspect-square bg-black/40 overflow-hidden">
-<img src="${fotoFinal}" alt="${p.title}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 relative z-0" onerror="this.src='https://placehold.co/400x400/1a1133/ff007a?text=ADT+STORE'">
-<!-- Watermark AU2Hub Thumbnail -->
-<img src="https://nos.wjv-1.neo.id/au2hub/Picsart_26-05-22_23-46-22-498.png" class="absolute inset-0 m-auto w-20 h-20 object-contain opacity-[0.25] pointer-events-none z-10 drop-shadow-lg group-hover:scale-105 transition-transform duration-300">
-<span class="absolute top-2 left-2 bg-brand-accent/90 text-white text-[8px] font-extrabold px-2 py-0.5 rounded-md backdrop-blur-sm border border-white/10 shadow-md z-20">
-READY
-</span>
-</div>
-<div class="p-3 flex-1 flex flex-col justify-between gap-1">
-<div>
-<div class="font-extrabold text-xs text-white leading-snug line-clamp-2 mb-1 min-h-[2.4rem]">${p.title}</div>
-<div class="text-[10px] text-gray-400 truncate mb-1">${deskripsiTeks.replace(regexImg, '').trim() || 'Proses cepat via WA.'}</div>
-</div>
-                    <div class="mt-auto">
-                        <div class="text-[9px] text-brand-success font-bold mb-0.5 flex items-center gap-1"><i class="fas fa-bolt text-[8px]"></i> Instan 1 Detik</div>
-                        <div class="flex flex-col items-start gap-px">
-                            <div class="text-gray-500 line-through text-[9px] font-medium opacity-60">Rp ${hargaCoret.toLocaleString('id-ID')}</div>
-                            <div class="text-brand-accent font-extrabold text-sm tracking-tight">Rp ${p.price.toLocaleString('id-ID')}</div>
-                        </div>
-                    </div>
-
-</div>
-</div>
-`;
-}).join('');
-}
-
-// 4. Fungsi Fitur Pencarian Gabungan
-document.getElementById('serviceSearch').addEventListener('input', (e) => {
-const val = e.target.value.toLowerCase();
-const hasilFilter = xoftwareProdukGlobal.filter(p => {
-let cocokKataKunci = p.title.toLowerCase().includes(val) || (p.description && p.description.toLowerCase().includes(val));
-let cocokKategori = (kategoriAktif === 'Semua') ? true : (getCategoryName(p) === kategoriAktif);
-return cocokKataKunci && cocokKategori;
-});
-renderProdukXoftware(hasilFilter);
-});
-
 
 
 // 🔥 VARIABEL GLOBAL UNTUK KALKULASI HARGA & VARIASI
@@ -8414,202 +8203,6 @@ document.getElementById('detail-product-price').innerHTML = `<span class="text-g
 }
 
 
-// 🔥 LOGIKA BUKA DETAIL PRODUK ALA SHOPEE WITH SLIDER SWIPE
-function openDetailProduk(index) {
-    const p = xoftwareProdukGlobal[index];
-    if (!p) return;
-
-    // 1. RESET STATE LACI
-    currentProductQty = 1;
-    currentSelectedVariation = "";
-    const elQty = document.getElementById('detail-qty');
-    if (elQty) elQty.value = "1";
-
-    // 2. DETEKSI VARIASI DARI XOFTWARE (SESUAI DASHBOARD ANDA)
-    let rawVariasi = p.variations || p.variasi || p.variants || p.items || [];
-    let arrVariasi = [];
-
-    // Normalisasi data array variasi agar formatnya seragam
-    if (Array.isArray(rawVariasi)) {
-        rawVariasi.forEach(v => {
-            if (typeof v === 'object' && v !== null) {
-                // Tarik nama variasi dan harga sesuai API Xoftware Anda
-                arrVariasi.push({
-                    name: v.nama_variasi || v.name || v.nama || v.title || "Variasi",
-                    price: parseFloat(v.harga || v.price || 0)
-                });
-            }
-        });
-    }
-
-    const variasiContainer = document.getElementById('detail-variasi-container');
-    const variasiList = document.getElementById('detail-variasi-list');
-
-    if (arrVariasi && arrVariasi.length > 0) {
-        variasiContainer.classList.remove('hidden');
-        
-        // Auto-Pilih Variasi Pertama saat laci dibuka
-        currentProductPrice = arrVariasi[0].price;
-        currentSelectedVariation = arrVariasi[0].name;
-
-        // Fungsi Render Tombol Variasi
-        window.renderVariasiButtons = function(activeName) {
-            variasiList.innerHTML = arrVariasi.map(v => {
-                let vName = v.name.replace(/'/g, "\\'");
-                let vPrice = v.price;
-                let isActive = (vName === activeName);
-                
-                let baseClass = "px-4 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ";
-                let activeClass = isActive 
-                    ? "bg-brand-accent/20 border-brand-accent text-brand-accent shadow-[0_0_10px_rgba(255,0,122,0.3)]" 
-                    : "bg-black/30 border-white/10 text-gray-400 hover:border-brand-info/50 hover:text-white";
-                
-                return `<div onclick="pilihVariasi('${vName}', ${vPrice})" class="${baseClass} ${activeClass}">${vName}</div>`;
-            }).join('');
-        };
-        window.renderVariasiButtons(currentSelectedVariation);
-        
-    } else {
-        // Kalau Gak Ada Variasi, Sembunyikan Wadah & Pake Harga Asli
-        variasiContainer.classList.add('hidden');
-        currentProductPrice = parseFloat(p.price || p.harga || 0);
-        currentSelectedVariation = "";
-    }
-
-
-    // 3. OLAH DESKRIPSI & GAMBAR
-    let deskripsiAsli = p.description || "";
-    let daftarGambar = [];
-
-    // Trik Sakti: Ekstrak kode [IMG: ...] dari deskripsi
-    const regexImg = /\[IMG:\s*(.*?)\]/;
-    const match = deskripsiAsli.match(regexImg);
-
-    let cleanDescription = deskripsiAsli;
-    let linkDariDeskripsi = "";
-
-    if (match) {
-        linkDariDeskripsi = match[1];
-        cleanDescription = deskripsiAsli.replace(regexImg, "").trim(); // Hapus text kode biar ga diliat pembeli
-    }
-
-    document.getElementById('detail-product-title').innerText = p.title;
-    updateHargaLayar(); // 🚀 Panggil mesin otomatis biar harga coret langsung nongol di laci
-
-    const urlRegex = /(https?:\/\/[^\s]+)/g;
-    let deskripsiBisaDiklik = cleanDescription.replace(urlRegex, '<a href="$1" target="_blank" class="text-brand-info underline hover:text-white transition-colors font-bold">$1</a>');
-    document.getElementById('detail-product-desc').innerHTML = deskripsiBisaDiklik || "Tidak ada deskripsi tambahan.";
-
-    // 4. LOGIKA TOMBOL BELI & DISKON KASTA
-    const btnBeli = document.getElementById('btn-beli-detail');
-    btnBeli.onclick = () => {
-        closeDetailProduk();
-        let teksSyarat = p.syarat_ketentuan || p.terms || p.syarat || "";
-        let infoLengkap = "";
-        if (cleanDescription) infoLengkap += "*Deskripsi:*\n" + cleanDescription + "\n\n";
-        if (teksSyarat) infoLengkap += "*Syarat & Ketentuan:*\n" + teksSyarat;
-
-        let totalHargaCheckout = currentProductPrice * currentProductQty;
-        
-        // 🔥 Format Nama Pesanan Biar Variasi Ikut Ke WA
-        let namaProdukFinal = p.title;
-        if (currentSelectedVariation !== "") namaProdukFinal += ` - ${currentSelectedVariation}`;
-        if (currentProductQty > 1) namaProdukFinal += ` (x${currentProductQty})`;
-
-        // 👑 SISTEM VOUCHER POTONGAN HARGA KASTA DEWA OTOMATIS
-        if (currentUser) {
-            const videoSaya = allVideosData.filter(v => v.user_id === currentUser.id).length;
-            if (videoSaya >= 100) {
-                // Kasta Legend Potong 10%
-                totalHargaCheckout = Math.floor(totalHargaCheckout * 0.9);
-                namaProdukFinal += " (Diskon Kasta Legend 10%)";
-                showToast("Selamat! Akun Legend Anda dapet diskon 10% otomatis!", "success");
-            } else if (videoSaya >= 50) {
-                // Kasta Master Potong 5%
-                totalHargaCheckout = Math.floor(totalHargaCheckout * 0.95);
-                namaProdukFinal += " (Diskon Kasta Master 5%)";
-                showToast("Selamat! Akun Master Anda dapet diskon 5% otomatis!", "success");
-            }
-        }
-
-        checkoutXoftwarePay(namaProdukFinal, totalHargaCheckout, infoLengkap);
-    };
-
-
-    // 5. RENDER GAMBAR CAROUSEL
-    const carousel = document.getElementById('detail-image-carousel');
-    carousel.innerHTML = '';
-
-    const domainXoftware = "https://web.xoftware.id/";
-    const folderGambarLokal = {
-        "FLIX": "https://nos.wjv-1.neo.id/au2hub/IMG-20260518-WA0208.jpg",
-    };
-
-    let rawImages = p.images || p.image || p.image_url || p.gambar || p.foto || p.thumbnail || p.logo || p.img || linkDariDeskripsi || folderGambarLokal[p.code] || '';
-
-    if (rawImages) {
-        let splitImages = rawImages.split(',');
-        daftarGambar = splitImages.map(img => {
-            let cleanImg = img.trim();
-            if (cleanImg && !cleanImg.startsWith('http')) {
-                return domainXoftware + (cleanImg.startsWith('/') ? cleanImg.substring(1) : cleanImg);
-            }
-            return cleanImg;
-        }).filter(img => img !== "");
-    }
-
-    if (daftarGambar.length === 0) {
-        daftarGambar.push('https://placehold.co/400x400/1a1133/ff007a?text=ADT+STORE');
-    }
-
-    carousel.innerHTML = daftarGambar.map(imgUrl => `
-        <div class="w-full h-full flex-shrink-0 snap-center relative flex items-center justify-center">
-            <img src="${imgUrl}" class="w-full h-full object-cover relative z-0" onerror="this.src='https://placehold.co/400x400/1a1133/ff007a?text=ADT+STORE'">
-            <!-- Watermark AU2Hub -->
-            <img src="https://nos.wjv-1.neo.id/au2hub/Picsart_26-05-22_23-46-22-498.png" class="absolute inset-0 m-auto w-36 h-36 object-contain opacity-[0.25] pointer-events-none z-10 drop-shadow-lg">
-        </div>
-    `).join('');
-
-    const currentTxt = document.getElementById('carousel-current-index');
-    const totalTxt = document.getElementById('carousel-total-index');
-    const badgeCounter = document.getElementById('carousel-counter-badge');
-
-    currentTxt.innerText = "1";
-    totalTxt.innerText = daftarGambar.length;
-
-    // 🔥 LOGIKA BARU: Sembunyikan angka 1/1 kalau gambar cuma sebiji
-    if (daftarGambar.length > 1) {
-        badgeCounter.classList.remove('hidden');
-    } else {
-        badgeCounter.classList.add('hidden');
-    }
-
-    carousel.onscroll = () => {
-        let page = Math.round(carousel.scrollLeft / carousel.clientWidth) + 1;
-        currentTxt.innerText = page;
-    };
-
-    // 6. BUKA LACI MODAL
-    const laci = document.getElementById('modal-detail-produk');
-    laci.classList.remove('translate-y-full');
-    laci.classList.add('translate-y-0');
-
-    history.pushState({ popup: 'detail_produk' }, null, '#detail?id=' + index);
-}
-
-// FUNGSI PENUTUP LACI SHOPEE (ANTI-NYANGKUT TOMBOL BACK HP)
-function closeDetailProduk(dariTombolBackHP = false) {
-    const laci = document.getElementById('modal-detail-produk');
-    laci.classList.remove('translate-y-0');
-    laci.classList.add('translate-y-full');
-
-    // Mencegah HP narik history back 2 kali kalau asalnya emang udah dari tombol back HP
-    if (!dariTombolBackHP && window.location.hash.startsWith('#detail')) {
-        history.back();
-    }
-}
-
-
 // ==========================================
 // SISTEM PEMBERSIH MEMORI OTOMATIS (ANTI QUOTA EXCEEDED)
 // ==========================================
@@ -8670,23 +8263,6 @@ supabaseClient.auth.onAuthStateChange((event, session) => {
   muatDataRipper();
   loadInfoLayanan();
   loadDataRekber();
-
-  // Menampilkan Katalog Xoftware, lalu cek apakah URL meminta laci spesifik
-  loadProdukXoftware().then(() => {
-      const urlHash = window.location.hash.substring(1); // Mengambil teks setelah tanda #
-      
-      // Deteksi jika link adalah laci detail produk
-      if (urlHash.startsWith('detail?id=')) {
-          const produkIndex = urlHash.split('=')[1];
-          
-          // Pastikan datanya ada, lalu buka lacinya
-          if (produkIndex && xoftwareProdukGlobal[produkIndex]) {
-              setTimeout(() => {
-                  openDetailProduk(parseInt(produkIndex));
-              }, 500); // Beri jeda sedikit agar animasi web selesai dulu
-          }
-      }
-  });
 
 
   // ==========================================
@@ -10217,73 +9793,6 @@ function bukaVideoShare(vidId) {
 
     </div>
 </div>
-
-<div id="modal-detail-produk" class="fixed inset-x-0 bottom-0 z-[180] max-h-[85vh] min-h-[50vh] bg-[#161B2E]/95 backdrop-blur-xl border-t border-white/10 rounded-t-[2.5rem] flex flex-col max-w-md mx-auto transition-transform translate-y-full shadow-[0_-20px_50px_rgba(0,0,0,0.6)]" style="transition-duration: 0.5s; transition-timing-function: cubic-bezier(0.32, 0.72, 0, 1);">
-    
-    <div class="flex justify-center p-3 shrink-0 bg-brand-dark/40 rounded-t-[2.5rem]" onclick="closeDetailProduk()">
-        <div class="w-12 h-1.5 bg-white/20 rounded-full cursor-pointer hover:bg-white/40 transition-colors"></div>
-    </div>
-    
-    <div class="overflow-y-auto hide-scroll flex-1 pb-4">
-        
-        <div class="relative w-full aspect-[4/3] bg-black/50 border-b border-white/5">
-            <div id="detail-image-carousel" class="flex overflow-x-auto hide-scroll snap-x snap-mandatory h-full w-full">
-            </div>
-            <div id="carousel-counter-badge" class="absolute bottom-4 right-4 bg-black/60 backdrop-blur-md text-white text-[10px] font-bold px-3 py-1 rounded-full border border-white/10 shadow-md">
-                <span id="carousel-current-index">1</span>/<span id="carousel-total-index">1</span>
-            </div>
-        </div>
-
-        <div class="p-6 space-y-5">
-            
-            <div class="flex justify-between items-start gap-4">
-                <div class="flex-1 min-w-0">
-                    <div class="text-brand-accent font-extrabold text-2xl tracking-tight mb-1" id="detail-product-price">Rp 0</div>
-                    <h3 class="text-base font-extrabold text-white leading-snug break-words" id="detail-product-title">Nama Produk</h3>
-                </div>
-                <button onclick="event.stopPropagation(); copyLinkLaciAktif(this)" class="bg-white/5 hover:bg-white/10 border border-white/10 w-10 h-10 rounded-xl flex items-center justify-center text-white active:scale-90 transition-all shrink-0 z-10 relative">
-                    <i class="fas fa-share-alt text-sm"></i>
-                </button>
-            </div>
-
-            <div id="detail-variasi-container" class="hidden border-t border-white/5 pt-4">
-                <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2.5 block">Pilih Variasi</span>
-                <div id="detail-variasi-list" class="flex flex-wrap gap-2"></div>
-            </div>
-
-            <div class="flex flex-wrap gap-2 border-y border-white/5 py-3 text-[10px] font-bold uppercase tracking-wider text-gray-400">
-                <span class="text-brand-success bg-brand-success/10 px-2.5 py-1 rounded-md border border-brand-success/20 flex items-center gap-1">
-                    <i class="fas fa-bolt text-[9px]"></i> INCLUDE REKBER NIKKY
-                </span>
-                <span id="detail-discount-badge" class="hidden text-brand-info bg-brand-info/10 px-2.5 py-1 rounded-md border border-brand-info/20 flex items-center gap-1"></span>
-            </div>
-
-            <div class="flex justify-between items-center bg-black/20 border border-white/5 p-3 rounded-2xl">
-                <span class="text-xs font-bold text-gray-300 uppercase tracking-wide">Jumlah</span>
-                <div class="flex items-center gap-2 bg-[#0F0920] border border-white/10 rounded-xl p-1 shadow-inner">
-                    <button onclick="ubahJumlahPesan(-1)" class="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/5 rounded-lg active:scale-95 transition-all"><i class="fas fa-minus text-xs"></i></button>
-                    <input type="tel" id="detail-qty" value="1" oninput="inputJumlahPesan(this.value)" onblur="validasiJumlah(this)" class="text-sm font-extrabold text-white w-10 text-center bg-transparent outline-none border-none p-0 m-0" maxlength="4">
-                    <button onclick="ubahJumlahPesan(1)" class="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/5 rounded-lg active:scale-95 transition-all"><i class="fas fa-plus text-xs"></i></button>
-                </div>
-            </div>
-
-            <div class="space-y-1.5 pt-1">
-                <h4 class="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest">Deskripsi Produk</h4>
-                <p class="text-xs text-gray-300 leading-relaxed whitespace-pre-line line-clamp-4 cursor-pointer transition-all duration-300" id="detail-product-desc" onclick="this.classList.toggle('line-clamp-4'); const btn = document.getElementById('btn-toggle-desc'); btn.innerHTML = this.classList.contains('line-clamp-4') ? 'Lihat Selengkapnya ▼' : 'Tutup Selengkapnya ▲';">Detail deskripsi...</p>
-                <button id="btn-toggle-desc" onclick="document.getElementById('detail-product-desc').click()" class="text-[10px] text-brand-info font-bold hover:text-white active:scale-95 transition-all">Lihat Selengkapnya ▼</button>
-            </div>
-
-        </div> 
-    </div> 
-    
-    <div class="w-full bg-[#161B2E] border-t border-white/5 p-4 shrink-0 pb-6 rounded-t-2xl z-20 mt-auto shadow-[0_-10px_20px_rgba(0,0,0,0.3)]">
-<button id="btn-beli-detail" onclick="" class="relative w-full bg-gradient-to-r from-[#00F0FF] via-[#8A2BE2] to-[#FF007A] text-white py-4 rounded-2xl font-extrabold text-sm active:scale-95 transition-all duration-300 hover:shadow-[0_0_20px_rgba(138,43,226,0.6)] overflow-hidden group flex justify-center items-center gap-2">
-    <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]"></div>
-    <i class="fas fa-shopping-bag relative z-10"></i> <span class="relative z-10">BELI SEKARANG VIA AUTO QRIS</span>
-</button>
-    </div> 
-</div>
-
 
 <!-- MODAL DETAIL PESANAN (TRACKER MODERN) -->
 <div id="modal-detail-pesanan" class="fixed inset-0 z-[600] hidden items-end sm:items-center justify-center bg-black/90 backdrop-blur-md px-0 sm:px-6 transition-all duration-300">
