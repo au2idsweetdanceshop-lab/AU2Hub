@@ -9510,9 +9510,8 @@ async function selesaikanPesanan() {
         if (activeOrderTable === 'orders_player' && sellerId) {
             
             // 🔥 LOGIKA BARU: Reverse Math (Balikin ke harga dasar Seller)
-            // hargaAsli saat ini isinya adalah Harga Customer (8.556)
-            // Rumus balik: (8556 - 500) / 1.007 = 8000
-            const hargaBaseSeller = Math.round((hargaAsli - 500) / 1.007);
+            // Rumus balik dikurangi 650 agar uang penjual tidak terpotong fee xoftware
+            const hargaBaseSeller = Math.round((hargaAsli - 650) / 1.007);
 
             // Hitung Potongan Pajak Admin (5% HANYA dari harga Base Seller)
             const pajakAdmin = Math.floor(hargaBaseSeller * 0.05);
@@ -10735,8 +10734,8 @@ function renderGridPasar(dataList) {
         const sellerAvatar = item.profiles?.avatar_url || 'https://placehold.co/100x100/1a1133/2BD975?text=AV';
         const sellerName = item.profiles?.nickname || 'Anonim';
         
-        // 🔥 LOGIKA BARU: Harga Markup Customer (+ 500 + 0.7%)
-        const hargaCustomer = Math.floor(item.price + 500 + (item.price * 0.007));
+        // 🔥 LOGIKA BARU: Harga Markup Customer (+ 650 + 0.7%)
+        const hargaCustomer = Math.floor(item.price + 650 + (item.price * 0.007));
         const formatHarga = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(hargaCustomer);
 
         // 🔥 LOGIKA HARGA CORET MARKETING AUTOMATIC (Sama seperti Xoftware)
@@ -11041,8 +11040,8 @@ function bukaDetailPasar(idProduk) {
         else wadahQty.classList.replace('hidden', 'flex');
     }
 
-    // Harga Markup Customer (+ 500 + 0.7%)
-    const hargaCustomer = Math.floor(produk.price + 500 + (produk.price * 0.007));
+    // Harga Markup Customer (+ 650 + 0.7%)
+    const hargaCustomer = Math.floor(produk.price + 650 + (produk.price * 0.007));
     currentPasarPrice = hargaCustomer;
 
     // LOGIKA VARIASI
@@ -11053,7 +11052,7 @@ function bukaDetailPasar(idProduk) {
         rawVariasi.forEach(v => {
             if (typeof v === 'object' && v !== null) {
                 let hargaVarAsli = parseFloat(v.harga || v.price || 0);
-                let hargaVarMarkup = Math.floor(hargaVarAsli + 500 + (hargaVarAsli * 0.007));
+                let hargaVarMarkup = Math.floor(hargaVarAsli + 650 + (hargaVarAsli * 0.007));
                 arrVariasi.push({ name: v.nama_variasi || v.name, price: hargaVarMarkup });
             }
         });
@@ -11848,7 +11847,7 @@ async function prosesAutoDeliveryTertunda() {
                         });
 
                         // 3. Masukkan uang ke saldo dompet penjual (🔥 UPDATE REVERSE MATH)
-                        const hargaBaseSeller = Math.round((order.price - 500) / 1.007);
+                        const hargaBaseSeller = Math.round((order.price - 650) / 1.007);
                         const pajakAdmin = Math.floor(hargaBaseSeller * 0.05);
                         const pendapatanBersih = hargaBaseSeller - pajakAdmin;
                         
