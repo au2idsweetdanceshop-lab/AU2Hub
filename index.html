@@ -5813,7 +5813,7 @@ function renderRow(item, isGroup) {
         else if (lastMessageText.startsWith('[AUDIO]')) lastMessageText = "🎙️ Pesan Suara";
         else if (lastMessageText.startsWith('[SISTEM]')) lastMessageText = "Pemberitahuan Sistem";
         else if (lastMessageText.startsWith('[REPLY:]')) lastMessageText = "Balasan pesan...";
-        else if (lastMessageText.startsWith('[STORY_REPLY:]')) {
+                else if (lastMessageText.startsWith('[STORY_REPLY:')) {
             let cleanText = lastMessageText.replace(/^\[STORY_REPLY:.*?\]\n/, '');
             lastMessageText = "Membalas status: " + cleanText;
         }
