@@ -40,6 +40,22 @@ tailwind.config = {
 
 
 <style>
+/* ========================================== */
+/* SISTEM ANTI-DOWNLOAD & DRAG GAMBAR GLOBAL  */
+/* ========================================== */
+img {
+    -webkit-user-drag: none; /* Mencegah drag di browser berbasis Webkit (Chrome/Safari) */
+    -khtml-user-drag: none;
+    -moz-user-drag: none;
+    -o-user-drag: none;
+    user-drag: none;
+    -webkit-touch-callout: none; /* MEMATIKAN pop-up "Save Image" saat di-hold di iPhone/Android */
+    -webkit-user-select: none; /* Mencegah gambar tersorot/terblok biru */
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
 /* Animasi Smooth Accordion untuk FAQ */
 details[open] > div {
     animation: accordionSlideDown 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
@@ -8545,8 +8561,10 @@ function openDetailProduk(index) {
     }
 
     carousel.innerHTML = daftarGambar.map(imgUrl => `
-        <div class="w-full h-full flex-shrink-0 snap-center">
-            <img src="${imgUrl}" class="w-full h-full object-cover" onerror="this.src='https://placehold.co/400x400/1a1133/ff007a?text=ADT+STORE'">
+        <div class="w-full h-full flex-shrink-0 snap-center relative flex items-center justify-center">
+            <img src="${imgUrl}" class="w-full h-full object-cover relative z-0" onerror="this.src='https://placehold.co/400x400/1a1133/ff007a?text=ADT+STORE'">
+            <!-- Watermark AU2Hub -->
+            <img src="https://nos.wjv-1.neo.id/au2hub/Picsart_26-05-22_23-46-22-498.png" class="absolute inset-0 m-auto w-36 h-36 object-contain opacity-[0.25] pointer-events-none z-10 drop-shadow-lg">
         </div>
     `).join('');
 
@@ -11091,8 +11109,10 @@ function bukaDetailPasar(idProduk) {
     let arrFoto = produk.image_url ? produk.image_url.split(',').map(img => img.trim()).filter(img => img !== "") : ['https://placehold.co/400x400/1a1133/2BD975?text=PASAR'];
 
     carousel.innerHTML = arrFoto.map((imgUrl, index) => `
-        <div class="w-full h-full flex-shrink-0 snap-center relative cursor-pointer" onclick="bukaGalleryPasar('${produk.id}', ${index})">
-            <img src="${imgUrl}" draggable="false" class="w-full h-full object-cover pointer-events-none" onerror="this.src='https://placehold.co/400x400/1a1133/2BD975?text=PASAR'">
+        <div class="w-full h-full flex-shrink-0 snap-center relative cursor-pointer flex items-center justify-center" onclick="bukaGalleryPasar('${produk.id}', ${index})">
+            <img src="${imgUrl}" draggable="false" class="w-full h-full object-cover pointer-events-none relative z-0" onerror="this.src='https://placehold.co/400x400/1a1133/2BD975?text=PASAR'">
+            <!-- Watermark AU2Hub -->
+            <img src="https://nos.wjv-1.neo.id/au2hub/Picsart_26-05-22_23-46-22-498.png" class="absolute inset-0 m-auto w-36 h-36 object-contain opacity-[0.25] pointer-events-none z-10 drop-shadow-lg">
         </div>
     `).join('');
 
@@ -12065,6 +12085,18 @@ async function prosesAutoDeliveryTertunda() {
         <div id="riwayat-pesanan-list" class="flex-1 overflow-y-auto p-4 hide-scroll space-y-3 bg-black/40 pb-10"></div>
     </div>
 </div>
+
+// ==========================================
+// SISTEM ANTI KLIK KANAN PADA GAMBAR
+// ==========================================
+document.addEventListener('contextmenu', function(e) {
+    // Jika yang diklik kanan adalah gambar (IMG), matikan fungsinya
+    if (e.target.tagName === 'IMG') {
+        e.preventDefault();
+        // Opsional: Kamu bisa memunculkan toast jika mau
+        // showToast("Gambar dilindungi oleh sistem.", "info");
+    }
+});
 
 
 </body>
