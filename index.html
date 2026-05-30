@@ -9353,8 +9353,18 @@ async function checkoutXoftwarePay(namaProduk, harga, deskripsi, sellerId = null
     try {
         // 1. Simpan antrean ke Supabase
         const targetTabel = sellerId ? 'orders_player' : 'orders';
-        const dataInsert = { user_id: currentUser.id, product_name: namaProduk, price: harga, status: 'PENDING', product_id: productId };
+        
+        // Hapus product_id dari deklarasi default agar tidak memaksa mengirim nilai null
+        const dataInsert = { 
+            user_id: currentUser.id, 
+            product_name: namaProduk, 
+            price: harga, 
+            status: 'PENDING' 
+        };
+        
+        // Hanya masukkan ke payload JIKA datanya memang ada
         if (sellerId) dataInsert.seller_id = sellerId;
+        if (productId) dataInsert.product_id = productId;
 
         const { data: orderData, error: orderError } = await supabaseClient.from(targetTabel).insert(dataInsert).select().single();
         if (orderError) throw orderError;
