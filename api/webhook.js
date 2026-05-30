@@ -28,25 +28,88 @@ export default async function handler(req, res) {
     }
 
     // ==========================================
-    // 3. JIKA PEMBAYARAN BERHASIL, UPDATE DATABASE
+    // 3. JIKA PEMBAYARAN BERHASIL, BACA DAN UPDATE DATABASE
     // ==========================================
-    // Kita buat standarisasi huruf besar (Uppercase) agar tidak sensitif huruf besar/kecil
     const statusXoftware = callbackData.status ? String(callbackData.status).toUpperCase() : '';
 
     if (statusXoftware === 'SUCCESS' || statusXoftware === 'PAID' || callbackData.payment_status === 'SUCCEEDED') {
         
-        console.log(`🔄 Sedang memperbarui status SUCCESS untuk ID: ${orderId}...`);
+        console.log(`🔄 Sedang memproses ID: ${orderId}...`);
 
-        // Eksekusi Update ke Supabase untuk kedua tabel kamu
-        const { error: err1 } = await supabase.from('orders').update({ status: 'SUCCESS' }).eq('id', orderId);
-        const { error: err2 } = await supabase.from('orders_player').update({ status: 'SUCCESS' }).eq('id', orderId);
+        // A. CARI DATA PESANAN (Mencari di tabel orders admin ATAU orders_player)
+        let orderData = null;
+        let targetTable = 'orders';
+
+        // Coba cari di tabel pesanan admin
+        let { data: orderAdmin } = await supabase.from('orders').select('*').eq('id', orderId).single();
         
-        if (err1 && err2) {
-            console.error("❌ Gagal update database di kedua tabel:", err1, err2);
-            return res.status(200).json({ success: false, message: 'Gagal update database' });
-        } 
+        if (orderAdmin) {
+            orderData = orderAdmin;
+        } else {
+            // Jika tidak ada, cari di tabel pasar player
+            let { data: orderPlayer } = await supabase.from('orders_player').select('*').eq('id', orderId).single();
+            if (orderPlayer) {
+                orderData = orderPlayer;
+                targetTable = 'orders_player';
+            }
+        }
+
+        // B. JIKA ORDER TIDAK DITEMUKAN DI KEDUA TABEL
+        if (!orderData) {
+            console.error(`❌ Order ID ${orderId} tidak ditemukan di database.`);
+            return res.status(200).json({ success: false, message: 'Order tidak ditemukan' });
+        }
+
+        const productName = orderData.product_name || '';
+        const userId = orderData.user_id;
+
+        // C. LOGIKA PINTAR: CEK APAKAH INI PEMBELIAN VIP SELLER
+        if (productName.includes('[VIP]')) {
+            console.log(`👑 Pembelian VIP terdeteksi untuk User: ${userId}`);
+
+            // 1. Ambil data profil untuk mengecek sisa masa aktif saat ini
+            const { data: profile } = await supabase.from('profiles').select('seller_expired_at').eq('id', userId).single();
+
+            let waktuSekarang = new Date();
+            let waktuExpired = profile?.seller_expired_at ? new Date(profile.seller_expired_at) : new Date();
+
+            // Jika masa aktif sudah habis/lewat, mulai hitungan murni dari hari ini
+            if (waktuExpired < waktuSekarang) {
+                waktuExpired = waktuSekarang;
+            }
+
+            // 2. Hitung penambahan waktu
+            if (productName.includes('1 Bulan')) {
+                waktuExpired.setDate(waktuExpired.getDate() + 30);
+            } else if (productName.includes('1 Tahun')) {
+                waktuExpired.setDate(waktuExpired.getDate() + 365);
+            }
+
+            // 3. Update tabel profiles
+            const { error: profileErr } = await supabase.from('profiles')
+                .update({ 
+                    is_seller: true, 
+                    seller_expired_at: waktuExpired.toISOString() 
+                })
+                .eq('id', userId);
+
+            if (profileErr) {
+                console.error("❌ Gagal update status VIP di tabel profil:", profileErr);
+            } else {
+                console.log(`✅ Profil ${userId} sukses diupdate jadi VIP sampai ${waktuExpired.toISOString()}`);
+            }
+
+            // 4. Update order menjadi "selesai" (VIP otomatis tanpa perlu dikirim barang)
+            await supabase.from(targetTable)
+                .update({ status: 'selesai', waktu_selesai: new Date().toISOString() })
+                .eq('id', orderId);
+
+        } else {
+            // D. JIKA BUKAN VIP (Order Biasa) -> Ubah ke 'SUCCESS' agar Auto-Delivery Frontend berjalan
+            await supabase.from(targetTable).update({ status: 'SUCCESS' }).eq('id', orderId);
+        }
         
-        console.log(`✅ BERHASIL! Status Order ${orderId} di kedua tabel Supabase kini SUCCESS.`);
+        console.log(`✅ BERHASIL! Proses Webhook selesai untuk Order ${orderId}.`);
         return res.status(200).json({ success: true, message: 'Callback received and processed' });
     }
 
