@@ -3092,19 +3092,25 @@ const navBottom = document.querySelector('nav');
 const headerTop = document.querySelector('header');
 
 if(isGlobalMuted) {
-showToast("Suara Dimatikan", "info");
-// Kembalikan video ke dalam kotak & gembok kembali
-allWraps.forEach(wrap => wrap.classList.remove('floating-focus'));
-document.body.classList.remove('video-focused');
+    showToast("Suara Dimatikan", "info");
+    // Kembalikan video ke dalam kotak & gembok kembali
+    allWraps.forEach(wrap => wrap.classList.remove('floating-focus'));
+    document.body.classList.remove('video-focused');
 
-// Hapus efek blur pada UI
-if(navBottom) navBottom.style.filter = 'none';
-if(headerTop) headerTop.style.filter = 'none';
+    // Hapus efek blur pada UI
+    if(navBottom) navBottom.style.filter = 'none';
+    if(headerTop) headerTop.style.filter = 'none';
 
-// Hapus jejak URL HANYA jika tidak ada instruksi skipHistory
-if (!skipHistory && window.location.hash === '#focused') {
-history.back();
-}
+    // 🔥 FIX: Jika Floating Player (profil/hashtag) sedang terbuka, tutup secara paksa TANPA history.back()
+    const floatingPlayer = document.getElementById('floating-video-player');
+    if (floatingPlayer && !floatingPlayer.classList.contains('hidden')) {
+        closeFloatingVideo(true); 
+    }
+
+    // Hapus jejak URL HANYA jika tidak ada instruksi skipHistory
+    if (!skipHistory && window.location.hash === '#focused') {
+        history.back();
+    }
 } else {
 showToast("Suara Dinyalakan", "success");
 // Buka gembok layar agar video bisa melayang keluar kotak
@@ -3530,15 +3536,18 @@ document.body.style.overflow = 'auto';
 }
 
 function openUploadModal() {
-// Matikan efek floating otomatis saat buka modal upload
+// Matikan efek floating otomatis saat buka modal upload TANPA memicu history.back()
 if (document.body.classList.contains('video-focused')) {
-toggleGlobalAudio();
+toggleGlobalAudio(true);
 }
+
+// Tambahkan history baru untuk modal upload
 history.pushState({ popup: 'upload' }, null, '#upload');
 const m = document.getElementById('modal-upload');
 m.classList.remove('hidden');
 m.classList.add('flex');
 }
+
 
 
 // Tombol Pintasan # dan @ ala TikTok
