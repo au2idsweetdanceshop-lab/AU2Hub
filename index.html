@@ -9471,11 +9471,20 @@ async function checkoutXoftwarePay(namaProduk, harga, deskripsi, sellerId = null
             
             // Cek apakah ini pembayaran VIP
             if (namaProduk.includes('[VIP]')) {
-                // Beri waktu 2 detik agar webhook backend selesai mengupdate Supabase
-                setTimeout(async () => {
-                    await fetchProfile(); // Tarik ulang data profil terbaru dari Supabase
-                    loadTokoSaya();       // Buka laci toko
-                }, 2000);
+                // 1. Paksa memori HP mengakui status VIP detik itu juga (Optimistic UI)
+                if (userProfile) {
+                    userProfile.is_seller = true;
+                    // Beri masa aktif bayangan (nanti akan tertimpa otomatis sama data asli)
+                    let expiry = new Date();
+                    expiry.setMonth(expiry.getMonth() + 1);
+                    userProfile.seller_expired_at = expiry.toISOString();
+                }
+                
+                // 2. Layar Toko langsung terbuka seketika!
+                loadTokoSaya();
+                
+                // 3. Tarik data aslinya diam-diam 3 detik kemudian untuk sinkronisasi
+                setTimeout(async () => { await fetchProfile(); }, 3000);
             } else {
                 prosesAutoDeliveryTertunda();
             }
@@ -9626,11 +9635,20 @@ async function prosesBayarUlang() {
             
             // Cek apakah ini pembayaran VIP
             if (namaProduk.includes('[VIP]')) {
-                // Beri waktu 2 detik agar webhook backend selesai mengupdate Supabase
-                setTimeout(async () => {
-                    await fetchProfile(); // Tarik ulang data profil terbaru dari Supabase
-                    loadTokoSaya();       // Buka laci toko
-                }, 2000);
+                // 1. Paksa memori HP mengakui status VIP detik itu juga (Optimistic UI)
+                if (userProfile) {
+                    userProfile.is_seller = true;
+                    // Beri masa aktif bayangan (nanti akan tertimpa otomatis sama data asli)
+                    let expiry = new Date();
+                    expiry.setMonth(expiry.getMonth() + 1);
+                    userProfile.seller_expired_at = expiry.toISOString();
+                }
+                
+                // 2. Layar Toko langsung terbuka seketika!
+                loadTokoSaya();
+                
+                // 3. Tarik data aslinya diam-diam 3 detik kemudian untuk sinkronisasi
+                setTimeout(async () => { await fetchProfile(); }, 3000);
             } else {
                 prosesAutoDeliveryTertunda();
             }
