@@ -1,8 +1,15 @@
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 
+// Menaikkan batas ukuran payload agar file base64 tidak terkena limit (Error 413 Payload Too Large)
+export const config = {
+  api: { bodyParser: { sizeLimit: '10mb' } }
+};
+
 export default async function handler(req, res) {
+    // Hanya izinkan method POST
     if (req.method !== 'POST') {
-        return res.status(405).json({ success: false, error: 'Method not allowed' });
+        res.setHeader('Allow', ['POST']);
+        return res.status(405).json({ success: false, error: `Method ${req.method} tidak diizinkan` });
     }
 
     try {
@@ -10,19 +17,25 @@ export default async function handler(req, res) {
         const userId = req.body.userId || req.body.user_id;
 
         if (!userId) {
-            return res.status(400).json({ success: false, error: 'Butuh login!' });
+            return res.status(400).json({ success: false, error: 'Butuh ID Pengguna (Belum login)!' });
         }
 
         if (!fileBase64) {
             return res.status(400).json({ success: false, error: 'File gambar kosong!' });
         }
 
-        // Mengubah teks Base64 menjadi file Gambar
+        // Mengubah teks Base64 menjadi file Buffer Gambar
         const base64Data = fileBase64.replace(/^data:image\/\w+;base64,/, "");
         const buffer = Buffer.from(base64Data, 'base64');
         
-        const fileName = `avatars/${userId}-${Date.now()}.jpg`;
+        // Format penamaan file di dalam sub-folder user agar rapi
+        const fileName = `avatars/${userId}/foto_${Date.now()}.jpg`;
         const bucketName = (process.env.BIZNET_BUCKET_NAME || "").trim();
+
+        // Validasi environment variables untuk menghindari crash internal
+        if (!bucketName || !process.env.BIZNET_ACCESS_KEY || !process.env.BIZNET_SECRET_KEY) {
+            throw new Error("Konfigurasi S3/Biznet belum lengkap di Environment Variables.");
+        }
 
         const client = new S3Client({
             region: "idn",
@@ -39,16 +52,17 @@ export default async function handler(req, res) {
             Key: fileName,
             Body: buffer,
             ContentType: "image/jpeg",
-            ACL: "public-read" // <--- INI KUNCINYA AGAR FOTO TIDAK BROKEN
+            ACL: "public-read" // KUNCI AGAR FOTO TIDAK BROKEN DI FRONTEND
         });
 
         await client.send(command);
 
-        const fileUrl = `https://nos.wjv-1.neo.id/${bucketName}/${fileName}`;
+        // Format URL diseragamkan dengan upload-url.js (Virtual-hosted style)
+        const fileUrl = `https://${bucketName}.nos.wjv-1.neo.id/${fileName}`;
 
-        res.status(200).json({ success: true, url: fileUrl });
+        return res.status(200).json({ success: true, url: fileUrl });
     } catch (error) {
         console.error("Error Upload Foto:", error);
-        res.status(500).json({ success: false, error: error.message });
+        return res.status(500).json({ success: false, error: error.message });
     }
 }
