@@ -1,6 +1,7 @@
 import crypto from 'crypto';
 import { createClient } from '@supabase/supabase-js';
 
+// Gunakan Service Role Key agar punya akses 'Dewa' menembus RLS
 const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
     process.env.SUPABASE_SERVICE_ROLE_KEY 
@@ -12,7 +13,7 @@ export default async function handler(req, res) {
     console.log("📥 WEBHOOK MASUK DARI XOFTWARE:", JSON.stringify(req.body, null, 2));
 
     // ==========================================
-    // 🛡️ VERIFIKASI SIGNATURE (MODE PANTAU)
+    // 🛡️ VERIFIKASI SIGNATURE (AKTIF PENUH)
     // ==========================================
     const apiKey = process.env.XOFTWARE_API_KEY; 
     const incomingSignature = req.headers['x-signature'] || req.headers['x-callback-signature'];
@@ -25,14 +26,16 @@ export default async function handler(req, res) {
         console.log(`🔐 Signature Masuk: ${incomingSignature}`);
         
         if (incomingSignature !== generatedSignatureBase64 && incomingSignature !== generatedSignatureHex) {
-             console.error("❌ PERINGATAN: Signature Tidak Valid! (Tapi diloloskan sementara untuk Testing)");
-             // Pemblokir dimatikan sementara agar VIP Anda tetap bisa masuk
-             // return res.status(401).json({ success: false, message: 'Unauthorized: Invalid Signature' });
+             console.error("❌ PERINGATAN: Signature Tidak Valid! Akses Ditolak.");
+             // 🔥 PEMBLOKIR DIAKTIFKAN! Hacker langsung mental!
+             return res.status(401).json({ success: false, message: 'Unauthorized: Invalid Signature' });
         } else {
              console.log("✅ Verifikasi Signature Sukses!");
         }
     } else {
-        console.error("⚠️ PERINGATAN: Webhook masuk tanpa header Signature! (Diloloskan sementara)");
+        console.error("⚠️ PERINGATAN: Webhook masuk tanpa header Signature!");
+        // 🔥 TOLAK MENTAH-MENTAH JIKA TANPA SIGNATURE
+        return res.status(401).json({ success: false, message: 'Unauthorized: No Signature' });
     }
     // ==========================================
 
@@ -47,7 +50,7 @@ export default async function handler(req, res) {
     const statusXoftware = callbackData.status ? String(callbackData.status).toUpperCase() : '';
     const paymentStatus = callbackData.payment_status ? String(callbackData.payment_status).toUpperCase() : '';
 
-    // 🔥 PERBAIKAN: Tambahkan kata "SETTLED" ke dalam kamus sukses kita!
+    // 🔥 SETTLED SUDAH MASUK KAMUS
     if (statusXoftware === 'SUCCESS' || statusXoftware === 'PAID' || statusXoftware === 'SETTLED' || paymentStatus === 'SUCCEEDED' || paymentStatus === 'SETTLED') {
         
         console.log(`🔄 Sedang memproses ID: ${orderId}...`);
@@ -115,8 +118,16 @@ export default async function handler(req, res) {
                 console.log(`✅ Profil ${userId} sukses diupdate jadi VIP sampai ${waktuExpired.toISOString()}`);
             }
 
+            // 🔥 PERBAIKAN: HINDARI ERROR KOLOM waktu_selesai DI TABEL ADMIN
+            let updatePayload = { status: 'selesai' };
+            
+            // Cuma masukin waktu_selesai kalau yang diurus itu tabel Pasar Player
+            if (targetTable === 'orders_player') {
+                updatePayload.waktu_selesai = new Date().toISOString();
+            }
+
             await supabase.from(targetTable)
-                .update({ status: 'selesai', waktu_selesai: new Date().toISOString() })
+                .update(updatePayload)
                 .eq('id', orderId);
 
         } else {
