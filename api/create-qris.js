@@ -74,7 +74,7 @@ export default async function handler(req, res) {
         // SUSUN PAYLOAD KE XOFTWARE
         const payload = {
             merchant_id: 129, 
-            channel_code: "REALTIME", 
+            channel_code: "QRISREALTIME", 
             amount: finalVerifiedPrice, 
             ref_id: order_id, 
             fee_direction: "merchant", 
