@@ -3331,10 +3331,18 @@ window.addEventListener('popstate', () => {
         return;
     }
 
+// Tangkap laci Dilihat/Disukai dulu!
+const statsModal = document.getElementById('modal-story-stats');
+if (statsModal && !statsModal.classList.contains('translate-y-full')) {
+    closeStoryStatsModal(true);
+    return;
+}
+
+// Baru tangkap layar pemutar Story utamanya
 const storyModal = document.getElementById('story-viewer-modal');
 if (storyModal && !storyModal.classList.contains('hidden')) {
-closeStoryViewer();
-return;
+    closeStoryViewer(true);
+    return;
 }
 
 const modalMsgOption = document.getElementById('modal-msg-option');
@@ -6122,6 +6130,7 @@ progressContainer.innerHTML = stories.map((_, i) => `
 </div>
 `).join('');
 
+history.pushState({ popup: 'story' }, null, '#story'); // <-- SUNTIKAN HISTORY BARU
 const modal = document.getElementById('story-viewer-modal');
 modal.classList.remove('hidden');
 modal.classList.add('flex');
@@ -6252,14 +6261,16 @@ const replyContainer = document.getElementById('story-reply-container');
 const replyInput = document.getElementById('story-reply-input');
 const statsContainer = document.getElementById('story-owner-stats');
 
-if (currentUser && story.user_id === currentUser.id) {
-// JIKA INI STORY MILIK SAYA SENDIRI
-if (replyContainer) replyContainer.classList.add('hidden');
-if (statsContainer) {
-statsContainer.classList.remove('hidden');
-statsContainer.classList.add('flex');
+// Pindahkan fungsi tarik data ke luar agar selalu aktif untuk story siapa pun
 if (typeof fetchStoryStats === 'function') fetchStoryStats(story.id);
-}
+
+if (currentUser && story.user_id === currentUser.id) {
+    // JIKA INI STORY MILIK SAYA SENDIRI
+    if (replyContainer) replyContainer.classList.add('hidden');
+    if (statsContainer) {
+        statsContainer.classList.remove('hidden');
+        statsContainer.classList.add('flex');
+    }
 } else {
 // JIKA INI STORY MILIK TEMAN
 if (statsContainer) {
@@ -6302,33 +6313,39 @@ showToast(vidEl.muted ? "Suara Status Dimatikan" : "Suara Status Dinyalakan", vi
 }
 }
 
-function closeStoryViewer() {
-clearTimeout(currentStoryTimer);
+function closeStoryViewer(dariTombolBack = false) {
+    clearTimeout(currentStoryTimer);
 
-// Paksa matikan video agar suaranya tidak bocor keluar setelah ditutup
-const vidEl = document.getElementById('viewer-story-vid');
-if (vidEl) {
-vidEl.pause();
-vidEl.src = '';
+    // Paksa matikan video agar suaranya tidak bocor
+    const vidEl = document.getElementById('viewer-story-vid');
+    if (vidEl) {
+        vidEl.pause();
+        vidEl.src = '';
+    }
+
+    const modal = document.getElementById('story-viewer-modal');
+    modal.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+    modal.classList.add('opacity-0');
+    modal.style.transform = 'translateY(50px)'; 
+
+    // Tutup laci stats jika masih terbuka secara visual (tanpa memicu history ganda)
+    const statsModal = document.getElementById('modal-story-stats');
+    if (statsModal && !statsModal.classList.contains('translate-y-full')) {
+        statsModal.classList.add('translate-y-full');
+    }
+
+    // SINKRONISASI TOMBOL BACK HP
+    if (!dariTombolBack && window.location.hash === '#story') {
+        history.back();
+    }
+
+    setTimeout(() => {
+        modal.classList.remove('flex');
+        modal.classList.add('hidden');
+        modal.style.transform = 'translateY(0)'; // Reset posisi
+    }, 300);
 }
 
-const modal = document.getElementById('story-viewer-modal');
-modal.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
-modal.classList.add('opacity-0');
-modal.style.transform = 'translateY(50px)'; // Efek turun sedikit saat ditutup
-
-// ==========================================
-// --- TAMBAHAN BARU: Tutup laci stats jika masih terbuka ---
-// ==========================================
-const statsModal = document.getElementById('modal-story-stats');
-if (statsModal) statsModal.classList.add('translate-y-full');
-
-setTimeout(() => {
-modal.classList.remove('flex');
-modal.classList.add('hidden');
-modal.style.transform = 'translateY(0)'; // Reset posisi kembali normal
-}, 300);
-}
 
 
 
@@ -8053,17 +8070,25 @@ document.getElementById('modal-like-count').innerText = likeCount || 0;
 
 // 3. Buka/Tutup Drawer Animasi
 function openStoryStatsModal() {
-const modal = document.getElementById('modal-story-stats');
-modal.classList.remove('translate-y-full');
-if (typeof pauseStoryForReply === 'function') pauseStoryForReply(); // Hentikan timer story sementara
-loadStoryStatsData(); // Muat daftar orangnya
+    history.pushState({ popup: 'story_stats' }, null, '#storystats'); // <-- HISTORY BARU
+    const modal = document.getElementById('modal-story-stats');
+    modal.classList.remove('translate-y-full');
+    if (typeof pauseStoryForReply === 'function') pauseStoryForReply(); 
+    loadStoryStatsData(); 
 }
 
-function closeStoryStatsModal() {
-const modal = document.getElementById('modal-story-stats');
-modal.classList.add('translate-y-full');
-if (typeof resumeStoryAfterReply === 'function') resumeStoryAfterReply(); // Lanjutkan timer story
+
+function closeStoryStatsModal(dariTombolBack = false) {
+    const modal = document.getElementById('modal-story-stats');
+    modal.classList.add('translate-y-full');
+    if (typeof resumeStoryAfterReply === 'function') resumeStoryAfterReply(); 
+
+    // SINKRONISASI TOMBOL BACK HP
+    if (!dariTombolBack && window.location.hash === '#storystats') {
+        history.back();
+    }
 }
+
 
 // 4. Pindah Tab Dilihat / Disukai
 function switchStoryStatTab(tab) {
@@ -8129,7 +8154,7 @@ if(p) {
 const ava = p.avatar_url || `https://ui-avatars.com/api/?name=${p.nickname}&background=1A1133&color=fff`;
 const icon = isLike ? '<i class="fas fa-heart text-brand-accent text-[12px] animate-pulse"></i>' : '<i class="fas fa-eye text-brand-info text-[12px]"></i>';
 html += `
-<div class="flex items-center p-3 hover:bg-white/5 rounded-2xl transition-all cursor-pointer border-b border-white/5 last:border-0" onclick="viewUserProfile('${p.id}'); closeStoryViewer();">
+<div class="flex items-center p-3 hover:bg-white/5 rounded-2xl transition-all cursor-pointer border-b border-white/5 last:border-0" onclick="closeStoryStatsModal(); closeStoryViewer(); setTimeout(() => viewUserProfile('${p.id}'), 300);">
 <img src="${ava}" loading="lazy" class="w-10 h-10 rounded-full object-cover border border-white/10 shrink-0">
 <div class="ml-3 flex-1 flex justify-between items-center">
 <div>
