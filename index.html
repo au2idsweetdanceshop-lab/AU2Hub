@@ -9486,15 +9486,12 @@ async function checkoutXoftwarePay(namaProduk, harga, deskripsi, sellerId = null
                     };
                 }
                 
-                // 3. Bersihkan memori bayangan setelah 1 menit (karena backend asli pasti sudah update)
+                // 3. Bersihkan memori bayangan setelah 1 menit
                 setTimeout(() => { 
                     localStorage.removeItem('optimistic_vip'); 
                     fetchProfile();
                 }, 60000);
             } else {
-                prosesAutoDeliveryTertunda();
-            }
- else {
                 prosesAutoDeliveryTertunda();
             }
         };
@@ -9659,15 +9656,12 @@ async function prosesBayarUlang() {
                     };
                 }
                 
-                // 3. Bersihkan memori bayangan setelah 1 menit (karena backend asli pasti sudah update)
+                // 3. Bersihkan memori bayangan setelah 1 menit
                 setTimeout(() => { 
                     localStorage.removeItem('optimistic_vip'); 
                     fetchProfile();
                 }, 60000);
             } else {
-                prosesAutoDeliveryTertunda();
-            }
- else {
                 prosesAutoDeliveryTertunda();
             }
         };
