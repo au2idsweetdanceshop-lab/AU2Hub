@@ -10848,6 +10848,39 @@ function ubahQtyVIP(delta) {
     pilihPaketSeller('bulanan');
 }
 
+// Fungsi saat user mengetik angka langsung
+function inputQtyVIP(val) {
+    let parsed = parseInt(val);
+    // Jika dikosongkan/dihapus, sementara anggap 1 agar harga tidak error/NaN
+    qtyVipBulan = (isNaN(parsed) || parsed < 1) ? 1 : parsed; 
+    
+    // Kalkulasi Harga Tampil
+    const hargaAsli = 40000 * qtyVipBulan;
+    const hargaCoret = 50000 * qtyVipBulan;
+    
+    // Update Text di Layar
+    document.getElementById('harga-bulanan').innerHTML = `Rp ${hargaAsli.toLocaleString('id-ID')}<span class="text-[10px] text-gray-500 font-normal"> /${qtyVipBulan * 30} hari</span>`;
+    document.getElementById('coret-bulanan').innerText = `Rp ${hargaCoret.toLocaleString('id-ID')}`;
+    
+    // Paksa pindah fokus ke paket bulanan
+    pilihPaketSeller('bulanan');
+}
+
+// Fungsi saat user selesai ngetik (klik di luar kotak)
+function validasiQtyVIP(el) {
+    let parsed = parseInt(el.value);
+    // Kalau user sengaja ngosongin kotak lalu ditinggal, paksa balik ke angka 1
+    if (isNaN(parsed) || parsed < 1) { 
+        parsed = 1; 
+        el.value = 1; 
+    } else {
+        el.value = parsed; // Menghilangkan angka nol di depan (misal "05" jadi "5")
+    }
+    qtyVipBulan = parsed;
+    inputQtyVIP(parsed);
+}
+
+
 function pilihPaketSeller(tipe) {
     paketSellerTerpilih = tipe;
     
@@ -11898,7 +11931,7 @@ document.addEventListener('contextmenu', function(e) {
                         </div>
                         <div class="flex items-center gap-1.5 bg-[#0F0920] border border-white/10 rounded-lg p-1 shadow-inner mt-1" onclick="event.stopPropagation()">
                             <button onclick="ubahQtyVIP(-1)" class="w-6 h-6 flex items-center justify-center text-gray-400 hover:text-white bg-white/5 rounded-md active:scale-95"><i class="fas fa-minus text-[10px]"></i></button>
-                            <input type="text" id="qty-vip-bulan" value="1" readonly class="text-[11px] font-extrabold text-white w-5 text-center bg-transparent outline-none border-none p-0 m-0 pointer-events-none">
+                            <input type="tel" id="qty-vip-bulan" value="1" oninput="inputQtyVIP(this.value)" onblur="validasiQtyVIP(this)" maxlength="3" class="text-[12px] font-extrabold text-white w-7 text-center bg-transparent outline-none border-none p-0 m-0">
                             <button onclick="ubahQtyVIP(1)" class="w-6 h-6 flex items-center justify-center text-gray-400 hover:text-white bg-white/5 rounded-md active:scale-95"><i class="fas fa-plus text-[10px]"></i></button>
                         </div>
                     </div>
