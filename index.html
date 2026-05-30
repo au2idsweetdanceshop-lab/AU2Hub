@@ -9300,7 +9300,6 @@ async function batalkanPesanan() {
 async function selesaikanPesanan() {
     if (!activeOrderIdToPay) return;
     
-    // 1. Bedakan teks konfirmasi antara pesanan Pasar Player vs Pesanan Admin
     let pesanKonfirmasi = "Pesanan sudah dikerjakan dan diterima dengan baik?";
     if (activeOrderTable === 'orders_player') {
         pesanKonfirmasi += "\n\nDana akan masuk ke Saldo Tertahan Penjual dan cair dalam 24 jam.";
@@ -9315,14 +9314,14 @@ async function selesaikanPesanan() {
     try {
         const waktuSekarang = new Date().toISOString();
         
-        // 2. Susun payload database secara dinamis
+        // Hanya update 'status' untuk order Admin
         let dataUpdate = { 
-            status: 'selesai', 
-            waktu_selesai: waktuSekarang 
+            status: 'selesai' 
         };
 
-        // HANYA masukkan perintah tahan dana (dana_cair: false) jika ini transaksi di Pasar Player
+        // HANYA masukkan 'waktu_selesai' dan 'dana_cair' jika ini transaksi di Pasar Player
         if (activeOrderTable === 'orders_player') {
+            dataUpdate.waktu_selesai = waktuSekarang;
             dataUpdate.dana_cair = false;
         }
         
@@ -9347,6 +9346,7 @@ async function selesaikanPesanan() {
         showToast("Gagal menyelesaikan pesanan: " + err.message, "error");
     }
 }
+
 
 async function checkoutXoftwarePay(namaProduk, harga, deskripsi, sellerId = null, productId = null) {
     if (!currentUser) return showToast("Silakan login dulu untuk membeli!", "error");
