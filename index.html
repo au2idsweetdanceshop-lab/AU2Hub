@@ -5319,22 +5319,25 @@ btn.disabled = false;
 async function hapusAkunPermanen() {
     if (!currentUser) return;
 
-    // Gunakan prompt yang sudah Anda buat untuk keamanan ekstra
-    const konfirmasi = await customPrompt("PERINGATAN! Semua data (Video, Follower, Saldo) akan hangus.\n\nKetik 'HAPUS AKUN' huruf besar semua untuk melanjutkan:");
+    const konfirmasi = await customPrompt("PERINGATAN! Semua data (Video, Follower, Saldo, dan Media) akan hangus.\n\nKetik 'HAPUS AKUN' huruf besar semua untuk melanjutkan:");
     
-    // Validasi ketat agar tidak kepencet secara tidak sengaja
     if (konfirmasi === 'HAPUS AKUN') {
-        showToast("Sedang menghancurkan akun...", "info");
+        showToast("Sedang menghancurkan akun dan membersihkan media...", "info");
         
         try {
-            // Kita memanggil fungsi khusus (RPC) yang akan kita buat di database Supabase nanti
+            // 1. PANGGIL API UNTUK MENGHAPUS FOLDER BIZNET GIO DULU
+            // Lakukan ini sebelum RPC Supabase agar akses ID user masih valid
+            await fetch(`/api/delete-folder?userId=${currentUser.id}`, {
+                method: 'DELETE'
+            });
+
+            // 2. PANGGIL SUPABASE RPC UNTUK HAPUS DATABASE
             const { error } = await supabaseClient.rpc('hapus_akun_saya');
             
             if (error) throw error;
 
-            showToast("Akun berhasil dihapus secara permanen.", "success");
+            showToast("Akun dan seluruh media berhasil dihapus permanen.", "success");
             
-            // Tutup laci dan paksa logout
             closeEditProfileModal();
             await handleLogout();
             
@@ -5343,10 +5346,10 @@ async function hapusAkunPermanen() {
             showToast("Gagal menghapus akun. Pastikan Anda terhubung ke internet.", "error");
         }
     } else if (konfirmasi !== null) {
-        // Jika user salah ngetik
         showToast("Kata kunci salah. Penghapusan dibatalkan.", "error");
     }
 }
+
 
 
 async function fetchFollowStats(targetUserId) {
@@ -6329,7 +6332,12 @@ const config = await configRes.json();
 
 if (!config.gasUrl) throw new Error("Link GAS tidak ditemukan di config");
 
-const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent(file.name)}&filetype=${file.type}`);
+// Memasukkan file ke dalam folder: {User ID}/feed_video/{nama_file}
+const namaFolder = `${currentUser.id}/feed_video`;
+const namaFileUnik = `${Date.now()}_${file.name.replace(/\s+/g, '_')}`; // Hindari spasi di nama file
+const pathLengkap = `${namaFolder}/${namaFileUnik}`;
+
+const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent(pathLengkap)}&filetype=${encodeURIComponent(file.type)}`);
 const dataUrl = await resUrl.json();
 
 // 🔥 PERBAIKAN 1: Menambahkan header x-amz-acl agar Biznet membuka izin baca publik untuk file video ini
@@ -6521,7 +6529,11 @@ async function prosesKirimMedia() {
 
     try {
         // Upload File ke Storage
-        const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent(context + '_' + Date.now())}&filetype=${encodeURIComponent(file.type)}`);
+        // Memasukkan file ke dalam folder: {User ID}/chat_media/ ATAU {User ID}/story_media/
+const namaFolder = context === 'chat' ? `${currentUser.id}/chat_media` : `${currentUser.id}/story_media`;
+const pathLengkap = `${namaFolder}/media_${Date.now()}`;
+
+const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent(pathLengkap)}&filetype=${encodeURIComponent(file.type)}`);
         const dataUrl = await resUrl.json();
         await fetch(dataUrl.uploadUrl, { method: 'PUT', body: file, headers: { 'Content-Type': file.type, 'x-amz-acl': 'public-read' } });
 
@@ -8782,7 +8794,8 @@ showToast("Mengupdate foto profil grup...", "info");
 
 try {
 // 1. Ambil URL unggahan dari API URL lu
-const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent('group_edit_'+Date.now())}&filetype=${encodeURIComponent(file.type)}`);
+const pathLengkap = `groups/${activeGroupId}/avatar_${Date.now()}`;
+const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent(pathLengkap)}&filetype=${encodeURIComponent(file.type)}`);
 const dataUrl = await resUrl.json();
 
 // 2. Upload file fisik ke storage Biznet GIO
@@ -10411,7 +10424,9 @@ async function prosesPostingJualan() {
         showToast(`Mengunggah ${fileJualanArray.length} foto ke satelit...`, "info");
 
         const uploadPromises = fileJualanArray.map(async (file, index) => {
-            const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent('pasar_'+index+'_'+Date.now())}&filetype=${encodeURIComponent(file.type)}`);
+            // Memasukkan file ke dalam folder: {User ID}/pasar/{nama_file}
+const pathLengkap = `${currentUser.id}/pasar/foto_${index}_${Date.now()}`;
+const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent(pathLengkap)}&filetype=${encodeURIComponent(file.type)}`);
             const dataUrl = await resUrl.json();
             await fetch(dataUrl.uploadUrl, { method: 'PUT', body: file, headers: { 'Content-Type': file.type, 'x-amz-acl': 'public-read' } });
             return dataUrl.finalVideoUrl;
