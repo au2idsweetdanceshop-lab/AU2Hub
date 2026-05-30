@@ -852,18 +852,28 @@ Satu pintu untuk info update terbaru, panduan pemula, jasa joki profesional, dan
 
     <div id="toko-container" class="w-full relative z-10">
         
-        <div id="toko-logged-out" class="hidden flex-col items-center justify-center py-14 px-6 mt-4 w-full bg-gradient-to-b from-brand-card/50 to-transparent rounded-[2rem] border border-white/5 shadow-inner">
-            <div class="w-20 h-20 bg-[#FF5722]/10 rounded-full flex items-center justify-center mb-5 border border-[#FF5722]/20 shadow-[0_0_30px_rgba(255,87,34,0.2)] shrink-0">
-                <i class="fas fa-store-slash text-4xl text-[#FF5722]/50 translate-x-1"></i>
-            </div>
-            
-            <h3 class="text-xl font-black text-white mb-2 tracking-tight text-center w-full">Akses Tertutup</h3>
-            <p class="text-xs text-gray-400 mb-8 text-center leading-relaxed w-full">Silakan login untuk mulai mengelola etalase toko dan melacak pesanan masuk Anda.</p>
-            
-            <button onclick="openAuthModal()" class="w-full block bg-gradient-to-r from-[#FF5722] to-[#FF007A] text-white py-3.5 rounded-xl font-extrabold active:scale-95 transition-all shadow-[0_8px_20px_rgba(255,87,34,0.3)] uppercase tracking-wider text-[11px] whitespace-nowrap shrink-0">
-                Login Sekarang
-            </button>
-        </div>
+        <!-- KOTAK LOGGED OUT (ANTI-BADAI) -->
+<div id="toko-logged-out" class="hidden flex-col items-center justify-center py-12 px-5 mt-4 w-full max-w-sm mx-auto bg-gradient-to-b from-brand-card/60 to-transparent rounded-[2rem] border border-white/5 shadow-inner">
+    
+    <div class="w-20 h-20 bg-[#FF5722]/10 rounded-full flex items-center justify-center mb-5 border border-[#FF5722]/20 shadow-[0_0_30px_rgba(255,87,34,0.2)] shrink-0">
+        <!-- Ikon digeser sedikit ke kanan biar pas di tengah -->
+        <i class="fas fa-store-slash text-4xl text-[#FF5722]/50 translate-x-1"></i>
+    </div>
+    
+    <h3 class="text-xl font-black text-white mb-2 tracking-tight text-center w-full">Akses Tertutup</h3>
+    
+    <!-- Teks dikunci max-w-[260px] biar gak nyentuh pinggiran layar -->
+    <p class="text-[11px] text-gray-400 mb-8 text-center leading-relaxed w-full max-w-[260px] mx-auto">
+        Silakan login untuk mulai mengelola etalase toko dan melacak pesanan masuk Anda.
+    </p>
+    
+    <!-- Tombol dikunci max-w-[250px] dan whitespace-nowrap biar 1 baris mutlak -->
+    <button onclick="openAuthModal()" class="w-full max-w-[250px] mx-auto flex items-center justify-center bg-gradient-to-r from-[#FF5722] to-[#FF007A] text-white py-3.5 rounded-xl font-extrabold active:scale-95 transition-all shadow-[0_8px_20px_rgba(255,87,34,0.3)] uppercase tracking-wider text-[11px] whitespace-nowrap shrink-0">
+        LOGIN SEKARANG
+    </button>
+
+</div>
+
         <div id="toko-logged-in" class="w-full hidden">
 
             
@@ -10909,10 +10919,11 @@ async function loadTokoSaya() {
     if (!currentUser) {
         loggedOut.querySelector('h3').innerText = "Akses Tertutup";
         loggedOut.querySelector('p').innerText = "Silakan login untuk mulai mengelola etalase toko dan melacak pesanan masuk Anda.";
-        loggedOut.querySelector('button').innerText = "Login Sekarang";
+        loggedOut.querySelector('button').innerText = "LOGIN SEKARANG";
         loggedOut.querySelector('button').onclick = openAuthModal;
         
         loggedOut.classList.remove('hidden');
+        loggedOut.classList.add('flex');
         loggedIn.classList.add('hidden');
         return;
     }
@@ -10925,24 +10936,28 @@ async function loadTokoSaya() {
     // Jika bukan VIP atau masa aktif habis
     if (!isVip || expiredAt < now) {
         loggedOut.querySelector('h3').innerText = "Akses Khusus VIP Seller";
-        loggedOut.querySelector('p').innerHTML = "Tingkatkan akunmu menjadi VIP Seller untuk mengelola toko,<br>menambah etalase, dan menerima pesanan.";
-        // Pakai innerHTML dan &nbsp; agar kata "BERLANGGANAN" dan "SEKARANG" terkunci jadi 1 baris
-loggedOut.querySelector('button').innerHTML = '<span style="white-space: nowrap !important; letter-spacing: 0.5px;">BERLANGGANAN SEKARANG</span>';
+        // Teks ini lebih pendek biar rapi
+        loggedOut.querySelector('p').innerText = "Tingkatkan akunmu menjadi VIP Seller untuk mengelola toko, menambah etalase, dan menerima pesanan.";
+        
+        loggedOut.querySelector('button').innerText = "BERLANGGANAN SEKARANG";
         loggedOut.querySelector('button').onclick = () => { document.getElementById('modal-langganan-seller').classList.replace('hidden', 'flex'); };
         
         loggedOut.classList.remove('hidden');
+        loggedOut.classList.add('flex');
         loggedIn.classList.add('hidden');
         return; // Setop disini, gembok pintunya!
     }
     
     // Jika aman, izinkan masuk ke etalase
     loggedOut.classList.add('hidden');
+    loggedOut.classList.remove('flex');
     loggedIn.classList.remove('hidden');
 
     await cekPencairanDanaH1();
     await updateUiSaldoSeller();
     switchTokoTab(tokoTabAktif);
 }
+
 
 
 async function updateUiSaldoSeller() {
