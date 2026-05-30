@@ -1800,6 +1800,9 @@ function bukaPratinjauVideo(e) {
 
     if (!videoKecil.src) return;
 
+    // 🔥 SUNTIKAN RADAR: Agar tombol back HP aktif
+    history.pushState({ popup: 'pratinjau' }, null, '#pratinjau');
+
     // Salin video dan buka mode full screen
     videoFull.src = videoKecil.src;
     modalPratinjau.classList.remove('hidden');
@@ -1810,10 +1813,15 @@ function bukaPratinjauVideo(e) {
     videoFull.play();
 }
 
-function tutupPratinjauVideo() {
+function tutupPratinjauVideo(dariTombolBack = false) {
     const videoFull = document.getElementById('video-pratinjau-full');
     const modalPratinjau = document.getElementById('modal-pratinjau');
     
+    // SINKRONISASI TOMBOL BACK HP
+    if (!dariTombolBack && window.location.hash === '#pratinjau') {
+        history.back();
+    }
+
     // Matikan pemutar dan tutup layar
     videoFull.pause();
     videoFull.src = '';
@@ -3270,11 +3278,16 @@ window.addEventListener('popstate', () => {
         return;
     }
 
+    // (Di dalam event listener popstate...)
 
+    // 🚀 TAMBAHAN BARU: TANGKAP LAYAR PRATINJAU FULL SCREEN DULU
+    const modalPratinjau = document.getElementById('modal-pratinjau');
+    if (modalPratinjau && !modalPratinjau.classList.contains('hidden')) {
+        tutupPratinjauVideo(true);
+        return;
+    }
 
-    // ==========================================
-    // 🚀 TAMBAHAN BARU: TANGKAP MODAL UPLOAD VIDEO & PRIVASI
-    // ==========================================
+    // 🚀 TAMBAHAN LAMA: TANGKAP MODAL UPLOAD VIDEO & PRIVASI
     const modalPrivasi = document.getElementById('modal-privasi-video');
     if (modalPrivasi && (!modalPrivasi.classList.contains('hidden') && !modalPrivasi.classList.contains('translate-y-full'))) {
         tutupPilihanPrivasi();
@@ -3288,6 +3301,7 @@ window.addEventListener('popstate', () => {
         closeUploadModal();
         return;
     }
+
     // ==========================================
 
     // 2. TANGKAP SEMUA POP-UP DULU (Biar menutup duluan kalau tombol Back ditekan)
@@ -10837,17 +10851,32 @@ let paketSellerTerpilih = 'tahunan';
 
 function bukaModalLangganan() {
     history.pushState({ popup: 'langganan' }, null, '#langganan');
-    document.getElementById('modal-langganan-seller').classList.replace('hidden', 'flex');
+    const modal = document.getElementById('modal-langganan-seller');
+    modal.classList.replace('hidden', 'flex');
+    
+    // Efek transisi halus masuk
+    modal.style.opacity = '0';
+    modal.style.transition = 'opacity 0.3s ease';
+    setTimeout(() => modal.style.opacity = '1', 10);
 }
 
 function tutupModalLangganan(dariTombolBack = false) {
-    document.getElementById('modal-langganan-seller').classList.replace('flex', 'hidden');
+    const modal = document.getElementById('modal-langganan-seller');
+    
+    // Efek memudar saat ditutup
+    modal.style.opacity = '0';
     
     // Sinkronisasi dengan tombol Back HP
     if (!dariTombolBack && window.location.hash === '#langganan') {
         history.back();
     }
+
+    setTimeout(() => {
+        modal.classList.replace('flex', 'hidden');
+        modal.style.opacity = '1'; // Reset untuk dibuka lagi nanti
+    }, 300);
 }
+
 
 
 // Fungsi untuk menambah/mengurangi bulan
