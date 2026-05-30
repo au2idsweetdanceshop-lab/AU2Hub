@@ -1,56 +1,74 @@
 import { S3Client, ListObjectsV2Command, DeleteObjectsCommand } from "@aws-sdk/client-s3";
 
-// Konfigurasi Biznet GIO S3
+// Konfigurasi Biznet GIO S3 diseragamkan dengan upload-url.js & upload-foto.js
 const s3Client = new S3Client({
-    region: process.env.S3_REGION || "id-jk1",
-    endpoint: process.env.S3_ENDPOINT, // e.g., "https://nos.wjv-1.neo.id"
+    region: "idn",
+    endpoint: "https://nos.wjv-1.neo.id",
     credentials: {
-        accessKeyId: process.env.S3_ACCESS_KEY,
-        secretAccessKey: process.env.S3_SECRET_KEY,
-    }
+        accessKeyId: process.env.BIZNET_ACCESS_KEY,
+        secretAccessKey: process.env.BIZNET_SECRET_KEY,
+    },
+    forcePathStyle: true, // KUNCI PENTING untuk Biznet NEO
 });
 
 export default async function handler(req, res) {
-    if (req.method !== 'DELETE') return res.status(405).json({ error: "Method Not Allowed" });
+    if (req.method !== 'DELETE') {
+        res.setHeader('Allow', ['DELETE']);
+        return res.status(405).json({ error: "Method Not Allowed" });
+    }
 
     const { userId } = req.query;
     if (!userId) return res.status(400).json({ error: "User ID wajib disertakan" });
 
     try {
-        const bucketName = process.env.S3_BUCKET_NAME;
-        const prefix = `${userId}/`; // Awalan nama file (folder user)
+        const bucketName = process.env.BIZNET_BUCKET_NAME;
+        
+        // Daftar prefix (folder) yang harus dibasmi tuntas untuk user ini
+        const foldersToDelete = [
+            `${userId}/`,          // Berisi: feed_video, chat_media, story_media, pasar
+            `avatars/${userId}/`   // Berisi: foto profil (Sesuai dengan upload-foto.js)
+        ];
 
-        // 1. Cari semua file yang ada di dalam folder user tersebut
-        const listCommand = new ListObjectsV2Command({
-            Bucket: bucketName,
-            Prefix: prefix,
-        });
-        const listedObjects = await s3Client.send(listCommand);
+        // Looping untuk setiap folder
+        for (const prefix of foldersToDelete) {
+            let isTruncated = true;
+            let continuationToken = undefined;
 
-        if (!listedObjects.Contents || listedObjects.Contents.length === 0) {
-            return res.status(200).json({ message: "Folder kosong atau tidak ditemukan." });
+            // SISTEM PAGINATION: Lakukan perulangan jika file user lebih dari 1000
+            while (isTruncated) {
+                const listCommand = new ListObjectsV2Command({
+                    Bucket: bucketName,
+                    Prefix: prefix,
+                    ContinuationToken: continuationToken
+                });
+                const listedObjects = await s3Client.send(listCommand);
+
+                // Jika ada isinya, eksekusi hapus
+                if (listedObjects.Contents && listedObjects.Contents.length > 0) {
+                    const deleteParams = {
+                        Bucket: bucketName,
+                        Delete: {
+                            Objects: listedObjects.Contents.map(({ Key }) => ({ Key }))
+                        }
+                    };
+
+                    const deleteCommand = new DeleteObjectsCommand(deleteParams);
+                    await s3Client.send(deleteCommand);
+                }
+
+                // Cek apakah masih ada sisa file selanjutnya (file > 1000)
+                isTruncated = listedObjects.IsTruncated;
+                continuationToken = listedObjects.NextContinuationToken;
+            }
         }
 
-        // 2. Siapkan array file untuk dihapus
-        const deleteParams = {
-            Bucket: bucketName,
-            Delete: { Objects: [] }
-        };
-
-        listedObjects.Contents.forEach(({ Key }) => {
-            deleteParams.Delete.Objects.push({ Key });
+        return res.status(200).json({ 
+            success: true, 
+            message: `Seluruh data media milik user ${userId} berhasil dibumihanguskan.` 
         });
 
-        // 3. Eksekusi penghapusan massal
-        const deleteCommand = new DeleteObjectsCommand(deleteParams);
-        await s3Client.send(deleteCommand);
-
-        // Jika jumlah file lebih dari 1000, proses ini harus diulang (pagination), 
-        // namun untuk skala aplikasi standar, blok kode di atas sudah cukup.
-
-        return res.status(200).json({ success: true, message: `Folder ${userId} berhasil dihapus.` });
     } catch (error) {
         console.error("Error deleting S3 folder:", error);
-        return res.status(500).json({ error: "Gagal menghapus file di storage." });
+        return res.status(500).json({ error: "Gagal menghapus file di storage server." });
     }
 }
