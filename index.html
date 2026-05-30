@@ -4090,37 +4090,50 @@ lastTap = now;
 
 // FITUR HAPUS VIDEO PERMANEN (SINKRON KE GOOGLE SHEETS)
 async function deleteVideo(vidId) {
-const hapus = await customPrompt("Ketik 'HAPUS' jika ingin menghapus video ini secara PERMANEN:");
-if(hapus === 'HAPUS') {
-try {
-// 1. Ambil config untuk mendapatkan link Google Apps Script (GAS)
-const configRes = await fetch('/api/get-config');
-const config = await configRes.json();
+    const hapus = await customPrompt("Ketik 'HAPUS' jika ingin menghapus video ini secara PERMANEN:");
+    if(hapus === 'HAPUS') {
+        try {
+            // Cari data video yang mau dihapus dari memori lokal untuk dapet URL-nya
+            const videoTarget = allVideosData.find(v => v.id === vidId);
 
-if (config.gasUrl) {
-// 2. Kirim perintah hapus ke Google Sheets via Webhook POST
-await fetch(config.gasUrl, {
-method: 'POST',
-mode: 'no-cors',
-headers: { 'Content-Type': 'text/plain' },
-body: JSON.stringify({ action: 'DELETE', id: vidId })
-});
+            // 1. Ambil config untuk mendapatkan link Google Apps Script (GAS)
+            const configRes = await fetch('/api/get-config');
+            const config = await configRes.json();
+
+            if (config.gasUrl) {
+                // 2. Kirim perintah hapus ke Google Sheets via Webhook POST
+                await fetch(config.gasUrl, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'text/plain' },
+                    body: JSON.stringify({ action: 'DELETE', id: vidId })
+                });
+            }
+
+            // 3. TEMBAK API DELETE FILE: Hapus fisik MP4 dari Biznet
+            if (videoTarget && videoTarget.video_url) {
+                await fetch('/api/delete-file', {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ fileUrl: videoTarget.video_url })
+                }).catch(e => console.log("Ignore S3 error:", e));
+            }
+
+            // 4. Bersihkan data dari memori RAM lokal HP (Feed Sosial & Profil)
+            allVideosData = allVideosData.filter(v => v.id !== vidId);
+            newUploads = newUploads.filter(v => v.id !== vidId); // Bersihkan juga dari antrean lokal
+
+            // 5. Perbarui tampilan layar secara instan
+            closeFloatingVideo();
+            renderProfileVideos();
+            showToast("Video berhasil dihapus permanen!", "success");
+
+        } catch (err) {
+            showToast("Gagal menghapus ke server: " + err.message, "error");
+        }
+    }
 }
 
-// 3. Bersihkan data dari memori RAM lokal HP (Feed Sosial & Profil)
-allVideosData = allVideosData.filter(v => v.id !== vidId);
-newUploads = newUploads.filter(v => v.id !== vidId); // Bersihkan juga dari antrean lokal
-
-// 4. Perbarui tampilan layar secara instan
-closeFloatingVideo();
-renderProfileVideos();
-showToast("Video berhasil dihapus permanen!", "success");
-
-} catch (err) {
-showToast("Gagal menghapus ke server: " + err.message, "error");
-}
-}
-}
 
 // FITUR SHARE VIDEO (DIPERBAIKI)
 function shareVideo(vidId, btn) {
@@ -6275,22 +6288,32 @@ playStory(nextIndex);
 }
 
 async function hapusStoryAktif() {
-const story = currentActiveStories[currentActiveStories.currentIndex];
-// 🔥 PERBAIKAN: Menggunakan modal kustom
-const konfirmasi = await customConfirm("Yakin ingin menghapus status ini?");
+    const story = currentActiveStories[currentActiveStories.currentIndex];
+    const konfirmasi = await customConfirm("Yakin ingin menghapus status ini?");
 
-if (konfirmasi) {
-try {
-const { error } = await supabaseClient.from('stories').delete().eq('id', story.id);
-if (error) throw error;
+    if (konfirmasi) {
+        try {
+            // 1. Hapus dari database Supabase
+            const { error } = await supabaseClient.from('stories').delete().eq('id', story.id);
+            if (error) throw error;
 
-showToast("Status berhasil deleted", "success");
-closeStoryViewer();
-loadStories(); // Refresh daftar status di latar belakang
-} catch (err) {
-showToast("Gagal menghapus status", "error");
-}
-}
+            // 2. TEMBAK API DELETE FILE: Hapus fisik MP4/JPG dari Biznet
+            if (story.media_url) {
+                // Kita tambahkan .catch agar jika file di Biznet sudah terlanjur hilang, aplikasi tidak nge-crash
+                await fetch('/api/delete-file', {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ fileUrl: story.media_url })
+                }).catch(e => console.log("Ignore S3 error:", e));
+            }
+
+            showToast("Status berhasil dihapus sepenuhnya", "success");
+            closeStoryViewer();
+            loadStories(); // Refresh daftar status di latar belakang
+        } catch (err) {
+            showToast("Gagal menghapus status", "error");
+        }
+    }
 }
 
 
@@ -11514,11 +11537,32 @@ async function hapusProdukSaya(productId, productName) {
     const konfirmasi = await customConfirm("Yakin hapus produk: " + productName + "?");
     if (!konfirmasi) return;
     try {
+        // 1. Tarik data URL foto dulu dari database sebelum dihapus
+        const { data: produk } = await supabaseClient.from('player_products').select('image_url').eq('id', productId).single();
+
+        // 2. Hapus data produk dari Supabase
         await supabaseClient.from('player_products').delete().eq('id', productId);
-        showToast("Produk dihapus!", "success");
+
+        // 3. TEMBAK API DELETE FILE: Jika ada banyak foto (koma), hapus semuanya!
+        if (produk && produk.image_url) {
+            const arrFoto = produk.image_url.split(',');
+            for (const urlFoto of arrFoto) {
+                if (urlFoto.trim() !== "") {
+                    await fetch('/api/delete-file', {
+                        method: 'DELETE',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ fileUrl: urlFoto.trim() })
+                    }).catch(e => console.log("Ignore S3 error:", e));
+                }
+            }
+        }
+
+        showToast("Produk dan foto berhasil dihapus!", "success");
         loadProdukSaya();
         loadPasarPlayer(true);
-    } catch (e) { showToast("Gagal menghapus.", "error"); }
+    } catch (e) { 
+        showToast("Gagal menghapus produk.", "error"); 
+    }
 }
 
 async function prosesAutoDeliveryTertunda() {
