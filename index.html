@@ -9471,21 +9471,30 @@ async function checkoutXoftwarePay(namaProduk, harga, deskripsi, sellerId = null
             
             // Cek apakah ini pembayaran VIP
             if (namaProduk.includes('[VIP]')) {
-                // 1. Paksa memori HP mengakui status VIP detik itu juga (Optimistic UI)
-                if (userProfile) {
-                    userProfile.is_seller = true;
-                    // Beri masa aktif bayangan (nanti akan tertimpa otomatis sama data asli)
-                    let expiry = new Date();
-                    expiry.setMonth(expiry.getMonth() + 1);
-                    userProfile.seller_expired_at = expiry.toISOString();
+                // 1. TANAMKAN BUKTI VIP KE MEMORI HP (Bertahan 60 detik)
+                localStorage.setItem('optimistic_vip', 'true');
+                
+                // 2. Cegat tombol "Tutup Halaman" agar langsung diarahkan masuk ke Toko!
+                const btnTutup = wadahPembayaran.querySelector('button[onclick="history.back()"]');
+                if (btnTutup) {
+                    btnTutup.onclick = () => {
+                        history.back(); // Tutup layar hijau
+                        setTimeout(() => {
+                            switchTab('toko'); // Pindah otomatis ke Tab Toko
+                            loadTokoSaya();    // Langsung buka pintunya
+                        }, 300);
+                    };
                 }
                 
-                // 2. Layar Toko langsung terbuka seketika!
-                loadTokoSaya();
-                
-                // 3. Tarik data aslinya diam-diam 3 detik kemudian untuk sinkronisasi
-                setTimeout(async () => { await fetchProfile(); }, 3000);
+                // 3. Bersihkan memori bayangan setelah 1 menit (karena backend asli pasti sudah update)
+                setTimeout(() => { 
+                    localStorage.removeItem('optimistic_vip'); 
+                    fetchProfile();
+                }, 60000);
             } else {
+                prosesAutoDeliveryTertunda();
+            }
+ else {
                 prosesAutoDeliveryTertunda();
             }
         };
@@ -9635,21 +9644,30 @@ async function prosesBayarUlang() {
             
             // Cek apakah ini pembayaran VIP
             if (namaProduk.includes('[VIP]')) {
-                // 1. Paksa memori HP mengakui status VIP detik itu juga (Optimistic UI)
-                if (userProfile) {
-                    userProfile.is_seller = true;
-                    // Beri masa aktif bayangan (nanti akan tertimpa otomatis sama data asli)
-                    let expiry = new Date();
-                    expiry.setMonth(expiry.getMonth() + 1);
-                    userProfile.seller_expired_at = expiry.toISOString();
+                // 1. TANAMKAN BUKTI VIP KE MEMORI HP (Bertahan 60 detik)
+                localStorage.setItem('optimistic_vip', 'true');
+                
+                // 2. Cegat tombol "Tutup Halaman" agar langsung diarahkan masuk ke Toko!
+                const btnTutup = wadahPembayaran.querySelector('button[onclick="history.back()"]');
+                if (btnTutup) {
+                    btnTutup.onclick = () => {
+                        history.back(); // Tutup layar hijau
+                        setTimeout(() => {
+                            switchTab('toko'); // Pindah otomatis ke Tab Toko
+                            loadTokoSaya();    // Langsung buka pintunya
+                        }, 300);
+                    };
                 }
                 
-                // 2. Layar Toko langsung terbuka seketika!
-                loadTokoSaya();
-                
-                // 3. Tarik data aslinya diam-diam 3 detik kemudian untuk sinkronisasi
-                setTimeout(async () => { await fetchProfile(); }, 3000);
+                // 3. Bersihkan memori bayangan setelah 1 menit (karena backend asli pasti sudah update)
+                setTimeout(() => { 
+                    localStorage.removeItem('optimistic_vip'); 
+                    fetchProfile();
+                }, 60000);
             } else {
+                prosesAutoDeliveryTertunda();
+            }
+ else {
                 prosesAutoDeliveryTertunda();
             }
         };
@@ -11173,9 +11191,15 @@ function bukaModalJualBarang() {
     if (!currentUser) return showToast("Silakan login dulu untuk berjualan!", "error");
     
     // CEK VIP SELLER DARI DATABASE LOKAL
-    const isVip = userProfile?.is_seller === true;
-    const expiredAt = userProfile?.seller_expired_at ? new Date(userProfile.seller_expired_at) : new Date(0);
+    let isVip = userProfile?.is_seller === true;
+    let expiredAt = userProfile?.seller_expired_at ? new Date(userProfile.seller_expired_at) : new Date(0);
     const now = new Date();
+
+    // 🔥 KUNCI ANTI-GAGAL: Paksa akses terbuka jika baru saja sukses bayar!
+    if (localStorage.getItem('optimistic_vip') === 'true') {
+        isVip = true;
+        expiredAt = new Date(Date.now() + (30 * 24 * 60 * 60 * 1000)); // +30 Hari Sementara
+    }
 
     // Jika bukan VIP atau masa aktif habis
     if (!isVip || expiredAt < now) {
@@ -11212,9 +11236,15 @@ async function loadTokoSaya() {
     }
 
     // CEK VIP SELLER DARI DATABASE LOKAL
-    const isVip = userProfile?.is_seller === true;
-    const expiredAt = userProfile?.seller_expired_at ? new Date(userProfile.seller_expired_at) : new Date(0);
+    let isVip = userProfile?.is_seller === true;
+    let expiredAt = userProfile?.seller_expired_at ? new Date(userProfile.seller_expired_at) : new Date(0);
     const now = new Date();
+
+    // 🔥 KUNCI ANTI-GAGAL: Paksa akses terbuka jika baru saja sukses bayar!
+    if (localStorage.getItem('optimistic_vip') === 'true') {
+        isVip = true;
+        expiredAt = new Date(Date.now() + (30 * 24 * 60 * 60 * 1000)); // +30 Hari Sementara
+    }
 
     // Jika bukan VIP atau masa aktif habis
     if (!isVip || expiredAt < now) {
