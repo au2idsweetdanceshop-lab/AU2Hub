@@ -10,8 +10,6 @@ export default async function handler(req, res) {
         return res.status(405).json({ success: false, message: 'Method Not Allowed' });
     }
 
-    // Mengabaikan 'amount' dari frontend untuk keamanan ekstra. 
-    // Kita hanya akan menggunakan harga yang diverifikasi oleh server.
     const { order_id, product_name, customer_name } = req.body; 
     const baseUrl = process.env.XOFTWARE_BASE_URL;       
     const apiKey = process.env.XOFTWARE_API_KEY;         
@@ -35,14 +33,12 @@ export default async function handler(req, res) {
             return res.status(404).json({ success: false, message: 'Pesanan tidak ditemukan.' });
         }
 
-        let finalVerifiedPrice = parseInt(orderData.price); // Harga awal dari DB yang disimpan frontend
+        let finalVerifiedPrice = parseInt(orderData.price); 
 
         // =================================================================
         // 🛡️ FITUR KEAMANAN MUTLAK: VALIDASI HARGA ASLI (SOURCE OF TRUTH)
         // =================================================================
-        
         if (isPasarPlayer && orderData.product_id) {
-            // Cek harga asli produk dari etalase penjual
             const { data: productMaster, error: errMaster } = await supabase
                 .from('player_products')
                 .select('price')
@@ -53,25 +49,17 @@ export default async function handler(req, res) {
                 return res.status(400).json({ success: false, message: 'Produk asli tidak ditemukan.' });
             }
 
-            // Rumus Harga Final Server: Harga Asli + Untung (500) + Fee Xoftware (150) + Fee Persen (0.7%)
             const basePrice = parseInt(productMaster.price);
             const expectedPrice = Math.floor(basePrice + 650 + (basePrice * 0.007));
 
-            // JIKA HARGA CHECKOUT FRONTEND TIDAK SAMA DENGAN RUMUS SERVER = HACKER ATAU RUMUS FRONTEND BELUM DIUPDATE!
             if (finalVerifiedPrice !== expectedPrice) {
                 console.error(`[HACK ATTEMPT!] User: ${orderData.user_id} mengubah harga pasar dari ${expectedPrice} menjadi ${finalVerifiedPrice}`);
-                
-                // Hapus order palsu dari database agar tidak nyangkut
                 await supabase.from('orders_player').delete().eq('id', order_id);
-                
                 return res.status(400).json({ success: false, message: 'Terdeteksi manipulasi harga! Transaksi digagalkan.' });
             }
             
-            // Set harga mutlak yang akan dikirim ke API
             finalVerifiedPrice = expectedPrice;
-
         } else {
-            // JIKA LAYANAN ADMIN: Batas minimal harga beli produk admin adalah Rp 1.000
             if (finalVerifiedPrice < 1000) {
                 console.error(`[HACK ATTEMPT!] Order Admin tidak wajar. Harga: Rp ${finalVerifiedPrice}`);
                 await supabase.from('orders').delete().eq('id', order_id);
@@ -80,16 +68,37 @@ export default async function handler(req, res) {
         }
         // =================================================================
 
+        const safeCustomerId = orderData.user_id ? String(orderData.user_id).slice(0, 8) : "UNKNOWN";
+        const safeProductId = orderData.product_id ? String(orderData.product_id).slice(0, 20) : "SKU-001";
+
         // SUSUN PAYLOAD KE XOFTWARE
         const payload = {
             merchant_id: 129, 
-            channel_code: "REALTIME", // Sudah diubah ke Instan H+0 sesuai instruksi Xoftware
-            amount: finalVerifiedPrice, // Menggunakan harga yang sudah tervalidasi aman
+            channel_code: "REALTIME", 
+            amount: finalVerifiedPrice, 
             ref_id: order_id, 
             fee_direction: "merchant", 
             notify_url: "https://au2idsweetdance.com/api/webhook", 
-            note: `Pembayaran: ${product_name}`
-            // 🛠️ PERBAIKAN FINAL: Blok 'metadata' dihapus total agar tidak ditolak oleh validasi Xoftware
+            note: `Pembayaran: ${product_name || 'AU2Hub Order'}`, 
+            
+            // 🛠️ PERBAIKAN BERDASARKAN DOKUMENTASI RESMI
+            metadata: {
+                customer: {
+                    id: `CUST-${safeCustomerId}`, 
+                    name: customer_name || "Player AU2Hub",
+                    phone: "081234567890",
+                    email: "buyer@au2hub.com"
+                },
+                // Sistem Xoftware meminta "minimal 1 item" di dalam produk
+                products: [
+                    {
+                        product_code: safeProductId,
+                        product_name: product_name || "Produk AU2Hub",
+                        product_thumbnail: "https://au2idsweetdance.com/favicon.ico", 
+                        product_url: "https://au2idsweetdance.com"
+                    }
+                ]
+            }
         };
 
         const payloadString = JSON.stringify(payload);
