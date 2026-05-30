@@ -6541,8 +6541,10 @@ function tutupPreviewMedia(dariTombolBack = false) {
     // Kembalikan widget chat jika kita sedang berada di inbox/room
     if(window.location.hash.startsWith('#inbox') || window.location.hash.startsWith('#chatroom')) {
         const floatingWidget = document.getElementById('floating-widget');
-        if (floatingWidget) floatingWidget.style.opacity = '1';
+        // Kosongkan style-nya agar sistem Class Tailwind bisa berfungsi lagi buat nutup laci
+        if (floatingWidget) floatingWidget.style.opacity = ''; 
     }
+
 
     if (!dariTombolBack && window.location.hash === '#mediapreview') history.back();
 
