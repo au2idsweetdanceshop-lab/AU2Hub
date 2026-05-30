@@ -9499,28 +9499,38 @@ async function checkoutXoftwarePay(namaProduk, harga, deskripsi, sellerId = null
             }
         };
 
-        // 5. Radar Supabase
+        // 5. Radar Supabase (Langsung memantau perubahan Database)
         const channelPembayaran = supabaseClient.channel(`tunggu-pembayaran-${orderData.id}`)
             .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: targetTabel, filter: `id=eq.${orderData.id}` }, (payload) => {
-                if (payload.new.status === 'selesai' || payload.new.status === 'SUCCESS' || payload.new.status === 'proses') {
+                // Konversi ke huruf besar agar tidak sensitif huruf kapital
+                const statusBaru = String(payload.new.status).toUpperCase();
+                
+                if (statusBaru === 'SELESAI' || statusBaru === 'SUCCESS' || statusBaru === 'PROSES' || statusBaru === 'PAID') {
                     tampilkanLayarSukses();
                     supabaseClient.removeChannel(channelPembayaran);
                     clearInterval(intervalJemputBola);
                 }
             }).subscribe();
 
-        // 6. Radar Jemput Bola API
+        // 6. Radar Jemput Bola API (Memantau status asli dari endpoint Anda)
         intervalJemputBola = setInterval(async () => {
             try {
                 const res = await fetch(`/api/check-status?order_id=${orderData.id}&table=${targetTabel}`);
-                const data = await res.json();
-                if (data.status === 'SUCCESS') {
+                const responseData = await res.json();
+                
+                // Pastikan kita mengekstrak status dengan aman (termasuk jika bentuk responsnya nested)
+                const apiStatus = String(responseData.status || responseData.data?.status || responseData.payment_status || '').toUpperCase();
+                
+                // Cek semua kemungkinan indikator "Lunas" dari Xoftware/Database
+                if (apiStatus === 'SUCCESS' || apiStatus === 'SUCCEEDED' || apiStatus === 'PAID' || apiStatus === 'SELESAI' || apiStatus === 'PROSES') {
                     clearInterval(intervalJemputBola); 
                     supabaseClient.removeChannel(channelPembayaran);
                     tampilkanLayarSukses(); 
                 }
             } catch (e) {}
         }, 3000);
+        
+        // Hentikan radar setelah 10 menit (agar tidak membebani server jika user membiarkan HP menyala)
         setTimeout(() => clearInterval(intervalJemputBola), 600000);
 
     } catch (error) {
