@@ -5788,22 +5788,36 @@ showMsgOptions(msgId, senderId);
 // FUNGSI RENDER BARIS CHAT DI INBOX
 // ==========================================
 function renderRow(item, isGroup) {
-    // 1. Amankan teks pesan dari tag media
+    // 1. Amankan teks pesan dari tag media & kode sistem
     let lastMessageText = "Belum ada pesan";
     if (item.latestMsg && item.latestMsg.message) {
         lastMessageText = item.latestMsg.message;
+
+        // Bersihkan kode [FORWARDED]
+        if (lastMessageText.startsWith('[FORWARDED]')) {
+            lastMessageText = "⏩ " + lastMessageText.replace(/^\[FORWARDED\]\n?/, '');
+        }
+
+        // Bersihkan kode [REPLY] yang bikin ID panjang bocor
+        const replyRegex = /^\[REPLY:(.*?)\|\|(.*?)\|\|(.*?)\]\n([\s\S]*)$/;
+        const matchReply = lastMessageText.match(replyRegex);
+        if (matchReply) {
+            lastMessageText = matchReply[4]; // Langsung ambil isi pesan aslinya aja
+        }
+
+        // Bersihkan kode [STORY_REPLY]
+        const storyReplyRegex = /^\[STORY_REPLY:(.*?)\|\|(.*?)\]\n([\s\S]*)$/;
+        const matchStory = lastMessageText.match(storyReplyRegex);
+        if (matchStory) {
+            lastMessageText = "Membalas status: " + matchStory[3];
+        }
+
+        // Ubah kode media jadi Ikon biar cantik
         if (lastMessageText.startsWith('[IMG]')) lastMessageText = "📷 Foto";
         else if (lastMessageText.startsWith('[VIDEO]')) lastMessageText = "🎥 Video";
         else if (lastMessageText.startsWith('[AUDIO]')) lastMessageText = "🎙️ Pesan Suara";
         else if (lastMessageText.startsWith('[SISTEM]')) lastMessageText = "Pemberitahuan Sistem";
-        else if (lastMessageText.startsWith('[REPLY:]')) lastMessageText = "Balasan pesan...";
-                else if (lastMessageText.startsWith('[STORY_REPLY:')) {
-            let cleanText = lastMessageText.replace(/^\[STORY_REPLY:.*?\]\n/, '');
-            lastMessageText = "Membalas status: " + cleanText;
-        }
     }
-
-
 
     // 2. Siapkan badge pesan belum dibaca
     let unreadBadge = item.unread > 0 
