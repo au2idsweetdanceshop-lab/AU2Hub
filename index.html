@@ -1070,7 +1070,7 @@ Satu pintu untuk info update terbaru, panduan pemula, jasa joki profesional, dan
 <img id="viewer-story-img" src="" class="w-full h-full object-contain hidden">
 <video id="viewer-story-vid" class="w-full h-full object-contain hidden" playsinline></video>
 
-<div class="absolute inset-0 flex z-40">
+<div id="story-nav-overlay" class="absolute inset-0 flex z-40">
 <div class="w-1/2 h-full" onclick="prevStory()"></div>
 <div class="w-1/2 h-full" onclick="nextStory()"></div>
 </div>
@@ -6724,24 +6724,56 @@ loadStories();
 // FITUR BALAS & LIKE STORY (WHATSAPP STYLE)
 // ==========================================
 
-// Fungsi Jeda Story Saat Mengetik Balasan
+// Fungsi Jeda Story Saat Buka Laci Stats / Mengetik Balasan
 function pauseStoryForReply() {
-const vidEl = document.getElementById('viewer-story-vid');
-if (vidEl && !vidEl.classList.contains('hidden')) {
-vidEl.pause(); // Jeda video
-} else {
-clearTimeout(currentStoryTimer); // Jeda timer foto
-}
+    // 1. Matikan fungsi klik Kiri/Kanan agar tidak tembus
+    const navOverlay = document.getElementById('story-nav-overlay');
+    if (navOverlay) navOverlay.style.pointerEvents = 'none';
+
+    // 2. Bekukan Garis Progress Bar persis di posisinya saat ini
+    const activeBar = document.getElementById(`story-progress-${currentActiveStories.currentIndex}`);
+    if (activeBar) {
+        // Ambil lebar piksel saat ini secara real-time
+        const computedWidth = window.getComputedStyle(activeBar).width;
+        activeBar.style.transition = 'none'; // Matikan mesin animasinya
+        activeBar.style.width = computedWidth; // Kunci garisnya di posisi tersebut
+    }
+
+    // 3. Jeda Video / Foto
+    const vidEl = document.getElementById('viewer-story-vid');
+    if (vidEl && !vidEl.classList.contains('hidden')) {
+        vidEl.pause();
+    } else {
+        clearTimeout(currentStoryTimer);
+    }
 }
 
-// Fungsi Lanjutkan Story Setelah Selesai Mengetik
+// Fungsi Lanjutkan Story Setelah Laci Ditutup
 function resumeStoryAfterReply() {
-const vidEl = document.getElementById('viewer-story-vid');
-if (vidEl && !vidEl.classList.contains('hidden')) {
-vidEl.play();
-} else {
-currentStoryTimer = setTimeout(() => { nextStory(); }, 3000);
-}
+    // 1. Nyalakan kembali fungsi klik Kiri/Kanan
+    const navOverlay = document.getElementById('story-nav-overlay');
+    if (navOverlay) navOverlay.style.pointerEvents = 'auto';
+
+    const activeBar = document.getElementById(`story-progress-${currentActiveStories.currentIndex}`);
+    const vidEl = document.getElementById('viewer-story-vid');
+
+    // 2. Lanjutkan Media & Jalankan Kembali Progress Bar
+    if (vidEl && !vidEl.classList.contains('hidden')) {
+        vidEl.play();
+        // Hitung sisa durasi video, lalu jalankan animasi garisnya lagi
+        if (activeBar) {
+            const sisaWaktu = vidEl.duration - vidEl.currentTime;
+            activeBar.style.transition = `width ${sisaWaktu}s linear`;
+            activeBar.style.width = '100%';
+        }
+    } else {
+        // Jika foto, kita beri sisa waktu 3 detik dari titik dia berhenti
+        if (activeBar) {
+            activeBar.style.transition = `width 3s linear`;
+            activeBar.style.width = '100%';
+        }
+        currentStoryTimer = setTimeout(() => { nextStory(); }, 3000);
+    }
 }
 
 // Fitur Tekan Enter Untuk Kirim
