@@ -8292,6 +8292,12 @@ function autoCleanLocalStorage() {
 // ==========================================
 document.addEventListener('DOMContentLoaded', () => {
   autoCleanLocalStorage(); // Eksekusi pembersih memori saat buka web
+  
+  setTimeout(() => {
+        if(document.getElementById('btn-bayar-langganan')) {
+            pilihPaketSeller('tahunan'); // Set default awal beserta biaya gateway-nya
+        }
+    }, 1000);
 
   // Logika Routing Halaman Utama
   let tabAwal = window.location.hash.substring(1);
@@ -10816,47 +10822,98 @@ async function checkoutPasar(namaFinal, totalHarga, id) {
 }
 
 // ==========================================
-// LOGIKA PEMBAYARAN VIP SELLER
+// LOGIKA PEMBAYARAN VIP SELLER (DIPERBARUI DENGAN QTY & BIAYA ADMIN)
 // ==========================================
-let paketSellerTerpilih = { tipe: 'tahunan', harga: 400000 };
+let qtyVipBulan = 1;
+let paketSellerTerpilih = 'tahunan';
 
 function tutupModalLangganan() {
     document.getElementById('modal-langganan-seller').classList.replace('flex', 'hidden');
 }
 
-function pilihPaketSeller(tipe, harga) {
-    paketSellerTerpilih = { tipe, harga };
+// Fungsi untuk menambah/mengurangi bulan
+function ubahQtyVIP(delta) {
+    qtyVipBulan = Math.max(1, qtyVipBulan + delta);
+    document.getElementById('qty-vip-bulan').value = qtyVipBulan;
     
-    // Update Teks Tombol
-    document.getElementById('btn-bayar-langganan').innerText = `Berlangganan Rp ${harga.toLocaleString('id-ID')}`;
+    // Kalkulasi Harga Tampil
+    const hargaAsli = 40000 * qtyVipBulan;
+    const hargaCoret = 50000 * qtyVipBulan;
     
-    // Update Visual Radio Button (Lingkaran)
+    // Update Text di Layar
+    document.getElementById('harga-bulanan').innerHTML = `Rp ${hargaAsli.toLocaleString('id-ID')}<span class="text-[10px] text-gray-500 font-normal"> /${qtyVipBulan * 30} hari</span>`;
+    document.getElementById('coret-bulanan').innerText = `Rp ${hargaCoret.toLocaleString('id-ID')}`;
+    
+    // Paksa auto-select ke paket bulanan setiap kali dipencet plus/minus
+    pilihPaketSeller('bulanan');
+}
+
+function pilihPaketSeller(tipe) {
+    paketSellerTerpilih = tipe;
+    
+    let hargaAwal = 0;
+    if (tipe === 'bulanan') {
+        hargaAwal = 40000 * qtyVipBulan;
+    } else {
+        hargaAwal = 400000;
+    }
+    
+    // LOGIKA PENAMBAHAN BIAYA ADMIN (Flat 500 + 0,7%)
+    const biayaGateway = 500 + Math.floor(hargaAwal * 0.007);
+    const hargaFinal = hargaAwal + biayaGateway;
+    
+    // Update Teks Tombol (Menampilkan total termasuk fee gateway)
+    document.getElementById('btn-bayar-langganan').innerHTML = `
+        <span>Berlangganan Rp ${hargaFinal.toLocaleString('id-ID')}</span>
+        <span class="text-[9px] font-normal text-white/80 normal-case mt-0.5">(Termasuk Admin QRIS: Rp ${biayaGateway.toLocaleString('id-ID')})</span>
+    `;
+    
+    // Update Animasi Kotak (Aktif/Tidak Aktif)
     const radioBulanan = document.getElementById('radio-bulanan').querySelector('div');
     const radioTahunan = document.getElementById('radio-tahunan').querySelector('div');
-    const borderBulanan = document.getElementById('radio-bulanan');
-    const borderTahunan = document.getElementById('radio-tahunan');
+    const cardBulanan = document.getElementById('card-bulanan');
+    const cardTahunan = document.getElementById('card-tahunan');
 
     if (tipe === 'bulanan') {
         radioBulanan.classList.replace('scale-0', 'scale-100');
         radioTahunan.classList.replace('scale-100', 'scale-0');
-        borderBulanan.classList.replace('border-gray-600', 'border-brand-info');
-        borderTahunan.classList.replace('border-brand-accent', 'border-gray-600');
+        cardBulanan.classList.add('border-brand-info', 'shadow-[0_0_15px_rgba(70,179,255,0.2)]');
+        cardBulanan.classList.remove('border-white/10');
+        cardTahunan.classList.remove('border-brand-accent', 'shadow-[0_0_15px_rgba(255,0,122,0.2)]');
+        cardTahunan.classList.add('border-white/10');
     } else {
         radioTahunan.classList.replace('scale-0', 'scale-100');
         radioBulanan.classList.replace('scale-100', 'scale-0');
-        borderTahunan.classList.replace('border-gray-600', 'border-brand-accent');
-        borderBulanan.classList.replace('border-brand-info', 'border-gray-600');
+        cardTahunan.classList.add('border-brand-accent', 'shadow-[0_0_15px_rgba(255,0,122,0.2)]');
+        cardTahunan.classList.remove('border-white/10');
+        cardBulanan.classList.remove('border-brand-info', 'shadow-[0_0_15px_rgba(70,179,255,0.2)]');
+        cardBulanan.classList.add('border-white/10');
     }
 }
 
 async function lanjutkanBayarLangganan() {
     tutupModalLangganan();
-    const namaPaket = paketSellerTerpilih.tipe === 'tahunan' ? '[VIP] Langganan Seller 1 Tahun' : '[VIP] Langganan Seller 1 Bulan';
     
-    // Tembak langsung ke sistem pembayaran XoftwarePay yang sudah ada
-    // Parameter terakhir dikosongkan agar bot sistem mendeteksinya sebagai transaksi non-produk-pasar
-    checkoutXoftwarePay(namaPaket, paketSellerTerpilih.harga, "Aktivasi VIP Seller AU2Hub", null, null);
+    let namaPaket = '';
+    let hargaAwal = 0;
+    
+    // Setup nama dan harga dasar tergantung paket yang dipilih
+    if (paketSellerTerpilih === 'tahunan') {
+        namaPaket = '[VIP] Langganan Seller 1 Tahun';
+        hargaAwal = 400000;
+    } else {
+        namaPaket = `[VIP] Langganan Seller ${qtyVipBulan} Bulan`;
+        hargaAwal = 40000 * qtyVipBulan;
+    }
+    
+    // Terapkan Biaya Gateway ke Total Checkout (500 + 0,7%)
+    const biayaGateway = 500 + Math.floor(hargaAwal * 0.007);
+    const hargaFinal = hargaAwal + biayaGateway;
+    
+    // Tembak API XoftwarePay menggunakan harga akhir
+    checkoutXoftwarePay(namaPaket, hargaFinal, "Aktivasi VIP Seller AU2Hub", null, null);
 }
+
 
 function tutupModalJualBarang(dariTombolBackHP = false) {
     const modal = document.getElementById('modal-jual-barang');
@@ -11804,31 +11861,59 @@ document.addEventListener('contextmenu', function(e) {
         </div>
 
         <div class="flex-1 overflow-y-auto hide-scroll p-6">
-            <div class="text-center mb-6">
-                <div class="w-16 h-16 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-full flex items-center justify-center mx-auto mb-3 shadow-[0_0_20px_rgba(250,204,21,0.5)]">
-                    <i class="fas fa-store text-2xl text-brand-dark"></i>
+            <div class="text-center mb-5">
+                <div class="w-14 h-14 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-full flex items-center justify-center mx-auto mb-3 shadow-[0_0_20px_rgba(250,204,21,0.5)]">
+                    <i class="fas fa-store text-xl text-brand-dark"></i>
                 </div>
                 <h2 class="text-xl font-extrabold text-white tracking-tight">Buka Tokomu Sendiri</h2>
-                <p class="text-[11px] text-gray-400 mt-2 leading-relaxed">Jangkau ribuan player AU2. Jual item, akun, dan jasa joki dengan aman tanpa potongan admin membebani penjual.</p>
             </div>
 
-            <div onclick="pilihPaketSeller('bulanan', 40000)" class="group cursor-pointer bg-black/40 border border-white/10 hover:border-brand-info rounded-2xl p-4 mb-3 transition-all relative overflow-hidden active:scale-95">
+            <!-- INFO BOX BENEFIT & POTONGAN -->
+            <div class="bg-brand-info/10 border border-brand-info/30 rounded-xl p-4 mb-6 relative overflow-hidden">
+                <div class="absolute -right-4 -bottom-4 opacity-10 text-6xl text-brand-info"><i class="fas fa-info-circle"></i></div>
+                <h4 class="text-[11px] font-bold text-brand-info mb-2 uppercase tracking-wider relative z-10"><i class="fas fa-star mr-1"></i> Benefit & Skema Biaya</h4>
+                <ul class="text-[10px] text-gray-300 space-y-1.5 relative z-10 leading-relaxed">
+                    <li><b class="text-white">Bebas Jualan:</b> Akses fitur Etalase Toko, Auto-Delivery, dan Manajemen Pesanan.</li>
+                    <li><b class="text-brand-success">Potongan Seller:</b> Pendapatan bersih hanya dipotong <b>5%</b> (Pajak Layanan).</li>
+                    <li><b class="text-red-400">Biaya Pembeli:</b> Dikenakan biaya Gateway QRIS flat <b>Rp 500 + 0,7%</b> per transaksi.</li>
+                </ul>
+            </div>
+
+            <!-- PAKET BULANAN (DENGAN QTY & HARGA CORET) -->
+            <div id="card-bulanan" onclick="pilihPaketSeller('bulanan')" class="group cursor-pointer bg-black/40 border border-white/10 hover:border-brand-info rounded-2xl p-4 mb-4 transition-all relative overflow-hidden active:scale-95 pt-6">
+                <!-- BADGE HEMAT (Mencolok di Atas) -->
+                <div class="absolute right-0 top-0 bg-gradient-to-r from-red-500 to-red-600 text-white text-[9px] font-black px-3 py-1 rounded-bl-xl shadow-lg z-20 tracking-wider">HEMAT 20%</div>
+                
                 <div class="flex justify-between items-center relative z-10">
-                    <div>
+                    <div class="flex-1">
                         <div class="text-[10px] font-bold text-brand-info tracking-widest uppercase mb-1">Paket Bulanan</div>
-                        <div class="text-2xl font-black text-white">Rp 40.000<span class="text-xs text-gray-500 font-normal"> /30 hari</span></div>
+                        <div class="text-gray-500 line-through text-[11px] font-medium mb-0.5" id="coret-bulanan">Rp 50.000</div>
+                        <div class="text-2xl font-black text-white" id="harga-bulanan">Rp 40.000<span class="text-[10px] text-gray-500 font-normal"> /30 hari</span></div>
                     </div>
-                    <div id="radio-bulanan" class="w-6 h-6 rounded-full border-2 border-gray-600 group-hover:border-brand-info flex items-center justify-center transition-colors">
-                        <div class="w-3 h-3 rounded-full bg-brand-info scale-0 transition-transform"></div>
+                    
+                    <!-- QTY CONTROL -->
+                    <div class="flex flex-col items-end gap-2">
+                        <div id="radio-bulanan" class="w-6 h-6 rounded-full border-2 border-gray-600 group-hover:border-brand-info flex items-center justify-center transition-colors">
+                            <div class="w-3 h-3 rounded-full bg-brand-info scale-0 transition-transform"></div>
+                        </div>
+                        <div class="flex items-center gap-1.5 bg-[#0F0920] border border-white/10 rounded-lg p-1 shadow-inner mt-1" onclick="event.stopPropagation()">
+                            <button onclick="ubahQtyVIP(-1)" class="w-6 h-6 flex items-center justify-center text-gray-400 hover:text-white bg-white/5 rounded-md active:scale-95"><i class="fas fa-minus text-[10px]"></i></button>
+                            <input type="text" id="qty-vip-bulan" value="1" readonly class="text-[11px] font-extrabold text-white w-5 text-center bg-transparent outline-none border-none p-0 m-0 pointer-events-none">
+                            <button onclick="ubahQtyVIP(1)" class="w-6 h-6 flex items-center justify-center text-gray-400 hover:text-white bg-white/5 rounded-md active:scale-95"><i class="fas fa-plus text-[10px]"></i></button>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <div onclick="pilihPaketSeller('tahunan', 400000)" class="group cursor-pointer bg-gradient-to-br from-[#1A1133] to-[#2A0815] border border-brand-accent rounded-2xl p-4 mb-6 transition-all relative overflow-hidden active:scale-95 shadow-[0_0_15px_rgba(255,0,122,0.2)]">
-                <div class="absolute -right-4 top-4 bg-red-500 text-white text-[8px] font-black px-6 py-1 rotate-45 shadow-md">HEMAT 16%</div>
+            <!-- PAKET TAHUNAN (DENGAN HARGA CORET) -->
+            <div id="card-tahunan" onclick="pilihPaketSeller('tahunan')" class="group cursor-pointer bg-gradient-to-br from-[#1A1133] to-[#2A0815] border border-brand-accent rounded-2xl p-4 mb-2 transition-all relative overflow-hidden active:scale-95 shadow-[0_0_15px_rgba(255,0,122,0.2)] pt-6">
+                <!-- BADGE HEMAT BESAR -->
+                <div class="absolute right-0 top-0 bg-gradient-to-r from-red-500 to-red-600 text-white text-[9px] font-black px-3 py-1 rounded-bl-xl shadow-lg z-20 tracking-wider">HEMAT Rp 200.000</div>
+                
                 <div class="flex justify-between items-center relative z-10">
                     <div>
                         <div class="text-[10px] font-bold text-brand-accent tracking-widest uppercase mb-1 flex items-center gap-1"><i class="fas fa-fire"></i> Paket Tahunan</div>
+                        <div class="text-gray-500 line-through text-[11px] font-medium mb-0.5">Rp 600.000</div>
                         <div class="text-2xl font-black text-white">Rp 400.000<span class="text-xs text-gray-500 font-normal"> /365 hari</span></div>
                     </div>
                     <div id="radio-tahunan" class="w-6 h-6 rounded-full border-2 border-brand-accent flex items-center justify-center transition-colors">
@@ -11839,12 +11924,13 @@ document.addEventListener('contextmenu', function(e) {
         </div>
         
         <div class="p-4 border-t border-white/5 bg-brand-dark shrink-0">
-            <button id="btn-bayar-langganan" onclick="lanjutkanBayarLangganan()" class="w-full bg-gradient-to-r from-brand-accent to-brand-purple text-white py-3.5 rounded-xl font-extrabold active:scale-95 transition-all uppercase tracking-wider text-sm shadow-[0_4px_15px_rgba(255,0,122,0.4)]">
-                Berlangganan Rp 400.000
+            <button id="btn-bayar-langganan" onclick="lanjutkanBayarLangganan()" class="w-full bg-gradient-to-r from-brand-accent to-brand-purple text-white py-3.5 rounded-xl font-extrabold active:scale-95 transition-all uppercase tracking-wider text-sm shadow-[0_4px_15px_rgba(255,0,122,0.4)] flex flex-col items-center justify-center leading-tight">
+                <span>Berlangganan Rp 400.000</span>
             </button>
         </div>
     </div>
 </div>
+
 
 
 </body>
