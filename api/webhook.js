@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import { createClient } from '@supabase/supabase-js';
 
 // Gunakan Service Role Key agar punya akses 'Dewa' menembus RLS
@@ -10,6 +11,36 @@ export default async function handler(req, res) {
     if (req.method !== 'POST') return res.status(405).send('Method Not Allowed');
 
     console.log("📥 WEBHOOK MASUK DARI XOFTWARE:", JSON.stringify(req.body, null, 2));
+
+    // ==========================================
+    // 🛡️ FITUR KEAMANAN MUTLAK: VERIFIKASI SIGNATURE AKTIF
+    // ==========================================
+    const apiKey = process.env.XOFTWARE_API_KEY; 
+    
+    // Ambil header signature dari Xoftware (Cek X-Signature atau X-Callback-Signature)
+    const incomingSignature = req.headers['x-signature'] || req.headers['x-callback-signature'];
+    
+    if (incomingSignature) {
+        // Buat tanda tangan tiruan dari payload JSON yang masuk
+        const payloadString = JSON.stringify(req.body);
+        
+        const generatedSignatureBase64 = crypto.createHmac('sha256', apiKey).update(payloadString, 'utf8').digest('base64');
+        const generatedSignatureHex = crypto.createHmac('sha256', apiKey).update(payloadString, 'utf8').digest('hex');
+        
+        console.log(`🔐 Signature Masuk: ${incomingSignature}`);
+        
+        // 🚨 AKTIF: BLOKIR JIKA SIGNATURE TIDAK COCOK
+        if (incomingSignature !== generatedSignatureBase64 && incomingSignature !== generatedSignatureHex) {
+             console.error("❌ HACK ATTEMPT: Signature Tidak Valid! Akses Ditolak.");
+             return res.status(401).json({ success: false, message: 'Unauthorized: Invalid Signature' });
+        }
+        console.log("✅ Verifikasi Signature Sukses! Ini benar-benar dari Xoftware.");
+    } else {
+        console.error("⚠️ HACK ATTEMPT: Webhook masuk tanpa header Signature!");
+        // AKTIF: Tolak mentah-mentah jika tidak ada header signature sama sekali
+        return res.status(401).json({ success: false, message: 'Unauthorized: No Signature' });
+    }
+    // ==========================================
 
     const callbackData = req.body;
     const orderId = callbackData.provider_ref || callbackData.ref_id || callbackData.order_id; 
@@ -49,7 +80,7 @@ export default async function handler(req, res) {
         const userId = orderData.user_id;
 
         // ==========================================
-        // 👑 LOGIKA VIP SELLER (DIPERBAIKI)
+        // 👑 LOGIKA VIP SELLER 
         // ==========================================
         if (productName.includes('[VIP]')) {
             console.log(`👑 Pembelian VIP terdeteksi untuk User: ${userId}`);
@@ -63,17 +94,14 @@ export default async function handler(req, res) {
                 waktuExpired = waktuSekarang;
             }
 
-            // --- PERBAIKAN LOGIKA WAKTU ---
             if (productName.includes('1 Tahun')) {
                 waktuExpired.setDate(waktuExpired.getDate() + 365);
             } else {
-                // Deteksi otomatis angka bulan berapapun (1, 2, 3, 10, dst)
                 const match = productName.match(/(\d+)\s+Bulan/i);
                 if (match) {
                     const jumlahBulan = parseInt(match[1]);
                     waktuExpired.setDate(waktuExpired.getDate() + (jumlahBulan * 30));
                 } else {
-                    // Fallback aman jika nama produk aneh
                     waktuExpired.setDate(waktuExpired.getDate() + 30); 
                 }
             }
