@@ -846,7 +846,10 @@ Satu pintu untuk info update terbaru, panduan pemula, jasa joki profesional, dan
     <div class="absolute top-0 right-0 w-40 h-40 bg-[#FF5722]/10 rounded-full blur-3xl pointer-events-none"></div>
 
     <div class="flex justify-between items-center mb-6 mt-2 relative z-10">
-        <h2 class="text-xl font-extrabold text-white tracking-tight">Seller Center</h2>
+        <div>
+            <h2 class="text-xl font-extrabold text-white tracking-tight flex items-center gap-2">Seller Center <span id="badge-toko-vip" class="hidden bg-gradient-to-r from-yellow-400 to-yellow-600 text-black text-[8px] px-2 py-0.5 rounded-md font-black tracking-wider border border-yellow-300 shadow-[0_0_10px_rgba(250,204,21,0.5)]">VIP</span></h2>
+            <p id="toko-vip-expired" class="text-[10px] text-gray-400 font-medium mt-1 hidden"></p>
+        </div>
         <button onclick="if(currentUser) { loadTokoSaya(); showToast('Memperbarui toko...', 'success'); } else { openAuthModal(); }" class="text-[#FF5722] bg-[#FF5722]/10 w-8 h-8 rounded-full flex items-center justify-center active:scale-90 transition-all border border-[#FF5722]/30 shadow-sm"><i class="fas fa-sync-alt text-sm"></i></button>
     </div>
 
@@ -11259,6 +11262,22 @@ async function loadTokoSaya() {
     loggedOut.classList.add('hidden');
     loggedOut.classList.remove('flex');
     loggedIn.classList.remove('hidden');
+
+    // 🔥 TAMPILKAN INFO MASA AKTIF VIP KE LAYAR
+    const elExpired = document.getElementById('toko-vip-expired');
+    const elBadge = document.getElementById('badge-toko-vip');
+    
+    if (elExpired && elBadge) {
+        // Hitung sisa hari
+        const sisaHari = Math.ceil((expiredAt - now) / (1000 * 60 * 60 * 24));
+        
+        // Format tanggal jadi cantik (Contoh: 15 Okt 2024)
+        const formatTanggal = expiredAt.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+        
+        elExpired.innerHTML = `<i class="fas fa-clock text-[#FF5722] mr-1"></i> Aktif s/d: <b class="text-white">${formatTanggal}</b> (${sisaHari} Hari)`;
+        elExpired.classList.remove('hidden');
+        elBadge.classList.remove('hidden');
+    }
 
     await cekPencairanDanaH1();
     await updateUiSaldoSeller();
