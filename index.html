@@ -3027,46 +3027,72 @@ document.getElementById('header-user').innerHTML = `<button onclick="openAuthMod
 }
 
 async function handleAvatarUpload(event) {
-const file = event.target.files[0]; if (!file) return;
-const icon = document.querySelector('label[for="avatar-input"] i'); icon.className = 'fas fa-spinner fa-spin';
-try {
-const compressedBlob = await compressImage(file);
-const base64data = await new Promise((resolve) => {
-const reader = new FileReader();
-reader.readAsDataURL(compressedBlob);
-reader.onloadend = () => resolve(reader.result);
-});
+    const file = event.target.files[0]; 
+    if (!file) return;
+    
+    const icon = document.querySelector('label[for="avatar-input"] i'); 
+    icon.className = 'fas fa-spinner fa-spin';
+    
+    try {
+        showToast("Memproses foto profil...", "info");
 
-const response = await fetch('/api/upload-foto', {
-method: 'POST',
-headers: { 'Content-Type': 'application/json' },
-body: JSON.stringify({ fileBase64: base64data, userId: currentUser.id })
-});
+        // 1. Kompresi gambar menggunakan fungsi bawaan Anda
+        const compressedBlob = await compressImage(file);
+        
+        // Ubah blob hasil kompresi menjadi objek File utuh (format JPEG)
+        const finalFile = new File([compressedBlob], "avatar.jpg", { type: "image/jpeg" });
 
-if (!response.ok) {
-const errText = await response.text();
-throw new Error(errText);
+        // 2. LOGIKA PENGHAPUSAN FOTO LAMA (ANTI NUMPUK)
+        const oldAvatarUrl = userProfile?.avatar_url || "";
+        // Pastikan foto lama ada dan BUKAN avatar default dari ui-avatars.com
+        if (oldAvatarUrl && !oldAvatarUrl.includes('ui-avatars.com')) {
+            await fetch('/api/delete-file', {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ fileUrl: oldAvatarUrl })
+            }).catch(e => console.log("Abaikan jika file lama sudah tidak ada:", e));
+        }
+
+        // 3. Tentukan Folder Baru: {User ID}/avatar/
+        const pathLengkap = `${currentUser.id}/avatar/ava_${Date.now()}`;
+
+        // 4. Minta URL Upload dari satelit/Biznet
+        const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent(pathLengkap)}&filetype=${encodeURIComponent(finalFile.type)}`);
+        const dataUrl = await resUrl.json();
+
+        // 5. Upload file fisik langsung ke Storage (Lebih ringan dari Base64)
+        await fetch(dataUrl.uploadUrl, {
+            method: 'PUT',
+            body: finalFile,
+            headers: { 'Content-Type': finalFile.type, 'x-amz-acl': 'public-read' }
+        });
+
+        // 6. Update URL foto di Supabase Database
+        const currentNick = userProfile?.nickname || "Player";
+        // Walau variabelnya finalVideoUrl, ini adalah link universal dari API Anda
+        const newAvatarUrl = dataUrl.finalVideoUrl; 
+
+        const { error: dbErr } = await supabaseClient
+            .from('profiles')
+            .upsert({ id: currentUser.id, nickname: currentNick, avatar_url: newAvatarUrl });
+
+        if (dbErr) throw new Error(dbErr.message);
+
+        // 7. Update tampilan layar tanpa perlu reload
+        const elImg = document.getElementById('profile-img'); 
+        if (elImg) elImg.src = newAvatarUrl;
+
+        await fetchProfile();
+        updateUIForLoggedIn();
+        showToast("Foto profil berhasil diperbarui!", "success");
+
+    } catch (e) {
+        showToast("Gagal upload: " + e.message, "error");
+    } finally {
+        icon.className = 'fas fa-camera text-xs';
+    }
 }
 
-const data = await response.json();
-if (!data.success) throw new Error(data.error);
-
-const currentNick = userProfile?.nickname || "Player";
-const { error: dbErr } = await supabaseClient.from('profiles').upsert({ id: currentUser.id, nickname: currentNick, avatar_url: data.url });
-if (dbErr) throw new Error(dbErr.message);
-
-const elImg = document.getElementById('profile-img'); if(elImg) elImg.src = data.url;
-
-await fetchProfile();
-updateUIForLoggedIn();
-showToast("Foto profil berhasil diperbarui!", "success");
-
-} catch (e) {
-showToast("Gagal upload: " + e.message, "error");
-} finally {
-icon.className = 'fas fa-camera text-xs';
-}
-}
 
 function compressImage(file) {
 return new Promise((resolve) => {
