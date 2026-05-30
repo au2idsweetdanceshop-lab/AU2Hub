@@ -9296,11 +9296,17 @@ async function batalkanPesanan() {
 }
 
 
-// EKSEKUSI PENYELESAIAN PESANAN DARI PEMBELI (VERSI FINAL - QRIS PRIBADI ADMIN)
+// EKSEKUSI PENYELESAIAN PESANAN DARI PEMBELI (VERSI FINAL)
 async function selesaikanPesanan() {
     if (!activeOrderIdToPay) return;
     
-    const konfirmasi = await customConfirm("Pesanan sudah dikerjakan dan diterima dengan baik?\n\nDana akan masuk ke Saldo Tertahan Penjual dan cair dalam 24 jam.");
+    // 1. Bedakan teks konfirmasi antara pesanan Pasar Player vs Pesanan Admin
+    let pesanKonfirmasi = "Pesanan sudah dikerjakan dan diterima dengan baik?";
+    if (activeOrderTable === 'orders_player') {
+        pesanKonfirmasi += "\n\nDana akan masuk ke Saldo Tertahan Penjual dan cair dalam 24 jam.";
+    }
+    
+    const konfirmasi = await customConfirm(pesanKonfirmasi);
     if (!konfirmasi) return;
     
     closeDetailPesanan(); 
@@ -9309,17 +9315,31 @@ async function selesaikanPesanan() {
     try {
         const waktuSekarang = new Date().toISOString();
         
-        // Update Status Order menjadi 'selesai' dan rekam jamnya, uang JANGAN dicairkan dulu!
+        // 2. Susun payload database secara dinamis
+        let dataUpdate = { 
+            status: 'selesai', 
+            waktu_selesai: waktuSekarang 
+        };
+
+        // HANYA masukkan perintah tahan dana (dana_cair: false) jika ini transaksi di Pasar Player
+        if (activeOrderTable === 'orders_player') {
+            dataUpdate.dana_cair = false;
+        }
+        
         const { error: orderError } = await supabaseClient
             .from(activeOrderTable) 
-            .update({ status: 'selesai', waktu_selesai: waktuSekarang, dana_cair: false })
+            .update(dataUpdate)
             .eq('id', activeOrderIdToPay);
 
         if (orderError) throw orderError;
 
-        showToast("Pesanan selesai! Dana masuk ke Saldo Tertahan (H+1).", "success");
-        tambahExp(50);
+        if (activeOrderTable === 'orders_player') {
+            showToast("Pesanan selesai! Dana masuk ke Saldo Tertahan Penjual (H+1).", "success");
+        } else {
+            showToast("Pesanan selesai! Terima kasih.", "success");
+        }
         
+        tambahExp(50);
         cekStatusPesanan('proses'); 
         loadOrderTracker(currentUser.id); 
         
@@ -9327,7 +9347,6 @@ async function selesaikanPesanan() {
         showToast("Gagal menyelesaikan pesanan: " + err.message, "error");
     }
 }
-
 
 async function checkoutXoftwarePay(namaProduk, harga, deskripsi, sellerId = null, productId = null) {
     if (!currentUser) return showToast("Silakan login dulu untuk membeli!", "error");
@@ -9353,18 +9372,8 @@ async function checkoutXoftwarePay(namaProduk, harga, deskripsi, sellerId = null
     try {
         // 1. Simpan antrean ke Supabase
         const targetTabel = sellerId ? 'orders_player' : 'orders';
-        
-        // Hapus product_id dari deklarasi default agar tidak memaksa mengirim nilai null
-        const dataInsert = { 
-            user_id: currentUser.id, 
-            product_name: namaProduk, 
-            price: harga, 
-            status: 'PENDING' 
-        };
-        
-        // Hanya masukkan ke payload JIKA datanya memang ada
+        const dataInsert = { user_id: currentUser.id, product_name: namaProduk, price: harga, status: 'PENDING', product_id: productId };
         if (sellerId) dataInsert.seller_id = sellerId;
-        if (productId) dataInsert.product_id = productId;
 
         const { data: orderData, error: orderError } = await supabaseClient.from(targetTabel).insert(dataInsert).select().single();
         if (orderError) throw orderError;
