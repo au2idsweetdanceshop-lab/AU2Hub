@@ -3234,6 +3234,14 @@ window.addEventListener('popstate', () => {
         tutupModalSaldoDompet(true);
         return;
     }
+    
+        // TANGKAP LACI VIP SELLER
+    const modalLangganan = document.getElementById('modal-langganan-seller');
+    if (modalLangganan && !modalLangganan.classList.contains('hidden')) {
+        tutupModalLangganan(true);
+        return;
+    }
+
 
     // 1. TANGKAP INFO GRUP (Tambahkan kode ini)
     const modalGroupInfo = document.getElementById('modal-group-info');
@@ -10827,9 +10835,20 @@ async function checkoutPasar(namaFinal, totalHarga, id) {
 let qtyVipBulan = 1;
 let paketSellerTerpilih = 'tahunan';
 
-function tutupModalLangganan() {
-    document.getElementById('modal-langganan-seller').classList.replace('flex', 'hidden');
+function bukaModalLangganan() {
+    history.pushState({ popup: 'langganan' }, null, '#langganan');
+    document.getElementById('modal-langganan-seller').classList.replace('hidden', 'flex');
 }
+
+function tutupModalLangganan(dariTombolBack = false) {
+    document.getElementById('modal-langganan-seller').classList.replace('flex', 'hidden');
+    
+    // Sinkronisasi dengan tombol Back HP
+    if (!dariTombolBack && window.location.hash === '#langganan') {
+        history.back();
+    }
+}
+
 
 // Fungsi untuk menambah/mengurangi bulan
 function ubahQtyVIP(delta) {
@@ -11002,7 +11021,7 @@ function bukaModalJualBarang() {
 
     // Jika bukan VIP atau masa aktif habis
     if (!isVip || expiredAt < now) {
-        document.getElementById('modal-langganan-seller').classList.replace('hidden', 'flex');
+        bukaModalLangganan();
         return; // Setop disini, gembok pintunya!
     }
 
@@ -11046,7 +11065,7 @@ async function loadTokoSaya() {
         loggedOut.querySelector('p').innerText = "Tingkatkan akunmu menjadi VIP Seller untuk mengelola toko, menambah etalase, dan menerima pesanan.";
         
         loggedOut.querySelector('button').innerText = "BERLANGGANAN SEKARANG";
-        loggedOut.querySelector('button').onclick = () => { document.getElementById('modal-langganan-seller').classList.replace('hidden', 'flex'); };
+        loggedOut.querySelector('button').onclick = bukaModalLangganan;
         
         loggedOut.classList.remove('hidden');
         loggedOut.classList.add('flex');
