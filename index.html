@@ -853,15 +853,20 @@ Satu pintu untuk info update terbaru, panduan pemula, jasa joki profesional, dan
     <div id="toko-container" class="w-full relative z-10">
         
         <div id="toko-logged-out" class="hidden flex-col items-center justify-center py-16 mt-4 bg-gradient-to-b from-brand-card/50 to-transparent rounded-[2rem] border border-white/5 shadow-inner">
-            <div class="w-24 h-24 bg-[#FF5722]/10 rounded-full flex items-center justify-center mb-5 border border-[#FF5722]/20 shadow-[0_0_30px_rgba(255,87,34,0.2)]">
-                <i class="fas fa-store-slash text-5xl text-[#FF5722]/50"></i>
-            </div>
-            <h3 class="text-xl font-black text-white mb-2 tracking-tight">Akses Tertutup</h3>
-            <p class="text-xs text-gray-400 mb-8 px-8 text-center leading-relaxed">Silakan login untuk mulai mengelola etalase toko dan melacak pesanan masuk Anda.</p>
-            <button onclick="openAuthModal()" class="bg-gradient-to-r from-[#FF5722] to-[#FF007A] text-white px-8 py-3.5 rounded-xl font-extrabold active:scale-95 transition-all shadow-[0_8px_20px_rgba(255,87,34,0.3)] uppercase tracking-wider text-xs">
-                Login Sekarang
-            </button>
-        </div>
+    <div class="w-24 h-24 bg-[#FF5722]/10 rounded-full flex items-center justify-center mb-5 border border-[#FF5722]/20 shadow-[0_0_30px_rgba(255,87,34,0.2)]">
+        <i class="fas fa-store-slash text-5xl text-[#FF5722]/50"></i>
+    </div>
+    <h3 class="text-xl font-black text-white mb-2 tracking-tight">Akses Tertutup</h3>
+    
+    <!-- 1. Ganti px-8 menjadi px-4 agar teks paragraf tidak terlalu terjepit -->
+    <p class="text-xs text-gray-400 mb-8 px-4 text-center leading-relaxed">Silakan login untuk mulai mengelola etalase toko dan melacak pesanan masuk Anda.</p>
+    
+    <!-- 2. Hapus px-8, tambahkan w-[85%] dan whitespace-nowrap agar tombol stabil dan teks tidak turun ke bawah -->
+    <button onclick="openAuthModal()" class="w-[85%] whitespace-nowrap bg-gradient-to-r from-[#FF5722] to-[#FF007A] text-white py-3.5 rounded-xl font-extrabold active:scale-95 transition-all shadow-[0_8px_20px_rgba(255,87,34,0.3)] uppercase tracking-wider text-xs">
+        Login Sekarang
+    </button>
+</div>
+
 
         <div id="toko-logged-in" class="w-full hidden">
             
