@@ -2020,7 +2020,7 @@ let viewedUserId = null;
 
 let allVideosData = [];
 let newUploads = [];
-let obs = null, activeVideoId = null, lastTap = 0, isGlobalMuted = true;
+let obs = null, activeVideoId = null, lastTap = 0, isGlobalMuted = false;
 let replyingToId = null, replyingToName = null;
 let currentVideoIndex = 0;
 const BATCH_SIZE = 5;
@@ -2410,6 +2410,9 @@ function playHashtagVideo(tagar, startIndex) {
     const container = document.getElementById('floating-feed-container');
     container.innerHTML = '';
     container.scrollTop = 0;
+
+    // [BARU] Paksa suara menyala (unmute) otomatis saat video hashtag diklik
+    isGlobalMuted = false;
 
     // Tampilkan floating player
     document.getElementById('floating-video-player').classList.remove('hidden');
@@ -3897,7 +3900,17 @@ function setupFloatVideoObserver() {
 floatObs = new IntersectionObserver(es => {
 es.forEach(e => {
 if (e.isIntersecting) {
-e.target.play().catch(() => {}); e.target.muted = isGlobalMuted;
+e.target.muted = isGlobalMuted;
+const playP = e.target.play();
+if (playP !== undefined) {
+    playP.catch(err => {
+        if (err.name === 'NotAllowedError') {
+            e.target.muted = true;
+            isGlobalMuted = true;
+            e.target.play().catch(e => {});
+        }
+    });
+}
 // Preload video selanjutnya agar mulus
 let currentContainer = e.target.closest('.snap-start');
 for(let j = 0; j < 2; j++) {
@@ -3936,6 +3949,9 @@ function openProfileFeed(userId, startIndex) {
 
     // 4. Hentikan paksa semua video utama di background
     document.querySelectorAll('.video-player').forEach(v => v.pause());
+
+    // [BARU] Paksa suara menyala (unmute) otomatis saat video profil diklik
+    isGlobalMuted = false;
 
     // 5. Tampilkan floating player
     document.getElementById('floating-video-player').classList.remove('hidden');
@@ -4148,50 +4164,53 @@ function toggleProfileVideoAudio(video) {
 }
 
 
-function handleFloatVideoClick(event, videoElement, vidId) {
-    const now = Date.now();
-    const TIMESLOT = 300; // Jeda waktu maksimal (milidetik) untuk dihitung sebagai klik 2x
+let floatClickTimer = null; // Memori antrean klik
 
-    if (now - lastTap < TIMESLOT) {
-        // --- JIKA KLIK 2X (DOUBLE TAP) ---
-        // Cari tombol like di video profil ini dan picu fungsi like
+function handleFloatVideoClick(event, videoElement, vidId) {
+    // JIKA ADA KLIK KE-2 MASUK -> BATALKAN KLIK 1 (SUARA TIDAK JADI MATI)
+    if (floatClickTimer) {
+        clearTimeout(floatClickTimer);
+        floatClickTimer = null;
+        
+        // Eksekusi Double Click (LIKE)
         const card = videoElement.closest('.snap-start');
         const likeBtn = card.querySelector('.like-container button');
-        
-        likeVideo(vidId, likeBtn); // Proses like ke database
-        createHeartAt(event);      // Munculkan animasi pop-up Hati di titik jari
-    } else {
-        // --- JIKA KLIK 1X (SINGLE TAP) ---
-        // Kasih delay dikit, kalau tidak ada klik kedua, berarti dia cuma mau nyalain/matiin suara
-        setTimeout(() => {
-            if (Date.now() - lastTap >= TIMESLOT) { 
-                toggleProfileVideoAudio(videoElement); 
-            }
-        }, TIMESLOT);
+        likeVideo(vidId, likeBtn); 
+        createHeartAt(event);      
+    } 
+    // JIKA INI KLIK 1 -> MULAI HITUNG MUNDUR 300ms
+    else {
+        floatClickTimer = setTimeout(() => {
+            // Jika dalam 300ms tidak ada klik ke-2, eksekusi suara!
+            floatClickTimer = null;
+            toggleProfileVideoAudio(videoElement); 
+        }, 300);
     }
-    
-    // Simpan waktu klik terakhir
-    lastTap = now;
 }
 
+
+let videoClickTimer = null; // Memori antrean klik feed utama
 
 function handleVideoClick(event, videoElement, vidId) {
-const now = Date.now();
-const TIMESLOT = 300;
-
-if (now - lastTap < TIMESLOT) {
-const card = videoElement.closest('.snap-start');
-const likeBtn = card.querySelector('.like-container button');
-likeVideo(vidId, likeBtn);
-createHeartAt(event);
-} else {
-setTimeout(() => {
-if (Date.now() - lastTap >= TIMESLOT) {
-toggleGlobalAudio();
-}
-}, TIMESLOT);
-}
-lastTap = now;
+    // JIKA ADA KLIK KE-2 MASUK -> BATALKAN KLIK 1 (SUARA TIDAK JADI MATI)
+    if (videoClickTimer) {
+        clearTimeout(videoClickTimer);
+        videoClickTimer = null;
+        
+        // Eksekusi Double Click (LIKE)
+        const card = videoElement.closest('.snap-start');
+        const likeBtn = card.querySelector('.like-container button');
+        likeVideo(vidId, likeBtn);
+        createHeartAt(event);
+    } 
+    // JIKA INI KLIK 1 -> MULAI HITUNG MUNDUR 300ms
+    else {
+        videoClickTimer = setTimeout(() => {
+            // Jika dalam 300ms tidak ada klik ke-2, eksekusi suara!
+            videoClickTimer = null;
+            toggleGlobalAudio();
+        }, 300);
+    }
 }
 
 // FITUR HAPUS VIDEO PERMANEN (SINKRON KE GOOGLE SHEETS)
@@ -4780,18 +4799,20 @@ async function likeComment(cid, btn) {
         return openAuthModal();
     }
 
-    // Cegah spam klik (double click cepat)
-    if (btn.disabled) return;
-    btn.disabled = true;
+    // Cegah spam klik yang bisa bikin database jebol
+    if (btn.isProcessing) return;
+    btn.isProcessing = true;
 
     const icon = btn.querySelector('i');
     
     // Deteksi warna: jika pink berarti sedang di-like, jika abu-abu berarti belum
     const isLiked = icon.classList.contains('text-brand-accent');
 
-    // Animasi denyut
+    // --- ANIMASI DENYUT ANTI-TABRAKAN ---
+    // Bersihkan timer lama jika user spam tap
+    if (btn.animTimer) clearTimeout(btn.animTimer);
     icon.classList.add('animate-ping');
-    setTimeout(() => icon.classList.remove('animate-ping'), 500);
+    btn.animTimer = setTimeout(() => icon.classList.remove('animate-ping'), 500);
 
     try {
         if (isLiked) {
@@ -4837,7 +4858,7 @@ async function likeComment(cid, btn) {
         }
         showToast(isLiked ? "Gagal membatalkan like." : "Gagal menyukai komentar.", "error");
     } finally {
-        btn.disabled = false;
+        btn.isProcessing = false;
     }
 }
 
@@ -6992,7 +7013,16 @@ else wrap.classList.remove('floating-focus');
 requestAnimationFrame(() => {
 const playPromise = video.play();
 if (playPromise !== undefined) {
-playPromise.catch(err => {});
+playPromise.catch(err => {
+    // JURUS ANTI-BLOKIR (AUTOPLAY POLICY)
+    // Jika browser ngeblokir suara karena user belum sentuh layar sama sekali, 
+    // paksa bisukan dulu supaya videonya tetap jalan (nggak macet/blank)
+    if (err.name === 'NotAllowedError') {
+        video.muted = true;
+        isGlobalMuted = true; // Sinkronkan sistem global ke bisu
+        video.play().catch(e => {}); // Mainkan ulang
+    }
+});
 }
 video.classList.remove('opacity-0');
 });
@@ -10073,6 +10103,9 @@ function bukaVideoShare(vidId) {
         if (v.querySelector('source')) v.querySelector('source').removeAttribute('src');
         v.load(); // Paksa browser membuang video dari memori saat itu juga
     });
+
+    // [BARU] Paksa suara menyala (unmute) otomatis dari link share
+    isGlobalMuted = false;
 
     // 5. Munculkan Layar Hitam (Floating Player) secara instan!
     const floatingPlayer = document.getElementById('floating-video-player');
