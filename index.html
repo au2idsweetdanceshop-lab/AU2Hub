@@ -8791,7 +8791,13 @@ async function switchLeaderboardTab(tab) {
                         </div>
                     </div>
                     <div class="text-right ml-2 shrink-0 relative z-10">
-                        <span class="text-[10px] font-extrabold bg-gradient-to-tr from-yellow-400 to-yellow-600 text-black px-2 py-1 rounded-lg border border-yellow-300 shadow-[0_0_10px_rgba(250,204,21,0.4)]">VIP</span>
+                        ${rank === 1 ? 
+                            `<span class="text-[10px] font-extrabold bg-gradient-to-tr from-[#FF007A] to-[#A277FF] text-white px-2 py-1 rounded-lg border border-[#FF007A]/50 shadow-[0_0_10px_rgba(255,0,122,0.6)]">VVIP</span>` 
+                        : rank <= 3 ? 
+                            `<span class="text-[10px] font-extrabold bg-gradient-to-tr from-yellow-400 to-yellow-600 text-black px-2 py-1 rounded-lg border border-yellow-300 shadow-[0_0_10px_rgba(250,204,21,0.4)]">SULTAN</span>`
+                        : 
+                            `<span class="text-[10px] font-extrabold bg-white/10 text-gray-300 px-2 py-1 rounded-lg border border-white/20">RICH</span>`
+                        }
                     </div>
                 </div>`;
             }).join('');
