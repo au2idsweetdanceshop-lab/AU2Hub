@@ -9340,7 +9340,7 @@ async function updateUiSaldoSeller() {
     try {
         // Tarik Saldo Aktif
         const { data: profile } = await supabaseClient.from('profiles').select('balance').eq('id', currentUser.id).single();
-        document.getElementById('toko-saldo-aktif').innerText = 'Rp ' + (profile?.balance || 0).toLocaleString('id-ID');
+        document.getElementById('saldo-angka').innerText = (profile?.balance || 0).toLocaleString('id-ID');
 
         // Tarik Saldo Tertahan (Pesanan selesai yang dana_cair = false)
         const { data: pendingFunds } = await supabaseClient
