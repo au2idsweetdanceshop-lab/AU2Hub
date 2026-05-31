@@ -1582,8 +1582,21 @@ if (isPush && window.location.hash !== `#${tabId}`) history.pushState(null, null
 
 window.addEventListener('popstate', () => {
     let isPopupClosed = false;
-    
-        // ==========================================
+
+    // 🚀 1. TANGKAP POP-UP ALERT DULUAN DI SINI (Biar gak stuck!)
+    const modalAlert = document.getElementById('modal-alert');
+    if (modalAlert && !modalAlert.classList.contains('hidden')) {
+        modalAlert.classList.add('hidden');
+        modalAlert.classList.remove('flex');
+        
+        if (typeof modalAlert.alertResolve === 'function') {
+            modalAlert.alertResolve();
+            modalAlert.alertResolve = null;
+        }
+        return;
+    }
+
+    // ==========================================
     // TANGKAP SEMUA MODAL PASAR PLAYER
     // ==========================================
     const modalGalleryPasar = document.getElementById('modal-gallery-pasar');
@@ -1618,15 +1631,14 @@ window.addEventListener('popstate', () => {
         return;
     }
     
-        // TANGKAP LACI VIP SELLER
+    // TANGKAP LACI VIP SELLER
     const modalLangganan = document.getElementById('modal-langganan-seller');
     if (modalLangganan && !modalLangganan.classList.contains('hidden')) {
         tutupModalLangganan(true);
         return;
     }
 
-
-    // 1. TANGKAP INFO GRUP (Tambahkan kode ini)
+    // 1. TANGKAP INFO GRUP
     const modalGroupInfo = document.getElementById('modal-group-info');
     if (modalGroupInfo && !modalGroupInfo.classList.contains('hidden')) {
         closeGroupInfoModal(true);
@@ -1639,34 +1651,31 @@ window.addEventListener('popstate', () => {
         return;
     }
 
-    // 2. TANGKAP MODAL INVOICE (KARENA INI MENUMPUK DI ATAS RIWAYAT) 👇
+    // 2. TANGKAP MODAL INVOICE
     const modalInvoice = document.getElementById('modal-detail-pesanan');
     if (modalInvoice && !modalInvoice.classList.contains('hidden')) {
         closeDetailPesanan(true);
         return;
     }
 
-    // 3. BARU TANGKAP MODAL RIWAYAT PESANAN (LAPISAN BAWAH) 👇
+    // 3. BARU TANGKAP MODAL RIWAYAT PESANAN
     const modalRiwayat = document.getElementById('modal-riwayat-pesanan');
     if (modalRiwayat && !modalRiwayat.classList.contains('hidden')) {
         closeRiwayatPesanan(true); 
         return;
     }
 
-    // (Di dalam event listener popstate...)
-
-    // 🚀 TAMBAHAN BARU: TANGKAP LAYAR PRATINJAU FULL SCREEN DULU
+    // 🚀 TANGKAP LAYAR PRATINJAU FULL SCREEN DULU
     const modalPratinjau = document.getElementById('modal-pratinjau');
     if (modalPratinjau && !modalPratinjau.classList.contains('hidden')) {
         tutupPratinjauVideo(true);
         return;
     }
 
-    // 🚀 TAMBAHAN LAMA: TANGKAP MODAL UPLOAD VIDEO & PRIVASI
+    // 🚀 TANGKAP MODAL UPLOAD VIDEO & PRIVASI
     const modalPrivasi = document.getElementById('modal-privasi-video');
     if (modalPrivasi && (!modalPrivasi.classList.contains('hidden') && !modalPrivasi.classList.contains('translate-y-full'))) {
         tutupPilihanPrivasi();
-        // Kembalikan jejak URL ke #upload agar bisa di-back lagi untuk menutup form upload
         history.pushState({ popup: 'upload' }, null, '#upload');
         return;
     }
@@ -1677,149 +1686,120 @@ window.addEventListener('popstate', () => {
         return;
     }
 
-    // ==========================================
-
-    // 2. TANGKAP SEMUA POP-UP DULU (Biar menutup duluan kalau tombol Back ditekan)
-        // --- MENDETEKSI POP-UP BANTUAN CEPAT ---
-    const modalAlert = document.getElementById('modal-alert');
-    if (modalAlert && !modalAlert.classList.contains('hidden')) {
-        modalAlert.classList.add('hidden');
-        modalAlert.classList.remove('flex');
-        
-        // Selesaikan Promise jika ditutup lewat tombol back HP dengan aman
-        if (typeof modalAlert.alertResolve === 'function') {
-            modalAlert.alertResolve();
-            modalAlert.alertResolve = null;
-        }
-        return;
-    }
-
     const lightbox = document.getElementById('lightbox-modal');
     if(!lightbox.classList.contains('hidden')) {
         closeLightbox();
         return;
     }
 
-// Tangkap laci Dilihat/Disukai dulu!
-const statsModal = document.getElementById('modal-story-stats');
-if (statsModal && !statsModal.classList.contains('translate-y-full')) {
-    closeStoryStatsModal(true);
-    return;
-}
+    // Tangkap laci Dilihat/Disukai dulu!
+    const statsModal = document.getElementById('modal-story-stats');
+    if (statsModal && !statsModal.classList.contains('translate-y-full')) {
+        closeStoryStatsModal(true);
+        return;
+    }
 
-// Baru tangkap layar pemutar Story utamanya
-const storyModal = document.getElementById('story-viewer-modal');
-if (storyModal && !storyModal.classList.contains('hidden')) {
-    closeStoryViewer(true);
-    return;
-}
+    // Baru tangkap layar pemutar Story utamanya
+    const storyModal = document.getElementById('story-viewer-modal');
+    if (storyModal && !storyModal.classList.contains('hidden')) {
+        closeStoryViewer(true);
+        return;
+    }
 
-const modalMsgOption = document.getElementById('modal-msg-option');
-if (!modalMsgOption.classList.contains('hidden')) {
-modalMsgOption.classList.add('hidden'); modalMsgOption.classList.remove('flex');
-return;
-}
+    const modalMsgOption = document.getElementById('modal-msg-option');
+    if (!modalMsgOption.classList.contains('hidden')) {
+        modalMsgOption.classList.add('hidden'); modalMsgOption.classList.remove('flex');
+        return;
+    }
 
-const commentDrawer = document.getElementById('comment-drawer');
-if (commentDrawer.classList.contains('open')) {
-commentDrawer.classList.remove('open');
-cancelReply();
+    const commentDrawer = document.getElementById('comment-drawer');
+    if (commentDrawer.classList.contains('open')) {
+        commentDrawer.classList.remove('open');
+        cancelReply();
 
-if (commentSubscription) {
-    supabaseClient.removeChannel(commentSubscription);
-    commentSubscription = null;
-}
-return;
-}
+        if (commentSubscription) {
+            supabaseClient.removeChannel(commentSubscription);
+            commentSubscription = null;
+        }
+        return;
+    }
 
-const modalEvent = document.getElementById('modal-event');
-if (!modalEvent.classList.contains('hidden')) {
-modalEvent.classList.add('hidden'); modalEvent.classList.remove('flex');
-document.body.style.overflow = 'auto'; isPopupClosed = true;
-}
+    const modalEvent = document.getElementById('modal-event');
+    if (!modalEvent.classList.contains('hidden')) {
+        modalEvent.classList.add('hidden'); modalEvent.classList.remove('flex');
+        document.body.style.overflow = 'auto'; isPopupClosed = true;
+    }
 
-const modalEditProfile = document.getElementById('modal-edit-profile');
-if (!modalEditProfile.classList.contains('hidden')) {
-closeEditProfileModal();
-isPopupClosed = true;
-}
+    const modalEditProfile = document.getElementById('modal-edit-profile');
+    if (!modalEditProfile.classList.contains('hidden')) {
+        closeEditProfileModal();
+        isPopupClosed = true;
+    }
 
-const modalUserList = document.getElementById('modal-user-list');
-if (!modalUserList.classList.contains('hidden')) {
-closeUserList();
-isPopupClosed = true;
-}
+    const modalUserList = document.getElementById('modal-user-list');
+    if (!modalUserList.classList.contains('hidden')) {
+        closeUserList();
+        isPopupClosed = true;
+    }
 
-const widget = document.getElementById('floating-widget');
+    const widget = document.getElementById('floating-widget');
 
-// JIKA WIDGET CHAT SEDANG TERBUKA
-if (!widget.classList.contains('opacity-0')) {
+    if (!widget.classList.contains('opacity-0')) {
+        const roomView = document.getElementById('chat-room-view');
+        if (roomView && roomView.classList.contains('flex')) {
+            closeChatRoom(true);
+            return; 
+        } else {
+            widget.classList.add('opacity-0', 'pointer-events-none', 'translate-y-8', 'scale-95');
+            return;
+        }
+    }
 
-// 1. CEK: Apakah user sedang di dalam RUANG CHAT (Isi Pesan)?
-const roomView = document.getElementById('chat-room-view');
-if (roomView && roomView.classList.contains('flex')) {
-// Jika iya, pencet Back = BALIK KE DAFTAR PESAN (INBOX)
-closeChatRoom(true);
-return; // Berhenti di sini agar widget tidak langsung tertutup semua
-}
+    const authModal = document.getElementById('modal-auth');
+    if (authModal && !authModal.classList.contains('hidden')) {
+        authModal.classList.add('hidden');
+        authModal.classList.remove('flex');
+        isPopupClosed = true;
+    }
 
-// 2. CEK: Apakah user sedang di DAFTAR CHAT (Inbox)?
-else {
-// Jika iya, pencet Back = TUTUP WIDGET SEPENUHNYA
-widget.classList.add('opacity-0', 'pointer-events-none', 'translate-y-8', 'scale-95');
-return;
-}
-}
+    const leaderboardModal = document.getElementById('modal-leaderboard');
+    if (leaderboardModal && !leaderboardModal.classList.contains('hidden')) {
+        leaderboardModal.classList.add('hidden');
+        leaderboardModal.classList.remove('flex');
 
-const authModal = document.getElementById('modal-auth');
-if (authModal && !authModal.classList.contains('hidden')) {
-authModal.classList.add('hidden');
-authModal.classList.remove('flex');
-isPopupClosed = true;
-}
+        const chatBtn = document.querySelector('button[onclick="toggleWidget()"]');
+        if (chatBtn) chatBtn.classList.remove('hidden');
 
-// 🏆 RE-SINKRONISASI TOMBOL BACK UTAMA LEADERBOARD MODAL
-const leaderboardModal = document.getElementById('modal-leaderboard');
-if (leaderboardModal && !leaderboardModal.classList.contains('hidden')) {
-leaderboardModal.classList.add('hidden');
-leaderboardModal.classList.remove('flex');
+        isPopupClosed = true;
+    }
 
-// 🔥 SELIPIN INI OM: Biar pas back HP tombol chatnya auto-nongol lagi
-const chatBtn = document.querySelector('button[onclick="toggleWidget()"]');
-if (chatBtn) chatBtn.classList.remove('hidden');
-
-isPopupClosed = true;
-}
-
-    // TANGKAP LAYAR GRID HASHTAG
     const hashtagGrid = document.getElementById('modal-hashtag-grid');
     if (hashtagGrid && !hashtagGrid.classList.contains('hidden') && !hashtagGrid.classList.contains('translate-x-full')) {
         closeHashtagGrid(true);
         return;
     }
 
+    if (document.body.classList.contains('video-focused')) {
+        toggleFloatingMode();
+        return;
+    }
 
-// 2. SETELAH POP-UP AMAN, BARU TANGKAP LAYAR MENGAMBANG
-if (document.body.classList.contains('video-focused')) {
-toggleFloatingMode();
-return;
-}
+    const floatingPlayer = document.getElementById('floating-video-player');
+    if (!floatingPlayer.classList.contains('hidden')) {
+        closeFloatingVideo();
+        return;
+    }
 
-const floatingPlayer = document.getElementById('floating-video-player');
-if (!floatingPlayer.classList.contains('hidden')) {
-closeFloatingVideo();
-return;
-}
+    if (isPopupClosed) return;
 
-if (isPopupClosed) return;
-
-const newHash = window.location.hash.substring(1) || 'home';
-if (newHash === 'profile' && viewedUserId !== currentUser?.id) {
-viewedUserId = currentUser?.id;
-checkSession();
-}
-switchTab(newHash.split('?')[0], null, false);
+    const newHash = window.location.hash.substring(1) || 'home';
+    if (newHash === 'profile' && viewedUserId !== currentUser?.id) {
+        viewedUserId = currentUser?.id;
+        checkSession();
+    }
+    switchTab(newHash.split('?')[0], null, false);
 });
+
 
 
 
