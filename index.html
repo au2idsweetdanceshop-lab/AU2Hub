@@ -9171,30 +9171,34 @@ function bukaDetailPesananDinamis(orderId, productName, price, status, tableSour
     const actionDiproses = document.getElementById('action-diproses');
     const pesanStatusLain = document.getElementById('pesan-status-lain');
 
-    // === KONTROL ANIMASI TRACKER TIMELINE ===
+    // === 1. KONTROL ANIMASI TRACKER TIMELINE (DIRESET DULU) ===
     const trackLine = document.getElementById('track-line');
     const dot2 = document.getElementById('step-2-dot');
     const text2 = document.getElementById('step-2-text');
     const dot3 = document.getElementById('step-3-dot');
     const text3 = document.getElementById('step-3-text');
 
-    // Reset Tracker
+    // Matikan transisi sementara biar reset-nya instan tanpa efek aneh
+    trackLine.style.transition = 'none';
     trackLine.style.width = '0%';
+    
+    // Reset Dot 2 (Balikin angkanya!)
     dot2.className = 'w-7 h-7 rounded-full bg-white/20 border-[3px] border-[#121319] flex items-center justify-center text-gray-400 font-bold text-[10px] transition-colors duration-500';
+    dot2.innerHTML = '2'; 
     text2.className = 'text-[9px] font-bold text-gray-500 tracking-widest uppercase transition-colors';
+    
+    // Reset Dot 3 (Balikin angkanya!)
     dot3.className = 'w-7 h-7 rounded-full bg-white/20 border-[3px] border-[#121319] flex items-center justify-center text-gray-400 font-bold text-[10px] transition-colors duration-500';
+    dot3.innerHTML = '3';
     text3.className = 'text-[9px] font-bold text-gray-500 tracking-widest uppercase transition-colors';
 
+    // Set Teks & Tombol sesuai Status
     if (status === 'PENDING') {
         statusBadge.innerText = 'BELUM BAYAR';
         statusBadge.className = 'bg-red-500/20 text-red-500 border-red-500/50';
         actionBelumBayar.classList.replace('hidden', 'flex'); 
         if(actionDiproses) actionDiproses.classList.replace('flex', 'hidden'); 
         pesanStatusLain.classList.add('hidden'); 
-        
-        // Animasi Line (0%)
-        setTimeout(() => { trackLine.style.width = '0%'; }, 100);
-
     } else if (status === 'proses') {
         statusBadge.innerText = 'DIPROSES';
         statusBadge.className = 'bg-brand-info/20 text-brand-info border-brand-info/50';
@@ -9202,15 +9206,6 @@ function bukaDetailPesananDinamis(orderId, productName, price, status, tableSour
         if(actionDiproses) actionDiproses.classList.replace('hidden', 'flex'); 
         pesanStatusLain.classList.remove('hidden'); 
         pesanStatusLain.innerText = 'Toko sedang mengerjakan pesananmu. Klik tombol di bawah jika barang sudah diterima.';
-        
-        // Animasi Line ke Proses (50%)
-        setTimeout(() => { 
-            trackLine.style.width = '50%'; 
-            dot2.className = 'w-7 h-7 rounded-full bg-brand-info border-[3px] border-[#121319] flex items-center justify-center text-brand-dark shadow-[0_0_10px_rgba(70,179,255,0.5)]';
-            dot2.innerHTML = '<i class="fas fa-check text-[10px] font-bold"></i>';
-            text2.className = 'text-[9px] font-bold text-white tracking-widest uppercase transition-colors';
-        }, 300);
-
     } else if (status === 'selesai') {
         statusBadge.innerText = 'SELESAI';
         statusBadge.className = 'bg-brand-success/20 text-brand-success border-brand-success/50';
@@ -9218,31 +9213,45 @@ function bukaDetailPesananDinamis(orderId, productName, price, status, tableSour
         if(actionDiproses) actionDiproses.classList.replace('flex', 'hidden'); 
         pesanStatusLain.classList.remove('hidden'); 
         pesanStatusLain.innerText = 'Pesanan ini telah lunas dan selesai. Terima kasih!';
-        
-        // Animasi Line ke Selesai (100%)
-        setTimeout(() => { 
+    }
+
+    // === 2. TAMPILKAN MODAL KE LAYAR (BUKA GEMBOK DISPLAY: NONE) ===
+    modal.classList.replace('hidden', 'flex');
+    
+    // Pastikan laci naik mulus dari bawah
+    setTimeout(() => {
+        modal.classList.remove('translate-y-full');
+    }, 10);
+
+    // === 3. JALANKAN ANIMASI TRACKER (SETELAH BROWSER SELESAI RENDER) ===
+    // Delay 150ms ini sangat krusial biar browser "napas" ngerender DOM sebelum animasi ditarik
+    setTimeout(() => {
+        // Nyalakan lagi transisinya
+        trackLine.style.transition = 'all 0.7s ease-in-out';
+
+        if (status === 'proses') {
+            trackLine.style.width = '50%'; 
+            dot2.className = 'w-7 h-7 rounded-full bg-brand-info border-[3px] border-[#121319] flex items-center justify-center text-brand-dark shadow-[0_0_10px_rgba(70,179,255,0.5)]';
+            dot2.innerHTML = '<i class="fas fa-check text-[10px] font-bold"></i>';
+            text2.className = 'text-[9px] font-bold text-white tracking-widest uppercase transition-colors';
+        } else if (status === 'selesai') {
             trackLine.style.width = '100%'; 
             dot2.className = 'w-7 h-7 rounded-full bg-brand-info border-[3px] border-[#121319] flex items-center justify-center text-brand-dark shadow-[0_0_10px_rgba(70,179,255,0.5)]';
             dot2.innerHTML = '<i class="fas fa-check text-[10px] font-bold"></i>';
             text2.className = 'text-[9px] font-bold text-white tracking-widest uppercase transition-colors';
             
+            // Titik 3 nyala belakangan biar dramatis
             setTimeout(() => {
                 dot3.className = 'w-7 h-7 rounded-full bg-brand-info border-[3px] border-[#121319] flex items-center justify-center text-brand-dark shadow-[0_0_10px_rgba(70,179,255,0.5)]';
                 dot3.innerHTML = '<i class="fas fa-check text-[10px] font-bold"></i>';
                 text3.className = 'text-[9px] font-bold text-white tracking-widest uppercase transition-colors';
-            }, 300); // efek delay nyala berurutan
-        }, 300);
-    }
-
-    modal.classList.replace('hidden', 'flex');
-    
-    // Pastikan laci mulus dari bawah
-    setTimeout(() => {
-        modal.classList.remove('translate-y-full');
-    }, 10);
+            }, 400); 
+        }
+    }, 150);
     
     history.pushState({ popup: 'detail_pesanan' }, null, '#invoice');
 }
+
 
 
 // 🔥 FUNGSI MENUTUP MODAL INVOICE (DIPERBARUI DENGAN BACK DETECTION)
