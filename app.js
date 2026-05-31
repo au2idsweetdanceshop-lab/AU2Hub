@@ -1210,33 +1210,45 @@ btn.innerText = isAuthLogin ? "Login" : "Daftar";
 }
 
 async function handleLogout() {
-await supabaseClient.auth.signOut();
-currentUser = null;
-userProfile = null;
+    // 1. Panggil logout Supabase
+    await supabaseClient.auth.signOut();
+
+    // 2. BERSIHKAN VARIABEL GLOBAL (Wajib!)
+    currentUser = null;
+    userProfile = null;
+    viewedUserId = null; // Tambahkan ini agar tidak nyangkut ke profil orang lain
     blockedUsersList = [];
-
-    localStorage.removeItem('optimistic_vip');
-
-    // --- BERSIHKAN SEMUA STATE & CACHE LAMA ---
-    allVideosData = [];
+    allVideosData = []; // Bersihkan cache video biar tidak nyangkut
     globalPersonalList = [];
     globalGroupList = [];
-    closeChatRoom(false); // Matikan radar obrolan jika sedang terbuka
-    if (commentSubscription) {
-        supabaseClient.removeChannel(commentSubscription);
-        commentSubscription = null;
+
+    // 3. BERSIHKAN LOCAL STORAGE (PENTING)
+    localStorage.removeItem('optimistic_vip');
+    // Opsional: hapus semua cache terkait session jika ada
+    localStorage.clear(); 
+
+    // 4. BERSIHKAN REALTIME SUBSCRIPTION
+    if (messageSubscription) {
+        supabaseClient.removeChannel(messageSubscription);
+        messageSubscription = null;
     }
-    // ------------------------------------------
+    if (presenceChannel) {
+        supabaseClient.removeChannel(presenceChannel);
+        presenceChannel = null;
+    }
 
-    if (globalMessageSubscription) {
-
-supabaseClient.removeChannel(globalMessageSubscription);
-globalMessageSubscription = null;
+    // 5. Reset UI ke tampilan "Logged Out"
+    updateUIForLoggedOut();
+    
+    // 6. Refresh sesi untuk memastikan tampilan benar-benar berubah
+    checkSession();
+    
+    showToast("Anda telah keluar.", "info");
+    
+    // 7. Opsional: Force Reload kalau masih membandel (paling ampuh)
+    // window.location.reload(); 
 }
 
-checkSession();
-showToast("Anda telah keluar.", "info");
-}
 
 function updateUIForLoggedIn() {
 const ava = (userProfile?.avatar_url && userProfile.avatar_url !== "") ? userProfile.avatar_url : `https://ui-avatars.com/api/?name=${userProfile?.nickname || 'User'}&background=1A1133&color=fff`;
