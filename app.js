@@ -9769,42 +9769,64 @@ async function fetchSaldoDanMutasi() {
     }
 }
 
+// === 1. TAMBAHKAN VARIABEL GEMBOK DI LUAR FUNGSI ===
+let isWithdrawing = false;
+
+// === 2. GANTI FUNGSI LAMA DENGAN YANG BARU INI ===
 async function prosesTarikSaldo() {
+    // BLOKIR INSTAN: Jika user klik berkali-kali, hentikan eksekusi kedua dst.
+    if (isWithdrawing) {
+        showToast("Mohon tunggu, ada penarikan yang sedang diproses...", "info");
+        return;
+    }
+    
+    // KUNCI PINTU SEKARANG
+    isWithdrawing = true;
+
     try {
         // 1. Ambil data saldo saat ini
         const { data: profile } = await supabaseClient.from('profiles').select('balance, nickname').eq('id', currentUser.id).single();
         const saldoMurni = profile.balance || 0;
         
-        // 2. Cek apakah saldo total akun bahkan mencapai batas minimal awal
-        if (saldoMurni < 10000) return showToast("Min. penarikan Rp 10.000", "error");
+        // 2. Cek apakah saldo total akun mencapai batas minimal
+        if (saldoMurni < 10000) {
+            showToast("Min. penarikan Rp 10.000", "error");
+            return;
+        }
         
-        // 3. [BARU] Minta nominal yang ingin ditarik secara spesifik
+        // 3. Minta nominal yang ingin ditarik
         const nominalInput = await customPrompt(`Masukkan nominal yang ingin ditarik (Saldo: Rp ${saldoMurni.toLocaleString('id-ID')}):`, "10000");
         if (!nominalInput) return; // Batal jika di-cancel / kosong
         
-        // Bersihkan inputan dari huruf atau titik jika user tidak sengaja mengetiknya
+        // Bersihkan inputan dari huruf atau titik
         const nominalTarik = parseInt(nominalInput.replace(/[^0-9]/g, ''));
         
-        // 4. [BARU] Validasi nominal inputan user
+        // 4. Validasi nominal inputan user
         if (isNaN(nominalTarik) || nominalTarik < 10000) {
-            return showToast("Minimal penarikan adalah Rp 10.000", "error");
+            showToast("Minimal penarikan adalah Rp 10.000", "error");
+            return;
         }
         if (nominalTarik > saldoMurni) {
-            return showToast("Saldo Anda tidak mencukupi untuk nominal tersebut!", "error");
+            showToast("Saldo Anda tidak mencukupi untuk nominal tersebut!", "error");
+            return;
         }
 
         // 5. Minta rekening tujuan
         const rek = await customPrompt("Masukkan Nama Bank & Nomor Rekening:", "DANA - 08xxxxxxxxxx");
         if (!rek) return;
 
-        // 6. POTONG SALDO & CATAT RIWAYAT (Sekarang mengirim nominalTarik, bukan semua saldo)
+        showToast("Sedang memproses penarikan...", "info");
+
+        // 6. POTONG SALDO KE DATABASE
         const { error: rpcError } = await supabaseClient.rpc('proses_tarik_saldo', {
             p_user_id: currentUser.id,
-            p_jumlah: nominalTarik, // <--- Sekarang dinamis sesuai ketikan seller!
+            p_jumlah: nominalTarik,
             p_rekening: rek
         });
 
         if (rpcError) throw rpcError;
+
+        // 7. MASUKKAN KE DAFTAR ANTREAN ADMIN
         const { error: wdError } = await supabaseClient.from('withdrawals').insert({
             user_id: currentUser.id,
             nominal: nominalTarik,
@@ -9817,30 +9839,31 @@ async function prosesTarikSaldo() {
             throw new Error("Gagal meneruskan data ke Pusat Kendali Admin.");
         }
 
-        // 7. Arahkan ke WhatsApp Admin dengan nominal yang dicairkan saja
+        // 8. Arahkan ke WhatsApp Admin
         const teks = encodeURIComponent(`Halo Admin, saya ${profile.nickname} ingin tarik saldo Rp ${nominalTarik.toLocaleString('id-ID')} ke ${rek}`);
         window.open(`https://wa.me/6283815584661?text=${teks}`, '_blank');
         
-        // 8. Tutup laci dan refresh UI
+        // 9. Tutup laci dan refresh UI secara instan (Optimistic UI)
         tutupModalSaldoDompet();
         
-        // 🔥 TAMBAHAN FIX: Langsung kurangi angka di layar detik itu juga (Optimistic UI)
         const sisaSaldoBaru = saldoMurni - nominalTarik;
         const elSaldoAktif = document.getElementById('toko-saldo-aktif');
         if (elSaldoAktif) {
             elSaldoAktif.innerText = 'Rp ' + sisaSaldoBaru.toLocaleString('id-ID');
         }
         
-        // 🔥 Sinkronisasi senyap dengan database di latar belakang
         updateUiSaldoSeller();
-        
         showToast(`Penarikan Rp ${nominalTarik.toLocaleString('id-ID')} berhasil diproses!`, "success");
         
     } catch (e) { 
         console.error(e);
         showToast("Gagal memproses penarikan saldo.", "error"); 
+    } finally {
+        // BUKA KUNCI KEMBALI: Wajib ditaruh di blok 'finally' agar jika user batal mengisi prompt atau terjadi error, tombol bisa diklik lagi.
+        isWithdrawing = false;
     }
 }
+
 
 
 
