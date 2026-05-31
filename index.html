@@ -1956,11 +1956,10 @@ function customAlert(title) {
         modal.classList.remove('hidden');
         modal.classList.add('flex');
 
-        // Simpan resolve agar bisa diakses dari tombol back
-        window.currentAlertResolve = resolve;
+        // Simpan resolve langsung ke elemen modal (bukan global window)
+        modal.alertResolve = resolve;
 
         btnOk.onclick = () => {
-            // 🔥 TAMBAHAN: Gunakan history.back() agar kembali secara rapi
             if (window.location.hash === '#alert') {
                 history.back(); 
             } else {
@@ -1968,9 +1967,9 @@ function customAlert(title) {
                 modal.classList.remove('flex');
             }
             btnOk.onclick = null;
-            if (typeof window.currentAlertResolve === 'function') {
-                window.currentAlertResolve();
-                window.currentAlertResolve = null;
+            if (typeof modal.alertResolve === 'function') {
+                modal.alertResolve();
+                modal.alertResolve = null;
             }
         };
     });
@@ -2911,9 +2910,23 @@ async function handleLogout() {
 await supabaseClient.auth.signOut();
 currentUser = null;
 userProfile = null;
-blockedUsersList = [];
+    blockedUsersList = [];
 
-if (globalMessageSubscription) {
+    localStorage.removeItem('optimistic_vip');
+
+    // --- BERSIHKAN SEMUA STATE & CACHE LAMA ---
+    allVideosData = [];
+    globalPersonalList = [];
+    globalGroupList = [];
+    closeChatRoom(false); // Matikan radar obrolan jika sedang terbuka
+    if (commentSubscription) {
+        supabaseClient.removeChannel(commentSubscription);
+        commentSubscription = null;
+    }
+    // ------------------------------------------
+
+    if (globalMessageSubscription) {
+
 supabaseClient.removeChannel(globalMessageSubscription);
 globalMessageSubscription = null;
 }
@@ -3353,10 +3366,10 @@ window.addEventListener('popstate', () => {
         modalAlert.classList.add('hidden');
         modalAlert.classList.remove('flex');
         
-        // Selesaikan Promise jika ditutup lewat tombol back HP
-        if (typeof window.currentAlertResolve === 'function') {
-            window.currentAlertResolve();
-            window.currentAlertResolve = null;
+        // Selesaikan Promise jika ditutup lewat tombol back HP dengan aman
+        if (typeof modalAlert.alertResolve === 'function') {
+            modalAlert.alertResolve();
+            modalAlert.alertResolve = null;
         }
         return;
     }
@@ -3910,8 +3923,14 @@ function openProfileFeed(userId, startIndex) {
     // 2. Tentukan index target
     let targetIndex = parseInt(startIndex) || 0;
 
-    // 3. Bersihkan layar player
+    // 3. Bersihkan memori video lama lalu kosongkan layar
     const container = document.getElementById('floating-feed-container');
+    container.querySelectorAll('video').forEach(v => {
+        v.pause();
+        v.removeAttribute('src');
+        if (v.querySelector('source')) v.querySelector('source').removeAttribute('src');
+        v.load();
+    });
     container.innerHTML = '';
     container.scrollTop = 0;
 
@@ -5198,8 +5217,18 @@ Suara Asli - @${vid.nickname || "Player"} 🎵 Original Audio
 // --- SISTEM ANTI DOM BLOAT (MENCEGAH HP CRASH) ---
 if (container.children.length > 40) {
     const tinggiVideo = container.firstElementChild.clientHeight;
-    // Hapus 5 video teratas yang sudah kelewat
-    for (let i = 0; i < 5; i++) container.firstElementChild.remove();
+    // Hapus 5 video teratas beserta memori medianya
+    for (let i = 0; i < 5; i++) {
+        const elToRemove = container.firstElementChild;
+        const vidToKill = elToRemove.querySelector('video');
+        if (vidToKill) {
+            vidToKill.pause();
+            vidToKill.removeAttribute('src');
+            if (vidToKill.querySelector('source')) vidToKill.querySelector('source').removeAttribute('src');
+            vidToKill.load(); 
+        }
+        elToRemove.remove();
+    }
     // Tarik scroll ke atas agar layar tidak lompat tiba-tiba
     container.scrollBy({ top: -(tinggiVideo * 5), behavior: 'instant' });
 }
@@ -6930,8 +6959,8 @@ video { will-change: contents; }
 document.head.appendChild(style);
 }
 
-window.videoClearTimers = window.videoClearTimers || new Map();
-window.videoPlayTimers = window.videoPlayTimers || new Map();
+window.videoClearTimers = window.videoClearTimers || new WeakMap();
+window.videoPlayTimers = window.videoPlayTimers || new WeakMap();
 
 obs = new IntersectionObserver(es => {
 const isFloatingOpen = !document.getElementById('floating-video-player').classList.contains('hidden');
@@ -8872,6 +8901,7 @@ let activeOrderTable = 'orders';
 let activeOrderSellerId = null; // <--- WAJIB DITAMBAHKAN
 let activeOrderProductId = null; // <--- WAJIB DITAMBAHKAN
 let intervalJemputBola = null; // <--- VAR GLOBAL UNTUK MENCEGAH KEBOCORAN MEMORI
+let activeChannelPembayaran = null; // <--- VAR GLOBAL UNTUK MENCEGAH KEBOCORAN WEBSOCKET
 
 async function cekStatusPesanan(kategori) {
     if (!currentUser) return showToast("Silakan login terlebih dahulu.", "error");
@@ -9276,6 +9306,12 @@ function closeDetailPesanan(dariTombolBackHP = false) {
         clearInterval(intervalJemputBola);
         intervalJemputBola = null;
     }
+    
+    // --- CEGAH KEBOCORAN WEBSOCKET SUPABASE ---
+    if (activeChannelPembayaran) {
+        supabaseClient.removeChannel(activeChannelPembayaran);
+        activeChannelPembayaran = null;
+    }
 
     if (!dariTombolBackHP && window.location.hash === '#invoice') {
         // Jika dari tombol (X) atau Batal, biarkan history.back() memanggil popstate
@@ -9498,7 +9534,7 @@ async function checkoutXoftwarePay(namaProduk, harga, deskripsi, sellerId = null
             // Cek apakah ini pembayaran VIP
             if (namaProduk.includes('[VIP]')) {
                 // 1. TANAMKAN BUKTI VIP KE MEMORI HP (Bertahan 60 detik)
-                localStorage.setItem('optimistic_vip', 'true');
+                localStorage.setItem('optimistic_vip', currentUser.id);
                 
                 // 2. Cegat tombol "Tutup Halaman" agar langsung diarahkan masuk ke Toko!
                 const btnTutup = wadahPembayaran.querySelector('button[onclick="history.back()"]');
@@ -9523,14 +9559,14 @@ async function checkoutXoftwarePay(namaProduk, harga, deskripsi, sellerId = null
         };
 
         // 5. Radar Supabase (Langsung memantau perubahan Database)
-        const channelPembayaran = supabaseClient.channel(`tunggu-pembayaran-${orderData.id}`)
+        activeChannelPembayaran = supabaseClient.channel(`tunggu-pembayaran-${orderData.id}`)
             .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: targetTabel, filter: `id=eq.${orderData.id}` }, (payload) => {
                 // Konversi ke huruf besar agar tidak sensitif huruf kapital
                 const statusBaru = String(payload.new.status).toUpperCase();
                 
                 if (statusBaru === 'SELESAI' || statusBaru === 'SUCCESS' || statusBaru === 'PROSES' || statusBaru === 'PAID') {
                     tampilkanLayarSukses();
-                    supabaseClient.removeChannel(channelPembayaran);
+                    supabaseClient.removeChannel(activeChannelPembayaran);
                     clearInterval(intervalJemputBola);
                 }
             }).subscribe();
@@ -9547,7 +9583,7 @@ async function checkoutXoftwarePay(namaProduk, harga, deskripsi, sellerId = null
                 // Cek semua kemungkinan indikator "Lunas" dari Xoftware/Database
                 if (apiStatus === 'SUCCESS' || apiStatus === 'SUCCEEDED' || apiStatus === 'PAID' || apiStatus === 'SELESAI' || apiStatus === 'PROSES') {
                     clearInterval(intervalJemputBola); 
-                    supabaseClient.removeChannel(channelPembayaran);
+                    supabaseClient.removeChannel(activeChannelPembayaran);
                     tampilkanLayarSukses(); 
                 }
             } catch (e) {}
@@ -9678,7 +9714,7 @@ async function prosesBayarUlang() {
             // Cek apakah ini pembayaran VIP
             if (namaProduk.includes('[VIP]')) {
                 // 1. TANAMKAN BUKTI VIP KE MEMORI HP (Bertahan 60 detik)
-                localStorage.setItem('optimistic_vip', 'true');
+                localStorage.setItem('optimistic_vip', currentUser.id);
                 
                 // 2. Cegat tombol "Tutup Halaman" agar langsung diarahkan masuk ke Toko!
                 const btnTutup = wadahPembayaran.querySelector('button[onclick="history.back()"]');
@@ -9703,7 +9739,7 @@ async function prosesBayarUlang() {
         };
 
         // Radar Supabase untuk Pembayaran Ulang
-        const channelPembayaran = supabaseClient
+        activeChannelPembayaran = supabaseClient
             .channel(`tunggu-pembayaran-ulang-${activeOrderIdToPay}`)
             .on(
                 'postgres_changes',
@@ -9711,7 +9747,7 @@ async function prosesBayarUlang() {
                 (payload) => {
                     if (payload.new.status === 'selesai' || payload.new.status === 'SUCCESS' || payload.new.status === 'proses') {
                         tampilkanLayarSukses();
-                        supabaseClient.removeChannel(channelPembayaran);
+                        supabaseClient.removeChannel(activeChannelPembayaran);
                         clearInterval(intervalJemputBola);
                     }
                 }
@@ -9724,7 +9760,7 @@ async function prosesBayarUlang() {
                 const data = await res.json();
                 if (data.status === 'SUCCESS') {
                     clearInterval(intervalJemputBola); 
-                    supabaseClient.removeChannel(channelPembayaran);
+                    supabaseClient.removeChannel(activeChannelPembayaran);
                     tampilkanLayarSukses(); 
                 }
             } catch (e) {}
@@ -10013,8 +10049,14 @@ function bukaVideoShare(vidId) {
     let targetIndex = currentProfileVideos.findIndex(v => v.id === vidId);
     if (targetIndex === -1) targetIndex = 0;
 
-    // 3. Bersihkan layar floating player (Layar Hitam)
+    // 3. Bersihkan layar floating player (Layar Hitam) beserta memorinya
     const container = document.getElementById('floating-feed-container');
+    container.querySelectorAll('video').forEach(v => {
+        v.pause();
+        v.removeAttribute('src');
+        if (v.querySelector('source')) v.querySelector('source').removeAttribute('src');
+        v.load();
+    });
     container.innerHTML = '';
     container.scrollTop = 0;
 
@@ -11230,7 +11272,7 @@ function bukaModalJualBarang() {
     const now = new Date();
 
     // 🔥 KUNCI ANTI-GAGAL: Paksa akses terbuka jika baru saja sukses bayar!
-    if (localStorage.getItem('optimistic_vip') === 'true') {
+    if (localStorage.getItem('optimistic_vip') === currentUser.id) {
         isVip = true;
         expiredAt = new Date(Date.now() + (30 * 24 * 60 * 60 * 1000)); // +30 Hari Sementara
     }
@@ -11275,7 +11317,7 @@ async function loadTokoSaya() {
     const now = new Date();
 
     // 🔥 KUNCI ANTI-GAGAL: Paksa akses terbuka jika baru saja sukses bayar!
-    if (localStorage.getItem('optimistic_vip') === 'true') {
+    if (localStorage.getItem('optimistic_vip') === currentUser.id) {
         isVip = true;
         expiredAt = new Date(Date.now() + (30 * 24 * 60 * 60 * 1000)); // +30 Hari Sementara
     }
@@ -11858,6 +11900,17 @@ async function bukaModalEditProduk(idProduk) {
 
 function tutupModalEditProduk(dariTombolBackHP = false) {
     document.getElementById('modal-edit-produk').classList.replace('flex', 'hidden');
+    
+    // --- BERSIHKAN MEMORI RAM (BLOB URL) SEBELUM DITUTUP ---
+    const previewContainer = document.getElementById('preview-container-edit');
+    if (previewContainer) {
+        const images = previewContainer.querySelectorAll('img');
+        images.forEach(img => {
+            if (img.src.startsWith('blob:')) URL.revokeObjectURL(img.src);
+        });
+        previewContainer.innerHTML = '';
+    }
+    
     editFileArray = [];
     existingImagesEdit = [];
     document.getElementById('input-foto-edit').value = '';
@@ -11889,6 +11942,13 @@ function previewGambarEdit(input) {
 
 function renderPreviewEditProduk() {
     const previewContainer = document.getElementById('preview-container-edit');
+    
+    // BERSIHKAN MEMORI BLOB LAMA SEBELUM RENDER ULANG AGAR TIDAK MENUMPUK DI RAM
+    const oldImages = previewContainer.querySelectorAll('img');
+    oldImages.forEach(img => {
+        if (img.src.startsWith('blob:')) URL.revokeObjectURL(img.src);
+    });
+    
     previewContainer.innerHTML = '';
     
     if (existingImagesEdit.length === 0 && editFileArray.length === 0) {
