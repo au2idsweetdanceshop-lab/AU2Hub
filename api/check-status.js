@@ -47,13 +47,76 @@ export default async function handler(req, res) {
             return res.status(200).json({ success: false, status: 'PENDING', message: 'Respons bukan JSON' });
         }
         
-        // 👇 FIX DI SINI COK: Kita tembusin langsung masuk ke dalam objek "data"
         const statusUtama = result.data?.status || '';
         const statusPembayaran = result.data?.payment_status || '';
 
         // JIKA LUNAS, KITA UPDATE DATABASE DETIK ITU JUGA!
-        if (statusUtama.toUpperCase() === 'SUCCESS' || statusPembayaran.toUpperCase() === 'SUCCEEDED') {
-            await supabase.from(targetTable).update({ status: 'SUCCESS' }).eq('id', order_id);
+        if (
+            statusUtama.toUpperCase() === 'SUCCESS' || 
+            statusPembayaran.toUpperCase() === 'SUCCEEDED' || 
+            statusUtama.toUpperCase() === 'SETTLED' || 
+            statusPembayaran.toUpperCase() === 'SETTLED' || 
+            statusUtama.toUpperCase() === 'PAID'
+        ) {
+            
+            // 1. Tarik data pesanan dulu untuk mengecek apakah ini pembelian VIP
+            const { data: orderData } = await supabase.from(targetTable).select('*').eq('id', order_id).single();
+            
+            if (orderData) {
+                const productName = orderData.product_name || '';
+                const userId = orderData.user_id;
+
+                // ==========================================
+                // 👑 LOGIKA VIP SELLER 
+                // ==========================================
+                if (productName.includes('[VIP]')) {
+                    const { data: profile } = await supabase.from('profiles').select('seller_expired_at').eq('id', userId).single();
+                    
+                    let waktuSekarang = new Date();
+                    let waktuExpired = profile?.seller_expired_at ? new Date(profile.seller_expired_at) : new Date();
+
+                    // Kalau kadaluarsa, mulai hitung dari hari ini
+                    if (waktuExpired < waktuSekarang) {
+                        waktuExpired = waktuSekarang;
+                    }
+
+                    // Deteksi durasi dari nama produk
+                    if (productName.includes('1 Tahun')) {
+                        waktuExpired.setDate(waktuExpired.getDate() + 365);
+                    } else {
+                        const match = productName.match(/(\d+)\s+Bulan/i);
+                        if (match) {
+                            const jumlahBulan = parseInt(match[1]);
+                            waktuExpired.setDate(waktuExpired.getDate() + (jumlahBulan * 30));
+                        } else {
+                            waktuExpired.setDate(waktuExpired.getDate() + 30); 
+                        }
+                    }
+
+                    // 🔥 TEMBAK PROFIL JADI VIP
+                    await supabase.from('profiles')
+                        .update({ 
+                            is_seller: true, 
+                            seller_expired_at: waktuExpired.toISOString() 
+                        })
+                        .eq('id', userId);
+
+                    // Update order jadi 'selesai'
+                    let updatePayload = { status: 'selesai' };
+                    if (targetTable === 'orders_player') {
+                        updatePayload.waktu_selesai = new Date().toISOString();
+                    }
+                    await supabase.from(targetTable).update(updatePayload).eq('id', order_id);
+
+                } else {
+                    // JIKA BUKAN VIP (ORDER BIASA)
+                    await supabase.from(targetTable).update({ status: 'SUCCESS' }).eq('id', order_id);
+                }
+            } else {
+                // Fallback darurat jika orderData tidak ditemukan
+                await supabase.from(targetTable).update({ status: 'SUCCESS' }).eq('id', order_id);
+            }
+
             return res.status(200).json({ success: true, status: 'SUCCESS' });
         }
 
