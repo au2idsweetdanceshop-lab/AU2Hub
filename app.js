@@ -10358,21 +10358,22 @@ function salinTeksAdmin(teks, btnElement, colorType) {
 // === 1. VARIABEL GEMBOK UNTUK ADMIN ===
 let isAdminProcessing = false;
 
-// === 2. FUNGSI SETUJUI PENARIKAN (ANTI DOBEL CHAT) ===
+// === FUNGSI SETUJUI PENARIKAN (NOTIFIKASI MASUK CHAT & DOMPET) ===
 async function setujuiPenarikan(wdId, nickname) {
-    if (isAdminProcessing) return showToast("Sistem sedang memproses antrean lain...", "info");
+    // Gembok anti klik-ganda admin
+    if (typeof isAdminProcessing !== 'undefined' && isAdminProcessing) return showToast("Sistem sedang memproses antrean lain...", "info");
     
     const konfirmasi = await customConfirm(`Anda YAKIN sudah mentransfer uang ini ke rekening @${nickname}?`);
     if (!konfirmasi) return;
 
-    isAdminProcessing = true; // Kunci tombol
+    window.isAdminProcessing = true; 
     try {
         showToast("Memproses...", "info");
         
         // 1. Tarik data penarikan
         const { data: wdData } = await supabaseClient.from('withdrawals').select('user_id, nominal, status').eq('id', wdId).single();
 
-        // VALIDASI MUTLAK: Pastikan status masih PENDING (Cegah klik ganda jika tab belum di-refresh)
+        // Validasi mutlak agar tidak dieksekusi 2x kalau internet lag
         if (wdData && wdData.status !== 'PENDING') {
             throw new Error("Transaksi ini sudah diproses sebelumnya.");
         }
@@ -10381,16 +10382,24 @@ async function setujuiPenarikan(wdId, nickname) {
         const { error } = await supabaseClient.from('withdrawals').update({ status: 'SELESAI' }).eq('id', wdId);
         if (error) throw error;
 
-        // 3. Kirim pesan Inbox otomatis ke Seller
         if (wdData) {
+            // 3A. ---> KIRIM NOTIFIKASI KE CHAT / INBOX SELLER <---
             await supabaseClient.from('messages').insert({
                 sender_id: currentUser.id,
                 receiver_id: wdData.user_id,
                 message: `[SISTEM] Penarikan saldo sebesar Rp ${Number(wdData.nominal).toLocaleString('id-ID')} telah berhasil ditransfer ke rekening Anda oleh Admin. Silakan cek mutasi rekening Anda.`
             });
+
+            // 3B. ---> KIRIM PENCATATAN KE RIWAYAT DOMPET SELLER <---
+            await supabaseClient.from('wallet_transactions').insert({
+                user_id: wdData.user_id,
+                amount: 0, // Di-set 0 agar tidak mengganggu kalkulasi saldo yang sudah dipotong di awal
+                type: 'INCOME', // Pakai INCOME agar teksnya berwarna hijau
+                description: `✅ BERHASIL: Dana Rp ${Number(wdData.nominal).toLocaleString('id-ID')} telah ditransfer Admin`
+            });
         }
 
-        // Efek visual hilang perlahan di laci admin
+        // 4. Efek visual hilang perlahan di laci admin
         const card = document.getElementById(`wd-${wdId}`);
         if (card) {
             card.style.opacity = '0';
@@ -10406,9 +10415,11 @@ async function setujuiPenarikan(wdId, nickname) {
     } catch (err) {
         showToast(err.message || "Gagal memperbarui database.", "error");
     } finally {
-        isAdminProcessing = false; // Buka kunci
+        // Buka kembali gembok setelah proses tuntas
+        window.isAdminProcessing = false;
     }
 }
+
 
 // === 3. FUNGSI TOLAK PENARIKAN (ANTI DOBEL REFUND) ===
 async function tolakPenarikan(wdId, userId, nominal) {
