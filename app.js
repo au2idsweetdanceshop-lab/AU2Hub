@@ -9340,7 +9340,18 @@ async function updateUiSaldoSeller() {
     try {
         // Tarik Saldo Aktif
         const { data: profile } = await supabaseClient.from('profiles').select('balance').eq('id', currentUser.id).single();
-        document.getElementById('saldo-angka').innerText = (profile?.balance || 0).toLocaleString('id-ID');
+        
+        // PERBAIKAN: Targetkan ke ID 'toko-saldo-aktif' (lengkap dengan awalan Rp)
+        const elSaldoAktif = document.getElementById('toko-saldo-aktif');
+        if (elSaldoAktif) {
+            elSaldoAktif.innerText = 'Rp ' + (profile?.balance || 0).toLocaleString('id-ID');
+        }
+
+        // Tetap biarkan 'saldo-angka' berjaga-jaga jika ada elemen lain yang menggunakan ID ini
+        const elSaldoAngka = document.getElementById('saldo-angka');
+        if (elSaldoAngka) {
+            elSaldoAngka.innerText = (profile?.balance || 0).toLocaleString('id-ID');
+        }
 
         // Tarik Saldo Tertahan (Pesanan selesai yang dana_cair = false)
         const { data: pendingFunds } = await supabaseClient
@@ -9359,8 +9370,11 @@ async function updateUiSaldoSeller() {
             });
         }
         document.getElementById('toko-saldo-tertahan').innerText = 'Rp ' + totalTertahan.toLocaleString('id-ID');
-    } catch(e) {}
+    } catch(e) {
+        console.error("Gagal update UI Saldo Seller:", e);
+    }
 }
+
 
 async function cekPencairanDanaH1() {
     try {
@@ -9751,16 +9765,21 @@ async function fetchSaldoDanMutasi() {
         const { data: txData } = await supabaseClient.from('wallet_transactions').select('*').eq('user_id', currentUser.id).order('created_at', { ascending: false });
 
         if (txData && txData.length > 0) {
-            listContainer.innerHTML = txData.map(tx => `
-                <div class="bg-brand-card border border-white/5 p-3 rounded-xl flex justify-between items-center">
-                    <div class="truncate">
-                        <h4 class="text-xs font-bold text-white truncate">${tx.description}</h4>
-                        <p class="text-[9px] text-gray-500">${timeAgo(tx.created_at)}</p>
+            listContainer.innerHTML = txData.map(tx => {
+                // Amankan teks deskripsi dari tanda kutip agar tidak merusak fungsi onclick HTML
+                const safeDesc = (tx.description || '').replace(/'/g, "\\'").replace(/"/g, "&quot;").replace(/\n/g, "\\n");
+                
+                return `
+                <div onclick="customAlert('${safeDesc}')" class="bg-brand-card border border-white/5 p-3 rounded-xl flex justify-between items-center gap-3 cursor-pointer hover:bg-white/5 transition-colors active:scale-95" title="Klik untuk baca selengkapnya">
+                    <div class="flex-1 min-w-0">
+                        <h4 class="text-[11px] font-bold text-white truncate">${tx.description}</h4>
+                        <p class="text-[9px] text-gray-500 mt-1">${timeAgo(tx.created_at)}</p>
                     </div>
-                    <span class="text-xs font-black ${tx.type === 'INCOME' ? 'text-brand-success' : 'text-red-400'}">
+                    <span class="text-xs font-black whitespace-nowrap shrink-0 ${tx.type === 'INCOME' ? 'text-brand-success' : 'text-red-400'}">
                         ${tx.type === 'INCOME' ? '+' : '-'} Rp ${Number(tx.amount).toLocaleString('id-ID')}
                     </span>
-                </div>`).join('');
+                </div>`;
+            }).join('');
         } else {
             listContainer.innerHTML = '<div class="text-center py-10 text-gray-500 text-xs">Belum ada riwayat.</div>';
         }
@@ -9768,6 +9787,7 @@ async function fetchSaldoDanMutasi() {
         listContainer.innerHTML = '<div class="text-center py-10 text-red-500 text-xs">Gagal memuat data.</div>';
     }
 }
+
 
 // === 1. TAMBAHKAN VARIABEL GEMBOK DI LUAR FUNGSI ===
 let isWithdrawing = false;
