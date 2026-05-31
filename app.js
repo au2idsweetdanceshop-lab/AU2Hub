@@ -9805,6 +9805,17 @@ async function prosesTarikSaldo() {
         });
 
         if (rpcError) throw rpcError;
+        const { error: wdError } = await supabaseClient.from('withdrawals').insert({
+            user_id: currentUser.id,
+            nominal: nominalTarik,
+            rekening: rek,
+            status: 'PENDING'
+        });
+
+        if (wdError) {
+            console.error("Gagal masuk antrean admin:", wdError);
+            throw new Error("Gagal meneruskan data ke Pusat Kendali Admin.");
+        }
 
         // 7. Arahkan ke WhatsApp Admin dengan nominal yang dicairkan saja
         const teks = encodeURIComponent(`Halo Admin, saya ${profile.nickname} ingin tarik saldo Rp ${nominalTarik.toLocaleString('id-ID')} ke ${rek}`);
