@@ -10573,7 +10573,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 // ==========================================
-// RENDER KATEGORI GRID (MODERN & UNIFORM)
+// RENDER KATEGORI GRID (GOPAY STYLE) UNTUK PASAR
 // ==========================================
 function renderKategoriPasarTabs(data) {
     const container = document.getElementById('kategori-pasar-grid');
@@ -10588,22 +10588,20 @@ function renderKategoriPasarTabs(data) {
 
     container.innerHTML = arrKategori.map(k => {
         const isActive = k === kategoriPasarAktif;
-        
-        // Desain ikon seragam (folder), yang aktif warna solid oranye, yang pasif outline
+        const logoUrl = getKategoriLogoURL(k); 
+
         return `
-        <div onclick="pilihKategoriPasar('${k}')" class="flex flex-col items-center gap-2.5 cursor-pointer text-center group active:scale-95 transition-all">
-            <div class="w-[52px] h-[52px] rounded-full flex items-center justify-center transition-all border ${isActive ? 'bg-gradient-to-br from-[#FF5722] to-[#EE4D2D] border-transparent shadow-[0_0_15px_rgba(238,77,45,0.4)]' : 'bg-transparent border-white/10 group-hover:border-white/30'}">
-                <i class="far fa-folder text-[22px] ${isActive ? 'text-white' : 'text-yellow-500/80 group-hover:text-yellow-400'}"></i>
+        <div onclick="pilihKategoriPasar('${k}')" class="flex flex-col items-center gap-2 cursor-pointer text-center group active:scale-95 transition-all">
+            <div class="w-12 h-12 rounded-[1.2rem] flex items-center justify-center transition-all border ${isActive ? 'bg-[#EE4D2D] border-[#EE4D2D] shadow-lg shadow-[#EE4D2D]/30' : 'bg-brand-card border-white/5 shadow-md group-hover:border-brand-success'}">
+                <img src="${logoUrl}" alt="${k}" class="w-7 h-7 object-contain ${isActive ? 'brightness-100' : 'opacity-80 group-hover:opacity-100 transition-opacity'}"
+                onerror="this.src='https://img.icons8.com/neon/96/folder-invoices.png'">
             </div>
-            <span class="text-[10px] font-extrabold tracking-wider uppercase ${isActive ? 'text-[#EE4D2D]' : 'text-gray-500 group-hover:text-gray-300'}">
+            <span class="text-[9px] font-extrabold tracking-wide truncate w-full uppercase leading-tight ${isActive ? 'text-[#EE4D2D]' : 'text-gray-400 group-hover:text-white'}">
                 ${k}
             </span>
         </div>
         `;
     }).join('');
-    
-    // Ubah formasi kotak luarnya agar sejajar di tengah dengan background dark blue
-    container.className = "flex overflow-x-auto hide-scroll gap-6 mb-6 bg-[#161B2E] p-6 rounded-[2rem] shadow-lg mt-4 justify-start sm:justify-center";
 }
 
 
@@ -10651,9 +10649,7 @@ function formatInputRupiah(e) {
 // Array Global Penyimpan Antrean Foto
 let fileJualanArray = []; 
 
-// ==========================================
-// RENDER GRID PRODUK PASAR (MODERN DARK MODE)
-// ==========================================
+// 1. RENDER GRID (Tampilkan Foto Pertama Saja di Etalase Depan)
 function renderGridPasar(dataList) {
     const grid = document.getElementById('grid-pasar-player');
     grid.innerHTML = '';
@@ -10663,60 +10659,66 @@ function renderGridPasar(dataList) {
         return;
     }
 
+    // Menggunakan map().join('') agar bisa mengeksekusi delay animasi berurutan (smooth-reveal)
     const htmlCards = dataList.map((item, index) => {
-        const sellerAvatar = item.profiles?.avatar_url || 'https://ui-avatars.com/api/?name=User&background=1A1133&color=fff';
+        const sellerAvatar = item.profiles?.avatar_url || 'https://placehold.co/100x100/1a1133/2BD975?text=AV';
         const sellerName = item.profiles?.nickname || 'Anonim';
         
-        // Harga Markup Customer
+        // 🔥 LOGIKA BARU: Harga Markup Customer (+ 650 + 0.7%)
         const hargaCustomer = Math.floor(item.price + 650 + (item.price * 0.007));
         const formatHarga = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(hargaCustomer);
 
-        // Harga Coret Marketing
+        // 🔥 LOGIKA HARGA CORET MARKETING AUTOMATIC (Sama seperti Xoftware)
         let hargaCoret = Math.ceil((hargaCustomer * 1.3) / 1000) * 1000; 
         if (hargaCustomer > 100000) hargaCoret = Math.ceil((hargaCustomer * 1.2) / 5000) * 5000;
         if (hargaCustomer <= 5000) hargaCoret = hargaCustomer + 2500;
 
+        const sellerExp = item.profiles?.exp || 0;
+        const sellerLevel = hitungStatusLevel(sellerExp).level;
+        const sellerVideoCount = allVideosData.filter(v => String(v.user_id) === String(item.user_id)).length;
+        const badgeHtml = getBadgeByLevelAndVideos(sellerLevel, sellerVideoCount);
+
         let rawThumb = item.image_url || '';
         let fotoPertama = rawThumb.split(',')[0].trim();
-        if (!fotoPertama) fotoPertama = 'https://ui-avatars.com/api/?name=Produk&background=1A1133&color=fff';
+        if (!fotoPertama) fotoPertama = 'https://placehold.co/400x400/1a1133/2BD975?text=PASAR';
 
         const isAutoItem = item.category === 'Akun' || item.category === 'Item' || item.category === 'APK Premium';
         const sisaStok = isAutoItem && item.stock_list ? item.stock_list.split(/\r?\n/).filter(s=>s.trim() !== '').length : 0;
         
-        // Lencana Kategori Hijau Terang (Sesuai Referensi)
-        const badgeCategory = `<span class="absolute top-3 left-3 bg-[#2BD975] text-white text-[9px] font-extrabold px-2.5 py-1 rounded-lg backdrop-blur-sm shadow-md tracking-wider uppercase z-20">${item.category}</span>`;
-        const badgeStok = (isAutoItem && sisaStok > 0) ? `<span class="absolute top-3 right-3 bg-black/60 text-white text-[8px] font-bold px-2 py-0.5 rounded-md border border-white/10 shadow-md z-20">Stok: ${sisaStok}</span>` : '';
+        // Lencana Kiri Atas (Stok/Kategori)
+        const badgeStok = isAutoItem 
+            ? `<span class="absolute top-2 left-2 bg-black/80 text-[8px] font-extrabold ${sisaStok > 0 ? 'text-brand-info border-brand-info/30' : 'text-red-500 border-red-500/50'} px-2 py-0.5 rounded-md backdrop-blur-sm border shadow-md tracking-wider">STOK: ${sisaStok}</span>` 
+            : `<span class="absolute top-2 left-2 bg-brand-success/90 text-white text-[8px] font-extrabold px-2 py-0.5 rounded-md backdrop-blur-sm border border-white/10 shadow-md uppercase tracking-wider">${item.category}</span>`;
 
-        // Animasi Muncul Berurutan
+        // Animasi Muncul Berurutan (Maksimal 0.4s)
         const delayAnimasi = Math.min(index * 0.02, 0.4);
 
         return `
-        <div onclick="bukaDetailPasar('${item.id}')" style="animation-delay: ${delayAnimasi}s; opacity: 0;" class="bg-[#161B2E] rounded-[1.2rem] border border-transparent overflow-hidden flex flex-col hover:border-white/5 transition-all smooth-reveal shadow-lg cursor-pointer group">
-            
-            <div class="relative w-full aspect-[4/3] bg-black/40 overflow-hidden">
-                <img src="${fotoPertama}" alt="${item.title}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 relative z-0" onerror="this.src='https://ui-avatars.com/api/?name=Produk&background=1A1133&color=fff'">
-                ${badgeCategory}
+        <div onclick="bukaDetailPasar('${item.id}')" style="animation-delay: ${delayAnimasi}s; opacity: 0;" class="bg-brand-card rounded-2xl border border-white/5 overflow-hidden flex flex-col hover:border-brand-success/30 transition-all smooth-reveal shadow-lg cursor-pointer group">
+            <div class="relative w-full aspect-square bg-black/40 overflow-hidden">
+                <img src="${fotoPertama}" alt="${item.title}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 relative z-0" onerror="this.src='https://placehold.co/400x400/1a1133/2BD975?text=PASAR'">
+                <!-- Watermark AU2Hub Thumbnail -->
+                <img src="https://nos.wjv-1.neo.id/au2hub/Picsart_26-05-22_23-46-22-498.png" class="absolute inset-0 m-auto w-20 h-20 object-contain opacity-[0.25] pointer-events-none z-10 drop-shadow-lg group-hover:scale-105 transition-transform duration-300">
                 ${badgeStok}
             </div>
-            
-            <div class="p-4 flex-1 flex flex-col justify-between gap-3">
+            <div class="p-3 flex-1 flex flex-col justify-between gap-1">
                 <div>
-                    <div class="font-extrabold text-[13px] text-white leading-snug line-clamp-2 mb-3">${item.title}</div>
-                    
-                    <div class="flex items-center gap-2 mb-1.5">
-                        <img src="${sellerAvatar}" class="w-4 h-4 rounded-full object-cover border border-white/10 shrink-0">
-                        <span class="text-[10px] text-gray-400 truncate w-full font-medium">${sellerName}</span>
-                    </div>
-                    <div class="text-[9px] text-[#46B3FF] font-bold flex items-center gap-1.5 mt-1">
-                        <i class="fas fa-user-shield text-[10px]"></i> 
-                        incREKBER NIKKY
+                    <div class="font-extrabold text-xs text-white leading-snug line-clamp-2 mb-1 min-h-[2.4rem]">${item.title}</div>
+                    <!-- Info Penjual Kecil (Menggantikan Deskripsi agar rapi) -->
+                    <div class="flex items-center gap-1.5 mb-1">
+                        <img src="${sellerAvatar}" class="w-3.5 h-3.5 rounded-full object-cover border border-white/10 shrink-0">
+                        <span class="text-[9px] text-gray-400 truncate w-full font-medium flex items-center gap-1">${sellerName} <span class="scale-[0.8] origin-left inline-flex shrink-0">${badgeHtml}</span></span>
                     </div>
                 </div>
                 
-                <div class="mt-1 pt-2">
-                    <div class="flex flex-col items-start gap-0.5">
-                        <div class="text-gray-500 line-through text-[10px] font-medium opacity-70">Rp ${hargaCoret.toLocaleString('id-ID')}</div>
-                        <div class="text-[#EE4D2D] font-black text-[15px] tracking-tight">${formatHarga}</div>
+                <div class="mt-auto">
+                    <div class="text-[9px] ${isAutoItem ? 'text-[#EE4D2D]' : 'text-brand-info'} font-bold mb-0.5 flex items-center gap-1">
+                        <i class="fas ${isAutoItem ? 'fa-bolt text-[8px]' : 'fa-user-shield text-[8px]'}"></i> 
+                        ${isAutoItem ? 'Instan 1 Detik' : 'incREKBER NIKKY'}
+                    </div>
+                    <div class="flex flex-col items-start gap-px">
+                        <div class="text-gray-500 line-through text-[9px] font-medium opacity-60">Rp ${hargaCoret.toLocaleString('id-ID')}</div>
+                        <div class="text-[#EE4D2D] font-extrabold text-sm tracking-tight">${formatHarga}</div>
                     </div>
                 </div>
             </div>
