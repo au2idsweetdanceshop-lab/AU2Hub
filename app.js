@@ -177,53 +177,93 @@ setTimeout(() => toast.remove(), 300);
 }
 
 function customPrompt(title, defaultValue = '') {
-return new Promise((resolve) => {
-const modal = document.getElementById('modal-prompt');
-const titleEl = document.getElementById('prompt-title');
-const inputEl = document.getElementById('prompt-input');
-const btnOk = document.getElementById('prompt-ok');
-const btnCancel = document.getElementById('prompt-cancel');
+    return new Promise((resolve) => {
+        const modal = document.getElementById('modal-prompt');
+        const titleEl = document.getElementById('prompt-title');
+        const inputEl = document.getElementById('prompt-input');
+        const btnOk = document.getElementById('prompt-ok');
+        const btnCancel = document.getElementById('prompt-cancel');
 
-titleEl.innerText = title;
-inputEl.value = defaultValue;
-modal.classList.remove('hidden');
-modal.classList.add('flex');
-inputEl.focus();
+        titleEl.innerText = title;
+        inputEl.value = defaultValue;
+        
+        // 🚀 SUNTIKAN HISTORY UNTUK TOMBOL BACK HP
+        history.pushState({ popup: 'prompt' }, null, '#prompt');
 
-const cleanup = () => {
-modal.classList.add('hidden');
-modal.classList.remove('flex');
-btnOk.onclick = null;
-btnCancel.onclick = null;
-};
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        inputEl.focus();
 
-btnOk.onclick = () => { cleanup(); resolve(inputEl.value); };
-btnCancel.onclick = () => { cleanup(); resolve(null); };
-});
+        // Simpan fungsi resolve ke modal agar bisa dipanggil oleh tombol back HP
+        modal.promptResolve = resolve;
+
+        const cleanup = () => {
+            if (window.location.hash === '#prompt') {
+                history.back();
+            } else {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }
+            btnOk.onclick = null;
+            btnCancel.onclick = null;
+        };
+
+        btnOk.onclick = () => { 
+            let val = inputEl.value; 
+            if (typeof modal.promptResolve === 'function') modal.promptResolve = null; // Cegah double resolve
+            cleanup(); 
+            resolve(val); 
+        };
+        btnCancel.onclick = () => { 
+            if (typeof modal.promptResolve === 'function') modal.promptResolve = null;
+            cleanup(); 
+            resolve(null); 
+        };
+    });
 }
 
 function customConfirm(title) {
-return new Promise((resolve) => {
-const modal = document.getElementById('modal-confirm');
-const titleEl = document.getElementById('confirm-title');
-const btnOk = document.getElementById('confirm-ok');
-const btnCancel = document.getElementById('confirm-cancel');
+    return new Promise((resolve) => {
+        const modal = document.getElementById('modal-confirm');
+        const titleEl = document.getElementById('confirm-title');
+        const btnOk = document.getElementById('confirm-ok');
+        const btnCancel = document.getElementById('confirm-cancel');
 
-titleEl.innerText = title;
-modal.classList.remove('hidden');
-modal.classList.add('flex');
+        titleEl.innerText = title;
+        
+        // 🚀 SUNTIKAN HISTORY UNTUK TOMBOL BACK HP
+        history.pushState({ popup: 'confirm' }, null, '#confirm');
 
-const cleanup = () => {
-modal.classList.add('hidden');
-modal.classList.remove('flex');
-btnOk.onclick = null;
-btnCancel.onclick = null;
-};
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
 
-btnOk.onclick = () => { cleanup(); resolve(true); };
-btnCancel.onclick = () => { cleanup(); resolve(false); };
-});
+        // Simpan fungsi resolve ke modal agar bisa dipanggil oleh tombol back HP
+        modal.confirmResolve = resolve;
+
+        const cleanup = () => {
+            if (window.location.hash === '#confirm') {
+                history.back();
+            } else {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }
+            btnOk.onclick = null;
+            btnCancel.onclick = null;
+        };
+
+        btnOk.onclick = () => { 
+            if (typeof modal.confirmResolve === 'function') modal.confirmResolve = null;
+            cleanup(); 
+            resolve(true); 
+        };
+        btnCancel.onclick = () => { 
+            if (typeof modal.confirmResolve === 'function') modal.confirmResolve = null;
+            cleanup(); 
+            resolve(false); 
+        };
+    });
 }
+
 
 function customAlert(title) {
     return new Promise((resolve) => {
@@ -1583,7 +1623,7 @@ if (isPush && window.location.hash !== `#${tabId}`) history.pushState(null, null
 window.addEventListener('popstate', () => {
     let isPopupClosed = false;
 
-    // 🚀 1. TANGKAP POP-UP ALERT DULUAN DI SINI (Biar gak stuck!)
+    // 🚀 1. TANGKAP POP-UP ALERT, PROMPT, & CONFIRM DULUAN DI SINI
     const modalAlert = document.getElementById('modal-alert');
     if (modalAlert && !modalAlert.classList.contains('hidden')) {
         modalAlert.classList.add('hidden');
@@ -1592,6 +1632,32 @@ window.addEventListener('popstate', () => {
         if (typeof modalAlert.alertResolve === 'function') {
             modalAlert.alertResolve();
             modalAlert.alertResolve = null;
+        }
+        return;
+    }
+
+    const modalPrompt = document.getElementById('modal-prompt');
+    if (modalPrompt && !modalPrompt.classList.contains('hidden')) {
+        modalPrompt.classList.add('hidden');
+        modalPrompt.classList.remove('flex');
+        
+        // Jika diback lewat HP, anggap user menekan tombol Batal (resolve null)
+        if (typeof modalPrompt.promptResolve === 'function') {
+            modalPrompt.promptResolve(null);
+            modalPrompt.promptResolve = null;
+        }
+        return;
+    }
+
+    const modalConfirm = document.getElementById('modal-confirm');
+    if (modalConfirm && !modalConfirm.classList.contains('hidden')) {
+        modalConfirm.classList.add('hidden');
+        modalConfirm.classList.remove('flex');
+        
+        // Jika diback lewat HP, anggap user menekan tombol Batal (resolve false)
+        if (typeof modalConfirm.confirmResolve === 'function') {
+            modalConfirm.confirmResolve(false);
+            modalConfirm.confirmResolve = null;
         }
         return;
     }
