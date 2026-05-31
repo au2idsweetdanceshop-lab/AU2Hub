@@ -10438,6 +10438,13 @@ async function tolakPenarikan(wdId, userId, nominal) {
             p_deskripsi: `Refund Gagal Cair: ${alasan}`
         });
 
+        // ---> TAMBAHAN BARU: KIRIM NOTIFIKASI KE INBOX SELLER <---
+        await supabaseClient.from('messages').insert({
+            sender_id: currentUser.id,
+            receiver_id: userId,
+            message: `[SISTEM] Penarikan saldo sebesar Rp ${Number(nominal).toLocaleString('id-ID')} DITOLAK oleh Admin.\n\nAlasan: ${alasan}\n\nDana telah dikembalikan ke Saldo Aktif Anda.`
+        });
+
         // Efek hilang
         if (card) {
             card.style.opacity = '0';
@@ -10448,7 +10455,7 @@ async function tolakPenarikan(wdId, userId, nominal) {
             }, 300);
         }
 
-        showToast("Penarikan dibatalkan dan saldo dikembalikan.", "success");
+        showToast("Penarikan dibatalkan, saldo direfund, dan notifikasi terkirim.", "success");
 
     } catch (err) {
         showToast(err.message || "Sistem gagal menolak transaksi.", "error");
@@ -10456,8 +10463,6 @@ async function tolakPenarikan(wdId, userId, nominal) {
         isAdminProcessing = false;
     }
 }
-
-
 
 // B. FUNGSI EKSEKUSINYA (Taruh di paling bawah file JS)
 async function toggleStatusAdmin(targetId, isCurrentlyAdmin, nickname) {
