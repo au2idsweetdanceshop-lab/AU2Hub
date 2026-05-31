@@ -10340,15 +10340,28 @@ async function setujuiPenarikan(wdId, nickname) {
     try {
         showToast("Memproses...", "info");
         
+        // 1. Tarik data penarikan untuk mendapatkan user_id seller dan nominalnya
+        const { data: wdData } = await supabaseClient.from('withdrawals').select('user_id, nominal').eq('id', wdId).single();
+
+        // 2. Ubah status antrean menjadi SELESAI
         const { error } = await supabaseClient.from('withdrawals').update({ status: 'SELESAI' }).eq('id', wdId);
         if (error) throw error;
 
-        // Efek hilang perlahan
+        // 3. [BARU] Kirim pesan Inbox otomatis ke Seller
+        if (wdData) {
+            await supabaseClient.from('messages').insert({
+                sender_id: currentUser.id, // Admin yang mengeksekusi
+                receiver_id: wdData.user_id, // Seller yang menerima uang
+                message: `[SISTEM] Penarikan saldo sebesar Rp ${Number(wdData.nominal).toLocaleString('id-ID')} telah berhasil ditransfer ke rekening Anda oleh Admin. Silakan cek mutasi rekening Anda.`
+            });
+        }
+
+        // Efek visual hilang perlahan di laci admin
         const card = document.getElementById(`wd-${wdId}`);
         card.style.opacity = '0';
         setTimeout(() => {
             card.style.display = 'none';
-            // Update angka antrean atas
+            // Update angka notif antrean atas
             let countEl = document.getElementById('admin-count-pending');
             countEl.innerText = Math.max(0, parseInt(countEl.innerText) - 1);
         }, 300);
@@ -10359,6 +10372,7 @@ async function setujuiPenarikan(wdId, nickname) {
         showToast("Gagal memperbarui database.", "error");
     }
 }
+
 
 // 5. Eksekutor: Tolak (Refund) Penarikan
 async function tolakPenarikan(wdId, userId, nominal) {
