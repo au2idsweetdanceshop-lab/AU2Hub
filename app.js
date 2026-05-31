@@ -9504,13 +9504,23 @@ function terapkanFilterPasar() {
 
 async function bukaModalSaldoDompet() {
     if (!currentUser) return showToast("Silakan login dulu!", "error");
+    
+    // 🚀 SUNTIKAN SAKTI: Tanamkan riwayat ke browser agar tombol back HP aktif khusus untuk dompet
+    history.pushState({ popup: 'dompet' }, null, '#dompet');
+    
     document.getElementById('modal-saldo-dompet').classList.replace('hidden', 'flex');
     fetchSaldoDanMutasi();
 }
 
-function tutupModalSaldoDompet() {
+function tutupModalSaldoDompet(dariTombolBack = false) {
     document.getElementById('modal-saldo-dompet').classList.replace('flex', 'hidden');
+    
+    // 🚀 SINKRONISASI TOMBOL BACK: Jika ditutup lewat tombol (X), suruh HP mundur 1 langkah
+    if (!dariTombolBack && window.location.hash === '#dompet') {
+        history.back();
+    }
 }
+
 
 // --- KODE PEMULIHAN (Fungsi yang hilang) ---
 
