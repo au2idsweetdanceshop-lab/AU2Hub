@@ -9801,7 +9801,7 @@ async function prosesTarikSaldo() {
         // Bersihkan inputan dari huruf atau titik
         const nominalTarik = parseInt(nominalInput.replace(/[^0-9]/g, ''));
         
-        // 4. Validasi nominal inputan user
+        // 4. Validate nominal inputan user
         if (isNaN(nominalTarik) || nominalTarik < 10000) {
             showToast("Minimal penarikan adalah Rp 10.000", "error");
             return;
@@ -9826,12 +9826,7 @@ async function prosesTarikSaldo() {
 
         if (rpcError) throw rpcError;
 
-        if (wdError) {
-            console.error("Gagal masuk antrean admin:", wdError);
-            throw new Error("Gagal meneruskan data ke Pusat Kendali Admin.");
-        }
-
-        // 8. Arahkan ke WhatsApp Admin
+        // 8. Arahkan ke WhatsApp Admin (Penomoran langsung lompat ke 8 sesuai kodemu)
         const teks = encodeURIComponent(`Halo Admin, saya ${profile.nickname} ingin tarik saldo Rp ${nominalTarik.toLocaleString('id-ID')} ke ${rek}`);
         window.open(`https://wa.me/6283815584661?text=${teks}`, '_blank');
         
@@ -9848,16 +9843,13 @@ async function prosesTarikSaldo() {
         showToast(`Penarikan Rp ${nominalTarik.toLocaleString('id-ID')} berhasil diproses!`, "success");
         
     } catch (e) { 
-        console.error(e);
+        console.error("Error Tarik Saldo:", e);
         showToast("Gagal memproses penarikan saldo.", "error"); 
     } finally {
-        // BUKA KUNCI KEMBALI: Wajib ditaruh di blok 'finally' agar jika user batal mengisi prompt atau terjadi error, tombol bisa diklik lagi.
+        // BUKA KUNCI KEMBALI
         isWithdrawing = false;
     }
 }
-
-
-
 
 // === 1. Variabel Global untuk Mode Edit ===
 let editFileArray = []; // Untuk menampung file foto baru dari HP
