@@ -2479,10 +2479,10 @@ function handleFloatVideoClick(event, videoElement, vidId) {
 }
 
 
-let videoClickTimer = null; // Memori antrean klik feed utama
+let videoClickTimer = null; 
 
+// 1. FUNGSI KLIK FEED UTAMA (SOSMED)
 function handleVideoClick(event, videoElement, vidId) {
-    // JIKA ADA KLIK KE-2 MASUK -> BATALKAN KLIK 1 (SUARA TIDAK JADI MATI)
     if (videoClickTimer) {
         clearTimeout(videoClickTimer);
         videoClickTimer = null;
@@ -2492,15 +2492,41 @@ function handleVideoClick(event, videoElement, vidId) {
         const likeBtn = card.querySelector('.like-container button');
         likeVideo(vidId, likeBtn);
         createHeartAt(event);
-    } 
-    // JIKA INI KLIK 1 -> MULAI HITUNG MUNDUR 300ms
-    else {
+    } else {
         videoClickTimer = setTimeout(() => {
-            // Jika dalam 300ms tidak ada klik ke-2, eksekusi suara!
             videoClickTimer = null;
+            // Klik 1x -> Panggil efek Floating Focus (bawaan kodingan lu)
+            toggleGlobalAudio(); 
         }, 300);
     }
 }
+
+
+let floatClickTimer = null; 
+
+// 2. FUNGSI KLIK VIDEO PROFIL / HASHTAG (LAYAR HITAM MENGAMBANG)
+function handleFloatVideoClick(event, videoElement, vidId) {
+    if (floatClickTimer) {
+        clearTimeout(floatClickTimer);
+        floatClickTimer = null;
+        
+        // Eksekusi Double Click (LIKE)
+        const card = videoElement.closest('.snap-start');
+        const likeBtn = card.querySelector('.like-container button');
+        likeVideo(vidId, likeBtn); 
+        createHeartAt(event);      
+    } else {
+        floatClickTimer = setTimeout(() => {
+            floatClickTimer = null;
+            
+            // KOSONGIN AJA BIAR NGGAK MATI/NYALAIN SUARA!
+            // (Atau kalau lu mau klik 1x buat Pause/Play ala TikTok, hapus garis miring di bawah ini:)
+            // if (videoElement.paused) videoElement.play(); else videoElement.pause();
+            
+        }, 300);
+    }
+}
+
 
 // FITUR HAPUS VIDEO PERMANEN (SINKRON KE GOOGLE SHEETS)
 async function deleteVideo(vidId) {
