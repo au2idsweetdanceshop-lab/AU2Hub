@@ -1426,55 +1426,60 @@ canvas.toBlob((blob) => resolve(blob), 'image/jpeg', 0.7);
 });
 }
 
-function toggleGlobalAudio(skipHistory = false) {
-isGlobalMuted = !isGlobalMuted;
-document.querySelectorAll('.video-player, .float-video-player').forEach(v => v.muted = isGlobalMuted);
+// --- FUNGSI 1: KHUSUS UNTUK MATIKAN/NYALAKAN SUARA GLOBAL ---
+function toggleGlobalAudio() {
+    isGlobalMuted = !isGlobalMuted;
+    document.querySelectorAll('.video-player, .float-video-player').forEach(v => v.muted = isGlobalMuted);
+    showToast(isGlobalMuted ? "Suara Dimatikan" : "Suara Dinyalakan", isGlobalMuted ? "info" : "success");
+}
 
-const allWraps = document.querySelectorAll('.video-inner-wrap');
-const navBottom = document.querySelector('nav');
-const headerTop = document.querySelector('header');
+// --- FUNGSI 2: KHUSUS UNTUK MODE FLOATING (LAYAR REDUP) ---
+function toggleFloatingMode(skipHistory = false) {
+    const isCurrentlyFocused = document.body.classList.contains('video-focused');
+    const allWraps = document.querySelectorAll('.video-inner-wrap');
+    const navBottom = document.querySelector('nav');
+    const headerTop = document.querySelector('header');
 
-if(isGlobalMuted) {
-    showToast("Suara Dimatikan", "info");
-    // Kembalikan video ke dalam kotak & gembok kembali
-    allWraps.forEach(wrap => wrap.classList.remove('floating-focus'));
-    document.body.classList.remove('video-focused');
+    if(isCurrentlyFocused) {
+        // MATIKAN EFEK FLOATING
+        allWraps.forEach(wrap => wrap.classList.remove('floating-focus'));
+        document.body.classList.remove('video-focused');
 
-    // Hapus efek blur pada UI
-    if(navBottom) navBottom.style.filter = 'none';
-    if(headerTop) headerTop.style.filter = 'none';
+        // Hapus efek blur pada UI
+        if(navBottom) navBottom.style.filter = 'none';
+        if(headerTop) headerTop.style.filter = 'none';
 
-    // 🔥 FIX: Jika Floating Player (profil/hashtag) sedang terbuka, tutup secara paksa TANPA history.back()
-    const floatingPlayer = document.getElementById('floating-video-player');
-    if (floatingPlayer && !floatingPlayer.classList.contains('hidden')) {
-        closeFloatingVideo(true); 
+        // Tutup paksa layar popup jika terbuka
+        const floatingPlayer = document.getElementById('floating-video-player');
+        if (floatingPlayer && !floatingPlayer.classList.contains('hidden')) {
+            closeFloatingVideo(true); 
+        }
+
+        // Hapus jejak URL HANYA jika tidak ada instruksi skipHistory
+        if (!skipHistory && window.location.hash === '#focused') {
+            history.back();
+        }
+    } else {
+        // NYALAKAN EFEK FLOATING
+        document.body.classList.add('video-focused');
+
+        // Tambahkan history agar tombol kembali HP terdeteksi
+        history.pushState({ popup: 'focused' }, null, '#focused');
+
+        // Terbangkan HANYA video yang sedang aktif
+        document.querySelectorAll('.video-player').forEach(v => {
+            if (!v.paused) {
+                const wrap = v.closest('.video-inner-wrap');
+                if (wrap) wrap.classList.add('floating-focus');
+            }
+        });
+
+        // Redupkan sisa antarmuka
+        if(navBottom) navBottom.style.filter = 'blur(8px) opacity(0.5)';
+        if(headerTop) headerTop.style.filter = 'blur(8px) opacity(0.5)';
     }
-
-    // Hapus jejak URL HANYA jika tidak ada instruksi skipHistory
-    if (!skipHistory && window.location.hash === '#focused') {
-        history.back();
-    }
-} else {
-showToast("Suara Dinyalakan", "success");
-// Buka gembok layar agar video bisa melayang keluar kotak
-document.body.classList.add('video-focused');
-
-// --- PENTING: TAMBAHKAN HISTORY AGAR TOMBOL KEMBALI HP TERDETEKSI ---
-history.pushState({ popup: 'focused' }, null, '#focused');
-
-// Terbangkan HANYA video yang sedang aktif
-document.querySelectorAll('.video-player').forEach(v => {
-if (!v.paused) {
-const wrap = v.closest('.video-inner-wrap');
-if (wrap) wrap.classList.add('floating-focus');
 }
-});
 
-// Redupkan sisa antarmuka
-if(navBottom) navBottom.style.filter = 'blur(8px) opacity(0.5)';
-if(headerTop) headerTop.style.filter = 'blur(8px) opacity(0.5)';
-}
-}
 
 
 
@@ -1775,7 +1780,7 @@ isPopupClosed = true;
 
 // 2. SETELAH POP-UP AMAN, BARU TANGKAP LAYAR MENGAMBANG
 if (document.body.classList.contains('video-focused')) {
-toggleGlobalAudio();
+toggleFloatingMode();
 return;
 }
 
@@ -2471,12 +2476,11 @@ function handleVideoClick(event, videoElement, vidId) {
     } else {
         videoClickTimer = setTimeout(() => {
             videoClickTimer = null;
-            // Klik 1x -> Panggil efek Floating Focus (bawaan kodingan lu)
-            toggleGlobalAudio(); 
+            // Klik 1x -> Panggil efek Floating Focus saja (Suara tidak berubah)
+            toggleFloatingMode(); 
         }, 300);
     }
 }
-
 
 let floatClickTimer = null; 
 
