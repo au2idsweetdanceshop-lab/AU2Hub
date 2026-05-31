@@ -1120,6 +1120,15 @@ async function fetchProfile() {
             
             elExpContainer.classList.remove('hidden');
         }
+const btnSuperAdmin = document.getElementById('btn-super-admin');
+        if (btnSuperAdmin) {
+            // Membaca status admin langsung dari Supabase
+            if (userProfile && userProfile.is_super_admin === true) {
+                btnSuperAdmin.classList.remove('hidden');
+            } else {
+                btnSuperAdmin.classList.add('hidden');
+            }
+        }
     }
 }
 
@@ -2111,6 +2120,17 @@ async function openUserProfile(userId) {
         // 🛠️ PERBAIKAN PEMBOROSAN JARINGAN (Lihat poin 2 di bawah)
         if (isOwn) {
             try { await loadOrderTracker(userId); } catch (e) { console.warn(e); }
+        }
+        const btnSetAdmin = document.getElementById('btn-set-admin');
+        if (btnSetAdmin) {
+            if (!isOwn && userProfile?.is_super_admin === true) {
+                const targetIsAdmin = data?.is_super_admin === true;
+                btnSetAdmin.innerHTML = `<i class="fas fa-crown mr-1"></i> ${targetIsAdmin ? 'Cabut Akses Admin' : 'Jadikan Super Admin'}`;
+                btnSetAdmin.onclick = () => toggleStatusAdmin(userId, targetIsAdmin, data?.nickname);
+                btnSetAdmin.classList.remove('hidden');
+            } else {
+                btnSetAdmin.classList.add('hidden');
+            }
         }
 
         document.getElementById('profile-loading').classList.add('hidden');
@@ -10130,3 +10150,244 @@ document.addEventListener('contextmenu', function(e) {
         // showToast("Gambar dilindungi oleh sistem.", "info");
     }
 });
+
+// ==========================================
+// PUSAT KENDALI SUPER ADMIN (AUTO-DISBURSEMENT)
+// ==========================================
+
+// ⚠️ PENTING: Ganti tulisan di bawah dengan UUID Supabase milik akun Mas Aditia!
+// Cara cek: Login ke AU2Hub, buka console (F12) lalu ketik: currentUser.id
+const SUPER_ADMIN_ID = "5e65bd71-62f8-4367-8744-95f626b73726";
+
+// 1. Fungsi Pembuka Pintu Rahasia (Berdasarkan Database)
+function bukaSuperAdmin() {
+    // Mengecek apakah di database profil kita tercentang sebagai super admin
+    if (!userProfile || userProfile.is_super_admin !== true) {
+        return showToast("Akses Ditolak! Area khusus dewa.", "error");
+    }
+    switchTab('superadmin');
+    loadAdminDashboard();
+}
+
+
+// 2. Fungsi Load Antrean (Lengkap dengan Tombol Salin Sat-Set)
+async function loadAdminDashboard() {
+    const listContainer = document.getElementById('admin-withdrawal-list');
+    listContainer.innerHTML = `
+        <div class="text-center py-10 flex flex-col items-center justify-center bg-black/20 rounded-[1.5rem] border border-white/5">
+            <div class="w-10 h-10 border-4 border-brand-accent border-t-transparent rounded-full animate-spin mb-3"></div>
+            <span class="text-[10px] text-gray-500 font-bold tracking-widest uppercase">Menarik Data Antrean...</span>
+        </div>`;
+
+    try {
+        // ASUMSI: Mas sudah membuat tabel 'withdrawals' di Supabase
+        const { data, error } = await supabaseClient
+            .from('withdrawals')
+            .select('*, profiles:user_id(nickname)')
+            .eq('status', 'PENDING')
+            .order('created_at', { ascending: true });
+
+        if (error) throw error;
+
+        // Update angka antrean merah
+        document.getElementById('admin-count-pending').innerText = data.length;
+
+        if (data.length > 0) {
+            listContainer.innerHTML = data.map(req => {
+                // Deteksi otomatis Nama Bank dan No Rekening (Format: "DANA - 08123")
+                let namaBank = "BANK";
+                let noRek = req.rekening;
+                if (req.rekening.includes('-')) {
+                    const parts = req.rekening.split('-');
+                    namaBank = parts[0].trim();
+                    noRek = parts[1].trim();
+                }
+
+                return `
+                <div class="bg-[#161B2E] border border-white/5 p-4 rounded-[1.5rem] flex flex-col gap-3 shadow-lg relative overflow-hidden transition-all" id="wd-${req.id}">
+                    <div class="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-brand-accent to-brand-info"></div>
+
+                    <div class="flex justify-between items-start mb-1">
+                        <div class="flex items-center gap-2">
+                            <div class="w-7 h-7 rounded-full bg-brand-info/20 text-brand-info flex items-center justify-center shrink-0">
+                                <i class="fas fa-store text-[10px]"></i>
+                            </div>
+                            <div>
+                                <h4 class="text-xs font-bold text-white">@${req.profiles?.nickname || 'Seller'}</h4>
+                                <p class="text-[9px] text-gray-500"><i class="far fa-clock"></i> ${timeAgo(req.created_at)}</p>
+                            </div>
+                        </div>
+                        <span class="bg-yellow-500/10 text-yellow-500 border border-yellow-500/30 text-[8px] font-black px-2 py-1 rounded-md uppercase tracking-wider animate-pulse">Menunggu Transfer</span>
+                    </div>
+                    
+                    <div class="bg-black/40 p-3 rounded-xl border border-white/5 relative group">
+                        
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-[9px] font-bold text-gray-500 uppercase tracking-widest">${namaBank}</span>
+                            <span class="text-[10px] text-brand-info font-bold flex items-center gap-1 cursor-pointer active:scale-95 transition-all bg-brand-info/10 px-2 py-0.5 rounded" onclick="salinTeksAdmin('${noRek}', this, 'info')">
+                                Salin Rek <i class="fas fa-copy"></i>
+                            </span>
+                        </div>
+                        <p class="text-sm font-bold text-white tracking-widest font-mono mb-2">${noRek}</p>
+                        
+                        <div class="border-t border-white/10 pt-2 mt-1 flex justify-between items-center">
+                            <span class="text-[9px] text-gray-400">Total Cair</span>
+                            <div class="flex items-center gap-2">
+                                <p class="text-sm font-black text-[#25D366] tracking-tight">Rp ${Number(req.nominal).toLocaleString('id-ID')}</p>
+                                <button onclick="salinTeksAdmin('${req.nominal}', this, 'success')" class="bg-brand-success/20 text-brand-success w-7 h-7 rounded-lg flex items-center justify-center active:scale-95 transition-all" title="Salin Nominal Saja">
+                                    <i class="fas fa-copy text-[11px]"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-2 mt-1">
+                        <button onclick="setujuiPenarikan('${req.id}', '${req.profiles?.nickname}')" class="flex-1 bg-brand-success text-brand-dark font-extrabold py-3 rounded-xl text-[10px] uppercase active:scale-95 transition-transform shadow-[0_4px_10px_rgba(37,211,102,0.3)]">
+                            <i class="fas fa-check-circle mr-1"></i> Setujui (Telah Ditransfer)
+                        </button>
+                        <button onclick="tolakPenarikan('${req.id}', '${req.user_id}', ${req.nominal})" class="w-12 bg-white/5 text-gray-400 hover:bg-red-500/20 hover:text-red-500 hover:border-red-500/50 border border-white/5 flex items-center justify-center rounded-xl active:scale-95 transition-all" title="Tolak / Refund">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+                `;
+            }).join('');
+        } else {
+            listContainer.innerHTML = `
+                <div class="flex flex-col items-center justify-center py-10 px-6 text-center bg-white/5 rounded-[1.5rem] border border-white/5">
+                    <div class="w-14 h-14 bg-brand-success/10 rounded-full flex items-center justify-center mb-3 border border-brand-success/20">
+                        <i class="fas fa-check text-2xl text-brand-success/50"></i>
+                    </div>
+                    <h4 class="text-white font-bold text-xs mb-1 tracking-tight">Semua Clear!</h4>
+                    <p class="text-[10px] text-gray-500 leading-relaxed">Tidak ada antrean pencairan dana.</p>
+                </div>`;
+        }
+
+        // Ambil angka total Seller di ekosistem
+        const { count } = await supabaseClient.from('profiles').select('*', { count: 'exact', head: true }).eq('is_seller', true);
+        document.getElementById('admin-count-seller').innerText = count || 0;
+
+    } catch (err) {
+        listContainer.innerHTML = '<div class="text-center py-4 text-xs text-red-500">Gagal memuat data dari server.</div>';
+    }
+}
+
+// 3. Fungsi Salin Cepat dengan Visual Feedback
+function salinTeksAdmin(teks, btnElement, colorType) {
+    // Proses salin ke clipboard HP/PC
+    if (navigator.clipboard && window.isSecureContext) { 
+        navigator.clipboard.writeText(teks); 
+    } else { 
+        let tempInput = document.createElement("textarea"); 
+        tempInput.value = teks; 
+        document.body.appendChild(tempInput); 
+        tempInput.select(); 
+        document.execCommand("copy"); 
+        document.body.removeChild(tempInput); 
+    }
+
+    // Getar dikit kalau HP-nya dukung
+    if (navigator.vibrate) navigator.vibrate(40);
+
+    // Manipulasi UI Sementara (Teks "Tersalin")
+    const teksAsli = btnElement.innerHTML;
+    const kelasAsli = btnElement.className;
+
+    if (btnElement.innerText.includes("Salin Rek")) {
+        btnElement.innerHTML = `Tersalin <i class="fas fa-check"></i>`;
+        btnElement.classList.add('bg-brand-success/20', 'text-brand-success');
+        btnElement.classList.remove('bg-brand-info/10', 'text-brand-info');
+    } else {
+        btnElement.innerHTML = `<i class="fas fa-check text-[11px]"></i>`;
+        // Tetap hijau karena memang tombol nominal sudah hijau
+    }
+
+    // Kembalikan ke tampilan semula setelah 1.5 detik
+    setTimeout(() => {
+        btnElement.innerHTML = teksAsli;
+        btnElement.className = kelasAsli;
+    }, 1500);
+}
+
+// 4. Eksekutor: Setujui (Acc) Penarikan
+async function setujuiPenarikan(wdId, nickname) {
+    const konfirmasi = await customConfirm(`Anda YAKIN sudah mentransfer uang ini ke rekening @${nickname}?`);
+    if (!konfirmasi) return;
+
+    try {
+        showToast("Memproses...", "info");
+        
+        const { error } = await supabaseClient.from('withdrawals').update({ status: 'SELESAI' }).eq('id', wdId);
+        if (error) throw error;
+
+        // Efek hilang perlahan
+        const card = document.getElementById(`wd-${wdId}`);
+        card.style.opacity = '0';
+        setTimeout(() => {
+            card.style.display = 'none';
+            // Update angka antrean atas
+            let countEl = document.getElementById('admin-count-pending');
+            countEl.innerText = Math.max(0, parseInt(countEl.innerText) - 1);
+        }, 300);
+
+        showToast("Transaksi selesai dicatat sistem!", "success");
+
+    } catch (err) {
+        showToast("Gagal memperbarui database.", "error");
+    }
+}
+
+// 5. Eksekutor: Tolak (Refund) Penarikan
+async function tolakPenarikan(wdId, userId, nominal) {
+    const alasan = await customPrompt("Masukkan alasan penolakan (misal: Rekening tidak ditemukan):", "Nomor Rekening tidak valid");
+    if (!alasan) return;
+
+    try {
+        showToast("Memproses pembatalan & refund...", "info");
+
+        // Update status ditolak
+        const { error } = await supabaseClient.from('withdrawals').update({ status: 'DITOLAK' }).eq('id', wdId);
+        if (error) throw error;
+
+        // Refund saldo menggunakan RPC
+        await supabaseClient.rpc('tambah_saldo', {
+            p_user_id: userId,
+            p_jumlah: nominal,
+            p_deskripsi: `Refund Gagal Cair: ${alasan}`
+        });
+
+        // Efek hilang
+        const card = document.getElementById(`wd-${wdId}`);
+        card.style.opacity = '0';
+        setTimeout(() => card.style.display = 'none', 300);
+
+        showToast("Penarikan dibatalkan dan saldo dikembalikan ke penjual.", "success");
+        loadAdminDashboard();
+
+    } catch (err) {
+        showToast("Sistem gagal menolak transaksi.", "error");
+    }
+}
+
+
+// B. FUNGSI EKSEKUSINYA (Taruh di paling bawah file JS)
+async function toggleStatusAdmin(targetId, isCurrentlyAdmin, nickname) {
+    const aksi = isCurrentlyAdmin ? "MENCABUT" : "MEMBERIKAN";
+    const konfirmasi = await customConfirm(`Yakin ingin ${aksi} akses Super Admin untuk @${nickname}?`);
+    if (!konfirmasi) return;
+
+    try {
+        showToast("Memproses...", "info");
+        const { error } = await supabaseClient
+            .from('profiles')
+            .update({ is_super_admin: !isCurrentlyAdmin })
+            .eq('id', targetId);
+
+        if (error) throw error;
+
+        showToast(`Akses Super Admin @${nickname} berhasil diubah!`, "success");
+        openUserProfile(targetId); // Refresh tampilan profilnya
+    } catch (err) {
+        showToast("Gagal mengubah status admin.", "error");
+    }
+}
