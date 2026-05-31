@@ -390,6 +390,12 @@ input[type="checkbox"].peer:checked + div::after {
     border-radius: 1.5rem; 
 }
 
+/* KHUSUS MENU TOKO: Warnanya menjadi Merah/Oranye Shopee saat aktif */
+.nav-item.active[href="#toko"],
+.nav-item.active[href="#pasar"] {
+    color: #EE4D2D !important;
+}
+
 /* KHUSUS MENU BIASA: Memanjang ke atas & bawah */
 .nav-item.active:not([href="#home"]) {
     height: 64px !important; 
@@ -843,14 +849,14 @@ Satu pintu untuk info update terbaru, panduan pemula, jasa joki profesional, dan
 
 <!-- HALAMAN TOKO SHOPEE STYLE -->
 <section id="toko" class="tab-content py-5 min-h-[60vh] flex flex-col justify-start relative px-4">
-    <div class="absolute top-0 right-0 w-40 h-40 bg-[#FF5722]/10 rounded-full blur-3xl pointer-events-none"></div>
+    <div class="absolute top-0 right-0 w-40 h-40 bg-[#EE4D2D]/10 rounded-full blur-3xl pointer-events-none"></div>
 
     <div class="flex justify-between items-center mb-6 mt-2 relative z-10">
         <div>
             <h2 class="text-xl font-extrabold text-white tracking-tight flex items-center gap-2">Seller Center <span id="badge-toko-vip" class="hidden bg-gradient-to-r from-yellow-400 to-yellow-600 text-black text-[8px] px-2 py-0.5 rounded-md font-black tracking-wider border border-yellow-300 shadow-[0_0_10px_rgba(250,204,21,0.5)]">VIP</span></h2>
             <p id="toko-vip-expired" class="text-[10px] text-gray-400 font-medium mt-1 hidden"></p>
         </div>
-        <button onclick="if(currentUser) { loadTokoSaya(); showToast('Memperbarui toko...', 'success'); } else { openAuthModal(); }" class="text-[#FF5722] bg-[#FF5722]/10 w-8 h-8 rounded-full flex items-center justify-center active:scale-90 transition-all border border-[#FF5722]/30 shadow-sm"><i class="fas fa-sync-alt text-sm"></i></button>
+        <button onclick="if(currentUser) { loadTokoSaya(); showToast('Memperbarui toko...', 'success'); } else { openAuthModal(); }" class="text-[#EE4D2D] bg-[#EE4D2D]/10 w-8 h-8 rounded-full flex items-center justify-center active:scale-90 transition-all border border-[#EE4D2D]/30 shadow-sm"><i class="fas fa-sync-alt text-sm"></i></button>
     </div>
 
     <div id="toko-container" class="w-full relative z-10">
@@ -858,9 +864,9 @@ Satu pintu untuk info update terbaru, panduan pemula, jasa joki profesional, dan
         <!-- KOTAK LOGGED OUT (ANTI-BADAI) -->
 <div id="toko-logged-out" class="hidden flex-col items-center justify-center py-12 px-5 mt-4 w-full max-w-sm mx-auto bg-gradient-to-b from-brand-card/60 to-transparent rounded-[2rem] border border-white/5 shadow-inner">
     
-    <div class="w-20 h-20 bg-[#FF5722]/10 rounded-full flex items-center justify-center mb-5 border border-[#FF5722]/20 shadow-[0_0_30px_rgba(255,87,34,0.2)] shrink-0">
+    <div class="w-20 h-20 bg-[#EE4D2D]/10 rounded-full flex items-center justify-center mb-5 border border-[#EE4D2D]/20 shadow-[0_0_30px_rgba(238,77,45,0.2)] shrink-0">
         <!-- Ikon digeser sedikit ke kanan biar pas di tengah -->
-        <i class="fas fa-store-slash text-4xl text-[#FF5722]/50 translate-x-1"></i>
+        <i class="fas fa-store-slash text-4xl text-[#EE4D2D]/50 translate-x-1"></i>
     </div>
     
     <h3 class="text-xl font-black text-white mb-2 tracking-tight text-center w-full">Akses Tertutup</h3>
@@ -871,7 +877,7 @@ Satu pintu untuk info update terbaru, panduan pemula, jasa joki profesional, dan
     </p>
     
     <!-- Tombol dikunci max-w-[250px] dan whitespace-nowrap biar 1 baris mutlak -->
-    <button onclick="openAuthModal()" class="w-full max-w-[250px] mx-auto flex items-center justify-center bg-gradient-to-r from-[#FF5722] to-[#FF007A] text-white py-3.5 rounded-xl font-extrabold active:scale-95 transition-all shadow-[0_8px_20px_rgba(255,87,34,0.3)] uppercase tracking-wider text-[11px] whitespace-nowrap shrink-0">
+    <button onclick="openAuthModal()" class="w-full max-w-[250px] mx-auto flex items-center justify-center bg-gradient-to-r from-[#FF5722] to-[#EE4D2D] text-white py-3.5 rounded-xl font-extrabold active:scale-95 transition-all shadow-[0_8px_20px_rgba(238,77,45,0.3)] uppercase tracking-wider text-[11px] whitespace-nowrap shrink-0">
         LOGIN SEKARANG
     </button>
 
@@ -881,7 +887,7 @@ Satu pintu untuk info update terbaru, panduan pemula, jasa joki profesional, dan
 
             
             <!-- KARTU SALDO ESCROW (SHOPEE STYLE) -->
-            <div class="bg-gradient-to-br from-[#FF5722] to-[#FF007A] rounded-3xl p-5 shadow-[0_10px_30px_rgba(255,87,34,0.3)] mb-6 relative overflow-hidden">
+            <div class="bg-gradient-to-br from-[#FF5722] to-[#EE4D2D] rounded-3xl p-5 shadow-[0_10px_30px_rgba(238,77,45,0.3)] mb-6 relative overflow-hidden">
                 <div class="relative z-10">
                     <div class="flex justify-between items-start mb-1">
                         <p class="text-[10px] text-white/90 font-extrabold uppercase tracking-widest">Saldo Aktif (Bisa Ditarik)</p>
@@ -894,7 +900,7 @@ Satu pintu untuk info update terbaru, panduan pemula, jasa joki profesional, dan
                             <p class="text-[9px] text-white/70 font-bold uppercase tracking-widest flex items-center gap-1"><i class="fas fa-clock"></i> Saldo Tertahan (H+1)</p>
                             <p class="text-sm font-extrabold text-white mt-0.5" id="toko-saldo-tertahan">Rp 0</p>
                         </div>
-                        <button onclick="bukaModalSaldoDompet()" class="bg-white text-[#FF5722] text-[10px] font-black px-5 py-2.5 rounded-full shadow-lg active:scale-95 transition-transform tracking-wider">TARIK DANA</button>
+                        <button onclick="bukaModalSaldoDompet()" class="bg-white text-[#EE4D2D] text-[10px] font-black px-5 py-2.5 rounded-full shadow-lg active:scale-95 transition-transform tracking-wider">TARIK DANA</button>
                     </div>
                 </div>
                 <div class="absolute -bottom-10 -right-10 w-40 h-40 bg-white/10 rounded-full blur-2xl"></div>
@@ -917,7 +923,7 @@ Satu pintu untuk info update terbaru, panduan pemula, jasa joki profesional, dan
             </div>
 
             <div class="flex items-center gap-2 mb-4">
-                <div class="w-1 h-5 bg-[#FF5722] rounded-full"></div>
+                <div class="w-1 h-5 bg-[#EE4D2D] rounded-full"></div>
                 <h3 id="toko-section-title" class="text-sm font-extrabold text-white tracking-wide">Daftar Pesanan Masuk</h3>
             </div>
             
@@ -927,6 +933,7 @@ Satu pintu untuk info update terbaru, panduan pemula, jasa joki profesional, dan
         </div>
     </div>
 </section>
+
 
 
 <!-- WIDGET CHAT GLOBAL MENGAMBANG (DIPERBARUI) -->
@@ -1127,11 +1134,11 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
 <section id="pasar" class="tab-content py-2">
     <div class="flex justify-between items-center mb-4 mt-2 border-b border-white/5 pb-4">
         <h2 class="text-xl font-extrabold text-white flex items-center gap-2">
-            <span class="w-1.5 h-6 bg-brand-success rounded-full"></span> Pasar Player
+            <span class="w-1.5 h-6 bg-[#EE4D2D] rounded-full"></span> Pasar Player
         </h2>
         <div class="flex items-center gap-2">
-            <button onclick="loadPasarPlayer(true)" class="text-brand-success bg-brand-success/10 w-8 h-8 rounded-full flex items-center justify-center active:scale-90 transition-all border border-brand-success/30 shadow-sm"><i class="fas fa-sync-alt"></i></button>
-            <button onclick="bukaModalJualBarang()" class="bg-brand-success text-brand-dark px-4 py-1.5 rounded-lg text-[11px] font-extrabold shadow-[0_4px_10px_rgba(37,211,102,0.3)] active:scale-95 transition-all"><i class="fas fa-plus mr-1"></i> Jual</button>
+            <button onclick="loadPasarPlayer(true)" class="text-[#EE4D2D] bg-[#EE4D2D]/10 w-8 h-8 rounded-full flex items-center justify-center active:scale-90 transition-all border border-[#EE4D2D]/30 shadow-sm"><i class="fas fa-sync-alt"></i></button>
+            <button onclick="bukaModalJualBarang()" class="bg-gradient-to-r from-[#FF5722] to-[#EE4D2D] text-white px-4 py-1.5 rounded-lg text-[11px] font-extrabold shadow-[0_4px_10px_rgba(238,77,45,0.3)] active:scale-95 transition-all border-none"><i class="fas fa-plus mr-1"></i> Jual</button>
         </div>
     </div>
 
@@ -1141,7 +1148,7 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
 
     <div class="relative mb-5">
         <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 text-xs"></i>
-        <input type="text" id="cari-pasar" placeholder="Cari item, joki, atau nama penjual..." class="w-full bg-black/40 border border-white/10 rounded-2xl py-3 pl-10 pr-4 text-xs text-white outline-none focus:border-brand-success focus:bg-white/5 focus:ring-4 focus:ring-brand-success/20 transition-all duration-300 shadow-inner">
+        <input type="text" id="cari-pasar" placeholder="Cari item, joki, atau nama penjual..." class="w-full bg-black/40 border border-white/10 rounded-2xl py-3 pl-10 pr-4 text-xs text-white outline-none focus:border-[#EE4D2D] focus:bg-white/5 focus:ring-4 focus:ring-[#EE4D2D]/20 transition-all duration-300 shadow-inner">
     </div>
     
     <div id="grid-pasar-player" class="grid grid-cols-2 gap-3 pb-10">
@@ -10216,7 +10223,7 @@ function bukaVideoShare(vidId) {
 <div id="modal-jual-barang" class="fixed inset-0 z-[600] hidden items-end sm:items-center justify-center bg-black/90 backdrop-blur-md px-0 sm:px-6 transition-all duration-300">
     <div class="bg-brand-card w-full max-w-md sm:rounded-3xl rounded-t-[2.5rem] border border-white/10 shadow-2xl relative modal-anim flex flex-col h-[90vh] sm:h-auto sm:max-h-[90vh] overflow-hidden">
         <div class="flex justify-between items-center p-5 border-b border-white/5 bg-brand-dark/80 backdrop-blur-xl shrink-0">
-            <h3 class="font-extrabold text-white text-sm flex items-center gap-2"><i class="fas fa-store text-brand-success"></i> Jual Produk Baru</h3>
+            <h3 class="font-extrabold text-white text-sm flex items-center gap-2"><i class="fas fa-store text-[#EE4D2D]"></i> Jual Produk Baru</h3>
             <button onclick="tutupModalJualBarang()" class="text-gray-400 hover:text-white w-8 h-8 rounded-full bg-white/5 flex items-center justify-center active:scale-95 transition-all"><i class="fas fa-times"></i></button>
         </div>
         <div class="flex-1 overflow-y-auto p-5 hide-scroll space-y-4">
@@ -10224,10 +10231,10 @@ function bukaVideoShare(vidId) {
             <!-- WADAH FOTO GESER -->
             <div class="flex flex-col items-center justify-center w-full">
                 <div id="preview-container-jualan" class="w-full flex overflow-x-auto hide-scroll gap-2 pb-2 hidden"></div>
-                <label for="input-foto-jualan" class="relative w-full h-24 rounded-2xl border-2 border-dashed border-brand-success/50 bg-brand-success/5 flex flex-col items-center justify-center cursor-pointer overflow-hidden group hover:border-brand-success transition-colors mt-1">
+                <label for="input-foto-jualan" class="relative w-full h-24 rounded-2xl border-2 border-dashed border-[#EE4D2D]/50 bg-[#EE4D2D]/5 flex flex-col items-center justify-center cursor-pointer overflow-hidden group hover:border-[#EE4D2D] transition-colors mt-1">
                     <div id="placeholder-foto-jualan" class="text-center group-hover:scale-110 transition-transform">
-                        <i class="fas fa-images text-2xl text-brand-success/70 mb-1"></i>
-                        <div class="text-[9px] font-bold text-brand-success uppercase tracking-widest">Pilih Foto</div>
+                        <i class="fas fa-images text-2xl text-[#EE4D2D]/70 mb-1"></i>
+                        <div class="text-[9px] font-bold text-[#EE4D2D] uppercase tracking-widest">Pilih Foto</div>
                     </div>
                 </label>
 
@@ -10272,7 +10279,7 @@ function bukaVideoShare(vidId) {
                 <textarea id="jualan-deskripsi" rows="4" placeholder="Jelaskan detail produk..." class="w-full bg-black/40 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white outline-none focus:border-brand-success focus:bg-white/5 focus:ring-4 focus:ring-brand-success/20 transition-all duration-300 resize-none hide-scroll"></textarea>
             </div>
         </div> <div class="p-4 border-t border-white/5 bg-brand-dark shrink-0">
-            <button id="btn-submit-jualan" onclick="prosesPostingJualan()" class="w-full bg-brand-success hover:bg-[#20bd5a] text-white py-3.5 rounded-xl font-extrabold active:scale-95 transition-all uppercase tracking-wider text-sm shadow-[0_4px_15px_rgba(37,211,102,0.3)]">Posting Dagangan</button>
+            <button id="btn-submit-jualan" onclick="prosesPostingJualan()" class="w-full bg-gradient-to-r from-[#FF5722] to-[#EE4D2D] text-white py-3.5 rounded-xl font-extrabold active:scale-95 transition-all uppercase tracking-wider text-sm shadow-[0_4px_15px_rgba(238,77,45,0.3)]">Posting Dagangan</button>
         </div>
     </div>
 </div>
@@ -10282,7 +10289,7 @@ function bukaVideoShare(vidId) {
 <div id="modal-edit-produk" class="fixed inset-0 z-[600] hidden items-end sm:items-center justify-center bg-black/90 backdrop-blur-md px-0 sm:px-6 transition-all duration-300">
     <div class="bg-brand-card w-full max-w-md sm:rounded-3xl rounded-t-[2.5rem] border border-white/10 shadow-2xl relative modal-anim flex flex-col h-[90vh] sm:h-auto sm:max-h-[90vh] overflow-hidden">
         <div class="flex justify-between items-center p-5 border-b border-white/5 bg-brand-dark/80 backdrop-blur-xl shrink-0">
-            <h3 class="font-extrabold text-white text-sm flex items-center gap-2"><i class="fas fa-pen text-brand-info"></i> Edit Produk</h3>
+            <h3 class="font-extrabold text-white text-sm flex items-center gap-2"><i class="fas fa-pen text-[#EE4D2D]"></i> Edit Produk</h3>
             <button onclick="tutupModalEditProduk()" class="text-gray-400 hover:text-white w-8 h-8 rounded-full bg-white/5 flex items-center justify-center active:scale-95 transition-all"><i class="fas fa-times"></i></button>
         </div>
         <div class="flex-1 overflow-y-auto p-5 hide-scroll space-y-4">
@@ -10292,10 +10299,10 @@ function bukaVideoShare(vidId) {
             <!-- WADAH FOTO GESER (MODE EDIT) -->
             <div class="flex flex-col items-center justify-center w-full">
                 <div id="preview-container-edit" class="w-full flex overflow-x-auto hide-scroll gap-2 pb-2 hidden"></div>
-                <label for="input-foto-edit" class="relative w-full h-16 rounded-2xl border-2 border-dashed border-brand-info/50 bg-brand-info/5 flex flex-col items-center justify-center cursor-pointer overflow-hidden group hover:border-brand-info transition-colors mt-1">
+                <label for="input-foto-edit" class="relative w-full h-16 rounded-2xl border-2 border-dashed border-[#EE4D2D]/50 bg-[#EE4D2D]/5 flex flex-col items-center justify-center cursor-pointer overflow-hidden group hover:border-[#EE4D2D] transition-colors mt-1">
                     <div class="text-center group-hover:scale-110 transition-transform flex items-center gap-2">
-                        <i class="fas fa-plus-circle text-brand-info/70"></i>
-                        <span class="text-[10px] font-bold text-brand-info uppercase tracking-widest">Tambahkan Foto Produk</span>
+                        <i class="fas fa-plus-circle text-[#EE4D2D]/70"></i>
+                        <span class="text-[10px] font-bold text-[#EE4D2D] uppercase tracking-widest">Tambahkan Foto Produk</span>
                     </div>
                 </label>
                 <!-- Atribut multiple agar bisa nambah banyak file -->
@@ -10338,7 +10345,7 @@ function bukaVideoShare(vidId) {
                 <textarea id="edit-produk-deskripsi" rows="4" class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-brand-info transition-colors resize-none hide-scroll"></textarea>
             </div>
         </div> <div class="p-4 border-t border-white/5 bg-brand-dark shrink-0">
-            <button id="btn-submit-edit-produk" onclick="prosesEditProduk()" class="w-full bg-brand-info hover:bg-[#35a2f2] text-brand-dark py-3.5 rounded-xl font-extrabold active:scale-95 transition-all uppercase tracking-wider text-sm shadow-[0_4px_15px_rgba(70,179,255,0.3)]">Simpan Perubahan</button>
+            <button id="btn-submit-edit-produk" onclick="prosesEditProduk()" class="w-full bg-gradient-to-r from-[#FF5722] to-[#EE4D2D] text-white py-3.5 rounded-xl font-extrabold active:scale-95 transition-all uppercase tracking-wider text-sm shadow-[0_4px_15px_rgba(238,77,45,0.3)]">Simpan Perubahan</button>
         </div>
     </div>
 </div>
@@ -10350,7 +10357,7 @@ function bukaVideoShare(vidId) {
 <div id="modal-detail-pasar" class="fixed inset-0 z-[600] hidden items-end sm:items-center justify-center bg-black/90 backdrop-blur-md px-0 sm:px-6 transition-all duration-300">
     <div class="bg-brand-card w-full max-w-md sm:rounded-3xl rounded-t-[2.5rem] border border-white/10 shadow-2xl relative modal-anim flex flex-col h-[90vh] sm:h-auto sm:max-h-[90vh] overflow-hidden">
         <div class="flex justify-between items-center p-5 border-b border-white/5 bg-brand-dark/80 backdrop-blur-xl shrink-0 absolute top-0 left-0 right-0 z-20">
-            <h3 class="font-extrabold text-white text-sm flex items-center gap-2"><i class="fas fa-shopping-bag text-brand-success"></i> Detail Produk</h3>
+            <h3 class="font-extrabold text-white text-sm flex items-center gap-2"><i class="fas fa-shopping-bag text-[#EE4D2D]"></i> Detail Produk</h3>
             <button onclick="tutupDetailPasar()" class="text-gray-400 hover:text-white w-8 h-8 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center active:scale-95 transition-all"><i class="fas fa-times"></i></button>
         </div>
         <div class="flex-1 overflow-y-auto hide-scroll pb-24 pt-[68px]">
@@ -10371,7 +10378,7 @@ function bukaVideoShare(vidId) {
                 <!-- [BARU] WADAH JUDUL, HARGA, DAN TOMBOL SHARE -->
                 <div class="flex justify-between items-start gap-4">
                     <div class="flex-1 min-w-0">
-                        <div id="pasar-detail-harga" class="text-3xl font-black text-brand-success tracking-tight mb-1">Rp 0</div>
+                        <div id="pasar-detail-harga" class="text-3xl font-black text-[#EE4D2D] tracking-tight mb-1">Rp 0</div>
                         <h2 id="pasar-detail-nama" class="text-base font-extrabold text-white leading-snug break-words">Nama Produk</h2>
                     </div>
                     <button onclick="event.stopPropagation(); shareProdukPasar(this)" class="bg-white/5 hover:bg-white/10 border border-white/10 w-10 h-10 rounded-xl flex items-center justify-center text-white active:scale-90 transition-all shrink-0 z-10 relative shadow-sm mt-1">
@@ -10412,15 +10419,15 @@ function bukaVideoShare(vidId) {
                     <!-- Tombol manual di bawahnya -->
                     <button id="btn-toggle-desc-pasar" onclick="document.getElementById('pasar-detail-deskripsi').click()" class="text-[10px] text-brand-info font-bold hover:text-white active:scale-95 transition-all mt-1">Lihat Selengkapnya ▼</button>
                 </div>
-                <div class="bg-brand-success/10 p-3 rounded-xl border border-brand-success/20 flex gap-3 items-start">
-                    <i class="fas fa-shield-check text-brand-success mt-0.5 text-lg"></i>
-                    <p class="text-[10px] text-brand-success leading-relaxed font-medium">Pembayaran aman dengan Admin. Dana ditahan sistem sampai transaksi selesai.</p>
+                <div class="bg-[#EE4D2D]/10 p-3 rounded-xl border border-[#EE4D2D]/20 flex gap-3 items-start">
+                    <i class="fas fa-shield-check text-[#EE4D2D] mt-0.5 text-lg"></i>
+                    <p class="text-[10px] text-[#EE4D2D] leading-relaxed font-medium">Pembayaran aman dengan Admin. Dana ditahan sistem sampai transaksi selesai.</p>
                 </div>
             </div>
             
         </div>
         <div class="p-4 border-t border-white/5 bg-brand-dark shrink-0 absolute bottom-0 left-0 right-0 z-20">
-            <button id="btn-beli-pasar" class="w-full bg-brand-success hover:bg-[#20bd5a] text-white py-3.5 rounded-xl font-extrabold active:scale-95 transition-all uppercase tracking-wider text-sm shadow-[0_4px_15px_rgba(37,211,102,0.3)] flex justify-center items-center gap-2">
+            <button id="btn-beli-pasar" class="w-full bg-gradient-to-r from-[#FF5722] to-[#EE4D2D] text-white py-3.5 rounded-xl font-extrabold active:scale-95 transition-all uppercase tracking-wider text-sm shadow-[0_4px_15px_rgba(238,77,45,0.3)] flex justify-center items-center gap-2">
                 <i class="fas fa-shopping-cart"></i> Beli Sekarang
             </button>
         </div>
@@ -10471,11 +10478,11 @@ function renderKategoriPasarTabs(data) {
 
         return `
         <div onclick="pilihKategoriPasar('${k}')" class="flex flex-col items-center gap-2 cursor-pointer text-center group active:scale-95 transition-all">
-            <div class="w-12 h-12 rounded-[1.2rem] flex items-center justify-center transition-all border ${isActive ? 'bg-brand-success border-brand-success shadow-lg shadow-brand-success/30' : 'bg-brand-card border-white/5 shadow-md group-hover:border-brand-success'}">
+            <div class="w-12 h-12 rounded-[1.2rem] flex items-center justify-center transition-all border ${isActive ? 'bg-[#EE4D2D] border-[#EE4D2D] shadow-lg shadow-[#EE4D2D]/30' : 'bg-brand-card border-white/5 shadow-md group-hover:border-brand-success'}">
                 <img src="${logoUrl}" alt="${k}" class="w-7 h-7 object-contain ${isActive ? 'brightness-100' : 'opacity-80 group-hover:opacity-100 transition-opacity'}"
                 onerror="this.src='https://img.icons8.com/neon/96/folder-invoices.png'">
             </div>
-            <span class="text-[9px] font-extrabold tracking-wide truncate w-full uppercase leading-tight ${isActive ? 'text-brand-success' : 'text-gray-400 group-hover:text-white'}">
+            <span class="text-[9px] font-extrabold tracking-wide truncate w-full uppercase leading-tight ${isActive ? 'text-[#EE4D2D]' : 'text-gray-400 group-hover:text-white'}">
                 ${k}
             </span>
         </div>
@@ -10590,13 +10597,13 @@ function renderGridPasar(dataList) {
                 </div>
                 
                 <div class="mt-auto">
-                    <div class="text-[9px] ${isAutoItem ? 'text-brand-success' : 'text-brand-info'} font-bold mb-0.5 flex items-center gap-1">
+                    <div class="text-[9px] ${isAutoItem ? 'text-[#EE4D2D]' : 'text-brand-info'} font-bold mb-0.5 flex items-center gap-1">
                         <i class="fas ${isAutoItem ? 'fa-bolt text-[8px]' : 'fa-user-shield text-[8px]'}"></i> 
                         ${isAutoItem ? 'Instan 1 Detik' : 'incREKBER NIKKY'}
                     </div>
                     <div class="flex flex-col items-start gap-px">
                         <div class="text-gray-500 line-through text-[9px] font-medium opacity-60">Rp ${hargaCoret.toLocaleString('id-ID')}</div>
-                        <div class="text-brand-success font-extrabold text-sm tracking-tight">${formatHarga}</div>
+                        <div class="text-[#EE4D2D] font-extrabold text-sm tracking-tight">${formatHarga}</div>
                     </div>
                 </div>
             </div>
@@ -10884,7 +10891,7 @@ function bukaDetailPasar(idProduk) {
                     let vName = v.name.replace(/'/g, "\\'");
                     let isActive = (vName === activeName);
                     let baseClass = "px-4 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ";
-                    let activeClass = isActive ? "bg-brand-success/20 border-brand-success text-brand-success shadow-[0_0_10px_rgba(37,211,102,0.3)]" : "bg-black/30 border-white/10 text-gray-400 hover:border-brand-info/50 hover:text-white";
+                    let activeClass = isActive ? "bg-[#EE4D2D]/20 border-[#EE4D2D] text-[#EE4D2D] shadow-[0_0_10px_rgba(238,77,45,0.3)]" : "bg-black/30 border-white/10 text-gray-400 hover:border-brand-info/50 hover:text-white";
                     return `<div onclick="pilihVariasiPasar('${vName}', ${v.price})" class="${baseClass} ${activeClass}">${vName}</div>`;
                 }).join('');
             };
@@ -10953,7 +10960,7 @@ function bukaDetailPasar(idProduk) {
     } else if (isAutoItem && sisaStok === 0) {
         btnBeli.innerHTML = '<i class="fas fa-box-open"></i> Stok Habis'; btnBeli.disabled = true; btnBeli.className = "w-full bg-red-500/50 text-white py-3.5 rounded-xl font-extrabold uppercase text-sm z-30 relative cursor-not-allowed border border-red-500/30";
     } else {
-        btnBeli.innerHTML = '<i class="fas fa-shopping-cart"></i> Beli Sekarang'; btnBeli.disabled = false; btnBeli.className = "w-full bg-brand-success hover:bg-[#20bd5a] text-white py-3.5 rounded-xl font-extrabold active:scale-95 transition-all uppercase text-sm shadow-[0_4px_15px_rgba(37,211,102,0.3)] z-30 relative";
+        btnBeli.innerHTML = '<i class="fas fa-shopping-cart"></i> Beli Sekarang'; btnBeli.disabled = false; btnBeli.className = "w-full bg-gradient-to-r from-[#FF5722] to-[#EE4D2D] text-white py-3.5 rounded-xl font-extrabold active:scale-95 transition-all uppercase text-sm shadow-[0_4px_15px_rgba(238,77,45,0.3)] z-30 relative";
     }
 
     document.getElementById('modal-detail-pasar').classList.replace('hidden', 'flex');
@@ -11527,7 +11534,7 @@ async function loadProdukSaya() {
                             <h4 class="text-xs font-bold text-white line-clamp-2 mb-1.5 leading-snug">${item.title}</h4>
                             <div class="flex flex-col gap-0.5">
                                 <span class="text-[9px] text-gray-500 font-medium">Harga Jual: Rp ${hargaAsli.toLocaleString('id-ID')}</span>
-                                <span class="text-[10px] text-brand-success font-bold tracking-tight">Pendapatan: Rp ${pendapatanBersih.toLocaleString('id-ID')}</span>
+                                <span class="text-[10px] text-[#EE4D2D] font-bold tracking-tight">Pendapatan: Rp ${pendapatanBersih.toLocaleString('id-ID')}</span>
                             </div>
                         </div>
                     </div>
@@ -11611,7 +11618,7 @@ async function loadPesananMasuk() {
                             <h4 class="text-xs font-bold text-white mb-1 line-clamp-2 leading-snug">${order.product_name}</h4>
                             <div class="flex justify-between items-end mt-2">
                                 <span class="text-[9px] text-gray-500"><i class="far fa-clock mr-1"></i>${timeAgo(order.created_at)}</span>
-                                <div class="text-[11px] text-brand-success font-bold tracking-tight">Rp ${Number(order.price).toLocaleString('id-ID')}</div>
+                                <div class="text-[11px] text-[#EE4D2D] font-bold tracking-tight">Rp ${Number(order.price).toLocaleString('id-ID')}</div>
                             </div>
                         </div>
                     </div>
@@ -11886,12 +11893,12 @@ function renderPreviewEditProduk() {
     editFileArray.forEach((file, index) => {
         const tempUrl = URL.createObjectURL(file);
         htmlContent += `
-            <div class="relative w-20 h-20 sm:w-24 sm:h-24 shrink-0 rounded-xl overflow-hidden border border-brand-success/50 shadow-md">
+            <div class="relative w-20 h-20 sm:w-24 sm:h-24 shrink-0 rounded-xl overflow-hidden border border-[#EE4D2D]/50 shadow-md">
                 <img src="${tempUrl}" class="w-full h-full object-cover">
                 <button onclick="hapusFotoBaruEdit(${index})" class="absolute top-1 right-1 bg-red-500/80 text-white rounded-full w-6 h-6 flex items-center justify-center backdrop-blur-md active:scale-90 transition-transform shadow-md z-10">
                     <i class="fas fa-times text-xs"></i>
                 </button>
-                <div class="absolute bottom-0 left-0 right-0 bg-brand-success/80 text-white text-[8px] text-center py-0.5">BARU</div>
+                <div class="absolute bottom-0 left-0 right-0 bg-[#EE4D2D]/80 text-white text-[8px] text-center py-0.5">BARU</div>
             </div>
         `;
     });
@@ -12196,7 +12203,7 @@ document.addEventListener('contextmenu', function(e) {
         </div>
         
         <div class="p-4 border-t border-white/5 bg-brand-dark shrink-0">
-            <button id="btn-bayar-langganan" onclick="lanjutkanBayarLangganan()" class="w-full bg-gradient-to-r from-brand-accent to-brand-purple text-white py-3.5 rounded-xl font-extrabold active:scale-95 transition-all uppercase tracking-wider text-sm shadow-[0_4px_15px_rgba(255,0,122,0.4)] flex flex-col items-center justify-center leading-tight">
+            <button id="btn-bayar-langganan" onclick="lanjutkanBayarLangganan()" class="w-full bg-gradient-to-r from-[#FF5722] to-[#FF007A] text-white py-3.5 rounded-xl font-extrabold active:scale-95 transition-all uppercase tracking-wider text-sm shadow-[0_4px_15px_rgba(255,87,34,0.4)] flex flex-col items-center justify-center leading-tight">
                 <span>Berlangganan Rp 400.000</span>
             </button>
         </div>
