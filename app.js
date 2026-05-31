@@ -1,0 +1,10129 @@
+    // Script mandiri agar splash screen 100% dijamin hilang walau script utama error
+    function removeSplashScreen() {
+        const splashScreen = document.getElementById('custom-splash');
+        if (splashScreen) {
+            splashScreen.style.opacity = '0';
+            splashScreen.style.transform = 'scale(1.1)';
+            setTimeout(() => splashScreen.remove(), 500);
+        }
+    }
+    // Hilang dalam 1.5 detik saat web dibaca
+    document.addEventListener('DOMContentLoaded', () => { setTimeout(removeSplashScreen, 1500); });
+    // Jaring pengaman mutlak
+    setTimeout(removeSplashScreen, 3500);
+    const logoElement = document.getElementById('splash-logo');
+    // Daftar link gambar promosi Anda
+    const promoImages = [
+        "https://nos.wjv-1.neo.id/au2hub/Picsart_26-05-22_23-46-22-498.png",
+    ];
+    
+    let currentIndex = 0;
+
+    // Fungsi untuk mengganti gambar dengan efek pudar
+    function rotateLogo() {
+        currentIndex = (currentIndex + 1) % promoImages.length;
+        logoElement.style.opacity = '0';
+        
+        setTimeout(() => {
+            logoElement.src = promoImages[currentIndex];
+            logoElement.style.opacity = '1';
+        }, 500);
+    }
+
+    // Ganti gambar setiap 1.5 detik (sesuaikan dengan kecepatan animasi Anda)
+    setInterval(rotateLogo, 1500);
+// ---- FUNGSI UNTUK LIGHTBOX (GAMBAR DI CHAT & PASAR) ----
+function openLightbox(imgUrl) {
+    history.pushState({ popup: 'lightbox' }, null, '#lightbox'); // Daftarkan ke history HP
+    const modal = document.getElementById('lightbox-modal');
+    const img = document.getElementById('lightbox-img');
+    img.src = imgUrl;
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    void modal.offsetWidth;
+    modal.classList.remove('opacity-0');
+    img.classList.remove('scale-95');
+    img.classList.add('scale-100');
+}
+
+function closeLightbox(dariTombolBack = false) {
+    const modal = document.getElementById('lightbox-modal');
+    const img = document.getElementById('lightbox-img');
+    modal.classList.add('opacity-0');
+    img.classList.remove('scale-100');
+    img.classList.add('scale-95');
+    
+    // Sinkronisasi tombol Back HP
+    if (!dariTombolBack && window.location.hash === '#lightbox') {
+        history.back();
+    }
+    
+    setTimeout(() => {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+        img.src = '';
+    }, 300);
+}
+
+
+// ---- DETEKSI KEMBALI SAAT UPLOAD (BEFOREUNLOAD) ----
+let isUploading = false;
+window.addEventListener('beforeunload', function (e) {
+if (isUploading) {
+e.preventDefault();
+e.returnValue = 'Upload sedang berlangsung. Yakin ingin meninggalkan halaman?';
+}
+});
+
+let privasiVideoAktif = 'Publik';
+
+function bukaPilihanPrivasi() {
+    const modal = document.getElementById('modal-privasi-video');
+    modal.classList.remove('hidden');
+    // Beri jeda sangat sedikit agar efek geser (slide-up) terlihat mulus
+    setTimeout(() => modal.classList.remove('translate-y-full'), 10);
+}
+
+function tutupPilihanPrivasi() {
+    const modal = document.getElementById('modal-privasi-video');
+    modal.classList.add('translate-y-full');
+    // Beri waktu laci turun dulu sebelum benar-benar dihilangkan (hidden)
+    setTimeout(() => modal.classList.add('hidden'), 300);
+}
+
+function bukaPratinjauVideo(e) {
+    e.preventDefault();   // Mencegah file manager/galeri terbuka lagi
+    e.stopPropagation();  // Mencegah klik tembus ke kotak label
+
+    const videoKecil = document.getElementById('video-preview-element');
+    const videoFull = document.getElementById('video-pratinjau-full');
+    const modalPratinjau = document.getElementById('modal-pratinjau');
+
+    if (!videoKecil.src) return;
+
+    // 🔥 SUNTIKAN RADAR: Agar tombol back HP aktif
+    history.pushState({ popup: 'pratinjau' }, null, '#pratinjau');
+
+    // Salin video dan buka mode full screen
+    videoFull.src = videoKecil.src;
+    modalPratinjau.classList.remove('hidden');
+    modalPratinjau.classList.add('flex');
+    
+    // Mainkan video dengan fitur kontrol & bersuara
+    videoFull.muted = false;
+    videoFull.play();
+}
+
+function tutupPratinjauVideo(dariTombolBack = false) {
+    const videoFull = document.getElementById('video-pratinjau-full');
+    const modalPratinjau = document.getElementById('modal-pratinjau');
+    
+    // SINKRONISASI TOMBOL BACK HP
+    if (!dariTombolBack && window.location.hash === '#pratinjau') {
+        history.back();
+    }
+
+    // Matikan pemutar dan tutup layar
+    videoFull.pause();
+    videoFull.src = '';
+    modalPratinjau.classList.add('hidden');
+    modalPratinjau.classList.remove('flex');
+}
+
+
+function setPrivasiVideo(jenis, ikon) {
+    privasiVideoAktif = jenis;
+    // Ubah teks dan ikon di menu upload sesuai pilihan user
+    document.getElementById('label-privasi-teks').innerHTML = `${jenis} <i class="fas fa-chevron-right text-[10px]"></i>`;
+    document.getElementById('ikon-privasi-utama').className = `fas ${ikon} text-xs`;
+    tutupPilihanPrivasi();
+}
+
+function showToast(message, type = 'info') {
+const container = document.getElementById('toast-container');
+const toast = document.createElement('div');
+
+let bgColor = 'bg-[#1A1133] border-brand-info/50';
+let icon = '<i class="fas fa-info-circle text-brand-info mr-3 text-lg"></i>';
+if(type === 'error') { bgColor = 'bg-[#2A0815] border-red-500/50'; icon = '<i class="fas fa-exclamation-circle text-red-500 mr-3 text-lg"></i>'; }
+if(type === 'success') { bgColor = 'bg-[#0A2010] border-[#25D366]/50'; icon = '<i class="fas fa-check-circle text-[#25D366] mr-3 text-lg"></i>'; }
+
+toast.className = `flex items-center px-5 py-3.5 rounded-2xl border shadow-2xl text-xs font-bold text-white toast-anim w-[90%] max-w-sm glass ${bgColor} cursor-pointer touch-none`;
+toast.innerHTML = `${icon} <span class="leading-snug">${message}</span>`;
+
+let startY = 0;
+toast.addEventListener('touchstart', e => { startY = e.touches[0].clientY; });
+toast.addEventListener('touchmove', e => {
+let moveY = e.touches[0].clientY;
+if (startY - moveY > 20) {
+toast.style.opacity = '0';
+toast.style.transform = 'translateY(-20px) scale(0.9)';
+toast.style.transition = 'all 0.3s ease';
+setTimeout(() => toast.remove(), 300);
+}
+});
+toast.onclick = () => { toast.remove(); };
+
+container.appendChild(toast);
+
+setTimeout(() => {
+if(document.body.contains(toast)){
+toast.style.opacity = '0';
+toast.style.transform = 'translateY(-20px) scale(0.9)';
+toast.style.transition = 'all 0.3s ease';
+setTimeout(() => toast.remove(), 300);
+}
+}, 3000);
+}
+
+function customPrompt(title, defaultValue = '') {
+return new Promise((resolve) => {
+const modal = document.getElementById('modal-prompt');
+const titleEl = document.getElementById('prompt-title');
+const inputEl = document.getElementById('prompt-input');
+const btnOk = document.getElementById('prompt-ok');
+const btnCancel = document.getElementById('prompt-cancel');
+
+titleEl.innerText = title;
+inputEl.value = defaultValue;
+modal.classList.remove('hidden');
+modal.classList.add('flex');
+inputEl.focus();
+
+const cleanup = () => {
+modal.classList.add('hidden');
+modal.classList.remove('flex');
+btnOk.onclick = null;
+btnCancel.onclick = null;
+};
+
+btnOk.onclick = () => { cleanup(); resolve(inputEl.value); };
+btnCancel.onclick = () => { cleanup(); resolve(null); };
+});
+}
+
+function customConfirm(title) {
+return new Promise((resolve) => {
+const modal = document.getElementById('modal-confirm');
+const titleEl = document.getElementById('confirm-title');
+const btnOk = document.getElementById('confirm-ok');
+const btnCancel = document.getElementById('confirm-cancel');
+
+titleEl.innerText = title;
+modal.classList.remove('hidden');
+modal.classList.add('flex');
+
+const cleanup = () => {
+modal.classList.add('hidden');
+modal.classList.remove('flex');
+btnOk.onclick = null;
+btnCancel.onclick = null;
+};
+
+btnOk.onclick = () => { cleanup(); resolve(true); };
+btnCancel.onclick = () => { cleanup(); resolve(false); };
+});
+}
+
+function customAlert(title) {
+    return new Promise((resolve) => {
+        const modal = document.getElementById('modal-alert');
+        const titleEl = document.getElementById('alert-title');
+        const btnOk = document.getElementById('alert-ok');
+
+        // Deteksi Link otomatis
+        const urlRegex = /(https?:\/\/[^\s]+)/g;
+        let formattedText = title.replace(urlRegex, (url) => {
+            return `<a href="${url}" target="_blank" class="text-brand-info underline font-bold">${url}</a>`;
+        });
+        // Ubah \n jadi <br>
+        formattedText = formattedText.replace(/\n/g, "<br>");
+
+        titleEl.innerHTML = formattedText;
+        
+        // 🔥 TAMBAHAN: Suntikkan riwayat URL agar terdeteksi oleh tombol back HP
+        history.pushState({ popup: 'alert' }, null, '#alert');
+
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+
+        // Simpan resolve langsung ke elemen modal (bukan global window)
+        modal.alertResolve = resolve;
+
+        btnOk.onclick = () => {
+            if (window.location.hash === '#alert') {
+                history.back(); 
+            } else {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }
+            btnOk.onclick = null;
+            if (typeof modal.alertResolve === 'function') {
+                modal.alertResolve();
+                modal.alertResolve = null;
+            }
+        };
+    });
+}
+
+
+
+
+function togglePassword(inputId, iconId) {
+const input = document.getElementById(inputId);
+const icon = document.getElementById(iconId);
+if (input.type === "password") {
+input.type = "text";
+icon.classList.remove('fa-eye');
+icon.classList.add('fa-eye-slash');
+} else {
+input.type = "password";
+icon.classList.remove('fa-eye-slash');
+icon.classList.add('fa-eye');
+}
+}
+
+const SUPABASE_URL = "https://divckiqkodtqudcoxkjz.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRpdmNraXFrb2R0cXVkY294a2p6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgzNDY0MzIsImV4cCI6MjA5MzkyMjQzMn0.z_FIS_rpDQPQ7nNWpuvabH7qDYgu7uq6TlYj9LSOcJQ";
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// FUNGSI PEMBERSIH XSS GLOBAL
+function escapeHTML(str) {
+    if (!str) return '';
+    return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+}
+
+let currentUser = null, userProfile = null, isAuthLogin = true;
+
+let tabSebelumnya = 'home';
+let activeGroupId = null;
+let activeGroupRole = 'member';
+let globalPersonalList = [];
+let globalGroupList = [];
+let messageToForward = "";
+let dataRipperGlobal = [], isRipperExpanded = localStorage.getItem('statusLihatSemua') === 'true';
+let viewedUserId = null;
+
+let allVideosData = [];
+let newUploads = [];
+let obs = null, activeVideoId = null, lastTap = 0, isGlobalMuted = false;
+let replyingToId = null, replyingToName = null;
+let currentVideoIndex = 0;
+const BATCH_SIZE = 5;
+
+let activeChatUserId = null;
+let messageSubscription = null;
+let globalMessageSubscription = null;
+let presenceChannel = null;
+let onlineUsersMap = new Map();
+let selectedMessageId = null;
+let blockedUsersList = [];
+let typingTimer; // VARIABEL TYPING INDICATOR
+
+
+        let globalFaqData = [];
+        let isInfoLoaded = false;
+
+        async function loadInfoLayanan(forceRefresh = false) {
+            if (isInfoLoaded && !forceRefresh) return;
+            
+            const eventContainer = document.getElementById('dynamic-event-container');
+            const faqContainer = document.getElementById('faq-container');
+            
+            if (forceRefresh) {
+                eventContainer.innerHTML = '<div class="animate-pulse bg-brand-card h-40 rounded-3xl border border-white/5 flex items-center justify-center"><i class="fas fa-spinner fa-spin text-brand-accent text-3xl"></i></div>';
+                faqContainer.innerHTML = '<div class="text-center py-6"><i class="fas fa-spinner fa-spin text-brand-info text-2xl"></i></div>';
+            }
+
+            try {
+                const configRes = await fetch('/api/get-config');
+                const config = await configRes.json();
+                if (!config.gasUrl) throw new Error("Link GAS tidak ditemukan");
+
+                const res = await fetch(`${config.gasUrl}?action=get_info`);
+                const data = await res.json();
+
+                if (data.status === 'success') {
+                    // 1. RENDER MULTIPLE BANNER EVENT (SLIDER LUAR AUTOMATIC)
+                    if (data.info && data.info.length > 0) {
+                        let carouselHTML = `
+                        <div class="relative w-full overflow-hidden rounded-[2rem] pb-8 pt-1">
+                            <div id="info-image-carousel" onscroll="updateInfoCarouselDots()" class="flex overflow-x-auto hide-scroll snap-x snap-mandatory gap-4 relative px-1 items-stretch">
+                        `;
+
+                        carouselHTML += data.info.map((evt, idx) => {
+                            // AMAN KAN DATA GAMBAR MULTIPLE DARI GOOGLE SHEETS
+                            let rawGambar = evt.link_gambar || evt.gambar || "";
+                            let arrGambar = [];
+                            
+                            if (typeof rawGambar === 'string' && rawGambar.trim() !== "") {
+                                arrGambar = rawGambar.split(/[\n,]+/).map(url => url.trim()).filter(url => url !== "");
+                            } else if (Array.isArray(rawGambar)) {
+                                arrGambar = rawGambar.filter(url => url && url.trim() !== "");
+                            }
+
+                            // GENERATE SLIDER DALAM (SLIDER GAMBAR) JIKA ADA > 0 GAMBAR
+                            let gambarSliderHTML = '';
+                            if (arrGambar.length > 0) {
+                                gambarSliderHTML = `
+                                <div class="relative w-full h-44 rounded-t-[1.7rem] rounded-b-xl overflow-hidden mb-3 shrink-0">
+                                    <div onscroll="updateInnerDots(this)" class="flex overflow-x-auto hide-scroll snap-x snap-mandatory w-full h-full relative">
+                                        ${arrGambar.map(urlGambar => `
+                                            <div class="w-full h-full flex-shrink-0 snap-center relative">
+                                                <img src="${urlGambar}" alt="Event" class="w-full h-full object-cover">
+                                                <div class="absolute inset-0 bg-gradient-to-t from-brand-dark/90 via-transparent to-transparent pointer-events-none opacity-80"></div>
+                                            </div>
+                                        `).join('')}
+                                    </div>
+
+                                    ${arrGambar.length > 1 ? `
+                                    <div class="inner-dots-container absolute bottom-3 left-1/2 -translate-x-1/2 flex space-x-1.5 z-10 pointer-events-none">
+                                        ${arrGambar.map((_, dotIdx) => `
+                                            <div class="inner-dot h-1.5 rounded-full transition-all duration-300 ${dotIdx === 0 ? 'w-4 bg-brand-accent' : 'w-1.5 bg-white/40'}"></div>
+                                        `).join('')}
+                                    </div>
+                                    ` : ''}
+                                </div>
+                                `;
+                            }
+
+                            // --- LOGIKA POTONG TEKS DESKRIPSI (BISA KLIK BUKA/TUTUP) ---
+                            let deskripsiTeks = evt.deskripsi || "";
+                            let isPanjang = deskripsiTeks.length > 120;
+                            let deskripsiHTML = isPanjang
+                                ? `
+                                <div class="flex-1 mb-4 flex flex-col items-start w-full">
+                                    <p id="info-desc-${idx}" onclick="toggleInfoDesc(${idx})" class="text-[11px] text-gray-400 leading-relaxed whitespace-pre-line line-clamp-3 transition-all duration-300 cursor-pointer w-full hover:text-gray-300" title="Klik untuk baca semua">${deskripsiTeks}</p>
+                                    <button id="info-btn-${idx}" onclick="toggleInfoDesc(${idx})" class="text-[10px] text-brand-info font-bold mt-1.5 hover:text-white active:scale-95 transition-all">Lihat Selengkapnya ▼</button>
+                                </div>
+                                `
+                                : `<p class="text-[11px] text-gray-400 mb-4 leading-relaxed whitespace-pre-line flex-1">${deskripsiTeks}</p>`;
+
+                            return `
+                            <div class="w-[calc(100%-24px)] flex-shrink-0 snap-center bg-gradient-to-b from-[#1A1133] to-[#0F0920] rounded-[2rem] p-1.5 border border-white/10 shadow-[0_10px_30px_rgba(0,0,0,0.5)] smooth-reveal h-auto flex flex-col" style="animation-delay: ${idx * 0.1}s">
+                                ${gambarSliderHTML}
+                                <div class="px-4 pb-4 flex flex-col flex-1 ${arrGambar.length === 0 || !arrGambar[0] ? 'pt-4' : ''}">
+                                    <h3 class="font-extrabold text-white text-base mb-1.5 leading-snug">${evt.judul || "Pengumuman"}</h3>
+                                    
+                                    ${deskripsiHTML}
+                                    
+                                    ${evt.link_facebook ? `
+                                    <a href="${evt.link_facebook}" target="_blank" class="flex justify-center items-center w-full bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold py-3.5 rounded-xl active:scale-95 transition-all text-xs shadow-inner mt-auto">
+                                        <i class="fas fa-external-link-alt mr-2 text-brand-info"></i> Baca Selengkapnya
+                                    </a>
+                                    ` : ''}
+                                </div>
+                            </div>
+                            `;
+                        }).join('');
+
+                        carouselHTML += `
+                            </div>
+                            <div id="info-carousel-dots" class="absolute bottom-0 left-1/2 -translate-x-1/2 flex space-x-1.5 z-10 pointer-events-none mt-4">
+                                ${data.info.map((_, i) => `<div class="info-dot-indicator h-1.5 rounded-full transition-all duration-300 ${i === 0 ? 'w-4 bg-brand-accent' : 'w-1.5 bg-white/40'}"></div>`).join('')}
+                            </div>
+                        </div>
+                        `;
+                        eventContainer.innerHTML = carouselHTML;
+                    } else {
+                        eventContainer.innerHTML = '<div class="text-center py-8 text-xs text-gray-500 bg-brand-card rounded-3xl border border-white/5"><i class="fas fa-box-open text-3xl mb-2 opacity-50"></i><br>Belum ada pengumuman terbaru.</div>';
+                    }
+
+                    // 2. RENDER FAQ
+                    if (data.faq && data.faq.length > 0) {
+                        globalFaqData = data.faq.map(f => ({ t: f.pertanyaan, j: f.jawaban }));
+                        renderFaqs(globalFaqData);
+                    } else {
+                        faqContainer.innerHTML = '<div class="text-center py-6 text-xs text-gray-500 bg-brand-card rounded-2xl border border-white/5">FAQ kosong.</div>';
+                    }
+
+                    // 3. RENDER BANTUAN CEPAT (DINAMIS DARI SPREADSHEET)
+                    if (data.bantuan && data.bantuan.length > 0) {
+                        const bantuanContainer = document.getElementById('bantuan-cepat-container');
+                        let htmlBantuan = '';
+                        
+                        data.bantuan.forEach(item => {
+                            let judul = item.Judul || item.judul || 'Bantuan';
+                            let ikon = item.Ikon || item.ikon || 'fa-info-circle';
+                            let warna = item.Warna || item.warna || 'brand-info'; 
+                            let tipeAksi = (item.TipeAksi || item.tipe_aksi || '').toLowerCase();
+                            let targetAksi = item.TargetAksi || item.target_aksi || '';
+                            
+                            let atributKlik = '';
+                            let tagPembuka = 'a'; // Semua tombol dipaksa jadi tag 'a' (link) agar aman
+                            
+                            if (tipeAksi === 'alert' || tipeAksi === 'popup') {
+                                let safeTarget = targetAksi.replace(/'/g, "\\'").replace(/\n/g, "\\n");
+                                atributKlik = `href="javascript:void(0)" onclick="customAlert('${safeTarget}')"`;
+                                
+                            } else if (tipeAksi === 'tab') {
+                                atributKlik = `href="javascript:void(0)" onclick="switchTab('${targetAksi}')"`;
+                                
+                            } else if (tipeAksi === 'link') {
+                                let amanUrl = targetAksi;
+                                // Otomatis tambah https:// kalau di spreadsheet lupa ditulis
+                                if (!amanUrl.startsWith('http')) {
+                                    amanUrl = 'https://' + amanUrl;
+                                }
+                                atributKlik = `href="${amanUrl}" target="_blank"`;
+                            }
+
+                            htmlBantuan += `
+                            <${tagPembuka} ${atributKlik} class="bg-gradient-to-br from-brand-card to-[#0A0615] p-4 rounded-2xl border border-white/5 flex flex-col items-center justify-center text-center cursor-pointer active:scale-95 transition-all group hover:border-${warna}/50 shadow-lg block decoration-transparent">
+                                <div class="w-10 h-10 rounded-full bg-${warna}/20 text-${warna} flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+                                    <i class="fas ${ikon}"></i>
+                                </div>
+                                <span class="text-[10px] font-bold text-gray-300 group-hover:text-white transition-colors">${judul}</span>
+                            </${tagPembuka}>`;
+                        });
+
+                        if (bantuanContainer) bantuanContainer.innerHTML = htmlBantuan;
+
+                    }
+
+                    isInfoLoaded = true;
+                    if(forceRefresh) showToast("Info berhasil diperbarui!", "success");
+                } else {
+                    throw new Error("Gagal ngambil data Info dari Sheets");
+                }
+            } catch (e) {
+                console.log(e);
+                eventContainer.innerHTML = '<div class="text-center py-6 text-xs text-red-500 bg-brand-card rounded-2xl border border-red-500/20">Gagal memuat info server.</div>';
+                faqContainer.innerHTML = '<div class="text-center py-6 text-xs text-red-500 bg-brand-card rounded-2xl border border-red-500/20">Gagal memuat FAQ.</div>';
+            }
+        }
+
+
+
+        function updateInfoCarouselDots() {
+            const carousel = document.getElementById('info-image-carousel'); 
+            const dots = document.querySelectorAll('.info-dot-indicator');
+            if (!carousel || dots.length === 0) return; 
+            
+            // Dapatkan index aktif berdasarkan jarak scroll dibagi lebar 1 kartu info
+            const scrollLeft = carousel.scrollLeft;
+            const cardWidth = carousel.firstElementChild ? carousel.firstElementChild.clientWidth : carousel.clientWidth;
+            let activeIndex = Math.round(scrollLeft / (cardWidth + 16)); // 16 adalah ukuran gap CSS
+            
+            activeIndex = Math.max(0, Math.min(activeIndex, dots.length - 1));
+            dots.forEach((dot, index) => { 
+                if (index === activeIndex) { dot.className = "info-dot-indicator h-1.5 rounded-full transition-all duration-300 w-4 bg-brand-accent"; } 
+                else { dot.className = "info-dot-indicator h-1.5 rounded-full transition-all duration-300 w-1.5 bg-white/40"; } 
+            });
+        }
+        
+        function updateInnerDots(container) {
+            // Amankan pencarian elemen container dots internal
+            const parentCard = container.closest('.relative.w-full.h-44');
+            if (!parentCard) return;
+            const dotsWrapper = parentCard.querySelector('.inner-dots-container');
+            if (!dotsWrapper) return;
+            
+            const dots = dotsWrapper.querySelectorAll('.inner-dot');
+            if (dots.length === 0) return;
+            
+            const scrollLeft = container.scrollLeft;
+            const imgWidth = container.clientWidth;
+            let activeIndex = Math.round(scrollLeft / imgWidth); 
+            
+            activeIndex = Math.max(0, Math.min(activeIndex, dots.length - 1));
+            
+            dots.forEach((dot, index) => { 
+                if (index === activeIndex) { 
+                    dot.className = "inner-dot h-1.5 rounded-full transition-all duration-300 w-4 bg-brand-accent"; 
+                } else { 
+                    dot.className = "inner-dot h-1.5 rounded-full transition-all duration-300 w-1.5 bg-white/40"; 
+                } 
+            });
+        }
+
+        
+
+
+// FORMAT TEKS (Otomatis deteksi Link, @Mention dan #Hashtag)
+function formatCaption(text) {
+    if(!text) return '';
+    let formatted = text
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+
+    // 1. [BARU] Deteksi Link URL (http:// atau https://)
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    formatted = formatted.replace(urlRegex, (url) => {
+        // event.stopPropagation() sangat penting agar saat link diklik, 
+        // teks caption tidak malah memanjang/memendek (expand)
+        return `<a href="${url}" target="_blank" onclick="event.stopPropagation()" class="text-brand-info underline hover:text-white transition-colors font-bold">${url}</a>`;
+    });
+
+    // 2. Deteksi Hashtag (#tagar) - Warna Biru
+    formatted = formatted.replace(/#(\w+)/g, '<span onclick="event.stopPropagation(); cariBerdasarkanTagar(\'$1\')" class="font-bold text-brand-info hover:underline cursor-pointer">#$1</span>');
+
+    // 3. Deteksi Mention (@username) - Warna Pink/Accent
+    formatted = formatted.replace(/@(\w+)/g, '<span onclick="event.stopPropagation(); viewUserProfileByNickname(\'$1\')" class="font-bold text-brand-accent hover:underline cursor-pointer">@$1</span>');
+
+    // 4. Deteksi Enter (Baris baru)
+    formatted = formatted.replace(/\n/g, "<br>");
+    
+    return formatted;
+}
+
+
+// FUNGSI KLIK MENTION: Mencari User ID berdasarkan Nickname
+async function viewUserProfileByNickname(nickname) {
+    showToast("Mencari pengguna...", "info");
+    
+    try {
+        // Cari di database Supabase yang nicknamenya mirip (ilike = tidak peduli huruf besar/kecil)
+        const { data, error } = await supabaseClient
+            .from('profiles')
+            .select('id')
+            .ilike('nickname', nickname)
+            .single();
+            
+        if (data && data.id) {
+            // Jika ketemu, buka profilnya
+            viewUserProfile(data.id);
+        } else {
+            showToast(`Pengguna @${nickname} tidak ditemukan.`, "error");
+        }
+    } catch (err) {
+        showToast(`Pengguna @${nickname} tidak ditemukan.`, "error");
+    }
+}
+
+function cariBerdasarkanTagar(tagar) {
+    // 1. Tutup layar story yang sedang aktif jika ada
+    const storyModal = document.getElementById('story-viewer-modal');
+    if (storyModal && !storyModal.classList.contains('hidden')) {
+        closeStoryViewer();
+    }
+
+    // [BARU] 2. Tutup mode fokus Feed Utama secara halus jika aktif
+    if (document.body.classList.contains('video-focused')) {
+        toggleGlobalAudio(true); // true = abaikan history agar URL tidak bentrok
+    }
+
+    // [BARU] 3. Tutup Floating Player (Misal jika diklik dari video profil)
+    const floatingPlayer = document.getElementById('floating-video-player');
+    if (floatingPlayer && !floatingPlayer.classList.contains('hidden')) {
+        closeFloatingVideo(true); 
+    }
+
+    // 4. Filter data video yang caption-nya mengandung hashtag tersebut
+    const videoDitemukan = allVideosData.filter(v => 
+        v.caption && v.caption.toLowerCase().includes('#' + tagar.toLowerCase())
+    );
+
+    if (videoDitemukan.length === 0) {
+        showToast(`Belum ada video dengan tagar #${tagar}`, "error");
+        return;
+    }
+
+    // 5. TAMPILKAN GRID MODAL HASHTAG
+    const modal = document.getElementById('modal-hashtag-grid');
+    const grid = document.getElementById('hashtag-video-grid');
+    const title = document.getElementById('hashtag-grid-title');
+    const count = document.getElementById('hashtag-grid-count');
+
+    // Set Teks Header
+    title.innerText = '#' + tagar;
+    count.innerText = videoDitemukan.length + ' Video Terkait';
+    
+    // Render Grid (dibalik agar yang terbaru di atas)
+    const reversedVideos = [...videoDitemukan].reverse();
+    grid.innerHTML = reversedVideos.map((vid, index) => {
+        return `
+        <div class="aspect-[9/16] bg-black relative rounded-sm overflow-hidden group cursor-pointer border border-white/5" onclick="playHashtagVideo('${tagar}', ${index})">
+            <video class="w-full h-full object-cover" preload="metadata">
+                <source src="${vid.video_url}" type="video/mp4">
+            </video>
+            <div class="absolute bottom-1.5 left-1.5 flex items-center gap-1.5 text-white text-[10px] font-bold z-10 bg-black/50 px-2 py-1 rounded backdrop-blur-sm border border-white/10">
+                <i class="fas fa-play text-[8px]"></i> 
+            </div>
+        </div>
+        `;
+    }).join('');
+
+    // Hentikan video latar belakang di feed utama agar tidak bocor suaranya
+    document.querySelectorAll('.video-player, .float-video-player').forEach(v => v.pause());
+
+    // Buka Modal
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    
+    // [PENTING] Beri delay agar animasi CSS geser laci dapat tereksekusi dengan mulus
+    setTimeout(() => {
+        modal.classList.remove('translate-x-full');
+    }, 50);
+
+    // Beri jejak sejarah URL (untuk tombol Back HP)
+    history.pushState({ popup: 'hashtag_grid' }, null, '#tagar');
+}
+
+
+// FUNGSI PENUTUP LAYAR GRID
+function closeHashtagGrid(dariTombolBack = false) {
+    const modal = document.getElementById('modal-hashtag-grid');
+    modal.classList.add('translate-x-full');
+    
+    setTimeout(() => {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }, 300);
+
+    if (!dariTombolBack && window.location.hash === '#tagar') {
+        history.back();
+    }
+}
+
+function playHashtagVideo(tagar, startIndex) {
+    // 1. Ambil video dengan hashtag yang sama
+    const videoDitemukan = allVideosData.filter(v => 
+        v.caption && v.caption.toLowerCase().includes('#' + tagar.toLowerCase())
+    );
+    if(videoDitemukan.length === 0) return;
+
+    // 2. Balikkan urutan agar sinkron dengan grid
+    currentProfileVideos = [...videoDitemukan].reverse();
+
+    // 3. Tentukan index target klik
+    let targetIndex = parseInt(startIndex) || 0;
+
+    // Bersihkan layar floating player
+    const container = document.getElementById('floating-feed-container');
+    container.innerHTML = '';
+    container.scrollTop = 0;
+
+    // [BARU] Paksa suara menyala (unmute) otomatis saat video hashtag diklik
+    isGlobalMuted = false;
+
+    // Tampilkan floating player
+    document.getElementById('floating-video-player').classList.remove('hidden');
+    document.getElementById('floating-video-player').classList.add('flex');
+    document.getElementById('floating-video-player').style.opacity = '1'; // <--- TAMBAHKAN BARIS INI
+
+    if(floatObs) floatObs.disconnect();
+    setupFloatVideoObserver();
+
+    // 4. Render batch video agar mulus (target yang diklik + 2 di bawahnya)
+    profileFeedIndex = 0;
+    let amountToLoad = targetIndex + 3;
+    renderProfileVideoBatch(amountToLoad);
+
+    // 5. Scroll otomatis tepat ke video yang baru diklik
+    setTimeout(() => {
+        const targetCard = container.children[targetIndex];
+        if (targetCard) {
+            targetCard.scrollIntoView({ behavior: 'auto', block: 'start' });
+        }
+    }, 10);
+
+    // Tambahkan jejak URL agar tombol back HP tahu kalau sedang nonton video hashtag
+    history.pushState({ popup: 'floating_video_hashtag' }, null, '#play_tagar');
+}
+
+
+
+async function fetchBlockedUsers() {
+if(!currentUser) return;
+try {
+const { data, error } = await supabaseClient.from('blocks').select('blocked_id').eq('blocker_id', currentUser.id);
+if(!error && data) {
+blockedUsersList = data.map(d => d.blocked_id);
+}
+} catch(e) {
+console.error("Gagal mengambil status blokir", e);
+}
+}
+
+async function checkGlobalUnreadMessages() {
+if(!currentUser) return;
+try {
+const { count, error } = await supabaseClient
+.from('messages')
+.select('*', { count: 'exact', head: true })
+.eq('receiver_id', currentUser.id)
+.eq('is_read', false);
+
+const badge = document.getElementById('global-chat-badge');
+if(badge) {
+if(!error && count && count > 0) {
+badge.innerText = count > 99 ? '99+' : count;
+badge.classList.remove('hidden');
+} else {
+badge.classList.add('hidden');
+}
+}
+} catch(e) {
+console.error("Error unread messages", e);
+}
+}
+
+function initGlobalMessageListener() {
+    if (!currentUser || globalMessageSubscription) return;
+
+    globalMessageSubscription = supabaseClient
+        .channel('global_messages')
+        .on('postgres_changes', {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'messages'
+        }, payload => {
+            const msg = payload.new;
+            const isForMe = msg.receiver_id === currentUser.id;
+            const isForMyGroup = msg.group_id && globalGroupList.some(g => g.id === msg.group_id);
+
+            // Cek apakah pesan untuk saya/grup dan pengirimnya bukan saya & tidak diblokir
+            if ((isForMe || isForMyGroup) && msg.sender_id !== currentUser.id && !blockedUsersList.includes(msg.sender_id)) {
+                
+                showToast("Ada pesan baru masuk!", "info");
+                
+                if ("Notification" in window && Notification.permission === "granted" && document.hidden) {
+                    new Notification("AU2Hub", {
+                        body: isForMyGroup ? "Ada pesan baru di Grup!" : "Anda menerima pesan baru!",
+                        icon: "/app-icon-192.png"
+                    });
+                }
+                
+                checkGlobalUnreadMessages();
+                
+                const widget = document.getElementById('floating-widget');
+                const chatList = document.getElementById('chat-list-view');
+                if (!widget.classList.contains('opacity-0') && chatList.classList.contains('flex')) {
+                    setTimeout(() => loadChatList(), 300);
+                }
+            }
+        })
+        .subscribe();
+        
+    checkGlobalUnreadMessages();
+}
+
+
+async function showUserList(type) {
+    if (!currentUser && viewedUserId === null) return;
+    const targetId = viewedUserId || currentUser.id;
+
+    // [BARU] Cek apakah ini profil sendiri dan sedang membuka tab "pengikut"
+    const isOwnProfile = currentUser && targetId === currentUser.id;
+    const isFollowerList = type === 'pengikut';
+
+    const modal = document.getElementById('modal-user-list');
+    const container = document.getElementById('user-list-container');
+    const title = document.getElementById('user-list-title');
+
+    title.innerText = type === 'mengikuti' ? 'Mengikuti' : 'Pengikut';
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    document.getElementById('userListSearch').value = '';
+    container.innerHTML = '<div class="flex justify-center mt-10"><i class="fas fa-spinner fa-spin text-brand-accent text-xl"></i></div>';
+
+    let query = supabaseClient.from('follows').select(type === 'mengikuti' ? 'following_id' : 'follower_id').eq(type === 'mengikuti' ? 'follower_id' : 'following_id', targetId);
+    const { data: follows } = await query;
+
+    if (!follows || follows.length === 0) {
+        container.innerHTML = `<p class="text-center text-xs text-gray-500 mt-10">Belum ada ${type}.</p>`;
+        return;
+    }
+
+    const ids = follows.map(f => type === 'mengikuti' ? f.following_id : f.follower_id);
+    const { data: profiles } = await supabaseClient.from('profiles').select('id, nickname, avatar_url, bio').in('id', ids);
+
+    if (profiles && profiles.length > 0) {
+        container.innerHTML = profiles.map(p => {
+            const ava = p.avatar_url || `https://ui-avatars.com/api/?name=${p.nickname}&background=1A1133&color=fff`;
+            
+            // [BARU] TOMBOL HAPUS PENGIKUT
+            // Tombol hanya digambar jika isOwnProfile (profil sendiri) & isFollowerList (tab pengikut)
+            let removeBtn = '';
+            if (isOwnProfile && isFollowerList) {
+                // event.stopPropagation() ditambahkan agar saat tombol dihapus diklik, 
+                // sistem tidak malah membuka profil orang tersebut
+                let namaAman = escapeHTML(p.nickname).replace(/'/g, "\\'");
+                removeBtn = `
+                <button onclick="event.stopPropagation(); removeFollower('${p.id}', '${namaAman}')"
+                    class="ml-auto w-8 h-8 rounded-full bg-red-500/10 text-red-500 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all active:scale-90 shrink-0"
+                    title="Hapus Pengikut">
+                    <i class="fas fa-user-times text-[10px]"></i>
+                </button>`;
+            }
+
+            return `
+            <div onclick="viewUserProfile('${p.id}'); closeUserList();" class="flex items-center p-3 hover:bg-white/5 cursor-pointer rounded-2xl transition-all border-b border-white/5 last:border-0">
+                <img src="${ava}" class="w-10 h-10 rounded-full object-cover border border-white/10 shrink-0">
+                <div class="ml-3 flex-1 min-w-0 pr-2">
+                    <h4 class="font-bold text-white text-xs truncate">${p.nickname}</h4>
+                    <p class="text-[10px] text-gray-400 truncate w-full">${p.bio || ''}</p>
+                </div>
+                ${removeBtn}
+            </div>`;
+        }).join('');
+    }
+}
+
+
+function closeUserList() {
+const modal = document.getElementById('modal-user-list');
+modal.classList.add('hidden');
+modal.classList.remove('flex');
+}
+
+// ==========================================
+// FUNGSI BARU: HAPUS PENGIKUT
+// ==========================================
+async function removeFollower(followerId, nickname) {
+    if (!currentUser) return;
+    
+    // Konfirmasi sebelum menghapus
+    const konfirmasi = await customConfirm(`Yakin ingin menghapus ${nickname} dari daftar pengikut Anda?`);
+    if (!konfirmasi) return;
+
+    try {
+        showToast(`Menghapus ${nickname}...`, "info");
+
+        // Proses hapus dari Supabase: 
+        // follower_id adalah ID orang yang mengikuti, following_id adalah ID kita
+        const { error } = await supabaseClient
+            .from('follows')
+            .delete()
+            .eq('follower_id', followerId)
+            .eq('following_id', currentUser.id);
+
+        if (error) throw error;
+
+        showToast(`${nickname} berhasil dihapus dari pengikut.`, "success");
+        
+        // Refresh statistik angka di profil dan muat ulang daftar modal
+        fetchFollowStats(currentUser.id);
+        showUserList('pengikut'); 
+        
+    } catch (err) {
+        console.error(err);
+        showToast("Gagal menghapus pengikut: " + err.message, "error");
+    }
+}
+
+
+async function toggleBlockUser(userId) {
+if(!currentUser) return openAuthModal();
+const btn = document.getElementById('btn-block-user');
+
+try {
+if(blockedUsersList.includes(userId)) {
+// 🔥 PERBAIKAN: Menggunakan modal kustom
+const hapus = await customConfirm("Buka blokir pengguna ini?");
+if(hapus) {
+btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memproses...';
+await supabaseClient.from('blocks').delete().eq('blocker_id', currentUser.id).eq('blocked_id', userId);
+blockedUsersList = blockedUsersList.filter(id => id !== userId);
+showToast("Blokir dibuka", "success");
+checkBlockStatusUI();
+}
+} else {
+// 🔥 PERBAIKAN: Menggunakan modal kustom
+const blokir = await customConfirm("Blokir pengguna ini? Anda tidak akan melihat video dan pesannya.");
+if(blokir) {
+btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memproses...';
+await supabaseClient.from('blocks').insert({ blocker_id: currentUser.id, blocked_id: userId });
+blockedUsersList.push(userId);
+showToast("Pengguna diblokir", "info");
+checkBlockStatusUI();
+allVideosData = allVideosData.filter(v => v.user_id !== userId);
+if(document.getElementById('sosial').classList.contains('active')) loadVideos();
+}
+}
+} catch(e) {
+showToast("Terjadi kesalahan sistem blokir", "error");
+checkBlockStatusUI();
+}
+}
+
+
+function checkBlockStatusUI() {
+const btn = document.getElementById('btn-block-user');
+if(!btn || !viewedUserId) return;
+
+if(blockedUsersList.includes(viewedUserId)) {
+btn.innerHTML = '<i class="fas fa-unlock mr-1"></i> Buka Blokir';
+btn.className = 'w-full bg-gray-500/10 border border-gray-500/20 py-2 rounded-xl text-[10px] font-bold text-gray-400 hover:bg-gray-500/20 transition-colors mt-1';
+} else {
+btn.innerHTML = '<i class="fas fa-ban mr-1"></i> Blokir Pengguna';
+btn.className = 'w-full bg-red-500/10 border border-red-500/20 py-2 rounded-xl text-[10px] font-bold text-red-500 hover:bg-red-500/20 transition-colors mt-1';
+}
+}
+
+async function checkSession() {
+    document.getElementById('profile-loading').classList.remove('hidden');
+    document.getElementById('profile-loading').classList.add('flex');
+
+    document.querySelectorAll('#profile-logged-in').forEach(el => el.classList.add('hidden'));
+    document.getElementById('profile-logged-out').classList.add('hidden');
+
+    const { data: { user } } = await supabaseClient.auth.getUser();
+
+    document.getElementById('profile-loading').classList.add('hidden');
+    document.getElementById('profile-loading').classList.remove('flex');
+
+    if (user) {
+        currentUser = user;
+        await fetchProfile();
+        const tracker = document.getElementById('order-tracker-section');
+        if (tracker) { tracker.classList.remove('hidden'); tracker.style.display = 'block'; }
+        const pesananOut = document.getElementById('pesanan-logged-out');
+        if (pesananOut) pesananOut.classList.add('hidden');
+        loadOrderTracker(user.id);
+
+        await fetchBlockedUsers();
+        checkGlobalUnreadMessages();
+        document.querySelectorAll('#profile-logged-in').forEach(el => el.classList.remove('hidden'));
+        document.getElementById('profile-logged-out').classList.add('hidden');
+        prosesAutoDeliveryTertunda(); // Panggil jaring pengaman setiap kali web dibuka
+
+
+        // 🚀 PRO-FIX: Jalankan fetch di background tanpa 'await' agar proses Login tidak tersandera
+        if (allVideosData.length === 0) {
+            fetch('/api/get-videos')
+                .then(res => res.json())
+                .then(dataDariSheet => {
+                    allVideosData = dataDariSheet.map((v, index) => {
+                        v.original_index = index; // <--- SUNTIKAN TIKET ANTREAN
+                        v.id = v.id || v.video_id || v.ID || 'vid_' + Math.random().toString(36).substr(2, 9);
+                        return v;
+                    }).filter(v => !blockedUsersList.includes(v.user_id));
+                })
+                .catch(e => console.log("Silent fetch videos failed", e));
+        }
+
+        updateUIForLoggedIn();
+        initPresence();
+        updateMyLastSeen();
+        initGlobalMessageListener();
+    } else {
+        if (presenceChannel) { supabaseClient.removeChannel(presenceChannel); presenceChannel = null; }
+        const tracker = document.getElementById('order-tracker-section');
+        if (tracker) { tracker.classList.add('hidden'); tracker.style.display = 'none'; }
+        const pesananOut = document.getElementById('pesanan-logged-out');
+        if (pesananOut) pesananOut.classList.remove('hidden');
+
+        if (globalMessageSubscription) { supabaseClient.removeChannel(globalMessageSubscription); globalMessageSubscription = null; }
+        document.querySelectorAll('#profile-logged-in').forEach(el => el.classList.add('hidden'));
+        document.getElementById('profile-logged-out').classList.remove('hidden');
+        updateUIForLoggedOut();
+    }
+}
+
+
+// ==========================================
+// FITUR LEVEL & EXP SYSTEM
+// ==========================================
+function hitungStatusLevel(totalExp) {
+    let exp = totalExp || 0; 
+    const level = Math.floor(Math.sqrt(exp / 100)) + 1;
+    const batasBawahExp = Math.pow(level - 1, 2) * 100;
+    const targetNextLevel = Math.pow(level, 2) * 100;
+    const expTerkumpulDiLevelIni = exp - batasBawahExp;
+    const totalExpDibutuhkanLevelIni = targetNextLevel - batasBawahExp;
+    let persentase = Math.floor((expTerkumpulDiLevelIni / totalExpDibutuhkanLevelIni) * 100);
+    if (persentase < 0) persentase = 0;
+    if (persentase > 100) persentase = 100;
+    return { level, exp, targetNextLevel, persentase };
+}
+
+// Fungsi Penambah EXP Otomatis (Aman via Server RPC)
+async function tambahExp(jumlah) {
+    if (!currentUser || !userProfile) return;
+
+    // Batasi maksimal request dari frontend 
+    const jumlahAman = Math.min(jumlah, 100); 
+    
+    const expLama = userProfile.exp || 0;
+    const levelLama = hitungStatusLevel(expLama).level;
+    
+    try {
+        // 🚀 Tembak ke RPC Supabase (Backend yang menghitung dan memvalidasi)
+        const { error } = await supabaseClient.rpc('tambah_exp_aman', { 
+            p_user_id: currentUser.id, 
+            p_jumlah: jumlahAman 
+        });
+
+        if (error) throw error;
+
+        // Prediksi lokal untuk UI (biar layar langsung berubah tanpa loading)
+        const expBaru = expLama + jumlahAman;
+        userProfile.exp = expBaru;
+        const levelBaru = hitungStatusLevel(expBaru).level;
+        
+        // Munculkan notifikasi jika Naik Level!
+        if (levelBaru > levelLama) {
+            showToast(`🎉 SELAMAT! Anda naik ke Level ${levelBaru}!`, "success");
+        }
+
+        // Update animasi bar langsung jika pengguna sedang membuka layar profilnya sendiri
+        if (document.getElementById('profile').classList.contains('active') && viewedUserId === currentUser.id) {
+            const statusLevel = hitungStatusLevel(expBaru);
+            document.getElementById('profile-level-badge').innerText = `Lv. ${statusLevel.level}`;
+            document.getElementById('text-exp-current').innerText = `EXP: ${statusLevel.exp}`;
+            document.getElementById('text-exp-target').innerText = `Next: ${statusLevel.targetNextLevel}`;
+            document.getElementById('bar-exp-progress').style.width = `${statusLevel.persentase}%`;
+        }
+    } catch (e) {
+        console.error("Gagal auto-update EXP:", e);
+    }
+}
+
+
+async function fetchProfile() {
+    const { data, error } = await supabaseClient.from('profiles').select('*').eq('id', currentUser.id).single();
+    if (data) {
+        userProfile = data;
+    } else {
+        userProfile = { nickname: 'Player', avatar_url: '', bio: 'Halo! Salam kenal.', exp: 0 };
+        await supabaseClient.from('profiles').upsert({ id: currentUser.id, nickname: 'Player', avatar_url: '', bio: 'Halo! Salam kenal.', exp: 0 });
+    }
+
+    if(!viewedUserId || viewedUserId === currentUser.id) {
+        const pNick = document.getElementById('profile-nickname'); if(pNick) pNick.innerText = "@" + (userProfile.nickname || "Player");
+        const pBio = document.getElementById('profile-bio'); if(pBio) pBio.innerText = userProfile.bio || "Belum ada deskripsi.";
+        if (userProfile.avatar_url && userProfile.avatar_url !== "") {
+            const pImg = document.getElementById('profile-img'); if(pImg) pImg.src = userProfile.avatar_url;
+        }
+
+        // --- TAMBAHAN BARU: EKSEKUSI LEVEL ---
+        // Catatan: Pastikan di database Supabase Anda, tabel 'profiles' sudah ada kolom 'exp' bertipe int4/numeric.
+        const expData = userProfile.exp || 0; 
+        const statusLevel = hitungStatusLevel(expData);
+
+        const elLevelBadge = document.getElementById('profile-level-badge');
+        const elExpContainer = document.getElementById('profile-exp-container');
+        
+        if (elLevelBadge && elExpContainer) {
+            // Tampilkan tulisan Level
+            elLevelBadge.innerText = `Lv. ${statusLevel.level}`;
+            elLevelBadge.classList.remove('hidden');
+            
+            // Animasikan bar dan teks
+            document.getElementById('text-exp-current').innerText = `EXP: ${statusLevel.exp}`;
+            document.getElementById('text-exp-target').innerText = `Next: ${statusLevel.targetNextLevel}`;
+            
+            // Gunakan timeout kecil agar efek animasi transisi CSS terlihat saat dimuat
+            setTimeout(() => {
+                document.getElementById('bar-exp-progress').style.width = `${statusLevel.persentase}%`;
+            }, 100);
+            
+            elExpContainer.classList.remove('hidden');
+        }
+    }
+}
+
+
+function openAuthModal() {
+history.pushState({ popup: 'auth' }, null, '#auth');
+document.getElementById('modal-auth').classList.remove('hidden');
+document.getElementById('modal-auth').classList.add('flex');
+}
+
+function closeAuthModal() {
+    const modal = document.getElementById('modal-auth');
+    modal.style.transition = 'opacity 0.3s ease';
+    modal.style.opacity = '0';
+
+    setTimeout(() => {
+        // PAKSA modal tertutup secara fisik terlebih dahulu
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+        modal.style.opacity = '1';
+
+        // Ganti history.back() dengan replaceState untuk menghindari PWA terjebak di loop hash
+        if (window.location.hash === '#auth') {
+            history.replaceState(null, null, '#home');
+        }
+    }, 300);
+}
+
+
+function toggleAuthMode() {
+isAuthLogin = !isAuthLogin;
+document.getElementById('auth-title').innerText = isAuthLogin ? "Selamat Datang" : "Buat Akun Baru";
+document.getElementById('nickname-field').classList.toggle('hidden', isAuthLogin);
+document.getElementById('auth-btn').innerText = isAuthLogin ? "Login" : "Daftar";
+document.getElementById('toggle-text').innerText = isAuthLogin ? "Belum punya akun?" : "Sudah punya akun?";
+document.getElementById('toggle-btn').innerText = isAuthLogin ? "Daftar" : "Login";
+}
+
+async function handleAuth() {
+const email = document.getElementById('auth-email').value, password = document.getElementById('auth-pass').value, nick = document.getElementById('auth-nick').value, btn = document.getElementById('auth-btn');
+btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+try {
+if (isAuthLogin) {
+const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+if (error) throw error;
+showToast("Login berhasil!", "success");
+} else {
+const { data: { user }, error } = await supabaseClient.auth.signUp({ email, password });
+if (error) throw error;
+const { error: dbErr } = await supabaseClient.from('profiles').upsert({ id: user.id, nickname: nick || "Player", avatar_url: "" });
+if (dbErr) throw new Error("Database Profil Error: " + dbErr.message);
+showToast("Akun berhasil dibuat!", "success");
+}
+
+document.getElementById('auth-email').value = '';
+document.getElementById('auth-pass').value = '';
+document.getElementById('auth-nick').value = '';
+
+// FITUR IZIN NOTIFIKASI
+// Bungkus notifikasi dengan try-catch agar jika PWA menolak, login tetap sukses
+try {
+    if ("Notification" in window && Notification.permission !== "granted") {
+        Notification.requestPermission().catch(() => {});
+    }
+} catch (err) {
+    console.log("Notifikasi otomatis diblokir oleh OS.");
+}
+
+await checkSession();
+closeAuthModal();
+
+
+} catch (e) {
+showToast(e.message, "error");
+} finally {
+btn.disabled = false;
+btn.innerText = isAuthLogin ? "Login" : "Daftar";
+}
+}
+
+async function handleLogout() {
+await supabaseClient.auth.signOut();
+currentUser = null;
+userProfile = null;
+    blockedUsersList = [];
+
+    localStorage.removeItem('optimistic_vip');
+
+    // --- BERSIHKAN SEMUA STATE & CACHE LAMA ---
+    allVideosData = [];
+    globalPersonalList = [];
+    globalGroupList = [];
+    closeChatRoom(false); // Matikan radar obrolan jika sedang terbuka
+    if (commentSubscription) {
+        supabaseClient.removeChannel(commentSubscription);
+        commentSubscription = null;
+    }
+    // ------------------------------------------
+
+    if (globalMessageSubscription) {
+
+supabaseClient.removeChannel(globalMessageSubscription);
+globalMessageSubscription = null;
+}
+
+checkSession();
+showToast("Anda telah keluar.", "info");
+}
+
+function updateUIForLoggedIn() {
+const ava = (userProfile?.avatar_url && userProfile.avatar_url !== "") ? userProfile.avatar_url : `https://ui-avatars.com/api/?name=${userProfile?.nickname || 'User'}&background=1A1133&color=fff`;
+document.getElementById('header-user').innerHTML = `
+<div onclick="switchTab('profile')" class="flex items-center gap-2 cursor-pointer bg-white/5 pr-4 pl-1 py-1 rounded-full border border-white/10 active:scale-95 transition-transform">
+<img src="${ava}" class="w-7 h-7 rounded-full object-cover border border-brand-info">
+<span class="text-[10px] font-bold text-white">${userProfile?.nickname || 'User'}</span>
+</div>`;
+
+renderProfileVideos();
+
+if(currentUser) {
+fetchFollowStats(currentUser.id);
+    if (document.getElementById('toko') && document.getElementById('toko').classList.contains('active')) {
+        loadTokoSaya();
+    }
+}
+}
+
+async function renderProfileVideos(targetUserId = null) {
+    const grid = document.getElementById('profile-video-grid');
+    if (!grid) return;
+
+    const uidToRender = String(targetUserId || (currentUser ? currentUser.id : viewedUserId));
+
+    if (!uidToRender || uidToRender === 'null' || uidToRender === 'undefined') {
+        grid.innerHTML = '';
+        return;
+    }
+
+    if (allVideosData.length === 0) {
+        try {
+            grid.innerHTML = '<div class="col-span-3 text-center text-xs text-brand-info py-4"><i class="fas fa-spinner fa-spin text-xl mb-2"></i><br>Memuat...</div>';
+            const res = await fetch('/api/get-videos');
+            let dataDariSheet = await res.json();
+
+            dataDariSheet = dataDariSheet.map((v, index) => {
+                v.original_index = index; // <--- SUNTIKAN TIKET ANTREAN
+                v.id = v.id || v.video_id || v.ID || 'vid_' + Math.random().toString(36).substr(2, 9);
+                v.user_id = v.user_id || v.User_ID || v.userId || v.userid; 
+                return v;
+            });
+
+            let nextIdx = dataDariSheet.length;
+            newUploads.forEach(newVid => {
+                newVid.id = newVid.id || newVid.video_id;
+                if (!dataDariSheet.find(v => v.id === newVid.id)) {
+                    newVid.original_index = nextIdx++;
+                    dataDariSheet.push(newVid);
+                }
+            });
+
+            dataDariSheet = dataDariSheet.filter(v => !blockedUsersList.includes(v.user_id));
+            allVideosData = dataDariSheet;
+        } catch(e) {
+            grid.innerHTML = '<p class="col-span-3 text-center text-xs text-red-500 py-4">Gagal memuat video profil.</p>';
+            return;
+        }
+    }
+
+    const userVideos = allVideosData.filter(v => String(v.user_id) === uidToRender);
+
+    const elLikes = document.getElementById('profile-total-likes');
+    if (elLikes) elLikes.innerText = (userVideos.length * 3);
+
+    // KUNCI PENGURUTAN: Acuhkan tanggal yang eror, langsung susun berdasarkan tiket antrean asli!
+    const reversedVideos = [...userVideos].sort((a, b) => {
+        return (b.original_index || 0) - (a.original_index || 0);
+    });
+
+    if (reversedVideos.length === 0) {
+        grid.innerHTML = '<div class="col-span-3 text-center text-xs text-gray-500 py-8 bg-black/20 rounded-xl border border-white/5"><i class="fas fa-film text-2xl mb-2 opacity-50"></i><br>Belum ada video yang diupload.</div>';
+        return;
+    }
+
+    grid.innerHTML = reversedVideos.map((vid, index) => {
+        return `
+        <div class="aspect-[9/16] bg-black relative rounded-md overflow-hidden border border-white/10 group cursor-pointer" onclick="openProfileFeed('${vid.user_id}', ${index})">
+            <video class="w-full h-full object-cover" preload="metadata">
+                <source src="${vid.video_url}" type="video/mp4">
+            </video>
+            <div class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                <i class="fas fa-play text-white text-xl"></i>
+            </div>
+        </div>
+        `;
+    }).join('');
+}
+
+
+function timeAgo(dateString) {
+if (!dateString) return "Baru saja";
+const past = new Date(dateString);
+if (isNaN(past.getTime())) return "Beberapa saat lalu";
+const now = new Date();
+const seconds = Math.floor((now - past) / 1000);
+
+let interval = Math.floor(seconds / 31536000);
+if (interval >= 1) return interval + " tahun lalu";
+interval = Math.floor(seconds / 2592000);
+if (interval >= 1) return interval + " bulan lalu";
+interval = Math.floor(seconds / 86400);
+if (interval >= 1) return interval + " hari lalu";
+interval = Math.floor(seconds / 3600);
+if (interval >= 1) return interval + " jam lalu";
+interval = Math.floor(seconds / 60);
+if (interval >= 1) return interval + " menit lalu";
+
+return "Baru saja";
+}
+
+function updateUIForLoggedOut() {
+document.getElementById('header-user').innerHTML = `<button onclick="openAuthModal()" class="text-[10px] font-bold bg-white/10 px-4 py-2 rounded-full border border-white/10 uppercase active:scale-95 transition-transform">Login / Daftar</button>`;
+}
+
+async function handleAvatarUpload(event) {
+    const file = event.target.files[0]; 
+    if (!file) return;
+    
+    const icon = document.querySelector('label[for="avatar-input"] i'); 
+    icon.className = 'fas fa-spinner fa-spin';
+    
+    try {
+        showToast("Memproses foto profil...", "info");
+
+        // 1. Kompresi gambar menggunakan fungsi bawaan Anda
+        const compressedBlob = await compressImage(file);
+        
+        // Ubah blob hasil kompresi menjadi objek File utuh (format JPEG)
+        const finalFile = new File([compressedBlob], "avatar.jpg", { type: "image/jpeg" });
+
+        // 2. LOGIKA PENGHAPUSAN FOTO LAMA (ANTI NUMPUK)
+        const oldAvatarUrl = userProfile?.avatar_url || "";
+        // Pastikan foto lama ada dan BUKAN avatar default dari ui-avatars.com
+        if (oldAvatarUrl && !oldAvatarUrl.includes('ui-avatars.com')) {
+            await fetch('/api/delete-file', {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ fileUrl: oldAvatarUrl })
+            }).catch(e => console.log("Abaikan jika file lama sudah tidak ada:", e));
+        }
+
+        // 3. Tentukan Folder Baru: {User ID}/avatar/
+        const pathLengkap = `${currentUser.id}/avatar/ava_${Date.now()}`;
+
+        // 4. Minta URL Upload dari satelit/Biznet
+        const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent(pathLengkap)}&filetype=${encodeURIComponent(finalFile.type)}`);
+        const dataUrl = await resUrl.json();
+
+        // 5. Upload file fisik langsung ke Storage (Lebih ringan dari Base64)
+        await fetch(dataUrl.uploadUrl, {
+            method: 'PUT',
+            body: finalFile,
+            headers: { 'Content-Type': finalFile.type, 'x-amz-acl': 'public-read' }
+        });
+
+        // 6. Update URL foto di Supabase Database
+        const currentNick = userProfile?.nickname || "Player";
+        // Walau variabelnya finalVideoUrl, ini adalah link universal dari API Anda
+        const newAvatarUrl = dataUrl.finalVideoUrl; 
+
+        const { error: dbErr } = await supabaseClient
+            .from('profiles')
+            .upsert({ id: currentUser.id, nickname: currentNick, avatar_url: newAvatarUrl });
+
+        if (dbErr) throw new Error(dbErr.message);
+
+        // 7. Update tampilan layar tanpa perlu reload
+        const elImg = document.getElementById('profile-img'); 
+        if (elImg) elImg.src = newAvatarUrl;
+
+        await fetchProfile();
+        updateUIForLoggedIn();
+        showToast("Foto profil berhasil diperbarui!", "success");
+
+    } catch (e) {
+        showToast("Gagal upload: " + e.message, "error");
+    } finally {
+        icon.className = 'fas fa-camera text-xs';
+    }
+}
+
+
+function compressImage(file) {
+return new Promise((resolve) => {
+const reader = new FileReader(); reader.readAsDataURL(file);
+reader.onload = (e) => {
+const img = new Image(); img.src = e.target.result;
+img.onload = () => {
+const canvas = document.createElement('canvas'); const scale = 400 / img.width;
+canvas.width = 400; canvas.height = img.height * scale;
+const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+canvas.toBlob((blob) => resolve(blob), 'image/jpeg', 0.7);
+};
+};
+});
+}
+
+function toggleGlobalAudio(skipHistory = false) {
+isGlobalMuted = !isGlobalMuted;
+document.querySelectorAll('.video-player, .float-video-player').forEach(v => v.muted = isGlobalMuted);
+
+const allWraps = document.querySelectorAll('.video-inner-wrap');
+const navBottom = document.querySelector('nav');
+const headerTop = document.querySelector('header');
+
+if(isGlobalMuted) {
+    showToast("Suara Dimatikan", "info");
+    // Kembalikan video ke dalam kotak & gembok kembali
+    allWraps.forEach(wrap => wrap.classList.remove('floating-focus'));
+    document.body.classList.remove('video-focused');
+
+    // Hapus efek blur pada UI
+    if(navBottom) navBottom.style.filter = 'none';
+    if(headerTop) headerTop.style.filter = 'none';
+
+    // 🔥 FIX: Jika Floating Player (profil/hashtag) sedang terbuka, tutup secara paksa TANPA history.back()
+    const floatingPlayer = document.getElementById('floating-video-player');
+    if (floatingPlayer && !floatingPlayer.classList.contains('hidden')) {
+        closeFloatingVideo(true); 
+    }
+
+    // Hapus jejak URL HANYA jika tidak ada instruksi skipHistory
+    if (!skipHistory && window.location.hash === '#focused') {
+        history.back();
+    }
+} else {
+showToast("Suara Dinyalakan", "success");
+// Buka gembok layar agar video bisa melayang keluar kotak
+document.body.classList.add('video-focused');
+
+// --- PENTING: TAMBAHKAN HISTORY AGAR TOMBOL KEMBALI HP TERDETEKSI ---
+history.pushState({ popup: 'focused' }, null, '#focused');
+
+// Terbangkan HANYA video yang sedang aktif
+document.querySelectorAll('.video-player').forEach(v => {
+if (!v.paused) {
+const wrap = v.closest('.video-inner-wrap');
+if (wrap) wrap.classList.add('floating-focus');
+}
+});
+
+// Redupkan sisa antarmuka
+if(navBottom) navBottom.style.filter = 'blur(8px) opacity(0.5)';
+if(headerTop) headerTop.style.filter = 'blur(8px) opacity(0.5)';
+}
+}
+
+
+
+function switchTab(tabId, event = null, isPush = true) {
+    if (event) event.preventDefault();
+
+    // 🔥 FIX: Mencegah tabrakan layar freeze saat klik AU2Hub dari dalam mode Nonton Video
+    if (document.body.classList.contains('video-focused')) {
+        toggleGlobalAudio(true);
+    }
+
+    // Matikan pemutar video secara paksa jika user meninggalkan tab Sosial
+    if (tabId !== 'sosial') {
+        document.querySelectorAll('.video-player, .float-video-player').forEach(v => {
+            v.pause();
+        });
+    }
+
+    // 🚀 PRO-FIX 5 TAHUN: PAKSA BALIK PROFIL SENDIRI TANPA SYARAT + CLEAR PARAMS URL
+    if (tabId === 'profile' && event !== null && currentUser) {
+        viewedUserId = currentUser.id;
+
+// Bersihkan sisa query string (?id=...) dari URL biar balik murni mentereng ke #profile
+history.replaceState({ popup: 'my_profile' }, null, '#profile');
+
+openUserProfile(currentUser.id);
+return; // hentikan karena openUserProfile akan mengeksekusi switchTab secara mandiri
+}
+
+
+if (tabId !== 'profile' && tabId !== 'pembayaran' && tabId !== 'upload') {tabSebelumnya = tabId;}
+if (tabId === 'layanan' && isPush && document.getElementById('pembayaran').classList.contains('active')) {
+window.scrollTo({ top: 0, behavior: 'smooth' }); return;
+}
+
+const targetSection = document.getElementById(tabId) || document.getElementById('home');
+if (!targetSection) return;
+
+localStorage.setItem('lastTab', tabId);
+document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+document.querySelectorAll('.nav-item').forEach(n => {
+n.classList.remove('active');
+const icon = n.querySelector('i');
+if (icon) icon.style.animation = 'none';
+});
+
+targetSection.classList.add('active');
+
+if (tabId === 'sosial') {
+loadVideos();
+}
+
+if (tabId === 'toko') {
+    loadTokoSaya();
+}
+
+
+        // Solusi Warna Navigasi Cerdas (Anti-Nyangkut)
+        let activeNav = document.querySelector(`.nav-item[href="#${tabId}"]`);
+        
+        // Pengecualian khusus: Saat buka Pembayaran, nyalakan ikon Layanan
+        if (tabId === 'pembayaran') {
+            activeNav = document.querySelector(`.nav-item[href="#layanan"]`);
+        }
+
+        if (activeNav) {
+            activeNav.classList.add('active');
+            const icon = activeNav.querySelector('i');
+            if (icon) { 
+                void icon.offsetWidth; 
+                icon.style.animation = 'popBounce 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards'; 
+            }
+        }
+
+setTimeout(() => { window.scrollTo({ top: 0, behavior: 'auto' }); }, 10);
+if (isPush && window.location.hash !== `#${tabId}`) history.pushState(null, null, `#${tabId}`);
+}
+
+
+window.addEventListener('popstate', () => {
+    let isPopupClosed = false;
+    
+        // ==========================================
+    // TANGKAP SEMUA MODAL PASAR PLAYER
+    // ==========================================
+    const modalGalleryPasar = document.getElementById('modal-gallery-pasar');
+    if (modalGalleryPasar && !modalGalleryPasar.classList.contains('hidden')) {
+        tutupGalleryPasar(true);
+        return;
+    }
+
+    const modalDetailPasar = document.getElementById('modal-detail-pasar');
+    if (modalDetailPasar && !modalDetailPasar.classList.contains('hidden')) {
+        tutupDetailPasar(true);
+        return;
+    }
+
+    const modalJual = document.getElementById('modal-jual-barang');
+    if (modalJual && !modalJual.classList.contains('hidden')) {
+        tutupModalJualBarang(true);
+        return;
+    }
+
+    const modalEditProduk = document.getElementById('modal-edit-produk');
+    if (modalEditProduk && !modalEditProduk.classList.contains('hidden')) {
+        tutupModalEditProduk(true);
+        return;
+    }
+    // ==========================================
+
+    // TANGKAP LACI DOMPET
+    const modalDompet = document.getElementById('modal-saldo-dompet');
+    if (modalDompet && !modalDompet.classList.contains('hidden')) {
+        tutupModalSaldoDompet(true);
+        return;
+    }
+    
+        // TANGKAP LACI VIP SELLER
+    const modalLangganan = document.getElementById('modal-langganan-seller');
+    if (modalLangganan && !modalLangganan.classList.contains('hidden')) {
+        tutupModalLangganan(true);
+        return;
+    }
+
+
+    // 1. TANGKAP INFO GRUP (Tambahkan kode ini)
+    const modalGroupInfo = document.getElementById('modal-group-info');
+    if (modalGroupInfo && !modalGroupInfo.classList.contains('hidden')) {
+        closeGroupInfoModal(true);
+        return;
+    }
+
+    const modalPreviewMedia = document.getElementById('modal-preview-media');
+    if (modalPreviewMedia && !modalPreviewMedia.classList.contains('hidden')) {
+        tutupPreviewMedia(true);
+        return;
+    }
+
+    // 2. TANGKAP MODAL INVOICE (KARENA INI MENUMPUK DI ATAS RIWAYAT) 👇
+    const modalInvoice = document.getElementById('modal-detail-pesanan');
+    if (modalInvoice && !modalInvoice.classList.contains('hidden')) {
+        closeDetailPesanan(true);
+        return;
+    }
+
+    // 3. BARU TANGKAP MODAL RIWAYAT PESANAN (LAPISAN BAWAH) 👇
+    const modalRiwayat = document.getElementById('modal-riwayat-pesanan');
+    if (modalRiwayat && !modalRiwayat.classList.contains('hidden')) {
+        closeRiwayatPesanan(true); 
+        return;
+    }
+
+    // (Di dalam event listener popstate...)
+
+    // 🚀 TAMBAHAN BARU: TANGKAP LAYAR PRATINJAU FULL SCREEN DULU
+    const modalPratinjau = document.getElementById('modal-pratinjau');
+    if (modalPratinjau && !modalPratinjau.classList.contains('hidden')) {
+        tutupPratinjauVideo(true);
+        return;
+    }
+
+    // 🚀 TAMBAHAN LAMA: TANGKAP MODAL UPLOAD VIDEO & PRIVASI
+    const modalPrivasi = document.getElementById('modal-privasi-video');
+    if (modalPrivasi && (!modalPrivasi.classList.contains('hidden') && !modalPrivasi.classList.contains('translate-y-full'))) {
+        tutupPilihanPrivasi();
+        // Kembalikan jejak URL ke #upload agar bisa di-back lagi untuk menutup form upload
+        history.pushState({ popup: 'upload' }, null, '#upload');
+        return;
+    }
+
+    const modalUpload = document.getElementById('modal-upload');
+    if (modalUpload && !modalUpload.classList.contains('hidden')) {
+        closeUploadModal();
+        return;
+    }
+
+    // ==========================================
+
+    // 2. TANGKAP SEMUA POP-UP DULU (Biar menutup duluan kalau tombol Back ditekan)
+        // --- MENDETEKSI POP-UP BANTUAN CEPAT ---
+    const modalAlert = document.getElementById('modal-alert');
+    if (modalAlert && !modalAlert.classList.contains('hidden')) {
+        modalAlert.classList.add('hidden');
+        modalAlert.classList.remove('flex');
+        
+        // Selesaikan Promise jika ditutup lewat tombol back HP dengan aman
+        if (typeof modalAlert.alertResolve === 'function') {
+            modalAlert.alertResolve();
+            modalAlert.alertResolve = null;
+        }
+        return;
+    }
+
+    const lightbox = document.getElementById('lightbox-modal');
+    if(!lightbox.classList.contains('hidden')) {
+        closeLightbox();
+        return;
+    }
+
+// Tangkap laci Dilihat/Disukai dulu!
+const statsModal = document.getElementById('modal-story-stats');
+if (statsModal && !statsModal.classList.contains('translate-y-full')) {
+    closeStoryStatsModal(true);
+    return;
+}
+
+// Baru tangkap layar pemutar Story utamanya
+const storyModal = document.getElementById('story-viewer-modal');
+if (storyModal && !storyModal.classList.contains('hidden')) {
+    closeStoryViewer(true);
+    return;
+}
+
+const modalMsgOption = document.getElementById('modal-msg-option');
+if (!modalMsgOption.classList.contains('hidden')) {
+modalMsgOption.classList.add('hidden'); modalMsgOption.classList.remove('flex');
+return;
+}
+
+const commentDrawer = document.getElementById('comment-drawer');
+if (commentDrawer.classList.contains('open')) {
+commentDrawer.classList.remove('open');
+cancelReply();
+
+if (commentSubscription) {
+    supabaseClient.removeChannel(commentSubscription);
+    commentSubscription = null;
+}
+return;
+}
+
+const modalEvent = document.getElementById('modal-event');
+if (!modalEvent.classList.contains('hidden')) {
+modalEvent.classList.add('hidden'); modalEvent.classList.remove('flex');
+document.body.style.overflow = 'auto'; isPopupClosed = true;
+}
+
+const modalEditProfile = document.getElementById('modal-edit-profile');
+if (!modalEditProfile.classList.contains('hidden')) {
+closeEditProfileModal();
+isPopupClosed = true;
+}
+
+const modalUserList = document.getElementById('modal-user-list');
+if (!modalUserList.classList.contains('hidden')) {
+closeUserList();
+isPopupClosed = true;
+}
+
+const widget = document.getElementById('floating-widget');
+
+// JIKA WIDGET CHAT SEDANG TERBUKA
+if (!widget.classList.contains('opacity-0')) {
+
+// 1. CEK: Apakah user sedang di dalam RUANG CHAT (Isi Pesan)?
+const roomView = document.getElementById('chat-room-view');
+if (roomView && roomView.classList.contains('flex')) {
+// Jika iya, pencet Back = BALIK KE DAFTAR PESAN (INBOX)
+closeChatRoom(true);
+return; // Berhenti di sini agar widget tidak langsung tertutup semua
+}
+
+// 2. CEK: Apakah user sedang di DAFTAR CHAT (Inbox)?
+else {
+// Jika iya, pencet Back = TUTUP WIDGET SEPENUHNYA
+widget.classList.add('opacity-0', 'pointer-events-none', 'translate-y-8', 'scale-95');
+return;
+}
+}
+
+const authModal = document.getElementById('modal-auth');
+if (authModal && !authModal.classList.contains('hidden')) {
+authModal.classList.add('hidden');
+authModal.classList.remove('flex');
+isPopupClosed = true;
+}
+
+// 🏆 RE-SINKRONISASI TOMBOL BACK UTAMA LEADERBOARD MODAL
+const leaderboardModal = document.getElementById('modal-leaderboard');
+if (leaderboardModal && !leaderboardModal.classList.contains('hidden')) {
+leaderboardModal.classList.add('hidden');
+leaderboardModal.classList.remove('flex');
+
+// 🔥 SELIPIN INI OM: Biar pas back HP tombol chatnya auto-nongol lagi
+const chatBtn = document.querySelector('button[onclick="toggleWidget()"]');
+if (chatBtn) chatBtn.classList.remove('hidden');
+
+isPopupClosed = true;
+}
+
+    // TANGKAP LAYAR GRID HASHTAG
+    const hashtagGrid = document.getElementById('modal-hashtag-grid');
+    if (hashtagGrid && !hashtagGrid.classList.contains('hidden') && !hashtagGrid.classList.contains('translate-x-full')) {
+        closeHashtagGrid(true);
+        return;
+    }
+
+
+// 2. SETELAH POP-UP AMAN, BARU TANGKAP LAYAR MENGAMBANG
+if (document.body.classList.contains('video-focused')) {
+toggleGlobalAudio();
+return;
+}
+
+const floatingPlayer = document.getElementById('floating-video-player');
+if (!floatingPlayer.classList.contains('hidden')) {
+closeFloatingVideo();
+return;
+}
+
+if (isPopupClosed) return;
+
+const newHash = window.location.hash.substring(1) || 'home';
+if (newHash === 'profile' && viewedUserId !== currentUser?.id) {
+viewedUserId = currentUser?.id;
+checkSession();
+}
+switchTab(newHash.split('?')[0], null, false);
+});
+
+
+
+// FUNGSI KEMBALI DARI PROFIL YANG SUDAH DIPERBAIKI SANGAT AMAN
+function kembaliDariProfil() {
+    // Pindah tab secara visual
+    switchTab(tabSebelumnya, null, false);
+
+    // Mengganti URL tanpa memicu popstate yang berisiko bentrok dengan chat widget
+    history.replaceState(null, null, '#' + tabSebelumnya);
+
+    // Reset profil yang tertinggal di background (agar siap pas di-klik dari bawah)
+    if (currentUser) {
+        viewedUserId = currentUser.id;
+
+        // 1. Ambil data current user
+        const userVideos = allVideosData.filter(v => v.user_id === currentUser.id);
+        const myExp = userProfile?.exp || 0;
+        const myStatusLevel = hitungStatusLevel(myExp);
+        const myBadgeHTML = getBadgeByLevelAndVideos(myStatusLevel.level, userVideos.length);
+
+        // 2. Kembalikan Nickname & Badge
+        const pNick = document.getElementById('profile-nickname'); 
+        if(pNick) pNick.innerHTML = "@" + (userProfile?.nickname || "Player") + myBadgeHTML;
+
+        // 3. Kembalikan Bio & Foto
+        const pBio = document.getElementById('profile-bio'); if(pBio) pBio.innerText = userProfile?.bio || "Belum ada deskripsi.";
+        const pImg = document.getElementById('profile-img'); if(pImg) pImg.src = userProfile?.avatar_url || `https://ui-avatars.com/api/?name=${userProfile?.nickname || 'Player'}&background=1A1133&color=fff`;
+
+        // 4. Kembalikan Level & Bar EXP
+        const elLevelBadge = document.getElementById('profile-level-badge');
+        const elExpContainer = document.getElementById('profile-exp-container');
+
+        if (elLevelBadge && elExpContainer) {
+            elLevelBadge.innerText = `Lv. ${myStatusLevel.level}`;
+            elLevelBadge.classList.remove('hidden');
+            
+            document.getElementById('text-exp-current').innerText = `EXP: ${myStatusLevel.exp}`;
+            document.getElementById('text-exp-target').innerText = `Next: ${myStatusLevel.targetNextLevel}`;
+            
+            setTimeout(() => {
+                document.getElementById('bar-exp-progress').style.width = `${myStatusLevel.persentase}%`;
+            }, 100);
+            
+            elExpContainer.classList.remove('hidden');
+        }
+
+const actionOwn = document.getElementById('profile-actions-own'); 
+if(actionOwn) { 
+    actionOwn.classList.remove('hidden'); 
+    actionOwn.style.display = 'flex'; 
+}
+
+const actionOther = document.getElementById('profile-actions-other'); 
+if(actionOther) { 
+    actionOther.classList.add('hidden'); 
+    actionOther.style.display = 'none'; 
+}
+
+        const btnBack = document.getElementById('btn-back-profile'); if(btnBack) btnBack.classList.add('hidden');
+        const btnEditAva = document.getElementById('btn-edit-avatar'); if(btnEditAva) btnEditAva.classList.remove('hidden');
+
+        const elVidTitle = document.getElementById('profile-video-title');
+        if(elVidTitle) elVidTitle.innerHTML = `<i class="fas fa-grip-vertical mr-2 text-brand-info"></i> Video Saya`;
+
+        renderProfileVideos(currentUser.id);
+        fetchFollowStats(currentUser.id);
+    } else {
+        viewedUserId = null;
+        document.querySelectorAll('#profile-logged-in').forEach(el => el.classList.add('hidden'));
+        document.getElementById('profile-logged-out').classList.remove('hidden');
+        const btnBack = document.getElementById('btn-back-profile'); if(btnBack) btnBack.classList.add('hidden');
+    }
+}
+
+
+function openModalEvent() {
+history.pushState({ popup: 'modal' }, null, '#event');
+const modal = document.getElementById('modal-event');
+modal.classList.remove('hidden'); modal.classList.add('flex');
+document.body.style.overflow = 'hidden';
+setTimeout(() => { const carousel = document.getElementById('image-carousel'); if(carousel) { carousel.scrollLeft = 0; updateCarouselDots(); } }, 50);
+}
+
+function closeModalEvent() {
+if (window.location.hash === '#event') { history.back(); } else {
+const modal = document.getElementById('modal-event');
+modal.classList.add('hidden'); modal.classList.remove('flex');
+document.body.style.overflow = 'auto';
+}
+}
+
+function openUploadModal() {
+// Matikan efek floating otomatis saat buka modal upload TANPA memicu history.back()
+if (document.body.classList.contains('video-focused')) {
+toggleGlobalAudio(true);
+}
+
+// Tambahkan history baru untuk modal upload
+history.pushState({ popup: 'upload' }, null, '#upload');
+const m = document.getElementById('modal-upload');
+m.classList.remove('hidden');
+m.classList.add('flex');
+}
+
+
+
+// Tombol Pintasan # dan @ ala TikTok
+function insertUploadShortcut(char) {
+    const textarea = document.getElementById('input-video-caption');
+    if (!textarea) return;
+    
+    const pos = textarea.selectionStart;
+    const text = textarea.value;
+    
+    // Sisipkan karakter di posisi kursor aktif
+    textarea.value = text.substring(0, pos) + char + text.substring(pos);
+    textarea.focus();
+    
+    // Pindahkan kursor tepat setelah karakter yang dimasukkan
+    textarea.setSelectionRange(pos + 1, pos + 1);
+}
+
+// Override Fungsi handleVideoSelect Bawaan Anda agar Pas di Mini Cover
+function handleVideoSelect(input) {
+    const file = input.files[0];
+    const placeholder = document.getElementById('upload-placeholder');
+    const previewContainer = document.getElementById('video-preview-container');
+    const previewVideo = document.getElementById('video-preview-element');
+    const spinner = document.getElementById('mini-upload-spinner');
+
+    if (file) {
+        // Validasi ukuran maksimal 50MB biar memori HP pembeli gak jebol
+        if (file.size > 50 * 1024 * 1024) {
+            showToast("Ukuran video terlalu besar! Maksimal 50MB.", "error");
+            input.value = '';
+            return;
+        }
+
+        const url = URL.createObjectURL(file);
+        previewVideo.src = url;
+        
+        // Sembunyikan instruksi teks, nyalakan layar preview video mini
+        if (placeholder) placeholder.classList.add('hidden');
+        if (previewContainer) previewContainer.classList.remove('hidden');
+        
+        // Nyalakan spinner loading
+        if (spinner) spinner.classList.remove('hidden');
+
+        // Tunggu video siap diputar, lalu matikan spinner
+        previewVideo.oncanplay = () => {
+            if (spinner) spinner.classList.add('hidden');
+        };
+        
+        // Putar video otomatis tanpa suara di pojok kanan laci
+        previewVideo.muted = true;
+        previewVideo.play().catch(() => {});
+        showToast("Video berhasil dimuat!", "success");
+    }
+}
+
+// Override Fungsi closeUploadModal Agar Mereset Seluruh Tampilan Mini Cover
+function closeUploadModal() {
+    if (window.location.hash === '#upload') history.back();
+    const m = document.getElementById('modal-upload');
+    m.classList.add('hidden'); 
+    m.classList.remove('flex');
+
+    // Reset Form & Preview Kembalikan ke Default
+    const placeholder = document.getElementById('upload-placeholder');
+    const previewContainer = document.getElementById('video-preview-container');
+    const previewVideo = document.getElementById('video-preview-element');
+    const fileInput = document.getElementById('input-video-file');
+    const captionInput = document.getElementById('input-video-caption');
+    
+    if (placeholder) placeholder.classList.remove('hidden');
+    if (previewContainer) previewContainer.classList.add('hidden');
+    if (previewVideo) { 
+        // BONGKAR MEMORI: Hapus Object URL agar RAM lega
+        if (previewVideo.src.startsWith('blob:')) {
+            URL.revokeObjectURL(previewVideo.src);
+        }
+        previewVideo.pause(); 
+        previewVideo.src = ''; 
+    }
+    if (fileInput) fileInput.value = '';
+    if (captionInput) captionInput.value = '';
+}
+
+
+async function openUserProfile(userId) {
+    try {
+        let wasPopupOpen = false;
+
+        if (document.body.classList.contains('video-focused')) {
+            toggleGlobalAudio(true);
+            wasPopupOpen = true;
+        }
+
+        const floatingPlayer = document.getElementById('floating-video-player');
+        if (floatingPlayer && !floatingPlayer.classList.contains('hidden')) {
+            closeFloatingVideo(true);
+            wasPopupOpen = true;
+        }
+
+        viewedUserId = userId;
+
+        setTimeout(() => {
+            switchTab('profile', null, false);
+        }, 10);
+
+        document.getElementById('profile-loading').classList.remove('hidden');
+        document.querySelectorAll('#profile-logged-in').forEach(el => el.classList.add('hidden'));
+
+        const currentUserId = currentUser ? String(currentUser.id) : null;
+        const targetId = String(userId);
+        const isOwn = (targetId === currentUserId);
+
+        const { data, error } = await supabaseClient.from('profiles').select('*').eq('id', userId).single();
+        if (error && error.code !== 'PGRST116') {
+            console.error("Error database:", error);
+        }
+
+        const elBio2 = document.getElementById('profile-bio'); if(elBio2) elBio2.innerText = data?.bio || "Belum ada deskripsi.";
+        const elImg2 = document.getElementById('profile-img'); if(elImg2) elImg2.src = data?.avatar_url || `https://ui-avatars.com/api/?name=${data?.nickname || 'Player'}&background=1A1133&color=fff`;
+
+        const actionOwn = document.getElementById('profile-actions-own');
+        const actionOther = document.getElementById('profile-actions-other');
+
+        if (isOwn) {
+            if(actionOwn) { actionOwn.classList.remove('hidden'); actionOwn.style.display = 'flex'; }
+            if(actionOther) { actionOther.classList.add('hidden'); actionOther.style.display = 'none'; }
+        } else {
+            if(actionOwn) { actionOwn.classList.add('hidden'); actionOwn.style.display = 'none'; }
+            if(actionOther) { actionOther.classList.remove('hidden'); actionOther.style.display = 'flex'; }
+        }
+
+        const btnBack = document.getElementById('btn-back-profile');
+        if (btnBack) {
+            if (isOwn) { btnBack.classList.add('hidden'); btnBack.style.display = 'none'; }
+            else { btnBack.classList.remove('hidden'); btnBack.style.display = 'flex'; }
+        }
+
+        const inputAva = document.getElementById('btn-edit-avatar');
+        if(inputAva) {
+            if(isOwn) { inputAva.classList.remove('hidden'); inputAva.style.display = 'flex'; }
+            else { inputAva.classList.add('hidden'); inputAva.style.display = 'none'; }
+        }
+
+        const elVidTitle = document.getElementById('profile-video-title');
+        if(elVidTitle) {
+            if(isOwn) { elVidTitle.innerHTML = `<i class="fas fa-grip-vertical mr-2 text-brand-info"></i> Video Saya`; }
+            else { elVidTitle.innerHTML = `<i class="fas fa-grip-vertical mr-2 text-brand-info"></i> Video ${data?.nickname || ''}`; }
+        }
+
+        await renderProfileVideos(userId);
+
+        const userVideos = allVideosData.filter(v => String(v.user_id) === targetId);
+        const expDataLain = data?.exp || 0;
+        const statusLevelObj = hitungStatusLevel(expDataLain);
+        const badgeHTML = getBadgeByLevelAndVideos(statusLevelObj.level, userVideos.length);
+        
+        const elNick2 = document.getElementById('profile-nickname');
+        if(elNick2) elNick2.innerHTML = "@" + (data?.nickname || "Player") + badgeHTML;
+
+        const elLevelBadge = document.getElementById('profile-level-badge');
+        const elExpContainer = document.getElementById('profile-exp-container');
+
+        if (elLevelBadge && elExpContainer) {
+            elLevelBadge.innerText = `Lv. ${statusLevelObj.level}`;
+            elLevelBadge.classList.remove('hidden');
+            
+            document.getElementById('text-exp-current').innerText = `EXP: ${statusLevelObj.exp}`;
+            document.getElementById('text-exp-target').innerText = `Next: ${statusLevelObj.targetNextLevel}`;
+            
+            setTimeout(() => {
+                document.getElementById('bar-exp-progress').style.width = `${statusLevelObj.persentase}%`;
+            }, 100);
+            
+            elExpContainer.classList.remove('hidden');
+        }
+
+        const elLikes = document.getElementById('profile-total-likes');
+        if (elLikes) elLikes.innerText = (userVideos.length * 3);
+
+        try { await fetchFollowStats(userId); } catch (e) { console.warn(e); }
+        
+        // 🛠️ PERBAIKAN: Cek apakah tombol Follow harus berstatus "Mengikuti"
+        if (!isOwn && currentUser) {
+            const btnFollow = document.getElementById('btn-follow');
+            if (btnFollow) {
+                // Cek ke database apakah user saat ini sudah follow target
+                const { data: isFollowing } = await supabaseClient
+                    .from('follows')
+                    .select('follower_id')
+                    .eq('follower_id', currentUser.id)
+                    .eq('following_id', userId)
+                    .single();
+
+                if (isFollowing) {
+                    btnFollow.innerText = 'MENGIKUTI';
+                    btnFollow.className = 'flex-1 bg-white/10 py-2.5 rounded-xl text-[11px] font-extrabold text-white uppercase tracking-wide transition-transform';
+                } else {
+                    btnFollow.innerText = 'IKUTI';
+                    btnFollow.className = 'flex-1 bg-brand-accent py-2.5 rounded-xl text-[11px] font-extrabold text-white uppercase tracking-wide hover:scale-95 transition-transform shadow-[0_0_15px_rgba(255,0,122,0.3)]';
+                }
+            }
+        }
+
+        // 🛠️ PERBAIKAN PEMBOROSAN JARINGAN (Lihat poin 2 di bawah)
+        if (isOwn) {
+            try { await loadOrderTracker(userId); } catch (e) { console.warn(e); }
+        }
+
+        document.getElementById('profile-loading').classList.add('hidden');
+// Cukup hapus class hidden, biarkan Tailwind yang mengatur layoutnya
+const profileContainer = document.getElementById('profile-logged-in');
+if (profileContainer) {
+    profileContainer.classList.remove('hidden');
+    // Hapus inline style jika ada yang nyangkut
+    profileContainer.style.display = ''; 
+}
+
+
+        checkBlockStatusUI();
+
+        if(!isOwn) {
+            if (wasPopupOpen) {
+                history.replaceState({ popup: 'user_profile' }, null, `#profile?id=${userId}`);
+            } else {
+                history.pushState({ popup: 'user_profile' }, null, `#profile?id=${userId}`);
+            }
+        }
+    } catch (err) {
+        console.error("Gagal membuka profil:", err);
+        showToast("Terjadi kesalahan saat memuat profil.", "error");
+    }
+}
+
+
+
+
+
+// FUNGSI MELIHAT PROFIL USER LAIN DARI MANA SAJA
+function viewUserProfile(userId) {
+if (!userId || userId === 'undefined') {
+showToast("Profil tidak dapat dibuka karena ID tidak ditemukan.", "error");
+return;
+}
+
+// CEK BLOKIR: Hentikan jika user ini ada di daftar blokir
+if (blockedUsersList.includes(userId)) {
+showToast("Anda telah memblokir pengguna ini. Buka blokir untuk melihat profil.", "error");
+return;
+}
+
+document.getElementById('comment-drawer').classList.remove('open');
+cancelReply();
+
+// Sembunyikan widget obrolan agar profil dapat dilihat tanpa dihalangi widget chat
+const widget = document.getElementById('floating-widget');
+if (widget && !widget.classList.contains('opacity-0')) {
+widget.classList.add('opacity-0', 'pointer-events-none', 'translate-y-8', 'scale-95');
+}
+
+openUserProfile(userId);
+}
+
+
+async function kirimPesanPribadi(userId) {
+// CEK BLOKIR: Hentikan jika mencoba nge-chat orang yang diblokir
+if (blockedUsersList.includes(userId)) {
+showToast("Buka blokir terlebih dahulu untuk mengirim pesan.", "error");
+return;
+}
+
+const { data } = await supabaseClient.from('profiles').select('nickname, avatar_url').eq('id', userId).single();
+if (data) {
+const ava = data.avatar_url || `https://ui-avatars.com/api/?name=${data.nickname}&background=1A1133&color=fff`;
+const widget = document.getElementById('floating-widget');
+if (widget.classList.contains('opacity-0')) {
+toggleWidget();
+}
+setTimeout(() => openChatRoom(userId, data.nickname, ava), 300);
+}
+}
+
+
+// ================== LOGIKA PROFIL FEED SCROLL TANPA UJUNG ==================
+let currentProfileVideos = [];
+let profileFeedIndex = 0;
+let floatObs = null;
+
+function setupFloatVideoObserver() {
+floatObs = new IntersectionObserver(es => {
+es.forEach(e => {
+if (e.isIntersecting) {
+e.target.muted = isGlobalMuted;
+const playP = e.target.play();
+if (playP !== undefined) {
+    playP.catch(err => {
+        if (err.name === 'NotAllowedError') {
+            e.target.muted = true;
+            isGlobalMuted = true;
+            e.target.play().catch(e => {});
+        }
+    });
+}
+// Preload video selanjutnya agar mulus
+let currentContainer = e.target.closest('.snap-start');
+for(let j = 0; j < 2; j++) {
+currentContainer = currentContainer?.nextElementSibling;
+if(currentContainer) {
+const nextVid = currentContainer.querySelector('video');
+if(nextVid && nextVid.getAttribute('preload') !== 'auto') nextVid.setAttribute('preload', 'auto');
+}
+}
+} else { e.target.pause(); }
+});
+}, { threshold: 0.6 });
+}
+
+function openProfileFeed(userId, startIndex) {
+    // 1. Ambil video milik user ini, lalu kembalikan posisinya sesuai tiket antrean asli!
+    currentProfileVideos = allVideosData
+        .filter(v => v.user_id === userId)
+        .sort((a, b) => (b.original_index || 0) - (a.original_index || 0));
+
+    if(currentProfileVideos.length === 0) return;
+
+    // 2. Tentukan index target
+    let targetIndex = parseInt(startIndex) || 0;
+
+    // 3. Bersihkan memori video lama lalu kosongkan layar
+    const container = document.getElementById('floating-feed-container');
+    container.querySelectorAll('video').forEach(v => {
+        v.pause();
+        v.removeAttribute('src');
+        if (v.querySelector('source')) v.querySelector('source').removeAttribute('src');
+        v.load();
+    });
+    container.innerHTML = '';
+    container.scrollTop = 0;
+
+    // 4. Hentikan paksa semua video utama di background
+    document.querySelectorAll('.video-player').forEach(v => v.pause());
+
+    // [BARU] Paksa suara menyala (unmute) otomatis saat video profil diklik
+    isGlobalMuted = false;
+
+    // 5. Tampilkan floating player
+    document.getElementById('floating-video-player').classList.remove('hidden');
+    document.getElementById('floating-video-player').classList.add('flex');
+    document.getElementById('floating-video-player').style.opacity = '1'; 
+
+    if(floatObs) floatObs.disconnect();
+    setupFloatVideoObserver();
+
+    // 6. Render Video Batch
+    profileFeedIndex = 0;
+    let amountToLoad = targetIndex + 3; 
+    
+    renderProfileVideoBatch(amountToLoad);
+
+    // 7. Paksa scroll layar
+    setTimeout(() => {
+        const targetCard = container.children[targetIndex];
+        if (targetCard) {
+            targetCard.scrollIntoView({ behavior: 'auto', block: 'start' });
+        }
+    }, 10); 
+
+    // 8. Tanamkan URL history 
+    history.pushState({ popup: 'floating_video' }, null, '#profil_video');
+}
+
+
+
+function closeFloatingVideo(skipHistory = false) {
+    const p = document.getElementById('floating-video-player');
+    
+    // Berikan efek transisi opacity agar menutup dengan halus (fade out)
+    p.style.transition = 'opacity 0.3s ease';
+    p.style.opacity = '0';
+
+    // 🚨 PERBAIKAN: Paksa pause dan kosongkan memori video sebelum dihapus
+    document.querySelectorAll('.float-video-player').forEach(v => {
+        v.pause();
+        v.removeAttribute('src');
+        if (v.querySelector('source')) v.querySelector('source').removeAttribute('src');
+        v.load(); // Buang dari RAM HP
+    });
+
+    setTimeout(() => {
+        // Sembunyikan dan reset elemen setelah efek fade selesai
+        p.classList.add('hidden'); 
+        p.classList.remove('flex');
+        p.style.opacity = '1'; 
+        
+        document.getElementById('floating-feed-container').innerHTML = '';
+        if(floatObs) floatObs.disconnect(); // bersihkan observer
+
+        // Eksekusi fungsi 'back' HP jika tidak di-skip
+        if (!skipHistory && window.location.hash === '#profil_video') {
+            history.back();
+        }
+    }, 300);
+}
+
+
+
+
+function renderProfileVideoBatch(customAmount = 3) {
+    const container = document.getElementById('floating-feed-container');
+
+    if (profileFeedIndex >= currentProfileVideos.length) {
+        return;
+    }
+
+    // 🚀 PERBAIKAN: Gunakan customAmount, bukan angka 3 mati
+    const nextBatch = currentProfileVideos.slice(profileFeedIndex, profileFeedIndex + customAmount);
+    if (nextBatch.length === 0) return;
+
+    const htmlString = nextBatch.map((vid) => `
+    <div class="snap-start w-full h-full flex-shrink-0 relative flex items-center justify-center bg-black/95 px-0 sm:px-4 py-0 sm:py-6">
+    <div class="w-full max-w-sm aspect-[9/16] relative bg-brand-dark mx-auto h-full sm:h-auto sm:rounded-3xl overflow-hidden shadow-2xl">
+    <div class="absolute inset-0 flex items-center justify-center z-0"><div class="w-12 h-12 border-4 border-brand-accent/20 border-t-brand-accent rounded-full animate-spin"></div></div>
+
+    <video class="absolute inset-0 m-auto w-full h-full object-cover float-video-player transition-opacity duration-500 opacity-0 z-10"
+    onloadeddata="this.classList.remove('opacity-0')" loop ${isGlobalMuted ? 'muted' : ''} playsinline preload="metadata"
+    ontimeupdate="updateVideoProgress(this)"
+    onclick="handleFloatVideoClick(event, this, '${vid.id}')">
+    <source src="${vid.video_url}" type="video/mp4">
+    </video>
+
+    <div class="volume-indicator absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-white bg-black/60 w-16 h-16 rounded-full flex items-center justify-center z-[60] pointer-events-none opacity-0 transition-all duration-300 scale-150">
+    <i class="fas fa-volume-up text-2xl"></i>
+    </div>
+
+    <div class="absolute bottom-0 left-0 w-full h-3 z-50 cursor-pointer group touch-none flex flex-col justify-end pb-1"
+    onpointerdown="startSeek(event, this)" onpointermove="doSeek(event, this)" onpointerup="endSeek(event, this)" onpointercancel="endSeek(event, this)">
+    <div class="w-full h-1 bg-white/30 relative">
+    <div class="progress-fill h-full bg-white w-0 relative pointer-events-none transition-all duration-75 ease-linear">
+    <div class="absolute -right-2 top-1/2 -translate-y-1/2 w-4 h-4 bg-white rounded-full scale-0 group-hover:scale-100 transition-transform shadow-md"></div>
+    </div>
+    </div>
+    </div>
+
+    <div class="absolute bottom-0 left-0 w-full p-6 flex justify-between items-end z-20 pointer-events-none bg-gradient-to-t from-black/80 to-transparent pb-10 sm:pb-6">
+<div class="text-white drop-shadow-lg w-[75%] pointer-events-auto">
+<p onclick="event.stopPropagation(); viewUserProfile('${vid.user_id}')" class="font-bold text-[15px] shadow-black drop-shadow-md mb-1.5 cursor-pointer hover:text-brand-info transition-colors">@${vid.nickname || "Player"}</p>
+
+    <div onclick="this.classList.toggle('expanded')" class="caption-text text-[13px] opacity-90 shadow-black drop-shadow-md cursor-pointer pr-2 leading-relaxed">${formatCaption(vid.caption)}</div>
+    </div>
+
+    <div class="flex flex-col gap-4 items-center pointer-events-auto mb-2 mr-1">
+    <div class="like-container flex flex-col items-center gap-0.5" data-vid="${vid.id}">
+    <button onclick="likeVideo('${vid.id}', this)" class="hover:scale-110 transition-transform active:scale-90">
+    <i class="fas fa-heart text-[32px] text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]"></i>
+    </button>
+    <span class="like-count-display text-white text-[12px] font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">0</span>
+    </div>
+
+    <div class="comment-count-container flex flex-col items-center gap-0.5" data-vid="${vid.id}">
+    <button onclick="openComments('${vid.id}')" class="hover:scale-110 transition-transform active:scale-90">
+    <i class="fas fa-comment-dots text-[32px] text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]" style="transform: scaleX(-1);"></i>
+    </button>
+    <span class="comment-count-display text-white text-[12px] font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">0</span>
+    </div>
+
+    <div class="flex flex-col items-center gap-0.5 mt-1">
+    <button onclick="shareVideo('${vid.id}', this)" class="hover:scale-110 transition-transform active:scale-90">
+    <i class="fas fa-share text-[30px] text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]"></i>
+    </button>
+    <span class="text-white text-[11px] font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">Share</span>
+    </div>
+
+    ${currentUser && vid.user_id === currentUser.id ? `
+    <button onclick="deleteVideo('${vid.id}')" class="hover:scale-110 transition-transform mt-3 active:scale-90">
+    <div class="bg-black/50 p-2 rounded-full border border-white/20 backdrop-blur-sm">
+    <i class="fas fa-trash text-red-500 text-xl drop-shadow-md"></i>
+    </div>
+    </button>
+    ` : ''}
+    </div>
+    </div>
+    </div>
+    </div>`).join('');
+
+    container.insertAdjacentHTML('beforeend', htmlString);
+    
+    // 🚀 PERBAIKAN: Tambah index sesuai dengan jumlah yang benar-benar dirender
+    profileFeedIndex += nextBatch.length;
+
+    const videoActions = container.querySelectorAll('.snap-start:not(.data-loaded)');
+    videoActions.forEach((card) => {
+        card.classList.add('data-loaded');
+        const vidId = card.querySelector('.like-container').dataset.vid;
+        updateLikeCountUI(vidId, card.querySelector('.like-container'));
+        updateCommentCountUI(vidId, card.querySelector('.comment-count-container'));
+    });
+
+    const unobservedVideos = container.querySelectorAll('.float-video-player:not(.observed)');
+    unobservedVideos.forEach((v, i) => {
+        v.classList.add('observed'); if (floatObs) floatObs.observe(v);
+        if (i === unobservedVideos.length - 1) {
+            const lastVideoObserver = new IntersectionObserver(entries => {
+                if(entries[0].isIntersecting) { 
+                    lastVideoObserver.disconnect(); 
+                    // 🚀 PERBAIKAN: Ketika di-scroll ke mentok bawah, tetap muat 3 per 3 secara standar
+                    renderProfileVideoBatch(3); 
+                }
+            }, { threshold: 0.1 });
+            lastVideoObserver.observe(v.closest('.snap-start'));
+        }
+    });
+}
+
+
+// FUNGSI KHUSUS UNTUK MENGONTROL SUARA DI VIDEO PROFIL (KLIK 1 KALI)
+function toggleProfileVideoAudio(video) {
+    // Ubah status suara
+    video.muted = !video.muted;
+    isGlobalMuted = video.muted; // Sinkronisasi dengan sistem suara global aplikasimu
+
+    // CEK APAKAH POP-UP FLOATING SEDANG TERBUKA
+    const isFloatingOpen = !document.getElementById('floating-video-player').classList.contains('hidden');
+
+    // Sinkronkan video lain agar ikut mute/unmute jika ada yang menyala
+    document.querySelectorAll('.video-player, .float-video-player').forEach(v => {
+        // JIKA pop-up terbuka, biarkan video background (.video-player) tetap mati/bisu
+        if (isFloatingOpen && v.classList.contains('video-player')) {
+            v.muted = true;
+            v.pause();
+        } else {
+            v.muted = isGlobalMuted;
+        }
+    });
+
+    // Tampilkan animasi pop-up ikon suara di tengah layar
+    const container = video.closest('.relative');
+    const indicator = container.querySelector('.volume-indicator');
+
+    if(indicator) {
+        indicator.innerHTML = video.muted
+        ? '<i class="fas fa-volume-mute text-2xl text-gray-300"></i>'
+        : '<i class="fas fa-volume-up text-2xl text-brand-info"></i>';
+
+        // Munculkan membesar
+        indicator.classList.remove('opacity-0', 'scale-150');
+        indicator.classList.add('opacity-100', 'scale-100');
+
+        // Hilangkan lagi setelah 0.8 detik
+        setTimeout(() => {
+            indicator.classList.remove('opacity-100', 'scale-100');
+            indicator.classList.add('opacity-0', 'scale-150');
+        }, 800);
+    }
+}
+
+
+let floatClickTimer = null; // Memori antrean klik
+
+function handleFloatVideoClick(event, videoElement, vidId) {
+    // JIKA ADA KLIK KE-2 MASUK -> BATALKAN KLIK 1 (SUARA TIDAK JADI MATI)
+    if (floatClickTimer) {
+        clearTimeout(floatClickTimer);
+        floatClickTimer = null;
+        
+        // Eksekusi Double Click (LIKE)
+        const card = videoElement.closest('.snap-start');
+        const likeBtn = card.querySelector('.like-container button');
+        likeVideo(vidId, likeBtn); 
+        createHeartAt(event);      
+    } 
+    // JIKA INI KLIK 1 -> MULAI HITUNG MUNDUR 300ms
+    else {
+        floatClickTimer = setTimeout(() => {
+            // Jika dalam 300ms tidak ada klik ke-2, eksekusi suara!
+            floatClickTimer = null;
+        }, 300);
+    }
+}
+
+
+let videoClickTimer = null; // Memori antrean klik feed utama
+
+function handleVideoClick(event, videoElement, vidId) {
+    // JIKA ADA KLIK KE-2 MASUK -> BATALKAN KLIK 1 (SUARA TIDAK JADI MATI)
+    if (videoClickTimer) {
+        clearTimeout(videoClickTimer);
+        videoClickTimer = null;
+        
+        // Eksekusi Double Click (LIKE)
+        const card = videoElement.closest('.snap-start');
+        const likeBtn = card.querySelector('.like-container button');
+        likeVideo(vidId, likeBtn);
+        createHeartAt(event);
+    } 
+    // JIKA INI KLIK 1 -> MULAI HITUNG MUNDUR 300ms
+    else {
+        videoClickTimer = setTimeout(() => {
+            // Jika dalam 300ms tidak ada klik ke-2, eksekusi suara!
+            videoClickTimer = null;
+        }, 300);
+    }
+}
+
+// FITUR HAPUS VIDEO PERMANEN (SINKRON KE GOOGLE SHEETS)
+async function deleteVideo(vidId) {
+    const hapus = await customPrompt("Ketik 'HAPUS' jika ingin menghapus video ini secara PERMANEN:");
+    if(hapus === 'HAPUS') {
+        try {
+            // Cari data video yang mau dihapus dari memori lokal untuk dapet URL-nya
+            const videoTarget = allVideosData.find(v => v.id === vidId);
+
+            // 1. Ambil config untuk mendapatkan link Google Apps Script (GAS)
+            const configRes = await fetch('/api/get-config');
+            const config = await configRes.json();
+
+            if (config.gasUrl) {
+                // 2. Kirim perintah hapus ke Google Sheets via Webhook POST
+                await fetch(config.gasUrl, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'text/plain' },
+                    body: JSON.stringify({ action: 'DELETE', id: vidId })
+                });
+            }
+
+            // 3. TEMBAK API DELETE FILE: Hapus fisik MP4 dari Biznet
+            if (videoTarget && videoTarget.video_url) {
+                await fetch('/api/delete-file', {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ fileUrl: videoTarget.video_url })
+                }).catch(e => console.log("Ignore S3 error:", e));
+            }
+
+            // 4. Bersihkan data dari memori RAM lokal HP (Feed Sosial & Profil)
+            allVideosData = allVideosData.filter(v => v.id !== vidId);
+            newUploads = newUploads.filter(v => v.id !== vidId); // Bersihkan juga dari antrean lokal
+
+            // 5. Perbarui tampilan layar secara instan
+            closeFloatingVideo();
+            renderProfileVideos();
+            showToast("Video berhasil dihapus permanen!", "success");
+
+        } catch (err) {
+            showToast("Gagal menghapus ke server: " + err.message, "error");
+        }
+    }
+}
+
+
+// FITUR SHARE VIDEO (DIPERBAIKI)
+function shareVideo(vidId, btn) {
+const finalId = vidId && vidId !== 'undefined' ? vidId : '';
+
+if (!finalId) {
+showToast("Gagal menyalin link: ID Video tidak ditemukan", "error");
+return;
+}
+
+const link = window.location.origin + window.location.pathname + '#sosial?vid=' + finalId;
+
+navigator.clipboard.writeText(link).then(() => {
+showToast("Link video disalin ke clipboard!", "success");
+const icon = btn.querySelector('i');
+icon.classList.replace('fa-share', 'fa-check');
+icon.classList.add('text-brand-success');
+setTimeout(() => {
+icon.classList.replace('fa-check', 'fa-share');
+icon.classList.remove('text-brand-success');
+}, 2000);
+}).catch(() => {
+showToast("Gagal menyalin link otomatis", "error");
+});
+}
+
+
+
+function renderFaqs(data = globalFaqData) {
+const container = document.getElementById('faq-container');
+if (data.length === 0) { container.innerHTML = `<div class="text-center text-xs text-gray-400 py-6 border border-white/5 bg-brand-card rounded-2xl"><i class="fas fa-search-minus mb-2 text-lg"></i><br>Pertanyaan tidak ditemukan.</div>`; return; }
+container.innerHTML = data.map(f => `<details class="bg-brand-card rounded-2xl border border-white/5 group"><summary class="flex justify-between items-center font-bold text-xs cursor-pointer text-white p-4">${f.t} <i class="fas fa-chevron-down text-brand-accent transition-transform group-open:rotate-180"></i></summary><div class="px-4 pb-4 text-xs text-gray-400 leading-relaxed border-t border-white/5 pt-3 mt-1">${f.j}</div></details>`).join('');
+}
+
+document.getElementById('faqSearch').addEventListener('input', (e) => {
+const val = e.target.value.toLowerCase();
+// UBAH kata 'faqs' jadi 'globalFaqData' sebelum kata .filter
+renderFaqs(globalFaqData.filter(f => f.t.toLowerCase().includes(val) || f.j.toLowerCase().includes(val)));
+});
+
+function salinNominal() {
+const nominalMurni = document.getElementById('nominal-asli').value;
+const btnSalin = document.getElementById('btn-salin');
+const teksAsli = btnSalin.innerHTML;
+if (navigator.clipboard && window.isSecureContext) { navigator.clipboard.writeText(nominalMurni); }
+else { let tempInput = document.createElement("textarea"); tempInput.value = nominalMurni; tempInput.style.position = "fixed"; tempInput.style.left = "-9999px"; document.body.appendChild(tempInput); tempInput.select(); try { document.execCommand("copy"); } catch (err) {} document.body.removeChild(tempInput); }
+btnSalin.innerHTML = '<i class="fas fa-check mr-1.5"></i> Tersalin';
+btnSalin.classList.replace('text-brand-info', 'text-brand-success'); btnSalin.classList.replace('bg-brand-info/10', 'bg-brand-success/10'); btnSalin.classList.replace('border-brand-info/30', 'border-brand-success/30');
+setTimeout(() => { btnSalin.innerHTML = teksAsli; btnSalin.classList.replace('text-brand-success', 'text-brand-info'); btnSalin.classList.replace('bg-brand-success/10', 'bg-brand-info/10'); btnSalin.classList.replace('border-brand-success/30', 'border-brand-info/30'); }, 2000);
+}
+
+// FUNGSI UNTUK MENYALIN ID TRANSAKSI DARI STRUK
+function salinIdTransaksi() {
+    const idText = document.getElementById('detail-ref-id').innerText;
+    const btnSalin = document.getElementById('btn-copy-ref');
+    const icon = btnSalin.querySelector('i');
+
+    // Proses salin ke clipboard HP/PC
+    if (navigator.clipboard && window.isSecureContext) { 
+        navigator.clipboard.writeText(idText); 
+    } else { 
+        let tempInput = document.createElement("textarea"); 
+        tempInput.value = idText; 
+        tempInput.style.position = "fixed"; 
+        tempInput.style.left = "-9999px"; 
+        document.body.appendChild(tempInput); 
+        tempInput.select(); 
+        try { document.execCommand("copy"); } catch (err) {} 
+        document.body.removeChild(tempInput); 
+    }
+
+    // Ubah Ikon dan Warna jadi Hijau Sukses
+    icon.className = 'fas fa-check text-xs';
+    btnSalin.classList.replace('text-brand-info', 'text-brand-success'); 
+    btnSalin.classList.replace('bg-brand-info/10', 'bg-brand-success/10'); 
+    btnSalin.classList.replace('border-brand-info/20', 'border-brand-success/20');
+    
+    // Munculkan notifikasi Toast bawaan Anda
+    showToast("ID Transaksi berhasil disalin!", "success");
+
+    // Kembalikan ke ikon copy semula setelah 2 detik
+    setTimeout(() => { 
+        icon.className = 'fas fa-copy text-xs';
+        btnSalin.classList.replace('text-brand-success', 'text-brand-info'); 
+        btnSalin.classList.replace('bg-brand-success/10', 'bg-brand-info/10'); 
+        btnSalin.classList.replace('border-brand-success/20', 'border-brand-info/20'); 
+    }, 2000);
+}
+
+
+
+// ==========================================
+// FITUR PENCARIAN LEADERBOARD (DOM FILTERING)
+// ==========================================
+document.getElementById('leaderboardSearch').addEventListener('input', function(e) {
+    const keyword = e.target.value.toLowerCase();
+
+    // Fungsi pembantu untuk memfilter elemen di dalam container secara otomatis
+    const filterLeaderboard = (containerId) => {
+        const list = document.querySelectorAll(`${containerId} > div`);
+        list.forEach(item => {
+            // Ambil teks nama dari dalam tag <h4>
+            const nameElement = item.querySelector('h4');
+            if (nameElement) {
+                const name = nameElement.innerText.toLowerCase();
+                // Jika nama cocok dengan ketikan, tampilkan. Jika tidak, sembunyikan.
+                if (name.includes(keyword)) {
+                    item.style.display = ''; // Kembali ke tampilan bawaan (flex/block)
+                } else {
+                    item.style.display = 'none'; // Sembunyikan
+                }
+            }
+        });
+    };
+
+    // Jalankan penyaringan untuk ketiga tab leaderboard secara serentak
+    filterLeaderboard('#leaderboard-container-creator');
+    filterLeaderboard('#leaderboard-container-level');
+    filterLeaderboard('#leaderboard-container-sultan');
+});
+
+
+
+
+function renderRippers(data, isSearch = false) {
+const container = document.getElementById('ripper-container');
+document.getElementById('ripper-count').innerText = `${dataRipperGlobal.length} Total Data`;
+if(data.length === 0) { container.innerHTML = `<div class="text-center py-10 px-4"><i class="fas fa-check-circle text-brand-success text-3xl mb-2"></i><div class="text-xs text-gray-400">Pencarian aman.<br>(Tetap waspada & gunakan Admin)</div></div>`; return; }
+const limitBatas = (!isSearch && !isRipperExpanded) ? 5 : data.length;
+const dataYangDitampilkan = data.slice(0, limitBatas);
+let htmlString = dataYangDitampilkan.map(r => `<div class="p-4 border-b border-white/5 last:border-0 hover:bg-white/5 transition-colors"><div class="flex justify-between items-start mb-1"><div class="font-bold text-xs text-white">${r["Nama / Keterangan"] || r.nama || r.Nama || "Tanpa Nama"}</div><div class="text-[9px] text-red-500 font-bold bg-red-500/10 px-2 py-0.5 rounded border border-red-500/20 whitespace-nowrap ml-2"><i class="fas fa-ban mr-1"></i> RIPPER</div></div><div class="text-[10px] text-brand-info font-mono mb-1">ID: ${r["ID"] || r.id || "-"}</div><div class="text-[10px] text-gray-400"><i class="fas fa-credit-card mr-1"></i> ${r["Rekening / Kontak (WA/Dana)"] || r.rekening || r.Rekening || "-"}</div></div>`).join('');
+container.innerHTML = htmlString;
+if (!isSearch && !isRipperExpanded && data.length > 5) { container.innerHTML += `<div id="wadah-tombol-semua" class="p-5 text-center bg-black/20 mt-1 border-t border-white/5"><button onclick="tampilkanSemuaRipper(this)" class="bg-brand-accent/20 border border-brand-accent/40 text-brand-accent text-xs font-bold py-2.5 px-6 rounded-full active:scale-95 transition-all w-full flex items-center justify-center"><i class="fas fa-list-ul mr-2"></i> Tampilkan Semua Laporan</button></div>`; }
+}
+
+// ==========================================
+// FITUR PENCARIAN PENGIKUT/MENGIKUTI (INSTAN DOM FILTERING)
+// ==========================================
+document.getElementById('userListSearch').addEventListener('input', function(e) {
+    const keyword = e.target.value.toLowerCase();
+    const container = document.getElementById('user-list-container');
+    
+    // Ambil semua elemen baris user (div) di dalam container
+    const listItems = container.querySelectorAll('div.flex.items-center.p-3'); 
+    
+    listItems.forEach(item => {
+        // Ambil nama dari tag h4
+        const nameElement = item.querySelector('h4');
+        if (nameElement) {
+            const name = nameElement.innerText.toLowerCase();
+            // Cek kecocokan
+            if (name.includes(keyword)) {
+                item.style.display = ''; // Tampilkan
+            } else {
+                item.style.display = 'none'; // Sembunyikan
+            }
+        }
+    });
+});
+
+
+function tampilkanSemuaRipper(tombol) {
+isRipperExpanded = true; localStorage.setItem('statusLihatSemua', 'true');
+tombol.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Membuka Data...'; tombol.classList.add('opacity-70', 'scale-95');
+setTimeout(() => {
+const wadahTombol = document.getElementById('wadah-tombol-semua'); if (wadahTombol) wadahTombol.remove();
+const sisaData = dataRipperGlobal.slice(5);
+let htmlSisa = sisaData.map((r, index) => `<div class="p-4 border-b border-white/5 last:border-0 hover:bg-white/5 transition-colors smooth-reveal" style="animation-delay: ${index < 5 ? (index * 0.05) : 0}s; opacity: 0;"><div class="flex justify-between items-start mb-1"><div class="font-bold text-xs text-white">${r["Nama / Keterangan"] || r.nama || r.Nama || "Tanpa Nama"}</div><div class="text-[9px] text-red-500 font-bold bg-red-500/10 px-2 py-0.5 rounded border border-red-500/20 whitespace-nowrap ml-2"><i class="fas fa-ban mr-1"></i> RIPPER</div></div><div class="text-[10px] text-brand-info font-mono mb-1">ID: ${r["ID"] || r.id || "-"}</div><div class="text-[10px] text-gray-400"><i class="fas fa-credit-card mr-1"></i> ${r["Rekening / Kontak (WA/Dana)"] || r.rekening || r.Rekening || "-"}</div></div>`).join('');
+document.getElementById('ripper-container').insertAdjacentHTML('beforeend', htmlSisa);
+}, 150);
+}
+
+document.getElementById('ripperSearch').addEventListener('input', (e) => {
+const val = e.target.value.toLowerCase();
+if(val === '') { renderRippers(dataRipperGlobal, false); return; }
+const hasilFilter = dataRipperGlobal.filter(r => { const nama = (r["Nama / Keterangan"] || r.nama || r.Nama || "").toLowerCase(); const idGame = (r["ID"] || r.id || "").toLowerCase(); const rekening = (r["Rekening / Kontak (WA/Dana)"] || r.rekening || r.Rekening || "").toLowerCase(); return nama.includes(val) || idGame.includes(val) || rekening.includes(val); });
+renderRippers(hasilFilter, true);
+});
+
+function updateCarouselDots() {
+const carousel = document.getElementById('image-carousel'); const dots = document.querySelectorAll('.dot-indicator');
+if (!carousel || dots.length === 0) return; const maxScroll = carousel.scrollWidth - carousel.clientWidth; if (maxScroll <= 0) return;
+let activeIndex = Math.round((carousel.scrollLeft / maxScroll) * (dots.length - 1)); activeIndex = Math.max(0, Math.min(activeIndex, dots.length - 1));
+dots.forEach((dot, index) => { if (index === activeIndex) { dot.className = "dot-indicator h-1.5 rounded-full transition-all duration-300 w-4 bg-brand-accent"; } else { dot.className = "dot-indicator h-1.5 rounded-full transition-all duration-300 w-1.5 bg-white/40"; } });
+}
+
+let commentSubscription = null;
+
+function setupCommentRealtime(videoId) {
+    if (commentSubscription) supabaseClient.removeChannel(commentSubscription);
+    
+    commentSubscription = supabaseClient.channel(`room_comments_${videoId}`)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'comments', filter: `video_id=eq.${videoId}` }, payload => {
+        const triggerUserId = payload.new ? payload.new.user_id : payload.old?.user_id;
+        
+        // Refresh layar jika ada komentar baru/dihapus oleh orang lain
+        if (triggerUserId !== currentUser?.id) {
+            loadComments(videoId, true);
+            const containerCount = document.querySelector(`.comment-count-container[data-vid="${videoId}"]`);
+            if(containerCount) updateCommentCountUI(videoId, containerCount);
+        }
+    })
+    .subscribe();
+}
+
+
+function openComments(id) {
+    history.pushState({ popup: 'comments' }, null, '#comments');
+    activeVideoId = id;
+    
+    // 1. CEK STATUS IZINKAN KOMENTAR DARI DATABASE LOKAL
+    const video = allVideosData.find(v => v.id === id);
+    // (Jika data allow_comments tidak ada/kosong untuk video lama, anggap true)
+    const isCommentsAllowed = video ? (video.allow_comments !== false && video.allow_comments !== 'false') : true;
+
+    // 2. KONTROL TAMPILAN LACI KOMENTAR
+    const inputWrapper = document.getElementById('comment-input-wrapper');
+    const disabledMsg = document.getElementById('comment-disabled-msg');
+
+    if (isCommentsAllowed) {
+        if (inputWrapper) inputWrapper.classList.remove('hidden');
+        if (disabledMsg) disabledMsg.classList.add('hidden');
+    } else {
+        if (inputWrapper) inputWrapper.classList.add('hidden');
+        if (disabledMsg) disabledMsg.classList.remove('hidden');
+    }
+
+    // 3. BUKA LACI DAN MUAT ISI KOMENTARNYA
+    document.getElementById('comment-drawer').classList.add('open');
+    loadComments(id);
+    setupCommentRealtime(id);
+}
+
+function closeComments() {
+    if (window.location.hash === '#comments') {
+        history.back(); // Memancing penangkap popstate (tombol back HP) bawaanmu
+    } else {
+        document.getElementById('comment-drawer').classList.remove('open');
+        if (typeof cancelReply === 'function') cancelReply();
+        
+        if (commentSubscription) {
+            supabaseClient.removeChannel(commentSubscription);
+            commentSubscription = null;
+        }
+    }
+}
+
+async function loadComments(videoId, silent = false) {
+    const list = document.getElementById('comment-list');
+    if (!silent) {
+        list.innerHTML = '<div class="flex justify-center mt-10"><i class="fas fa-spinner fa-spin text-brand-accent text-3xl"></i></div>';
+    }
+    cancelReply();
+
+    try {
+        // 🔥 KITA GANTI: Tarik data LANGSUNG dari Supabase, Bypass API Cache!
+        const { data: supabaseData, error } = await supabaseClient
+            .from('comments')
+            .select('*')
+            .eq('video_id', videoId)
+            .order('created_at', { ascending: true });
+            
+        if (error) throw error;
+        
+        // Simpan ke variabel data agar kode di bawahnya tetap jalan normal
+        const data = supabaseData || [];
+        
+        document.getElementById('drawer-comment-count').innerText = data.length || 0;
+
+        if (data && data.length > 0) {
+            // 🔥 JURUS ANTI GAGAL 1: Paksa semua ID jadi String bersih tanpa spasi tersembunyi
+            data.forEach(c => {
+                c.user_id = String(c.user_id || c.User_ID || c.userId || c.userid).trim();
+            });
+
+            // Ambil kumpulan ID dan Nickname yang valid untuk jalur cadangan
+            const userIds = [...new Set(data.map(c => c.user_id))].filter(id => id && id !== 'undefined' && id !== 'null');
+            const nicknames = [...new Set(data.map(c => c.nickname))].filter(n => n && n !== 'undefined' && n !== 'null');
+
+            let profilesData = [];
+            if (nicknames.length > 0) {
+                // Tarik data EXP dan ID Asli berdasarkan Nickname (Karena Nickname selalu valid di komentar)
+                const { data: pData } = await supabaseClient.from('profiles').select('id, nickname, exp').in('nickname', nicknames);
+                if (pData) profilesData = pData;
+            } else if (userIds.length > 0) {
+                // Fallback jika kebetulan memakai ID
+                const { data: pData } = await supabaseClient.from('profiles').select('id, nickname, exp').in('id', userIds);
+                if (pData) profilesData = pData;
+            }
+            
+            // 🔥 JURUS ANTI GAGAL 2: Penentuan EXP super akurat & Auto-Repair ID
+            data.forEach(c => {
+                // Jika ini komentar MILIK KITA (Cocokkan lewat ID atau Nickname)
+                if (currentUser && (c.user_id === String(currentUser.id).trim() || c.nickname === userProfile?.nickname)) {
+                    c.exp = (typeof userProfile !== 'undefined' && userProfile.exp) ? userProfile.exp : 0;
+                    c.user_id = currentUser.id; // PERBAIKI ID SECARA PAKSA agar hitungan video jalan!
+                } 
+                // Jika komentar orang lain, cocokkan dengan data server
+                else {
+                    const p = profilesData.find(x => String(x.id).trim() === c.user_id || x.nickname === c.nickname);
+                    c.exp = p ? p.exp : 0;
+                    
+                    // PERBAIKI ID orang lain jika terputus dari server, agar lencana videonya ikut jalan!
+                    if (p && (c.user_id === 'undefined' || !c.user_id || c.user_id === 'null')) {
+                        c.user_id = p.id; 
+                    }
+                }
+            });
+
+            const mainComments = data.filter(c => !c.parent_id);
+            const replies = data.filter(c => c.parent_id);
+
+
+            if(mainComments.length === 0) {
+                list.innerHTML = '<p class="text-center text-xs text-gray-500 italic mt-10">Belum ada komentar.</p>';
+                return;
+            }
+
+            let htmlOutput = '';
+            mainComments.forEach(c => {
+                const childReplies = replies.filter(r => r.parent_id == c.id);
+                htmlOutput += buildCommentHTML(c, childReplies);
+            });
+            list.innerHTML = htmlOutput;
+
+            setTimeout(() => { data.forEach(c => fetchCommentLikes(c.id)); }, 50);
+        } else {
+            list.innerHTML = '<p class="text-center text-xs text-gray-500 italic mt-10">Jadilah yang pertama berkomentar!</p>';
+        }
+    } catch(e) {
+        if(!silent) list.innerHTML = '<p class="text-center text-xs text-red-500 mt-10">Gagal memuat komentar.</p>';
+    }
+}
+
+
+function buildCommentHTML(comment, replies = []) {
+const ava = comment.avatar_url || `https://ui-avatars.com/api/?name=${comment.nickname || 'User'}&background=1A1133&color=fff`;
+const isMe = currentUser && currentUser.id === comment.user_id;
+const delBtn = isMe ? `<button onclick="deleteComment('${comment.id}')" class="text-red-500/50 hover:text-red-500 transition-colors px-2"><i class="fas fa-times text-[10px]"></i></button>` : '';
+
+let html = `
+<div class="flex items-start gap-3 mb-5" id="comment-box-${comment.id}">
+<img src="${ava}" onclick="viewUserProfile('${comment.user_id}')" class="w-8 h-8 rounded-full object-cover border border-white/10 shrink-0 mt-1 cursor-pointer hover:opacity-80 transition-opacity">
+<div class="flex-1">
+<div class="flex justify-between items-start">
+<div class="pr-2">
+<div class="flex items-center gap-1">
+    <b onclick="viewUserProfile('${comment.user_id}')" class="text-brand-info text-[11px] cursor-pointer hover:underline">${comment.nickname}</b>
+    ${getBadgeByLevelAndVideos(hitungStatusLevel(comment.exp || 0).level, allVideosData.filter(v => String(v.user_id) === String(comment.user_id)).length)}
+</div>
+<p class="text-gray-200 text-xs mt-0.5 leading-relaxed break-words">${formatCaption(comment.message)}</p>
+<div class="flex items-center gap-2 mt-1.5"><span class="text-[9px] text-gray-600">${timeAgo(comment.created_at)}</span><button onclick="setReply('${comment.id}', '${comment.nickname}')" class="text-[10px] text-gray-400 font-bold hover:text-white px-2">Balas</button> ${delBtn} </div>
+</div>
+<div class="flex flex-col items-center gap-1 ml-1 shrink-0">
+<button onclick="likeComment('${comment.id}', this)" class="text-gray-500 hover:text-brand-accent transition-colors active:scale-75"><i class="fas fa-heart text-sm ${localStorage.getItem('comment_liked_'+comment.id) ? 'text-brand-accent' : ''}"></i></button>
+<span class="text-[9px] text-gray-500 font-medium comment-like-count" data-cid="${comment.id}">0</span>
+</div>
+</div>`;
+
+if (replies.length > 0) {
+html += `
+<div class="mt-2">
+<button onclick="toggleReplies('${comment.id}')" class="text-[10px] text-brand-info font-bold flex items-center gap-1.5 active:scale-95 transition-transform"><span class="w-5 h-[1px] bg-brand-info/50 inline-block"></span> Lihat ${replies.length} balasan <i class="fas fa-chevron-down text-[8px] transition-transform duration-300" id="icon-reply-${comment.id}"></i></button>
+<div id="replies-${comment.id}" class="hidden mt-3 space-y-4 pl-3 border-l border-white/10 relative">`;
+
+replies.forEach(r => {
+const rAva = r.avatar_url || `https://ui-avatars.com/api/?name=${r.nickname || 'User'}&background=1A1133&color=fff`;
+const isRMe = currentUser && currentUser.id === r.user_id;
+const rDelBtn = isRMe ? `<button onclick="deleteComment('${r.id}')" class="text-red-500/50 hover:text-red-500 transition-colors px-2"><i class="fas fa-times text-[10px]"></i></button>` : '';
+
+html += `
+<div class="flex items-start gap-2 relative" id="comment-box-${r.id}">
+<img src="${rAva}" onclick="viewUserProfile('${r.user_id}')" class="w-6 h-6 rounded-full object-cover border border-white/10 shrink-0 mt-0.5 cursor-pointer hover:opacity-80 transition-opacity">
+<div class="flex-1">
+<div class="flex justify-between items-start">
+<div class="pr-2">
+<div class="flex items-center gap-1">
+    <b onclick="viewUserProfile('${r.user_id}')" class="text-brand-purple text-[10px] cursor-pointer hover:underline">${r.nickname}</b>
+    ${getBadgeByLevelAndVideos(hitungStatusLevel(r.exp || 0).level, allVideosData.filter(v => String(v.user_id) === String(r.user_id)).length)}
+</div>
+<p class="text-gray-300 text-[11px] mt-0.5 leading-relaxed break-words">${formatCaption(r.message)}</p>
+<div class="flex items-center gap-2 mt-1"><button onclick="setReply('${comment.id}', '${r.nickname}')" class="text-[9px] text-gray-500 font-bold hover:text-white pr-2">Balas</button> ${rDelBtn}</div>
+</div>
+<div class="flex flex-col items-center gap-1 ml-1 shrink-0">
+<button onclick="likeComment('${r.id}', this)" class="text-gray-500 hover:text-brand-accent transition-colors active:scale-75"><i class="fas fa-heart text-[11px] ${localStorage.getItem('comment_liked_'+r.id) ? 'text-brand-accent' : ''}"></i></button>
+<span class="text-[8px] text-gray-500 comment-like-count" data-cid="${r.id}">0</span>
+</div>
+</div>
+</div>
+</div>`;
+});
+html += `</div></div>`;
+}
+html += `</div></div>`; return html;
+}
+
+async function deleteComment(cid) {
+    const konfirmasi = await customConfirm("Yakin ingin menghapus komentar ini?");
+    if (!konfirmasi) return;
+
+    const commentBox = document.getElementById(`comment-box-${cid}`);
+    if (commentBox) commentBox.style.opacity = '0.5';
+
+    try {
+        // PERBAIKAN: Hapus filter user_id karena datanya memang NULL di DB
+        // Biarkan RLS Supabase (kalau sudah kamu setel) yang membatasi hak aksesnya
+        const { error: deleteError } = await supabaseClient
+            .from('comments')
+            .delete()
+            .eq('id', cid);
+        
+        if (deleteError) throw deleteError;
+
+        // Visual feedback
+        if (commentBox) {
+            commentBox.style.transition = 'all 0.3s ease';
+            commentBox.style.opacity = '0';
+            setTimeout(() => {
+                commentBox.remove();
+                // Update UI counter
+                const countEl = document.getElementById('drawer-comment-count');
+                if(countEl) countEl.innerText = Math.max(0, parseInt(countEl.innerText) - 1);
+            }, 300);
+        }
+        showToast("Komentar berhasil dihapus", "success");
+
+    } catch (e) {
+        console.error("Gagal hapus:", e);
+        if (commentBox) commentBox.style.opacity = '1';
+        showToast("Gagal menghapus komentar!", "error");
+    }
+}
+
+
+function toggleReplies(id) {
+const div = document.getElementById('replies-'+id); const icon = document.getElementById('icon-reply-'+id);
+if(div.classList.contains('hidden')) { div.classList.remove('hidden'); icon.style.transform = 'rotate(180deg)'; }
+else { div.classList.add('hidden'); icon.style.transform = 'rotate(0deg)'; }
+}
+
+function setReply(parentId, nickname) {
+replyingToId = parentId; replyingToName = nickname;
+document.getElementById('reply-indicator').classList.remove('hidden');
+document.getElementById('replying-to-name').innerText = '@' + nickname;
+const input = document.getElementById('comment-input'); input.focus();
+if(nickname) input.value = `@${nickname} `;
+}
+
+function cancelReply() {
+replyingToId = null; replyingToName = null;
+document.getElementById('reply-indicator').classList.add('hidden');
+const input = document.getElementById('comment-input');
+if (input.value.startsWith('@')) input.value = '';
+}
+
+async function sendComment(event) {
+    if (!currentUser) return openAuthModal();
+    
+    const video = allVideosData.find(v => v.id === activeVideoId);
+    const isCommentsAllowed = video ? (video.allow_comments !== false && video.allow_comments !== 'false') : true;
+    if (!isCommentsAllowed) {
+        return showToast("Komentar dinonaktifkan untuk video ini.", "error");
+    }
+
+    const msgInput = document.getElementById('comment-input');
+    const msg = msgInput.value.trim();
+    if (!msg) {
+        showToast("Komentar tidak boleh kosong!", "error");
+        return;
+    }
+
+    const btn = event.currentTarget;
+    const iconAsli = btn.innerHTML; 
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>'; 
+    btn.disabled = true;
+
+    try {
+        const payload = {
+            video_id: activeVideoId,
+            nickname: userProfile?.nickname || "Player",
+            message: msg,
+            avatar_url: userProfile?.avatar_url || "",
+            user_id: currentUser.id // User ID wajib masuk agar RLS Supabase tidak menolak saat dihapus
+        };
+        if (replyingToId) payload.parent_id = replyingToId;
+
+        // EKSEKUSI LANGSUNG KE SUPABASE (Tanpa lewat fetch '/api/comment')
+        const { error: insertError } = await supabaseClient
+            .from('comments')
+            .insert(payload);
+
+        if (insertError) throw insertError; 
+
+        msgInput.value = '';
+        cancelReply(); 
+        
+        await tambahExp(10); 
+        await loadComments(activeVideoId, true);
+        
+        // Update angka di UI
+        const container = document.querySelector(`.comment-count-container[data-vid="${activeVideoId}"]`);
+        if(container) updateCommentCountUI(activeVideoId, container);
+
+        const floatComment = document.getElementById('float-comment-container');
+        if (floatComment && floatComment.dataset.vid === activeVideoId) {
+            updateCommentCountUI(activeVideoId, floatComment);
+        }
+    } catch(e) {
+        console.error("Error Kirim Komentar:", e);
+        showToast("Gagal kirim: " + (e.message || "Kesalahan jaringan"), "error");
+    } finally {
+        btn.innerHTML = iconAsli; 
+        btn.disabled = false;
+    }
+}
+
+
+
+async function fetchCommentLikes(cid) {
+try {
+// Hitung jumlah like komentar langsung dari Supabase
+const { count, error } = await supabaseClient
+.from('comment_likes')
+.select('*', { count: 'exact', head: true })
+.eq('comment_id', cid);
+
+const span = document.querySelector(`.comment-like-count[data-cid="${cid}"]`);
+if(span && !error) span.innerText = count || 0;
+} catch(e) {
+console.error("Gagal mengambil like komentar", e);
+}
+}
+
+async function likeComment(cid, btn) {
+    // Wajib login untuk melike komentar
+    if (!currentUser) {
+        showToast("Silakan login untuk menyukai komentar!", "error");
+        return openAuthModal();
+    }
+
+    // Cegah spam klik yang bisa bikin database jebol
+    if (btn.isProcessing) return;
+    btn.isProcessing = true;
+
+    const icon = btn.querySelector('i');
+    
+    // Deteksi warna: jika pink berarti sedang di-like, jika abu-abu berarti belum
+    const isLiked = icon.classList.contains('text-brand-accent');
+
+    // --- ANIMASI DENYUT ANTI-TABRAKAN ---
+    // Bersihkan timer lama jika user spam tap
+    if (btn.animTimer) clearTimeout(btn.animTimer);
+    icon.classList.add('animate-ping');
+    btn.animTimer = setTimeout(() => icon.classList.remove('animate-ping'), 500);
+
+    try {
+        if (isLiked) {
+            // === PROSES UNLIKE (BATAL SUKA) ===
+            icon.classList.replace('text-brand-accent', 'text-gray-500');
+            
+            const { error } = await supabaseClient
+                .from('comment_likes')
+                .delete()
+                .eq('comment_id', cid)
+                .eq('user_id', currentUser.id);
+
+            if(error) throw error;
+            localStorage.removeItem('comment_liked_'+cid);
+            
+        } else {
+            // === PROSES LIKE (MENYUKAI) ===
+            icon.classList.replace('text-gray-500', 'text-brand-accent');
+            
+            const { error } = await supabaseClient
+                .from('comment_likes')
+                .insert({
+                    comment_id: cid,
+                    user_id: currentUser.id
+                });
+
+            // Abaikan error duplikat jika di DB memang sudah ter-like
+            if(error && error.code !== '23505') throw error;
+            localStorage.setItem('comment_liked_'+cid, 'true');
+        }
+        
+        // Update angka like di layar
+        fetchCommentLikes(cid);
+
+    } catch(e) {
+        console.error("Comment Like Error:", e);
+        
+        // ROLLBACK: Kembalikan warna jika database gagal merespons
+        if (isLiked) {
+            icon.classList.replace('text-gray-500', 'text-brand-accent');
+        } else {
+            icon.classList.replace('text-brand-accent', 'text-gray-500');
+        }
+        showToast(isLiked ? "Gagal membatalkan like." : "Gagal menyukai komentar.", "error");
+    } finally {
+        btn.isProcessing = false;
+    }
+}
+
+
+async function updateLikeCountUI(videoId, containerDiv) {
+    if (!containerDiv) return;
+    try {
+        // 1. Dapatkan total jumlah like dari Supabase
+        const { count, error } = await supabaseClient
+            .from('video_likes')
+            .select('*', { count: 'exact', head: true })
+            .eq('video_id', videoId);
+
+        const countSpan = containerDiv.querySelector('.like-count-display');
+        if (countSpan && !error) countSpan.innerText = count || 0;
+
+        // 2. Cek status LIKE Akurat dari Database untuk User yang sedang login
+        const icon = containerDiv.querySelector('i');
+        
+        if (currentUser) {
+            const { data: isLikedDB } = await supabaseClient
+                .from('video_likes')
+                .select('id')
+                .eq('video_id', videoId)
+                .eq('user_id', currentUser.id)
+                .single();
+
+            if (isLikedDB) {
+                // Jika di database sudah di-like, ubah merah dan sinkronkan memori lokal
+                icon.classList.replace('text-white', 'text-brand-accent');
+                localStorage.setItem(`liked_${videoId}`, 'true');
+            } else {
+                // Jika belum, pastikan ikon putih
+                icon.classList.replace('text-brand-accent', 'text-white');
+                localStorage.removeItem(`liked_${videoId}`);
+            }
+        } else {
+            // Jika belum login, gunakan deteksi memori HP sementara
+            if(localStorage.getItem(`liked_${videoId}`)) {
+                icon.classList.replace('text-white', 'text-brand-accent');
+            }
+        }
+
+    } catch(e) {
+        // Fallback jika query database gagal / koneksi lambat
+        if(localStorage.getItem(`liked_${videoId}`)) {
+            containerDiv.querySelector('i').classList.replace('text-white', 'text-brand-accent');
+        }
+        console.error("Gagal update UI like", e);
+    }
+}
+
+
+async function updateCommentCountUI(videoId, containerDiv) {
+    if (!containerDiv) return;
+    try {
+        // Hitung langsung ke Supabase dengan akurat (Bypass API Vercel)
+        const { count, error } = await supabaseClient
+            .from('comments')
+            .select('*', { count: 'exact', head: true })
+            .eq('video_id', videoId);
+        
+        const countSpan = containerDiv.querySelector('.comment-count-display');
+        if (countSpan && !error) {
+            countSpan.innerText = count || 0;
+        }
+    } catch(e) {
+        console.error("Gagal update angka komentar:", e);
+    }
+}
+
+
+
+
+async function likeVideo(videoId, btn) {
+    // Wajib login untuk melike
+    if (!currentUser) {
+        showToast("Silakan login untuk menyukai video!", "error");
+        return openAuthModal();
+    }
+
+    // Cegah spam klik (double click cepat) yang bikin error database
+    if (btn.disabled) return;
+    btn.disabled = true;
+
+    const icon = btn.querySelector('i');
+    
+    // Deteksi apakah saat ini video SEDANG di-like berdasarkan warna ikon (Optimistic UI)
+    const isLiked = icon.classList.contains('text-brand-accent'); 
+
+    // Berikan efek animasi denyut saat ditekan
+    icon.classList.add('animate-ping');
+    setTimeout(() => icon.classList.remove('animate-ping'), 500);
+
+    try {
+        if (isLiked) {
+            // ==========================================
+            // PROSES UNLIKE (BATAL SUKA)
+            // ==========================================
+            icon.classList.replace('text-brand-accent', 'text-white'); // Ubah warna jadi putih instan
+            
+            const { error } = await supabaseClient
+                .from('video_likes')
+                .delete()
+                .eq('video_id', videoId)
+                .eq('user_id', currentUser.id);
+
+            if (error) throw error;
+            
+            // Hapus jejak dari memori HP
+            localStorage.removeItem(`liked_${videoId}`);
+
+        } else {
+            // ==========================================
+            // PROSES LIKE (MENYUKAI)
+            // ==========================================
+            icon.classList.replace('text-white', 'text-brand-accent'); // Ubah warna jadi pink instan
+            
+            const { error } = await supabaseClient
+                .from('video_likes')
+                .insert({
+                    video_id: videoId,
+                    user_id: currentUser.id
+                });
+
+            // Abaikan error dengan kode '23505' (Duplicate) jika ternyata di DB sudah ter-like sebelumnya
+            if (error && error.code !== '23505') throw error;
+            
+            // Simpan jejak di memori HP
+            localStorage.setItem(`liked_${videoId}`, 'true');
+        }
+
+        // Perbarui angka jumlah like di layar secara real-time
+        updateLikeCountUI(videoId, btn.closest('.like-container') || document.getElementById('float-like-container'));
+
+    } catch (e) {
+        console.error("Video Like Error:", e);
+        
+        // ROLLBACK: Jika database gagal, kembalikan warna ikon seperti semula
+        if (isLiked) {
+            icon.classList.replace('text-white', 'text-brand-accent');
+        } else {
+            icon.classList.replace('text-brand-accent', 'text-white');
+        }
+        
+        showToast(isLiked ? "Gagal membatalkan like." : "Gagal menyukai video.", "error");
+    } finally {
+        // Buka kembali kunci tombol setelah proses selesai
+        btn.disabled = false;
+    }
+}
+
+
+function handleVideoError(videoElement) { const container = videoElement.closest('.snap-start'); if (container) container.remove(); }
+
+function createHeartAt(event) {
+const heart = document.createElement('i');
+heart.className = 'fas fa-heart heart-pop';
+const x = event.clientX || (event.touches && event.touches[0].clientX) || (window.innerWidth / 2);
+const y = event.clientY || (event.touches && event.touches[0].clientY) || (window.innerHeight / 2);
+heart.style.left = `${x}px`; heart.style.top = `${y}px`;
+document.body.appendChild(heart);
+setTimeout(() => heart.remove(), 800);
+}
+
+
+
+async function loadVideos() {
+    const container = document.getElementById('feed-container'); 
+    const fakeLoader = document.getElementById('fake-loader'); 
+    const fakeProgress = document.getElementById('fake-progress');
+    const isFirstTime = !localStorage.getItem('hasVisitedSosial');
+    
+    if (obs) obs.disconnect();
+    
+    try {
+        if (allVideosData.length === 0) container.innerHTML = `<div class="w-full h-full relative bg-[#1A1133] animate-pulse flex flex-col justify-end p-6 flex-shrink-0 snap-start"><div class="absolute inset-0 flex items-center justify-center"><i class="fas fa-circle-notch fa-spin text-brand-accent text-4xl opacity-40"></i></div></div>`;
+
+        const res = await fetch('/api/get-videos');
+        let dataDariSheet = await res.json();
+
+        // --- PENYERAGAMAN ID & INDEX PINTAR ---
+        dataDariSheet = dataDariSheet.map((v, index) => {
+            v.original_index = index; // <--- SUNTIKAN TIKET ANTREAN
+            v.id = v.id || v.video_id || v.ID || 'vid_' + Math.random().toString(36).substr(2, 9);
+            v.user_id = v.user_id || v.User_ID || v.userId || v.userid;
+            return v;
+        });
+
+        let nextIdx = dataDariSheet.length;
+        newUploads.forEach(newVid => {
+            newVid.id = newVid.id || newVid.video_id; 
+            if (!dataDariSheet.find(v => v.id === newVid.id)) {
+                newVid.original_index = nextIdx++; // Amankan nomor antrean jika ada postingan baru
+                dataDariSheet.push(newVid);
+            }
+        });
+
+        dataDariSheet = dataDariSheet.filter(v => !blockedUsersList.includes(v.user_id));
+
+        // 1. Biarkan pengacakan (shuffle) bawaan Anda berjalan dulu
+        for (let i = dataDariSheet.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [dataDariSheet[i], dataDariSheet[j]] = [dataDariSheet[j], dataDariSheet[i]];
+        }
+
+        allVideosData = dataDariSheet;
+
+        // ========================================================
+        // DETEKSI LINK SHARE & LANGSUNG BUKA POP-UP
+        // ========================================================
+        const urlHash = window.location.hash;
+        if (urlHash.includes('sosial?vid=')) {
+            const params = new URLSearchParams(urlHash.split('?')[1]);
+            const targetVidId = params.get('vid');
+            if (targetVidId) {
+                setTimeout(() => { bukaVideoShare(targetVidId); }, 800); 
+            }
+        }
+        // ========================================================
+
+        currentVideoIndex = 0;
+        container.innerHTML = '';
+        renderProfileVideos();
+
+        if (!allVideosData.length) { container.innerHTML = '<p class="text-center py-20 text-gray-500">Belum ada video.</p>'; return; }
+
+        if (isFirstTime) {
+            fakeLoader.classList.remove('hidden'); fakeLoader.classList.add('flex'); fakeProgress.style.transition = 'width 15s cubic-bezier(0.1, 0.7, 1.0, 0.1)';
+            setTimeout(() => { fakeProgress.style.width = '80%'; }, 100);
+            setupVideoObserver(); renderVideoBatch();
+            
+            const videosInDOM = document.querySelectorAll('.video-player'); 
+            const targetCount = Math.min(10, videosInDOM.length);
+            let readyCount = 0; let isResolved = false;
+            
+            const finishLoading = () => {
+                if (isResolved) return; isResolved = true; fakeProgress.style.transition = 'width 0.4s ease-out'; fakeProgress.style.width = '100%';
+                setTimeout(() => { fakeLoader.classList.add('opacity-0'); setTimeout(() => { fakeLoader.classList.add('hidden'); fakeLoader.classList.remove('flex'); }, 1000); localStorage.setItem('hasVisitedSosial', 'true'); }, 500);
+            };
+            
+            const safetyTimeout = setTimeout(() => { finishLoading(); }, 15000);
+            
+            if (targetCount === 0) { clearTimeout(safetyTimeout); finishLoading(); }
+            else {
+                videosInDOM.forEach((vid, index) => {
+                    if (index < targetCount) {
+                        vid.setAttribute('preload', 'auto'); vid.load();
+                        const onVideoReady = () => {
+                            if (isResolved) return; readyCount++; const progressPercent = 80 + ((readyCount / targetCount) * 20); fakeProgress.style.width = `${progressPercent}%`;
+                            if (readyCount >= targetCount) { clearTimeout(safetyTimeout); finishLoading(); }
+                        };
+                        if (vid.readyState >= 3) onVideoReady(); else { vid.addEventListener('canplay', onVideoReady, { once: true }); vid.addEventListener('loadeddata', onVideoReady, { once: true }); }
+                    }
+                });
+            }
+        } else { 
+            setupVideoObserver(); 
+            renderVideoBatch(); 
+        }
+    } catch (e) { 
+        container.innerHTML = '<p class="text-center py-20 text-gray-500">Gagal memuat video.</p>'; 
+    }
+}
+
+
+
+function renderVideoBatch() {
+const container = document.getElementById('feed-container');
+
+// --- LOGIKA FEED TANPA UJUNG (INFINITE LOOP) ---
+if (currentVideoIndex >= allVideosData.length) {
+currentVideoIndex = 0;
+}
+
+const nextBatch = allVideosData.slice(currentVideoIndex, currentVideoIndex + BATCH_SIZE);
+if (nextBatch.length === 0) return;
+
+const htmlString = nextBatch.map((vid) => `
+<div class="snap-start w-full h-full flex-shrink-0 relative flex items-center justify-center bg-black">
+
+<div class="video-inner-wrap w-full h-full relative bg-brand-dark ${!isGlobalMuted ? 'floating-focus' : ''}">
+
+<div class="absolute inset-0 flex items-center justify-center z-0"><div class="w-12 h-12 border-4 border-brand-accent/20 border-t-brand-accent rounded-full animate-spin"></div></div>
+<video class="absolute inset-0 m-auto w-full h-full object-cover video-player transition-opacity duration-500 opacity-0 z-10"
+onloadeddata="this.classList.remove('opacity-0')" loop ${isGlobalMuted ? 'muted' : ''} playsinline preload="metadata"
+ontimeupdate="updateVideoProgress(this)"
+onclick="handleVideoClick(event, this, '${vid.id}')" onerror="handleVideoError(this)">
+<source src="${vid.video_url}" type="video/mp4">
+</video>
+
+<div class="time-indicator absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-white font-extrabold text-4xl drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)] opacity-0 transition-opacity z-[60] pointer-events-none tracking-wider bg-black/40 px-6 py-2 rounded-2xl">
+<span class="time-current">00:00</span> <span class="text-white/50 text-2xl mx-1">/</span> <span class="time-total text-white/70">00:00</span>
+</div>
+
+<!-- Progress Bar Tetap di Dasar Layar -->
+<div class="absolute bottom-0 left-0 w-full h-3 z-50 cursor-pointer group touch-none flex flex-col justify-end pb-1"
+onpointerdown="startSeek(event, this)" onpointermove="doSeek(event, this)" onpointerup="endSeek(event, this)" onpointercancel="endSeek(event, this)">
+<div class="w-full h-1 bg-white/30 relative">
+<div class="progress-fill h-full bg-white w-0 relative pointer-events-none transition-all duration-75 ease-linear">
+<div class="absolute -right-2 top-1/2 -translate-y-1/2 w-4 h-4 bg-white rounded-full scale-0 group-hover:scale-100 transition-transform shadow-md"></div>
+</div>
+</div>
+</div>
+
+<!-- ============================================== -->
+<!-- TATA LETAK BARU (TIKTOK STYLE)                 -->
+<!-- ============================================== -->
+
+<!-- 1. Area Teks Kiri Bawah -->
+<div class="absolute bottom-6 left-2 z-40 w-[75%] pr-2 pointer-events-auto flex flex-col justify-end pb-2">
+<p onclick="event.stopPropagation(); viewUserProfile('${vid.user_id}')" class="font-bold text-[16px] text-white cursor-pointer hover:text-brand-info drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)] mb-1.5 flex items-center">
+@${vid.nickname || "Player"} ${getBadgeByLevelAndVideos(0, allVideosData.filter(v => v.user_id === vid.user_id).length)}
+</p>
+<div onclick="this.classList.toggle('expanded')" class="caption-text text-[14px] text-white/95 drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)] cursor-pointer leading-snug">
+${formatCaption(vid.caption)}
+</div>
+
+<!-- [BARU] Teks Berjalan "Suara Asli / Lagu" -->
+<div class="flex items-center gap-2 mt-2.5 overflow-hidden w-3/4">
+<i class="fas fa-music text-[10px] text-white animate-pulse drop-shadow-md"></i>
+<div class="overflow-hidden whitespace-nowrap relative w-full mask-text">
+<div class="inline-block text-[12px] text-white drop-shadow-md font-medium marquee-text">
+Suara Asli - @${vid.nickname || "Player"} 🎵 Original Audio
+</div>
+</div>
+</div>
+</div>
+
+<!-- 2. Tombol Aksi Kanan Bawah -->
+<div class="absolute bottom-6 right-4 z-40 flex flex-col items-center gap-5 pointer-events-auto pb-2">
+
+<!-- Foto Profil & Tombol Plus -->
+<div class="relative cursor-pointer hover:scale-105 transition-transform" onclick="event.stopPropagation(); viewUserProfile('${vid.user_id}')">
+<img src="${vid.avatar_url || 'https://ui-avatars.com/api/?name=User&background=1A1133&color=fff'}" loading="lazy" class="w-[46px] h-[46px] rounded-full object-cover border-[1.5px] border-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
+<button id="feed-follow-btn-${vid.user_id}" onclick="event.stopPropagation(); feedToggleFollow('${vid.user_id}', this)" class="absolute -bottom-2.5 left-1/2 -translate-x-1/2 bg-[#FF007A] text-white rounded-full w-[22px] h-[22px] flex items-center justify-center border-[1.5px] border-brand-dark drop-shadow-md active:scale-90 transition-transform z-30">
+<i class="fas fa-plus text-[10px]"></i>
+</button>
+</div>
+
+<!-- Like -->
+<div class="like-container flex flex-col items-center gap-1" data-vid="${vid.id}">
+<button onclick="likeVideo('${vid.id}', this)" class="hover:scale-110 transition-transform active:scale-90">
+<i class="fas fa-heart text-[35px] text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]"></i>
+</button>
+<span class="like-count-display text-white text-[13px] font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">0</span>
+</div>
+
+<!-- Comment -->
+<div class="comment-count-container flex flex-col items-center gap-1" data-vid="${vid.id}">
+<button onclick="openComments('${vid.id}')" class="hover:scale-110 transition-transform active:scale-90">
+<i class="fas fa-comment-dots text-[35px] text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]" style="transform: scaleX(-1);"></i>
+</button>
+<span class="comment-count-display text-white text-[13px] font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">0</span>
+</div>
+
+<!-- Share -->
+<div class="flex flex-col items-center gap-1">
+<button onclick="shareVideo('${vid.id}', this)" class="hover:scale-110 transition-transform active:scale-90">
+<i class="fas fa-share text-[35px] text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]"></i>
+</button>
+<span class="text-white text-[13px] font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">Share</span>
+</div>
+
+<!-- [BARU] Piringan Musik Berputar -->
+<div class="relative mt-2 flex items-center justify-center w-11 h-11 group cursor-pointer hover:scale-105 transition-transform" onclick="event.stopPropagation()">
+<i class="fas fa-music absolute -top-4 -left-2 text-[10px] text-white/70 animate-ping opacity-0 group-hover:opacity-100 transition-opacity"></i>
+<div class="w-10 h-10 rounded-full bg-[#1A1133] border-[3.5px] border-gray-800 flex items-center justify-center animate-[spin_4s_linear_infinite] shadow-[0_0_15px_rgba(0,0,0,0.8)]">
+<img src="${vid.avatar_url || 'https://ui-avatars.com/api/?name=Music&background=1A1133&color=fff'}" class="w-4 h-4 rounded-full object-cover">
+</div>
+</div>
+</div>
+
+</div>
+</div>`).join('');
+
+// --- SISTEM ANTI DOM BLOAT (MENCEGAH HP CRASH) ---
+if (container.children.length > 40) {
+    const tinggiVideo = container.firstElementChild.clientHeight;
+    // Hapus 5 video teratas beserta memori medianya
+    for (let i = 0; i < 5; i++) {
+        const elToRemove = container.firstElementChild;
+        const vidToKill = elToRemove.querySelector('video');
+        if (vidToKill) {
+            vidToKill.pause();
+            vidToKill.removeAttribute('src');
+            if (vidToKill.querySelector('source')) vidToKill.querySelector('source').removeAttribute('src');
+            vidToKill.load(); 
+        }
+        elToRemove.remove();
+    }
+    // Tarik scroll ke atas agar layar tidak lompat tiba-tiba
+    container.scrollBy({ top: -(tinggiVideo * 5), behavior: 'instant' });
+}
+
+container.insertAdjacentHTML('beforeend', htmlString);
+currentVideoIndex += BATCH_SIZE;
+
+const videoActions = container.querySelectorAll('.snap-start:not(.data-loaded)');
+videoActions.forEach((card) => {
+card.classList.add('data-loaded');
+const vidId = card.querySelector('.like-container').dataset.vid;
+updateLikeCountUI(vidId, card.querySelector('.like-container'));
+updateCommentCountUI(vidId, card.querySelector('.comment-count-container'));
+});
+
+const unobservedVideos = container.querySelectorAll('.video-player:not(.observed)');
+unobservedVideos.forEach((v, i) => {
+v.classList.add('observed'); if (obs) obs.observe(v);
+if (i === unobservedVideos.length - 1) {
+const lastVideoObserver = new IntersectionObserver(entries => {
+if(entries[0].isIntersecting) { lastVideoObserver.disconnect(); renderVideoBatch(); }
+}, { threshold: 0.1 });
+lastVideoObserver.observe(v.closest('.snap-start'));
+}
+});
+}
+
+
+// ==========================================
+// FITUR SWIPE DOWN (USAP KE BAWAH) UNTUK TUTUP STORY
+// ==========================================
+let storyStartY = 0;
+let storyCurrentY = 0;
+const storyModal = document.getElementById('story-viewer-modal');
+
+storyModal.addEventListener('touchstart', (e) => {
+// Abaikan jika user memiliki 2 jari di layar
+if (e.touches.length > 1) return;
+storyStartY = e.touches[0].clientY;
+}, { passive: true });
+
+storyModal.addEventListener('touchmove', (e) => {
+if (storyStartY === 0) return;
+storyCurrentY = e.touches[0].clientY;
+const diffY = storyCurrentY - storyStartY;
+
+// Jika ditarik ke bawah (diffY positif)
+if (diffY > 0) {
+storyModal.style.transition = 'none'; // Hilangkan delay agar mulus mengikuti jari
+storyModal.style.transform = `translateY(${diffY}px)`;
+
+// Buat background makin pudar/transparan saat ditarik
+const opacity = Math.max(0.3, 0.95 - (diffY / window.innerHeight));
+storyModal.style.backgroundColor = `rgba(0, 0, 0, ${opacity})`;
+}
+}, { passive: true });
+
+storyModal.addEventListener('touchend', (e) => {
+if (storyStartY === 0 || storyCurrentY === 0) return;
+const diffY = storyCurrentY - storyStartY;
+
+// Jika ditarik lebih dari 120 pixel ke bawah, TUTUP!
+if (diffY > 120) {
+closeStoryViewer();
+} else {
+// Jika ditarik sedikit / nanggung, kembalikan posisi ke atas
+storyModal.style.transition = 'transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.3s ease';
+storyModal.style.transform = 'translateY(0)';
+storyModal.style.backgroundColor = 'rgba(0, 0, 0, 0.95)';
+}
+
+// Reset Koordinat
+storyStartY = 0;
+storyCurrentY = 0;
+});
+
+// ==========================================
+// FITUR WHATSAPP STYLE (ENTER & AUTO RESIZE)
+// ==========================================
+
+function handleEnter(e) {
+// Jika user menekan tombol Enter TANPA menekan tombol Shift
+if (e.key === 'Enter' && !e.shiftKey) {
+e.preventDefault(); // Mencegah spasi kosong / enter berantakan
+
+const input = document.getElementById('chat-room-input');
+if (input.value.trim() !== '') {
+sendMessageRoom();
+}
+}
+}
+
+function handleTyping(el) {
+// 1. Auto-resize tinggi kotak sesuai dengan teks (Maksimal 120px dari HTML)
+el.style.height = 'auto';
+el.style.height = el.scrollHeight + 'px';
+
+// 2. Panggil fungsi asli milik Anda untuk urus Ikon Mic & Sinyal Typing
+sendTypingStatus();
+}
+
+
+
+let lastTypingTime = 0; // Tambahkan variabel ini di luar fungsi
+
+// FUNGSI TYPING INDICATOR & TOGGLE MIC/SEND (DIOPTIMALKAN)
+function sendTypingStatus() {
+// --- 1. LOGIKA UBAH IKON MIC / PESAWAT KERTAS ---
+const input = document.getElementById('chat-room-input');
+const btnSend = document.getElementById('btn-send-room');
+
+// Jangan ubah ikon kalau sistem sedang sibuk merekam suara
+if (!input.disabled) {
+if (input.value.trim() !== '') {
+// Jika ada teks, ubah jadi pesawat kertas (Kirim Teks)
+btnSend.innerHTML = '<i class="fas fa-paper-plane"></i>';
+btnSend.onclick = sendMessageRoom;
+} else {
+// Jika kosong, ubah jadi mikrofon (Kirim Voice Note)
+btnSend.innerHTML = '<i class="fas fa-microphone"></i>';
+btnSend.onclick = startRecordingVoice;
+}
+}
+
+// --- 2. LOGIKA TYPING ASLI ---
+// Jika belum terhubung ke channel atau tidak ada target, batalkan
+if(!messageSubscription || (!activeChatUserId && !activeGroupId)) return;
+
+const now = Date.now();
+// Hanya kirim sinyal ke server jika sudah lewat 2 detik (2000 ms) dari ketikan terakhir
+if (now - lastTypingTime > 2000) {
+messageSubscription.send({
+type: 'broadcast',
+event: 'typing',
+payload: { userId: currentUser.id }
+});
+lastTypingTime = now; // Update waktu terakhir mengetik
+}
+}
+
+
+
+function openEditProfileModal() {
+if(!currentUser) return;
+document.getElementById('edit-nick').value = userProfile?.nickname || '';
+document.getElementById('edit-bio').value = userProfile?.bio || '';
+document.getElementById('edit-pass').value = '';
+document.getElementById('modal-edit-profile').classList.remove('hidden');
+document.getElementById('modal-edit-profile').classList.add('flex');
+history.pushState({ popup: 'edit_profile' }, null, '#edit');
+}
+
+function closeEditProfileModal() {
+if(window.location.hash === '#edit') history.back();
+else {
+const m = document.getElementById('modal-edit-profile');
+m.classList.add('hidden'); m.classList.remove('flex');
+}
+}
+
+async function saveProfileInfo() {
+const btn = document.querySelector('button[onclick="saveProfileInfo()"]');
+const originalText = btn.innerHTML;
+btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Menyimpan...';
+btn.disabled = true;
+
+try {
+const newNick = document.getElementById('edit-nick').value.trim();
+const newBio = document.getElementById('edit-bio').value.trim();
+const newPass = document.getElementById('edit-pass').value.trim();
+
+if(!newNick) {
+showToast("Nickname tidak boleh kosong!", "error");
+return;
+}
+
+if (newPass) {
+const { error: errPass } = await supabaseClient.auth.updateUser({ password: newPass });
+if (errPass) {
+showToast("Gagal ganti password: " + errPass.message, "error");
+return;
+}
+}
+
+const currentAvatar = userProfile?.avatar_url || "";
+const { error } = await supabaseClient.from('profiles').upsert({
+id: currentUser.id,
+nickname: newNick,
+bio: newBio,
+avatar_url: currentAvatar
+});
+
+if (error) {
+// Jika error karena nickname sudah dipakai (Kode error PostgreSQL: 23505)
+if (error.code === '23505') {
+throw new Error("Nickname tersebut sudah dipakai player lain. Silakan cari yang lain!");
+}
+throw error;
+}
+
+await fetchProfile();
+updateUIForLoggedIn();
+closeEditProfileModal();
+showToast("Profil berhasil diperbarui!", "success");
+
+} catch (err) {
+showToast("Terjadi Kesalahan: " + err.message, "error");
+} finally {
+btn.innerHTML = originalText;
+btn.disabled = false;
+}
+}
+
+// ==========================================
+// FUNGSI HAPUS AKUN PERMANEN
+// ==========================================
+async function hapusAkunPermanen() {
+    if (!currentUser) return;
+
+    const konfirmasi = await customPrompt("PERINGATAN! Semua data (Video, Follower, Saldo, dan Media) akan hangus.\n\nKetik 'HAPUS AKUN' huruf besar semua untuk melanjutkan:");
+    
+    if (konfirmasi === 'HAPUS AKUN') {
+        showToast("Sedang menghancurkan akun dan membersihkan media...", "info");
+        
+        try {
+            // 1. PANGGIL API UNTUK MENGHAPUS FOLDER BIZNET GIO DULU
+            // Lakukan ini sebelum RPC Supabase agar akses ID user masih valid
+            await fetch(`/api/delete-folder?userId=${currentUser.id}`, {
+                method: 'DELETE'
+            });
+
+            // 2. PANGGIL SUPABASE RPC UNTUK HAPUS DATABASE
+            const { error } = await supabaseClient.rpc('hapus_akun_saya');
+            
+            if (error) throw error;
+
+            showToast("Akun dan seluruh media berhasil dihapus permanen.", "success");
+            
+            closeEditProfileModal();
+            await handleLogout();
+            
+        } catch (err) {
+            console.error(err);
+            showToast("Gagal menghapus akun. Pastikan Anda terhubung ke internet.", "error");
+        }
+    } else if (konfirmasi !== null) {
+        showToast("Kata kunci salah. Penghapusan dibatalkan.", "error");
+    }
+}
+
+
+
+async function fetchFollowStats(targetUserId) {
+const { count: followers } = await supabaseClient.from('follows').select('*', { count: 'exact', head: true }).eq('following_id', targetUserId);
+const { count: following } = await supabaseClient.from('follows').select('*', { count: 'exact', head: true }).eq('follower_id', targetUserId);
+
+const elPengikut = document.getElementById('stat-pengikut'); if(elPengikut) elPengikut.innerText = followers || 0;
+const elMengikuti = document.getElementById('stat-mengikuti'); if(elMengikuti) elMengikuti.innerText = following || 0;
+}
+
+async function toggleFollow(targetUserId) {
+if (!currentUser) return openAuthModal();
+if (currentUser.id === targetUserId) return;
+
+const btns = document.querySelectorAll('#btn-follow');
+btns.forEach(btn => btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>');
+
+const { data } = await supabaseClient.from('follows').select('*').eq('follower_id', currentUser.id).eq('following_id', targetUserId).single();
+
+if (data) {
+await supabaseClient.from('follows').delete().eq('follower_id', currentUser.id).eq('following_id', targetUserId);
+btns.forEach(btn => {
+btn.innerText = 'IKUTI';
+btn.classList.replace('bg-white/10', 'bg-brand-accent');
+});
+showToast("Batal mengikuti", "info");
+} else {
+await supabaseClient.from('follows').insert({ follower_id: currentUser.id, following_id: targetUserId });
+btns.forEach(btn => {
+btn.innerText = 'MENGIKUTI';
+btn.classList.replace('bg-brand-accent', 'bg-white/10');
+});
+showToast("Berhasil mengikuti!", "success");
+}
+
+fetchFollowStats(targetUserId);
+}
+
+// FUNGSI AUTO-FOLLOW DARI FEED VIDEO
+async function feedToggleFollow(targetUserId, btnElement) {
+if (!currentUser) return openAuthModal();
+
+// Cegah user mem-follow dirinya sendiri
+if (currentUser.id === targetUserId) {
+showToast("Ini video milikmu sendiri!", "info");
+return;
+}
+
+// Ubah ikon jadi loading berputar
+const icon = btnElement.querySelector('i');
+icon.className = 'fas fa-spinner fa-spin text-[10px]';
+
+try {
+// Panggil fungsi toggleFollow utama yang sudah kamu buat sebelumnya
+await toggleFollow(targetUserId);
+
+// Animasi pop-out menghilang ala TikTok saat sukses di-follow
+btnElement.classList.add('scale-0', 'opacity-0');
+setTimeout(() => {
+btnElement.style.display = 'none';
+}, 300);
+
+} catch(e) {
+// Jika gagal, kembalikan ikon menjadi plus
+icon.className = 'fas fa-plus text-[10px]';
+}
+}
+
+async function initPresence() {
+if (!currentUser || presenceChannel) return;
+
+presenceChannel = supabaseClient.channel('global_presence', {
+config: { presence: { key: currentUser.id } }
+});
+
+presenceChannel
+.on('presence', { event: 'sync' }, () => {
+const newState = presenceChannel.presenceState();
+onlineUsersMap.clear();
+for (const id in newState) {
+onlineUsersMap.set(id, true);
+}
+updatePresenceUI();
+})
+.subscribe(async (status) => {
+if (status === 'SUBSCRIBED') {
+await presenceChannel.track({ online_at: new Date().toISOString() });
+}
+});
+}
+
+async function updatePresenceUI() {
+if (activeChatUserId) {
+const statusEl = document.getElementById('active-chat-status');
+const dotEl = document.getElementById('active-chat-online-dot');
+const isOnline = onlineUsersMap.has(activeChatUserId);
+
+if (isOnline) {
+statusEl.innerText = 'Online';
+statusEl.className = 'text-[9px] text-brand-info font-bold';
+dotEl.classList.remove('hidden');
+} else {
+dotEl.classList.add('hidden');
+statusEl.className = 'text-[9px] text-gray-500';
+
+// Tarik data last_seen dari Supabase
+const { data } = await supabaseClient.from('profiles').select('last_seen').eq('id', activeChatUserId).single();
+if (data && data.last_seen) {
+statusEl.innerText = 'Terakhir dilihat ' + timeAgo(data.last_seen);
+} else {
+statusEl.innerText = 'Offline';
+}
+}
+}
+
+document.querySelectorAll('.online-indicator').forEach(el => {
+const uid = el.dataset.uid;
+onlineUsersMap.has(uid) ? el.classList.remove('hidden') : el.classList.add('hidden');
+});
+}
+
+async function searchUsersForChat(query) {
+if (!query.trim()) return loadChatList();
+
+// 🚨 KUNCI FIX: Arahkan langsung ke container personal chat biar gak eror crash!
+const container = document.getElementById('chat-personal-container');
+container.innerHTML = '<div class="flex justify-center mt-6"><i class="fas fa-spinner fa-spin text-brand-accent text-xl"></i></div>';
+
+const { data } = await supabaseClient.from('profiles').select('*').ilike('nickname', `%${query}%`).limit(15);
+
+if (data && data.length > 0) {
+let html = '<p class="text-[10px] text-gray-500 font-bold mb-2 ml-1 uppercase">Hasil Pencarian</p>';
+data.forEach(p => {
+const ava = p.avatar_url || `https://ui-avatars.com/api/?name=${p.nickname}&background=1A1133&color=fff`;
+html += `
+<div onclick="openChatRoom('${p.id}', '${p.nickname.replace(/'/g, "\\'")}', '${ava}')" class="flex items-center p-3 hover:bg-white/5 cursor-pointer rounded-2xl transition-all">
+<img src="${ava}" class="w-10 h-10 rounded-full object-cover border border-white/10 shrink-0">
+<div class="ml-3">
+<h4 class="font-bold text-white text-xs">${p.nickname}</h4>
+<p class="text-[10px] text-gray-400 truncate w-48">${p.bio || 'Pemain AU2'}</p>
+</div>
+</div>`;
+});
+container.innerHTML = html;
+} else {
+container.innerHTML = '<p class="text-center text-xs text-gray-500 mt-6">User tidak ditemukan.</p>';
+}
+}
+
+function toggleWidget() {
+const widget = document.getElementById('floating-widget');
+if (widget.classList.contains('opacity-0')) {
+history.pushState({ popup: 'widget' }, null, '#inbox');
+widget.classList.remove('opacity-0', 'pointer-events-none', 'translate-y-8', 'scale-95');
+document.getElementById('search-user-chat').value = '';
+loadChatList();
+} else {
+if (window.location.hash.startsWith('#inbox') || window.location.hash.startsWith('#chatroom')) {
+history.back();
+} else {
+widget.classList.add('opacity-0', 'pointer-events-none', 'translate-y-8', 'scale-95');
+closeChatRoom(false);
+}
+}
+}
+// Fungsi untuk membuka ruang obrolan (Grup atau Personal)
+// ==========================================
+// FITUR RUANG OBROLAN (CHAT ROOM)
+// ==========================================
+
+// Fungsi untuk membuka ruang obrolan (Grup atau Personal)
+function openChatRoom(id, name, avatar, isGroup = false) {
+// --- KUNCI PERBAIKAN: Tambahkan riwayat ke browser agar tombol back HP aktif ---
+history.pushState({ popup: 'chatroom' }, null, '#chatroom');
+
+// 1. Sembunyikan daftar chat, tampilkan ruang chat
+document.getElementById('chat-list-view').classList.add('hidden');
+document.getElementById('chat-list-view').classList.remove('flex');
+
+document.getElementById('chat-room-view').classList.remove('hidden');
+document.getElementById('chat-room-view').classList.add('flex');
+
+// 2. Ubah profil di header (Atas ruang chat)
+document.getElementById('active-chat-name').innerHTML = `<div class="flex items-center gap-1">${name} <span id="header-badge-container"></span></div>`;
+
+if (!isGroup) {
+    // Ambil data EXP user secara real-time untuk menampilkan lencana
+    supabaseClient.from('profiles').select('exp').eq('id', id).single().then(({data}) => {
+        const targetLevel = hitungStatusLevel(data?.exp || 0).level;
+        const vidCountHeader = allVideosData.filter(v => String(v.user_id) === String(id)).length;
+        
+        const badgeHTML = getBadgeByLevelAndVideos(targetLevel, vidCountHeader);
+        const badgeContainer = document.getElementById('header-badge-container');
+        if (badgeContainer) badgeContainer.innerHTML = badgeHTML;
+    });
+}
+document.getElementById('active-chat-avatar').src = avatar;
+
+// 3. Set ID yang sedang aktif agar fungsi kirim pesan tahu mau dikirim ke mana
+if (isGroup) {
+activeGroupId = id;
+activeChatUserId = null;
+document.getElementById('active-chat-status').innerText = 'Grup Obrolan';
+document.getElementById('active-chat-online-dot').classList.add('hidden');
+} else {
+activeChatUserId = id;
+activeGroupId = null;
+}
+
+// 4. Bersihkan kontainer chat lama sebelum memuat yang baru
+document.getElementById('chat-messages-container').innerHTML = '<div class="flex justify-center mt-10"><i class="fas fa-spinner fa-spin text-brand-accent text-2xl"></i></div>';
+
+// 5. Panggil fungsi untuk memuat pesan dari Supabase
+loadRoomMessages();
+
+// 6. AKTIFKAN RADAR REAL-TIME & TYPING INDICATOR
+setupChatRoomListener();
+
+// --- 7. TAMBAHAN BARU: VOICE NOTE & LAST SEEN ---
+document.getElementById('chat-room-input').value = '';
+sendTypingStatus();
+updatePresenceUI();
+}
+
+
+
+// Fungsi untuk menutup ruang obrolan dan kembali ke daftar
+function closeChatRoom(kembaliKeList = true) {
+// --- CLEANUP DATABASE ---
+// Putus koneksi real-time agar HP tidak panas dan tidak ada bug pesan double
+if (messageSubscription) {
+supabaseClient.removeChannel(messageSubscription);
+messageSubscription = null;
+}
+
+// --- RESET STATE ---
+activeGroupId = null;
+activeChatUserId = null;
+
+// Bersihkan layar chat agar tidak 'bayang-bayang' saat buka chat orang lain
+const container = document.getElementById('chat-messages-container');
+if (container) container.innerHTML = '';
+
+// --- UI TRANSITION ---
+if (kembaliKeList) {
+// Sembunyikan Ruang Chat (Room)
+const roomView = document.getElementById('chat-room-view');
+roomView.classList.add('hidden');
+roomView.classList.remove('flex');
+
+// Munculkan kembali Daftar Chat (Inbox)
+const listView = document.getElementById('chat-list-view');
+listView.classList.remove('hidden');
+listView.classList.add('flex');
+
+// Refresh daftar inbox untuk update pesan terakhir & centang biru
+loadChatList();
+}
+}
+
+// FUNGSI UNTUK MEMBUKA PROFIL/INFO GRUP DARI HEADER CHAT
+function openChatHeaderInfo() {
+    if (activeGroupId) {
+        loadGroupInfo(activeGroupId);
+    } else if (activeChatUserId) {
+        const widget = document.getElementById('floating-widget');
+        if (widget) widget.classList.add('opacity-0', 'pointer-events-none', 'translate-y-8', 'scale-95');
+        viewUserProfile(activeChatUserId);
+    }
+}
+
+
+// FUNGSI UNTUK SCROLL CHAT KE PALING BAWAH OTOMATIS
+function scrollToBottomChat() {
+const container = document.getElementById('chat-messages-container');
+if (container) {
+// Beri sedikit delay agar browser selesai merender HTML-nya dulu
+setTimeout(() => {
+container.scrollTo({
+top: container.scrollHeight,
+behavior: 'smooth' // <--- INI KUNCI EFEK WHATSAPP
+});
+}, 50);
+}
+}
+
+
+
+// 1. FUNGSI MENGAMBIL PESAN DARI DATABASE (WHATSAPP STYLE WITH DATE DIVIDER)
+async function loadRoomMessages() {
+const container = document.getElementById('chat-messages-container');
+const isGroup = !!activeGroupId;
+const targetId = isGroup ? activeGroupId : activeChatUserId;
+
+if(!targetId) return;
+
+try {
+let query = supabaseClient.from('messages').select('*, profiles!messages_sender_id_fkey(nickname, avatar_url, exp)').order('created_at', { ascending: false }).limit(50);
+
+if (isGroup) {
+query = query.eq('group_id', targetId);
+} else {
+query = query.or(`and(sender_id.eq.${currentUser.id},receiver_id.eq.${targetId}),and(sender_id.eq.${targetId},receiver_id.eq.${currentUser.id})`);
+}
+
+const { data, error } = await query;
+if (error) { await customAlert("INFO ERROR SUPABASE:\n" + error.message); throw error; }
+
+container.innerHTML = '';
+
+if (data && data.length > 0) {
+let lastDateString = '';
+
+let clearedChats = JSON.parse(localStorage.getItem('cleared_chats') || '{}');
+let clearTime = clearedChats[targetId] ? new Date(clearedChats[targetId]) : new Date(0);
+let deletedForMe = JSON.parse(localStorage.getItem('deleted_msgs') || '[]');
+
+let validMessages = data.filter(msg => {
+const msgDate = new Date(msg.created_at);
+if (msgDate <= clearTime) return false;
+if (deletedForMe.includes(msg.id)) return false;
+return true;
+});
+
+validMessages.reverse();
+if(validMessages.length === 0) {
+container.innerHTML = '<div class="text-center text-xs text-gray-500 mt-10">Belum ada pesan. Mulai obrolan!</div>';
+} else {
+validMessages.forEach(msg => {
+const msgDate = new Date(msg.created_at);
+const today = new Date();
+const yesterday = new Date(today);
+yesterday.setDate(yesterday.getDate() - 1);
+
+let dateLabel = '';
+if (msgDate.toDateString() === today.toDateString()) { dateLabel = 'HARI INI'; }
+else if (msgDate.toDateString() === yesterday.toDateString()) { dateLabel = 'KEMARIN'; }
+else { dateLabel = msgDate.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }).toUpperCase(); }
+
+if (dateLabel !== lastDateString) {
+const dateDividerHtml = `
+<div class="flex justify-center my-3 message-anim">
+<span class="bg-[#121b22] text-gray-400 text-[10px] font-bold px-2.5 py-1 rounded-lg border border-white/5 tracking-wide shadow-sm uppercase">${dateLabel}</span>
+</div>
+`;
+container.insertAdjacentHTML('beforeend', dateDividerHtml);
+lastDateString = dateLabel;
+}
+appendMessageBubble(msg);
+});
+scrollToBottomChat();
+}
+} else {
+container.innerHTML = '<div class="text-center text-xs text-gray-500 mt-10">Belum ada pesan. Mulai obrolan!</div>';
+}
+
+if (!isGroup) {
+await supabaseClient.from('messages').update({ is_read: true }).eq('sender_id', targetId).eq('receiver_id', currentUser.id).eq('is_read', false);
+checkGlobalUnreadMessages();
+}
+} catch (err) {
+container.innerHTML = '<div class="text-center text-xs text-red-500 mt-10">Gagal memuat pesan.</div>';
+}
+}
+
+// FUNGSI BERSIHKAN SEMUA OBROLAN (CLEAR CHAT DARI DALAM ROOM)
+async function clearCurrentChat() {
+const isGroup = !!activeGroupId;
+const targetId = isGroup ? activeGroupId : activeChatUserId;
+if (!targetId) return;
+
+const confirmClear = await customConfirm("Yakin ingin membersihkan semua pesan di obrolan ini untuk Anda?");
+if (confirmClear) {
+let clearedChats = JSON.parse(localStorage.getItem('cleared_chats') || '{}');
+clearedChats[targetId] = new Date().toISOString();
+localStorage.setItem('cleared_chats', JSON.stringify(clearedChats));
+
+showToast("Obrolan berhasil dibersihkan", "success");
+loadRoomMessages();
+loadChatList();
+}
+}
+
+// FUNGSI BERSIHKAN OBROLAN DARI DAFTAR INBOX (DARI LUAR)
+async function deleteConversation(targetId, chatName) {
+const confirmClear = await customConfirm(`Yakin ingin membersihkan riwayat obrolan dengan ${chatName}?`);
+if (confirmClear) {
+let clearedChats = JSON.parse(localStorage.getItem('cleared_chats') || '{}');
+clearedChats[targetId] = new Date().toISOString();
+localStorage.setItem('cleared_chats', JSON.stringify(clearedChats));
+
+showToast(`Obrolan dibersihkan`, "success");
+loadChatList();
+}
+}
+
+// --- FUNGSI HELPER UNTUK LONG PRESS ---
+let longPressTimer;
+function hancurkanLongPress() {
+clearTimeout(longPressTimer);
+}
+function mulaiLongPress(msgId, senderId) {
+clearTimeout(longPressTimer);
+longPressTimer = setTimeout(() => {
+if (navigator.vibrate) navigator.vibrate(40);
+showMsgOptions(msgId, senderId);
+}, 500);
+}
+
+// ==========================================
+// FUNGSI RENDER BARIS CHAT DI INBOX
+// ==========================================
+function renderRow(item, isGroup) {
+    // 1. Amankan teks pesan dari tag media & kode sistem
+    let lastMessageText = "Belum ada pesan";
+    if (item.latestMsg && item.latestMsg.message) {
+        lastMessageText = item.latestMsg.message;
+
+        // Bersihkan kode [FORWARDED]
+        if (lastMessageText.startsWith('[FORWARDED]')) {
+            lastMessageText = "⏩ " + lastMessageText.replace(/^\[FORWARDED\]\n?/, '');
+        }
+
+        // Bersihkan kode [REPLY] yang bikin ID panjang bocor
+        const replyRegex = /^\[REPLY:(.*?)\|\|(.*?)\|\|(.*?)\]\n([\s\S]*)$/;
+        const matchReply = lastMessageText.match(replyRegex);
+        if (matchReply) {
+            lastMessageText = matchReply[4]; // Langsung ambil isi pesan aslinya aja
+        }
+
+        // Bersihkan kode [STORY_REPLY]
+        const storyReplyRegex = /^\[STORY_REPLY:(.*?)\|\|(.*?)\]\n([\s\S]*)$/;
+        const matchStory = lastMessageText.match(storyReplyRegex);
+        if (matchStory) {
+            lastMessageText = "Membalas status: " + matchStory[3];
+        }
+
+        // Ubah kode media jadi Ikon biar cantik
+        if (lastMessageText.startsWith('[IMG]')) lastMessageText = "📷 Foto";
+        else if (lastMessageText.startsWith('[VIDEO]')) lastMessageText = "🎥 Video";
+        else if (lastMessageText.startsWith('[AUDIO]')) lastMessageText = "🎙️ Pesan Suara";
+        else if (lastMessageText.startsWith('[SISTEM]')) lastMessageText = "Pemberitahuan Sistem";
+    }
+
+    // 2. Siapkan badge pesan belum dibaca
+    let unreadBadge = item.unread > 0 
+        ? `<span class="bg-brand-accent text-white text-[8px] font-bold w-4 h-4 flex items-center justify-center rounded-full ml-2 shrink-0 shadow-md">${item.unread > 99 ? '99+' : item.unread}</span>` 
+        : '';
+
+    // 3. Atur URL foto dan efek cincin (story ring)
+    let avatarUrl = item.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(item.name)}&background=1A1133&color=fff`;
+    let ringClass = item.hasStory && !isGroup ? 'story-ring' : '';
+    let imgBorder = item.hasStory && !isGroup ? 'border-2 border-brand-card' : 'border border-white/10';
+
+    // 4. Amankan nama dan pesan dari XSS & tanda kutip
+    let safeNameDisplay = escapeHTML(item.name);
+    let safeNameJS = safeNameDisplay.replace(/'/g, "\\'");
+    let safeMessageDisplay = escapeHTML(lastMessageText);
+    let timeText = item.latestMsg ? timeAgo(item.latestMsg.created_at) : '';
+
+    return `
+    <div onclick="openChatRoom('${item.id}', '${safeNameJS}', '${avatarUrl}', ${isGroup})" class="flex items-center p-3 hover:bg-white/5 cursor-pointer rounded-2xl transition-all border-b border-white/5 last:border-0">
+        <div class="relative shrink-0 ${ringClass}">
+            <img src="${avatarUrl}" class="w-11 h-11 rounded-full object-cover ${imgBorder}">
+        </div>
+        <div class="ml-3 flex-1 min-w-0">
+            <div class="flex justify-between items-center mb-0.5">
+                <h4 class="font-bold text-white text-xs truncate">${safeNameDisplay}</h4>
+                <span class="text-[9px] text-gray-500 shrink-0 ml-2">${timeText}</span>
+            </div>
+            <div class="flex justify-between items-center">
+                <p class="text-[10px] text-gray-400 truncate leading-snug">${safeMessageDisplay}</p>
+                ${unreadBadge}
+            </div>
+        </div>
+    </div>`;
+}
+
+
+// FUNGSI MENGAMBIL DAFTAR CHAT INBOX (PROTEKSI KEBAL CRASH & SINKRONISASI TOTAL)
+async function loadChatList() {
+const cPersonal = document.getElementById('chat-personal-container');
+const cGroup = document.getElementById('chat-group-container');
+
+if (!currentUser) {
+cPersonal.innerHTML = `<div class="text-center mt-20 text-xs text-gray-500">Silakan login.</div>`;
+return;
+}
+
+cPersonal.innerHTML = '<div class="flex justify-center mt-10"><i class="fas fa-spinner fa-spin text-brand-accent text-2xl"></i></div>';
+cGroup.innerHTML = '<div class="flex justify-center mt-10"><i class="fas fa-spinner fa-spin text-brand-accent text-2xl"></i></div>';
+
+try {
+const unreadCounts = {};
+const { data: unreads } = await supabaseClient.from('messages').select('sender_id').is('group_id', null).eq('receiver_id', currentUser.id).eq('is_read', false);
+if (unreads) unreads.forEach(u => { unreadCounts[u.sender_id] = (unreadCounts[u.sender_id] || 0) + 1; });
+
+const { data: myGroups } = await supabaseClient.from('group_members').select('group_id').eq('user_id', currentUser.id);
+let myGroupIds = myGroups ? myGroups.map(g => g.group_id) : [];
+
+let query = supabaseClient.from('messages').select('*');
+if (myGroupIds.length > 0) {
+query = query.or(`sender_id.eq.${currentUser.id},receiver_id.eq.${currentUser.id},group_id.in.(${myGroupIds.join(',')})`);
+} else {
+query = query.or(`sender_id.eq.${currentUser.id},receiver_id.eq.${currentUser.id}`);
+}
+
+const { data: messages, error: msgError } = await query.order('created_at', { ascending: false });
+if (msgError) { console.error("Error messages query:", msgError); throw msgError; }
+
+const personalContacts = {}, groupContacts = {};
+if (messages) {
+messages.forEach(msg => {
+if (msg.group_id) {
+if (!groupContacts[msg.group_id]) groupContacts[msg.group_id] = msg;
+} else {
+const partnerId = msg.sender_id === currentUser.id ? msg.receiver_id : msg.sender_id;
+if (partnerId && !personalContacts[partnerId] && !blockedUsersList.includes(partnerId)) {
+personalContacts[partnerId] = msg;
+}
+}
+});
+}
+
+if (myGroups) {
+myGroups.forEach(g => {
+if (!groupContacts[g.group_id]) groupContacts[g.group_id] = { created_at: '1970-01-01T00:00:00Z', is_empty: true, message: 'Grup baru dibuat' };
+});
+}
+
+globalPersonalList = [];
+globalGroupList = [];
+const partnerIds = Object.keys(personalContacts), groupIds = Object.keys(groupContacts);
+
+let clearedChats = JSON.parse(localStorage.getItem('cleared_chats') || '{}');
+let deletedForMe = JSON.parse(localStorage.getItem('deleted_msgs') || '[]');
+
+if (partnerIds.length > 0) {
+    const { data: profiles } = await supabaseClient.from('profiles').select('id, nickname, avatar_url').in('id', partnerIds);
+    const past24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    const { data: activeStories } = await supabaseClient.from('stories').select('user_id').gte('created_at', past24h);
+    let usersWithStory = activeStories ? activeStories.map(s => s.user_id) : [];
+
+    if (profiles) {
+        profiles.forEach(p => {
+            const msg = personalContacts[p.id];
+            const clearTimeStr = clearedChats[p.id];
+            if (clearTimeStr && msg && new Date(msg.created_at) <= new Date(clearTimeStr)) return;
+            // FIX: Gunakan globalPersonalList
+            globalPersonalList.push({ type: 'personal', id: p.id, name: p.nickname || "Player", avatar: p.avatar_url, latestMsg: msg, unread: unreadCounts[p.id] || 0, hasStory: usersWithStory.includes(p.id) });
+        });
+    }
+}
+
+if (groupIds.length > 0) {
+    const { data: groups } = await supabaseClient.from('groups').select('id, name, avatar_url').in('id', groupIds);
+    if (groups) {
+        groups.forEach(g => {
+            const msg = groupContacts[g.id];
+            const clearTimeStr = clearedChats[g.id];
+            if (clearTimeStr && msg && new Date(msg.created_at) <= new Date(clearTimeStr)) return;
+            // FIX: Gunakan globalGroupList
+            globalGroupList.push({ type: 'group', id: g.id, name: g.name || "Grup Obrolan", avatar: g.avatar_url, latestMsg: msg, unread: 0 });
+        });
+    }
+}
+
+// FIX: Urutkan menggunakan variabel global
+globalPersonalList.sort((a, b) => new Date(b.latestMsg?.created_at || 0) - new Date(a.latestMsg?.created_at || 0));
+globalGroupList.sort((a, b) => new Date(b.latestMsg?.created_at || 0) - new Date(a.latestMsg?.created_at || 0));
+
+// FIX: Render menggunakan variabel global
+cPersonal.innerHTML = globalPersonalList.length ? globalPersonalList.map(i => renderRow(i, false)).join('') : '<p class="text-center text-xs text-gray-500 mt-10">Belum ada obrolan.</p>';
+cGroup.innerHTML = globalGroupList.length ? globalGroupList.map(i => renderRow(i, true)).join('') : '<p class="text-center text-xs text-gray-500 mt-10">Belum ada grup.</p>';
+
+checkGlobalUnreadMessages();
+} catch (e) {
+console.error("Crash loadChatList:", e);
+cPersonal.innerHTML = '<div class="p-6 text-center text-xs text-red-500">Gagal memuat pesan.</div>';
+}
+}
+
+
+
+
+
+
+
+
+// 3. LOGIKA STORY / STATUS
+let currentActiveStories = [];
+let currentStoryTimer;
+
+async function loadStories() {
+const container = document.getElementById('status-list-container');
+if (!currentUser) return;
+
+// Set foto profil saya di bagian Status
+const myAvatar = userProfile?.avatar_url || `https://ui-avatars.com/api/?name=${userProfile?.nickname || 'Me'}`;
+document.getElementById('my-story-avatar').src = myAvatar;
+
+try {
+const past24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+const { data: stories } = await supabaseClient
+.from('stories')
+.select('*, profiles(nickname, avatar_url)')
+.gte('created_at', past24h)
+.order('created_at', { ascending: false });
+
+// --- AMBIL ELEMEN UI STATUS SAYA ---
+const myStoryRing = document.getElementById('my-story-ring');
+const myStatusText = document.getElementById('my-status-text');
+
+// Reset tampilan ke default (Jika tidak ada story aktif)
+window.viewMyStory = () => document.getElementById('upload-story-input').click();
+if (myStoryRing) {
+myStoryRing.classList.remove('story-ring');
+myStoryRing.classList.add('border', 'border-white/10');
+}
+if (myStatusText) {
+myStatusText.innerText = "Ketuk untuk menambahkan update status";
+myStatusText.className = "text-[10px] text-gray-400";
+}
+
+if (!stories || stories.length === 0) {
+container.innerHTML = `<div class="text-center py-6 text-xs text-gray-500">Belum ada pembaruan status.</div>`;
+return;
+}
+
+// Kelompokkan status berdasarkan user_id
+const groupedStories = {};
+stories.forEach(s => {
+if (!groupedStories[s.user_id]) {
+groupedStories[s.user_id] = {
+user_id: s.user_id,
+nickname: s.profiles?.nickname,
+avatar: s.profiles?.avatar_url,
+stories: []
+};
+}
+groupedStories[s.user_id].stories.push(s);
+});
+
+// --- CEK: APAKAH SAYA PUNYA STATUS AKTIF? ---
+if (groupedStories[currentUser.id]) {
+const myLatestTime = timeAgo(groupedStories[currentUser.id].stories[0].created_at);
+
+// 1. Nyalakan Ring Warna-warni
+if (myStoryRing) {
+myStoryRing.classList.add('story-ring');
+myStoryRing.classList.remove('border', 'border-white/10');
+}
+// 2. Ganti teks jadi waktu (misal: "Baru saja")
+if (myStatusText) {
+myStatusText.innerText = myLatestTime;
+myStatusText.className = "text-[10px] text-brand-info font-bold";
+}
+// 3. Jika diklik, fungsinya jadi MENONTON, bukan upload
+window.viewMyStory = () => viewStory(
+currentUser.id,
+userProfile?.nickname || 'Me',
+myAvatar
+);
+}
+
+// --- RENDER LIST STATUS TEMAN ---
+let html = '';
+for (const uid in groupedStories) {
+if (uid === currentUser.id) continue; // Jangan masukkan status saya ke daftar teman
+
+const user = groupedStories[uid];
+const ava = user.avatar || `https://ui-avatars.com/api/?name=${user.nickname}`;
+const latestTime = timeAgo(user.stories[0].created_at);
+
+html += `
+<div class="flex items-center p-2 bg-brand-card/50 hover:bg-white/5 cursor-pointer rounded-2xl border border-white/5 transition-all mb-2" onclick="viewStory('${user.user_id}', '${user.nickname}', '${ava}')">
+<div class="relative shrink-0 story-ring">
+<img src="${ava}" class="w-11 h-11 rounded-full object-cover border-2 border-brand-card">
+</div>
+<div class="ml-3 flex-1">
+<h4 class="font-bold text-white text-[13px]">${user.nickname}</h4>
+<p class="text-[10px] text-brand-info">${latestTime}</p>
+</div>
+</div>`;
+}
+container.innerHTML = html || `<div class="text-center py-6 text-xs text-gray-500">Belum ada pembaruan status teman.</div>`;
+} catch(e) {
+console.error(e);
+container.innerHTML = `<div class="text-center py-6 text-xs text-red-500">Gagal memuat status.</div>`;
+}
+}
+
+// STORY VIEWER LOGIC (WHATSAPP STYLE)
+async function viewStory(userId, name, avatar) {
+document.getElementById('viewer-story-name').innerText = name;
+document.getElementById('viewer-story-avatar').src = avatar;
+
+const past24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+const { data: stories } = await supabaseClient.from('stories').select('*').eq('user_id', userId).gte('created_at', past24h).order('created_at', { ascending: true });
+
+if(!stories || stories.length === 0) {
+showToast("Status sudah kedaluwarsa.", "error");
+return loadChatList();
+}
+
+currentActiveStories = stories;
+currentActiveStories.currentIndex = 0;
+
+// -- BIKIN GARIS PROGRESS SEBANYAK JUMLAH STORY --
+const progressContainer = document.getElementById('story-progress-container');
+progressContainer.innerHTML = stories.map((_, i) => `
+<div class="h-1 bg-white/30 rounded-full overflow-hidden flex-1">
+<div id="story-progress-${i}" class="h-full bg-white w-0"></div>
+</div>
+`).join('');
+
+history.pushState({ popup: 'story' }, null, '#story'); // <-- SUNTIKAN HISTORY BARU
+const modal = document.getElementById('story-viewer-modal');
+modal.classList.remove('hidden');
+modal.classList.add('flex');
+
+// Pastikan posisi normal sebelum dibuka (jika sebelumnya ditarik)
+modal.style.transform = 'translateY(0)';
+modal.style.backgroundColor = 'rgba(0, 0, 0, 0.95)';
+setTimeout(() => modal.classList.remove('opacity-0'), 10);
+
+playStory(0);
+}
+
+// ==========================================
+// FUNGSI MANAJEMEN DAN NAVIGASI STORY (BISA FOTO & VIDEO)
+// ==========================================
+function playStory(index) {
+if (index >= currentActiveStories.length) {
+return closeStoryViewer();
+}
+currentActiveStories.currentIndex = index;
+const story = currentActiveStories[index];
+
+document.getElementById('viewer-story-time').innerText = timeAgo(story.created_at);
+
+const imgEl = document.getElementById('viewer-story-img');
+const vidEl = document.getElementById('viewer-story-vid');
+const volBtn = document.getElementById('btn-story-volume');
+
+// Bersihkan media sebelumnya & hentikan pemutar video jika sedang berjalan
+imgEl.classList.add('hidden');
+vidEl.classList.add('hidden');
+vidEl.pause();
+vidEl.src = '';
+vidEl.onended = null;
+vidEl.onloadedmetadata = null;
+
+// --- DETEKSI TIPE MEDIA STATUS ---
+if (story.media_type === 'video') {
+vidEl.src = story.media_url;
+vidEl.classList.remove('hidden');
+
+// 🔥 PERBAIKAN: Dipaksa langsung false agar video status langsung otomatis bersuara kencang saat dibuka
+vidEl.muted = false;
+vidEl.play().catch(() => {});
+
+if (volBtn) {
+volBtn.classList.remove('hidden');
+volBtn.innerHTML = '<i class="fas fa-volume-up"></i>'; // Set default ikon ke speaker menyala
+}
+} else {
+imgEl.src = story.media_url;
+imgEl.classList.remove('hidden');
+if (volBtn) volBtn.classList.add('hidden');
+}
+
+const captionEl = document.getElementById('viewer-story-caption');
+if (captionEl) {
+if (story.caption && story.caption.trim() !== '') {
+captionEl.innerText = story.caption;
+captionEl.classList.remove('hidden');
+} else {
+captionEl.classList.add('hidden');
+captionEl.innerText = '';
+}
+}
+
+const btnDelete = document.getElementById('btn-delete-story');
+if (btnDelete) {
+if (currentUser && story.user_id === currentUser.id) {
+btnDelete.classList.remove('hidden'); // Munculkan jika milik sendiri
+} else {
+btnDelete.classList.add('hidden'); // Sembunyikan jika milik orang lain
+}
+}
+
+// -- RESET ANIMASI PROGRESS BAR SINKRON ALA WHATSAPP --
+for (let i = 0; i < currentActiveStories.length; i++) {
+const bar = document.getElementById(`story-progress-${i}`);
+if (!bar) continue;
+
+bar.style.transition = 'none';
+if (i < index) {
+bar.style.width = '100%'; // Garis sebelumnya FULL
+} else if (i > index) {
+bar.style.width = '0%';   // Garis selanjutnya KOSONG
+} else {
+bar.style.width = '0%';   // Garis saat ini reset ke 0 dulu
+}
+}
+
+clearTimeout(currentStoryTimer);
+
+// --- JALANKAN TIMING PROGRESS BAR ---
+if (story.media_type === 'video') {
+// Jika video, bar berjalan mengikuti durasi asli video
+vidEl.onloadedmetadata = () => {
+const duration = vidEl.duration || 5;
+setTimeout(() => {
+const activeBar = document.getElementById(`story-progress-${index}`);
+if (activeBar) {
+activeBar.style.transition = `width ${duration}s linear`;
+activeBar.style.width = '100%';
+}
+}, 50);
+};
+// Saat durasi video berakhir, otomatis lompat ke status berikutnya
+vidEl.onended = () => {
+nextStory();
+};
+} else {
+// Jika foto, jalankan bar default selama 5 detik seperti biasa
+setTimeout(() => {
+const activeBar = document.getElementById(`story-progress-${index}`);
+if (activeBar) {
+activeBar.style.transition = 'width 5s linear';
+activeBar.style.width = '100%';
+}
+currentStoryTimer = setTimeout(() => {
+nextStory();
+}, 5000);
+}, 50);
+}
+
+// ==========================================
+// --- LOGIKA BARU: TAMPILKAN STATS & BALASAN ---
+// ==========================================
+const replyContainer = document.getElementById('story-reply-container');
+const replyInput = document.getElementById('story-reply-input');
+const statsContainer = document.getElementById('story-owner-stats');
+
+// Pindahkan fungsi tarik data ke luar agar selalu aktif untuk story siapa pun
+if (typeof fetchStoryStats === 'function') fetchStoryStats(story.id);
+
+if (currentUser && story.user_id === currentUser.id) {
+    // JIKA INI STORY MILIK SAYA SENDIRI
+    if (replyContainer) replyContainer.classList.add('hidden');
+    if (statsContainer) {
+        statsContainer.classList.remove('hidden');
+        statsContainer.classList.add('flex');
+    }
+} else {
+// JIKA INI STORY MILIK TEMAN
+if (statsContainer) {
+statsContainer.classList.add('hidden');
+statsContainer.classList.remove('flex');
+}
+if (replyContainer) {
+replyContainer.classList.remove('hidden');
+if (replyInput) replyInput.value = '';
+
+const heartIcon = replyContainer.querySelector('.fa-heart');
+if (heartIcon) {
+if (localStorage.getItem('story_liked_' + story.id)) {
+heartIcon.classList.replace('far', 'fas');
+heartIcon.classList.add('text-brand-accent');
+heartIcon.classList.remove('animate-ping');
+} else {
+heartIcon.classList.replace('fas', 'far');
+heartIcon.classList.remove('text-brand-accent', 'animate-ping');
+}
+}
+}
+
+// CATAT BAHWA KITA MELIHAT STORY INI (VIEWS)
+if (typeof recordStoryView === 'function') recordStoryView(story.id);
+}
+}
+
+
+
+// FUNGSI UTAMAKAN SAKLAR MUTED / UNMUTED VIDEO STORY
+function toggleStoryVolume() {
+const vidEl = document.getElementById('viewer-story-vid');
+const volBtn = document.getElementById('btn-story-volume');
+if (vidEl && volBtn) {
+vidEl.muted = !vidEl.muted;
+isGlobalMuted = vidEl.muted; // Sinkronkan ke audio global aplikasi
+volBtn.innerHTML = vidEl.muted ? '<i class="fas fa-volume-mute"></i>' : '<i class="fas fa-volume-up"></i>';
+showToast(vidEl.muted ? "Suara Status Dimatikan" : "Suara Status Dinyalakan", vidEl.muted ? "info" : "success");
+}
+}
+
+function closeStoryViewer(dariTombolBack = false) {
+    clearTimeout(currentStoryTimer);
+
+    // Paksa matikan video agar suaranya tidak bocor
+    const vidEl = document.getElementById('viewer-story-vid');
+    if (vidEl) {
+        vidEl.pause();
+        vidEl.src = '';
+    }
+
+    const modal = document.getElementById('story-viewer-modal');
+    modal.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+    modal.classList.add('opacity-0');
+    modal.style.transform = 'translateY(50px)'; 
+
+    // Tutup laci stats jika masih terbuka secara visual (tanpa memicu history ganda)
+    const statsModal = document.getElementById('modal-story-stats');
+    if (statsModal && !statsModal.classList.contains('translate-y-full')) {
+        statsModal.classList.add('translate-y-full');
+    }
+
+    // SINKRONISASI TOMBOL BACK HP
+    if (!dariTombolBack && window.location.hash === '#story') {
+        history.back();
+    }
+
+    setTimeout(() => {
+        modal.classList.remove('flex');
+        modal.classList.add('hidden');
+        modal.style.transform = 'translateY(0)'; // Reset posisi
+    }, 300);
+}
+
+
+
+
+function nextStory() {
+if (!currentActiveStories || currentActiveStories.length === 0) return;
+
+let nextIndex = currentActiveStories.currentIndex + 1;
+
+if (nextIndex >= currentActiveStories.length) {
+closeStoryViewer();
+} else {
+playStory(nextIndex);
+}
+}
+
+async function hapusStoryAktif() {
+    const story = currentActiveStories[currentActiveStories.currentIndex];
+    const konfirmasi = await customConfirm("Yakin ingin menghapus status ini?");
+
+    if (konfirmasi) {
+        try {
+            // 1. Hapus dari database Supabase
+            const { error } = await supabaseClient.from('stories').delete().eq('id', story.id);
+            if (error) throw error;
+
+            // 2. TEMBAK API DELETE FILE: Hapus fisik MP4/JPG dari Biznet
+            if (story.media_url) {
+                // Kita tambahkan .catch agar jika file di Biznet sudah terlanjur hilang, aplikasi tidak nge-crash
+                await fetch('/api/delete-file', {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ fileUrl: story.media_url })
+                }).catch(e => console.log("Ignore S3 error:", e));
+            }
+
+            showToast("Status berhasil dihapus sepenuhnya", "success");
+            closeStoryViewer();
+            loadStories(); // Refresh daftar status di latar belakang
+        } catch (err) {
+            showToast("Gagal menghapus status", "error");
+        }
+    }
+}
+
+
+function prevStory() {
+if (!currentActiveStories || currentActiveStories.length === 0) return;
+
+let prevIndex = currentActiveStories.currentIndex - 1;
+
+if (prevIndex < 0) {
+playStory(0);
+} else {
+playStory(prevIndex);
+}
+}
+
+
+
+
+
+async function prosesUploadVideo() {
+if (!currentUser) return openAuthModal();
+
+const fileInput = document.getElementById('input-video-file');
+const captionInput = document.getElementById('input-video-caption');
+const file = fileInput.files[0];
+const allowCommentsToggle = document.getElementById('upload-allow-comments');
+const allowComments = allowCommentsToggle ? allowCommentsToggle.checked : true;
+if (!file) return showToast("Pilih video dulu!", "error");
+
+const btn = document.querySelector('button[onclick="prosesUploadVideo()"]');
+btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+// Kunci window unload
+isUploading = true;
+
+try {
+const configRes = await fetch('/api/get-config');
+const config = await configRes.json();
+
+if (!config.gasUrl) throw new Error("Link GAS tidak ditemukan di config");
+
+// Memasukkan file ke dalam folder: {User ID}/feed_video/{nama_file}
+const namaFolder = `${currentUser.id}/feed_video`;
+const namaFileUnik = `${Date.now()}_${file.name.replace(/\s+/g, '_')}`; // Hindari spasi di nama file
+const pathLengkap = `${namaFolder}/${namaFileUnik}`;
+
+const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent(pathLengkap)}&filetype=${encodeURIComponent(file.type)}`);
+const dataUrl = await resUrl.json();
+
+// 🔥 PERBAIKAN 1: Menambahkan header x-amz-acl agar Biznet membuka izin baca publik untuk file video ini
+await fetch(dataUrl.uploadUrl, {
+method: 'PUT',
+body: file,
+headers: {
+'Content-Type': file.type,
+'x-amz-acl': 'public-read'
+}
+});
+
+const spreadsheetPayload = {
+// --- DUA BARIS INI TAMBAHAN BARU UNTUK GOOGLE SHEETS ---
+ID_Video: 'vid_' + Date.now(),
+URL_Video: dataUrl.finalVideoUrl,
+
+// --- SISANYA TETAP SAMA (JANGAN DIHAPUS UNTUK DATABASE INTERNAL) ---
+id: 'vid_' + Date.now(),
+video_url: dataUrl.finalVideoUrl,
+caption: captionInput.value || "",
+nickname: userProfile?.nickname || "Player",
+avatar_url: userProfile?.avatar_url || "",
+user_id: currentUser.id,
+created_at: new Date().toISOString(), // <--- TAMBAHKAN KOMA DI SINI
+allow_comments: allowComments
+};
+
+// 🔥 PERBAIKAN 2: Masukkan data video baru ke antrean lokal aplikasi biar langsung tayang di feed tanpa nunggu Google Sheets yang lelet
+newUploads.push(spreadsheetPayload);
+
+await fetch(config.gasUrl, {
+method: 'POST',
+mode: 'no-cors',
+headers: { 'Content-Type': 'text/plain' },
+body: JSON.stringify(spreadsheetPayload)
+});
+
+showToast("Berhasil diposting!", "success");
+tambahExp(50); // <--- SISTEM EXP
+fileInput.value = ''; captionInput.value = '';
+closeUploadModal();
+allVideosData = [];
+
+// Smart Redirect: Cek apakah halaman sblmnya valid, jika tidak lempar ke feed sosial
+if (tabSebelumnya && tabSebelumnya !== 'sosial' && tabSebelumnya !== 'upload') {
+switchTab(tabSebelumnya);
+} else {
+switchTab('sosial');
+}
+loadVideos();
+
+} catch (err) {
+showToast("Error: " + err.message, "error");
+} finally {
+btn.disabled = false; btn.innerHTML = '<i class="fas fa-paper-plane mr-2"></i> Posting Video';
+isUploading = false; // Buka kunci window unload
+}
+}
+
+// ==========================================
+// FITUR PREVIEW MEDIA WHATSAPP STYLE (CHAT & STORY)
+// ==========================================
+let mediaPreviewFile = null;
+let mediaPreviewContext = ''; // Isinya 'chat' atau 'story'
+
+// 1. Interceptor untuk Chat
+async function handleChatMediaSelect(event) {
+    const file = event.target.files[0];
+    if (!file || (!activeChatUserId && !activeGroupId)) return;
+
+    // Cek keamanan jika ini di Grup
+    if (activeGroupId) {
+        const { data: checkMember } = await supabaseClient.from('group_members').select('user_id').eq('group_id', activeGroupId).eq('user_id', currentUser.id).single();
+        if (!checkMember) {
+            await customAlert("Anda tidak dapat mengirim foto karena telah dikeluarkan dari grup ini.");
+            event.target.value = ''; closeChatRoom(); return;
+        }
+    }
+    bukaPreviewMedia(file, 'chat');
+    event.target.value = ''; // Reset
+}
+
+// 2. Interceptor untuk Story
+function handleUploadStory(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    bukaPreviewMedia(file, 'story');
+    event.target.value = ''; // Reset
+}
+
+// 3. Mesin UI Layar Preview
+function bukaPreviewMedia(file, context) {
+    history.pushState({ popup: 'media_preview' }, null, '#mediapreview');
+    
+    mediaPreviewFile = file;
+    mediaPreviewContext = context;
+
+    const modal = document.getElementById('modal-preview-media');
+    const imgEl = document.getElementById('preview-media-img');
+    const vidEl = document.getElementById('preview-media-vid');
+    const titleEl = document.getElementById('preview-media-title');
+    const captionInput = document.getElementById('preview-media-caption');
+    
+    captionInput.value = '';
+    captionInput.style.height = 'auto'; 
+
+    const url = URL.createObjectURL(file);
+
+    // Deteksi Video atau Foto
+    if (file.type.startsWith('video/')) {
+        imgEl.classList.add('hidden');
+        vidEl.src = url;
+        vidEl.classList.remove('hidden');
+        
+        // --- PAKSA SUARA NYALA OTOMATIS ---
+        vidEl.muted = false; 
+        
+        // Mainkan video. Dilengkapi penangkap error (catch) jika seandainya
+        // browser HP (misal Safari iPhone mode ketat) memblokir autoplay bersuara.
+        vidEl.play().catch((err) => {
+            console.log("Autoplay bersuara ditolak browser, fallback ke mode bisu.");
+            vidEl.muted = true;
+            vidEl.play();
+        });
+    } else {
+        vidEl.classList.add('hidden');
+        vidEl.pause();
+        imgEl.src = url;
+        imgEl.classList.remove('hidden');
+    }
+
+    titleEl.innerText = context === 'chat' ? 'Kirim ke Obrolan' : 'Status Baru';
+    
+    // Sembunyikan widget chat (bila sedang terbuka) agar tidak tumpang tindih
+    const floatingWidget = document.getElementById('floating-widget');
+    if (floatingWidget) floatingWidget.style.opacity = '0'; 
+
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    
+    // Efek Slide-Up Muluss
+    setTimeout(() => {
+        modal.classList.remove('opacity-0', 'translate-y-full');
+    }, 10);
+}
+
+function tutupPreviewMedia(dariTombolBack = false) {
+    const modal = document.getElementById('modal-preview-media');
+    modal.classList.add('opacity-0', 'translate-y-full');
+    
+    // Kembalikan widget chat jika kita sedang berada di inbox/room
+    if(window.location.hash.startsWith('#inbox') || window.location.hash.startsWith('#chatroom')) {
+        const floatingWidget = document.getElementById('floating-widget');
+        // Kosongkan style-nya agar sistem Class Tailwind bisa berfungsi lagi buat nutup laci
+        if (floatingWidget) floatingWidget.style.opacity = ''; 
+    }
+
+
+    if (!dariTombolBack && window.location.hash === '#mediapreview') history.back();
+
+    setTimeout(() => {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+        
+        const vidEl = document.getElementById('preview-media-vid');
+        const imgEl = document.getElementById('preview-media-img');
+        
+        // BONGKAR MEMORI: Hapus Object URL
+        if (vidEl.src.startsWith('blob:')) URL.revokeObjectURL(vidEl.src);
+        if (imgEl.src.startsWith('blob:')) URL.revokeObjectURL(imgEl.src);
+
+        vidEl.pause();
+        vidEl.src = '';
+        imgEl.src = '';
+        mediaPreviewFile = null;
+    }, 300);
+}
+
+// 4. Eksekusi Pengiriman ke Server
+async function prosesKirimMedia() {
+    if (!mediaPreviewFile) return;
+
+    const file = mediaPreviewFile;
+    const context = mediaPreviewContext;
+    const caption = document.getElementById('preview-media-caption').value.trim();
+    const btnSend = document.getElementById('btn-send-media');
+    
+    btnSend.disabled = true;
+    btnSend.innerHTML = '<i class="fas fa-circle-notch fa-spin text-xl"></i>';
+
+    try {
+        // Upload File ke Storage
+        // Memasukkan file ke dalam folder: {User ID}/chat_media/ ATAU {User ID}/story_media/
+const namaFolder = context === 'chat' ? `${currentUser.id}/chat_media` : `${currentUser.id}/story_media`;
+const pathLengkap = `${namaFolder}/media_${Date.now()}`;
+
+const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent(pathLengkap)}&filetype=${encodeURIComponent(file.type)}`);
+        const dataUrl = await resUrl.json();
+        await fetch(dataUrl.uploadUrl, { method: 'PUT', body: file, headers: { 'Content-Type': file.type, 'x-amz-acl': 'public-read' } });
+
+        const fileUrl = dataUrl.finalVideoUrl;
+
+        if (context === 'chat') {
+            // ======== KIRIM CHAT ========
+            const isGroup = !!activeGroupId;
+            const targetId = isGroup ? activeGroupId : activeChatUserId;
+
+            // Handle Reply
+            const currentReplyId = replyingToMsgId;
+            const currentReplyName = replyingToMsgName;
+            const currentReplyText = replyingToMsgText;
+            cancelChatReply();
+
+            // Gabungkan Tipe, URL, dan Caption
+            let msgText = file.type.startsWith('video/') ? `[VIDEO]${fileUrl}` : `[IMG]${fileUrl}`;
+            if (caption) msgText += `||CAP||${caption}`;
+
+            if (currentReplyId) {
+                const safeName = currentReplyName.replace(/\|\|/g, "").replace(/\]/g, "");
+                const safeText = currentReplyText.replace(/\|\|/g, "").replace(/\]/g, "");
+                msgText = `[REPLY:${currentReplyId}||${safeName}||${safeText}]\n${msgText}`;
+            }
+
+            // UI Instan
+            const tempId = 'temp-' + Date.now();
+            const tempMsg = { id: tempId, sender_id: currentUser.id, message: msgText, created_at: new Date().toISOString() };
+            appendMessageBubble(tempMsg); scrollToBottomChat();
+
+            // DB Insert
+            const insertData = { sender_id: currentUser.id, message: msgText };
+            if (isGroup) insertData.group_id = targetId; else insertData.receiver_id = targetId;
+            await supabaseClient.from('messages').insert(insertData);
+
+        } else if (context === 'story') {
+            // ======== KIRIM STORY ========
+            const { error } = await supabaseClient.from('stories').insert({
+                user_id: currentUser.id,
+                media_url: fileUrl,
+                media_type: file.type.startsWith('video/') ? 'video' : 'image',
+                caption: caption
+            });
+if (error) throw error;
+showToast("Status berhasil diperbarui!", "success");
+tambahExp(20); // <--- SISTEM EXP
+loadStories(); 
+
+        }
+
+        tutupPreviewMedia();
+    } catch (err) {
+        showToast("Gagal mengirim file: " + err.message, "error");
+    } finally {
+        btnSend.disabled = false;
+        btnSend.innerHTML = '<i class="fas fa-paper-plane text-lg mr-0.5"></i>';
+    }
+}
+
+
+// ==========================================
+// FITUR BALAS & LIKE STORY (WHATSAPP STYLE)
+// ==========================================
+
+// Fungsi Jeda Story Saat Buka Laci Stats / Mengetik Balasan
+function pauseStoryForReply() {
+    // 1. Matikan fungsi klik Kiri/Kanan agar tidak tembus
+    const navOverlay = document.getElementById('story-nav-overlay');
+    if (navOverlay) navOverlay.style.pointerEvents = 'none';
+
+    // 2. Bekukan Garis Progress Bar persis di posisinya saat ini
+    const activeBar = document.getElementById(`story-progress-${currentActiveStories.currentIndex}`);
+    if (activeBar) {
+        // Ambil lebar piksel saat ini secara real-time
+        const computedWidth = window.getComputedStyle(activeBar).width;
+        activeBar.style.transition = 'none'; // Matikan mesin animasinya
+        activeBar.style.width = computedWidth; // Kunci garisnya di posisi tersebut
+    }
+
+    // 3. Jeda Video / Foto
+    const vidEl = document.getElementById('viewer-story-vid');
+    if (vidEl && !vidEl.classList.contains('hidden')) {
+        vidEl.pause();
+    } else {
+        clearTimeout(currentStoryTimer);
+    }
+}
+
+// Fungsi Lanjutkan Story Setelah Laci Ditutup
+function resumeStoryAfterReply() {
+    // 1. Nyalakan kembali fungsi klik Kiri/Kanan
+    const navOverlay = document.getElementById('story-nav-overlay');
+    if (navOverlay) navOverlay.style.pointerEvents = 'auto';
+
+    const activeBar = document.getElementById(`story-progress-${currentActiveStories.currentIndex}`);
+    const vidEl = document.getElementById('viewer-story-vid');
+
+    // 2. Lanjutkan Media & Jalankan Kembali Progress Bar
+    if (vidEl && !vidEl.classList.contains('hidden')) {
+        vidEl.play();
+        // Hitung sisa durasi video, lalu jalankan animasi garisnya lagi
+        if (activeBar) {
+            const sisaWaktu = vidEl.duration - vidEl.currentTime;
+            activeBar.style.transition = `width ${sisaWaktu}s linear`;
+            activeBar.style.width = '100%';
+        }
+    } else {
+        // Jika foto, kita beri sisa waktu 3 detik dari titik dia berhenti
+        if (activeBar) {
+            activeBar.style.transition = `width 3s linear`;
+            activeBar.style.width = '100%';
+        }
+        currentStoryTimer = setTimeout(() => { nextStory(); }, 3000);
+    }
+}
+
+// Fitur Tekan Enter Untuk Kirim
+function handleStoryReplyEnter(e) {
+if (e.key === 'Enter') {
+e.preventDefault();
+sendStoryReply();
+}
+}
+
+// Fungsi Mengirim Balasan ke Chat
+async function sendStoryReply() {
+if (!currentUser) return showToast("Silakan login untuk membalas!", "error");
+
+const input = document.getElementById('story-reply-input');
+const message = input.value.trim();
+if (!message) return;
+
+const story = currentActiveStories[currentActiveStories.currentIndex];
+const targetId = story.user_id;
+
+// Menghindari error balas diri sendiri
+if (targetId === currentUser.id) return;
+
+input.value = '';
+showToast("Mengirim balasan...", "info");
+
+try {
+// Ekstrak info story (apakah dia membalas gambar atau video)
+const storyTipe = story.media_type === 'video' ? 'Video' : 'Foto';
+let storyCaption = story.caption || "Pembaruan Status";
+// Potong caption jika terlalu panjang untuk preview
+if (storyCaption.length > 30) storyCaption = storyCaption.substring(0, 30) + '...';
+
+// Gunakan tag khusus [STORY_REPLY] agar sistem merendernya sebagai kotak kutipan
+const finalMessage = `[STORY_REPLY:${storyTipe}||${storyCaption}]\n${message}`;
+const { error } = await supabaseClient.from('messages').insert({
+sender_id: currentUser.id,
+receiver_id: targetId,
+message: finalMessage
+});
+
+if (error) throw error;
+
+showToast("Balasan terkirim!", "success");
+input.blur(); // Tutup keyboard hp
+resumeStoryAfterReply(); // Lanjutkan story
+
+} catch (e) {
+showToast("Gagal mengirim balasan.", "error");
+}
+}
+
+// Fungsi Like Story (Animasi Hati & Simpan ke DB)
+async function likeStoryAktif(btn) {
+if (!currentUser) return showToast("Silakan login untuk menyukai!", "error");
+
+const icon = btn.querySelector('i');
+const story = currentActiveStories[currentActiveStories.currentIndex];
+
+// Matikan tombol sementara agar tidak dispam klik
+btn.style.pointerEvents = 'none';
+
+try {
+if (icon.classList.contains('far')) {
+// === PROSES LIKE ===
+icon.classList.replace('far', 'fas');
+icon.classList.add('text-brand-accent', 'animate-ping');
+
+setTimeout(() => icon.classList.remove('animate-ping'), 500);
+
+// Tembak data ke tabel story_likes
+const { error } = await supabaseClient.from('story_likes').insert({
+story_id: story.id,
+user_id: currentUser.id
+});
+
+if (error) {
+// Jika error karena sudah pernah like (duplikat), abaikan saja
+if (error.code !== '23505') throw error;
+}
+
+// --- 🔥 PERBAIKAN: SIMPAN KE MEMORI LOKAL HP ---
+// Agar saat story ini diputar ulang, ikon love-nya tetap merah
+localStorage.setItem('story_liked_' + story.id, 'true');
+
+const nama = document.getElementById('viewer-story-name').innerText;
+showToast(`Anda menyukai status ${nama}`, "success");
+
+} else {
+// === PROSES UNLIKE (BATAL LIKE) ===
+icon.classList.replace('fas', 'far');
+icon.classList.remove('text-brand-accent');
+
+// Hapus data dari tabel story_likes
+const { error } = await supabaseClient.from('story_likes')
+.delete()
+.eq('story_id', story.id)
+.eq('user_id', currentUser.id);
+
+if (error) throw error;
+
+// --- 🔥 PERBAIKAN: HAPUS DARI MEMORI LOKAL HP ---
+// Agar ikon kembali menjadi kosong saat di-unlike
+localStorage.removeItem('story_liked_' + story.id);
+}
+} catch (e) {
+console.error("Gagal memproses like:", e);
+showToast("Terjadi kesalahan saat menyukai.", "error");
+
+// Kembalikan ikon jika gagal (Rollback UI)
+if (icon.classList.contains('fas')) {
+icon.classList.replace('fas', 'far');
+icon.classList.remove('text-brand-accent');
+} else {
+icon.classList.replace('far', 'fas');
+icon.classList.add('text-brand-accent');
+}
+} finally {
+// Nyalakan kembali tombol
+btn.style.pointerEvents = 'auto';
+}
+}
+
+
+
+
+
+
+
+// ==========================================
+// OPTIMASI V6 (ANTI-STUTTER & MEMORY LEAK)
+// ==========================================
+function setupVideoObserver() {
+if (typeof obs !== 'undefined' && obs) obs.disconnect();
+
+if (!document.getElementById('gpu-hack')) {
+const style = document.createElement('style');
+style.id = 'gpu-hack';
+style.innerHTML = `
+.snap-start { transform: translateZ(0); will-change: transform, opacity; content-visibility: auto; }
+video { will-change: contents; }
+`;
+document.head.appendChild(style);
+}
+
+window.videoClearTimers = window.videoClearTimers || new WeakMap();
+window.videoPlayTimers = window.videoPlayTimers || new WeakMap();
+
+obs = new IntersectionObserver(es => {
+const isFloatingOpen = !document.getElementById('floating-video-player').classList.contains('hidden');
+
+es.forEach(e => {
+const video = e.target;
+
+if (e.isIntersecting && !isFloatingOpen) {
+if (window.videoClearTimers.has(video)) {
+clearTimeout(window.videoClearTimers.get(video));
+window.videoClearTimers.delete(video);
+}
+
+const playTimerId = setTimeout(() => {
+if (video.dataset.savedSrc) {
+video.src = video.dataset.savedSrc;
+video.dataset.savedSrc = '';
+video.load();
+}
+
+video.muted = (typeof isGlobalMuted !== 'undefined') ? isGlobalMuted : true;
+
+const wrap = video.closest('.video-inner-wrap');
+if (wrap) {
+if (!isGlobalMuted) wrap.classList.add('floating-focus');
+else wrap.classList.remove('floating-focus');
+}
+
+requestAnimationFrame(() => {
+const playPromise = video.play();
+if (playPromise !== undefined) {
+playPromise.catch(err => {
+    // JURUS ANTI-BLOKIR (AUTOPLAY POLICY)
+    // Jika browser ngeblokir suara karena user belum sentuh layar sama sekali, 
+    // paksa bisukan dulu supaya videonya tetap jalan (nggak macet/blank)
+    if (err.name === 'NotAllowedError') {
+        video.muted = true;
+        isGlobalMuted = true; // Sinkronkan sistem global ke bisu
+        video.play().catch(e => {}); // Mainkan ulang
+    }
+});
+}
+video.classList.remove('opacity-0');
+});
+
+const card = video.closest('.snap-start');
+if (card && card.nextElementSibling) {
+const nextVid = card.nextElementSibling.querySelector('video');
+if (nextVid && nextVid.dataset.savedSrc && !nextVid.src) {
+nextVid.src = nextVid.dataset.savedSrc;
+nextVid.dataset.savedSrc = '';
+nextVid.setAttribute('preload', 'auto');
+}
+}
+}, 100);
+
+window.videoPlayTimers.set(video, playTimerId);
+
+} else {
+if (window.videoPlayTimers.has(video)) {
+clearTimeout(window.videoPlayTimers.get(video));
+window.videoPlayTimers.delete(video);
+}
+
+video.pause();
+
+const timerId = setTimeout(() => {
+const hapusMemori = () => {
+let currentUrl = video.currentSrc || video.src || (video.querySelector('source') ? video.querySelector('source').src : '');
+if (currentUrl && currentUrl.length > 5) {
+video.dataset.savedSrc = currentUrl;
+video.removeAttribute('src');
+if (video.querySelector('source')) video.querySelector('source').removeAttribute('src');
+video.removeAttribute('preload');
+video.load();
+}
+window.videoClearTimers.delete(video);
+};
+
+if ('requestIdleCallback' in window) {
+requestIdleCallback(hapusMemori, { timeout: 1000 });
+} else {
+hapusMemori();
+}
+}, 1000);
+
+window.videoClearTimers.set(video, timerId);
+}
+});
+}, { threshold: 0.5 });
+
+const videos = document.querySelectorAll('.video-player, .float-video-player');
+videos.forEach(v => obs.observe(v));
+}
+
+
+// ==========================================
+// FITUR GRUP CHAT (TAHAP 3)
+// ==========================================
+
+// 1. Buka / Tutup Modal Buat Grup
+function openCreateGroupModal() {
+document.getElementById('modal-create-group').classList.remove('hidden');
+document.getElementById('modal-create-group').classList.add('flex');
+}
+
+function closeCreateGroupModal() {
+document.getElementById('modal-create-group').classList.add('hidden');
+document.getElementById('modal-create-group').classList.remove('flex');
+}
+
+// 2. Preview Foto Grup Saat Dipilih
+function previewGroupAvatar(input, imgId) {
+if (input.files && input.files[0]) {
+const reader = new FileReader();
+reader.onload = function(e) { document.getElementById(imgId).src = e.target.result; }
+reader.readAsDataURL(input.files[0]);
+}
+}
+
+// 3. Proses Eksekusi Buat Grup ke Database (DIPERBAIKI)
+async function prosesCreateGroup() {
+if (!currentUser) return showToast("Silakan login dulu!", "error");
+
+const nameInput = document.getElementById('create-group-name').value.trim();
+const descInput = document.getElementById('create-group-desc').value.trim();
+const fileInput = document.getElementById('create-group-avatar'); // Ambil elemen file foto
+const btn = document.getElementById('btn-submit-group');
+
+if (!nameInput) return showToast("Nama grup wajib diisi!", "error");
+
+btn.disabled = true;
+const originalText = btn.innerHTML;
+btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Membuat...';
+
+try {
+// Default avatar (jika user tidak memilih foto)
+let finalAvatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(nameInput)}&background=1A1133&color=fff`;
+
+// LOGIKA BARU: Jika user memilih foto, upload fotonya dulu!
+if (fileInput.files && fileInput.files[0]) {
+const file = fileInput.files[0];
+showToast("Mengunggah foto grup...", "info");
+
+// Proses upload ke storage menggunakan API-mu
+const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent('group_'+Date.now())}&filetype=${encodeURIComponent(file.type)}`);
+const dataUrl = await resUrl.json();
+
+await fetch(dataUrl.uploadUrl, {
+method: 'PUT',
+body: file,
+headers: { 'Content-Type': file.type, 'x-amz-acl': 'public-read' }
+});
+
+// Ganti URL default dengan URL foto yang berhasil di-upload
+finalAvatarUrl = dataUrl.finalVideoUrl;
+}
+
+// Masukkan data grup ke tabel 'groups' (sekarang pakai finalAvatarUrl)
+const { data: groupData, error: groupErr } = await supabaseClient
+.from('groups')
+.insert({ name: nameInput, description: descInput, avatar_url: finalAvatarUrl, created_by: currentUser.id })
+.select().single();
+
+if (groupErr) throw groupErr;
+
+// Masukkan pembuat grup otomatis sebagai 'admin' di 'group_members'
+const { error: memberErr } = await supabaseClient
+.from('group_members')
+.insert({ group_id: groupData.id, user_id: currentUser.id, role: 'admin' });
+
+if (memberErr) throw memberErr;
+
+showToast("Grup berhasil dibuat!", "success");
+closeCreateGroupModal();
+
+// Reset form
+document.getElementById('create-group-name').value = '';
+document.getElementById('create-group-desc').value = '';
+fileInput.value = ''; // Reset input file foto
+document.getElementById('create-group-preview').src = 'https://ui-avatars.com/api/?name=Grup&background=1A1133&color=fff';
+
+// Reload daftar chat agar grup baru muncul beserta fotonya
+loadChatList();
+
+} catch (err) {
+showToast("Gagal buat grup: " + err.message, "error");
+} finally {
+btn.disabled = false;
+btn.innerHTML = originalText;
+}
+}
+
+// 4. Tutup Modal Info Grup (DIPERBAIKI)
+function closeGroupInfoModal(dariTombolBack = false) {
+    document.getElementById('modal-group-info').classList.add('hidden');
+    document.getElementById('modal-group-info').classList.remove('flex');
+    
+    // Cegah HP menarik history mundur 2 kali jika asalnya dari tombol Back HP
+    if (!dariTombolBack && window.location.hash === '#groupinfo') {
+        history.back();
+    }
+}
+
+// 5. Muat Data Info Grup & Anggota (DIPERBAIKI)
+async function loadGroupInfo(groupId) {
+    // 🔥 SUNTIKAN SAKTI: Beri jejak ke browser agar tombol Back HP aktif
+    history.pushState({ popup: 'group_info' }, null, '#groupinfo');
+
+    document.getElementById('modal-group-info').classList.remove('hidden');
+    document.getElementById('modal-group-info').classList.add('flex');
+
+    // Ambil data detail grup
+    const { data: group } = await supabaseClient.from('groups').select('*').eq('id', groupId).single();
+    if(!group) return;
+
+document.getElementById('info-group-avatar').src = group.avatar_url;
+document.getElementById('info-group-name').innerText = group.name;
+document.getElementById('info-group-desc').innerText = group.description || "Tidak ada deskripsi";
+
+// Ambil data semua member di grup ini
+const { data: members } = await supabaseClient.from('group_members').select('role, user_id').eq('group_id', groupId);
+
+// Cek jabatan (role) kita di grup ini
+const myData = members.find(m => m.user_id === currentUser.id);
+activeGroupRole = myData ? myData.role : 'member';
+
+// Tampilkan fitur Edit & Undang HANYA jika dia Admin
+if (activeGroupRole === 'admin') {
+document.getElementById('btn-edit-group-info').classList.remove('hidden');
+document.getElementById('section-invite-group').classList.remove('hidden');
+document.getElementById('btn-edit-group-avatar').classList.replace('hidden', 'flex');
+} else {
+document.getElementById('btn-edit-group-info').classList.add('hidden');
+document.getElementById('section-invite-group').classList.add('hidden');
+document.getElementById('btn-edit-group-avatar').classList.replace('flex', 'hidden');
+}
+
+renderGroupMembers(members);
+}
+
+// 6. Render Daftar Member di Modal (Updated: Admin Management)
+async function renderGroupMembers(membersData) {
+const list = document.getElementById('group-member-list');
+document.getElementById('info-group-count').innerText = membersData.length;
+list.innerHTML = '<div class="text-center py-4"><i class="fas fa-spinner fa-spin text-brand-info"></i></div>';
+
+const userIds = membersData.map(m => m.user_id);
+const { data: profiles } = await supabaseClient.from('profiles').select('id, nickname, avatar_url').in('id', userIds);
+
+let html = '';
+profiles.forEach(p => {
+const m = membersData.find(x => x.user_id === p.id);
+const isAdmin = m.role === 'admin';
+const badge = isAdmin ? '<span class="bg-brand-accent/20 text-brand-accent text-[8px] px-2 py-0.5 rounded border border-brand-accent/30 font-bold ml-2">ADMIN</span>' : '';
+const ava = p.avatar_url || `https://ui-avatars.com/api/?name=${p.nickname}&background=1A1133&color=fff`;
+
+// --- LOGIKA TOMBOL MANAJEMEN ---
+let adminButtons = '';
+
+// Tombol HANYA muncul jika:
+// 1. Saya adalah Admin grup (activeGroupRole === 'admin')
+// 2. Baris yang sedang di-render BUKAN diri saya sendiri
+if (activeGroupRole === 'admin' && p.id !== currentUser.id) {
+adminButtons = `
+<div class="flex gap-2 ml-2">
+<!-- Tombol Jadikan/Batalkan Admin -->
+<button onclick="toggleAdminStatus('${p.id}', '${m.role}', '${p.nickname}')"
+class="w-8 h-8 rounded-lg flex items-center justify-center transition-all ${isAdmin ? 'bg-orange-500/20 text-orange-500' : 'bg-brand-info/20 text-brand-info'}"
+title="${isAdmin ? 'Turunkan dari Admin' : 'Jadikan Admin'}">
+<i class="fas ${isAdmin ? 'fa-user-minus' : 'fa-user-shield'} text-xs"></i>
+</button>
+
+<!-- Tombol Kick Member -->
+<button onclick="kickMember('${p.id}', '${p.nickname}')"
+class="w-8 h-8 rounded-lg bg-red-500/20 text-red-500 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all"
+title="Keluarkan Anggota">
+<i class="fas fa-user-times text-xs"></i>
+</button>
+</div>`;
+}
+
+html += `
+<div class="flex items-center justify-between p-2 bg-black/30 rounded-xl border border-white/5 mb-2">
+<!-- Bagian bawah ini yang ditambahin onclick dan cursor-pointer -->
+<div class="flex items-center flex-1 min-w-0 cursor-pointer hover:bg-white/10 p-1.5 rounded-lg transition-colors" onclick="closeGroupInfoModal(); viewUserProfile('${p.id}');">
+<img src="${ava}" class="w-9 h-9 rounded-full object-cover border border-white/10 shrink-0">
+<div class="ml-3 truncate">
+<div class="flex items-center">
+<h4 class="font-bold text-white text-xs truncate">${p.nickname}</h4>
+${badge}
+</div>
+</div>
+</div>
+${adminButtons}
+</div>`;
+});
+list.innerHTML = html;
+}
+
+
+// 7. Buka Tutup Form Edit Info Grup
+function toggleEditGroupInfo() {
+const form = document.getElementById('form-edit-group-info');
+if (form.classList.contains('hidden')) {
+form.classList.remove('hidden');
+document.getElementById('input-edit-group-name').value = document.getElementById('info-group-name').innerText;
+document.getElementById('input-edit-group-desc').value = document.getElementById('info-group-desc').innerText;
+} else {
+form.classList.add('hidden');
+}
+}
+
+// 8. Simpan Editan Info Grup (Hanya Admin)
+async function saveGroupInfo() {
+    const name = document.getElementById('input-edit-group-name').value.trim();
+    const desc = document.getElementById('input-edit-group-desc').value.trim();
+    if(!name) return showToast("Nama grup tidak boleh kosong!", "error");
+
+    const btn = document.getElementById('btn-save-group-info');
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan...';
+    btn.disabled = true; // Kunci tombol biar nggak diklik dobel
+
+    try {
+        const { error } = await supabaseClient.from('groups').update({ name: name, description: desc }).eq('id', activeGroupId);
+        if(error) throw error;
+
+        showToast("Info grup diperbarui!", "success");
+        toggleEditGroupInfo();
+        loadGroupInfo(activeGroupId); // Refresh UI
+    } catch (err) {
+        showToast("Gagal update: " + err.message, "error");
+    } finally {
+        btn.innerHTML = 'Simpan Perubahan';
+        btn.disabled = false; // Buka kunci tombol lagi
+    }
+}
+
+// 9. Undang Teman Berdasarkan Nickname (Hanya Admin)
+async function inviteToGroup() {
+const nick = document.getElementById('invite-user-nickname').value.trim();
+if(!nick) return;
+
+const btn = document.getElementById('btn-invite-user');
+btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+try {
+const { data: userProfile } = await supabaseClient.from('profiles').select('id').ilike('nickname', nick).single();
+if(!userProfile) throw new Error("User tidak ditemukan!");
+
+const { error } = await supabaseClient.from('group_members').insert({
+group_id: activeGroupId,
+user_id: userProfile.id,
+role: 'member'
+});
+
+if(error) {
+if(error.code === '23505') throw new Error("User ini sudah ada di grup!");
+throw error;
+}
+
+// 🔥 TAMBAHAN NOTIFIKASI SISTEM
+await supabaseClient.from('messages').insert({
+sender_id: currentUser.id,
+group_id: activeGroupId,
+message: `[SISTEM] ${nick} telah ditambahkan ke dalam grup oleh Admin.`
+});
+
+showToast(nick + " berhasil ditambahkan!", "success");
+document.getElementById('invite-user-nickname').value = '';
+loadGroupInfo(activeGroupId); // Refresh anggota
+
+} catch (err) {
+showToast(err.message, "error");
+} finally {
+btn.innerHTML = 'Undang';
+}
+}
+
+
+// 10. Keluar dari Grup
+async function keluarDariGrup() {
+const yakin = confirm("Yakin ingin keluar dari grup ini?");
+if(!yakin) return;
+
+await supabaseClient.from('group_members').delete().eq('group_id', activeGroupId).eq('user_id', currentUser.id);
+showToast("Berhasil keluar dari grup", "success");
+closeGroupInfoModal();
+closeChatRoom();
+}
+// ==========================================
+// LOGIKA VIDEO PROGRESS BAR (SUPER SMOOTH FIX)
+// ==========================================
+function formatTime(seconds) {
+if (isNaN(seconds)) return "00:00";
+const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+const s = Math.floor(seconds % 60).toString().padStart(2, '0');
+return `${m}:${s}`;
+}
+
+function updateVideoProgress(video) {
+if (video.isDragging) return;
+
+if (!video.progressFill) {
+const container = video.closest('.snap-start');
+if (container) video.progressFill = container.querySelector('.progress-fill');
+}
+
+if (video.progressFill && video.duration) {
+requestAnimationFrame(() => {
+const percent = (video.currentTime / video.duration) * 100;
+video.progressFill.style.width = `${percent}%`;
+});
+}
+}
+
+// 11. FUNGSI UBAH STATUS ADMIN (Hanya Admin)
+async function toggleAdminStatus(userId, currentRole, nickname) {
+// GEMBOK KEAMANAN: Cegah bypass eksekusi ilegal via console / Eruda
+if (activeGroupRole !== 'admin') return showToast("Hanya admin yang diizinkan melakukan ini!", "error");
+
+const nextRole = (currentRole === 'admin') ? 'member' : 'admin';
+const confirmMsg = (currentRole === 'admin')
+? `Yakin ingin mencopot jabatan Admin dari ${nickname}?`
+: `Jadikan ${nickname} sebagai Admin grup?`;
+
+if (!await customConfirm(confirmMsg)) return;
+
+try {
+showToast("Memproses status...", "info"); // Notif biar user tahu sistem sedang bekerja
+
+const { error } = await supabaseClient
+.from('group_members')
+.update({ role: nextRole })
+.eq('group_id', activeGroupId)
+.eq('user_id', userId);
+
+if (error) throw error;
+
+showToast(`Status ${nickname} berhasil diperbarui!`, "success");
+
+// 🔥 KUNCI PERBAIKAN: Beri jeda 300 milidetik agar database
+// punya waktu memproses sebelum layar direfresh otomatis.
+setTimeout(() => {
+loadGroupInfo(activeGroupId);
+}, 300);
+
+} catch (err) {
+showToast("Gagal memperbarui status: " + err.message, "error");
+}
+}
+
+// 12. FUNGSI KICK ANGGOTA (Hanya Admin)
+async function kickMember(userId, nickname) {
+// GEMBOK KEAMANAN: Cegah bypass eksekusi ilegal via console / Eruda
+if (activeGroupRole !== 'admin') return showToast("Hanya admin yang diizinkan mengeluarkan anggota!", "error");
+
+if (!await customConfirm(`Yakin ingin mengeluarkan ${nickname} dari grup ini?`)) return;
+
+try {
+showToast("Sedang mengeluarkan...", "info");
+
+// 1. Hapus dari tabel group_members
+const { error } = await supabaseClient
+.from('group_members')
+.delete()
+.eq('group_id', activeGroupId)
+.eq('user_id', userId);
+
+if (error) throw error;
+
+// 2. Kirim pesan sistem bahwa user telah dikeluarkan
+await supabaseClient.from('messages').insert({
+sender_id: currentUser.id,
+group_id: activeGroupId,
+message: `[SISTEM] ${nickname} telah dikeluarkan dari grup oleh Admin.`
+});
+
+showToast(nickname + " telah dikeluarkan", "success");
+
+// 🔥 KUNCI PERBAIKAN: Beri jeda 300 milidetik
+setTimeout(() => {
+loadGroupInfo(activeGroupId);
+}, 300);
+
+} catch (err) {
+showToast("Gagal mengeluarkan: " + err.message, "error");
+}
+}
+
+
+
+
+
+// ==========================================
+// LOGIKA DRAG / GESER PROGRESS BAR
+// ==========================================
+function startSeek(e, containerElement) {
+const video = containerElement.closest('.snap-start').querySelector('video');
+if (!video) return;
+video.isDragging = true;
+
+const timeIndicator = containerElement.closest('.snap-start').querySelector('.time-indicator');
+if (timeIndicator) timeIndicator.classList.replace('opacity-0', 'opacity-100');
+
+updateSeek(e, containerElement, video);
+}
+
+function doSeek(e, containerElement) {
+const video = containerElement.closest('.snap-start').querySelector('video');
+if (!video || !video.isDragging) return;
+updateSeek(e, containerElement, video);
+}
+
+function endSeek(e, containerElement) {
+const video = containerElement.closest('.snap-start').querySelector('video');
+if (!video) return;
+
+if (video.isDragging) {
+updateSeek(e, containerElement, video);
+video.isDragging = false;
+}
+
+const timeIndicator = containerElement.closest('.snap-start').querySelector('.time-indicator');
+if (timeIndicator) timeIndicator.classList.replace('opacity-100', 'opacity-0');
+}
+
+function updateSeek(e, containerElement, video) {
+const rect = containerElement.getBoundingClientRect();
+let x = e.clientX;
+if (x === undefined && e.touches && e.touches.length > 0) x = e.touches[0].clientX;
+if (x === undefined) return;
+
+let pos = (x - rect.left) / rect.width;
+pos = Math.max(0, Math.min(1, pos));
+
+const fill = containerElement.querySelector('.progress-fill');
+if (fill) fill.style.width = `${pos * 100}%`;
+
+if (video.duration) {
+video.currentTime = pos * video.duration;
+
+const timeIndicator = containerElement.closest('.snap-start').querySelector('.time-indicator');
+if (timeIndicator) {
+timeIndicator.querySelector('.time-current').innerText = formatTime(video.currentTime);
+timeIndicator.querySelector('.time-total').innerText = formatTime(video.duration);
+}
+}
+}
+
+// ==========================================
+// FITUR HAPUS PESAN (Hapus Untukku & Semua)
+// ==========================================
+function showMsgOptions(msgId, senderId) {
+selectedMessageId = msgId;
+const modal = document.getElementById('modal-msg-option');
+const btnDelAll = document.getElementById('btn-del-msg-all');
+
+modal.classList.remove('hidden');
+modal.classList.add('flex');
+
+// Jika pesan ini bukan milik kita, sembunyikan tombol "Hapus untuk Semua"
+if (senderId !== currentUser.id) {
+btnDelAll.style.display = 'none';
+} else {
+btnDelAll.style.display = 'block';
+}
+}
+
+function closeMsgOptions() {
+const modal = document.getElementById('modal-msg-option');
+modal.classList.add('hidden');
+modal.classList.remove('flex');
+}
+
+function deleteMsgForMe() {
+if (!selectedMessageId) return;
+// Simpan ID ke memori lokal HP agar disembunyikan
+let deletedForMe = JSON.parse(localStorage.getItem('deleted_msgs') || '[]');
+if (!deletedForMe.includes(selectedMessageId)) {
+deletedForMe.push(selectedMessageId);
+localStorage.setItem('deleted_msgs', JSON.stringify(deletedForMe));
+}
+closeMsgOptions();
+loadRoomMessages(); // Muat ulang layar chat
+showToast("Pesan dihapus untuk Anda", "success");
+}
+
+async function deleteMsgForAll() {
+if (!selectedMessageId) return;
+try {
+// Ubah teks pesan di Supabase menjadi ditarik
+const { error } = await supabaseClient.from('messages').update({ message: '[DELETED]' }).eq('id', selectedMessageId);
+if (error) throw error;
+
+closeMsgOptions();
+loadRoomMessages();
+showToast("Pesan berhasil ditarik", "success");
+} catch (err) {
+showToast("Gagal menarik pesan", "error");
+}
+}
+
+// ==========================================
+// FITUR PESAN SUARA (VOICE NOTE)
+// ==========================================
+let mediaRecorder;
+let audioChunks = [];
+
+async function startRecordingVoice() {
+try {
+// Meminta izin mikrofon ke pengguna
+const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+mediaRecorder = new MediaRecorder(stream);
+audioChunks = [];
+
+mediaRecorder.ondataavailable = e => {
+if (e.data.size > 0) audioChunks.push(e.data);
+};
+
+mediaRecorder.onstop = async () => {
+// 👉 PINDAHAN DARI BAWAH: Matikan mikrofon di sini
+mediaRecorder.stream.getTracks().forEach(track => track.stop());
+
+const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+await uploadAndSendVoice(audioBlob);
+};
+
+mediaRecorder.start();
+
+// Ubah UI jadi mode merekam (Tombol Stop berdenyut merah)
+const input = document.getElementById('chat-room-input');
+input.placeholder = "Merekam suara... (Klik stop)";
+input.disabled = true;
+
+const btnSend = document.getElementById('btn-send-room');
+btnSend.innerHTML = '<i class="fas fa-stop text-white"></i>';
+btnSend.classList.add('bg-red-500', 'animate-pulse');
+btnSend.classList.remove('bg-brand-accent');
+btnSend.onclick = stopRecordingVoice;
+
+} catch (err) {
+// 👇 KODE BARU: Memunculkan error ASLI dari sistem 👇
+showToast("Error Mic: " + err.name + " - " + err.message, "error");
+console.error("Detail Error Mic:", err);
+}
+}
+
+function stopRecordingVoice() {
+if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+mediaRecorder.stop();
+}
+
+// Kembalikan UI ke awal
+const input = document.getElementById('chat-room-input');
+input.placeholder = "Ketik pesan...";
+input.disabled = false;
+
+const btnSend = document.getElementById('btn-send-room');
+btnSend.innerHTML = '<i class="fas fa-microphone"></i>';
+btnSend.classList.remove('bg-red-500', 'animate-pulse');
+btnSend.classList.add('bg-brand-accent');
+btnSend.onclick = startRecordingVoice;
+}
+
+
+
+
+
+
+async function uploadAndSendVoice(blob) {
+if (!activeChatUserId && !activeGroupId) return;
+const isGroup = !!activeGroupId;
+const targetId = isGroup ? activeGroupId : activeChatUserId;
+
+// PENJAGA PINTU GRUP
+if (isGroup) {
+const { data: checkMember } = await supabaseClient.from('group_members').select('user_id').eq('group_id', targetId).eq('user_id', currentUser.id).single();
+if (!checkMember) {
+await customAlert("Anda tidak dapat mengirim Voice Note karena telah dikeluarkan dari grup ini.");
+closeChatRoom(); return;
+}
+}
+
+// Tangkap data balasan (jika sedang me-reply pesan)
+const currentReplyId = replyingToMsgId;
+const currentReplyName = replyingToMsgName;
+const currentReplyText = replyingToMsgText;
+cancelChatReply(); // Tutup UI balasan seketika
+
+const tempId = 'temp-vn-' + Date.now();
+const tempMsg = { id: tempId, sender_id: currentUser.id, message: "🎙️ Mengirim pesan suara...", created_at: new Date().toISOString() };
+appendMessageBubble(tempMsg);
+scrollToBottomChat();
+
+try {
+const reader = new FileReader();
+reader.readAsDataURL(blob);
+reader.onloadend = async () => {
+try {
+// Samakan dengan sistem upload gambar & video lu yang udah terbukti anti-gagal
+const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent('voice_'+Date.now()+'.webm')}&filetype=${encodeURIComponent('audio/webm')}`);
+const dataUrl = await resUrl.json();
+
+// Upload file fisik suara ke Biznet Storage
+await fetch(dataUrl.uploadUrl, {
+method: 'PUT',
+body: blob,
+headers: { 'Content-Type': 'audio/webm', 'x-amz-acl': 'public-read' }
+});
+
+let msgText = `[AUDIO]${dataUrl.finalVideoUrl}`;
+
+// SISIPKAN KODE BALASAN JIKA ADA
+if (currentReplyId) {
+const safeName = currentReplyName.replace(/\|\|/g, "").replace(/\]/g, "");
+const safeText = currentReplyText.replace(/\|\|/g, "").replace(/\]/g, "");
+msgText = `[REPLY:${currentReplyId}||${safeName}||${safeText}]\n${msgText}`;
+}
+
+const insertData = { sender_id: currentUser.id, message: msgText };
+if (isGroup) insertData.group_id = targetId; else insertData.receiver_id = targetId;
+
+const { error: dbErr } = await supabaseClient.from('messages').insert(insertData);
+if (dbErr) throw new Error("Gagal simpan DB");
+
+const oldBubble = document.getElementById(`msg-chat-${tempId}`);
+if (oldBubble) oldBubble.remove();
+
+} catch(err) {
+const oldBubble = document.getElementById(`msg-chat-${tempId}`);
+if (oldBubble) oldBubble.remove();
+showToast("Error VN: " + err.message, "error");
+}
+};
+} catch (err) { showToast("Error Sistem: " + err.message, "error"); }
+}
+
+
+
+
+
+
+// ==========================================
+// FITUR TERAKHIR DILIHAT (LAST SEEN SINKRONISASI)
+// ==========================================
+async function updateMyLastSeen() {
+if (!currentUser) return;
+try {
+await supabaseClient.from('profiles').update({ last_seen: new Date().toISOString() }).eq('id', currentUser.id);
+} catch (e) { console.log("Gagal update last seen"); }
+}
+
+// Jalankan update saat buka web dan tiap 1 menit sekali kalau aplikasinya sedang dibuka
+setInterval(updateMyLastSeen, 60000);
+document.addEventListener('visibilitychange', () => {
+if (document.visibilityState === 'hidden') updateMyLastSeen();
+});
+
+
+// ==========================================
+// FITUR QUOTE REPLY (BALAS PESAN WA STYLE)
+// ==========================================
+let replyingToMsgId = null;
+let replyingToMsgText = "";
+let replyingToMsgName = "";
+
+// Fungsi saat tombol "Balas" di menu opsi di-klik (VERSI DISEMPURNAKAN UNTUK FOTO & AUDIO)
+document.getElementById('btn-reply-msg').addEventListener('click', () => {
+if (!selectedMessageId) return;
+
+// Nama default diambil dari Header Chat (untuk chat pribadi)
+let name = document.getElementById('active-chat-name').innerText;
+
+// Cari gelembung chat berdasarkan ID
+const msgBubble = document.getElementById(`msg-chat-${selectedMessageId}`);
+let text = "Membalas pesan...";
+
+if (msgBubble) {
+// FITUR CERDAS: Jika di dalam Grup, ambil nama asli pengirim dari dalam gelembung chatnya
+// Menyesuaikan dengan class warna biru "#00F0FF" yang baru
+const groupSenderEl = msgBubble.querySelector('.text-\\[\\#00F0FF\\]');
+if (groupSenderEl) {
+name = groupSenderEl.innerText;
+}
+
+// Ekstrak teks/media murni dari gelembung chat (mencari pembungkus kontennya)
+const textDiv = msgBubble.querySelector('.text-\\[12px\\]');
+if (textDiv) {
+if (textDiv.innerHTML.includes('<audio')) {
+text = "🎙️ Pesan Suara";
+} else if (textDiv.innerHTML.includes('<img')) {
+text = "📷 Foto/Gambar";
+} else {
+// Jika pesan teks biasa, hilangkan kode [REPLY:...] yang ada di dalamnya agar rapi
+let cleanText = textDiv.innerText;
+
+// Menghapus elemen cuplikan kotak balasan jika membalas pesan yang sudah merupakan balasan
+const innerReplyBox = textDiv.querySelector('div[onclick^="jumpToMessage"]');
+if (innerReplyBox) {
+cleanText = cleanText.replace(innerReplyBox.innerText, '').trim();
+}
+
+text = cleanText.replace(/\n/g, ' ').substring(0, 50);
+if (cleanText.length > 50) text += "...";
+}
+}
+}
+
+setChatReply(selectedMessageId, name, text);
+closeMsgOptions();
+});
+
+
+function setChatReply(msgId, name, text) {
+replyingToMsgId = msgId;
+replyingToMsgName = name;
+replyingToMsgText = text;
+
+document.getElementById('chat-reply-preview').classList.remove('hidden');
+document.getElementById('chat-reply-name').innerText = name;
+document.getElementById('chat-reply-text').innerText = text;
+
+document.getElementById('chat-room-input').focus();
+}
+
+function cancelChatReply() {
+replyingToMsgId = null;
+replyingToMsgName = "";
+replyingToMsgText = "";
+document.getElementById('chat-reply-preview').classList.add('hidden');
+}
+
+// FUNGSI UNTUK MELOMPAT LANGSUNG KE PESAN YANG DI-BALAS (WHATSAPP STYLE)
+function jumpToMessage(msgId) {
+const targetEl = document.getElementById(`msg-chat-${msgId}`);
+
+if (targetEl) {
+// Gulirkan layar obrolan secara halus tepat ke tengah-tengah gelembung asli
+targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+// Mengambil gelembung pesan yang sebenarnya (menggunakan class .rounded-2xl)
+const innerBubble = targetEl.querySelector('.rounded-2xl');
+
+if (innerBubble) {
+innerBubble.style.transition = 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)';
+
+// Beri efek animasi kilatan warna khas website (Pink/Purple)
+innerBubble.classList.add(
+'ring-[3px]', 'ring-brand-accent',
+'scale-[1.04]',
+'shadow-[0_0_30px_rgba(255,0,122,0.6),_0_0_45px_rgba(138,43,226,0.4)]'
+);
+
+// Hilangkan efek kilatan secara mulus setelah 1.5 detik
+setTimeout(() => {
+innerBubble.classList.remove(
+'ring-[3px]', 'ring-brand-accent',
+'scale-[1.04]',
+'shadow-[0_0_30px_rgba(255,0,122,0.6),_0_0_45px_rgba(138,43,226,0.4)]'
+);
+}, 1500);
+}
+} else {
+showToast("Pesan asli tidak ditemukan atau sudah terlalu lama dibersihkan.", "info");
+}
+}
+
+
+
+// ==========================================
+// FITUR TYPING INDICATOR & REAL-TIME CHAT
+// ==========================================
+
+function setupChatRoomListener() {
+// Bersihkan langganan (subscription) lama jika ada, agar tidak double
+if (messageSubscription) {
+supabaseClient.removeChannel(messageSubscription);
+}
+
+// Tentukan target chat (Grup atau Personal)
+const targetId = activeGroupId ? activeGroupId : activeChatUserId;
+if (!targetId) return;
+
+// Buat nama ruangan khusus. Untuk personal, urutkan ID agar selalu sama terlepas dari siapa yang memulai
+const roomName = activeGroupId
+? `room_group_${targetId}`
+: `room_personal_${[currentUser.id, targetId].sort().join('_')}`;
+
+messageSubscription = supabaseClient.channel(roomName)
+// 1. Tangkap sinyal saat lawan bicara mengetik
+.on('broadcast', { event: 'typing' }, payload => {
+// Pastikan sinyal yang ditangkap bukan dari diri kita sendiri
+if (payload.payload.userId !== currentUser.id) {
+showTypingIndicator();
+}
+})
+// 2. TANGKAP PESAN BARU DAN MUNCULKAN TANPA REFRESH
+.on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, async payload => {
+const msg = payload.new;
+
+// Cek apakah pesan ini milik ruangan yang sedang terbuka
+const isGroup = !!activeGroupId;
+const validRoom = isGroup
+? msg.group_id === activeGroupId
+: ((msg.sender_id === activeChatUserId && msg.receiver_id === currentUser.id) ||
+(msg.sender_id === currentUser.id && msg.receiver_id === activeChatUserId));
+
+if (validRoom) {
+// Sembunyikan tulisan "Sedang mengetik..." begitu pesan masuk
+const indicator = document.getElementById('typing-indicator');
+if (indicator) indicator.classList.add('hidden');
+
+if (msg.sender_id !== currentUser.id) {
+// --- JIKA PESAN DARI ORANG LAIN ---
+// Ambil data nama & foto jika ini di dalam Grup
+if (isGroup) {
+const { data: p } = await supabaseClient.from('profiles').select('nickname, avatar_url').eq('id', msg.sender_id).single();
+msg.profiles = p;
+}
+
+// Suntikkan langsung ke layar bawah secara mulus!
+appendMessageBubble(msg);
+scrollToBottomChat();
+
+// Langsung tandai Centang Biru (Read) secara otomatis
+if (!isGroup) {
+supabaseClient.from('messages').update({ is_read: true }).eq('id', msg.id).then();
+}
+} else {
+// --- JIKA PESAN DARI KITA SENDIRI ---
+// Hapus balon sementara agar tidak dobel
+const tempBubble = document.querySelector('[id^="msg-chat-temp-"]');
+if (tempBubble) {
+    tempBubble.remove();
+}
+
+// Pasang pesan asli dari database
+appendMessageBubble(msg);
+scrollToBottomChat();
+}
+}
+})
+.subscribe();
+
+}
+
+
+function showTypingIndicator() {
+const indicator = document.getElementById('typing-indicator');
+if (indicator) {
+indicator.classList.remove('hidden');
+
+// Hilangkan tulisan "Mengetik..." secara otomatis setelah 2 detik
+clearTimeout(typingTimer);
+typingTimer = setTimeout(() => {
+indicator.classList.add('hidden');
+}, 2000);
+}
+}
+
+function switchChatTab(tab) {
+// Sembunyikan semua container
+document.getElementById('chat-personal-container').classList.add('hidden');
+document.getElementById('chat-group-container').classList.add('hidden');
+document.getElementById('chat-status-container').classList.add('hidden');
+
+// Reset warna teks & garis bawah tab ke abu-abu (tidak aktif)
+document.getElementById('tab-personal').className = 'flex-1 py-3 text-[11px] font-bold text-gray-500 border-b-2 border-transparent transition-colors';
+document.getElementById('tab-group').className = 'flex-1 py-3 text-[11px] font-bold text-gray-500 border-b-2 border-transparent transition-colors';
+document.getElementById('tab-status').className = 'flex-1 py-3 text-[11px] font-bold text-gray-500 border-b-2 border-transparent transition-colors';
+
+// Aktifkan tab yang dipilih
+if (tab === 'personal') {
+document.getElementById('chat-personal-container').classList.remove('hidden');
+document.getElementById('chat-personal-container').classList.add('block');
+document.getElementById('tab-personal').className = 'flex-1 py-3 text-[11px] font-bold text-brand-accent border-b-2 border-brand-accent transition-colors';
+} else if (tab === 'group') {
+document.getElementById('chat-group-container').classList.remove('hidden');
+document.getElementById('chat-group-container').classList.add('block');
+document.getElementById('tab-group').className = 'flex-1 py-3 text-[11px] font-bold text-brand-accent border-b-2 border-brand-accent transition-colors';
+} else if (tab === 'status') {
+document.getElementById('chat-status-container').classList.remove('hidden');
+document.getElementById('chat-status-container').classList.add('block');
+document.getElementById('tab-status').className = 'flex-1 py-3 text-[11px] font-bold text-brand-accent border-b-2 border-brand-accent transition-colors';
+loadStories(); // Langsung muat story saat tab status dibuka
+}
+}
+
+// ==========================================
+// 1. FUNGSI RENDER GELEMBUNG CHAT (BISA KLIK BALASAN & DETEKSI FORWARD)
+// ==========================================
+function appendMessageBubble(msg) {
+    const container = document.getElementById('chat-messages-container');
+    const isMe = msg.sender_id === currentUser.id;
+
+    // Format waktu
+    const date = new Date(msg.created_at);
+    const time = date.getHours().toString().padStart(2, '0') + ':' + date.getMinutes().toString().padStart(2, '0');
+
+    let bubbleColor = isMe ? 'bg-gradient-to-br from-brand-accent to-[#d61a7f] text-white rounded-br-none shadow-[0_4px_12px_rgba(255,0,122,0.25)]' : 'bg-white/10 text-white border border-white/10 rounded-bl-none backdrop-blur-sm shadow-sm';
+    let align = isMe ? 'justify-end' : 'justify-start';
+
+    let rawMessage = msg.message || '';
+    let replyHtml = '';
+    let forwardedHtml = '';
+
+    // --- DETEKSI PESAN DITERUSKAN (FORWARDED) ---
+    if (rawMessage.startsWith('[FORWARDED]')) {
+        rawMessage = rawMessage.replace(/^\[FORWARDED\]\n?/, ''); // Hapus kode rahasia dari teks
+        forwardedHtml = `<div class="text-[9px] text-white/70 italic mb-1 font-medium flex items-center gap-1.5"><i class="fas fa-share text-[8px]"></i> Diteruskan</div>`;
+    }
+
+    // --- BACA FORMAT BALASAN (QUOTE REPLY) ---
+    const replyRegex = /^\[REPLY:(.*?)\|\|(.*?)\|\|(.*?)\]\n([\s\S]*)$/;
+    const match = rawMessage.match(replyRegex);
+
+    if (match) {
+        const replyId = escapeHTML(match[1]);
+        const replyName = escapeHTML(match[2]);
+        const replyText = escapeHTML(match[3]);
+        rawMessage = match[4]; // Sisa pesan setelah dipotong format reply
+
+        // Buat kotak balasan yang bisa diklik
+        replyHtml = `
+        <div onclick="jumpToMessage('${replyId}')" class="bg-black/30 border-l-[3px] border-brand-info p-2 mb-1.5 rounded-md cursor-pointer hover:bg-black/50 transition-colors active:scale-95">
+        <div class="text-[10px] font-bold text-brand-info mb-0.5">${replyName}</div>
+        <div class="text-[10px] text-gray-300 truncate max-w-[200px] line-clamp-1">${replyText}</div>
+        </div>`;
+    }
+    
+        // --- BACA FORMAT BALASAN STORY (STORY REPLY) ---
+    const storyReplyRegex = /^\[STORY_REPLY:(.*?)\|\|(.*?)\]\n([\s\S]*)$/;
+    const matchStory = rawMessage.match(storyReplyRegex);
+
+    if (matchStory) {
+        const mediaType = escapeHTML(matchStory[1]);
+        const storyText = escapeHTML(matchStory[2]);
+        rawMessage = matchStory[3]; // Sisa pesan yang diketik pembeli
+
+        // Buat kotak balasan story (warna pink/accent biar beda dikit sama reply biasa)
+        replyHtml = `
+        <div class="bg-black/30 border-l-[3px] border-brand-accent p-2 mb-1.5 rounded-md cursor-default">
+            <div class="text-[10px] font-bold text-brand-accent mb-0.5"><i class="fas fa-history mr-1"></i> Membalas Status ${mediaType}</div>
+            <div class="text-[10px] text-gray-300 truncate max-w-[200px] line-clamp-1 italic">"${storyText}"</div>
+        </div>`;
+    }
+
+
+    // --- TANGANI TEKS, GAMBAR, ATAU AUDIO ---
+    let contentHtml = '';
+    if (rawMessage.startsWith('[IMG]')) {
+        let urlPart = rawMessage.replace('[IMG]', '');
+        let cap = '';
+        if (urlPart.includes('||CAP||')) {
+            const parts = urlPart.split('||CAP||');
+            urlPart = parts[0]; cap = parts[1];
+        }
+        contentHtml = `<img src="${urlPart}" class="max-w-[200px] rounded-lg cursor-pointer mt-1 shadow-sm" onclick="openLightbox('${urlPart}')">`;
+        if (cap) contentHtml += `<div class="mt-1.5 text-white/95 text-[11.5px]">${formatCaption(cap)}</div>`;
+    } else if (rawMessage.startsWith('[VIDEO]')) {
+        let urlPart = rawMessage.replace('[VIDEO]', '');
+        let cap = '';
+        if (urlPart.includes('||CAP||')) {
+            const parts = urlPart.split('||CAP||');
+            urlPart = parts[0]; cap = parts[1];
+        }
+        contentHtml = `<video src="${urlPart}" class="max-w-[200px] rounded-lg mt-1 shadow-sm" controls playsinline></video>`;
+        if (cap) contentHtml += `<div class="mt-1.5 text-white/95 text-[11.5px]">${formatCaption(cap)}</div>`;
+    } else if (rawMessage.startsWith('[AUDIO]')) {
+        const url = rawMessage.replace('[AUDIO]', '');
+        contentHtml = `<audio controls class="w-[200px] mt-1 h-8"><source src="${url}" type="audio/webm"></audio>`;
+    } else if (rawMessage.startsWith('[SISTEM]')) {
+        contentHtml = `<div class="text-center w-full my-2"><span class="bg-brand-info/20 text-brand-info font-bold text-[10px] px-4 py-1.5 rounded-full">${rawMessage.replace('[SISTEM] ', '')}</span></div>`;
+        container.insertAdjacentHTML('beforeend', contentHtml);
+        return; // Hentikan di sini karena pesan sistem posisinya di tengah
+    } else {
+        contentHtml = formatCaption(rawMessage);
+    }
+
+    // Gabungkan label "Diteruskan" + kotak balasan + isi pesan utama
+    contentHtml = forwardedHtml + replyHtml + contentHtml;
+
+    // --- TANGANI NAMA PENGIRIM (Khusus di Grup) ---
+    let senderNameHtml = '';
+    if (!isMe && activeGroupId) {
+        const vidCountBubble = allVideosData.filter(v => String(v.user_id) === String(msg.sender_id)).length;
+        // Ambil exp dari Supabase, hitung levelnya secara otomatis
+        const expData = msg.profiles?.exp || 0;
+        const senderLevel = hitungStatusLevel(expData).level;
+        
+        const badgeBubble = getBadgeByLevelAndVideos(senderLevel, vidCountBubble);
+        const safeNickname = escapeHTML(msg.profiles?.nickname || 'Anggota');
+        senderNameHtml = `<div onclick="const w = document.getElementById('floating-widget'); if(w) w.classList.add('opacity-0', 'pointer-events-none', 'translate-y-8', 'scale-95'); viewUserProfile('${msg.sender_id}')" class="text-[10px] text-[#00F0FF] font-bold mb-1 flex items-center gap-0.5 cursor-pointer hover:underline w-max">${safeNickname} <span class="scale-[0.7] origin-left inline-flex">${badgeBubble}</span></div>`;
+    }
+
+    const html = `
+    <div class="flex ${align} w-full message-anim mb-2" id="msg-chat-${msg.id}">
+        <div class="max-w-[80%] flex flex-col relative" ontouchstart="mulaiLongPress('${msg.id}', '${msg.sender_id}')" ontouchend="hancurkanLongPress()" oncontextmenu="event.preventDefault();">
+            <div class="${bubbleColor} px-3 py-2 rounded-2xl shadow-lg relative group">
+                ${senderNameHtml}
+                <div class="text-[12px] leading-relaxed break-words">${contentHtml}</div>
+                <div class="text-[9px] text-white/50 text-right mt-1.5 float-right flex items-center gap-1">
+                    ${time}
+                    ${isMe ? `<i class="fas fa-check${(msg.is_read || msg.is_read === 'true') ? '-double text-brand-info' : ''}"></i>` : ''}
+                </div>
+            </div>
+        </div>
+    </div>`;
+
+    container.insertAdjacentHTML('beforeend', html);
+}
+
+
+
+// ==========================================
+// 2. FUNGSI KIRIM PESAN (DENGAN PENJAGA PINTU GRUP)
+// ==========================================
+async function sendMessageRoom() {
+if (!activeChatUserId && !activeGroupId) return;
+const input = document.getElementById('chat-room-input');
+const message = input.value.trim();
+if (!message) return;
+
+const isGroup = !!activeGroupId;
+const targetId = isGroup ? activeGroupId : activeChatUserId;
+
+// --- PENJAGA PINTU GRUP ANTI-KICK ---
+if (isGroup) {
+const { data: checkMember } = await supabaseClient.from('group_members').select('user_id').eq('group_id', targetId).eq('user_id', currentUser.id).single();
+if (!checkMember) {
+await customAlert("Anda tidak dapat mengirim pesan karena telah dikeluarkan dari grup ini.");
+input.value = ''; // Kosongkan inputan
+closeChatRoom(); // Usir paksa dari layar chat
+return;
+}
+}
+
+// Tangkap data reply jika sedang membalas pesan
+const currentReplyId = replyingToMsgId;
+const currentReplyName = replyingToMsgName;
+const currentReplyText = replyingToMsgText;
+cancelChatReply();
+
+// Kosongkan input dan reset ikon ke mikrofon
+input.value = '';
+input.style.height = 'auto';
+sendTypingStatus();
+
+// Sisipkan format balasan
+let finalMessage = message;
+if (currentReplyId) {
+const safeName = currentReplyName.replace(/\|\|/g, "").replace(/\]/g, "");
+const safeText = currentReplyText.replace(/\|\|/g, "").replace(/\]/g, "");
+finalMessage = `[REPLY:${currentReplyId}||${safeName}||${safeText}]\n${message}`;
+}
+
+// Tampilkan pesan sementara ke layar biar terasa responsif
+const tempId = 'temp-' + Date.now();
+const tempMsg = { id: tempId, sender_id: currentUser.id, message: finalMessage, created_at: new Date().toISOString() };
+appendMessageBubble(tempMsg);
+scrollToBottomChat();
+
+// Kirim ke database Supabase
+try {
+const insertData = { sender_id: currentUser.id, message: finalMessage };
+if (isGroup) insertData.group_id = targetId;
+else insertData.receiver_id = targetId;
+
+const { error } = await supabaseClient.from('messages').insert(insertData);
+if (error) throw error;
+
+tambahExp(2); // <--- SISTEM EXP
+
+} catch (err) {
+showToast("Gagal mengirim pesan", "error");
+// Hapus gelembung sementara jika gagal
+const bubble = document.getElementById(`msg-chat-${tempId}`);
+if(bubble) bubble.remove();
+}
+}
+
+// ==========================================
+// FITUR WHATSAPP: STORY VIEWS & LIKES STATS
+// ==========================================
+
+// 1. Rekam jejak (Seen) saat menonton story teman
+async function recordStoryView(storyId) {
+if (!currentUser) return;
+try {
+// Kirim ke Supabase. Pastikan tabel story_views punya constraint UNIQUE untuk kombinasi story_id dan user_id
+await supabaseClient.from('story_views').insert({
+story_id: storyId,
+user_id: currentUser.id
+});
+} catch (err) {
+// Abaikan jika error (biasanya error karena constraint unique = user sudah pernah nonton dan tercatat)
+}
+}
+
+// 2. Tarik angka total Views dan Likes
+async function fetchStoryStats(storyId) {
+try {
+const { count: viewCount } = await supabaseClient.from('story_views').select('*', { count: 'exact', head: true }).eq('story_id', storyId);
+const { count: likeCount } = await supabaseClient.from('story_likes').select('*', { count: 'exact', head: true }).eq('story_id', storyId);
+
+document.getElementById('story-view-count').innerText = viewCount || 0;
+document.getElementById('story-like-count').innerText = likeCount || 0;
+document.getElementById('modal-view-count').innerText = viewCount || 0;
+document.getElementById('modal-like-count').innerText = likeCount || 0;
+} catch(e) {}
+}
+
+// 3. Buka/Tutup Drawer Animasi
+function openStoryStatsModal() {
+    history.pushState({ popup: 'story_stats' }, null, '#storystats'); // <-- HISTORY BARU
+    const modal = document.getElementById('modal-story-stats');
+    modal.classList.remove('translate-y-full');
+    if (typeof pauseStoryForReply === 'function') pauseStoryForReply(); 
+    loadStoryStatsData(); 
+}
+
+
+function closeStoryStatsModal(dariTombolBack = false) {
+    const modal = document.getElementById('modal-story-stats');
+    modal.classList.add('translate-y-full');
+    if (typeof resumeStoryAfterReply === 'function') resumeStoryAfterReply(); 
+
+    // SINKRONISASI TOMBOL BACK HP
+    if (!dariTombolBack && window.location.hash === '#storystats') {
+        history.back();
+    }
+}
+
+
+// 4. Pindah Tab Dilihat / Disukai
+function switchStoryStatTab(tab) {
+const listViews = document.getElementById('story-views-list');
+const listLikes = document.getElementById('story-likes-list');
+const tabViews = document.getElementById('tab-views');
+const tabLikes = document.getElementById('tab-likes');
+
+if (tab === 'views') {
+listViews.classList.replace('hidden', 'block');
+listLikes.classList.replace('block', 'hidden');
+tabViews.className = 'font-bold text-brand-info text-sm border-b-2 border-brand-info pb-1 transition-colors';
+tabLikes.className = 'font-bold text-gray-500 text-sm border-b-2 border-transparent pb-1 transition-colors';
+} else {
+listLikes.classList.replace('hidden', 'block');
+listViews.classList.replace('block', 'hidden');
+tabLikes.className = 'font-bold text-brand-accent text-sm border-b-2 border-brand-accent pb-1 transition-colors';
+tabViews.className = 'font-bold text-gray-500 text-sm border-b-2 border-transparent pb-1 transition-colors';
+}
+}
+
+// 5. Muat dan Render Daftar User
+async function loadStoryStatsData() {
+const story = currentActiveStories[currentActiveStories.currentIndex];
+if(!story) return;
+
+const listViews = document.getElementById('story-views-list');
+const listLikes = document.getElementById('story-likes-list');
+
+listViews.innerHTML = '<div class="text-center py-10"><i class="fas fa-spinner fa-spin text-brand-info text-2xl"></i></div>';
+listLikes.innerHTML = '<div class="text-center py-10"><i class="fas fa-spinner fa-spin text-brand-accent text-2xl"></i></div>';
+
+try {
+// Ambil ID orang-orangnya dari database
+const { data: viewsData } = await supabaseClient.from('story_views').select('user_id, created_at').eq('story_id', story.id).order('created_at', { ascending: false });
+const { data: likesData } = await supabaseClient.from('story_likes').select('user_id, created_at').eq('story_id', story.id).order('created_at', { ascending: false });
+
+// Render Profilnya
+await renderStatsList(viewsData, listViews, 'Belum ada yang melihat status ini.');
+await renderStatsList(likesData, listLikes, 'Belum ada yang menyukai status ini.', true);
+
+} catch (err) {
+listViews.innerHTML = '<div class="text-center py-5 text-xs text-red-500">Gagal memuat data.</div>';
+listLikes.innerHTML = '<div class="text-center py-5 text-xs text-red-500">Gagal memuat data.</div>';
+}
+}
+
+async function renderStatsList(dataArray, container, emptyMsg, isLike = false) {
+if (!dataArray || dataArray.length === 0) {
+container.innerHTML = `<div class="flex flex-col items-center justify-center py-10 opacity-50"><i class="fas ${isLike ? 'fa-heart text-brand-accent' : 'fa-eye text-brand-info'} text-4xl mb-3"></i><p class="text-xs text-white font-bold">${emptyMsg}</p></div>`;
+return;
+}
+
+const userIds = dataArray.map(d => d.user_id);
+const { data: profiles } = await supabaseClient.from('profiles').select('id, nickname, avatar_url').in('id', userIds);
+
+if(!profiles) return;
+
+let html = '';
+dataArray.forEach(item => {
+const p = profiles.find(x => x.id === item.user_id);
+if(p) {
+const ava = p.avatar_url || `https://ui-avatars.com/api/?name=${p.nickname}&background=1A1133&color=fff`;
+const icon = isLike ? '<i class="fas fa-heart text-brand-accent text-[12px] animate-pulse"></i>' : '<i class="fas fa-eye text-brand-info text-[12px]"></i>';
+html += `
+<div class="flex items-center p-3 hover:bg-white/5 rounded-2xl transition-all cursor-pointer border-b border-white/5 last:border-0" onclick="closeStoryStatsModal(); closeStoryViewer(); setTimeout(() => viewUserProfile('${p.id}'), 300);">
+<img src="${ava}" loading="lazy" class="w-10 h-10 rounded-full object-cover border border-white/10 shrink-0">
+<div class="ml-3 flex-1 flex justify-between items-center">
+<div>
+<h4 class="font-bold text-white text-xs">${p.nickname}</h4>
+<p class="text-[9px] text-gray-500 mt-0.5">${timeAgo(item.created_at)}</p>
+</div>
+<div class="bg-black/30 p-2 rounded-full border border-white/5">${icon}</div>
+</div>
+</div>`;
+}
+});
+container.innerHTML = html;
+}
+
+// ==========================================
+// DATABASE DATABASE RIPPER (ANTI PENIPU)
+// ==========================================
+async function muatDataRipper() {
+const linkAPI = "/api/ripper";
+const container = document.getElementById('ripper-container');
+const dataTersimpan = localStorage.getItem('ripperCache');
+if (dataTersimpan) { dataRipperGlobal = JSON.parse(dataTersimpan); renderRippers(dataRipperGlobal, false); }
+else { container.innerHTML = '<div class="text-center py-10 text-xs text-brand-info animate-pulse"><i class="fas fa-sync fa-spin mb-2 text-2xl"></i><br>Menyiapkan Database Pertama Kali...</div>'; }
+try { const respon = await fetch(linkAPI); const dataBaru = await respon.json(); localStorage.setItem('ripperCache', JSON.stringify(dataBaru)); dataRipperGlobal = dataBaru; renderRippers(dataRipperGlobal, false); }
+catch (error) { if (!dataTersimpan) { container.innerHTML = '<div class="text-center py-10 text-xs text-red-500"><i class="fas fa-exclamation-triangle mb-2 text-2xl"></i><br>Gagal terhubung ke database.</div>'; } }
+}
+
+// 🤖 HELPER 1: Generator Link Gambar PNG dari Biznet GIO Storage Lu Om
+function getKategoriLogoURL(name) {
+name = name.toLowerCase().trim().replace(/\s+/g, '-'); // Ubah "AU2 ID" jadi "au2-id" biar aman di URL
+
+// 📢 GANTI LINK DI BAWAH INI pake link folder storage Biznet lu tempat nyimpen ikon-ikonnya ya Om!
+const folderStorageLu = "https://nos.wjv-1.neo.id/au2hub/icons/";
+
+return `${folderStorageLu}${name}.png`;
+}
+
+
+// 🤖 HELPER 2: Scanner Otomatis Warna Neon Ikon biar berwarna layaknya Gojek
+function getIconColorClass(name, isActive) {
+if (isActive) return '!text-white'; // Kalau aktif, ikonnya dipaksa putih bersih
+name = name.toLowerCase();
+if (name === 'semua') return 'text-brand-info';
+if (name.includes('joki')) return 'text-yellow-400';
+if (name.includes('netflix') || name.includes('flix')) return 'text-red-500';
+if (name.includes('game') || name.includes('dance') || name.includes('bingo')) return 'text-brand-purple';
+return 'text-brand-accent';
+}
+
+// 🤖 FUNGSI SAKTI: Pendeteksi Kategori Otomatis lewat Judul Produk
+function getCategoryName(p) {
+let kat = p.category_name || p.brand_name || p.group_name || p.category || p.kategori || p.brand || p.type;
+if (!kat && p.title) {
+kat = p.title.trim().split(' ')[0];
+}
+return kat ? kat.trim().toUpperCase() : 'LAINNYA';
+}
+
+
+function pilihKategori(kat) {
+kategoriAktif = kat;
+document.getElementById('serviceSearch').value = '';
+renderKategoriTabs(xoftwareProdukGlobal); // Refresh status tombol aktif
+
+let dataFiltered = xoftwareProdukGlobal;
+if (kat !== 'Semua') {
+dataFiltered = xoftwareProdukGlobal.filter(p => getCategoryName(p) === kat);
+}
+renderProdukXoftware(dataFiltered);
+}
+
+
+// 🔥 VARIABEL GLOBAL UNTUK KALKULASI HARGA & VARIASI
+let currentProductPrice = 0;
+let currentProductQty = 1;
+let currentSelectedVariation = ""; // Nyimpen nama variasi yang dipilih
+
+// 🌟 FUNGSI BARU: KLIK VARIASI
+function pilihVariasi(namaVariasi, hargaVariasi) {
+    currentSelectedVariation = namaVariasi;
+    currentProductPrice = parseFloat(hargaVariasi) || 0;
+    
+    // Refresh warna tombol biar keliatan mana yang aktif
+    if (window.renderVariasiButtons) window.renderVariasiButtons(namaVariasi);
+    
+    updateHargaLayar(); // Update harga ke layar
+}
+
+// 1. Fungsi Tombol Plus Minus
+function ubahJumlahPesan(delta) {
+let newQty = currentProductQty + delta;
+if (newQty < 1) newQty = 1;
+currentProductQty = newQty;
+
+const elQty = document.getElementById('detail-qty');
+if (elQty) elQty.value = currentProductQty; // Pake .value karena sekarang jadi input box
+
+updateHargaLayar();
+}
+
+// 2. Fungsi Diketik Manual (Real-time)
+function inputJumlahPesan(val) {
+    let parsed = parseInt(val);
+    // Jika kosong / dihapus, anggap sementara jumlahnya 1 agar tidak NaN
+    if (isNaN(parsed) || parsed < 1) {
+        currentProductQty = 1;
+    } else {
+        currentProductQty = parsed;
+    }
+    updateHargaLayar();
+}
+
+// Lakukan hal yang persis sama pada fungsi inputJumlahPasar(val)
+function inputJumlahPasar(val) {
+    let parsed = parseInt(val);
+    if (isNaN(parsed) || parsed < 1) {
+        currentPasarQty = 1; 
+    } else {
+        currentPasarQty = parsed; 
+    }
+    updateHargaPasarLayar();
+}
+
+// 3. Fungsi Mencegah User Ngetik Huruf Aneh / Dikosongin
+function validasiJumlah(el) {
+let parsed = parseInt(el.value);
+if (isNaN(parsed) || parsed < 1) {
+parsed = 1;
+el.value = 1;
+}
+currentProductQty = parsed;
+updateHargaLayar();
+}
+
+// 4. Update Angka Harga (Dengan Coretan Marketing + Potongan Kasta Live)
+function updateHargaLayar() {
+let totalPrice = currentProductPrice * currentProductQty;
+
+// Rumus hitung harga coret otomatis biar sinkron
+let baseHargaCoret = Math.ceil((currentProductPrice * 1.3) / 1000) * 1000;
+if (currentProductPrice > 100000) baseHargaCoret = Math.ceil((currentProductPrice * 1.2) / 5000) * 5000;
+if (currentProductPrice <= 5000) baseHargaCoret = currentProductPrice + 2500;
+
+let totalHargaCoret = baseHargaCoret * currentProductQty;
+
+// 👑 DETEKSI DISKON KASTA LIVE: Potong harga asli langsung di layar laci produk!
+const badgeDiscount = document.getElementById('detail-discount-badge');
+if (currentUser && badgeDiscount) {
+const videoSaya = allVideosData.filter(v => v.user_id === currentUser.id).length;
+if (videoSaya >= 100) {
+totalPrice = Math.floor(totalPrice * 0.9); // Sunat 10%
+badgeDiscount.innerHTML = `<i class="fas fa-percentage mr-1"></i> DISKON LEGEND 10% AKTIF`;
+badgeDiscount.classList.remove('hidden');
+} else if (videoSaya >= 50) {
+totalPrice = Math.floor(totalPrice * 0.95); // Sunat 5%
+badgeDiscount.innerHTML = `<i class="fas fa-percentage mr-1"></i> DISKON MASTER 5% AKTIF`;
+badgeDiscount.classList.remove('hidden');
+} else {
+badgeDiscount.classList.add('hidden');
+}
+}
+
+// Suntikkan ke elemen teks laci produk
+document.getElementById('detail-product-price').innerHTML = `<span class="text-gray-500 line-through text-sm font-medium mr-2">Rp ${totalHargaCoret.toLocaleString('id-ID')}</span>Rp ${totalPrice.toLocaleString('id-ID')}`;
+}
+
+
+// ==========================================
+// SISTEM PEMBERSIH MEMORI OTOMATIS (ANTI QUOTA EXCEEDED)
+// ==========================================
+function autoCleanLocalStorage() {
+    let keysToRemove = [];
+    let likeCount = 0;
+
+    for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && (key.startsWith('liked_') || key.startsWith('comment_liked_') || key.startsWith('story_liked_'))) {
+            likeCount++;
+            keysToRemove.push(key);
+        }
+    }
+    // Jika jumlah riwayat Like di HP sudah lebih dari 300, bersihkan untuk mencegah memori penuh
+    if (likeCount > 300) {
+        keysToRemove.forEach(k => localStorage.removeItem(k));
+        console.log(`[System] ${likeCount} Cache memori dibersihkan.`);
+    }
+}
+
+// ==========================================
+// INISIALISASI HALAMAN (WAJIB ADA AGAR WEB BERJALAN)
+// ==========================================
+document.addEventListener('DOMContentLoaded', () => {
+  autoCleanLocalStorage(); // Eksekusi pembersih memori saat buka web
+  
+  setTimeout(() => {
+        if(document.getElementById('btn-bayar-langganan')) {
+            pilihPaketSeller('tahunan'); // Set default awal beserta biaya gateway-nya
+        }
+    }, 1000);
+
+  // Logika Routing Halaman Utama
+  let tabAwal = window.location.hash.substring(1);
+  if (!tabAwal) {
+    tabAwal = localStorage.getItem('lastTab') || 'home';
+  }
+
+  // --- LOGIKA BARU: Pisahkan parameter dan atur tab background yang benar ---
+  let tabMurni = tabAwal.split('?')[0]; // Membuang "?id=..." agar sistem tidak bingung
+
+  // Mengarahkan background ke tab aslinya agar tidak nyasar ke home saat link laci dibuka
+  if (tabMurni === 'detailpasar') tabMurni = 'pasar';
+  if (tabMurni === 'detail') tabMurni = 'layanan';
+  if (tabMurni === 'invoice') tabMurni = 'pesanan';
+
+  switchTab(tabMurni, null, false);
+
+  checkSession();
+supabaseClient.auth.onAuthStateChange((event, session) => {
+      // Jika token gagal diperbarui atau kadaluarsa
+      if (event === 'TOKEN_REFRESHED' && !session) {
+          handleLogout(); 
+          showToast("Sesi kamu telah berakhir. Silakan login kembali.", "error");
+      } 
+      // Jika user terdeteksi logout (misal dari tab browser lain)
+      else if (event === 'SIGNED_OUT') {
+          currentUser = null;
+          userProfile = null;
+          checkSession(); 
+      }
+  });
+  muatDataRipper();
+  loadInfoLayanan();
+  loadDataRekber();
+
+
+  // ==========================================
+  // FITUR PWA & SERVICE WORKER (AUTO-UPDATE RADAR)
+  // ==========================================
+
+  // 1. Daftarkan Service Worker & Pasang Radar Update
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js')
+      .then((reg) => {
+        console.log('SW Berhasil Terdaftar!');
+
+        // 📡 RADAR DETEKSI UPDATE CODINGAN
+        reg.onupdatefound = () => {
+          const installingWorker = reg.installing;
+          installingWorker.onstatechange = () => {
+            if (installingWorker.state === 'installed') {
+              if (navigator.serviceWorker.controller) {
+                // Jika player sudah punya versi lama, dan versi baru sukses terpasang:
+                if (typeof showToast === 'function') {
+                    showToast("Aplikasi diperbarui! Memuat ulang sistem...", "success");
+                }
+                
+                // Beri jeda 1.5 detik agar notifikasi terbaca, lalu paksa auto-refresh
+                setTimeout(() => {
+                  window.location.reload(true); 
+                }, 1500);
+              }
+            }
+          };
+        };
+      })
+      .catch((err) => console.log('SW Gagal:', err));
+  }
+
+  let deferredPrompt;
+  const btnInstallContainer = document.getElementById('install-container');
+  const btnInstallManual = document.getElementById('btn-install-manual');
+
+  // 2. Cek apakah sudah diakses dari Aplikasi PWA
+  function isPWAInstalled() {
+      return window.matchMedia('(display-mode: standalone)').matches || 
+             window.navigator.standalone || 
+             document.referrer.includes('android-app://');
+  }
+
+  // Tampilkan tombol HANYA jika dibuka di browser biasa
+  if (btnInstallContainer) {
+      if (isPWAInstalled()) {
+          btnInstallContainer.classList.add('hidden');
+      } else {
+          btnInstallContainer.classList.remove('hidden');
+      }
+  }
+
+  // 3. Tangkap Event Install PWA (Untuk Android/Chrome)
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    if (btnInstallContainer) btnInstallContainer.classList.remove('hidden');
+  });
+
+  // 4. Logika Klik Tombol Install
+  if (btnInstallManual) {
+    btnInstallManual.addEventListener('click', async () => {
+      if (deferredPrompt) {
+        // Munculkan dialog bawaan Android
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        console.log('Hasil install:', outcome);
+        
+        // Kosongkan prompt
+        deferredPrompt = null;
+      } else {
+        // Fallback untuk iOS / Safari yang tidak mendukung prompt otomatis
+        alert("Untuk menginstal di iPhone/iPad:\n\n1. Ketuk ikon 'Bagikan' (Share) di menu bawah.\n2. Pilih 'Tambahkan ke Layar Utama' (Add to Home Screen).");
+      }
+    });
+  }
+
+  // 5. Sembunyikan tombol HANYA jika benar-benar berhasil di-install
+  window.addEventListener('appinstalled', () => {
+    console.log('Aplikasi sukses terinstal!');
+    if (btnInstallContainer) btnInstallContainer.classList.add('hidden');
+  });
+
+
+});
+
+// 🤖 HELPER SAKTI V3: Sistem Lencana Kasta Tertinggi + Rebirth Loop Tanpa Batas 5 Tahun Awet (VERSI IKON SAJA)
+function getBadgeByLevelAndVideos(level, count) {
+    // Kasta Legend: Level 10 ke atas ATAU 100+ video
+    if (level >= 10 || count >= 100) {
+        return `<span class="inline-flex items-center justify-center bg-gradient-to-r from-yellow-400 via-orange-500 to-yellow-600 text-black w-[18px] h-[18px] rounded-full text-[10px] ml-1 shadow-[0_0_12px_rgba(250,204,21,1)] border border-yellow-300" title="Legend"><i class="fas fa-crown"></i></span>`;
+    }
+    // Kasta Master: Level 5 ke atas ATAU 50+ video
+    if (level >= 5 || count >= 50) {
+        return `<span class="inline-flex items-center justify-center bg-gradient-to-r from-brand-accent to-[#ff758c] text-white w-[18px] h-[18px] rounded-full text-[10px] ml-1 shadow-[0_0_10px_rgba(255,0,122,0.8)] border border-brand-accent" title="Master"><i class="fas fa-fire"></i></span>`;
+    }
+    // Kasta Elite: Level 3 ke atas ATAU 25+ video
+    if (level >= 3 || count >= 25) {
+        return `<span class="inline-flex items-center justify-center bg-gradient-to-r from-brand-purple to-[#c471ed] text-white w-[18px] h-[18px] rounded-full text-[10px] ml-1 shadow-[0_0_10px_rgba(138,43,226,0.8)] border border-brand-purple" title="Elite"><i class="fas fa-star"></i></span>`;
+    }
+    // Kasta Verified: Level 2 ke atas ATAU 10+ video
+    if (level >= 2 || count >= 10) {
+        return `<span class="inline-flex items-center justify-center bg-gradient-to-r from-brand-info to-[#89f7fe] text-brand-dark w-[18px] h-[18px] rounded-full text-[10px] ml-1 shadow-[0_0_10px_rgba(0,240,255,0.8)] border border-brand-info" title="Verified"><i class="fas fa-check-circle"></i></span>`;
+    }
+    return '';
+}
+
+
+
+
+// 🤖 GAMIFIKASI V2: Logika Papan Peringkat Dual Mode (Top Creator & Top Sultan)
+function openLeaderboardModal() {
+    // [BARU] Matikan efek floating video secara halus seperti pada tombol Upload
+    if (document.body.classList.contains('video-focused')) {
+        toggleGlobalAudio(true);
+    }
+
+    const modal = document.getElementById('modal-leaderboard');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+
+    // 🔥 KUNCI FIX: Sembunyikan tombol chat mengambang biar gak kehalang
+    const chatBtn = document.querySelector('button[onclick="toggleWidget()"]');
+    if (chatBtn) chatBtn.classList.add('hidden');
+
+    history.pushState({ popup: 'leaderboard' }, null, '#leaderboard');
+
+    // Auto buka tab Creator saat pertama di-klik
+    switchLeaderboardTab('creator');
+}
+
+function closeLeaderboardModal() {
+    if (window.location.hash === '#leaderboard') {
+        // Biarkan sistem 'back' HP (popstate) yang mengeksekusi penutupan agar sinkron!
+        history.back(); 
+    } else {
+        // Jika tidak ada di history, baru tutup secara manual
+        const modal = document.getElementById('modal-leaderboard');
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+
+        // 🔥 KUNCI FIX: Munculin balik tombol chat mengambangnya pas ditutup
+        const chatBtn = document.querySelector('button[onclick="toggleWidget()"]');
+        if (chatBtn) chatBtn.classList.remove('hidden');
+    }
+}
+
+// 🧠 MESIN PENARIK DATA LEADERBOARD DUAL-TAB JADI TRIPLE-TAB
+async function switchLeaderboardTab(tab) {
+    const btnCreator = document.getElementById('tab-lb-creator');
+    const btnLevel = document.getElementById('tab-lb-level');
+    const btnSultan = document.getElementById('tab-lb-sultan');
+    
+    const containerCreator = document.getElementById('leaderboard-container-creator');
+    const containerLevel = document.getElementById('leaderboard-container-level');
+    const containerSultan = document.getElementById('leaderboard-container-sultan');
+
+    // Reset Semua Tombol ke Default (Tidak Aktif)
+    const normalClass = 'flex-1 py-2.5 text-[10px] font-bold text-gray-500 hover:text-white rounded-xl transition-all bg-transparent shadow-none border border-transparent hover:border-white/10';
+    btnCreator.className = normalClass;
+    btnLevel.className = normalClass;
+    btnSultan.className = normalClass;
+
+    // Sembunyikan Semua Wadah List
+    containerCreator.classList.replace('block', 'hidden');
+    containerLevel.classList.replace('block', 'hidden');
+    containerSultan.classList.replace('block', 'hidden');
+
+    if (tab === 'creator') {
+        btnCreator.className = 'flex-1 py-2.5 text-[10px] font-bold text-white bg-brand-accent rounded-xl shadow-[0_0_15px_rgba(255,0,122,0.4)] transition-all';
+        containerCreator.classList.replace('hidden', 'block');
+        containerCreator.innerHTML = '<div class="text-center py-10"><i class="fas fa-spinner fa-spin text-brand-accent text-2xl"></i></div>';
+
+        // Fetch Data Creator (Gunakan cache ram allVideosData Anda)
+        if (allVideosData.length === 0) {
+            try {
+                const res = await fetch('/api/get-videos');
+                let dataDariSheet = await res.json();
+                dataDariSheet = dataDariSheet.map(v => { v.id = v.id || v.video_id || v.ID || 'vid_' + Math.random().toString(36).substr(2, 9); return v; });
+                allVideosData = dataDariSheet.filter(v => !blockedUsersList.includes(v.user_id));
+            } catch(e) {
+                containerCreator.innerHTML = '<p class="text-center text-xs text-red-500 py-10">Gagal memuat ranking.</p>';
+                return;
+            }
+        }
+
+        const userStats = {};
+        allVideosData.forEach(vid => {
+            if (!userStats[vid.user_id]) {
+                userStats[vid.user_id] = { user_id: vid.user_id, nickname: vid.nickname || "Player", avatar_url: vid.avatar_url || "", videoCount: 0 };
+            }
+            userStats[vid.user_id].videoCount++;
+        });
+
+        const sortedLeaderboard = Object.values(userStats).sort((a, b) => b.videoCount - a.videoCount);
+        if (sortedLeaderboard.length === 0) {
+            containerCreator.innerHTML = '<p class="text-center text-xs text-gray-500 py-10">Belum ada kompetisi dimulai.</p>';
+            return;
+        }
+
+        containerCreator.innerHTML = sortedLeaderboard.map((user, index) => {
+            const rank = index + 1;
+            const ava = user.avatar_url || `https://ui-avatars.com/api/?name=${user.nickname}&background=1A1133&color=fff`;
+            let rankBadge = `<span class="text-xs font-bold text-gray-500 w-6 text-center">#${rank}</span>`;
+            if (rank === 1) rankBadge = '<div class="w-6 flex justify-center text-xl text-yellow-400"><i class="fas fa-medal"></i></div>';
+            if (rank === 2) rankBadge = '<div class="w-6 flex justify-center text-xl text-gray-300"><i class="fas fa-medal"></i></div>';
+            if (rank === 3) rankBadge = '<div class="w-6 flex justify-center text-xl text-amber-600"><i class="fas fa-medal"></i></div>';
+
+            return `
+            <div onclick="viewUserProfile('${user.user_id}'); closeLeaderboardModal();" class="flex items-center justify-between p-3 bg-black/20 border border-white/5 rounded-2xl hover:bg-white/10 transition-all cursor-pointer">
+                <div class="flex items-center gap-3 min-w-0 flex-1">
+                    ${rankBadge}
+                    <img src="${ava}" class="w-9 h-9 rounded-full object-cover border border-white/10 shrink-0">
+                    <div class="truncate">
+                        <h4 class="font-bold text-white text-xs flex items-center gap-1">@${user.nickname}</h4>
+                        <p class="text-[10px] text-gray-400 mt-0.5">${user.videoCount} Video dibagikan</p>
+                    </div>
+                </div>
+                <div class="text-right ml-2 shrink-0">
+                    <span class="text-[10px] font-extrabold bg-brand-accent/10 text-brand-accent px-2.5 py-1 rounded-lg border border-brand-accent/20 tracking-wider">${user.videoCount * 10} XP</span>
+                </div>
+            </div>`;
+        }).join('');
+
+    } else if (tab === 'level') {
+        // 🔥 TAB BARU: TOP LEVEL SINKRONISASI SUPABASE
+        btnLevel.className = 'flex-1 py-2.5 text-[10px] font-bold text-white bg-brand-purple rounded-xl shadow-[0_0_15px_rgba(162,119,255,0.4)] transition-all';
+        containerLevel.classList.replace('hidden', 'block');
+        containerLevel.innerHTML = '<div class="text-center py-10"><i class="fas fa-spinner fa-spin text-brand-purple text-2xl"></i></div>';
+
+        try {
+            // Tarik 50 Player dengan EXP Tertinggi dari database Supabase
+            const { data: topPlayers, error } = await supabaseClient
+                .from('profiles')
+                .select('*')
+                .order('exp', { ascending: false })
+                .limit(50);
+
+            if (error || !topPlayers || topPlayers.length === 0) {
+                containerLevel.innerHTML = '<p class="text-center text-xs text-gray-500 py-10">Belum ada data level terdeteksi.</p>';
+                return;
+            }
+
+            containerLevel.innerHTML = topPlayers.map((player, index) => {
+                const rank = index + 1;
+                const ava = player.avatar_url || `https://ui-avatars.com/api/?name=${player.nickname}&background=1A1133&color=fff`;
+                const statusLevel = hitungStatusLevel(player.exp || 0);
+                
+                // Hitung jumlah video untuk validasi Kasta Badge lencana dewa
+                const videoCount = allVideosData.filter(v => v.user_id === player.id).length;
+                const statusBadge = getBadgeByLevelAndVideos(statusLevel.level, videoCount);
+
+                let rankBadge = `<span class="text-xs font-bold text-gray-500 w-6 text-center">#${rank}</span>`;
+                if (rank === 1) rankBadge = '<div class="w-6 flex justify-center text-xl text-yellow-400 drop-shadow-[0_0_6px_rgba(250,204,21,0.5)]"><i class="fas fa-trophy"></i></div>';
+                if (rank === 2) rankBadge = '<div class="w-6 flex justify-center text-xl text-gray-300"><i class="fas fa-award"></i></div>';
+                if (rank === 3) rankBadge = '<div class="w-6 flex justify-center text-xl text-amber-600"><i class="fas fa-award"></i></div>';
+
+                return `
+                <div onclick="viewUserProfile('${player.id}'); closeLeaderboardModal();" class="flex items-center justify-between p-3 bg-black/20 border border-white/5 rounded-2xl hover:bg-white/10 transition-all cursor-pointer">
+                    <div class="flex items-center gap-3 min-w-0 flex-1">
+                        ${rankBadge}
+                        <img src="${ava}" class="w-9 h-9 rounded-full object-cover border border-white/10 shrink-0">
+                        <div class="truncate">
+                            <h4 class="font-bold text-white text-xs flex items-center gap-1">@${player.nickname} ${statusBadge}</h4>
+                            <p class="text-[10px] text-gray-400 mt-0.5">Total akumulasi: ${statusLevel.exp.toLocaleString('id-ID')} EXP</p>
+                        </div>
+                    </div>
+                    <div class="text-right ml-2 shrink-0">
+                        <span class="text-[11px] font-black bg-gradient-to-r from-brand-info to-brand-purple text-white px-3 py-1 rounded-xl border border-white/10 tracking-tight shadow-md">Lv. ${statusLevel.level}</span>
+                    </div>
+                </div>`;
+            }).join('');
+
+        } catch (err) {
+            containerLevel.innerHTML = '<p class="text-center text-xs text-red-500 py-10">Gagal menarik data database level.</p>';
+        }
+
+    } else if (tab === 'sultan') {
+        btnSultan.className = 'flex-1 py-2.5 text-[10px] font-bold text-brand-dark bg-gradient-to-r from-yellow-400 to-yellow-600 rounded-xl shadow-[0_0_15px_rgba(250,204,21,0.4)] transition-all';
+        containerSultan.classList.replace('hidden', 'block');
+        containerSultan.innerHTML = '<div class="text-center py-10"><i class="fas fa-spinner fa-spin text-yellow-400 text-2xl"></i></div>';
+
+        try {
+            // 1. Tarik data dari Layanan Admin (orders)
+            const reqAdmin = supabaseClient.from('orders').select('user_id, price').eq('status', 'selesai');
+            // 2. Tarik data dari Pasar Player (orders_player)
+            const reqPlayer = supabaseClient.from('orders_player').select('user_id, price').eq('status', 'selesai');
+            
+            // Eksekusi berbarengan agar cepat
+            const [resAdmin, resPlayer] = await Promise.all([reqAdmin, reqPlayer]);
+            
+            // Gabungkan kedua data pesanan
+            const allOrders = [...(resAdmin.data || []), ...(resPlayer.data || [])];
+
+            if (allOrders.length === 0) {
+                containerSultan.innerHTML = '<p class="text-center text-xs text-gray-500 py-10">Belum ada data sultan yang memborong.</p>';
+                return;
+            }
+
+            // Hitung total gabungan pengeluaran
+            const sultanStats = {};
+            allOrders.forEach(o => {
+                if (!sultanStats[o.user_id]) sultanStats[o.user_id] = { user_id: o.user_id, totalSpent: 0 };
+                sultanStats[o.user_id].totalSpent += Number(o.price);
+            });
+
+            const sortedSultans = Object.values(sultanStats).sort((a, b) => b.totalSpent - a.totalSpent);
+            const userIds = sortedSultans.map(s => s.user_id);
+            const { data: profiles } = await supabaseClient.from('profiles').select('id, nickname, avatar_url').in('id', userIds);
+
+            containerSultan.innerHTML = sortedSultans.map((sultan, index) => {
+                const rank = index + 1;
+                const p = profiles?.find(x => x.id === sultan.user_id);
+                const nickname = p?.nickname || "Player";
+                const ava = p?.avatar_url || `https://ui-avatars.com/api/?name=${nickname}&background=1A1133&color=fff`;
+
+                let rankBadge = `<span class="text-xs font-bold text-gray-500 w-6 text-center">#${rank}</span>`;
+                if (rank === 1) rankBadge = '<div class="w-6 flex justify-center text-xl text-yellow-400"><i class="fas fa-crown"></i></div>';
+                if (rank === 2) rankBadge = '<div class="w-6 flex justify-center text-xl text-gray-300"><i class="fas fa-medal"></i></div>';
+                if (rank === 3) rankBadge = '<div class="w-6 flex justify-center text-xl text-amber-600"><i class="fas fa-medal"></i></div>';
+
+                return `
+                <div onclick="viewUserProfile('${sultan.user_id}'); closeLeaderboardModal();" class="flex items-center justify-between p-3 bg-black/20 border border-white/5 rounded-2xl hover:bg-white/10 transition-all cursor-pointer relative overflow-hidden">
+                    <div class="flex items-center gap-3 min-w-0 flex-1 relative z-10">
+                        ${rankBadge}
+                        <img src="${ava}" class="w-9 h-9 rounded-full object-cover border border-white/10 shrink-0">
+                        <div class="truncate">
+                            <h4 class="font-bold text-white text-xs truncate">@${nickname}</h4>
+                            <p class="text-[10px] text-yellow-500 mt-0.5 font-bold tracking-wide">Rp ${sultan.totalSpent.toLocaleString('id-ID')}</p>
+                        </div>
+                    </div>
+                    <div class="text-right ml-2 shrink-0 relative z-10">
+                        ${rank === 1 ? 
+                            `<span class="text-[10px] font-extrabold bg-gradient-to-tr from-[#FF007A] to-[#A277FF] text-white px-2 py-1 rounded-lg border border-[#FF007A]/50 shadow-[0_0_10px_rgba(255,0,122,0.6)]">VVIP</span>` 
+                        : rank <= 3 ? 
+                            `<span class="text-[10px] font-extrabold bg-gradient-to-tr from-yellow-400 to-yellow-600 text-black px-2 py-1 rounded-lg border border-yellow-300 shadow-[0_0_10px_rgba(250,204,21,0.4)]">SULTAN</span>`
+                        : 
+                            `<span class="text-[10px] font-extrabold bg-white/10 text-gray-300 px-2 py-1 rounded-lg border border-white/20">RICH</span>`
+                        }
+                    </div>
+                </div>`;
+            }).join('');
+        } catch(e) {
+            containerSultan.innerHTML = '<p class="text-center text-xs text-red-500 py-10">Gagal menarik data Sultan.</p>';
+        }
+    }
+}
+
+
+
+
+// 📦 LOGIKA TRACKER PESANAN (REAL-TIME DATABASE)
+async function loadOrderTracker(userId) {
+// Sembunyikan semua badge saat loading awal
+const bBayar = document.getElementById('badge-track-bayar'); if(bBayar) bBayar.classList.add('hidden');
+const bProses = document.getElementById('badge-track-proses'); if(bProses) bProses.classList.add('hidden');
+const bSelesai = document.getElementById('badge-track-selesai'); if(bSelesai) bSelesai.classList.add('hidden');
+
+try {
+    // Tarik data dari DUA tabel sekaligus
+    const req1 = supabaseClient.from('orders').select('status').eq('user_id', userId);
+    const req2 = supabaseClient.from('orders_player').select('status').eq('user_id', userId);
+    
+    // Gabungkan hasilnya
+    const [res1, res2] = await Promise.all([req1, req2]);
+    const data = [...(res1.data || []), ...(res2.data || [])];
+
+    if (data && data.length > 0) {
+        let countBayar = data.filter(o => o.status === 'PENDING').length;
+        let countProses = data.filter(o => o.status === 'proses' || o.status === 'SUCCESS').length; 
+        let countSelesai = data.filter(o => o.status === 'selesai').length;
+
+        if (countBayar > 0 && bBayar) { bBayar.innerText = countBayar; bBayar.classList.remove('hidden'); }
+        if (countProses > 0 && bProses) { bProses.innerText = countProses; bProses.classList.remove('hidden'); }
+        if (countSelesai > 0 && bSelesai) { bSelesai.innerText = countSelesai; bSelesai.classList.remove('hidden'); }
+    }
+} catch (err) {
+    console.log("Tabel orders belum siap, abaikan tracker.");
+}
+
+}
+
+function closeRiwayatPesanan(dariTombolBackHP = false) {
+    const modal = document.getElementById('modal-riwayat-pesanan');
+    
+    if (!dariTombolBackHP && window.location.hash === '#riwayat') {
+        history.back(); // Pancing popstate
+    } else {
+        if (modal) {
+            // Beri efek halus memudar saat ditutup
+            modal.style.opacity = '0';
+            modal.style.transition = 'opacity 0.3s ease';
+            
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+                modal.style.opacity = '1'; // Reset
+            }, 300);
+        }
+    }
+}
+
+
+
+// 📦 LOGIKA KLIK PESANAN ALA SHOPEE (PESANAN DITERIMA)
+// VARIABEL GLOBAL UNTUK MENYIMPAN DATA TAGIHAN AKTIF
+let activeOrderIdToPay = null;
+let activeOrderPriceToPay = 0;
+let activeOrderNameToPay = "";
+let activeOrderTable = 'orders';
+let activeOrderSellerId = null; // <--- WAJIB DITAMBAHKAN
+let activeOrderProductId = null; // <--- WAJIB DITAMBAHKAN
+let intervalJemputBola = null; // <--- VAR GLOBAL UNTUK MENCEGAH KEBOCORAN MEMORI
+let activeChannelPembayaran = null; // <--- VAR GLOBAL UNTUK MENCEGAH KEBOCORAN WEBSOCKET
+
+async function cekStatusPesanan(kategori) {
+    if (!currentUser) return showToast("Silakan login terlebih dahulu.", "error");
+
+    const modal = document.getElementById('modal-riwayat-pesanan');
+    const container = document.getElementById('riwayat-pesanan-list');
+    
+    // Ambil judul header laci
+    const headerTitle = modal.querySelector('h3'); 
+    
+    // Buka Modal & Tampilkan Loading
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    history.pushState({ popup: 'riwayat_pesanan' }, null, '#riwayat');
+
+    container.innerHTML = '<div class="flex flex-col items-center justify-center mt-20"><i class="fas fa-spinner fa-spin text-brand-info text-4xl mb-3"></i><p class="text-[10px] text-gray-500 font-bold tracking-widest uppercase">Memuat Database...</p></div>';
+
+    try {
+        // Query untuk DUA Tabel
+        let q1 = supabaseClient.from('orders').select('*').eq('user_id', currentUser.id);
+        let q2 = supabaseClient.from('orders_player').select('*').eq('user_id', currentUser.id);
+
+        if (kategori === 'bayar') {
+            q1 = q1.eq('status', 'PENDING');
+            q2 = q2.eq('status', 'PENDING');
+            headerTitle.innerHTML = '<i class="fas fa-wallet text-red-500"></i> TAGIHAN BELUM BAYAR';
+        } else if (kategori === 'proses') {
+            q1 = q1.in('status', ['proses', 'SUCCESS']);
+            q2 = q2.in('status', ['proses', 'SUCCESS']);
+            headerTitle.innerHTML = '<i class="fas fa-box text-brand-info"></i> PESANAN DIPROSES';
+        } else if (kategori === 'selesai') {
+            q1 = q1.eq('status', 'selesai');
+            q2 = q2.eq('status', 'selesai');
+            headerTitle.innerHTML = '<i class="fas fa-check-circle text-brand-success"></i> PESANAN SELESAI';
+        } else {
+            headerTitle.innerHTML = '<i class="fas fa-receipt text-brand-info"></i> SEMUA RIWAYAT';
+        }
+
+        const [res1, res2] = await Promise.all([q1, q2]);
+        
+        // Beri tanda ini data dari tabel mana
+        let data1 = (res1.data || []).map(o => ({...o, table_source: 'orders'}));
+        let data2 = (res2.data || []).map(o => ({...o, table_source: 'orders_player'}));
+
+        // Gabungkan dan urutkan dari yang terbaru
+        let combinedData = [...data1, ...data2];
+        combinedData.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+        if (combinedData.length > 0) {
+            container.innerHTML = combinedData.map(order => {
+                let statusColor = ''; let icon = ''; let teksStatus = order.status.toUpperCase();
+
+                if (order.status === 'selesai') { statusColor = 'text-brand-success bg-brand-success/10 border-brand-success/30'; icon = 'fa-check-circle'; } 
+                else if (order.status === 'proses' || order.status === 'SUCCESS') { 
+                    statusColor = 'text-brand-info bg-brand-info/10 border-brand-info/30'; icon = 'fa-box'; teksStatus = 'DIPROSES'; 
+                    if (order.status === 'SUCCESS') supabaseClient.from(order.table_source).update({status: 'proses'}).eq('id', order.id).then();
+                } 
+                else if (order.status === 'PENDING') { statusColor = 'text-gray-400 bg-gray-500/10 border-gray-500/30'; icon = 'fa-wallet'; teksStatus = 'PENDING'; }
+                else if (order.status === 'DIBATALKAN') { 
+                    statusColor = 'text-gray-500 bg-gray-600/10 border-gray-600/30'; 
+                    icon = 'fa-times-circle'; 
+                    teksStatus = 'DIBATALKAN'; 
+                }
+
+                // Gunakan escapeHTML dan escape kutip tunggal agar HTML tidak patah
+                let namaAman = escapeHTML(order.product_name).replace(/'/g, "\\'");
+                let clickAction = `onclick="bukaDetailPesananDinamis('${order.id}', '${namaAman}', ${order.price}, '${order.status}', '${order.table_source}', '${order.seller_id || ''}', '${order.product_id || ''}')" class="cursor-pointer hover:border-brand-accent/50"`;
+
+                return `
+                <div ${clickAction} class="bg-brand-dark/50 border border-white/5 p-4 rounded-2xl flex flex-col gap-2 relative overflow-hidden transition-all hover:border-white/10 ${order.status === 'PENDING' ? 'border-red-500/20 shadow-[0_0_10px_rgba(239,68,68,0.1)]' : ''}">
+                    <div class="flex justify-between items-start z-10">
+                        <h4 class="text-xs font-bold text-white line-clamp-2 pr-3">${order.product_name}</h4>
+                        <span class="text-[9px] font-extrabold px-2 py-1 rounded-md border whitespace-nowrap flex items-center gap-1 ${statusColor} shrink-0 shadow-sm"><i class="fas ${icon}"></i> ${teksStatus}</span>
+                    </div>
+                    <div class="flex justify-between items-end mt-2 z-10 border-t border-white/5 pt-2.5">
+                        <span class="text-[9px] text-gray-400"><i class="far fa-clock mr-1"></i>${timeAgo(order.created_at)}</span>
+                        <span class="text-[13px] font-extrabold text-brand-accent">Rp ${Number(order.price).toLocaleString('id-ID')}</span>
+                    </div>
+                </div>`;
+            }).join('');
+        } else {
+            container.innerHTML = `
+<div class="flex flex-col items-center justify-center mt-24 text-center px-6">
+    <div class="relative w-24 h-24 mb-5 flex items-center justify-center">
+        <div class="absolute inset-0 bg-brand-info/10 rounded-full blur-xl"></div>
+        <div class="w-20 h-20 bg-brand-info/10 rounded-full flex items-center justify-center border border-brand-info/20 backdrop-blur-md relative z-10 shadow-lg">
+            <i class="fas fa-box-open text-4xl text-brand-info/70"></i>
+        </div>
+    </div>
+    <h4 class="text-white font-extrabold text-base mb-1 tracking-tight">Belum Ada Transaksi</h4>
+    <p class="text-xs text-gray-500 leading-relaxed">Sepertinya kamu belum memiliki data pesanan di kategori ini.</p>
+</div>`;
+        }
+    } catch (e) {
+        container.innerHTML = '<div class="text-center mt-20 text-red-500 text-xs">Gagal menarik data dari server.</div>';
+    }
+
+}
+
+
+// 👥 AUTO-UPDATE FOTO PROFIL GRUP (REAL-TIME STORAGE)
+async function handleGroupAvatarUpload(event) {
+const file = event.target.files[0];
+if (!file || !activeGroupId) return;
+
+showToast("Mengupdate foto profil grup...", "info");
+
+try {
+// 1. Ambil URL unggahan dari API URL lu
+const pathLengkap = `groups/${activeGroupId}/avatar_${Date.now()}`;
+const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent(pathLengkap)}&filetype=${encodeURIComponent(file.type)}`);
+const dataUrl = await resUrl.json();
+
+// 2. Upload file fisik ke storage Biznet GIO
+await fetch(dataUrl.uploadUrl, {
+method: 'PUT',
+body: file,
+headers: { 'Content-Type': file.type, 'x-amz-acl': 'public-read' }
+});
+
+// 3. Tembak perubahan URL foto baru ke database Supabase
+const { error } = await supabaseClient
+.from('groups')
+.update({ avatar_url: dataUrl.finalVideoUrl })
+.eq('id', activeGroupId);
+
+if (error) throw error;
+
+// 4. Ubah tampilan layar secara instan tanpa reload
+document.getElementById('info-group-avatar').src = dataUrl.finalVideoUrl;
+showToast("Foto profil grup berhasil diperbarui!", "success");
+loadChatList(); // Refresh daftar pesan masuk di latar belakang
+
+} catch(err) {
+showToast("Gagal memperbarui foto grup.", "error");
+}
+}
+
+        
+        function getBadgeByVideoCount(count) {
+    return getBadgeByLevelAndVideos(0, count);
+}
+
+let isRekberLoaded = false;
+
+async function loadDataRekber(forceRefresh = false) {
+    if (isRekberLoaded && !forceRefresh) return;
+    
+    const container = document.getElementById('rekber-dynamic-container');
+    if (forceRefresh) {
+        container.innerHTML = '<div class="flex flex-col items-center justify-center py-10 mt-10"><i class="fas fa-spinner fa-spin text-brand-purple text-3xl mb-3"></i><span class="text-xs text-gray-500 font-bold tracking-widest">MEMUAT ULANG...</span></div>';
+    }
+
+    try {
+        const configRes = await fetch('/api/get-config');
+        const config = await configRes.json();
+        if (!config.gasUrl) throw new Error("Link GAS tidak ditemukan");
+
+        const res = await fetch(`${config.gasUrl}?action=get_rekber`);
+        const result = await res.json();
+
+        if (result.status === 'success' && result.data.length > 0) {
+            const data = result.data;
+            let htmlOutput = '';
+
+            // 1. RENDER PROSEDUR
+            const dataProsedur = data.find(d => d.Kategori.toLowerCase() === 'prosedur');
+            if (dataProsedur) {
+                // Mengubah \n di spreadsheet menjadi <li>
+                const prosedurList = dataProsedur.Deskripsi.split(/\\n/).map(item => `<li>${item.trim()}</li>`).join('');
+                
+                htmlOutput += `
+                <div class="bg-brand-card rounded-2xl p-5 border border-white/5 mb-6 relative overflow-hidden">
+                    <div class="absolute -right-4 -top-4 text-6xl text-${dataProsedur.Warna} opacity-5"><i class="fas ${dataProsedur.Ikon}"></i></div>
+                    <h3 class="font-bold text-${dataProsedur.Warna} text-sm mb-3 relative z-10"><i class="fas ${dataProsedur.Ikon} mr-2"></i> ${dataProsedur.Judul}</h3>
+                    <ul class="list-decimal list-inside text-xs text-gray-300 space-y-2 mb-4 relative z-10 leading-relaxed">
+                        ${prosedurList}
+                    </ul>
+                    <div class="bg-black/30 rounded-xl p-3 text-xs text-gray-400 border border-white/5 relative z-10">
+                        <i class="fas fa-clock text-brand-accent mr-2"></i> <strong>Jam Operasional:</strong> Harap chat admin terlebih dahulu.
+                    </div>
+                </div>`;
+            }
+
+            // 2. RENDER KONTAK
+            const dataKontak = data.filter(d => d.Kategori.toLowerCase() === 'kontak');
+            if (dataKontak.length > 0) {
+                htmlOutput += `<h3 class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">Kontak Resmi (Anti Clone)</h3><div class="space-y-3 mb-6">`;
+                
+                dataKontak.forEach(k => {
+                    htmlOutput += `
+                    <a href="${k.Link}" target="_blank" class="flex items-center p-4 bg-brand-card rounded-2xl border border-${k.Warna.replace(/[\[\]#]/g, '')}/20 active:scale-95 transition-transform">
+                        <div class="bg-${k.Warna.replace(/[\[\]#]/g, '')}/10 w-10 h-10 rounded-full flex items-center justify-center mr-4"><i class="${k.Ikon.includes('fa-') ? k.Ikon : 'fas ' + k.Ikon} text-${k.Warna} text-lg"></i></div>
+                        <div><div class="font-bold text-white text-sm">${k.Judul}</div><div class="text-[11px] text-gray-400 mt-0.5">${k.Deskripsi}</div></div>
+                    </a>`;
+                });
+                htmlOutput += `</div>`;
+            }
+
+            // 3. RENDER GRUP
+            const dataGrup = data.filter(d => d.Kategori.toLowerCase() === 'grup');
+            if (dataGrup.length > 0) {
+                htmlOutput += `<h3 class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">Grup Komunitas</h3><div class="grid grid-cols-2 gap-3 pb-4">`;
+                
+                dataGrup.forEach((g, index) => {
+                    // Jika grup Facebook atau item terakhir dan ganjil, buat memanjang (col-span-2)
+                    let isFullWidth = g.Judul.toLowerCase().includes('facebook') || (dataGrup.length % 2 !== 0 && index === dataGrup.length - 1);
+                    let gridClass = isFullWidth ? 'col-span-2' : '';
+                    let layoutClass = isFullWidth ? 'p-3 flex items-center justify-center' : 'py-3 px-2 flex flex-col items-center justify-center';
+                    let iconClass = isFullWidth ? 'text-xl mr-3' : 'text-2xl mb-1.5';
+
+                    htmlOutput += `
+                    <a href="${g.Link}" target="_blank" class="${gridClass} bg-${g.Warna.replace(/[\[\]#]/g, '')}/10 border border-${g.Warna.replace(/[\[\]#]/g, '')}/20 rounded-2xl text-center active:scale-95 transition-transform ${layoutClass}">
+                        <i class="${g.Ikon.includes('fa-') ? g.Ikon : 'fas ' + g.Ikon} text-${g.Warna} ${iconClass}"></i>
+                        <div class="${isFullWidth ? 'text-xs' : 'text-[11px]'} font-bold text-white">${g.Judul}</div>
+                    </a>`;
+                });
+                htmlOutput += `</div>`;
+            }
+
+            container.innerHTML = htmlOutput;
+            isRekberLoaded = true;
+            if(forceRefresh) showToast("Data Admin AU2Hub berhasil diperbarui!", "success");
+
+        } else {
+            throw new Error("Data Kosong");
+        }
+    } catch (e) {
+        console.error(e);
+        container.innerHTML = '<div class="text-center py-6 text-xs text-red-500 bg-brand-card rounded-2xl border border-red-500/20">Gagal memuat data dari server.</div>';
+    }
+}
+
+// Fitur Buka/Tutup Deskripsi di Pusat Informasi
+function toggleInfoDesc(idx) {
+    const desc = document.getElementById(`info-desc-${idx}`);
+    const btn = document.getElementById(`info-btn-${idx}`);
+    
+    if (desc) {
+        if (desc.classList.contains('line-clamp-3')) {
+            // Jika sedang tertutup -> Buka
+            desc.classList.remove('line-clamp-3');
+            if (btn) btn.innerHTML = 'Tutup Selengkapnya ▲';
+        } else {
+            // Jika sedang terbuka -> Tutup
+            desc.classList.add('line-clamp-3');
+            if (btn) btn.innerHTML = 'Lihat Selengkapnya ▼';
+        }
+    }
+}
+
+
+// --- JURUS SWIPE LEADERBOARD ---
+let lbTouchStartX = 0;
+let lbTouchStartY = 0; // Tambahan untuk mendeteksi sumbu Y (vertikal)
+const lbModal = document.getElementById('modal-leaderboard');
+
+lbModal.addEventListener('touchstart', e => {
+    lbTouchStartX = e.changedTouches[0].screenX;
+    lbTouchStartY = e.changedTouches[0].screenY;
+}, {passive: true});
+
+lbModal.addEventListener('touchend', e => {
+    let touchEndX = e.changedTouches[0].screenX;
+    let touchEndY = e.changedTouches[0].screenY;
+    
+    let diffX = lbTouchStartX - touchEndX;
+    let diffY = lbTouchStartY - touchEndY;
+    
+    // Validasi: Geser sumbu X harus > 50px DAN Geser sumbu Y harus < 50px (mencegah tab pindah saat sedang scroll ke bawah/atas)
+    if (Math.abs(diffX) > 50 && Math.abs(diffY) < 50) { 
+        const tabs = ['creator', 'level', 'sultan'];
+        let currentTab = '';
+        
+        // Cek tab mana yang lagi aktif
+        if (!document.getElementById('leaderboard-container-creator').classList.contains('hidden')) currentTab = 'creator';
+        else if (!document.getElementById('leaderboard-container-level').classList.contains('hidden')) currentTab = 'level';
+        else currentTab = 'sultan';
+
+        let currentIndex = tabs.indexOf(currentTab);
+        
+        if (diffX > 0) { 
+            // Swipe ke KIRI = Pindah ke TAB BERIKUTNYA
+            if (currentIndex < 2) switchLeaderboardTab(tabs[currentIndex + 1]);
+        } else { 
+            // Swipe ke KANAN = Pindah ke TAB SEBELUMNYA (TYPO DIPERBAIKI)
+            if (currentIndex > 0) switchLeaderboardTab(tabs[currentIndex - 1]); 
+        }
+    }
+}, {passive: true});
+
+
+// 🔥 FUNGSI PEMBUKA MODAL INVOICE (DIPERBARUI KE V3 MODERN)
+function bukaDetailPesananDinamis(orderId, productName, price, status, tableSource, sellerId, productId) {
+    activeOrderIdToPay = orderId;
+    activeOrderPriceToPay = price;
+    activeOrderNameToPay = productName;
+    activeOrderTable = tableSource; 
+    activeOrderSellerId = sellerId || null; 
+    activeOrderProductId = productId || null; 
+
+    const modal = document.getElementById('modal-detail-pesanan');
+    
+    document.getElementById('detail-nama-layanan').innerText = productName;
+    document.getElementById('detail-harga-layanan').innerText = `Rp ${price.toLocaleString('id-ID')}`;
+    document.getElementById('detail-ref-id').innerText = `NIKKY - ${orderId}`;
+    
+    const statusBadge = document.getElementById('detail-status-badge');
+    const actionBelumBayar = document.getElementById('action-belum-bayar');
+    const actionDiproses = document.getElementById('action-diproses');
+    const pesanStatusLain = document.getElementById('pesan-status-lain');
+
+    // === 1. KONTROL ANIMASI TRACKER TIMELINE (DIRESET DULU) ===
+    const trackLine = document.getElementById('track-line');
+    const dot2 = document.getElementById('step-2-dot');
+    const text2 = document.getElementById('step-2-text');
+    const dot3 = document.getElementById('step-3-dot');
+    const text3 = document.getElementById('step-3-text');
+
+    // Matikan transisi sementara biar reset-nya instan tanpa efek aneh
+    trackLine.style.transition = 'none';
+    trackLine.style.width = '0%';
+    
+    // Reset Dot 2 (Balikin angkanya!)
+    dot2.className = 'w-7 h-7 rounded-full bg-white/20 border-[3px] border-[#121319] flex items-center justify-center text-gray-400 font-bold text-[10px] transition-colors duration-500';
+    dot2.innerHTML = '2'; 
+    text2.className = 'text-[9px] font-bold text-gray-500 tracking-widest uppercase transition-colors';
+    
+    // Reset Dot 3 (Balikin angkanya!)
+    dot3.className = 'w-7 h-7 rounded-full bg-white/20 border-[3px] border-[#121319] flex items-center justify-center text-gray-400 font-bold text-[10px] transition-colors duration-500';
+    dot3.innerHTML = '3';
+    text3.className = 'text-[9px] font-bold text-gray-500 tracking-widest uppercase transition-colors';
+
+    // Set Teks & Tombol sesuai Status
+    if (status === 'PENDING') {
+        statusBadge.innerText = 'BELUM BAYAR';
+        statusBadge.className = 'bg-red-500/20 text-red-500 border-red-500/50';
+        actionBelumBayar.classList.replace('hidden', 'flex'); 
+        if(actionDiproses) actionDiproses.classList.replace('flex', 'hidden'); 
+        pesanStatusLain.classList.add('hidden'); 
+    } else if (status === 'proses') {
+        statusBadge.innerText = 'DIPROSES';
+        statusBadge.className = 'bg-brand-info/20 text-brand-info border-brand-info/50';
+        actionBelumBayar.classList.replace('flex', 'hidden'); 
+        if(actionDiproses) actionDiproses.classList.replace('hidden', 'flex'); 
+        pesanStatusLain.classList.remove('hidden'); 
+        pesanStatusLain.innerText = 'Toko sedang mengerjakan pesananmu. Klik tombol di bawah jika barang sudah diterima.';
+    } else if (status === 'selesai') {
+        statusBadge.innerText = 'SELESAI';
+        statusBadge.className = 'bg-brand-success/20 text-brand-success border-brand-success/50';
+        actionBelumBayar.classList.replace('flex', 'hidden'); 
+        if(actionDiproses) actionDiproses.classList.replace('flex', 'hidden'); 
+        pesanStatusLain.classList.remove('hidden'); 
+        pesanStatusLain.innerText = 'Pesanan ini telah lunas dan selesai. Terima kasih!';
+    }
+
+    // === 2. TAMPILKAN MODAL KE LAYAR (BUKA GEMBOK DISPLAY: NONE) ===
+    modal.classList.replace('hidden', 'flex');
+    
+    // Pastikan laci naik mulus dari bawah
+    setTimeout(() => {
+        modal.classList.remove('translate-y-full');
+    }, 10);
+
+    // === 3. JALANKAN ANIMASI TRACKER (SETELAH BROWSER SELESAI RENDER) ===
+    // Delay 150ms ini sangat krusial biar browser "napas" ngerender DOM sebelum animasi ditarik
+    setTimeout(() => {
+        // Nyalakan lagi transisinya
+        trackLine.style.transition = 'all 0.7s ease-in-out';
+
+        if (status === 'proses') {
+            trackLine.style.width = '50%'; 
+            dot2.className = 'w-7 h-7 rounded-full bg-brand-info border-[3px] border-[#121319] flex items-center justify-center text-brand-dark shadow-[0_0_10px_rgba(70,179,255,0.5)]';
+            dot2.innerHTML = '<i class="fas fa-check text-[10px] font-bold"></i>';
+            text2.className = 'text-[9px] font-bold text-white tracking-widest uppercase transition-colors';
+        } else if (status === 'selesai') {
+            trackLine.style.width = '100%'; 
+            dot2.className = 'w-7 h-7 rounded-full bg-brand-info border-[3px] border-[#121319] flex items-center justify-center text-brand-dark shadow-[0_0_10px_rgba(70,179,255,0.5)]';
+            dot2.innerHTML = '<i class="fas fa-check text-[10px] font-bold"></i>';
+            text2.className = 'text-[9px] font-bold text-white tracking-widest uppercase transition-colors';
+            
+            // Titik 3 nyala belakangan biar dramatis
+            setTimeout(() => {
+                dot3.className = 'w-7 h-7 rounded-full bg-brand-info border-[3px] border-[#121319] flex items-center justify-center text-brand-dark shadow-[0_0_10px_rgba(70,179,255,0.5)]';
+                dot3.innerHTML = '<i class="fas fa-check text-[10px] font-bold"></i>';
+                text3.className = 'text-[9px] font-bold text-white tracking-widest uppercase transition-colors';
+            }, 400); 
+        }
+    }, 150);
+    
+    history.pushState({ popup: 'detail_pesanan' }, null, '#invoice');
+}
+
+
+
+// 🔥 FUNGSI MENUTUP MODAL INVOICE (DIPERBARUI DENGAN BACK DETECTION)
+function closeDetailPesanan(dariTombolBackHP = false) {
+    const modal = document.getElementById('modal-detail-pesanan');
+    
+    // HENTIKAN PENCARIAN API SAAT LACI DITUTUP AGAR SERVER TIDAK DDOS
+    if (intervalJemputBola) {
+        clearInterval(intervalJemputBola);
+        intervalJemputBola = null;
+    }
+    
+    // --- CEGAH KEBOCORAN WEBSOCKET SUPABASE ---
+    if (activeChannelPembayaran) {
+        supabaseClient.removeChannel(activeChannelPembayaran);
+        activeChannelPembayaran = null;
+    }
+
+    if (!dariTombolBackHP && window.location.hash === '#invoice') {
+        // Jika dari tombol (X) atau Batal, biarkan history.back() memanggil popstate
+        history.back();
+    } else {
+        // Jika popstate sudah bekerja (Back HP), berikan efek halus sebelum menghilang
+        modal.style.opacity = '0';
+        modal.style.transition = 'opacity 0.3s ease';
+        
+        setTimeout(() => {
+            modal.classList.replace('flex', 'hidden');
+            modal.style.opacity = '1'; // Reset untuk dibuka lagi nanti
+        }, 300);
+    }
+}
+
+// EKSEKUSI PEMBATALAN PESANAN DARI DATABASE
+async function batalkanPesanan() {
+    if (!activeOrderIdToPay) return;
+    
+    const konfirmasi = await customConfirm("Apakah kamu yakin ingin membatalkan pesanan ini?");
+    
+    if (konfirmasi) {
+        closeDetailPesanan(); // Tutup popup invoice
+        showToast("Membatalkan pesanan...", "info");
+        
+        try {
+            // PERBAIKAN: Gunakan 'activeOrderTable' bukan 'orders'
+            // Agar bisa membatalkan pesanan baik dari Toko Admin maupun Pasar Player
+            const { error } = await supabaseClient.from(activeOrderTable).delete().eq('id', activeOrderIdToPay);
+            if (error) throw error;
+            
+            showToast("Pesanan berhasil dibatalkan.", "success");
+            
+            // Refresh layar List dan Angka Badge di Profile
+            cekStatusPesanan('bayar'); 
+            loadOrderTracker(currentUser.id); 
+            
+        } catch (err) {
+            showToast("Gagal membatalkan pesanan.", "error");
+        }
+    }
+}
+
+
+// EKSEKUSI PENYELESAIAN PESANAN DARI PEMBELI (VERSI FINAL)
+async function selesaikanPesanan() {
+    if (!activeOrderIdToPay) return;
+    
+    let pesanKonfirmasi = "Pesanan sudah dikerjakan dan diterima dengan baik?";
+    if (activeOrderTable === 'orders_player') {
+        pesanKonfirmasi += "\n\nDana akan masuk ke Saldo Tertahan Penjual dan cair dalam 24 jam.";
+    }
+    
+    const konfirmasi = await customConfirm(pesanKonfirmasi);
+    if (!konfirmasi) return;
+    
+    closeDetailPesanan(); 
+    showToast("Menyelesaikan pesanan...", "info");
+    
+    try {
+        const waktuSekarang = new Date().toISOString();
+        
+        // Hanya update 'status' untuk order Admin
+        let dataUpdate = { 
+            status: 'selesai' 
+        };
+
+        // HANYA masukkan 'waktu_selesai' dan 'dana_cair' jika ini transaksi di Pasar Player
+        if (activeOrderTable === 'orders_player') {
+            dataUpdate.waktu_selesai = waktuSekarang;
+            dataUpdate.dana_cair = false;
+        }
+        
+        const { error: orderError } = await supabaseClient
+            .from(activeOrderTable) 
+            .update(dataUpdate)
+            .eq('id', activeOrderIdToPay);
+
+        if (orderError) throw orderError;
+
+        if (activeOrderTable === 'orders_player') {
+            showToast("Pesanan selesai! Dana masuk ke Saldo Tertahan Penjual (H+1).", "success");
+        } else {
+            showToast("Pesanan selesai! Terima kasih.", "success");
+        }
+        
+        tambahExp(50);
+        // 🔥 FIX: Otomatis pindahkan layar user ke tab "SELESAI" agar tidak panik
+        cekStatusPesanan('selesai'); 
+        loadOrderTracker(currentUser.id); 
+        
+    } catch (err) {
+        showToast("Gagal menyelesaikan pesanan: " + err.message, "error");
+    }
+}
+
+
+async function checkoutXoftwarePay(namaProduk, harga, deskripsi, sellerId = null, productId = null) {
+    if (!currentUser) return showToast("Silakan login dulu untuk membeli!", "error");
+
+    const konfirmasi = await customConfirm(`Lanjutkan pesanan untuk:\n\n${namaProduk}\n\nTotal: Rp ${harga.toLocaleString('id-ID')} via QRIS Otomatis?`);
+    if (!konfirmasi) return;
+
+    // Pindah layar ke mode Loading QRIS DULUAN biar mulus transisinya
+    switchTab('pembayaran');
+    
+    // Kembalikan kotak QRIS ke mode loading (jika sebelumnya bekas dipakai)
+    const wadahPembayaran = document.getElementById('qris-container');
+    if (wadahPembayaran) {
+        wadahPembayaran.innerHTML = `
+        <div class="text-center flex flex-col items-center animate-pulse w-full">
+            <div class="w-20 h-20 bg-brand-info/10 rounded-full flex items-center justify-center mb-4 border border-brand-info/30 shadow-[0_0_30px_rgba(70,179,255,0.3)]">
+                <i class="fas fa-qrcode text-brand-info text-4xl"></i>
+            </div>
+            <p class="text-[10px] text-gray-400 font-extrabold tracking-widest uppercase mt-2">Menghubungkan ke Gateway...</p>
+        </div>`;
+    }
+
+    try {
+        // 1. Simpan antrean ke Supabase
+        const targetTabel = sellerId ? 'orders_player' : 'orders';
+        const dataInsert = { user_id: currentUser.id, product_name: namaProduk, price: harga, status: 'PENDING', product_id: productId };
+        if (sellerId) dataInsert.seller_id = sellerId;
+
+        const { data: orderData, error: orderError } = await supabaseClient.from(targetTabel).insert(dataInsert).select().single();
+        if (orderError) throw orderError;
+        
+        if (sellerId) {
+            const namaAsli = namaProduk.replace("[PASAR] ", "");
+            const produkTerjual = globalDataPasar.find(p => p.title === namaAsli && p.user_id === sellerId);
+            if (produkTerjual && (produkTerjual.category === 'Akun' || produkTerjual.category === 'Item' || produkTerjual.category === 'APK Premium')) {
+                await supabaseClient.from('player_products').delete().eq('id', produkTerjual.id);
+            }
+        }
+
+        // 2. Minta QRIS Xoftware
+        const responsePG = await fetch('/api/create-qris', { 
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ order_id: orderData.id, amount: harga, product_name: namaProduk, customer_name: userProfile?.nickname || 'Player' })
+        });
+
+        const dataPG = await responsePG.json();
+        if (!dataPG.success) throw new Error("Gagal mengambil tagihan Xoftware");
+
+        // 3. Generate Link Gambar QRIS
+        const qrImgUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(dataPG.qris_string)}`;
+
+        // 4. RENDER UI APPLE PAY STYLE
+        const noWA = "6283815584661";
+        const teksWA = encodeURIComponent(`Halo Admin, pesanan saya sudah masuk via QRIS Otomatis untuk:\n\n*${namaProduk}*\nID: NIKKY - ${orderData.id}\n\n(Berikut screenshot bukti transfernya)`);
+
+        if (wadahPembayaran) {
+            wadahPembayaran.innerHTML = `
+                <div class="absolute top-0 inset-x-0 h-32 bg-gradient-to-b from-brand-info/10 to-transparent pointer-events-none z-0"></div>
+                
+                <div class="text-[9px] font-extrabold text-white bg-white/10 px-3 py-1 rounded-full border border-white/20 uppercase tracking-widest mb-6 relative z-10 backdrop-blur-sm">XOFTWARE PAY</div>
+                
+                <div class="text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-1 relative z-10">Total Tagihan</div>
+                <div class="flex items-center justify-center gap-3 mb-6 relative z-10 w-full px-6">
+                    <div id="pay-total" class="text-4xl font-black text-white tracking-tighter drop-shadow-md truncate">Rp ${harga.toLocaleString('id-ID')}</div>
+                    <button onclick="salinNominal()" id="btn-salin" class="bg-brand-info/20 text-brand-info w-8 h-8 rounded-full flex items-center justify-center active:scale-90 transition-all shrink-0">
+                        <i class="fas fa-copy text-xs"></i>
+                    </button>
+                    <input type="hidden" id="nominal-asli" value="${harga}">
+                </div>
+                
+                <div class="bg-white p-4 rounded-[1.5rem] mb-6 shadow-[0_0_40px_rgba(255,255,255,0.15)] relative z-10 group overflow-hidden">
+                    <img id="qris-image-target" src="${qrImgUrl}" alt="QRIS" class="w-48 h-48 object-cover rounded-xl relative z-10">
+                    <div class="absolute inset-0 bg-black/70 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-sm cursor-pointer z-20">
+                        <i class="fas fa-camera text-white text-3xl mb-2 drop-shadow-md"></i>
+                        <span class="text-white text-[10px] font-extrabold tracking-widest uppercase">Screenshot QR</span>
+                    </div>
+                </div>
+                
+                <div class="w-full bg-black/40 border border-white/10 rounded-2xl p-4 mb-6 relative z-10 text-left">
+                    <div class="flex justify-between items-start text-xs mb-2">
+                        <span class="text-gray-400 shrink-0">Pesanan</span>
+                        <span class="text-white font-bold text-right pl-4 line-clamp-2">${namaProduk}</span>
+                    </div>
+                    <div class="flex justify-between items-center text-xs border-t border-white/5 pt-2">
+                        <span class="text-gray-400">Admin Rekber</span>
+                        <span class="text-brand-success font-bold flex items-center gap-1"><i class="fas fa-shield-check"></i> NIKKY (Aman)</span>
+                    </div>
+                </div>
+                
+                <a id="wa-confirm" href="https://wa.me/${noWA}?text=${teksWA}" target="_blank" class="w-full bg-[#25D366] hover:bg-[#20bd5a] text-white py-4 rounded-xl font-extrabold uppercase text-xs shadow-[0_10px_20px_rgba(37,211,102,0.3)] flex justify-center items-center active:scale-95 transition-all relative z-10 tracking-wider">
+                    <i class="fab fa-whatsapp text-lg mr-2"></i> Konfirmasi ke Admin
+                </a>
+            `;
+        }
+
+        // --- KODINGAN UI SUKSES (APPLE PAY STYLE) ---
+        const tampilkanLayarSukses = () => {
+            if (wadahPembayaran) {
+                const noWA_Sukses = "6283815584661";
+                const teksWA_Sukses = encodeURIComponent(`Halo Admin, pesanan saya sudah BERHASIL DIBAYAR via QRIS Otomatis untuk:\n\n*${namaProduk}*\nID: NIKKY - ${orderData.id}\n\n(Mohon segera diproses ya)`);
+
+                wadahPembayaran.innerHTML = `
+                    <div class="flex flex-col items-center justify-center py-4 text-center modal-anim w-full relative z-10">
+                        <div class="relative w-28 h-28 mb-6 mt-4">
+                            <div class="absolute inset-0 bg-brand-success rounded-full animate-ping opacity-20"></div>
+                            <div class="w-full h-full bg-brand-success/20 rounded-full flex items-center justify-center border border-brand-success/50 backdrop-blur-md">
+                                <i class="fas fa-check text-5xl text-brand-success drop-shadow-[0_0_15px_rgba(37,211,102,0.8)]"></i>
+                            </div>
+                        </div>
+                        <h2 class="text-3xl font-black text-white mb-2 tracking-tight">Sukses!</h2>
+                        <p class="text-gray-400 text-xs mb-8 leading-relaxed px-4">Pembayaran senilai <b class="text-white">Rp ${harga.toLocaleString('id-ID')}</b> telah diterima sistem.</p>
+                        
+                        <a href="https://wa.me/${noWA_Sukses}?text=${teksWA_Sukses}" target="_blank" class="w-full mb-3 bg-[#25D366] hover:bg-[#20bd5a] text-white py-4 rounded-xl font-extrabold uppercase tracking-wider text-xs shadow-[0_10px_20px_rgba(37,211,102,0.3)] flex justify-center items-center active:scale-95 transition-all">
+                            <i class="fab fa-whatsapp text-lg mr-2"></i> Hubungi Admin
+                        </a>
+
+                        <button onclick="history.back()" class="w-full bg-white/5 text-white py-4 rounded-xl font-bold uppercase tracking-wider text-xs border border-white/10 hover:bg-white/10 active:scale-95 transition-all">Tutup Halaman</button>
+                    </div>
+                `;
+            }
+            
+            // Cek apakah ini pembayaran VIP
+            if (namaProduk.includes('[VIP]')) {
+                // 1. TANAMKAN BUKTI VIP KE MEMORI HP (Bertahan 60 detik)
+                localStorage.setItem('optimistic_vip', currentUser.id);
+                
+                // 2. Cegat tombol "Tutup Halaman" agar langsung diarahkan masuk ke Toko!
+                const btnTutup = wadahPembayaran.querySelector('button[onclick="history.back()"]');
+                if (btnTutup) {
+                    btnTutup.onclick = () => {
+                        history.back(); // Tutup layar hijau
+                        setTimeout(() => {
+                            switchTab('toko'); // Pindah otomatis ke Tab Toko
+                            loadTokoSaya();    // Langsung buka pintunya
+                        }, 300);
+                    };
+                }
+                
+                // 3. Bersihkan memori bayangan setelah 1 menit
+                setTimeout(() => { 
+                    localStorage.removeItem('optimistic_vip'); 
+                    fetchProfile();
+                }, 60000);
+            } else {
+                prosesAutoDeliveryTertunda();
+            }
+        };
+
+        // 5. Radar Supabase (Langsung memantau perubahan Database)
+        activeChannelPembayaran = supabaseClient.channel(`tunggu-pembayaran-${orderData.id}`)
+            .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: targetTabel, filter: `id=eq.${orderData.id}` }, (payload) => {
+                // Konversi ke huruf besar agar tidak sensitif huruf kapital
+                const statusBaru = String(payload.new.status).toUpperCase();
+                
+                if (statusBaru === 'SELESAI' || statusBaru === 'SUCCESS' || statusBaru === 'PROSES' || statusBaru === 'PAID') {
+                    tampilkanLayarSukses();
+                    supabaseClient.removeChannel(activeChannelPembayaran);
+                    clearInterval(intervalJemputBola);
+                }
+            }).subscribe();
+
+        // 6. Radar Jemput Bola API (Memantau status asli dari endpoint Anda)
+        intervalJemputBola = setInterval(async () => {
+            try {
+                const res = await fetch(`/api/check-status?order_id=${orderData.id}&table=${targetTabel}`);
+                const responseData = await res.json();
+                
+                // Pastikan kita mengekstrak status dengan aman (termasuk jika bentuk responsnya nested)
+                const apiStatus = String(responseData.status || responseData.data?.status || responseData.payment_status || '').toUpperCase();
+                
+                // Cek semua kemungkinan indikator "Lunas" dari Xoftware/Database
+                if (apiStatus === 'SUCCESS' || apiStatus === 'SUCCEEDED' || apiStatus === 'PAID' || apiStatus === 'SELESAI' || apiStatus === 'PROSES') {
+                    clearInterval(intervalJemputBola); 
+                    supabaseClient.removeChannel(activeChannelPembayaran);
+                    tampilkanLayarSukses(); 
+                }
+            } catch (e) {}
+        }, 3000);
+        
+        // Hentikan radar setelah 10 menit (agar tidak membebani server jika user membiarkan HP menyala)
+        setTimeout(() => clearInterval(intervalJemputBola), 600000);
+
+    } catch (error) {
+        showToast("Gangguan Server/Koneksi Pembayaran.", "error");
+        history.back(); // Auto tutup layar bayar jika error
+    }
+}
+
+
+async function prosesBayarUlang() {
+    if (!activeOrderIdToPay) return;
+    
+    closeDetailPesanan(); 
+    closeRiwayatPesanan(); 
+    
+    // Pindah layar ke mode Loading QRIS DULUAN biar mulus transisinya
+    switchTab('pembayaran');
+    
+    // Kembalikan kotak QRIS ke mode loading (jika sebelumnya bekas dipakai)
+    const wadahPembayaran = document.getElementById('qris-container');
+    if (wadahPembayaran) {
+        wadahPembayaran.innerHTML = `
+        <div class="text-center flex flex-col items-center animate-pulse w-full">
+            <div class="w-20 h-20 bg-brand-info/10 rounded-full flex items-center justify-center mb-4 border border-brand-info/30 shadow-[0_0_30px_rgba(70,179,255,0.3)]">
+                <i class="fas fa-qrcode text-brand-info text-4xl"></i>
+            </div>
+            <p class="text-[10px] text-gray-400 font-extrabold tracking-widest uppercase mt-2">Menghubungkan ke Gateway...</p>
+        </div>`;
+    }
+
+    try {
+        // 1. Tembak API Backend Vercel TERLEBIH DAHULU
+        const responsePG = await fetch('/api/create-qris', { 
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                order_id: activeOrderIdToPay,
+                amount: activeOrderPriceToPay,
+                product_name: activeOrderNameToPay,
+                customer_name: userProfile?.nickname || 'Player'
+            })
+        });
+
+        const dataPG = await responsePG.json();
+        if (!dataPG.success) throw new Error("Gagal mengambil QRIS");
+
+        // 2. Generate Link Gambar QRIS
+        const qrImgUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(dataPG.qris_string)}`;
+        
+        // 3. RENDER UI APPLE PAY STYLE
+        const noWA = "6283815584661";
+        const teksWA = encodeURIComponent(`Halo Admin, pesanan saya sudah masuk via QRIS Otomatis untuk:\n\n*${activeOrderNameToPay}*\nID: NIKKY - ${activeOrderIdToPay}\n\n(Berikut screenshot bukti transfernya)`);
+
+        if (wadahPembayaran) {
+            wadahPembayaran.innerHTML = `
+                <div class="absolute top-0 inset-x-0 h-32 bg-gradient-to-b from-brand-info/10 to-transparent pointer-events-none z-0"></div>
+                
+                <div class="text-[9px] font-extrabold text-white bg-white/10 px-3 py-1 rounded-full border border-white/20 uppercase tracking-widest mb-6 relative z-10 backdrop-blur-sm">XOFTWARE PAY</div>
+                
+                <div class="text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-1 relative z-10">Total Tagihan</div>
+                <div class="flex items-center justify-center gap-3 mb-6 relative z-10 w-full px-6">
+                    <div id="pay-total" class="text-4xl font-black text-white tracking-tighter drop-shadow-md truncate">Rp ${activeOrderPriceToPay.toLocaleString('id-ID')}</div>
+                    <button onclick="salinNominal()" id="btn-salin" class="bg-brand-info/20 text-brand-info w-8 h-8 rounded-full flex items-center justify-center active:scale-90 transition-all shrink-0">
+                        <i class="fas fa-copy text-xs"></i>
+                    </button>
+                    <input type="hidden" id="nominal-asli" value="${activeOrderPriceToPay}">
+                </div>
+                
+                <div class="bg-white p-4 rounded-[1.5rem] mb-6 shadow-[0_0_40px_rgba(255,255,255,0.15)] relative z-10 group overflow-hidden">
+                    <img id="qris-image-target" src="${qrImgUrl}" alt="QRIS" class="w-48 h-48 object-cover rounded-xl relative z-10">
+                    <div class="absolute inset-0 bg-black/70 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-sm cursor-pointer z-20">
+                        <i class="fas fa-camera text-white text-3xl mb-2 drop-shadow-md"></i>
+                        <span class="text-white text-[10px] font-extrabold tracking-widest uppercase">Screenshot QR</span>
+                    </div>
+                </div>
+                
+                <div class="w-full bg-black/40 border border-white/10 rounded-2xl p-4 mb-6 relative z-10 text-left">
+                    <div class="flex justify-between items-start text-xs mb-2">
+                        <span class="text-gray-400 shrink-0">Pesanan</span>
+                        <span class="text-white font-bold text-right pl-4 line-clamp-2">${activeOrderNameToPay}</span>
+                    </div>
+                    <div class="flex justify-between items-center text-xs border-t border-white/5 pt-2">
+                        <span class="text-gray-400">Admin Rekber</span>
+                        <span class="text-brand-success font-bold flex items-center gap-1"><i class="fas fa-shield-check"></i> NIKKY (Aman)</span>
+                    </div>
+                </div>
+                
+                <a id="wa-confirm" href="https://wa.me/${noWA}?text=${teksWA}" target="_blank" class="w-full bg-[#25D366] hover:bg-[#20bd5a] text-white py-4 rounded-xl font-extrabold uppercase text-xs shadow-[0_10px_20px_rgba(37,211,102,0.3)] flex justify-center items-center active:scale-95 transition-all relative z-10 tracking-wider">
+                    <i class="fab fa-whatsapp text-lg mr-2"></i> Konfirmasi ke Admin
+                </a>
+            `;
+        }
+
+        showToast("Silakan scan QRIS untuk melanjutkan.", "success");
+
+        // --- KODINGAN UI SUKSES (APPLE PAY STYLE) ---
+        const tampilkanLayarSukses = () => {
+            if (wadahPembayaran) {
+                const noWA_Sukses = "6283815584661";
+                const teksWA_Sukses = encodeURIComponent(`Halo Admin, pesanan saya sudah BERHASIL DIBAYAR via QRIS Otomatis untuk:\n\n*${activeOrderNameToPay}*\nID: NIKKY - ${activeOrderIdToPay}\n\n(Mohon segera diproses ya)`);
+
+                wadahPembayaran.innerHTML = `
+                    <div class="flex flex-col items-center justify-center py-4 text-center modal-anim w-full relative z-10">
+                        <div class="relative w-28 h-28 mb-6 mt-4">
+                            <div class="absolute inset-0 bg-brand-success rounded-full animate-ping opacity-20"></div>
+                            <div class="w-full h-full bg-brand-success/20 rounded-full flex items-center justify-center border border-brand-success/50 backdrop-blur-md">
+                                <i class="fas fa-check text-5xl text-brand-success drop-shadow-[0_0_15px_rgba(37,211,102,0.8)]"></i>
+                            </div>
+                        </div>
+                        <h2 class="text-3xl font-black text-white mb-2 tracking-tight">Sukses!</h2>
+                        <p class="text-gray-400 text-xs mb-8 leading-relaxed px-4">Pembayaran senilai <b class="text-white">Rp ${activeOrderPriceToPay.toLocaleString('id-ID')}</b> telah diterima sistem.</p>
+                        
+                        <a href="https://wa.me/${noWA_Sukses}?text=${teksWA_Sukses}" target="_blank" class="w-full mb-3 bg-[#25D366] hover:bg-[#20bd5a] text-white py-4 rounded-xl font-extrabold uppercase tracking-wider text-xs shadow-[0_10px_20px_rgba(37,211,102,0.3)] flex justify-center items-center active:scale-95 transition-all">
+                            <i class="fab fa-whatsapp text-lg mr-2"></i> Hubungi Admin
+                        </a>
+
+                        <button onclick="history.back()" class="w-full bg-white/5 text-white py-4 rounded-xl font-bold uppercase tracking-wider text-xs border border-white/10 hover:bg-white/10 active:scale-95 transition-all">Tutup Halaman</button>
+                    </div>
+                `;
+            }
+            
+            // Cek apakah ini pembayaran VIP
+            if (namaProduk.includes('[VIP]')) {
+                // 1. TANAMKAN BUKTI VIP KE MEMORI HP (Bertahan 60 detik)
+                localStorage.setItem('optimistic_vip', currentUser.id);
+                
+                // 2. Cegat tombol "Tutup Halaman" agar langsung diarahkan masuk ke Toko!
+                const btnTutup = wadahPembayaran.querySelector('button[onclick="history.back()"]');
+                if (btnTutup) {
+                    btnTutup.onclick = () => {
+                        history.back(); // Tutup layar hijau
+                        setTimeout(() => {
+                            switchTab('toko'); // Pindah otomatis ke Tab Toko
+                            loadTokoSaya();    // Langsung buka pintunya
+                        }, 300);
+                    };
+                }
+                
+                // 3. Bersihkan memori bayangan setelah 1 menit
+                setTimeout(() => { 
+                    localStorage.removeItem('optimistic_vip'); 
+                    fetchProfile();
+                }, 60000);
+            } else {
+                prosesAutoDeliveryTertunda();
+            }
+        };
+
+        // Radar Supabase untuk Pembayaran Ulang
+        activeChannelPembayaran = supabaseClient
+            .channel(`tunggu-pembayaran-ulang-${activeOrderIdToPay}`)
+            .on(
+                'postgres_changes',
+                { event: 'UPDATE', schema: 'public', table: activeOrderTable, filter: `id=eq.${activeOrderIdToPay}` },
+                (payload) => {
+                    if (payload.new.status === 'selesai' || payload.new.status === 'SUCCESS' || payload.new.status === 'proses') {
+                        tampilkanLayarSukses();
+                        supabaseClient.removeChannel(activeChannelPembayaran);
+                        clearInterval(intervalJemputBola);
+                    }
+                }
+            ).subscribe();
+            
+        // Radar Jemput Bola API
+        intervalJemputBola = setInterval(async () => {
+            try {
+                const res = await fetch(`/api/check-status?order_id=${activeOrderIdToPay}&table=${activeOrderTable}`);
+                const data = await res.json();
+                if (data.status === 'SUCCESS') {
+                    clearInterval(intervalJemputBola); 
+                    supabaseClient.removeChannel(activeChannelPembayaran);
+                    tampilkanLayarSukses(); 
+                }
+            } catch (e) {}
+        }, 3000);
+        setTimeout(() => clearInterval(intervalJemputBola), 600000);
+
+    } catch (e) {
+        showToast("Gagal memuat ulang QRIS. Silakan coba lagi.", "error");
+        console.error(e);
+        history.back(); // Menutup layar loading jika error
+    }
+}
+
+
+
+// FUNCTIONS UNTUK KONTROL ANIMASI BUKA TUTUP LACI MENU
+function openAssistiveMenu() {
+    const menu = document.getElementById('assistive-menu');
+    const box = menu.querySelector('div');
+    menu.classList.remove('hidden');
+    menu.classList.add('flex');
+    setTimeout(() => {
+        menu.classList.remove('opacity-0');
+        box.classList.remove('scale-90');
+        box.classList.add('scale-100');
+    }, 10);
+}
+
+function closeAssistiveMenu() {
+    const menu = document.getElementById('assistive-menu');
+    const box = menu.querySelector('div');
+    menu.classList.add('opacity-0');
+    box.classList.remove('scale-100');
+    box.classList.add('scale-90');
+    setTimeout(() => {
+        menu.classList.add('hidden');
+        menu.classList.remove('flex');
+    }, 300);
+}
+
+// EKSEKUTOR KLIK MENU
+function executeAssistive(target) {
+    closeAssistiveMenu(); // Tutup dulaan laci AssistiveTouch
+    if (target === 'leaderboard') {
+        openLeaderboardModal(); // Panggil fungsi bawaan lu
+    } else {
+        switchTab(target); // Pindah tab murni bawaan lu
+    }
+}
+
+// Fungsi menyalin URL / Membuka menu Share bawaan OS (iOS/Android)
+async function copyLinkLaciAktif(btn) {
+    const currentUrl = window.location.href; 
+    
+    // Mengambil nama produk dari laci yang sedang terbuka agar teks share lebih menarik
+    const judulProduk = document.getElementById('detail-product-title').innerText || "Layanan AU2Hub";
+
+    // 1. Cek apakah HP/Browser mendukung fitur Share bawaan sistem
+    if (navigator.share) {
+        try {
+            await navigator.share({
+                title: 'AU2Hub',
+                text: `Cek ${judulProduk} di AU2Hub sekarang!`,
+                url: currentUrl
+            });
+            // Tidak perlu memunculkan toast karena OS HP sudah memunculkan menu sendiri
+        } catch (err) {
+            // Error biasa terjadi kalau user menekan tombol "Batal / Cancel" di menu Share HP-nya
+            console.log("Membagikan dibatalkan.", err);
+        }
+    } 
+    // 2. FALLBACK: Jika dibuka di PC atau browser yang tidak mendukung, kembali ke sistem "Copy Link"
+    else {
+        navigator.clipboard.writeText(currentUrl).then(() => {
+            showToast("Link laci berhasil disalin!", "success");
+            
+            // Animasi ikon berubah jadi centang
+            const icon = btn.querySelector('i');
+            icon.className = 'fas fa-check text-brand-success';
+            setTimeout(() => {
+                icon.className = 'fas fa-share-alt';
+            }, 2000);
+        }).catch(() => {
+            showToast("Gagal menyalin link otomatis", "error");
+        });
+    }
+}
+
+// ==========================================
+// FITUR TERUSKAN PESAN (FORWARD) WHATSAPP STYLE
+// ==========================================
+
+// 1. Eksekusi Tombol "Teruskan Pesan" di Modal Opsi (Disederhanakan)
+document.getElementById('btn-forward-msg').addEventListener('click', () => {
+    if (!selectedMessageId) return;
+
+    // Langsung tutup modal opsi dan buka laci kontak (Tanpa pusing membaca HTML layar)
+    closeMsgOptions(); 
+    document.getElementById('modal-forward-msg').classList.remove('hidden');
+    document.getElementById('modal-forward-msg').classList.add('flex');
+    loadForwardContacts(); 
+});
+
+
+// 2. Fungsi Me-render Daftar Kontak ke Layar
+function loadForwardContacts(searchQuery = '') {
+    const container = document.getElementById('forward-list-container');
+    
+    // Gabungkan Grup dan Personal Chat yang pernah berinteraksi
+    let allContacts = [...globalGroupList, ...globalPersonalList];
+    
+    // Logika Filter (Pencarian Instan)
+    if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        allContacts = allContacts.filter(c => c.name.toLowerCase().includes(query));
+    }
+
+    // Render ke HTML
+    if (allContacts.length === 0) {
+        container.innerHTML = '<p class="text-center text-xs text-gray-500 mt-10">Kontak tidak ditemukan.</p>';
+        return;
+    }
+
+    container.innerHTML = allContacts.map(contact => {
+        const isGroup = contact.type === 'group';
+        return `
+        <div onclick="executeForward('${contact.id}', ${isGroup}, '${contact.name.replace(/'/g, "\\'")}')" class="flex items-center justify-between p-3 hover:bg-white/5 cursor-pointer rounded-2xl transition-all border-b border-white/5">
+            <div class="flex items-center">
+                <img src="${contact.avatar}" class="w-10 h-10 rounded-full object-cover border border-white/10 shrink-0">
+                <div class="ml-3">
+                    <h4 class="font-bold text-white text-xs">${contact.name}</h4>
+                    <p class="text-[9px] text-gray-500">${isGroup ? 'Grup' : 'Chat Pribadi'}</p>
+                </div>
+            </div>
+            <button class="w-8 h-8 rounded-full bg-brand-info/20 text-brand-info flex items-center justify-center active:scale-90 transition-all">
+                <i class="fas fa-share"></i>
+            </button>
+        </div>`;
+    }).join('');
+}
+
+// 3. Eksekusi Pengiriman Pesan (Langsung Tarik dari Database)
+async function executeForward(targetId, isGroup, targetName) {
+    const confirmSend = await customConfirm(`Teruskan pesan ini ke ${targetName}?`);
+    if (!confirmSend) return;
+
+    closeForwardModal(); 
+    showToast(`Meneruskan pesan ke ${targetName}...`, "info");
+
+    try {
+        // 1. Tarik isi pesan asli secara real-time dari database
+        const { data: originalMsg, error: fetchErr } = await supabaseClient
+            .from('messages')
+            .select('message')
+            .eq('id', selectedMessageId)
+            .single();
+
+        if (fetchErr || !originalMsg) throw new Error("Gagal membaca pesan asli dari server.");
+
+        let rawMessage = originalMsg.message;
+
+        // 2. Bersihkan kotak [REPLY] (WhatsApp biasanya menghilangkan konteks balasan saat pesan diforward)
+        const replyRegex = /^\[REPLY:(.*?)\|\|(.*?)\|\|(.*?)\]\n([\s\S]*)$/;
+        const match = rawMessage.match(replyRegex);
+        if (match) {
+            rawMessage = match[4]; 
+        }
+
+        // Bersihkan tag [FORWARDED] lama (Jika mem-forward pesan yang sudah diforward, tagnya jangan dobel)
+        rawMessage = rawMessage.replace(/^\[FORWARDED\]\n?/, '').trim();
+
+        // 3. Sisipkan kode rahasia [FORWARDED] di awal pesan
+        const finalMessage = `[FORWARDED]\n${rawMessage}`;
+
+        // 4. Siapkan Payload Database untuk dikirim
+        const insertData = { 
+            sender_id: currentUser.id, 
+            message: finalMessage 
+        };
+        
+        if (isGroup) {
+            insertData.group_id = targetId;
+        } else {
+            insertData.receiver_id = targetId;
+        }
+
+        // 5. Tembak ke Supabase
+        const { error } = await supabaseClient.from('messages').insert(insertData);
+        if (error) throw error;
+
+        showToast("Pesan berhasil diteruskan!", "success");
+        loadChatList(); 
+
+    } catch (err) {
+        showToast(err.message, "error");
+    }
+}
+
+
+
+
+// 4. Fungsi Menutup Modal
+function closeForwardModal() {
+    const modal = document.getElementById('modal-forward-msg');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+    
+    // Reset Data
+    document.getElementById('forward-search-input').value = ''; 
+    messageToForward = ""; 
+}
+
+// 5. Event Listener Kotak Pencarian Kontak
+document.getElementById('forward-search-input').addEventListener('input', (e) => {
+    loadForwardContacts(e.target.value);
+});
+
+// ==========================================
+// FITUR SWIPE (GESER) UNTUK WIDGET CHAT
+// ==========================================
+let chatSwipeStartX = 0;
+let chatSwipeStartY = 0;
+
+document.addEventListener('DOMContentLoaded', () => {
+    const chatListView = document.getElementById('chat-list-view');
+    
+    if (chatListView) {
+        // Tangkap kordinat awal saat layar disentuh
+        chatListView.addEventListener('touchstart', e => {
+            chatSwipeStartX = e.changedTouches[0].screenX;
+            chatSwipeStartY = e.changedTouches[0].screenY;
+        }, {passive: true});
+
+        // Tangkap kordinat saat jari dilepas dan eksekusi geseran
+        chatListView.addEventListener('touchend', e => {
+            let touchEndX = e.changedTouches[0].screenX;
+            let touchEndY = e.changedTouches[0].screenY;
+            
+            let diffX = chatSwipeStartX - touchEndX;
+            let diffY = chatSwipeStartY - touchEndY;
+            
+            // Validasi: Jarak geser horizontal harus > 50px, dan vertikal harus < 50px 
+            // (Ini agar tidak bentrok saat user niatnya scroll list chat ke bawah/atas)
+            if (Math.abs(diffX) > 50 && Math.abs(diffY) < 50) { 
+                const tabs = ['personal', 'group', 'status'];
+                let currentTab = '';
+                
+                // Deteksi tab mana yang sedang terbuka
+                if (!document.getElementById('chat-personal-container').classList.contains('hidden')) {
+                    currentTab = 'personal';
+                } else if (!document.getElementById('chat-group-container').classList.contains('hidden')) {
+                    currentTab = 'group';
+                } else {
+                    currentTab = 'status';
+                }
+
+                let currentIndex = tabs.indexOf(currentTab);
+                
+                if (diffX > 0) { 
+                    // Geser jari ke KIRI = Pindah ke Tab KANAN (Selanjutnya)
+                    if (currentIndex < 2) switchChatTab(tabs[currentIndex + 1]);
+                } else { 
+                    // Geser jari ke KANAN = Pindah ke Tab KIRI (Sebelumnya)
+                    if (currentIndex > 0) switchChatTab(tabs[currentIndex - 1]); 
+                }
+            }
+        }, {passive: true});
+    }
+});
+
+// ========================================================
+// FUNGSI KHUSUS UNTUK MEMBUKA VIDEO DARI LINK SHARE
+// ========================================================
+function bukaVideoShare(vidId) {
+    // 1. Cari data videonya dari database lokal
+    const targetVideo = allVideosData.find(v => v.id === vidId);
+    if (!targetVideo) {
+        showToast("Video yang dibagikan tidak ditemukan atau sudah dihapus.", "error");
+        return;
+    }
+
+    // 2. Kumpulkan semua video milik kreator yang sama
+    currentProfileVideos = allVideosData.filter(v => v.user_id === targetVideo.user_id).reverse();
+    
+    // Cari urutan ke berapa video ini di profil kreator tersebut
+    let targetIndex = currentProfileVideos.findIndex(v => v.id === vidId);
+    if (targetIndex === -1) targetIndex = 0;
+
+    // 3. Bersihkan layar floating player (Layar Hitam) beserta memorinya
+    const container = document.getElementById('floating-feed-container');
+    container.querySelectorAll('video').forEach(v => {
+        v.pause();
+        v.removeAttribute('src');
+        if (v.querySelector('source')) v.querySelector('source').removeAttribute('src');
+        v.load();
+    });
+    container.innerHTML = '';
+    container.scrollTop = 0;
+
+    // 4. HENTIKAN DAN CABUT SRC VIDEO DI FEED UTAMA AGAR BENAR-BENAR MATI (FIX DOUBLE AUDIO)
+    document.querySelectorAll('.video-player').forEach(v => {
+        v.pause();
+        v.muted = true;
+        // Simpan URL sebelum dihapus agar bisa dimuat lagi nanti saat pop-up ditutup
+        let currentUrl = v.currentSrc || v.src || (v.querySelector('source') ? v.querySelector('source').src : '');
+        if (currentUrl && currentUrl.length > 5) {
+            v.dataset.savedSrc = currentUrl;
+        }
+        v.removeAttribute('src'); 
+        if (v.querySelector('source')) v.querySelector('source').removeAttribute('src');
+        v.load(); // Paksa browser membuang video dari memori saat itu juga
+    });
+
+    // [BARU] Paksa suara menyala (unmute) otomatis dari link share
+    isGlobalMuted = false;
+
+    // 5. Munculkan Layar Hitam (Floating Player) secara instan!
+    const floatingPlayer = document.getElementById('floating-video-player');
+    floatingPlayer.classList.remove('hidden');
+    floatingPlayer.classList.add('flex');
+    floatingPlayer.style.opacity = '1';
+
+    if (floatObs) floatObs.disconnect();
+    setupFloatVideoObserver();
+
+    // 6. Render Video
+    profileFeedIndex = 0;
+    renderProfileVideoBatch(targetIndex + 3);
+
+    // 7. Paksa scroll layar
+    setTimeout(() => {
+        const targetCard = container.children[targetIndex];
+        if (targetCard) {
+            targetCard.scrollIntoView({ behavior: 'auto', block: 'start' });
+        }
+    }, 100);
+
+    // 8. Tanamkan URL history
+    history.pushState({ popup: 'floating_video' }, null, '#profil_video');
+}
+// Variabel Global
+let globalDataPasar = [];
+let idPenjualAktif = null;
+let kategoriPasarAktif = 'Semua'; // Variabel baru untuk filter
+
+document.addEventListener('DOMContentLoaded', () => {
+    // Jalankan sistem pembaca input Rupiah dan auto-load data
+    setTimeout(() => {
+        const searchInput = document.getElementById('cari-pasar');
+        if (searchInput) searchInput.addEventListener('input', terapkanFilterPasar);
+
+        const jualanHarga = document.getElementById('jualan-harga');
+        const editHarga = document.getElementById('edit-produk-harga');
+        if(jualanHarga) jualanHarga.addEventListener('input', formatInputRupiah);
+        if(editHarga) editHarga.addEventListener('input', formatInputRupiah);
+    }, 500);
+
+    loadPasarPlayer();
+});
+
+
+// ==========================================
+// RENDER KATEGORI GRID (GOPAY STYLE) UNTUK PASAR
+// ==========================================
+function renderKategoriPasarTabs(data) {
+    const container = document.getElementById('kategori-pasar-grid');
+    if (!container) return;
+
+    let categories = new Set();
+    data.forEach(p => {
+        if (p.category) categories.add(p.category);
+    });
+
+    let arrKategori = ['Semua', ...Array.from(categories).sort()];
+
+    container.innerHTML = arrKategori.map(k => {
+        const isActive = k === kategoriPasarAktif;
+        const logoUrl = getKategoriLogoURL(k); 
+
+        return `
+        <div onclick="pilihKategoriPasar('${k}')" class="flex flex-col items-center gap-2 cursor-pointer text-center group active:scale-95 transition-all">
+            <div class="w-12 h-12 rounded-[1.2rem] flex items-center justify-center transition-all border ${isActive ? 'bg-[#EE4D2D] border-[#EE4D2D] shadow-lg shadow-[#EE4D2D]/30' : 'bg-brand-card border-white/5 shadow-md group-hover:border-brand-success'}">
+                <img src="${logoUrl}" alt="${k}" class="w-7 h-7 object-contain ${isActive ? 'brightness-100' : 'opacity-80 group-hover:opacity-100 transition-opacity'}"
+                onerror="this.src='https://img.icons8.com/neon/96/folder-invoices.png'">
+            </div>
+            <span class="text-[9px] font-extrabold tracking-wide truncate w-full uppercase leading-tight ${isActive ? 'text-[#EE4D2D]' : 'text-gray-400 group-hover:text-white'}">
+                ${k}
+            </span>
+        </div>
+        `;
+    }).join('');
+}
+
+
+function pilihKategoriPasar(kat) {
+    kategoriPasarAktif = kat;
+    const searchInput = document.getElementById('cari-pasar');
+    if (searchInput) searchInput.value = '';
+    
+    renderKategoriPasarTabs(globalDataPasar); 
+    terapkanFilterPasar();
+}
+
+function terapkanFilterPasar() {
+    const keyword = (document.getElementById('cari-pasar')?.value || '').toLowerCase();
+    
+    const filteredData = globalDataPasar.filter(item => {
+        const matchSearch = item.title.toLowerCase().includes(keyword) || 
+                            item.category.toLowerCase().includes(keyword) || 
+                            (item.profiles?.nickname || '').toLowerCase().includes(keyword);
+                            
+        // Jika pilih "Semua", maka lolos. Jika pilih kategori lain, harus cocok.
+        const matchKat = (kategoriPasarAktif === 'Semua') ? true : (item.category === kategoriPasarAktif || item.category.includes(kategoriPasarAktif));
+        
+        return matchSearch && matchKat;
+    });
+    
+    renderGridPasar(filteredData);
+}
+
+// [BARU] FUNGSI HELPER FORMAT RUPIAH SAAT MENGETIK
+function formatInputRupiah(e) {
+    let val = e.target.value.replace(/[^,\d]/g, '').toString();
+    let split = val.split(',');
+    let sisa = split[0].length % 3;
+    let rupiah = split[0].substr(0, sisa);
+    let ribuan = split[0].substr(sisa).match(/\d{3}/gi);
+
+    if (ribuan) {
+        let separator = sisa ? '.' : '';
+        rupiah += separator + ribuan.join('.');
+    }
+    e.target.value = split[1] != undefined ? rupiah + ',' + split[1] : rupiah;
+}
+
+// Array Global Penyimpan Antrean Foto
+let fileJualanArray = []; 
+
+// 1. RENDER GRID (Tampilkan Foto Pertama Saja di Etalase Depan)
+function renderGridPasar(dataList) {
+    const grid = document.getElementById('grid-pasar-player');
+    grid.innerHTML = '';
+
+    if (dataList.length === 0) {
+        grid.innerHTML = '<div class="col-span-2 text-center py-10 text-gray-500 text-xs flex flex-col items-center"><i class="fas fa-store-slash text-4xl mb-3 opacity-30"></i><span>Tidak ada produk di kategori ini.</span></div>';
+        return;
+    }
+
+    // Menggunakan map().join('') agar bisa mengeksekusi delay animasi berurutan (smooth-reveal)
+    const htmlCards = dataList.map((item, index) => {
+        const sellerAvatar = item.profiles?.avatar_url || 'https://placehold.co/100x100/1a1133/2BD975?text=AV';
+        const sellerName = item.profiles?.nickname || 'Anonim';
+        
+        // 🔥 LOGIKA BARU: Harga Markup Customer (+ 650 + 0.7%)
+        const hargaCustomer = Math.floor(item.price + 650 + (item.price * 0.007));
+        const formatHarga = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(hargaCustomer);
+
+        // 🔥 LOGIKA HARGA CORET MARKETING AUTOMATIC (Sama seperti Xoftware)
+        let hargaCoret = Math.ceil((hargaCustomer * 1.3) / 1000) * 1000; 
+        if (hargaCustomer > 100000) hargaCoret = Math.ceil((hargaCustomer * 1.2) / 5000) * 5000;
+        if (hargaCustomer <= 5000) hargaCoret = hargaCustomer + 2500;
+
+        const sellerExp = item.profiles?.exp || 0;
+        const sellerLevel = hitungStatusLevel(sellerExp).level;
+        const sellerVideoCount = allVideosData.filter(v => String(v.user_id) === String(item.user_id)).length;
+        const badgeHtml = getBadgeByLevelAndVideos(sellerLevel, sellerVideoCount);
+
+        let rawThumb = item.image_url || '';
+        let fotoPertama = rawThumb.split(',')[0].trim();
+        if (!fotoPertama) fotoPertama = 'https://placehold.co/400x400/1a1133/2BD975?text=PASAR';
+
+        const isAutoItem = item.category === 'Akun' || item.category === 'Item' || item.category === 'APK Premium';
+        const sisaStok = isAutoItem && item.stock_list ? item.stock_list.split(/\r?\n/).filter(s=>s.trim() !== '').length : 0;
+        
+        // Lencana Kiri Atas (Stok/Kategori)
+        const badgeStok = isAutoItem 
+            ? `<span class="absolute top-2 left-2 bg-black/80 text-[8px] font-extrabold ${sisaStok > 0 ? 'text-brand-info border-brand-info/30' : 'text-red-500 border-red-500/50'} px-2 py-0.5 rounded-md backdrop-blur-sm border shadow-md tracking-wider">STOK: ${sisaStok}</span>` 
+            : `<span class="absolute top-2 left-2 bg-brand-success/90 text-white text-[8px] font-extrabold px-2 py-0.5 rounded-md backdrop-blur-sm border border-white/10 shadow-md uppercase tracking-wider">${item.category}</span>`;
+
+        // Animasi Muncul Berurutan (Maksimal 0.4s)
+        const delayAnimasi = Math.min(index * 0.02, 0.4);
+
+        return `
+        <div onclick="bukaDetailPasar('${item.id}')" style="animation-delay: ${delayAnimasi}s; opacity: 0;" class="bg-brand-card rounded-2xl border border-white/5 overflow-hidden flex flex-col hover:border-brand-success/30 transition-all smooth-reveal shadow-lg cursor-pointer group">
+            <div class="relative w-full aspect-square bg-black/40 overflow-hidden">
+                <img src="${fotoPertama}" alt="${item.title}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 relative z-0" onerror="this.src='https://placehold.co/400x400/1a1133/2BD975?text=PASAR'">
+                <!-- Watermark AU2Hub Thumbnail -->
+                <img src="https://nos.wjv-1.neo.id/au2hub/Picsart_26-05-22_23-46-22-498.png" class="absolute inset-0 m-auto w-20 h-20 object-contain opacity-[0.25] pointer-events-none z-10 drop-shadow-lg group-hover:scale-105 transition-transform duration-300">
+                ${badgeStok}
+            </div>
+            <div class="p-3 flex-1 flex flex-col justify-between gap-1">
+                <div>
+                    <div class="font-extrabold text-xs text-white leading-snug line-clamp-2 mb-1 min-h-[2.4rem]">${item.title}</div>
+                    <!-- Info Penjual Kecil (Menggantikan Deskripsi agar rapi) -->
+                    <div class="flex items-center gap-1.5 mb-1">
+                        <img src="${sellerAvatar}" class="w-3.5 h-3.5 rounded-full object-cover border border-white/10 shrink-0">
+                        <span class="text-[9px] text-gray-400 truncate w-full font-medium flex items-center gap-1">${sellerName} <span class="scale-[0.8] origin-left inline-flex shrink-0">${badgeHtml}</span></span>
+                    </div>
+                </div>
+                
+                <div class="mt-auto">
+                    <div class="text-[9px] ${isAutoItem ? 'text-[#EE4D2D]' : 'text-brand-info'} font-bold mb-0.5 flex items-center gap-1">
+                        <i class="fas ${isAutoItem ? 'fa-bolt text-[8px]' : 'fa-user-shield text-[8px]'}"></i> 
+                        ${isAutoItem ? 'Instan 1 Detik' : 'incREKBER NIKKY'}
+                    </div>
+                    <div class="flex flex-col items-start gap-px">
+                        <div class="text-gray-500 line-through text-[9px] font-medium opacity-60">Rp ${hargaCoret.toLocaleString('id-ID')}</div>
+                        <div class="text-[#EE4D2D] font-extrabold text-sm tracking-tight">${formatHarga}</div>
+                    </div>
+                </div>
+            </div>
+        </div>`;
+    }).join('');
+
+    grid.innerHTML = htmlCards;
+}
+
+
+// 2. PREVIEW BANYAK FOTO SAAT JUAL BARANG
+function previewGambarJualan(input) {
+    if (input.files && input.files.length > 0) {
+        const newFiles = Array.from(input.files);
+        let isSizeError = false;
+
+        newFiles.forEach((file) => {
+            if (file.size > 5 * 1024 * 1024) isSizeError = true;
+            else fileJualanArray.push(file); 
+        });
+
+        if (isSizeError) showToast("Beberapa foto berukuran > 5MB diabaikan.", "error");
+
+        renderPreviewJualan();
+        input.value = ''; 
+    }
+}
+
+function renderPreviewJualan() {
+    const previewContainer = document.getElementById('preview-container-jualan');
+    previewContainer.innerHTML = '';
+    
+    if (fileJualanArray.length === 0) {
+        previewContainer.classList.add('hidden');
+        return;
+    }
+
+    fileJualanArray.forEach((file, index) => {
+        const reader = new FileReader();
+        reader.onload = e => {
+            previewContainer.innerHTML += `
+                <div class="relative w-20 h-20 sm:w-24 sm:h-24 shrink-0 rounded-xl overflow-hidden border border-white/20 shadow-md">
+                    <img src="${e.target.result}" class="w-full h-full object-cover">
+                    <button onclick="hapusPreviewJualan(${index})" class="absolute top-1 right-1 bg-red-500/80 text-white rounded-full w-6 h-6 flex items-center justify-center backdrop-blur-md active:scale-90 transition-transform shadow-md z-10">
+                        <i class="fas fa-times text-xs"></i>
+                    </button>
+                </div>
+            `;
+        }
+        reader.readAsDataURL(file);
+    });
+
+    previewContainer.classList.remove('hidden');
+}
+
+function hapusPreviewJualan(index) {
+    fileJualanArray.splice(index, 1);
+    renderPreviewJualan();
+}
+
+// 3. PROSES UPLOAD MULTI FOTO SEKALIGUS
+async function prosesPostingJualan() {
+    const nama = document.getElementById('jualan-nama').value.trim();
+    const hargaInputClean = document.getElementById('jualan-harga').value.replace(/\./g, '');
+    const harga = parseInt(hargaInputClean);
+    const kategori = document.getElementById('jualan-kategori').value;
+    const deskripsi = document.getElementById('jualan-deskripsi').value.trim();
+    
+    // [BARU] Ambil isi data stok dari textbox
+    const stockList = document.getElementById('jualan-stock').value.trim();
+    
+    const btn = document.getElementById('btn-submit-jualan');
+
+    if (!nama || !harga || isNaN(harga) || !deskripsi) return showToast("Mohon lengkapi formulir!", "error");
+    if (harga < 1000) return showToast("Harga minimal adalah Rp 1.000", "error");
+    if (fileJualanArray.length === 0) return showToast("Wajib menyertakan minimal 1 foto produk!", "error");
+    
+    // [BARU] Cegah user nge-post kalau kategori Akun/Item tapi stoknya kosong
+    if ((kategori === 'Akun' || kategori === 'Item' || kategori === 'APK Premium') && !stockList) {
+        return showToast("Wajib mengisi List Stok untuk kategori ini!", "error");
+    }
+
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memproses Upload...';
+    btn.disabled = true;
+
+    try {
+        let uploadedUrls = [];
+        showToast(`Mengunggah ${fileJualanArray.length} foto ke satelit...`, "info");
+
+        const uploadPromises = fileJualanArray.map(async (file, index) => {
+            // Memasukkan file ke dalam folder: {User ID}/pasar/{nama_file}
+const pathLengkap = `${currentUser.id}/pasar/foto_${index}_${Date.now()}`;
+const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent(pathLengkap)}&filetype=${encodeURIComponent(file.type)}`);
+            const dataUrl = await resUrl.json();
+            await fetch(dataUrl.uploadUrl, { method: 'PUT', body: file, headers: { 'Content-Type': file.type, 'x-amz-acl': 'public-read' } });
+            return dataUrl.finalVideoUrl;
+        });
+
+        uploadedUrls = await Promise.all(uploadPromises);
+        const finalImageUrl = uploadedUrls.join(',');
+
+        // [BARU] Masukkan stock_list ke dalam payload Supabase
+        const { error } = await supabaseClient.from('player_products').insert({
+            user_id: currentUser.id, 
+            title: nama, 
+            price: harga, 
+            category: kategori, 
+            description: deskripsi, 
+            image_url: finalImageUrl,
+            stock_list: (kategori === 'Akun' || kategori === 'Item' || kategori === 'APK Premium') ? stockList : null
+        });
+
+        if (error) throw error;
+
+        showToast("Dagangan berhasil diposting!", "success");
+        tutupModalJualBarang();
+        
+        document.getElementById('jualan-nama').value = '';
+        document.getElementById('jualan-harga').value = '';
+        document.getElementById('jualan-deskripsi').value = '';
+        document.getElementById('input-foto-jualan').value = '';
+        document.getElementById('jualan-stock').value = ''; // [BARU] Kosongkan form stok
+        
+        fileJualanArray = [];
+        document.getElementById('preview-container-jualan').innerHTML = '';
+        document.getElementById('preview-container-jualan').classList.add('hidden');
+        
+        loadPasarPlayer(true);
+        // 🔥 FIX: Perbarui Etalase Pribadi Seller secara realtime!
+        if (currentUser) {
+            loadProdukSaya();
+        }
+
+    } catch (err) {
+        showToast("Gagal memposting: " + err.message, "error");
+    } finally {
+        btn.innerHTML = 'Posting Dagangan';
+        btn.disabled = false;
+    }
+}
+
+
+// SMART SHARE (FINAL: TAMBAH TITIK SETELAH RP, FIX BOLD WA)
+async function shareProdukPasar(btn) {
+    const currentUrl = window.location.href;
+    const judulProduk = document.getElementById('pasar-detail-nama').innerText || "Produk Pasar Player";
+
+    // 1. Kalkulasi Harga Asli dan Harga Coret secara dinamis
+    let totalPrice = currentPasarPrice * currentPasarQty;
+    let baseHargaCoret = Math.ceil((currentPasarPrice * 1.3) / 1000) * 1000;
+    if (currentPasarPrice > 100000) baseHargaCoret = Math.ceil((currentPasarPrice * 1.2) / 5000) * 5000;
+    if (currentPasarPrice <= 5000) baseHargaCoret = currentPasarPrice + 2500;
+    let totalHargaCoret = baseHargaCoret * currentPasarQty;
+
+    // 2. Format ke Rupiah, buang spasi, LALU tambah titik setelah "Rp"
+    const formatHarga = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 })
+        .format(totalPrice)
+        .replace(/\s|\u00A0/g, '') // Buang spasi gaib
+        .replace('Rp', 'Rp.');     // Tambahkan titik
+        
+    const formatHargaCoret = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 })
+        .format(totalHargaCoret)
+        .replace(/\s|\u00A0/g, '') // Buang spasi gaib
+        .replace('Rp', 'Rp.');     // Tambahkan titik
+
+    // 3. Gunakan tanda ~ untuk coret dan * untuk tebal (bold) di WhatsApp
+    const teksShare = `Cek ${judulProduk} seharga ~${formatHargaCoret}~ hanya menjadi *${formatHarga}* di AU2Hub sekarang! Aman via Admin.`;
+
+    if (navigator.share) {
+        try {
+            await navigator.share({
+                title: 'AU2Hub Pasar Player',
+                text: teksShare,
+                url: currentUrl
+            });
+        } catch (err) { console.log("Membagikan dibatalkan."); }
+    } else {
+        // Fallback untuk perangkat PC
+        navigator.clipboard.writeText(`${teksShare} ${currentUrl}`).then(() => {
+            showToast("Link produk berhasil disalin!", "success");
+            const icon = btn.querySelector('i');
+            icon.className = 'fas fa-check text-brand-success';
+            setTimeout(() => { icon.className = 'fas fa-share-alt text-sm'; }, 2000);
+        }).catch(() => { showToast("Gagal menyalin link", "error"); });
+    }
+}
+
+
+// ==========================================
+// VARIABEL GLOBAL PASAR (UNTUK VARIASI & QTY)
+// ==========================================
+let currentPasarPrice = 0;
+let currentPasarQty = 1;
+let currentPasarVariation = "";
+
+function ubahJumlahPasar(delta) {
+    currentPasarQty = Math.max(1, currentPasarQty + delta);
+    document.getElementById('pasar-detail-qty').value = currentPasarQty;
+    updateHargaPasarLayar();
+}
+
+function inputJumlahPasar(val) {
+    let parsed = parseInt(val);
+    currentPasarQty = (isNaN(parsed) || parsed < 1) ? 1 : parsed; 
+    updateHargaPasarLayar();
+}
+
+function validasiJumlahPasar(el) {
+    let parsed = parseInt(el.value);
+    if (isNaN(parsed) || parsed < 1) { parsed = 1; el.value = 1; }
+    currentPasarQty = parsed; updateHargaPasarLayar();
+}
+
+function pilihVariasiPasar(namaVariasi, hargaVariasi) {
+    currentPasarVariation = namaVariasi;
+    currentPasarPrice = parseFloat(hargaVariasi) || 0;
+    if (window.renderVariasiPasarButtons) window.renderVariasiPasarButtons(namaVariasi);
+    updateHargaPasarLayar();
+}
+
+function updateHargaPasarLayar() {
+    let totalPrice = currentPasarPrice * currentPasarQty;
+
+    // Harga Coret Marketing
+    let baseHargaCoret = Math.ceil((currentPasarPrice * 1.3) / 1000) * 1000;
+    if (currentPasarPrice > 100000) baseHargaCoret = Math.ceil((currentPasarPrice * 1.2) / 5000) * 5000;
+    if (currentPasarPrice <= 5000) baseHargaCoret = currentPasarPrice + 2500;
+    let totalHargaCoret = baseHargaCoret * currentPasarQty;
+
+    const formatHarga = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(totalPrice);
+    const formatHargaCoret = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(totalHargaCoret);
+
+    document.getElementById('pasar-detail-harga').innerHTML = `<span class="text-gray-500 line-through text-sm font-medium mr-2">${formatHargaCoret}</span>${formatHarga}`;
+}
+
+
+// ==========================================
+// 4. BUKA DETAIL PASAR (VERSI FINAL & SEMPURNA)
+// ==========================================
+function bukaDetailPasar(idProduk) {
+    const produk = globalDataPasar.find(item => item.id === idProduk);
+    if (!produk) return;
+
+    idPenjualAktif = produk.user_id; 
+    
+    // Reset Data Laci
+    currentPasarQty = 1;
+    currentPasarVariation = "";
+    document.getElementById('pasar-detail-qty').value = "1";
+
+    const isAutoItem = produk.category === 'Akun' || produk.category === 'Item' || produk.category === 'APK Premium';
+    const sisaStok = isAutoItem && produk.stock_list ? produk.stock_list.split(/\r?\n/).filter(s=>s.trim() !== '').length : 0;
+    
+    // Keamanan Pintar: Sembunyikan Input Jumlah jika produk pengiriman otomatis
+    const wadahQty = document.getElementById('pasar-qty-container');
+    if (wadahQty) {
+        if (isAutoItem) wadahQty.classList.replace('flex', 'hidden');
+        else wadahQty.classList.replace('hidden', 'flex');
+    }
+
+    // Harga Markup Customer (+ 650 + 0.7%)
+    const hargaCustomer = Math.floor(produk.price + 650 + (produk.price * 0.007));
+    currentPasarPrice = hargaCustomer;
+
+    // LOGIKA VARIASI
+    let rawVariasi = produk.variations || produk.variasi || [];
+    let arrVariasi = [];
+
+    if (Array.isArray(rawVariasi)) {
+        rawVariasi.forEach(v => {
+            if (typeof v === 'object' && v !== null) {
+                let hargaVarAsli = parseFloat(v.harga || v.price || 0);
+                let hargaVarMarkup = Math.floor(hargaVarAsli + 650 + (hargaVarAsli * 0.007));
+                arrVariasi.push({ name: v.nama_variasi || v.name, price: hargaVarMarkup });
+            }
+        });
+    }
+
+    const variasiContainer = document.getElementById('pasar-variasi-container');
+    const variasiList = document.getElementById('pasar-variasi-list');
+
+    if (variasiContainer && variasiList) {
+        if (arrVariasi.length > 0) {
+            variasiContainer.classList.remove('hidden');
+            currentPasarPrice = arrVariasi[0].price;
+            currentPasarVariation = arrVariasi[0].name;
+
+            window.renderVariasiPasarButtons = function(activeName) {
+                variasiList.innerHTML = arrVariasi.map(v => {
+                    let vName = v.name.replace(/'/g, "\\'");
+                    let isActive = (vName === activeName);
+                    let baseClass = "px-4 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ";
+                    let activeClass = isActive ? "bg-[#EE4D2D]/20 border-[#EE4D2D] text-[#EE4D2D] shadow-[0_0_10px_rgba(238,77,45,0.3)]" : "bg-black/30 border-white/10 text-gray-400 hover:border-brand-info/50 hover:text-white";
+                    return `<div onclick="pilihVariasiPasar('${vName}', ${v.price})" class="${baseClass} ${activeClass}">${vName}</div>`;
+                }).join('');
+            };
+            window.renderVariasiPasarButtons(currentPasarVariation);
+        } else {
+            variasiContainer.classList.add('hidden');
+        }
+    }
+
+    // Render Gambar Carousel
+    const carousel = document.getElementById('pasar-detail-carousel');
+    let arrFoto = produk.image_url ? produk.image_url.split(',').map(img => img.trim()).filter(img => img !== "") : ['https://placehold.co/400x400/1a1133/2BD975?text=PASAR'];
+
+    carousel.innerHTML = arrFoto.map((imgUrl, index) => `
+        <div class="w-full h-full flex-shrink-0 snap-center relative cursor-pointer flex items-center justify-center" onclick="bukaGalleryPasar('${produk.id}', ${index})">
+            <img src="${imgUrl}" draggable="false" class="w-full h-full object-cover pointer-events-none relative z-0" onerror="this.src='https://placehold.co/400x400/1a1133/2BD975?text=PASAR'">
+            <!-- Watermark AU2Hub -->
+            <img src="https://nos.wjv-1.neo.id/au2hub/Picsart_26-05-22_23-46-22-498.png" class="absolute inset-0 m-auto w-36 h-36 object-contain opacity-[0.25] pointer-events-none z-10 drop-shadow-lg">
+        </div>
+    `).join('');
+
+    const counterBadge = document.getElementById('pasar-carousel-counter');
+    if (arrFoto.length > 1) {
+        counterBadge.classList.remove('hidden');
+        document.getElementById('pasar-total-idx').innerText = arrFoto.length;
+        carousel.onscroll = () => { document.getElementById('pasar-current-idx').innerText = Math.round(carousel.scrollLeft / carousel.clientWidth) + 1; };
+    } else { counterBadge.classList.add('hidden'); carousel.onscroll = null; }
+
+    // Render Teks & Panggil Harga Pertama Kali
+    updateHargaPasarLayar(); 
+    document.getElementById('pasar-detail-kategori').innerHTML = `${produk.category} ${isAutoItem ? ` &bull; Sisa: ${sisaStok}` : ''}`;
+    document.getElementById('pasar-detail-nama').innerText = produk.title;
+    
+    let deskripsiBisaDiklik = (produk.description || "-").replace(/&/g, "&").replace(/</g, "<").replace(/>/g, ">").replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" onclick="event.stopPropagation()" class="text-brand-info underline font-bold hover:text-white transition-colors">$1</a>');
+
+    // --- PERBAIKAN RESET LIHAT SELENGKAPNYA ---
+    const pDescPasar = document.getElementById('pasar-detail-deskripsi');
+    const btnDescPasar = document.getElementById('btn-toggle-desc-pasar');
+    pDescPasar.innerHTML = deskripsiBisaDiklik.replace(/\n/g, '<br>');
+    if(pDescPasar && btnDescPasar) { 
+        pDescPasar.classList.add('line-clamp-4'); 
+        btnDescPasar.innerHTML = 'Lihat Selengkapnya ▼'; 
+    }
+    // -----------------------------------------
+    
+    const sellerVideoCount = allVideosData.filter(v => String(v.user_id) === String(produk.user_id)).length;
+    const sellerExp = produk.profiles?.exp || 0;
+    const badgeHtml = getBadgeByLevelAndVideos(hitungStatusLevel(sellerExp).level, sellerVideoCount);
+
+    document.getElementById('pasar-detail-avatar').src = produk.profiles?.avatar_url || 'https://placehold.co/100x100/1a1133/2BD975?text=AV';
+    document.getElementById('pasar-detail-penjual').innerHTML = `${produk.profiles?.nickname || 'Anonim'} <span class="scale-[0.85] origin-left inline-flex ml-1">${badgeHtml}</span>`;
+
+    // Tombol Beli Dinamis (Dengan Qty & Variasi)
+    const btnBeli = document.getElementById('btn-beli-pasar');
+    btnBeli.onclick = () => {
+        let namaProdukFinal = produk.title;
+        if (currentPasarVariation !== "") namaProdukFinal += ` - ${currentPasarVariation}`;
+        if (currentPasarQty > 1) namaProdukFinal += ` (x${currentPasarQty})`;
+        let totalHargaCheckout = currentPasarPrice * currentPasarQty;
+        checkoutPasar(namaProdukFinal, totalHargaCheckout, produk.id);
+    };
+
+    // Logika Tombol Sesuai Status Stok / Kepemilikan
+    if (currentUser && currentUser.id === produk.user_id) {
+        btnBeli.innerHTML = '<i class="fas fa-ban"></i> Ini Produk Anda'; btnBeli.disabled = true; btnBeli.className = "w-full bg-gray-600 text-white py-3.5 rounded-xl font-extrabold uppercase text-sm z-30 relative";
+    } else if (isAutoItem && sisaStok === 0) {
+        btnBeli.innerHTML = '<i class="fas fa-box-open"></i> Stok Habis'; btnBeli.disabled = true; btnBeli.className = "w-full bg-red-500/50 text-white py-3.5 rounded-xl font-extrabold uppercase text-sm z-30 relative cursor-not-allowed border border-red-500/30";
+    } else {
+        btnBeli.innerHTML = '<i class="fas fa-shopping-cart"></i> Beli Sekarang'; btnBeli.disabled = false; btnBeli.className = "w-full bg-gradient-to-r from-[#FF5722] to-[#EE4D2D] text-white py-3.5 rounded-xl font-extrabold active:scale-95 transition-all uppercase text-sm shadow-[0_4px_15px_rgba(238,77,45,0.3)] z-30 relative";
+    }
+
+    document.getElementById('modal-detail-pasar').classList.replace('hidden', 'flex');
+    history.pushState({ popup: 'detail_pasar' }, null, '#detailpasar?id=' + produk.id);
+}
+
+
+function tutupDetailPasar(dariTombolBackHP = false) {
+    document.getElementById('modal-detail-pasar').classList.replace('flex', 'hidden');
+    if (!dariTombolBackHP && window.location.hash.startsWith('#detailpasar')) {
+        history.back();
+    }
+}
+
+function lihatProfilPenjual() {
+    if (idPenjualAktif) {
+        tutupDetailPasar();
+        viewUserProfile(idPenjualAktif);
+    }
+}
+
+function chatPenjualPasar() {
+    if (idPenjualAktif) {
+        tutupDetailPasar();
+        kirimPesanPribadi(idPenjualAktif);
+    }
+}
+
+async function checkoutPasar(namaFinal, totalHarga, id) {
+    const btnBeli = document.getElementById('btn-beli-pasar');
+    btnBeli.disabled = true;
+    btnBeli.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memverifikasi...';
+
+    showToast("Memverifikasi pesanan ke server...", "info");
+    
+    try {
+        const { data: produkAsli, error } = await supabaseClient.from('player_products').select('user_id').eq('id', id).single();
+        if (error || !produkAsli) throw new Error("Barang tidak ditemukan di server.");
+        
+        tutupDetailPasar(); 
+        
+        // Lempar ke fungsi pembayaran XoftwarePay Anda yang asli
+        checkoutXoftwarePay("[PASAR] " + namaFinal, totalHarga, "Pembelian item dari Pasar Player.", produkAsli.user_id, id);
+        
+    } catch (err) {
+        showToast("Gagal memverifikasi keamanan: " + err.message, "error");
+    } finally {
+        btnBeli.disabled = false;
+        btnBeli.innerHTML = '<i class="fas fa-shopping-cart"></i> Beli Sekarang';
+    }
+}
+
+// ==========================================
+// LOGIKA PEMBAYARAN VIP SELLER (DIPERBARUI DENGAN QTY & BIAYA ADMIN)
+// ==========================================
+let qtyVipBulan = 1;
+let paketSellerTerpilih = 'tahunan';
+
+function bukaModalLangganan() {
+    history.pushState({ popup: 'langganan' }, null, '#langganan');
+    const modal = document.getElementById('modal-langganan-seller');
+    modal.classList.replace('hidden', 'flex');
+    
+    // Efek transisi halus masuk
+    modal.style.opacity = '0';
+    modal.style.transition = 'opacity 0.3s ease';
+    setTimeout(() => modal.style.opacity = '1', 10);
+}
+
+function tutupModalLangganan(dariTombolBack = false) {
+    const modal = document.getElementById('modal-langganan-seller');
+    
+    // Efek memudar saat ditutup
+    modal.style.opacity = '0';
+    
+    // Sinkronisasi dengan tombol Back HP
+    if (!dariTombolBack && window.location.hash === '#langganan') {
+        history.back();
+    }
+
+    setTimeout(() => {
+        modal.classList.replace('flex', 'hidden');
+        modal.style.opacity = '1'; // Reset untuk dibuka lagi nanti
+    }, 300);
+}
+
+
+
+// Fungsi untuk menambah/mengurangi bulan
+function ubahQtyVIP(delta) {
+    qtyVipBulan = Math.max(1, qtyVipBulan + delta);
+    document.getElementById('qty-vip-bulan').value = qtyVipBulan;
+    
+    // Kalkulasi Harga Tampil
+    const hargaAsli = 40000 * qtyVipBulan;
+    const hargaCoret = 50000 * qtyVipBulan;
+    
+    // Update Text di Layar
+    document.getElementById('harga-bulanan').innerHTML = `Rp ${hargaAsli.toLocaleString('id-ID')}<span class="text-[10px] text-gray-500 font-normal"> /${qtyVipBulan * 30} hari</span>`;
+    document.getElementById('coret-bulanan').innerText = `Rp ${hargaCoret.toLocaleString('id-ID')}`;
+    
+    // Paksa auto-select ke paket bulanan setiap kali dipencet plus/minus
+    pilihPaketSeller('bulanan');
+}
+
+// Fungsi saat user mengetik angka langsung
+function inputQtyVIP(val) {
+    let parsed = parseInt(val);
+    // Jika dikosongkan/dihapus, sementara anggap 1 agar harga tidak error/NaN
+    qtyVipBulan = (isNaN(parsed) || parsed < 1) ? 1 : parsed; 
+    
+    // Kalkulasi Harga Tampil
+    const hargaAsli = 40000 * qtyVipBulan;
+    const hargaCoret = 50000 * qtyVipBulan;
+    
+    // Update Text di Layar
+    document.getElementById('harga-bulanan').innerHTML = `Rp ${hargaAsli.toLocaleString('id-ID')}<span class="text-[10px] text-gray-500 font-normal"> /${qtyVipBulan * 30} hari</span>`;
+    document.getElementById('coret-bulanan').innerText = `Rp ${hargaCoret.toLocaleString('id-ID')}`;
+    
+    // Paksa pindah fokus ke paket bulanan
+    pilihPaketSeller('bulanan');
+}
+
+// Fungsi saat user selesai ngetik (klik di luar kotak)
+function validasiQtyVIP(el) {
+    let parsed = parseInt(el.value);
+    // Kalau user sengaja ngosongin kotak lalu ditinggal, paksa balik ke angka 1
+    if (isNaN(parsed) || parsed < 1) { 
+        parsed = 1; 
+        el.value = 1; 
+    } else {
+        el.value = parsed; // Menghilangkan angka nol di depan (misal "05" jadi "5")
+    }
+    qtyVipBulan = parsed;
+    inputQtyVIP(parsed);
+}
+
+
+function pilihPaketSeller(tipe) {
+    paketSellerTerpilih = tipe;
+    
+    let hargaAwal = 0;
+    if (tipe === 'bulanan') {
+        hargaAwal = 40000 * qtyVipBulan;
+    } else {
+        hargaAwal = 400000;
+    }
+    
+    // LOGIKA PENAMBAHAN BIAYA ADMIN (Flat 500 + 0,7%)
+    const biayaGateway = 500 + Math.floor(hargaAwal * 0.007);
+    const hargaFinal = hargaAwal + biayaGateway;
+    
+    // Update Teks Tombol (Menampilkan total termasuk fee gateway)
+    document.getElementById('btn-bayar-langganan').innerHTML = `
+        <span>Berlangganan Rp ${hargaFinal.toLocaleString('id-ID')}</span>
+        <span class="text-[9px] font-normal text-white/80 normal-case mt-0.5">(Termasuk Admin QRIS: Rp ${biayaGateway.toLocaleString('id-ID')})</span>
+    `;
+    
+    // Update Animasi Kotak (Aktif/Tidak Aktif)
+    const radioBulanan = document.getElementById('radio-bulanan').querySelector('div');
+    const radioTahunan = document.getElementById('radio-tahunan').querySelector('div');
+    const cardBulanan = document.getElementById('card-bulanan');
+    const cardTahunan = document.getElementById('card-tahunan');
+
+    if (tipe === 'bulanan') {
+        radioBulanan.classList.replace('scale-0', 'scale-100');
+        radioTahunan.classList.replace('scale-100', 'scale-0');
+        cardBulanan.classList.add('border-brand-info', 'shadow-[0_0_15px_rgba(70,179,255,0.2)]');
+        cardBulanan.classList.remove('border-white/10');
+        cardTahunan.classList.remove('border-brand-accent', 'shadow-[0_0_15px_rgba(255,0,122,0.2)]');
+        cardTahunan.classList.add('border-white/10');
+    } else {
+        radioTahunan.classList.replace('scale-0', 'scale-100');
+        radioBulanan.classList.replace('scale-100', 'scale-0');
+        cardTahunan.classList.add('border-brand-accent', 'shadow-[0_0_15px_rgba(255,0,122,0.2)]');
+        cardTahunan.classList.remove('border-white/10');
+        cardBulanan.classList.remove('border-brand-info', 'shadow-[0_0_15px_rgba(70,179,255,0.2)]');
+        cardBulanan.classList.add('border-white/10');
+    }
+}
+
+async function lanjutkanBayarLangganan() {
+    tutupModalLangganan();
+    
+    let namaPaket = '';
+    let hargaAwal = 0;
+    
+    // Setup nama dan harga dasar tergantung paket yang dipilih
+    if (paketSellerTerpilih === 'tahunan') {
+        namaPaket = '[VIP] Langganan Seller 1 Tahun';
+        hargaAwal = 400000;
+    } else {
+        namaPaket = `[VIP] Langganan Seller ${qtyVipBulan} Bulan`;
+        hargaAwal = 40000 * qtyVipBulan;
+    }
+    
+    // Terapkan Biaya Gateway ke Total Checkout (500 + 0,7%)
+    const biayaGateway = 500 + Math.floor(hargaAwal * 0.007);
+    const hargaFinal = hargaAwal + biayaGateway;
+    
+    // Tembak API XoftwarePay menggunakan harga akhir
+    checkoutXoftwarePay(namaPaket, hargaFinal, "Aktivasi VIP Seller AU2Hub", null, null);
+}
+
+
+function tutupModalJualBarang(dariTombolBackHP = false) {
+    const modal = document.getElementById('modal-jual-barang');
+    modal.style.opacity = '0'; 
+    
+    if (!dariTombolBackHP && window.location.hash === '#jualbarang') {
+        history.back();
+    }
+
+    setTimeout(() => {
+        modal.classList.replace('flex', 'hidden');
+        modal.style.opacity = '1'; 
+        
+        document.getElementById('jualan-nama').value = '';
+        document.getElementById('jualan-harga').value = '';
+        document.getElementById('jualan-deskripsi').value = '';
+        document.getElementById('input-foto-jualan').value = '';
+        fileJualanArray = [];
+        const previewContainer = document.getElementById('preview-container-jualan');
+        if (previewContainer) {
+            previewContainer.innerHTML = '';
+            previewContainer.classList.add('hidden');
+        }
+    }, 300); 
+}
+
+// FUNGSI UNTUK MEMUNCULKAN/MENYEMBUNYIKAN KOTAK STOK
+function toggleStockInput(kategori, wadahId) {
+    const wadah = document.getElementById(wadahId);
+    if (kategori === 'Akun' || kategori === 'Item' || kategori === 'APK Premium') {
+        wadah.classList.remove('hidden');
+        wadah.classList.add('block');
+    } else {
+        wadah.classList.add('hidden');
+        wadah.classList.remove('block');
+    }
+}
+
+
+// Tambahkan variabel memori ini tepat di atas fungsinya
+let tokoTabAktif = 'pesanan'; // Menyimpan riwayat tab terakhir yang dibuka seller
+
+// ==========================================
+// GATEKEEPER 1: TOMBOL TAMBAH PRODUK
+// ==========================================
+function bukaModalJualBarang() {
+    if (!currentUser) return showToast("Silakan login dulu untuk berjualan!", "error");
+    
+    // CEK VIP SELLER DARI DATABASE LOKAL
+    let isVip = userProfile?.is_seller === true;
+    let expiredAt = userProfile?.seller_expired_at ? new Date(userProfile.seller_expired_at) : new Date(0);
+    const now = new Date();
+
+    // 🔥 KUNCI ANTI-GAGAL: Paksa akses terbuka jika baru saja sukses bayar!
+    if (localStorage.getItem('optimistic_vip') === currentUser.id) {
+        isVip = true;
+        expiredAt = new Date(Date.now() + (30 * 24 * 60 * 60 * 1000)); // +30 Hari Sementara
+    }
+
+    // Jika bukan VIP atau masa aktif habis
+    if (!isVip || expiredAt < now) {
+        bukaModalLangganan();
+        return; // Setop disini, gembok pintunya!
+    }
+
+    // Jika aman, buka laci jualan
+    history.pushState({ popup: 'jual_barang' }, null, '#jualbarang');
+    const modal = document.getElementById('modal-jual-barang');
+    modal.classList.replace('hidden', 'flex');
+    modal.style.opacity = '0';
+    modal.style.transition = 'opacity 0.3s ease';
+    setTimeout(() => modal.style.opacity = '1', 10);
+}
+
+// ==========================================
+// GATEKEEPER 2: MENU TOKO SAYA (DASHBOARD)
+// ==========================================
+async function loadTokoSaya() {
+    const loggedOut = document.getElementById('toko-logged-out');
+    const loggedIn = document.getElementById('toko-logged-in');
+    
+    if (!currentUser) {
+        loggedOut.querySelector('h3').innerText = "Akses Tertutup";
+        loggedOut.querySelector('p').innerText = "Silakan login untuk mulai mengelola etalase toko dan melacak pesanan masuk Anda.";
+        loggedOut.querySelector('button').innerText = "LOGIN SEKARANG";
+        loggedOut.querySelector('button').onclick = openAuthModal;
+        
+        loggedOut.classList.remove('hidden');
+        loggedOut.classList.add('flex');
+        loggedIn.classList.add('hidden');
+        return;
+    }
+
+    // CEK VIP SELLER DARI DATABASE LOKAL
+    let isVip = userProfile?.is_seller === true;
+    let expiredAt = userProfile?.seller_expired_at ? new Date(userProfile.seller_expired_at) : new Date(0);
+    const now = new Date();
+
+    // 🔥 KUNCI ANTI-GAGAL: Paksa akses terbuka jika baru saja sukses bayar!
+    if (localStorage.getItem('optimistic_vip') === currentUser.id) {
+        isVip = true;
+        expiredAt = new Date(Date.now() + (30 * 24 * 60 * 60 * 1000)); // +30 Hari Sementara
+    }
+
+    // Jika bukan VIP atau masa aktif habis
+    if (!isVip || expiredAt < now) {
+        loggedOut.querySelector('h3').innerText = "Akses Khusus VIP Seller";
+        // Teks ini lebih pendek biar rapi
+        loggedOut.querySelector('p').innerText = "Tingkatkan akunmu menjadi VIP Seller untuk mengelola toko, menambah etalase, dan menerima pesanan.";
+        
+        loggedOut.querySelector('button').innerText = "BERLANGGANAN SEKARANG";
+        loggedOut.querySelector('button').onclick = bukaModalLangganan;
+        
+        loggedOut.classList.remove('hidden');
+        loggedOut.classList.add('flex');
+        loggedIn.classList.add('hidden');
+        return; // Setop disini, gembok pintunya!
+    }
+    
+    // Jika aman, izinkan masuk ke etalase
+    loggedOut.classList.add('hidden');
+    loggedOut.classList.remove('flex');
+    loggedIn.classList.remove('hidden');
+
+    // 🔥 TAMPILKAN INFO MASA AKTIF VIP KE LAYAR
+    const elExpired = document.getElementById('toko-vip-expired');
+    const elBadge = document.getElementById('badge-toko-vip');
+    
+    if (elExpired && elBadge) {
+        // Hitung sisa hari
+        const sisaHari = Math.ceil((expiredAt - now) / (1000 * 60 * 60 * 24));
+        
+        // Format tanggal jadi cantik (Contoh: 15 Okt 2024)
+        const formatTanggal = expiredAt.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+        
+        elExpired.innerHTML = `<i class="fas fa-clock text-[#FF5722] mr-1"></i> Aktif s/d: <b class="text-white">${formatTanggal}</b> (${sisaHari} Hari)`;
+        elExpired.classList.remove('hidden');
+        elBadge.classList.remove('hidden');
+    }
+
+    await cekPencairanDanaH1();
+    await updateUiSaldoSeller();
+    switchTokoTab(tokoTabAktif);
+}
+
+
+
+async function updateUiSaldoSeller() {
+    try {
+        // Tarik Saldo Aktif
+        const { data: profile } = await supabaseClient.from('profiles').select('balance').eq('id', currentUser.id).single();
+        document.getElementById('toko-saldo-aktif').innerText = 'Rp ' + (profile?.balance || 0).toLocaleString('id-ID');
+
+        // Tarik Saldo Tertahan (Pesanan selesai yang dana_cair = false)
+        const { data: pendingFunds } = await supabaseClient
+            .from('orders_player')
+            .select('price')
+            .eq('seller_id', currentUser.id)
+            .eq('status', 'selesai')
+            .eq('dana_cair', false);
+        
+        let totalTertahan = 0;
+        if(pendingFunds && pendingFunds.length > 0) {
+            pendingFunds.forEach(p => {
+                const hargaBase = Math.round((p.price - 650) / 1.007);
+                const bersih = hargaBase - Math.floor(hargaBase * 0.05);
+                totalTertahan += bersih;
+            });
+        }
+        document.getElementById('toko-saldo-tertahan').innerText = 'Rp ' + totalTertahan.toLocaleString('id-ID');
+    } catch(e) {}
+}
+
+async function cekPencairanDanaH1() {
+    try {
+        // Cari semua order milik Seller ini yang statusnya 'selesai' TAPI 'dana_cair' masih false
+        const { data: ordersToClear } = await supabaseClient
+            .from('orders_player')
+            .select('id, price, product_name, waktu_selesai')
+            .eq('seller_id', currentUser.id)
+            .eq('status', 'selesai')
+            .eq('dana_cair', false);
+
+        if (!ordersToClear || ordersToClear.length === 0) return;
+
+        const sekarang = new Date();
+        let danaCairBaru = 0;
+        
+        for (let order of ordersToClear) {
+            // Jika bot gagal mencatat waktu_selesai, pasang otomatis ke waktu sekarang
+            if (!order.waktu_selesai) {
+                await supabaseClient.from('orders_player').update({ waktu_selesai: sekarang.toISOString() }).eq('id', order.id);
+                continue;
+            }
+
+            const waktuSelesai = new Date(order.waktu_selesai);
+            const selisihJam = Math.abs(sekarang - waktuSelesai) / 36e5; // Mengubah milidetik jadi Jam
+
+            // JIKA UMURNYA SUDAH LEBIH DARI 24 JAM (H+1)
+            if (selisihJam >= 24) {
+                const hargaBase = Math.round((order.price - 650) / 1.007);
+                const pendapatanBersih = hargaBase - Math.floor(hargaBase * 0.05);
+
+                // 1. Tembak RPC Cairkan Saldo
+                await supabaseClient.rpc('proses_pencairan_otomatis', {
+                    p_seller_id: currentUser.id,
+                    p_jumlah: pendapatanBersih,
+                    p_deskripsi: `Pencairan H+1: ${order.product_name}`
+                });
+
+                // 2. Gembok order ini agar tidak dicairkan dua kali
+                await supabaseClient.from('orders_player').update({ dana_cair: true }).eq('id', order.id);
+                
+                danaCairBaru += pendapatanBersih;
+            }
+        }
+
+        if (danaCairBaru > 0) {
+            showToast(`Dana tertahan sebesar Rp ${danaCairBaru.toLocaleString('id-ID')} telah cair ke Saldo Aktif Anda!`, "success");
+        }
+
+    } catch(e) {
+        console.error("Gagal menjalankan cron pencairan H+1", e);
+    }
+}
+
+
+
+// --- FUNGSI MANAJEMEN TOKO & PASAR ---
+
+function switchTokoTab(tab) {
+    tokoTabAktif = tab; // Simpan tab yang sedang diklik ke dalam memori
+
+    const contProduk = document.getElementById('toko-produk-container');
+    const contPesanan = document.getElementById('toko-pesanan-container');
+    const menuProduk = document.getElementById('menu-toko-produk');
+    const menuPesanan = document.getElementById('menu-toko-pesanan');
+    const title = document.getElementById('toko-section-title');
+
+    // Style modern vertical cards (tanpa ring putih)
+    const activeClass = 'bg-[#1A2642] border-[#2A3C65] shadow-lg transform -translate-y-1';
+    const inactiveClass = 'bg-[#161B2E] border-transparent shadow-md opacity-80 hover:opacity-100';
+
+    if (tab === 'produk') {
+        title.innerText = "Etalase Produk Saya";
+        menuProduk.className = `p-4 rounded-2xl flex flex-col items-center gap-2 cursor-pointer transition-all active:scale-95 ${activeClass}`;
+        menuPesanan.className = `p-4 rounded-2xl flex flex-col items-center gap-2 cursor-pointer transition-all active:scale-95 hover:bg-white/5 ${inactiveClass}`;
+        
+        contProduk.classList.replace('hidden', 'block');
+        contPesanan.classList.replace('block', 'hidden');
+        if(currentUser) loadProdukSaya();
+    } else {
+        title.innerText = "Daftar Pesanan Masuk";
+        menuPesanan.className = `p-4 rounded-2xl flex flex-col items-center gap-2 cursor-pointer transition-all active:scale-95 ${activeClass}`;
+        menuProduk.className = `p-4 rounded-2xl flex flex-col items-center gap-2 cursor-pointer transition-all active:scale-95 hover:bg-white/5 ${inactiveClass}`;
+        
+        contPesanan.classList.replace('hidden', 'block');
+        contProduk.classList.replace('block', 'hidden');
+        if(currentUser) loadPesananMasuk();
+    }
+}
+
+
+async function loadPasarPlayer(forceRefresh = false) {
+    const gridPasar = document.getElementById('grid-pasar-player');
+    if (!gridPasar) return;
+
+    if (forceRefresh) {
+        gridPasar.innerHTML = '<div class="col-span-2 text-center py-10 text-brand-success"><i class="fas fa-spinner fa-spin text-3xl mb-3"></i><br><span class="text-xs font-bold uppercase tracking-widest">Memuat Ulang...</span></div>';
+    }
+
+    try {
+        const { data, error } = await supabaseClient
+            .from('player_products')
+            .select('*, profiles:user_id(nickname, avatar_url, exp)') 
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        globalDataPasar = data || [];
+        renderKategoriPasarTabs(globalDataPasar);
+        terapkanFilterPasar(); // Gunakan fungsi filter cerdas
+
+        // --- INI LOGIKA PENDETEKSI LINK YANG SEBELUMNYA TERTIMPA ---
+        const urlHash = window.location.hash.substring(1);
+        if (urlHash.startsWith('detailpasar?id=')) {
+            const produkId = urlHash.split('=')[1];
+            if (produkId) {
+                // Beri jeda 800ms agar data selesai dimuat sebelum membuka laci
+                setTimeout(() => { bukaDetailPasar(produkId); }, 800); 
+            }
+        }
+
+    } catch (err) {
+        gridPasar.innerHTML = '<div class="col-span-2 text-center py-10 text-red-500 text-xs">Gagal menarik data pasar. Cek koneksi.</div>';
+    }
+}
+
+function filterKategoriPasar(kat, btnEl) {
+    kategoriPasarAktif = kat;
+    document.querySelectorAll('.btn-kat-pasar').forEach(btn => {
+        btn.className = "btn-kat-pasar whitespace-nowrap bg-white/5 border border-white/10 text-gray-400 px-4 py-1.5 rounded-full text-[10px] font-bold hover:bg-white/10 transition-all";
+    });
+    btnEl.className = "btn-kat-pasar whitespace-nowrap bg-brand-success border border-transparent text-white px-4 py-1.5 rounded-full text-[10px] font-bold shadow-[0_0_10px_rgba(37,211,102,0.3)] transition-all";
+    terapkanFilterPasar();
+}
+
+function terapkanFilterPasar() {
+    const keyword = (document.getElementById('cari-pasar')?.value || '').toLowerCase();
+    const filteredData = globalDataPasar.filter(item => {
+        const matchSearch = item.title.toLowerCase().includes(keyword) || 
+                            item.category.toLowerCase().includes(keyword) || 
+                            (item.profiles?.nickname || '').toLowerCase().includes(keyword);
+        const matchKat = (kategoriPasarAktif === 'Semua') ? true : (item.category === kategoriPasarAktif);
+        return matchSearch && matchKat;
+    });
+    renderGridPasar(filteredData);
+}
+
+async function bukaModalSaldoDompet() {
+    if (!currentUser) return showToast("Silakan login dulu!", "error");
+    document.getElementById('modal-saldo-dompet').classList.replace('hidden', 'flex');
+    fetchSaldoDanMutasi();
+}
+
+function tutupModalSaldoDompet() {
+    document.getElementById('modal-saldo-dompet').classList.replace('flex', 'hidden');
+}
+
+// --- KODE PEMULIHAN (Fungsi yang hilang) ---
+
+async function loadProdukSaya() {
+    const container = document.getElementById('toko-produk-container');
+    if(!container) return;
+    
+    container.innerHTML = '<div class="text-center py-10 text-xs text-gray-500"><i class="fas fa-spinner fa-spin text-2xl mb-2 text-orange-500"></i><br>Memuat etalase...</div>';
+    
+    try {
+        const { data, error } = await supabaseClient
+            .from('player_products')
+            .select('*')
+            .eq('user_id', currentUser.id)
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        if (data && data.length > 0) {
+            container.innerHTML = data.map(item => {
+                const hargaAsli = Number(item.price);
+                const pajakAdmin = Math.floor(hargaAsli * 0.05);
+                const pendapatanBersih = hargaAsli - pajakAdmin;
+                const foto = (item.image_url || '').split(',')[0];
+                
+                // Hitung Stok jika produknya adalah barang otomatis
+                const isAutoItem = item.category === 'Akun' || item.category === 'Item' || item.category === 'APK Premium';
+                const sisaStok = isAutoItem && item.stock_list ? item.stock_list.split(/\r?\n/).filter(s=>s.trim() !== '').length : 0;
+                const stokBadge = isAutoItem ? `<span class="text-[8px] font-bold bg-black/80 text-white px-2 py-0.5 rounded backdrop-blur-sm border border-white/20 absolute top-1.5 right-1.5 shadow-md">Sisa: ${sisaStok}</span>` : '';
+
+                return `
+                <div class="bg-[#161B2E] border border-transparent rounded-[1.2rem] p-4 shadow-lg mb-3 transition-all hover:border-white/5">
+                    <div class="flex gap-4 items-center mb-4">
+                        <div class="relative w-[70px] h-[70px] rounded-[1rem] overflow-hidden shrink-0 bg-black/40 shadow-sm border border-white/5">
+                            <img src="${foto}" class="w-full h-full object-cover" onerror="this.src='https://placehold.co/100/1a1133/2BD975?text=PRODUK'">
+                            ${stokBadge}
+                        </div>
+                        
+                        <div class="flex-1 min-w-0">
+                            <h4 class="text-sm font-bold text-white line-clamp-1 mb-1">${item.title}</h4>
+                            <div class="flex flex-col gap-0.5">
+                                <span class="text-[10px] text-gray-500 font-medium">Harga Jual: Rp ${hargaAsli.toLocaleString('id-ID')}</span>
+                                <span class="text-[11px] text-[#EE4D2D] font-bold tracking-tight">Pendapatan: Rp ${pendapatanBersih.toLocaleString('id-ID')}</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex gap-3 justify-end w-full">
+                        <button onclick="bukaModalEditProduk('${item.id}')" class="flex-1 bg-[#1A2642] border border-[#2A3C65] text-[#46B3FF] py-3 rounded-xl text-[11px] font-bold transition-all active:scale-95 flex items-center justify-center gap-2">
+                            <i class="fas fa-pen"></i> Edit Detail
+                        </button>
+                        <button onclick="hapusProdukSaya('${item.id}', '${escapeHTML(item.title).replace(/'/g, "\\'")}')" class="w-12 h-12 flex-shrink-0 bg-[#3A1818] border border-[#5A2020] text-red-500 rounded-xl flex items-center justify-center transition-all active:scale-95">
+                            <i class="fas fa-trash-alt text-[11px]"></i>
+                        </button>
+                    </div>
+                </div>`;
+            }).join('');
+        } else {
+            container.innerHTML = `
+            <div class="flex flex-col items-center justify-center py-12 px-6 text-center bg-black/20 rounded-2xl border border-white/5">
+                <div class="w-16 h-16 bg-orange-500/10 rounded-full flex items-center justify-center mb-3 border border-orange-500/20 shadow-inner">
+                    <i class="fas fa-box-open text-2xl text-orange-500/50"></i>
+                </div>
+                <h4 class="text-white font-bold text-xs mb-1 tracking-tight">Belum Ada Produk</h4>
+                <p class="text-[10px] text-gray-500 leading-relaxed">Etalase toko Anda masih kosong. Tambahkan produk sekarang!</p>
+            </div>`;
+        }
+    } catch (err) {
+        container.innerHTML = '<div class="text-center py-10 text-red-500 text-xs">Gagal menarik data produk.</div>';
+    }
+}
+
+
+async function loadPesananMasuk() {
+    const container = document.getElementById('toko-pesanan-container');
+    if(!container) return;
+    
+    container.innerHTML = '<div class="text-center py-10 text-xs text-gray-500"><i class="fas fa-spinner fa-spin text-2xl mb-2 text-brand-info"></i><br>Memuat pesanan...</div>';
+    
+    try {
+        // [UPDATE] Tambahkan avatar_url agar foto profil pembeli bisa muncul
+        const { data, error } = await supabaseClient
+            .from('orders_player')
+            .select('*, profiles:user_id(nickname, avatar_url)')
+            .eq('seller_id', currentUser.id)
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        if (data && data.length > 0) {
+            container.innerHTML = data.map(order => {
+                const isSelesai = order.status === 'selesai';
+                const isPending = order.status === 'PENDING';
+                
+                // Data Pembeli
+                const namaPembeli = order.profiles?.nickname || 'Anonim';
+                const avaPembeli = order.profiles?.avatar_url || `https://ui-avatars.com/api/?name=${namaPembeli}&background=1A1133&color=fff`;
+                
+                // Styling Status
+                let teksStatus = order.status === 'SUCCESS' ? 'DIPROSES' : order.status.toUpperCase();
+                let statusClass = 'text-brand-info border-brand-info/30 bg-brand-info/10'; // Default Diproses
+                if (isSelesai) statusClass = 'text-brand-success border-brand-success/30 bg-brand-success/10';
+                if (isPending) statusClass = 'text-gray-400 border-gray-500/30 bg-gray-500/10';
+
+                // DESAIN CARD MODERN ALA SHOPEE SELLER CENTER
+                return `
+                <div class="bg-brand-card border border-white/5 rounded-2xl overflow-hidden shadow-lg transition-all hover:border-white/10">
+                    <div class="flex justify-between items-center p-3 border-b border-white/5 bg-black/20">
+                        <div class="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity" onclick="viewUserProfile('${order.user_id}')">
+                            <img src="${avaPembeli}" class="w-6 h-6 rounded-full object-cover border border-white/10 shrink-0">
+                            <span class="text-[10px] font-bold text-white truncate max-w-[100px]">${namaPembeli}</span>
+                            <i class="fas fa-chevron-right text-[8px] text-gray-500"></i>
+                        </div>
+                        <span class="text-[8px] font-black px-2 py-1 rounded border ${statusClass} uppercase tracking-widest shrink-0">
+                            ${teksStatus}
+                        </span>
+                    </div>
+                    
+                    <div class="p-4 flex gap-3 items-center">
+                        <div class="w-12 h-12 rounded-xl bg-black/40 flex items-center justify-center border border-white/5 shrink-0 shadow-inner">
+                            <i class="fas fa-box text-xl ${isSelesai ? 'text-brand-success/50' : 'text-brand-info/50'}"></i>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <h4 class="text-xs font-bold text-white mb-1 line-clamp-2 leading-snug">${order.product_name}</h4>
+                            <div class="flex justify-between items-end mt-2">
+                                <span class="text-[9px] text-gray-500"><i class="far fa-clock mr-1"></i>${timeAgo(order.created_at)}</span>
+                                <div class="text-[11px] text-[#EE4D2D] font-bold tracking-tight">Rp ${Number(order.price).toLocaleString('id-ID')}</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="p-3 border-t border-white/5 bg-black/20 flex justify-end gap-2">
+                        <button onclick="kirimPesanPribadi('${order.user_id}')" class="bg-brand-info/10 text-brand-info hover:bg-brand-info hover:text-brand-dark border border-brand-info/30 px-4 py-2 rounded-xl text-[10px] font-bold transition-all flex items-center gap-1.5 active:scale-95 shadow-sm">
+                            <i class="fas fa-comment-dots"></i> Chat Pembeli
+                        </button>
+                    </div>
+                </div>`;
+            }).join('');
+        } else {
+            container.innerHTML = `
+            <div class="flex flex-col items-center justify-center py-12 px-6 text-center bg-black/20 rounded-2xl border border-white/5">
+                <div class="w-16 h-16 bg-blue-500/10 rounded-full flex items-center justify-center mb-3 border border-blue-500/20">
+                    <i class="fas fa-clipboard-list text-2xl text-blue-500/50"></i>
+                </div>
+                <h4 class="text-white font-bold text-xs mb-1">Belum Ada Pesanan</h4>
+                <p class="text-[10px] text-gray-500 leading-relaxed">Pesanan dari pembeli akan muncul di sini.</p>
+            </div>`;
+        }
+    } catch (e) {
+        container.innerHTML = '<div class="text-center py-10 text-red-500 text-xs">Gagal menarik data pesanan.</div>';
+    }
+}
+
+
+function bukaGalleryPasar(idProduk, startIndex) {
+    const produk = globalDataPasar.find(item => String(item.id) === String(idProduk));
+    if (!produk) return;
+    
+    let arrFoto = produk.image_url ? produk.image_url.split(',').map(img => img.trim()).filter(img => img !== "") : [];
+    if (arrFoto.length === 0) arrFoto.push('https://placehold.co/400x400/1a1133/2BD975?text=PASAR');
+    
+    let galleryModal = document.getElementById('modal-gallery-pasar');
+    if (!galleryModal) {
+        galleryModal = document.createElement('div');
+        galleryModal.id = 'modal-gallery-pasar';
+        galleryModal.className = 'fixed inset-0 z-[9999] hidden items-center justify-center bg-black/95 backdrop-blur-md opacity-0 transition-opacity duration-300';
+        document.body.appendChild(galleryModal);
+    }
+
+    // 1. SEMBUNYIKAN LACI DETAIL PRODUK SEMENTARA
+    const modalDetail = document.getElementById('modal-detail-pasar');
+    if (modalDetail && !modalDetail.classList.contains('hidden')) {
+        modalDetail.classList.replace('flex', 'hidden');
+    }
+
+    history.pushState({ popup: 'gallery' }, null, '#gallery');
+    
+    galleryModal.innerHTML = `
+        <button onclick="tutupGalleryPasar()" class="absolute top-6 right-6 text-white bg-white/10 backdrop-blur-md w-12 h-12 rounded-full flex items-center justify-center active:scale-90 z-[9999] shadow-lg border border-white/20"><i class="fas fa-times text-xl"></i></button>
+        <div id="gallery-slider" class="w-full h-full flex overflow-x-auto hide-scroll snap-x snap-mandatory items-center relative z-[9990]">
+            ${arrFoto.map(img => `
+                <div class="w-full h-full flex-shrink-0 snap-center flex items-center justify-center p-2 relative">
+                    <img src="${img}" draggable="false" class="max-w-full max-h-[85vh] object-contain rounded-xl shadow-2xl pointer-events-none relative z-0">
+                    <!-- Watermark AU2Hub untuk Full Screen -->
+                    <img src="https://nos.wjv-1.neo.id/au2hub/Picsart_26-05-22_23-46-22-498.png" class="absolute inset-0 m-auto w-48 h-48 object-contain opacity-[0.25] pointer-events-none z-10 drop-shadow-lg">
+                </div>
+            `).join('')}
+        </div>
+        ${arrFoto.length > 1 ? `<div class="absolute bottom-10 left-1/2 -translate-x-1/2 bg-black/60 backdrop-blur-md text-white text-[10px] font-bold px-5 py-2 rounded-full border border-white/10 shadow-lg z-[9999]"><span id="gallery-current">${startIndex + 1}</span> / ${arrFoto.length}</div>` : ''}
+    `;
+    
+    galleryModal.classList.remove('hidden');
+    galleryModal.classList.add('flex');
+    
+    setTimeout(() => {
+        galleryModal.classList.remove('opacity-0');
+        const slider = document.getElementById('gallery-slider');
+        if (slider) {
+            slider.scrollLeft = slider.clientWidth * startIndex;
+            slider.onscroll = () => {
+                let page = Math.round(slider.scrollLeft / slider.clientWidth) + 1;
+                const currCounter = document.getElementById('gallery-current');
+                if (currCounter) currCounter.innerText = page;
+            };
+        }
+    }, 10);
+}
+
+
+function tutupGalleryPasar(dariTombolBack = false) {
+    const modal = document.getElementById('modal-gallery-pasar');
+    if (!modal) return;
+    modal.classList.add('opacity-0');
+    const modalDetail = document.getElementById('modal-detail-pasar');
+    if (modalDetail && modalDetail.classList.contains('hidden')) {
+        modalDetail.classList.replace('hidden', 'flex');
+    }
+    if (!dariTombolBack && window.location.hash === '#gallery') history.back();
+    setTimeout(() => { modal.classList.add('hidden'); modal.classList.remove('flex'); modal.innerHTML = ''; }, 300);
+}
+
+async function fetchSaldoDanMutasi() {
+    const listContainer = document.getElementById('dompet-history-list');
+    if(!listContainer) return;
+    listContainer.innerHTML = '<div class="text-center py-10 text-gray-500 text-xs"><i class="fas fa-spinner fa-spin text-2xl mb-2"></i></div>';
+
+    try {
+        const { data: profile } = await supabaseClient.from('profiles').select('balance').eq('id', currentUser.id).single();
+        const saldoSekarang = profile?.balance || 0;
+        document.getElementById('dompet-angka-saldo').innerText = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(saldoSekarang);
+
+        const { data: txData } = await supabaseClient.from('wallet_transactions').select('*').eq('user_id', currentUser.id).order('created_at', { ascending: false });
+
+        if (txData && txData.length > 0) {
+            listContainer.innerHTML = txData.map(tx => `
+                <div class="bg-brand-card border border-white/5 p-3 rounded-xl flex justify-between items-center">
+                    <div class="truncate">
+                        <h4 class="text-xs font-bold text-white truncate">${tx.description}</h4>
+                        <p class="text-[9px] text-gray-500">${timeAgo(tx.created_at)}</p>
+                    </div>
+                    <span class="text-xs font-black ${tx.type === 'INCOME' ? 'text-brand-success' : 'text-red-400'}">
+                        ${tx.type === 'INCOME' ? '+' : '-'} Rp ${Number(tx.amount).toLocaleString('id-ID')}
+                    </span>
+                </div>`).join('');
+        } else {
+            listContainer.innerHTML = '<div class="text-center py-10 text-gray-500 text-xs">Belum ada riwayat.</div>';
+        }
+    } catch (err) {
+        listContainer.innerHTML = '<div class="text-center py-10 text-red-500 text-xs">Gagal memuat data.</div>';
+    }
+}
+
+async function prosesTarikSaldo() {
+    try {
+        // 1. Ambil data saldo saat ini
+        const { data: profile } = await supabaseClient.from('profiles').select('balance, nickname').eq('id', currentUser.id).single();
+        const saldoMurni = profile.balance || 0;
+        
+        // 2. Cek apakah saldo total akun bahkan mencapai batas minimal awal
+        if (saldoMurni < 10000) return showToast("Min. penarikan Rp 10.000", "error");
+        
+        // 3. [BARU] Minta nominal yang ingin ditarik secara spesifik
+        const nominalInput = await customPrompt(`Masukkan nominal yang ingin ditarik (Saldo: Rp ${saldoMurni.toLocaleString('id-ID')}):`, "10000");
+        if (!nominalInput) return; // Batal jika di-cancel / kosong
+        
+        // Bersihkan inputan dari huruf atau titik jika user tidak sengaja mengetiknya
+        const nominalTarik = parseInt(nominalInput.replace(/[^0-9]/g, ''));
+        
+        // 4. [BARU] Validasi nominal inputan user
+        if (isNaN(nominalTarik) || nominalTarik < 10000) {
+            return showToast("Minimal penarikan adalah Rp 10.000", "error");
+        }
+        if (nominalTarik > saldoMurni) {
+            return showToast("Saldo Anda tidak mencukupi untuk nominal tersebut!", "error");
+        }
+
+        // 5. Minta rekening tujuan
+        const rek = await customPrompt("Masukkan Nama Bank & Nomor Rekening:", "DANA - 08xxxxxxxxxx");
+        if (!rek) return;
+
+        // 6. POTONG SALDO & CATAT RIWAYAT (Sekarang mengirim nominalTarik, bukan semua saldo)
+        const { error: rpcError } = await supabaseClient.rpc('proses_tarik_saldo', {
+            p_user_id: currentUser.id,
+            p_jumlah: nominalTarik, // <--- Sekarang dinamis sesuai ketikan seller!
+            p_rekening: rek
+        });
+
+        if (rpcError) throw rpcError;
+
+        // 7. Arahkan ke WhatsApp Admin dengan nominal yang dicairkan saja
+        const teks = encodeURIComponent(`Halo Admin, saya ${profile.nickname} ingin tarik saldo Rp ${nominalTarik.toLocaleString('id-ID')} ke ${rek}`);
+        window.open(`https://wa.me/6283815584661?text=${teks}`, '_blank');
+        
+        // 8. Tutup laci dan refresh UI
+        tutupModalSaldoDompet();
+        
+        // 🔥 TAMBAHAN FIX: Langsung kurangi angka di layar detik itu juga (Optimistic UI)
+        const sisaSaldoBaru = saldoMurni - nominalTarik;
+        const elSaldoAktif = document.getElementById('toko-saldo-aktif');
+        if (elSaldoAktif) {
+            elSaldoAktif.innerText = 'Rp ' + sisaSaldoBaru.toLocaleString('id-ID');
+        }
+        
+        // 🔥 Sinkronisasi senyap dengan database di latar belakang
+        updateUiSaldoSeller();
+        
+        showToast(`Penarikan Rp ${nominalTarik.toLocaleString('id-ID')} berhasil diproses!`, "success");
+        
+    } catch (e) { 
+        console.error(e);
+        showToast("Gagal memproses penarikan saldo.", "error"); 
+    }
+}
+
+
+
+// === 1. Variabel Global untuk Mode Edit ===
+let editFileArray = []; // Untuk menampung file foto baru dari HP
+let existingImagesEdit = []; // Untuk menampung URL foto lama dari database
+
+// === 2. Modifikasi Fungsi Buka & Tutup Modal Edit ===
+async function bukaModalEditProduk(idProduk) {
+    showToast("Mengambil data...", "info");
+    try {
+        const { data, error } = await supabaseClient.from('player_products').select('*').eq('id', idProduk).single();
+        if (error || !data) throw new Error("Produk tidak ditemukan.");
+        
+        document.getElementById('edit-produk-id').value = data.id;
+        document.getElementById('edit-produk-nama').value = data.title;
+        document.getElementById('edit-produk-harga').value = data.price;
+        document.getElementById('edit-produk-kategori').value = data.category;
+        document.getElementById('edit-produk-deskripsi').value = data.description;
+        
+        // [BARU] Masukkan data stok lama ke form, lalu atur tampilannya (muncul/sembunyi)
+        document.getElementById('edit-produk-stock').value = data.stock_list || '';
+        toggleStockInput(data.category, 'wadah-stock-edit');
+        
+        editFileArray = [];
+        existingImagesEdit = [];
+        
+        if (data.image_url) {
+            existingImagesEdit = data.image_url.split(',').map(u => u.trim()).filter(u => u !== "");
+        }
+        
+        renderPreviewEditProduk(); 
+        document.getElementById('modal-edit-produk').classList.replace('hidden', 'flex');
+        history.pushState({ popup: 'edit_produk' }, null, '#editproduk');
+    } catch(err) { 
+        showToast("Gagal memuat form edit", "error"); 
+    }
+}
+
+
+function tutupModalEditProduk(dariTombolBackHP = false) {
+    document.getElementById('modal-edit-produk').classList.replace('flex', 'hidden');
+    
+    // --- BERSIHKAN MEMORI RAM (BLOB URL) SEBELUM DITUTUP ---
+    const previewContainer = document.getElementById('preview-container-edit');
+    if (previewContainer) {
+        const images = previewContainer.querySelectorAll('img');
+        images.forEach(img => {
+            if (img.src.startsWith('blob:')) URL.revokeObjectURL(img.src);
+        });
+        previewContainer.innerHTML = '';
+    }
+    
+    editFileArray = [];
+    existingImagesEdit = [];
+    document.getElementById('input-foto-edit').value = '';
+    
+    // Mencegah looping history jika ditutup dari tombol Back HP
+    if (!dariTombolBackHP && window.location.hash === '#editproduk') {
+        history.back();
+    }
+}
+
+
+// === 3. Fungsi Preview Foto Mode Edit ===
+function previewGambarEdit(input) {
+    if (input.files && input.files.length > 0) {
+        const newFiles = Array.from(input.files);
+        let isSizeError = false;
+
+        newFiles.forEach((file) => {
+            if (file.size > 5 * 1024 * 1024) isSizeError = true;
+            else editFileArray.push(file); 
+        });
+
+        if (isSizeError) showToast("Beberapa foto berukuran > 5MB diabaikan.", "error");
+
+        renderPreviewEditProduk();
+        input.value = ''; 
+    }
+}
+
+function renderPreviewEditProduk() {
+    const previewContainer = document.getElementById('preview-container-edit');
+    
+    // BERSIHKAN MEMORI BLOB LAMA SEBELUM RENDER ULANG AGAR TIDAK MENUMPUK DI RAM
+    const oldImages = previewContainer.querySelectorAll('img');
+    oldImages.forEach(img => {
+        if (img.src.startsWith('blob:')) URL.revokeObjectURL(img.src);
+    });
+    
+    previewContainer.innerHTML = '';
+    
+    if (existingImagesEdit.length === 0 && editFileArray.length === 0) {
+        previewContainer.classList.add('hidden');
+        return;
+    }
+
+    let htmlContent = '';
+
+    // Render foto lama (dari URL) dengan label "LAMA"
+    existingImagesEdit.forEach((url, index) => {
+        htmlContent += `
+            <div class="relative w-20 h-20 sm:w-24 sm:h-24 shrink-0 rounded-xl overflow-hidden border border-brand-info/50 shadow-md">
+                <img src="${url}" class="w-full h-full object-cover">
+                <button onclick="hapusFotoLamaEdit(${index})" class="absolute top-1 right-1 bg-red-500/80 text-white rounded-full w-6 h-6 flex items-center justify-center backdrop-blur-md active:scale-90 transition-transform shadow-md z-10">
+                    <i class="fas fa-times text-xs"></i>
+                </button>
+                <div class="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-[8px] text-center py-0.5">LAMA</div>
+            </div>
+        `;
+    });
+
+    // Render foto baru (dari HP) dengan label "BARU"
+    editFileArray.forEach((file, index) => {
+        const tempUrl = URL.createObjectURL(file);
+        htmlContent += `
+            <div class="relative w-20 h-20 sm:w-24 sm:h-24 shrink-0 rounded-xl overflow-hidden border border-[#EE4D2D]/50 shadow-md">
+                <img src="${tempUrl}" class="w-full h-full object-cover">
+                <button onclick="hapusFotoBaruEdit(${index})" class="absolute top-1 right-1 bg-red-500/80 text-white rounded-full w-6 h-6 flex items-center justify-center backdrop-blur-md active:scale-90 transition-transform shadow-md z-10">
+                    <i class="fas fa-times text-xs"></i>
+                </button>
+                <div class="absolute bottom-0 left-0 right-0 bg-[#EE4D2D]/80 text-white text-[8px] text-center py-0.5">BARU</div>
+            </div>
+        `;
+    });
+
+    previewContainer.innerHTML = htmlContent;
+    previewContainer.classList.remove('hidden');
+}
+
+function hapusFotoLamaEdit(index) {
+    existingImagesEdit.splice(index, 1);
+    renderPreviewEditProduk();
+}
+
+function hapusFotoBaruEdit(index) {
+    editFileArray.splice(index, 1);
+    renderPreviewEditProduk();
+}
+
+// === 4. Eksekusi Simpan ke Database (Fungsi yang hilang) ===
+async function prosesEditProduk() {
+    const idProduk = document.getElementById('edit-produk-id').value;
+    const nama = document.getElementById('edit-produk-nama').value.trim();
+    const hargaInputClean = document.getElementById('edit-produk-harga').value.replace(/\./g, '');
+    const harga = parseInt(hargaInputClean);
+    const kategori = document.getElementById('edit-produk-kategori').value;
+    const deskripsi = document.getElementById('edit-produk-deskripsi').value.trim();
+    
+    // [BARU] Ambil data stok hasil editan
+    const stockList = document.getElementById('edit-produk-stock').value.trim();
+    
+    const btn = document.getElementById('btn-submit-edit-produk');
+
+    if (!idProduk) return showToast("Gagal mengidentifikasi ID produk!", "error");
+    if (!nama || !harga || isNaN(harga) || !deskripsi) return showToast("Mohon lengkapi formulir!", "error");
+    if (existingImagesEdit.length === 0 && editFileArray.length === 0) return showToast("Wajib menyertakan minimal 1 foto produk!", "error");
+    
+    // [BARU] Cegah user simpan kalau kategori Akun/Item tapi stoknya dikosongkan
+    if ((kategori === 'Akun' || kategori === 'Item' || kategori === 'APK Premium') && !stockList) {
+        return showToast("Wajib mengisi List Stok untuk kategori ini!", "error");
+    }
+
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan...';
+    btn.disabled = true;
+
+    try {
+        let uploadedUrls = [];
+        
+        if (editFileArray.length > 0) {
+            showToast(`Mengunggah ${editFileArray.length} foto baru...`, "info");
+            const uploadPromises = editFileArray.map(async (file, index) => {
+                const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent('pasar_edit_'+index+'_'+Date.now())}&filetype=${encodeURIComponent(file.type)}`);
+                const dataUrl = await resUrl.json();
+                await fetch(dataUrl.uploadUrl, { method: 'PUT', body: file, headers: { 'Content-Type': file.type, 'x-amz-acl': 'public-read' } });
+                return dataUrl.finalVideoUrl;
+            });
+            uploadedUrls = await Promise.all(uploadPromises);
+        }
+
+        const finalImageArray = [...existingImagesEdit, ...uploadedUrls];
+        const finalImageUrl = finalImageArray.join(',');
+
+        // [BARU] Update kolom stock_list ke Supabase
+        const { data: updatedData, error } = await supabaseClient.from('player_products')
+            .update({
+                title: nama, 
+                price: harga, 
+                category: kategori, 
+                description: deskripsi, 
+                image_url: finalImageUrl,
+                stock_list: (kategori === 'Akun' || kategori === 'Item' || kategori === 'APK Premium') ? stockList : null,
+                user_id: currentUser.id 
+            })
+            .eq('id', idProduk)
+            .select();
+
+        if (error) throw error;
+        
+        if (!updatedData || updatedData.length === 0) {
+            throw new Error("Izin ditolak oleh server (RLS UPDATE belum aktif).");
+        }
+
+        showToast("Produk berhasil diperbarui!", "success");
+        tutupModalEditProduk();
+        
+        await loadProdukSaya();
+        await loadPasarPlayer(true);
+
+    } catch (err) {
+        showToast("Gagal: " + err.message, "error");
+        console.error("Error Edit Produk:", err);
+    } finally {
+        btn.innerHTML = 'Simpan Perubahan';
+        btn.disabled = false;
+    }
+}
+
+
+
+
+async function hapusProdukSaya(productId, productName) {
+    const konfirmasi = await customConfirm("Yakin hapus produk: " + productName + "?");
+    if (!konfirmasi) return;
+    try {
+        // 1. Tarik data URL foto dulu dari database sebelum dihapus
+        const { data: produk } = await supabaseClient.from('player_products').select('image_url').eq('id', productId).single();
+
+        // 2. Hapus data produk dari Supabase
+        await supabaseClient.from('player_products').delete().eq('id', productId);
+
+        // 3. TEMBAK API DELETE FILE: Jika ada banyak foto (koma), hapus semuanya!
+        if (produk && produk.image_url) {
+            const arrFoto = produk.image_url.split(',');
+            for (const urlFoto of arrFoto) {
+                if (urlFoto.trim() !== "") {
+                    await fetch('/api/delete-file', {
+                        method: 'DELETE',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ fileUrl: urlFoto.trim() })
+                    }).catch(e => console.log("Ignore S3 error:", e));
+                }
+            }
+        }
+
+        showToast("Produk dan foto berhasil dihapus!", "success");
+        loadProdukSaya();
+        loadPasarPlayer(true);
+    } catch (e) { 
+        showToast("Gagal menghapus produk.", "error"); 
+    }
+}
+
+async function prosesAutoDeliveryTertunda() {
+    if (!currentUser) return;
+
+    // Cari pesanan Pasar Player berstatus 'SUCCESS' (sudah dibayar via Xoftware tapi barang belum dikirim)
+    const { data: pendingOrders } = await supabaseClient
+        .from('orders_player')
+        .select('*')
+        .eq('user_id', currentUser.id)
+        .eq('status', 'SUCCESS');
+
+    if (pendingOrders && pendingOrders.length > 0) {
+        for (let order of pendingOrders) {
+            let autoDeliveryData = "";
+            
+            if (order.product_id) {
+                const { data: prodData } = await supabaseClient
+                    .from('player_products')
+                    .select('stock_list, category')
+                    .eq('id', order.product_id)
+                    .single();
+
+                if (prodData && (prodData.category === 'Akun' || prodData.category === 'Item' || prodData.category === 'APK Premium') && prodData.stock_list) {
+                    let lines = prodData.stock_list.split(/\r?\n/).filter(l => l.trim() !== '');
+                    
+                    if (lines.length > 0) {
+                        autoDeliveryData = lines.shift();
+                        const newStockList = lines.join('\n');
+                        
+                        // 1. Kurangi stok di database etalase
+                        await supabaseClient.from('player_products').update({stock_list: newStockList}).eq('id', order.product_id);
+                        
+                        // 2. Kirim pesan inbox ke pembeli berisi item-nya
+                        await supabaseClient.from('messages').insert({
+                            sender_id: order.seller_id,
+                            receiver_id: order.user_id,
+                            message: `[SISTEM] Transaksi berhasil! Berikut detail pesanan *${order.product_name}* Anda:\n\n${autoDeliveryData}`
+                        });
+
+                        // ⚠️ PENTING: Fitur pencairan instan (tambah_saldo) telah dihapus dari sini.
+                        // Dana kini menjadi "Saldo Tertahan" dan akan dicairkan oleh sistem H+1.
+                    }
+                }
+            }
+
+            // 4. Ubah status jadi selesai dan catat WAKTU SELESAI agar argo H+1 mulai berjalan
+            const finalStatus = autoDeliveryData ? 'selesai' : 'proses';
+            
+            if (finalStatus === 'selesai') {
+                const waktuSelesaiBot = new Date().toISOString();
+                
+                await supabaseClient.from('orders_player')
+                    .update({ 
+                        status: finalStatus, 
+                        waktu_selesai: waktuSelesaiBot, 
+                        dana_cair: false 
+                    })
+                    .eq('id', order.id);
+            } else {
+                // Jika gagal auto-delivery, biarkan status "proses" tanpa menahan dana dulu
+                await supabaseClient.from('orders_player')
+                    .update({ status: finalStatus })
+                    .eq('id', order.id);
+            }
+        }
+    }
+}
+
+// ==========================================
+// SISTEM ANTI KLIK KANAN PADA GAMBAR
+// ==========================================
+document.addEventListener('contextmenu', function(e) {
+    // Jika yang diklik kanan adalah gambar (IMG), matikan fungsinya
+    if (e.target.tagName === 'IMG') {
+        e.preventDefault();
+        // Opsional: Kamu bisa memunculkan toast jika mau
+        // showToast("Gambar dilindungi oleh sistem.", "info");
+    }
+});
