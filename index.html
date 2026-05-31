@@ -9358,7 +9358,8 @@ async function selesaikanPesanan() {
         }
         
         tambahExp(50);
-        cekStatusPesanan('proses'); 
+        // 🔥 FIX: Otomatis pindahkan layar user ke tab "SELESAI" agar tidak panik
+        cekStatusPesanan('selesai'); 
         loadOrderTracker(currentUser.id); 
         
     } catch (err) {
@@ -10731,6 +10732,10 @@ const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent(pathLe
         document.getElementById('preview-container-jualan').classList.add('hidden');
         
         loadPasarPlayer(true);
+        // 🔥 FIX: Perbarui Etalase Pribadi Seller secara realtime!
+        if (currentUser) {
+            loadProdukSaya();
+        }
 
     } catch (err) {
         showToast("Gagal memposting: " + err.message, "error");
@@ -11785,8 +11790,19 @@ async function prosesTarikSaldo() {
         const teks = encodeURIComponent(`Halo Admin, saya ${profile.nickname} ingin tarik saldo Rp ${nominalTarik.toLocaleString('id-ID')} ke ${rek}`);
         window.open(`https://wa.me/6283815584661?text=${teks}`, '_blank');
         
-        // 8. Tutup laci dan refresh
+        // 8. Tutup laci dan refresh UI
         tutupModalSaldoDompet();
+        
+        // 🔥 TAMBAHAN FIX: Langsung kurangi angka di layar detik itu juga (Optimistic UI)
+        const sisaSaldoBaru = saldoMurni - nominalTarik;
+        const elSaldoAktif = document.getElementById('toko-saldo-aktif');
+        if (elSaldoAktif) {
+            elSaldoAktif.innerText = 'Rp ' + sisaSaldoBaru.toLocaleString('id-ID');
+        }
+        
+        // 🔥 Sinkronisasi senyap dengan database di latar belakang
+        updateUiSaldoSeller();
+        
         showToast(`Penarikan Rp ${nominalTarik.toLocaleString('id-ID')} berhasil diproses!`, "success");
         
     } catch (e) { 
