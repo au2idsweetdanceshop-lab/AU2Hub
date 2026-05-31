@@ -2455,30 +2455,6 @@ function toggleProfileVideoAudio(video) {
 }
 
 
-let floatClickTimer = null; // Memori antrean klik
-
-function handleFloatVideoClick(event, videoElement, vidId) {
-    // JIKA ADA KLIK KE-2 MASUK -> BATALKAN KLIK 1 (SUARA TIDAK JADI MATI)
-    if (floatClickTimer) {
-        clearTimeout(floatClickTimer);
-        floatClickTimer = null;
-        
-        // Eksekusi Double Click (LIKE)
-        const card = videoElement.closest('.snap-start');
-        const likeBtn = card.querySelector('.like-container button');
-        likeVideo(vidId, likeBtn); 
-        createHeartAt(event);      
-    } 
-    // JIKA INI KLIK 1 -> MULAI HITUNG MUNDUR 300ms
-    else {
-        floatClickTimer = setTimeout(() => {
-            // Jika dalam 300ms tidak ada klik ke-2, eksekusi suara!
-            floatClickTimer = null;
-        }, 300);
-    }
-}
-
-
 let videoClickTimer = null; 
 
 // 1. FUNGSI KLIK FEED UTAMA (SOSMED)
