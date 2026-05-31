@@ -9826,14 +9826,6 @@ async function prosesTarikSaldo() {
 
         if (rpcError) throw rpcError;
 
-        // 7. MASUKKAN KE DAFTAR ANTREAN ADMIN
-        const { error: wdError } = await supabaseClient.from('withdrawals').insert({
-            user_id: currentUser.id,
-            nominal: nominalTarik,
-            rekening: rek,
-            status: 'PENDING'
-        });
-
         if (wdError) {
             console.error("Gagal masuk antrean admin:", wdError);
             throw new Error("Gagal meneruskan data ke Pusat Kendali Admin.");
@@ -10360,47 +10352,50 @@ let isAdminProcessing = false;
 
 // === FUNGSI SETUJUI PENARIKAN (NOTIFIKASI MASUK CHAT & DOMPET) ===
 async function setujuiPenarikan(wdId, nickname) {
-    // Gembok anti klik-ganda admin
-    if (typeof isAdminProcessing !== 'undefined' && isAdminProcessing) return showToast("Sistem sedang memproses antrean lain...", "info");
-    
-    const konfirmasi = await customConfirm(`Anda YAKIN sudah mentransfer uang ini ke rekening @${nickname}?`);
-    if (!konfirmasi) return;
+    // 1. KUNCI LANGSUNG DI AWAL (Bukan setelah pop-up konfirmasi)
+    if (isAdminProcessing) return showToast("Sistem sedang memproses...", "info");
+    isAdminProcessing = true; 
 
-    window.isAdminProcessing = true; 
     try {
+        const konfirmasi = await customConfirm(`Anda YAKIN sudah mentransfer uang ini ke rekening @${nickname}?`);
+        if (!konfirmasi) return; // Jika Batal, lari ke 'finally' untuk buka gembok
+
         showToast("Memproses...", "info");
-        
-        // 1. Tarik data penarikan
-        const { data: wdData } = await supabaseClient.from('withdrawals').select('user_id, nominal, status').eq('id', wdId).single();
 
-        // Validasi mutlak agar tidak dieksekusi 2x kalau internet lag
-        if (wdData && wdData.status !== 'PENDING') {
-            throw new Error("Transaksi ini sudah diproses sebelumnya.");
-        }
-
-        // 2. Ubah status antrean menjadi SELESAI
-        const { error } = await supabaseClient.from('withdrawals').update({ status: 'SELESAI' }).eq('id', wdId);
-        if (error) throw error;
-
-        if (wdData) {
-            // 3A. ---> KIRIM NOTIFIKASI KE CHAT / INBOX SELLER <---
-            await supabaseClient.from('messages').insert({
-                sender_id: currentUser.id,
-                receiver_id: wdData.user_id,
-                message: `[SISTEM] Penarikan saldo sebesar Rp ${Number(wdData.nominal).toLocaleString('id-ID')} telah berhasil ditransfer ke rekening Anda oleh Admin. Silakan cek mutasi rekening Anda.`
-            });
-
-            // 3B. ---> KIRIM PENCATATAN KE RIWAYAT DOMPET SELLER <---
-            await supabaseClient.from('wallet_transactions').insert({
-                user_id: wdData.user_id,
-                amount: 0, // Di-set 0 agar tidak mengganggu kalkulasi saldo yang sudah dipotong di awal
-                type: 'INCOME', // Pakai INCOME agar teksnya berwarna hijau
-                description: `✅ BERHASIL: Dana Rp ${Number(wdData.nominal).toLocaleString('id-ID')} telah ditransfer Admin`
-            });
-        }
-
-        // 4. Efek visual hilang perlahan di laci admin
+        // 2. MATIKAN KLIK KARTU AGAR TIDAK BISA DI-SPAM KLIK
         const card = document.getElementById(`wd-${wdId}`);
+        if (card) card.style.pointerEvents = 'none';
+
+        // 3. JURUS ATOMIC UPDATE: Memaksa Supabase hanya mengeksekusi 1 kali seumur hidup
+        const { data, error } = await supabaseClient
+            .from('withdrawals')
+            .update({ status: 'SELESAI' })
+            .eq('id', wdId)
+            .eq('status', 'PENDING') // Syarat mutlak: Hanya dieksekusi jika status masih PENDING
+            .select();
+
+        if (error) throw error;
+        // Jika data kosong, berarti transaksi sudah pernah dieksekusi oleh klik sebelumnya
+        if (!data || data.length === 0) throw new Error("Transaksi ini sudah diproses.");
+
+        const wdData = data[0];
+
+        // 4A. ---> KIRIM NOTIFIKASI KE CHAT / INBOX SELLER <---
+        await supabaseClient.from('messages').insert({
+            sender_id: currentUser.id,
+            receiver_id: wdData.user_id,
+            message: `[SISTEM] Penarikan saldo sebesar Rp ${Number(wdData.nominal).toLocaleString('id-ID')} telah berhasil ditransfer ke rekening Anda oleh Admin. Silakan cek mutasi rekening Anda.`
+        });
+
+        // 4B. ---> KIRIM PENCATATAN KE RIWAYAT DOMPET SELLER <---
+        await supabaseClient.from('wallet_transactions').insert({
+            user_id: wdData.user_id,
+            amount: 0,
+            type: 'INCOME',
+            description: `✅ BERHASIL: Dana Rp ${Number(wdData.nominal).toLocaleString('id-ID')} telah ditransfer Admin`
+        });
+
+        // Efek visual hilang perlahan di laci admin
         if (card) {
             card.style.opacity = '0';
             setTimeout(() => {
@@ -10415,32 +10410,34 @@ async function setujuiPenarikan(wdId, nickname) {
     } catch (err) {
         showToast(err.message || "Gagal memperbarui database.", "error");
     } finally {
-        // Buka kembali gembok setelah proses tuntas
-        window.isAdminProcessing = false;
+        isAdminProcessing = false; // BUKA GEMBOK
     }
 }
 
-
-// === 3. FUNGSI TOLAK PENARIKAN (ANTI DOBEL REFUND) ===
+// === FUNGSI TOLAK PENARIKAN (ANTI DOBEL REFUND) ===
 async function tolakPenarikan(wdId, userId, nominal) {
-    if (isAdminProcessing) return showToast("Sistem sedang memproses antrean lain...", "info");
+    if (isAdminProcessing) return showToast("Sistem sedang memproses...", "info");
+    isAdminProcessing = true; // KUNCI LANGSUNG DI AWAL
 
-    const alasan = await customPrompt("Masukkan alasan penolakan (misal: Rekening tidak ditemukan):", "Nomor Rekening tidak valid");
-    if (!alasan) return;
-
-    isAdminProcessing = true; // Kunci tombol
     try {
+        const alasan = await customPrompt("Masukkan alasan penolakan (misal: Rekening tidak valid):", "Nomor Rekening tidak valid");
+        if (!alasan) return; 
+
         showToast("Memproses pembatalan & refund...", "info");
 
-        // VALIDASI MUTLAK: Pastikan status masih PENDING
-        const { data: wdData } = await supabaseClient.from('withdrawals').select('status').eq('id', wdId).single();
-        if (wdData && wdData.status !== 'PENDING') {
-            throw new Error("Transaksi ini sudah diproses sebelumnya.");
-        }
+        const card = document.getElementById(`wd-${wdId}`);
+        if (card) card.style.pointerEvents = 'none';
 
-        // Update status ditolak
-        const { error } = await supabaseClient.from('withdrawals').update({ status: 'DITOLAK' }).eq('id', wdId);
+        // JURUS ATOMIC UPDATE
+        const { data, error } = await supabaseClient
+            .from('withdrawals')
+            .update({ status: 'DITOLAK' })
+            .eq('id', wdId)
+            .eq('status', 'PENDING')
+            .select();
+
         if (error) throw error;
+        if (!data || data.length === 0) throw new Error("Transaksi ini sudah diproses.");
 
         // Refund saldo menggunakan RPC
         await supabaseClient.rpc('tambah_saldo', {
@@ -10450,7 +10447,6 @@ async function tolakPenarikan(wdId, userId, nominal) {
         });
 
         // Efek hilang
-        const card = document.getElementById(`wd-${wdId}`);
         if (card) {
             card.style.opacity = '0';
             setTimeout(() => {
@@ -10460,48 +10456,15 @@ async function tolakPenarikan(wdId, userId, nominal) {
             }, 300);
         }
 
-        showToast("Penarikan dibatalkan dan saldo dikembalikan ke penjual.", "success");
+        showToast("Penarikan dibatalkan dan saldo dikembalikan.", "success");
 
     } catch (err) {
         showToast(err.message || "Sistem gagal menolak transaksi.", "error");
     } finally {
-        isAdminProcessing = false; // Buka kunci
+        isAdminProcessing = false;
     }
 }
 
-
-
-// 5. Eksekutor: Tolak (Refund) Penarikan
-async function tolakPenarikan(wdId, userId, nominal) {
-    const alasan = await customPrompt("Masukkan alasan penolakan (misal: Rekening tidak ditemukan):", "Nomor Rekening tidak valid");
-    if (!alasan) return;
-
-    try {
-        showToast("Memproses pembatalan & refund...", "info");
-
-        // Update status ditolak
-        const { error } = await supabaseClient.from('withdrawals').update({ status: 'DITOLAK' }).eq('id', wdId);
-        if (error) throw error;
-
-        // Refund saldo menggunakan RPC
-        await supabaseClient.rpc('tambah_saldo', {
-            p_user_id: userId,
-            p_jumlah: nominal,
-            p_deskripsi: `Refund Gagal Cair: ${alasan}`
-        });
-
-        // Efek hilang
-        const card = document.getElementById(`wd-${wdId}`);
-        card.style.opacity = '0';
-        setTimeout(() => card.style.display = 'none', 300);
-
-        showToast("Penarikan dibatalkan dan saldo dikembalikan ke penjual.", "success");
-        loadAdminDashboard();
-
-    } catch (err) {
-        showToast("Sistem gagal menolak transaksi.", "error");
-    }
-}
 
 
 // B. FUNGSI EKSEKUSINYA (Taruh di paling bawah file JS)
