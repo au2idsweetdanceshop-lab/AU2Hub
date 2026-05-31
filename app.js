@@ -608,7 +608,7 @@ function cariBerdasarkanTagar(tagar) {
 
     // [BARU] 2. Tutup mode fokus Feed Utama secara halus jika aktif
     if (document.body.classList.contains('video-focused')) {
-        toggleGlobalAudio(true); // true = abaikan history agar URL tidak bentrok
+        toggleFloatingMode(true); // true = abaikan history agar URL tidak bentrok
     }
 
     // [BARU] 3. Tutup Floating Player (Misal jika diklik dari video profil)
@@ -1488,7 +1488,7 @@ function switchTab(tabId, event = null, isPush = true) {
 
     // 🔥 FIX: Mencegah tabrakan layar freeze saat klik AU2Hub dari dalam mode Nonton Video
     if (document.body.classList.contains('video-focused')) {
-        toggleGlobalAudio(true);
+        toggleFloatingMode(true);
     }
 
     // Matikan pemutar video secara paksa jika user meninggalkan tab Sosial
@@ -1894,7 +1894,7 @@ document.body.style.overflow = 'auto';
 function openUploadModal() {
 // Matikan efek floating otomatis saat buka modal upload TANPA memicu history.back()
 if (document.body.classList.contains('video-focused')) {
-toggleGlobalAudio(true);
+toggleFloatingMode(true);
 }
 
 // Tambahkan history baru untuk modal upload
@@ -1994,7 +1994,7 @@ async function openUserProfile(userId) {
         let wasPopupOpen = false;
 
         if (document.body.classList.contains('video-focused')) {
-            toggleGlobalAudio(true);
+            toggleFloatingMode(true);
             wasPopupOpen = true;
         }
 
@@ -6920,14 +6920,11 @@ function getBadgeByLevelAndVideos(level, count) {
     return '';
 }
 
-
-
-
 // 🤖 GAMIFIKASI V2: Logika Papan Peringkat Dual Mode (Top Creator & Top Sultan)
 function openLeaderboardModal() {
     // [BARU] Matikan efek floating video secara halus seperti pada tombol Upload
     if (document.body.classList.contains('video-focused')) {
-        toggleGlobalAudio(true);
+        toggleFloatingMode(true);
     }
 
     const modal = document.getElementById('modal-leaderboard');
