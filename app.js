@@ -186,38 +186,30 @@ function customPrompt(title, defaultValue = '') {
 
         titleEl.innerText = title;
         inputEl.value = defaultValue;
-        
-        // 🚀 SUNTIKAN HISTORY UNTUK TOMBOL BACK HP
         history.pushState({ popup: 'prompt' }, null, '#prompt');
 
         modal.classList.remove('hidden');
         modal.classList.add('flex');
         inputEl.focus();
 
-        // Simpan fungsi resolve ke modal agar bisa dipanggil oleh tombol back HP
         modal.promptResolve = resolve;
+        delete modal.promptResult; // Bersihkan memori klik sebelumnya
 
-        const cleanup = () => {
-            if (window.location.hash === '#prompt') {
-                history.back();
-            } else {
-                modal.classList.add('hidden');
-                modal.classList.remove('flex');
+        btnOk.onclick = () => {
+            modal.promptResult = inputEl.value; // Simpan nilainya di memori
+            if (window.location.hash === '#prompt') history.back(); // Biarkan sistem HP yang menutupnya
+            else {
+                modal.classList.add('hidden'); modal.classList.remove('flex');
+                if (modal.promptResolve) { modal.promptResolve(modal.promptResult); modal.promptResolve = null; }
             }
-            btnOk.onclick = null;
-            btnCancel.onclick = null;
         };
-
-        btnOk.onclick = () => { 
-            let val = inputEl.value; 
-            if (typeof modal.promptResolve === 'function') modal.promptResolve = null; // Cegah double resolve
-            cleanup(); 
-            resolve(val); 
-        };
-        btnCancel.onclick = () => { 
-            if (typeof modal.promptResolve === 'function') modal.promptResolve = null;
-            cleanup(); 
-            resolve(null); 
+        btnCancel.onclick = () => {
+            modal.promptResult = null;
+            if (window.location.hash === '#prompt') history.back();
+            else {
+                modal.classList.add('hidden'); modal.classList.remove('flex');
+                if (modal.promptResolve) { modal.promptResolve(null); modal.promptResolve = null; }
+            }
         };
     });
 }
@@ -230,40 +222,32 @@ function customConfirm(title) {
         const btnCancel = document.getElementById('confirm-cancel');
 
         titleEl.innerText = title;
-        
-        // 🚀 SUNTIKAN HISTORY UNTUK TOMBOL BACK HP
         history.pushState({ popup: 'confirm' }, null, '#confirm');
 
         modal.classList.remove('hidden');
         modal.classList.add('flex');
 
-        // Simpan fungsi resolve ke modal agar bisa dipanggil oleh tombol back HP
         modal.confirmResolve = resolve;
+        delete modal.confirmResult;
 
-        const cleanup = () => {
-            if (window.location.hash === '#confirm') {
-                history.back();
-            } else {
-                modal.classList.add('hidden');
-                modal.classList.remove('flex');
+        btnOk.onclick = () => {
+            modal.confirmResult = true;
+            if (window.location.hash === '#confirm') history.back();
+            else {
+                modal.classList.add('hidden'); modal.classList.remove('flex');
+                if (modal.confirmResolve) { modal.confirmResolve(true); modal.confirmResolve = null; }
             }
-            btnOk.onclick = null;
-            btnCancel.onclick = null;
         };
-
-        btnOk.onclick = () => { 
-            if (typeof modal.confirmResolve === 'function') modal.confirmResolve = null;
-            cleanup(); 
-            resolve(true); 
-        };
-        btnCancel.onclick = () => { 
-            if (typeof modal.confirmResolve === 'function') modal.confirmResolve = null;
-            cleanup(); 
-            resolve(false); 
+        btnCancel.onclick = () => {
+            modal.confirmResult = false;
+            if (window.location.hash === '#confirm') history.back();
+            else {
+                modal.classList.add('hidden'); modal.classList.remove('flex');
+                if (modal.confirmResolve) { modal.confirmResolve(false); modal.confirmResolve = null; }
+            }
         };
     });
 }
-
 
 function customAlert(title) {
     return new Promise((resolve) => {
@@ -271,42 +255,25 @@ function customAlert(title) {
         const titleEl = document.getElementById('alert-title');
         const btnOk = document.getElementById('alert-ok');
 
-        // Deteksi Link otomatis
         const urlRegex = /(https?:\/\/[^\s]+)/g;
-        let formattedText = title.replace(urlRegex, (url) => {
-            return `<a href="${url}" target="_blank" class="text-brand-info underline font-bold">${url}</a>`;
-        });
-        // Ubah \n jadi <br>
-        formattedText = formattedText.replace(/\n/g, "<br>");
+        let formattedText = title.replace(urlRegex, (url) => `<a href="${url}" target="_blank" class="text-brand-info underline font-bold">${url}</a>`);
+        titleEl.innerHTML = formattedText.replace(/\n/g, "<br>");
 
-        titleEl.innerHTML = formattedText;
-        
-        // 🔥 TAMBAHAN: Suntikkan riwayat URL agar terdeteksi oleh tombol back HP
         history.pushState({ popup: 'alert' }, null, '#alert');
 
         modal.classList.remove('hidden');
         modal.classList.add('flex');
-
-        // Simpan resolve langsung ke elemen modal (bukan global window)
         modal.alertResolve = resolve;
 
         btnOk.onclick = () => {
-            if (window.location.hash === '#alert') {
-                history.back(); 
-            } else {
-                modal.classList.add('hidden');
-                modal.classList.remove('flex');
-            }
-            btnOk.onclick = null;
-            if (typeof modal.alertResolve === 'function') {
-                modal.alertResolve();
-                modal.alertResolve = null;
+            if (window.location.hash === '#alert') history.back();
+            else {
+                modal.classList.add('hidden'); modal.classList.remove('flex');
+                if (modal.alertResolve) { modal.alertResolve(); modal.alertResolve = null; }
             }
         };
     });
 }
-
-
 
 
 function togglePassword(inputId, iconId) {
@@ -1623,12 +1590,11 @@ if (isPush && window.location.hash !== `#${tabId}`) history.pushState(null, null
 window.addEventListener('popstate', () => {
     let isPopupClosed = false;
 
-    // 🚀 1. TANGKAP POP-UP ALERT, PROMPT, & CONFIRM DULUAN DI SINI
+    // 🚀 1. TANGKAP POP-UP ALERT, PROMPT, & CONFIRM (Anti Terpental)
     const modalAlert = document.getElementById('modal-alert');
     if (modalAlert && !modalAlert.classList.contains('hidden')) {
         modalAlert.classList.add('hidden');
         modalAlert.classList.remove('flex');
-        
         if (typeof modalAlert.alertResolve === 'function') {
             modalAlert.alertResolve();
             modalAlert.alertResolve = null;
@@ -1640,11 +1606,12 @@ window.addEventListener('popstate', () => {
     if (modalPrompt && !modalPrompt.classList.contains('hidden')) {
         modalPrompt.classList.add('hidden');
         modalPrompt.classList.remove('flex');
-        
-        // Jika diback lewat HP, anggap user menekan tombol Batal (resolve null)
         if (typeof modalPrompt.promptResolve === 'function') {
-            modalPrompt.promptResolve(null);
+            // Ambil data dari tombol Simpan, jika diback pakai HP anggap batal (null)
+            let result = modalPrompt.hasOwnProperty('promptResult') ? modalPrompt.promptResult : null;
+            modalPrompt.promptResolve(result);
             modalPrompt.promptResolve = null;
+            delete modalPrompt.promptResult;
         }
         return;
     }
@@ -1653,11 +1620,12 @@ window.addEventListener('popstate', () => {
     if (modalConfirm && !modalConfirm.classList.contains('hidden')) {
         modalConfirm.classList.add('hidden');
         modalConfirm.classList.remove('flex');
-        
-        // Jika diback lewat HP, anggap user menekan tombol Batal (resolve false)
         if (typeof modalConfirm.confirmResolve === 'function') {
-            modalConfirm.confirmResolve(false);
+            // Ambil data dari tombol OK, jika diback pakai HP anggap batal (false)
+            let result = modalConfirm.hasOwnProperty('confirmResult') ? modalConfirm.confirmResult : false;
+            modalConfirm.confirmResolve(result);
             modalConfirm.confirmResolve = null;
+            delete modalConfirm.confirmResult;
         }
         return;
     }
