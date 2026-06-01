@@ -17,9 +17,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
 
 <style>
-/* ========================================== */
-/* SISTEM ANTI-DOWNLOAD & DRAG GAMBAR GLOBAL  */
-/* ========================================== */
+
 img {
     -webkit-user-drag: none; /* Mencegah drag di browser berbasis Webkit (Chrome/Safari) */
     -khtml-user-drag: none;
@@ -33,7 +31,7 @@ img {
     user-select: none;
 }
 
-/* Animasi Smooth Accordion untuk FAQ */
+
 details[open] > div {
     animation: accordionSlideDown 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     transform-origin: top;
@@ -71,7 +69,7 @@ body { background-color: #0F0920; color: #E2E8F0; -webkit-tap-highlight-color: t
 .heart-pop { position: fixed; color: #FF007A; font-size: 100px; pointer-events: none; z-index: 9999; animation: heartAnim 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; text-shadow: 0 0 30px rgba(255, 0, 122, 0.8); transform: translate(-50%, -50%); }
 @keyframes heartAnim { 0% { transform: translate(-50%, -50%) scale(0) rotate(-15deg); opacity: 0; } 20% { transform: translate(-50%, -50%) scale(1.2) rotate(0deg); opacity: 0.9; } 40% { transform: translate(-50%, -50%) scale(1) rotate(5deg); opacity: 0.9; } 100% { transform: translate(-50%, -150%) scale(1.5) rotate(0deg); opacity: 0; } }
 
-/* Toast Animation Modern (Spring Bouncy) */
+
 @keyframes toastIn { 
     0% { opacity: 0; transform: translateY(-40px) scale(0.85); } 
     60% { opacity: 1; transform: translateY(5px) scale(1.02); } 
@@ -79,7 +77,7 @@ body { background-color: #0F0920; color: #E2E8F0; -webkit-tap-highlight-color: t
 }
 .toast-anim { animation: toastIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
 
-/* SKELETON LOADING ANIMATION (SHIMMER MODERN) */
+
 @keyframes shimmer {
     100% { transform: translateX(100%); }
 }
@@ -139,25 +137,19 @@ will-change: transform, opacity;
 }
 
 
-/* ========================================================= */
-/* SOLUSI FINAL V2: MENGAMBANG, SCROLL LANCAR, NO BLUR BUG   */
-/* ========================================================= */
-
-/* 1. KUNCI ANTI-BOCOR KLIK (Matikan klik latar belakang) */
 body.video-focused {
 overflow: hidden !important;
 pointer-events: none !important; /* Mematikan semua sentuhan di luar kotak */
 }
 
-/* 1.5 KUNCI BEBAS DARI PENJARA PARENT (SANGAT PENTING!) */
-/* Mematikan transform pada parent agar position:fixed bisa mengambang di layar utuh */
+
 body.video-focused .tab-content.active {
 transform: none !important;
 will-change: auto !important;
 animation: none !important;
 }
 
-/* 2. KOTAK FEED MENGAMBANG OTOMATIS SEMUA DEVICE (FLEXIBLE CENTER) */
+
 body.video-focused #sosial-wrapper {
 position: fixed !important;
 pointer-events: auto !important;
@@ -176,7 +168,7 @@ max-height: 100% !important;
 z-index: 9999 !important;
 border-radius: 1.5rem !important;
 
-/* Hanya gunakan scale, jangan pakai translate agar scroll tidak macet */
+
 transform: scale(1.02) !important;
 
 box-shadow: 0 0 0 100vmax rgba(10, 6, 20, 0.98), 0 20px 80px rgba(0,0,0,0.95), 0 0 40px rgba(0, 240, 255, 0.4) !important;
@@ -185,11 +177,6 @@ transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
 
 
-
-
-
-
-/* 3. PASTIKAN HEADER, MODAL LOGIN, KOMENTAR, & UPLOAD TETAP HIDUP */
 body.video-focused header,
 body.video-focused #modal-auth,
 body.video-focused #comment-drawer,
@@ -202,8 +189,6 @@ body.video-focused #modal-pratinjau {
 }
 
 
-
-/* 4. SEMBUNYIKAN MENU BAWAH SAAT MENGAMBANG BIAR FOKUS */
 body.video-focused nav {
 transform: translateY(100%); /* Geser menu ke luar layar bawah */
 pointer-events: none !important; /* Matikan klik di area menu yang sembunyi */
@@ -211,7 +196,7 @@ opacity: 0 !important; /* Buat transparan */
 transition: all 0.3s ease; /* Animasi mulus menghilang */
 }
 
-/* TULISAN "FEED KOMUNITAS" BERBAYANG & MENGAMBANG KE POJOK ATAS */
+
 body.video-focused #sosial-header {
     position: fixed !important;
     top: max(1.5rem, env(safe-area-inset-top)) !important; /* Jarak aman dari poni/notch HP */
@@ -229,7 +214,7 @@ body.video-focused #sosial-header {
     transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
 
-/* Tombol kamera berdenyut */
+
 body.video-focused #sosial-header button {
 animation: pulseCamera 1.5s infinite;
 }
@@ -240,7 +225,7 @@ animation: pulseCamera 1.5s infinite;
 100% { box-shadow: 0 0 15px rgba(255,0,122,0.4); transform: scale(1); }
 }
 
-/* 5. PASTIKAN FEED DI DALAM KOTAK TETAP BISA DI-SCROLL MULUS */
+
 body.video-focused #feed-container {
 overflow-y: scroll !important;
 -webkit-overflow-scrolling: touch !important; /* Kunci kelancaran scroll iOS/Android */
@@ -248,7 +233,7 @@ touch-action: pan-y !important;
 height: 100% !important; /* Paksa mendeteksi tinggi area scroll */
 }
 
-/* 6. HANCURKAN BATASAN RENDER AGAR TIDAK TERPOTONG */
+
 body.video-focused .snap-start {
 content-visibility: visible !important;
 contain: none !important;
@@ -256,7 +241,6 @@ transform: none !important;
 }
 
 
-/* 7. KEMBALIKAN POSISI VIDEO INNER KE AWAL */
 .video-inner-wrap {
 position: relative;
 z-index: 10;
@@ -264,8 +248,6 @@ transition: all 0.4s ease;
 }
 
 
-
-/* JURUS 1: Isolasi Rendering (Sangat Ampuh) */
 .snap-start {
 content-visibility: auto;
 contain-intrinsic-size: 100vh;
@@ -273,27 +255,24 @@ contain-intrinsic-size: 100vh;
 }
 
 
-/* JURUS 2: Paksa elemen video pakai layer GPU terpisah */
 .video-player, .float-video-player {
 transform: translateZ(0);
 backface-visibility: hidden;
 perspective: 1000px;
 }
 
-/* JURUS 3: Paksa elemen yang ada efek kaca (blur) agar tidak bentrok dengan video */
+
 .backdrop-blur-sm, .backdrop-blur-md, .backdrop-blur-lg {
 transform: translate3d(0, 0, 0);
 will-change: transform, backdrop-filter;
 }
 
-/* JURUS 4: Ringankan progress bar saat video jalan */
+
 .progress-fill {
 will-change: transform; /* Ubah dari width ke transform scaleX kalau memungkinkan, tapi will-change ini sudah lumayan bantu */
 }
 
-/* ... kode CSS kamu yang lain ... */
 
-/* Sembunyikan Widget Chat Global saat video mode fokus */
 body.video-focused button[onclick="toggleWidget()"] {
 opacity: 0 !important;
 transform: scale(0.5) !important;
@@ -311,7 +290,7 @@ overflow-y: scroll !important;
 touch-action: pan-y !important;
 }
 
-/* Animasi Teks Berjalan (Marquee) ala TikTok */
+
 @keyframes marquee {
 0% { transform: translateX(100%); }
 100% { transform: translateX(-100%); }
@@ -319,13 +298,13 @@ touch-action: pan-y !important;
 .marquee-text {
 animation: marquee 6s linear infinite;
 }
-/* Efek fade (memudar) di ujung kanan teks agar rapi */
+
 .mask-text {
 -webkit-mask-image: linear-gradient(to right, black 80%, transparent 100%);
 mask-image: linear-gradient(to right, black 80%, transparent 100%);
 }
 
-/* Toggle Switch Animasi Custom untuk TikTok UI */
+
 input[type="checkbox"].peer:checked + div {
     background-color: #2BD975 !important;
 }
@@ -345,9 +324,6 @@ input[type="checkbox"].peer:checked + div::after {
 }
 
 
-/* ========================================= */
-/* ANIMASI NAVIGASI KIRI (EFEK KAPSUL MEMANJANG) */
-/* ========================================= */
 .nav-item {
     position: relative;
     border-radius: 50%; /* Awalnya bulat sempurna */
@@ -367,18 +343,18 @@ input[type="checkbox"].peer:checked + div::after {
     border-radius: 1.5rem; 
 }
 
-/* KHUSUS MENU TOKO: Warnanya menjadi Merah/Oranye Shopee saat aktif */
+
 .nav-item.active[href="#toko"],
 .nav-item.active[href="#pasar"] {
     color: #EE4D2D !important;
 }
 
-/* KHUSUS MENU BIASA: Memanjang ke atas & bawah */
+
 .nav-item.active:not([href="#home"]) {
     height: 64px !important; 
 }
 
-/* KHUSUS LOGO HOME: Jangan memanjang, cukup gambarnya saja yang membesar */
+
 .nav-item.active[href="#home"] img {
     transform: scale(1.15);
     transition: transform 0.3s ease;
@@ -390,18 +366,16 @@ input[type="checkbox"].peer:checked + div::after {
 }
 
 
-/* Sembunyikan Navigasi ke Kiri saat Nonton Video Penuh */
 body.video-focused nav {
     transform: translateX(-100%);
     opacity: 0 !important;
     pointer-events: none !important;
 }
 
-/* Sembunyikan Scrollbar di Menu Kiri */
+
 nav::-webkit-scrollbar { display: none; }
 
 #saldo-angka {
-    /* Angka akan mengecil jika melebihi lebar layar */
     font-size: clamp(1.5rem, 8vw, 2.25rem); 
     word-break: break-all;
 }
@@ -413,7 +387,6 @@ nav::-webkit-scrollbar { display: none; }
     <div class="relative flex flex-col items-center">
         <div class="absolute inset-0 bg-brand-accent blur-3xl opacity-30 animate-pulse"></div>
         
-        <!-- ID 'splash-logo' kita gunakan untuk mengganti gambar lewat JS -->
         <img id="splash-logo" src="https://nos.wjv-1.neo.id/au2hub/Picsart_26-05-22_23-46-22-498.png" alt="AU2Hub" 
              class="w-32 h-32 relative z-10 splash-logo-anim drop-shadow-[0_0_20px_rgba(0,240,255,0.5)] transition-opacity duration-500">
         
@@ -521,7 +494,6 @@ Satu pintu untuk info update terbaru, panduan pemula, jasa joki profesional, dan
 
 
 <section id="sosial" class="tab-content py-2">
-<!-- HEADER SOSIAL BARU (Ada Tombol Upload) -->
 <div id="sosial-header" class="flex justify-between items-center mb-5"> 
     <h3 class="text-xl font-extrabold flex items-center gap-1"> 
         <div class="w-1.5 h-6 bg-[#25D366] rounded-full"></div> Feed Komunitas
@@ -561,7 +533,7 @@ Satu pintu untuk info update terbaru, panduan pemula, jasa joki profesional, dan
         </button>
     </div>
 
-    <!-- Tempat Data Akan Dirender oleh Javascript -->
+
     <div id="rekber-dynamic-container">
         <div class="flex flex-col items-center justify-center py-10 mt-10">
             <i class="fas fa-spinner fa-spin text-brand-purple text-3xl mb-3"></i>
@@ -572,15 +544,13 @@ Satu pintu untuk info update terbaru, panduan pemula, jasa joki profesional, dan
 
 
 <section id="ripper" class="tab-content py-2">
-    <!-- Tambahkan gap-2 agar judul dan tombol di kanan tidak saling bertabrakan -->
     <div class="flex items-center justify-between mb-4 gap-2">
         
-        <!-- [UBAH] text-lg sm:text-xl, whitespace-nowrap, dan shrink-0 agar lurus sejajar -->
+         text-lg sm:text-xl, whitespace-nowrap, dan shrink-0 
         <h3 class="text-lg sm:text-xl font-extrabold text-red-500 flex items-center gap-2 whitespace-nowrap shrink-0 tracking-tight">
             <i class="fas fa-user-ninja"></i> Database Ripper
         </h3>
         
-        <!-- Wadah untuk Tombol Refresh dan Badge Total Data -->
         <div class="flex items-center gap-1.5 sm:gap-2">
             <!-- [BARU] Tombol Refresh Database -->
             <button onclick="localStorage.removeItem('ripperCache'); muatDataRipper(); showToast('Memperbarui database...', 'info');" class="text-red-500 bg-red-500/10 w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center active:scale-90 transition-all border border-red-500/30 shrink-0" title="Refresh Ripper">
@@ -609,15 +579,13 @@ Satu pintu untuk info update terbaru, panduan pemula, jasa joki profesional, dan
 
 <section id="pembayaran" class="tab-content fixed inset-0 z-[999999] bg-black/80 backdrop-blur-xl px-5 py-10 flex flex-col items-center justify-center">
     
-    <!-- Tombol Close Melayang di Kanan Atas -->
     <button onclick="history.back()" class="absolute top-6 right-6 w-10 h-10 bg-white/10 hover:bg-white/20 border border-white/20 rounded-full flex items-center justify-center text-white backdrop-blur-md active:scale-90 transition-all z-50 shadow-lg">
         <i class="fas fa-times text-lg"></i>
     </button>
 
-    <!-- Wadah QRIS (Container Utama ala Apple Pay) -->
+
     <div id="qris-container" class="w-full max-w-sm bg-[#121319] border border-white/10 rounded-[2.5rem] p-6 shadow-[0_25px_50px_rgba(0,0,0,0.8)] relative overflow-hidden flex flex-col items-center justify-center min-h-[450px] transform transition-all modal-anim">
         
-        <!-- Loading State Bawaan -->
         <div class="text-center flex flex-col items-center animate-pulse w-full">
             <div class="w-20 h-20 bg-brand-info/10 rounded-full flex items-center justify-center mb-4 border border-brand-info/30 shadow-[0_0_30px_rgba(70,179,255,0.3)]">
                 <i class="fas fa-qrcode text-brand-info text-4xl"></i>
@@ -636,14 +604,14 @@ Satu pintu untuk info update terbaru, panduan pemula, jasa joki profesional, dan
         <i class="fas fa-arrow-left mr-2"></i> Kembali
     </button>
 
-    <!-- Loading Skeleton Update -->
+
     <div id="profile-loading" class="flex flex-col items-center justify-center py-20 mt-10 min-h-[50vh]">
         <div class="w-24 h-24 skeleton rounded-full mb-4"></div>
         <div class="w-32 h-6 skeleton rounded-md mb-2"></div>
         <div class="w-48 h-4 skeleton rounded-md"></div>
     </div>
 
-    <!-- WADAH UTAMA PROFIL -->
+
     <div id="profile-logged-in" class="hidden text-center relative mt-12 w-full">
         <div class="relative inline-block mb-3">
             <div class="avatar-ring">
@@ -655,18 +623,17 @@ Satu pintu untuk info update terbaru, panduan pemula, jasa joki profesional, dan
             <input type="file" id="avatar-input" class="hidden" accept="image/*" onchange="handleAvatarUpload(event)">
         </div>
         
-        <!-- Nickname & Badge Level -->
         <div class="flex items-center justify-center gap-2 mb-1">
             <!-- [UBAH] Tambahkan "flex items-center" di h3 agar username dan lencana verified sejajar presisi -->
             <h3 id="profile-nickname" class="text-xl font-extrabold text-white flex items-center leading-none">@Nickname</h3>
             
-            <!-- [UBAH] Tambahkan "flex items-center justify-center" agar tulisan Lv di dalam kotaknya tidak miring -->
+        "flex items-center justify-center"
             <span id="profile-level-badge" class="hidden bg-gradient-to-r from-brand-accent to-brand-purple text-white text-[10px] font-extrabold px-2 py-1 rounded-md border border-white/20 shadow-[0_0_10px_rgba(255,0,122,0.3)] flex items-center justify-center leading-none">Lv. 1</span>
         </div>
 
         <p id="profile-bio" class="text-[11px] text-gray-300 mt-1 mb-4 px-6 leading-relaxed whitespace-pre-line">Mencari teman main Sweet Dance. Add ID aku ya!</p>
 
-        <!-- Progress Bar EXP -->
+
         <div id="profile-exp-container" class="max-w-[200px] mx-auto mb-6 hidden">
             <div class="flex justify-between text-[9px] text-gray-400 font-bold mb-1 px-1 tracking-wider uppercase">
                 <span id="text-exp-current">EXP: 0</span>
@@ -700,7 +667,7 @@ Satu pintu untuk info update terbaru, panduan pemula, jasa joki profesional, dan
             </button>
         </div>
 
-        <!-- Tombol Aksi Orang Lain -->
+
         <div id="profile-actions-other" class="hidden flex flex-col gap-2 justify-center px-4 mb-6">
             <div class="flex gap-2">
                 <button id="btn-follow" onclick="toggleFollow(viewedUserId)" class="flex-1 bg-brand-accent py-2.5 rounded-xl text-[11px] font-extrabold text-white uppercase tracking-wide hover:scale-95 transition-transform shadow-[0_0_15px_rgba(255,0,122,0.3)]">Ikuti</button>
@@ -711,7 +678,7 @@ Satu pintu untuk info update terbaru, panduan pemula, jasa joki profesional, dan
         </div>
 
 
-        <!-- Grid Video -->
+
         <div class="border-t border-white/10 pt-4 text-left px-2">
             <div class="flex justify-center border-b border-white/5 mb-2 pb-2">
                 <h4 id="profile-video-title" class="font-bold text-white text-sm flex items-center border-b-2 border-brand-accent pb-1"><i class="fas fa-grip-vertical mr-2 text-brand-info"></i> Video Saya</h4>
@@ -719,7 +686,7 @@ Satu pintu untuk info update terbaru, panduan pemula, jasa joki profesional, dan
             <div id="profile-video-grid" class="grid grid-cols-3 gap-0.5"></div>
         </div>
         
-    </div> <!-- WADAH UTAMA DITUTUP DENGAN BENAR DI SINI -->
+    </div> 
 
     <div id="profile-logged-out" class="hidden text-center py-10 mt-10">
         <i class="fas fa-user-circle text-6xl text-gray-700 mb-4"></i>
@@ -730,17 +697,15 @@ Satu pintu untuk info update terbaru, panduan pemula, jasa joki profesional, dan
 </section>
 
 
-<!-- TAMBAHKAN HALAMAN PESANAN BARU DI SINI -->
 <section id="pesanan" class="tab-content py-5 min-h-[60vh] flex flex-col justify-start relative px-4">
     <!-- Tambahkan gap-2 agar judul dan tombol tidak terlalu menempel -->
     <div class="flex justify-between items-center mb-6 mt-2 border-b border-white/5 pb-4 gap-2">
         
-        <!-- [UBAH] text-lg sm:text-xl, whitespace-nowrap, dan shrink-0 -->
+        text-lg sm:text-xl, whitespace-nowrap, dan shrink-0 
         <h2 class="text-lg sm:text-xl font-extrabold text-white flex items-center gap-2 whitespace-nowrap shrink-0 tracking-tight">
             <div class="w-1.5 h-5 sm:h-6 bg-brand-info rounded-full"></div> Pesanan Saya
         </h2>
         
-        <!-- [UBAH] Kecilkan sedikit gap, padding, dan font pada tombol untuk versi HP -->
         <div class="flex items-center gap-1.5 sm:gap-2">
             <button onclick="if(currentUser) { loadOrderTracker(currentUser.id); showToast('Memperbarui status pesanan...', 'success'); } else { openAuthModal(); }" class="text-brand-info bg-brand-info/10 w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center active:scale-90 transition-all border border-brand-info/30 shrink-0" title="Refresh Pesanan">
                 <i class="fas fa-sync-alt text-xs sm:text-sm"></i>
@@ -753,7 +718,7 @@ Satu pintu untuk info update terbaru, panduan pemula, jasa joki profesional, dan
         
     </div>
 
-    <!-- UI Jika User Sudah Login -->
+
     <div id="order-tracker-section" class="hidden bg-brand-card/50 border border-white/5 rounded-3xl p-6 w-full text-left shadow-lg">
         <div class="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider mb-6 text-center">Status Pengerjaan</div>
         
@@ -784,7 +749,7 @@ Satu pintu untuk info update terbaru, panduan pemula, jasa joki profesional, dan
         </div>
     </div>
 
-    <!-- UI Jika User Belum Login -->
+
     <div id="pesanan-logged-out" class="hidden text-center py-12 mt-4 bg-brand-card/30 rounded-3xl border border-white/5">
         <i class="fas fa-box-open text-6xl text-gray-700 mb-4"></i>
         <h3 class="text-xl font-extrabold text-white mb-2">Belum Login</h3>
@@ -794,7 +759,7 @@ Satu pintu untuk info update terbaru, panduan pemula, jasa joki profesional, dan
 </section>
 
 
-<!-- HALAMAN TOKO SHOPEE STYLE -->
+
 <section id="toko" class="tab-content py-5 min-h-[60vh] flex flex-col justify-start relative px-4">
     <div class="absolute top-0 right-0 w-40 h-40 bg-[#EE4D2D]/10 rounded-full blur-3xl pointer-events-none"></div>
 
@@ -808,7 +773,6 @@ Satu pintu untuk info update terbaru, panduan pemula, jasa joki profesional, dan
 
     <div id="toko-container" class="w-full relative z-10">
         
-        <!-- KOTAK LOGGED OUT (ANTI-BADAI) -->
 <div id="toko-logged-out" class="hidden flex-col items-center justify-center py-12 px-5 mt-4 w-full max-w-sm mx-auto bg-gradient-to-b from-brand-card/60 to-transparent rounded-[2rem] border border-white/5 shadow-inner">
     
     <div class="w-20 h-20 bg-[#EE4D2D]/10 rounded-full flex items-center justify-center mb-5 border border-[#EE4D2D]/20 shadow-[0_0_30px_rgba(238,77,45,0.2)] shrink-0">
@@ -818,12 +782,11 @@ Satu pintu untuk info update terbaru, panduan pemula, jasa joki profesional, dan
     
     <h3 class="text-xl font-black text-white mb-2 tracking-tight text-center w-full">Akses Tertutup</h3>
     
-    <!-- Teks dikunci max-w-[260px] biar gak nyentuh pinggiran layar -->
     <p class="text-[11px] text-gray-400 mb-8 text-center leading-relaxed w-full max-w-[260px] mx-auto">
         Silakan login untuk mulai mengelola etalase toko dan melacak pesanan masuk Anda.
     </p>
     
-    <!-- Tombol dikunci max-w-[250px] dan whitespace-nowrap biar 1 baris mutlak -->
+       max-w-[250px] dan whitespace-nowrap
     <button onclick="openAuthModal()" class="w-full max-w-[250px] mx-auto flex items-center justify-center bg-gradient-to-r from-[#FF5722] to-[#EE4D2D] text-white py-3.5 rounded-xl font-extrabold active:scale-95 transition-all shadow-[0_8px_20px_rgba(238,77,45,0.3)] uppercase tracking-wider text-[11px] whitespace-nowrap shrink-0">
         LOGIN SEKARANG
     </button>
@@ -833,7 +796,6 @@ Satu pintu untuk info update terbaru, panduan pemula, jasa joki profesional, dan
         <div id="toko-logged-in" class="w-full hidden">
 
             
-            <!-- KARTU SALDO ESCROW (MODERN STYLE) -->
             <div class="bg-gradient-to-br from-[#FF5722] to-[#EE4D2D] rounded-[2rem] p-6 shadow-[0_10px_40px_rgba(238,77,45,0.4)] mb-6 relative overflow-hidden">
                 <div class="relative z-10">
                     <div class="flex justify-between items-center mb-2">
@@ -857,26 +819,25 @@ Satu pintu untuk info update terbaru, panduan pemula, jasa joki profesional, dan
                 <div class="absolute -bottom-12 -right-12 w-48 h-48 bg-white/10 rounded-full blur-2xl pointer-events-none"></div>
             </div>
 
-            <!-- GRID MENU AKSES CEPAT (MODERN VERTICAL STYLE) -->
             <div class="grid grid-cols-3 gap-3 mb-6">
                 <!-- Tombol Pesanan Masuk -->
                 <div id="menu-toko-pesanan" onclick="switchTokoTab('pesanan')" class="bg-[#161B2E] border border-transparent p-4 py-5 rounded-[1.5rem] flex flex-col items-center justify-center gap-3 cursor-pointer transition-all active:scale-95 shadow-lg">
                     <div class="w-11 h-11 rounded-full bg-[#1A2A4A] text-[#46B3FF] flex items-center justify-center text-lg"><i class="fas fa-clipboard-list"></i></div>
                     <span class="text-[11px] font-bold text-gray-300 text-center leading-tight">Pesanan<br>Masuk</span>
                 </div>
-                <!-- Tombol Etalase Saya -->
+
                 <div id="menu-toko-produk" onclick="switchTokoTab('produk')" class="bg-[#161B2E] border border-transparent p-4 py-5 rounded-[1.5rem] flex flex-col items-center justify-center gap-3 cursor-pointer transition-all active:scale-95 shadow-lg">
                     <div class="w-11 h-11 rounded-full bg-[#3A2218] text-[#EE4D2D] flex items-center justify-center text-lg"><i class="fas fa-box-open"></i></div>
                     <span class="text-[11px] font-bold text-gray-300 text-center leading-tight">Etalase<br>Saya</span>
                 </div>
-                <!-- Tombol Tambah Produk -->
+
                 <div onclick="bukaModalJualBarang()" class="bg-[#161B2E] border border-transparent p-4 py-5 rounded-[1.5rem] flex flex-col items-center justify-center gap-3 cursor-pointer transition-all active:scale-95 shadow-lg hover:border-brand-success/30">
                     <div class="w-11 h-11 rounded-full bg-[#0A2A1A] text-[#2BD975] flex items-center justify-center text-lg"><i class="fas fa-plus"></i></div>
                     <span class="text-[11px] font-bold text-gray-300 text-center leading-tight">Tambah<br>Produk</span>
                 </div>
             </div>
 
-            <!-- Judul Section -->
+
             <div class="flex items-center gap-2.5 mb-4">
                 <div class="w-1.5 h-5 bg-[#EE4D2D] rounded-full"></div>
                 <h3 id="toko-section-title" class="text-sm font-extrabold text-white tracking-wide">Daftar Pesanan Masuk</h3>
@@ -932,10 +893,9 @@ Satu pintu untuk info update terbaru, panduan pemula, jasa joki profesional, dan
 </section>
 
 
-<!-- WIDGET CHAT GLOBAL MENGAMBANG (DIPERBARUI) -->
 <div id="floating-widget" class="fixed bottom-24 right-5 sm:right-10 z-[150] w-[90%] max-w-[380px] h-[80vh] max-h-[800px] bg-brand-card border border-white/10 rounded-3xl shadow-2xl opacity-0 pointer-events-none translate-y-8 scale-95 flex flex-col overflow-hidden glass origin-bottom-right" style="transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);">
 
-<!-- Tampilan Daftar Obrolan -->
+
 <div id="chat-list-view" class="flex flex-col h-full">
 <div class="p-4 border-b border-white/5 bg-black/20 flex justify-between items-center shrink-0">
 <h3 class="font-bold text-white text-sm"><i class="fas fa-comments text-brand-info mr-2"></i> Pesan Masuk</h3>
@@ -945,14 +905,14 @@ Satu pintu untuk info update terbaru, panduan pemula, jasa joki profesional, dan
 </div>
 </div>
 
-<!-- 3 NAVIGASI TAB -->
+
 <div class="flex border-b border-white/10 bg-black/30 shrink-0">
 <button onclick="switchChatTab('personal')" id="tab-personal" class="flex-1 py-3 text-[11px] font-bold text-brand-accent border-b-2 border-brand-accent transition-colors">Chat Pribadi</button>
 <button onclick="switchChatTab('group')" id="tab-group" class="flex-1 py-3 text-[11px] font-bold text-gray-500 border-b-2 border-transparent transition-colors">Grup</button>
 <button onclick="switchChatTab('status')" id="tab-status" class="flex-1 py-3 text-[11px] font-bold text-gray-500 border-b-2 border-transparent transition-colors">Status Story</button>
 </div>
 
-<!-- PENCARIAN -->
+
 <div id="chat-search-container" class="p-3 border-b border-white/5 shrink-0">
 <div class="relative">
 <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-xs"></i>
@@ -960,13 +920,13 @@ Satu pintu untuk info update terbaru, panduan pemula, jasa joki profesional, dan
 </div>
 </div>
 
-<!-- CONTAINER CHAT PRIBADI -->
+
 <div id="chat-personal-container" class="flex-1 overflow-y-auto hide-scroll p-2 space-y-1 block"></div>
 
-<!-- CONTAINER GRUP -->
+
 <div id="chat-group-container" class="flex-1 overflow-y-auto hide-scroll p-2 space-y-1 hidden"></div>
 
-<!-- CONTAINER STATUS STORY -->
+
 <div id="chat-status-container" class="flex-1 overflow-y-auto hide-scroll p-2 hidden">
 <!-- Status Saya -->
 <div class="p-2 mb-2 border-b border-white/10">
@@ -984,7 +944,7 @@ Satu pintu untuk info update terbaru, panduan pemula, jasa joki profesional, dan
 <input type="file" id="upload-story-input" accept="image/*,video/*" class="hidden" onchange="handleUploadStory(event)">
 </div>
 </div>
-<!-- List Status Teman -->
+
 <p class="text-[10px] text-gray-500 font-bold mb-2 ml-3 uppercase">Pembaruan Terbaru</p>
 <div id="status-list-container" class="space-y-1">
 <div class="text-center py-6 text-xs text-gray-500"><i class="fas fa-spinner fa-spin"></i> Memuat status...</div>
@@ -992,7 +952,7 @@ Satu pintu untuk info update terbaru, panduan pemula, jasa joki profesional, dan
 </div>
 </div>
 
-<!-- Tampilan Ruang Obrolan (TETAP SAMA SEPERTI SEBELUMNYA) -->
+
 <div id="chat-room-view" class="hidden flex-col h-full">
 <div class="p-3 border-b border-white/5 bg-black/20 flex justify-between items-center z-10 shrink-0">
 <div class="flex items-center gap-3">
@@ -1015,10 +975,10 @@ Satu pintu untuk info update terbaru, panduan pemula, jasa joki profesional, dan
 <div id="chat-messages-container" class="flex-1 overflow-y-auto hide-scroll p-4 flex flex-col gap-1 relative bg-black/40"></div>
 <div id="typing-indicator" class="hidden px-4 pb-2 bg-black/40 text-[10px] text-brand-info italic transition-all">User sedang mengetik...</div>
 
-<!-- INPUT CHAT MODERN (WHATSAPP STYLE) -->
+
 <div class="p-4 border-t border-white/5 bg-brand-card/80 backdrop-blur-lg shrink-0 flex flex-col relative">
 
-<!-- KOTAK PREVIEW BALASAN (Hidden by default) -->
+
 <div id="chat-reply-preview" class="hidden w-full max-w-md mx-auto mb-2 bg-black/40 border-l-4 border-brand-info rounded-r-xl p-2 relative transition-all">
 <div class="flex justify-between items-start pr-6">
 <div>
@@ -1031,7 +991,7 @@ Satu pintu untuk info update terbaru, panduan pemula, jasa joki profesional, dan
 </button>
 </div>
 
-<!-- AREA KETIK -->
+
 <div class="flex items-end gap-3 max-w-md mx-auto w-full">
 <div class="relative pb-1">
 <input type="file" id="chat-image-input" accept="image/*,video/*" class="hidden" onchange="handleChatMediaSelect(event)">
@@ -1126,7 +1086,6 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
 </div>
 
 
-<!-- HALAMAN PASAR PLAYER -->
 <section id="pasar" class="tab-content py-2">
     <div class="flex justify-between items-center mb-4 mt-2 border-b border-white/5 pb-4">
         <h2 class="text-xl font-extrabold text-white flex items-center gap-2">
@@ -1138,7 +1097,7 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
         </div>
     </div>
 
-    <!-- FILTER KATEGORI CEPAT -->
+
     <div id="kategori-pasar-grid" class="grid grid-cols-4 gap-x-2 gap-y-5 mb-6 bg-black/20 p-4 rounded-2xl border border-white/5 shadow-inner mt-4">
         </div>
 
@@ -1156,7 +1115,7 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
 
 </main>
 
-<!-- MENGAMBANG: LAYAR GRID HASHTAG -->
+
 <div id="modal-hashtag-grid" class="fixed inset-0 z-[140] hidden flex-col bg-brand-dark transition-all duration-300 transform translate-x-full">
     
     <!-- Header Hashtag -->
@@ -1173,20 +1132,20 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
         </div>
     </div>
     
-    <!-- Grid Container -->
+
     <div id="hashtag-video-grid" class="grid grid-cols-3 gap-0.5 overflow-y-auto hide-scroll flex-1 pb-10 content-start bg-black">
-        <!-- Video Grid akan dimuat oleh JS di sini -->
+
     </div>
 </div>
 
 
-<!-- MENGAMBANG VIDEO PLAYER (PROFIL FEED SCROLL) -->
+
 <div id="floating-video-player" class="fixed inset-0 z-[150] hidden flex-col bg-black/95 backdrop-blur-lg">
 <button onclick="closeFloatingVideo()" class="absolute top-6 right-6 text-white bg-white/10 w-12 h-12 rounded-full flex items-center justify-center active:scale-90 z-[160]"><i class="fas fa-times text-xl"></i></button>
 
-<!-- Wadah Scroll Profil -->
+
 <div id="floating-feed-container" class="flex-1 overflow-y-scroll snap-y snap-mandatory hide-scroll relative w-full h-full pb-5">
-<!-- Video akan dimuat di sini -->
+
 </div>
 </div>
 
@@ -1210,13 +1169,13 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
         </div>
     </div>
 
-    <!-- Pesan Jika Komentar Dimatikan -->
+
     <div id="comment-disabled-msg" class="hidden w-full glass border-t border-white/5 p-4 shrink-0 pb-6 rounded-t-xl z-10 mt-auto text-center">
         <p class="text-xs text-gray-500 font-bold bg-black/40 py-3 rounded-xl border border-white/5"><i class="fas fa-lock mr-2"></i>Komentar dinonaktifkan oleh kreator.</p>
     </div>
 </div>
 
-<!-- MENGAMBANG LIGHTBOX FOTO DI CHAT -->
+
 <div id="lightbox-modal" class="fixed inset-0 z-[400] hidden items-center justify-center bg-black/95 backdrop-blur-md opacity-0 transition-opacity duration-300" onclick="closeLightbox()">
 <button onclick="closeLightbox()" class="absolute top-6 right-6 text-white bg-white/10 w-12 h-12 rounded-full flex items-center justify-center active:scale-90 z-[410]"><i class="fas fa-times text-xl"></i></button>
 <img id="lightbox-img" src="" class="max-w-[90%] max-h-[80vh] object-contain rounded-lg shadow-2xl scale-95 transition-transform duration-300">
@@ -1286,7 +1245,7 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
 <div class="p-4 border-b border-white/5 text-center"><h3 class="text-sm font-bold text-gray-300">Opsi Pesan</h3></div>
 
 <button id="btn-reply-msg" class="w-full text-white py-4 font-bold active:bg-white/5 transition-colors text-sm hover:text-brand-info"><i class="fas fa-reply mr-2"></i> Balas Pesan</button>
-<!-- TOMBOL TERUSKAN BARU -->
+
 <button id="btn-forward-msg" class="w-full text-white py-4 font-bold border-t border-white/5 active:bg-white/5 transition-colors text-sm hover:text-brand-info"><i class="fas fa-share mr-2"></i> Teruskan Pesan</button>
 
 <button id="btn-del-msg-me" onclick="deleteMsgForMe()" class="w-full text-white py-4 font-bold border-t border-white/5 active:bg-white/5 transition-colors text-sm hover:text-brand-info"><i class="fas fa-trash-alt mr-2"></i> Hapus untuk Saya</button>
@@ -1295,11 +1254,11 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
 </div>
 </div>
 
-<!-- MODAL TERUSKAN PESAN -->
+
 <div id="modal-forward-msg" class="fixed inset-0 z-[400] hidden items-end sm:items-center justify-center bg-black/90 backdrop-blur-md px-0 sm:px-6 transition-all duration-300">
     <div class="bg-brand-card w-full max-w-md sm:rounded-3xl rounded-t-[2.5rem] border border-white/10 shadow-2xl relative modal-anim flex flex-col h-[85vh] sm:h-auto sm:max-h-[85vh] overflow-hidden">
         
-        <!-- Header Laci -->
+
         <div class="flex justify-between items-center p-5 border-b border-white/5 bg-brand-dark/80 backdrop-blur-xl shrink-0">
             <h3 class="font-extrabold text-white text-sm flex items-center gap-2">
                 <i class="fas fa-share text-brand-info"></i> Teruskan ke...
@@ -1307,7 +1266,7 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
             <button onclick="closeForwardModal()" class="text-gray-400 hover:text-white w-8 h-8 rounded-full bg-white/5 flex items-center justify-center active:scale-95 transition-all"><i class="fas fa-times"></i></button>
         </div>
 
-        <!-- Kotak Pencarian Kontak -->
+
         <div class="p-3 bg-brand-dark/50 shrink-0 border-b border-white/5">
             <div class="relative">
                 <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-xs"></i>
@@ -1315,7 +1274,7 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
             </div>
         </div>
 
-        <!-- Wadah Daftar Kontak & Grup -->
+
         <div id="forward-list-container" class="flex-1 overflow-y-auto p-2 hide-scroll space-y-1 block pb-6">
             <!-- Data Kontak akan dirender oleh Javascript di Langkah 3 -->
         </div>
@@ -1354,7 +1313,7 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
 </div>
 </div>
 
-<!-- MODAL BUAT GRUP BARU -->
+
 <div id="modal-create-group" class="fixed inset-0 z-[300] hidden items-center justify-center bg-black/90 backdrop-blur-md px-6 transition-all duration-300">
 <div class="bg-brand-card w-full max-w-sm rounded-3xl border border-white/10 p-6 shadow-2xl relative modal-anim">
 <button onclick="closeCreateGroupModal()" class="absolute top-4 right-4 text-gray-500 w-8 h-8 flex justify-center items-center rounded-full bg-white/5"><i class="fas fa-times"></i></button>
@@ -1382,7 +1341,7 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
 </div>
 </div>
 
-<!-- MODAL INFO GRUP / MANAJEMEN ANGGOTA -->
+
 <div id="modal-group-info" class="fixed inset-0 z-[300] hidden items-end sm:items-center justify-center bg-black/90 backdrop-blur-md px-0 sm:px-6 transition-all duration-300">
 <div class="bg-brand-card w-full max-w-md sm:rounded-3xl rounded-t-3xl border border-white/10 p-6 shadow-2xl relative modal-anim max-h-[85vh] flex flex-col">
 <button onclick="closeGroupInfoModal()" class="absolute top-4 right-4 text-gray-500 w-8 h-8 flex justify-center items-center rounded-full bg-white/5 z-10"><i class="fas fa-times"></i></button>
@@ -1401,7 +1360,7 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
 <p id="info-group-desc" class="text-[11px] text-gray-400 mt-1 px-4">Deskripsi Grup</p>
 <button id="btn-edit-group-info" onclick="toggleEditGroupInfo()" class="hidden mx-auto mt-3 bg-white/10 border border-white/10 text-white text-[10px] px-4 py-2 rounded-full font-bold active:scale-95"><i class="fas fa-pen mr-1"></i> Edit Info Grup</button>
 
-<!-- Form Edit (Hidden by default) -->
+
 <div id="form-edit-group-info" class="hidden mt-4 space-y-3 text-left bg-black/30 p-4 rounded-xl border border-white/5">
 <input type="text" id="input-edit-group-name" placeholder="Nama Baru..." class="w-full bg-black/50 border border-white/10 rounded-lg px-3 py-2 text-xs text-white outline-none focus:border-brand-info">
 <textarea id="input-edit-group-desc" rows="2" placeholder="Deskripsi Baru..." class="w-full bg-black/50 border border-white/10 rounded-lg px-3 py-2 text-xs text-white outline-none focus:border-brand-info resize-none"></textarea>
@@ -1409,7 +1368,7 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
 </div>
 </div>
 
-<!-- Bagian Undang User (Hanya muncul jika user adalah Admin) -->
+
 <div id="section-invite-group" class="hidden mb-6 border-t border-white/10 pt-4">
 <h4 class="text-xs font-bold text-white mb-3"><i class="fas fa-user-plus mr-1 text-brand-success"></i> Undang Anggota</h4>
 <div class="flex gap-2">
@@ -1418,11 +1377,11 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
 </div>
 </div>
 
-<!-- Daftar Anggota -->
+
 <div class="border-t border-white/10 pt-4">
 <h4 class="text-xs font-bold text-white mb-3"><i class="fas fa-users mr-1 text-brand-purple"></i> Anggota Grup (<span id="info-group-count">0</span>)</h4>
 <div id="group-member-list" class="space-y-2">
-<!-- List Member akan di-load di sini oleh JS -->
+
 </div>
 </div>
 
@@ -1458,7 +1417,7 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
 </div>
 </div>
 
-<!-- MODAL UPLOAD VIDEO MODERN (DESAIN KEKINIAN) -->
+
 <div id="modal-upload" class="fixed inset-0 z-[600] hidden items-end sm:items-center justify-center bg-black/95 backdrop-blur-xl px-0 sm:px-6 transition-all duration-500">
     <div class="w-full max-w-md bg-[#121319] rounded-t-[2rem] sm:rounded-[2rem] border-t sm:border border-white/10 p-6 shadow-2xl relative modal-anim overflow-hidden flex flex-col max-h-[90vh]">
         
@@ -1627,7 +1586,7 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
 </div>
 </div>
 
-<!-- MODAL DAFTAR USER FOLLOW/FOLLOWING -->
+
 <div id="modal-user-list" class="fixed inset-0 z-[250] hidden items-center justify-center bg-black/90 backdrop-blur-md px-6">
     <div class="bg-brand-card w-full max-w-sm rounded-3xl border border-white/10 shadow-2xl relative modal-anim flex flex-col max-h-[70vh]">
         
@@ -1636,7 +1595,6 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
             <button onclick="closeUserList()" class="text-gray-400 hover:text-white w-8 h-8 rounded-full bg-white/5 flex items-center justify-center active:scale-95 transition-all"><i class="fas fa-times"></i></button>
         </div>
         
-        <!-- [BARU] Kotak Pencarian Instan -->
         <div class="p-3 bg-black/20 shrink-0 border-b border-white/5">
             <div class="relative">
                 <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-xs"></i>
@@ -1713,16 +1671,13 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
     </a>
 
     
-        <!-- ... tombol navigasi lainnya ... -->
     <a href="#pesanan" onclick="switchTab('pesanan', event)" class="nav-item flex items-center justify-center w-[44px] h-[44px] text-gray-500" title="Pesanan">
         <i class="fas fa-receipt text-lg pointer-events-none"></i>
     </a>
 
-    <!-- SUNTIKKAN KODE INI SECARA MANUAL -->
     <a href="#pasar" onclick="switchTab('pasar', event)" class="nav-item flex items-center justify-center w-[44px] h-[44px] text-gray-500" title="Pasar Player">
         <i class="fas fa-store text-lg pointer-events-none"></i>
     </a>
-    <!-- ================================== -->
 
     <button onclick="toggleWidget()" class="nav-item flex items-center justify-center w-[44px] h-[44px] text-gray-500 relative cursor-pointer" title="Chat">
         <i class="fas fa-comment-dots text-lg pointer-events-none"></i>
@@ -1732,7 +1687,7 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
     
 </nav>
 
-<!-- MODAL RIWAYAT PESANAN -->
+
 <div id="modal-riwayat-pesanan" class="fixed inset-0 z-[300] hidden items-end sm:items-center justify-center bg-black/90 backdrop-blur-md px-0 sm:px-6 transition-all duration-300">
     <div class="bg-brand-card w-full max-w-md sm:rounded-3xl rounded-t-[2.5rem] border border-white/10 shadow-2xl relative modal-anim flex flex-col h-[80vh] sm:h-auto sm:max-h-[80vh] overflow-hidden">
         
@@ -1744,7 +1699,6 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
             <button onclick="closeRiwayatPesanan()" class="text-gray-400 hover:text-white w-8 h-8 rounded-full bg-white/5 flex items-center justify-center active:scale-95 transition-all"><i class="fas fa-times"></i></button>
         </div>
         
-        <!-- Area Konten (Otomatis Scroll) -->
         <div id="riwayat-pesanan-list" class="flex-1 overflow-y-auto p-4 hide-scroll space-y-3 bg-black/40 pb-10">
             <!-- Data dari database Supabase akan disuntikkan ke sini -->
         </div>
@@ -1752,12 +1706,11 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
     </div>
 </div>
 
-<!-- MODAL DETAIL PESANAN (TRACKER MODERN) -->
+
 <div id="modal-detail-pesanan" class="fixed inset-0 z-[600] hidden items-end sm:items-center justify-center bg-black/90 backdrop-blur-md px-0 sm:px-6 transition-all duration-300">
     <!-- Laci naik dari bawah kalau di HP, melayang kalau di PC -->
     <div class="bg-[#121319] w-full max-w-md sm:rounded-[2rem] rounded-t-[2.5rem] border-t sm:border border-white/10 shadow-[0_-10px_40px_rgba(0,0,0,0.5)] relative modal-anim flex flex-col h-[85vh] sm:h-auto sm:max-h-[85vh] overflow-hidden">
         
-        <!-- Header dengan efek Glassmorphism -->
         <div class="flex justify-between items-center p-5 border-b border-white/5 bg-brand-dark/80 backdrop-blur-xl shrink-0">
             <h3 class="font-extrabold text-white text-sm flex items-center gap-2 tracking-tight">
                 <i class="fas fa-receipt text-brand-info"></i> Struk Pesanan
@@ -1774,7 +1727,7 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
                 <div class="absolute left-4 right-4 top-1/2 -translate-y-1/2 h-1 bg-white/10 z-0 rounded-full"></div>
                 <div id="track-line" class="absolute left-4 top-1/2 -translate-y-1/2 h-1 bg-brand-info z-0 rounded-full transition-all duration-700 w-[0%] shadow-[0_0_10px_rgba(70,179,255,0.8)]"></div>
 
-                <!-- Titik 1: Pesan -->
+
                 <div class="relative z-10 flex flex-col items-center gap-1.5">
                     <div id="step-1-dot" class="w-7 h-7 rounded-full bg-brand-info border-[3px] border-[#121319] flex items-center justify-center text-brand-dark shadow-[0_0_10px_rgba(70,179,255,0.5)]"><i class="fas fa-check text-[10px] font-bold"></i></div>
                     <span class="text-[9px] font-bold text-white tracking-widest uppercase">Bayar</span>
@@ -1791,7 +1744,7 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
                 </div>
             </div>
 
-            <!-- 2. KARTU STRUK DIGITAL -->
+
             <div class="bg-black/30 rounded-2xl border border-white/5 relative overflow-hidden">
                 <!-- Ornamen bolong struk di kiri-kanan -->
                 <div class="absolute -left-3 top-[50px] w-6 h-6 bg-[#121319] rounded-full border-r border-white/5"></div>
@@ -1821,7 +1774,7 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
                     </div>
                 </div>
 
-            <!-- 3. AREA TOMBOL AKSI -->
+
             <div id="action-belum-bayar" class="hidden flex-col gap-3">
                 <button onclick="prosesBayarUlang()" class="w-full bg-brand-info hover:bg-[#35a2f2] text-brand-dark py-4 rounded-xl font-extrabold active:scale-95 transition-all text-xs uppercase tracking-wider shadow-[0_4px_15px_rgba(70,179,255,0.4)] flex items-center justify-center">
                     <i class="fas fa-wallet mr-2 text-sm"></i> Lanjutkan Pembayaran
@@ -1891,15 +1844,10 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
     </div>
 </div>
 
-<!-- ======================================================== -->
-<!-- 🛒 MEGA KOMPILASI FITUR PASAR PLAYER (LANGKAH 1 SAMPAI 4) -->
-<!-- ======================================================== -->
 
-<!-- 1. MODAL JUAL BARANG (UI MODERN MARKETPLACE) -->
 <div id="modal-jual-barang" class="fixed inset-0 z-[600] hidden items-end sm:items-center justify-center bg-black/90 backdrop-blur-md px-0 sm:px-6 transition-all duration-300">
     <div class="bg-brand-card w-full max-w-md sm:rounded-[2rem] rounded-t-[2.5rem] shadow-2xl relative modal-anim flex flex-col h-[90vh] sm:h-auto sm:max-h-[90vh] overflow-hidden">
         
-        <!-- Header -->
         <div class="flex justify-between items-center p-5 sm:p-6 shrink-0 z-10">
             <h3 class="font-extrabold text-white text-base flex items-center gap-2 tracking-tight"><i class="fas fa-store text-[#EE4D2D]"></i> Jual Produk Baru</h3>
             <button onclick="tutupModalJualBarang()" class="text-gray-400 hover:text-white w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center active:scale-95 transition-all"><i class="fas fa-times"></i></button>
@@ -1907,12 +1855,10 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
 
         <div class="flex-1 overflow-y-auto p-5 sm:px-6 hide-scroll space-y-5">
             
-            <!-- WADAH FOTO GESER & TOMBOL UPLOAD -->
             <div class="flex flex-col items-center justify-center w-full">
                 <!-- Preview Foto -->
                 <div id="preview-container-jualan" class="w-full flex overflow-x-auto hide-scroll gap-3 pb-3 hidden"></div>
                 
-                <!-- Area Upload (Sesuai Referensi 64103.jpg) -->
                 <label for="input-foto-jualan" class="relative w-full h-28 rounded-[1.2rem] border-2 border-dashed border-[#EE4D2D]/40 bg-[#EE4D2D]/5 flex flex-col items-center justify-center cursor-pointer overflow-hidden group hover:bg-[#EE4D2D]/10 transition-all mt-1">
                     <div id="placeholder-foto-jualan" class="text-center group-hover:scale-105 transition-transform">
                         <i class="fas fa-images text-2xl text-[#EE4D2D] mb-2 drop-shadow-sm"></i>
@@ -1922,13 +1868,12 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
                 <input type="file" id="input-foto-jualan" accept="image/*" multiple class="hidden" onchange="previewGambarJualan(this)">
             </div>
 
-            <!-- NAMA PRODUK -->
             <div>
                 <label class="text-[10px] text-gray-400/80 font-bold uppercase tracking-widest mb-2 block pl-1">Nama Produk</label>
                 <input type="text" id="jualan-nama" placeholder="Contoh: Joki GB Level 1-10" class="w-full bg-black/40 border border-transparent rounded-2xl px-4 py-3.5 text-sm text-white outline-none focus:bg-black/60 focus:ring-1 focus:ring-[#EE4D2D]/50 transition-all">
             </div>
 
-            <!-- GRID HARGA & KATEGORI -->
+
             <div class="grid grid-cols-2 gap-4">
                 <div>
                     <label class="text-[10px] text-gray-400/80 font-bold uppercase tracking-widest mb-2 block pl-1">Harga (Rp)</label>
@@ -1949,7 +1894,7 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
                 </div>
             </div> 
 
-            <!-- STOK AUTO-KIRIM -->
+
             <div id="wadah-stock-jualan" class="hidden mt-2">
                 <label class="text-[10px] text-brand-info/90 font-bold uppercase tracking-widest mb-2 block flex items-center gap-1 pl-1">
                     <i class="fas fa-robot"></i> Stok Auto-Kirim
@@ -1958,14 +1903,13 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
                 <p class="text-[8px] text-gray-500 mt-1.5 italic leading-relaxed pl-1">*Sistem otomatis mengirim baris teratas ke pembeli.</p>
             </div>
 
-            <!-- DESKRIPSI -->
+
             <div>
                 <label class="text-[10px] text-gray-400/80 font-bold uppercase tracking-widest mb-2 block pl-1">Deskripsi Lengkap</label>
                 <textarea id="jualan-deskripsi" rows="4" placeholder="Jelaskan detail produk..." class="w-full bg-black/40 border border-transparent rounded-2xl px-4 py-3.5 text-sm text-white outline-none focus:bg-black/60 focus:ring-1 focus:ring-[#EE4D2D]/50 transition-all resize-none hide-scroll"></textarea>
             </div>
         </div> 
         
-        <!-- TOMBOL BAWAH -->
         <div class="p-5 sm:p-6 pt-2 shrink-0 bg-brand-card">
             <button id="btn-submit-jualan" onclick="prosesPostingJualan()" class="w-full bg-[#EE4D2D] hover:bg-[#FF5722] text-white py-4 rounded-[1rem] font-extrabold active:scale-95 transition-all uppercase tracking-widest text-sm shadow-[0_8px_20px_rgba(238,77,45,0.3)]">Posting Dagangan</button>
         </div>
@@ -1973,8 +1917,6 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
 </div>
 
 
-
-<!-- 2. MODAL EDIT PRODUK (UI MODERN MARKETPLACE) -->
 <div id="modal-edit-produk" class="fixed inset-0 z-[600] hidden items-end sm:items-center justify-center bg-black/90 backdrop-blur-md px-0 sm:px-6 transition-all duration-300">
     <div class="bg-brand-card w-full max-w-md sm:rounded-[2rem] rounded-t-[2.5rem] shadow-2xl relative modal-anim flex flex-col h-[90vh] sm:h-auto sm:max-h-[90vh] overflow-hidden">
         
@@ -2004,13 +1946,12 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
                 <input type="file" id="input-foto-edit" accept="image/*" multiple class="hidden" onchange="previewGambarEdit(this)">
             </div>
 
-            <!-- NAMA PRODUK -->
             <div>
                 <label class="text-[10px] text-gray-400/80 font-bold uppercase tracking-widest mb-2 block pl-1">Nama Produk</label>
                 <input type="text" id="edit-produk-nama" class="w-full bg-black/40 border border-transparent rounded-2xl px-4 py-3.5 text-sm text-white outline-none focus:bg-black/60 focus:ring-1 focus:ring-[#EE4D2D]/50 transition-all">
             </div>
 
-            <!-- GRID HARGA & KATEGORI -->
+
             <div class="grid grid-cols-2 gap-4">
                 <div>
                     <label class="text-[10px] text-gray-400/80 font-bold uppercase tracking-widest mb-2 block pl-1">Harga (Rp)</label>
@@ -2031,7 +1972,6 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
                 </div>
             </div> 
 
-            <!-- STOK AUTO-KIRIM -->
             <div id="wadah-stock-edit" class="hidden mt-2">
                 <label class="text-[10px] text-brand-info/90 font-bold uppercase tracking-widest mb-2 block flex items-center gap-1 pl-1">
                     <i class="fas fa-robot"></i> Edit Stok Auto-Kirim
@@ -2039,14 +1979,12 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
                 <textarea id="edit-produk-stock" rows="3" placeholder="Masukkan 1 stok per baris..." class="w-full bg-[#0F1322] border border-brand-info/20 rounded-2xl px-4 py-3.5 text-sm text-brand-info outline-none focus:border-brand-info/50 transition-all resize-none hide-scroll"></textarea>
             </div>
 
-            <!-- DESKRIPSI -->
             <div>
                 <label class="text-[10px] text-gray-400/80 font-bold uppercase tracking-widest mb-2 block pl-1">Deskripsi Lengkap</label>
                 <textarea id="edit-produk-deskripsi" rows="4" class="w-full bg-black/40 border border-transparent rounded-2xl px-4 py-3.5 text-sm text-white outline-none focus:bg-black/60 focus:ring-1 focus:ring-[#EE4D2D]/50 transition-all resize-none hide-scroll"></textarea>
             </div>
         </div> 
         
-        <!-- TOMBOL BAWAH -->
         <div class="p-5 sm:p-6 pt-2 shrink-0 bg-brand-card">
             <button id="btn-submit-edit-produk" onclick="prosesEditProduk()" class="w-full bg-[#EE4D2D] hover:bg-[#FF5722] text-white py-4 rounded-[1rem] font-extrabold active:scale-95 transition-all uppercase tracking-widest text-sm shadow-[0_8px_20px_rgba(238,77,45,0.3)]">Simpan Perubahan</button>
         </div>
@@ -2054,10 +1992,6 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
 </div>
 
 
-
-
-
-<!-- 2. MODAL DETAIL PASAR (DIPERBARUI UNTUK CAROUSEL FOTO) -->
 <div id="modal-detail-pasar" class="fixed inset-0 z-[600] hidden items-end sm:items-center justify-center bg-black/90 backdrop-blur-md px-0 sm:px-6 transition-all duration-300">
     <div class="bg-brand-card w-full max-w-md sm:rounded-3xl rounded-t-[2.5rem] border border-white/10 shadow-2xl relative modal-anim flex flex-col h-[90vh] sm:h-auto sm:max-h-[90vh] overflow-hidden">
         <div class="flex justify-between items-center p-5 border-b border-white/5 bg-brand-dark/80 backdrop-blur-xl shrink-0 absolute top-0 left-0 right-0 z-20">
@@ -2066,12 +2000,11 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
         </div>
         <div class="flex-1 overflow-y-auto hide-scroll pb-24 pt-[68px]">
             
-            <!-- CAROUSEL FOTO -->
             <div class="w-full aspect-square bg-black/50 relative border-b border-white/5">
                 <div id="pasar-detail-carousel" class="flex overflow-x-auto hide-scroll snap-x snap-mandatory h-full w-full">
                     <!-- Foto akan dirender JS di sini -->
                 </div>
-                <!-- Indikator Angka -->
+
                 <div id="pasar-carousel-counter" class="absolute bottom-4 right-4 bg-black/60 backdrop-blur-md text-white text-[10px] font-bold px-3 py-1 rounded-full border border-white/10 shadow-md hidden z-10">
                     <span id="pasar-current-idx">1</span>/<span id="pasar-total-idx">1</span>
                 </div>
@@ -2117,10 +2050,8 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
                 <div class="space-y-1.5 pt-1">
                     <label class="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-1 block">Deskripsi Lengkap</label>
                     
-                    <!-- Paragraf dengan line-clamp dan fungsi klik -->
                     <p id="pasar-detail-deskripsi" class="text-xs sm:text-sm text-gray-300 leading-relaxed whitespace-pre-line line-clamp-4 cursor-pointer transition-all duration-300" onclick="this.classList.toggle('line-clamp-4'); const btn = document.getElementById('btn-toggle-desc-pasar'); btn.innerHTML = this.classList.contains('line-clamp-4') ? 'Lihat Selengkapnya ▼' : 'Tutup Selengkapnya ▲';"></p>
                     
-                    <!-- Tombol manual di bawahnya -->
                     <button id="btn-toggle-desc-pasar" onclick="document.getElementById('pasar-detail-deskripsi').click()" class="text-[10px] text-brand-info font-bold hover:text-white active:scale-95 transition-all mt-1">Lihat Selengkapnya ▼</button>
                 </div>
                 <div class="bg-[#EE4D2D]/10 p-3 rounded-xl border border-[#EE4D2D]/20 flex gap-3 items-start">
@@ -2172,7 +2103,6 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
                 <h2 class="text-xl font-extrabold text-white tracking-tight">Buka Tokomu Sendiri</h2>
             </div>
 
-            <!-- INFO BOX BENEFIT & POTONGAN -->
             <div class="bg-brand-info/10 border border-brand-info/30 rounded-xl p-4 mb-6 relative overflow-hidden">
                 <div class="absolute -right-4 -bottom-4 opacity-10 text-6xl text-brand-info"><i class="fas fa-info-circle"></i></div>
                 <h4 class="text-[11px] font-bold text-brand-info mb-2 uppercase tracking-wider relative z-10"><i class="fas fa-star mr-1"></i> Benefit & Skema Biaya</h4>
@@ -2183,7 +2113,6 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
                 </ul>
             </div>
 
-            <!-- PAKET BULANAN (DENGAN QTY & HARGA CORET) -->
             <div id="card-bulanan" onclick="pilihPaketSeller('bulanan')" class="group cursor-pointer bg-black/40 border border-white/10 hover:border-brand-info rounded-2xl p-4 mb-4 transition-all relative overflow-hidden active:scale-95 pt-6">
                 <!-- BADGE HEMAT (Mencolok di Atas) -->
                 <div class="absolute right-0 top-0 bg-gradient-to-r from-red-500 to-red-600 text-white text-[9px] font-black px-3 py-1 rounded-bl-xl shadow-lg z-20 tracking-wider">HEMAT 20%</div>
@@ -2209,7 +2138,7 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
                 </div>
             </div>
 
-            <!-- PAKET TAHUNAN (DENGAN HARGA CORET) -->
+
             <div id="card-tahunan" onclick="pilihPaketSeller('tahunan')" class="group cursor-pointer bg-gradient-to-br from-[#1A1133] to-[#2A0815] border border-brand-accent rounded-2xl p-4 mb-2 transition-all relative overflow-hidden active:scale-95 shadow-[0_0_15px_rgba(255,0,122,0.2)] pt-6">
                 <!-- BADGE HEMAT BESAR -->
                 <div class="absolute right-0 top-0 bg-gradient-to-r from-red-500 to-red-600 text-white text-[9px] font-black px-3 py-1 rounded-bl-xl shadow-lg z-20 tracking-wider">HEMAT Rp 200.000</div>
@@ -2235,7 +2164,8 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
     </div>
 </div>
 
-<script src="app.js?v=1.1" defer></script>
+<script type="module" src="/app.js"></script>
+
 
 
 </body>
