@@ -8838,12 +8838,6 @@ function ubahJumlahPasar(delta) {
     updateHargaPasarLayar();
 }
 
-function inputJumlahPasar(val) {
-    let parsed = parseInt(val);
-    currentPasarQty = (isNaN(parsed) || parsed < 1) ? 1 : parsed; 
-    updateHargaPasarLayar();
-}
-
 function validasiJumlahPasar(el) {
     let parsed = parseInt(el.value);
     if (isNaN(parsed) || parsed < 1) { parsed = 1; el.value = 1; }
