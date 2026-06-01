@@ -9518,17 +9518,6 @@ function filterKategoriPasar(kat, btnEl) {
     terapkanFilterPasar();
 }
 
-function terapkanFilterPasar() {
-    const keyword = (document.getElementById('cari-pasar')?.value || '').toLowerCase();
-    const filteredData = globalDataPasar.filter(item => {
-        const matchSearch = item.title.toLowerCase().includes(keyword) || 
-                            item.category.toLowerCase().includes(keyword) || 
-                            (item.profiles?.nickname || '').toLowerCase().includes(keyword);
-        const matchKat = (kategoriPasarAktif === 'Semua') ? true : (item.category === kategoriPasarAktif);
-        return matchSearch && matchKat;
-    });
-    renderGridPasar(filteredData);
-}
 
 async function bukaModalSaldoDompet() {
     if (!currentUser) return showToast("Silakan login dulu!", "error");
