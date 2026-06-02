@@ -3486,115 +3486,106 @@ const nextBatch = allVideosData.slice(currentVideoIndex, currentVideoIndex + BAT
 if (nextBatch.length === 0) return;
 
 const htmlString = nextBatch.map((vid, index) => {
-// Memunculkan tutorial hanya di video paling pertama
-const isFirstVideo = (currentVideoIndex === 0 && index === 0);
-const tutorialHtml = isFirstVideo ? `
-    <div id="tutorial-tap" class="absolute top-[35%] left-1/2 -translate-x-1/2 z-[70] bg-black/80 backdrop-blur-md text-white text-[12px] text-center font-bold px-5 py-4 rounded-3xl border border-white/20 pointer-events-none shadow-[0_10px_40px_rgba(0,0,0,0.8)] transition-opacity duration-500 w-[80%] max-w-[260px]">
-        <div class="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-3 border border-white/10">
-            <i class="fas fa-hand-pointer text-brand-accent text-2xl animate-bounce"></i>
+    // Memunculkan tutorial hanya di video paling pertama
+    const isFirstVideo = (currentVideoIndex === 0 && index === 0);
+    const tutorialHtml = isFirstVideo ? `
+        <div id="tutorial-tap" class="absolute top-[35%] left-1/2 -translate-x-1/2 z-[70] bg-black/80 backdrop-blur-md text-white text-[12px] text-center font-bold px-5 py-4 rounded-3xl border border-white/20 pointer-events-none shadow-[0_10px_40px_rgba(0,0,0,0.8)] transition-opacity duration-500 w-[80%] max-w-[260px]">
+            <div class="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-3 border border-white/10">
+                <i class="fas fa-hand-pointer text-brand-accent text-2xl animate-bounce"></i>
+            </div>
+            Ketuk layar sekali untuk pengalaman seperti di TikTok<br>
+            <span class="text-brand-info text-[10px] font-normal mt-2 block">Ketuk sekali lagi untuk menutup</span>
         </div>
-        Ketuk layar sekali untuk pengalaman seperti di TikTok<br>
-        <span class="text-brand-info text-[10px] font-normal mt-2 block">Ketuk sekali lagi untuk menutup</span>
+    ` : '';
+
+    return `
+    <div class="snap-start w-full h-full flex-shrink-0 relative flex items-center justify-center bg-black">
+
+    <div class="video-inner-wrap w-full h-full relative bg-brand-dark ${!isGlobalMuted ? 'floating-focus' : ''}">
+    
+    ${tutorialHtml}
+
+    <div class="absolute inset-0 flex items-center justify-center z-0"><div class="w-12 h-12 border-4 border-brand-accent/20 border-t-brand-accent rounded-full animate-spin"></div></div>
+    <video class="absolute inset-0 m-auto w-full h-full object-cover video-player transition-opacity duration-500 opacity-0 z-10"
+    onloadeddata="this.classList.remove('opacity-0')" loop ${isGlobalMuted ? 'muted' : ''} playsinline preload="metadata"
+    ontimeupdate="updateVideoProgress(this)"
+    onclick="handleVideoClick(event, this, '${vid.id}')" onerror="handleVideoError(this)">
+    <source src="${vid.video_url}" type="video/mp4">
+    </video>
+
+    <div class="time-indicator absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-white font-extrabold text-4xl drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)] opacity-0 transition-opacity z-[60] pointer-events-none tracking-wider bg-black/40 px-6 py-2 rounded-2xl">
+    <span class="time-current">00:00</span> <span class="text-white/50 text-2xl mx-1">/</span> <span class="time-total text-white/70">00:00</span>
     </div>
-` : '';
 
-return `
-<div class="snap-start w-full h-full flex-shrink-0 relative flex items-center justify-center bg-black">
+    <div class="absolute bottom-0 left-0 w-full h-3 z-50 cursor-pointer group touch-none flex flex-col justify-end pb-1"
+    onpointerdown="startSeek(event, this)" onpointermove="doSeek(event, this)" onpointerup="endSeek(event, this)" onpointercancel="endSeek(event, this)">
+    <div class="w-full h-1 bg-white/30 relative">
+    <div class="progress-fill h-full bg-white w-0 relative pointer-events-none transition-all duration-75 ease-linear">
+    <div class="absolute -right-2 top-1/2 -translate-y-1/2 w-4 h-4 bg-white rounded-full scale-0 group-hover:scale-100 transition-transform shadow-md"></div>
+    </div>
+    </div>
+    </div>
 
-<div class="video-inner-wrap w-full h-full relative bg-brand-dark ${!isGlobalMuted ? 'floating-focus' : ''}">
-${tutorialHtml}
-<div class="absolute inset-0 flex items-center justify-center z-0"><div class="w-12 h-12 border-4 border-brand-accent/20 border-t-brand-accent rounded-full animate-spin"></div></div>
-<video class="absolute inset-0 m-auto w-full h-full object-cover video-player transition-opacity duration-500 opacity-0 z-10"
-onloadeddata="this.classList.remove('opacity-0')" loop ${isGlobalMuted ? 'muted' : ''} playsinline preload="metadata"
-ontimeupdate="updateVideoProgress(this)"
-onclick="handleVideoClick(event, this, '${vid.id}')" onerror="handleVideoError(this)">
-<source src="${vid.video_url}" type="video/mp4">
-</video>
+    <div class="absolute bottom-6 left-2 z-40 w-[75%] pr-2 pointer-events-auto flex flex-col justify-end pb-2">
+    <p onclick="event.stopPropagation(); viewUserProfile('${vid.user_id}')" class="font-bold text-[16px] text-white cursor-pointer hover:text-brand-info drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)] mb-1.5 flex items-center">
+    @${vid.nickname || "Player"} ${getBadgeByLevelAndVideos(0, allVideosData.filter(v => v.user_id === vid.user_id).length)}
+    </p>
+    <div onclick="this.classList.toggle('expanded')" class="caption-text text-[14px] text-white/95 drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)] cursor-pointer leading-snug">
+    ${formatCaption(vid.caption)}
+    </div>
 
-<div class="time-indicator absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-white font-extrabold text-4xl drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)] opacity-0 transition-opacity z-[60] pointer-events-none tracking-wider bg-black/40 px-6 py-2 rounded-2xl">
-<span class="time-current">00:00</span> <span class="text-white/50 text-2xl mx-1">/</span> <span class="time-total text-white/70">00:00</span>
-</div>
+    <div class="flex items-center gap-2 mt-2.5 overflow-hidden w-3/4">
+    <i class="fas fa-music text-[10px] text-white animate-pulse drop-shadow-md"></i>
+    <div class="overflow-hidden whitespace-nowrap relative w-full mask-text">
+    <div class="inline-block text-[12px] text-white drop-shadow-md font-medium marquee-text">
+    Suara Asli - @${vid.nickname || "Player"} 🎵 Original Audio
+    </div>
+    </div>
+    </div>
+    </div>
 
-<!-- Progress Bar Tetap di Dasar Layar -->
-<div class="absolute bottom-0 left-0 w-full h-3 z-50 cursor-pointer group touch-none flex flex-col justify-end pb-1"
-onpointerdown="startSeek(event, this)" onpointermove="doSeek(event, this)" onpointerup="endSeek(event, this)" onpointercancel="endSeek(event, this)">
-<div class="w-full h-1 bg-white/30 relative">
-<div class="progress-fill h-full bg-white w-0 relative pointer-events-none transition-all duration-75 ease-linear">
-<div class="absolute -right-2 top-1/2 -translate-y-1/2 w-4 h-4 bg-white rounded-full scale-0 group-hover:scale-100 transition-transform shadow-md"></div>
-</div>
-</div>
-</div>
+    <div class="absolute bottom-6 right-4 z-40 flex flex-col items-center gap-5 pointer-events-auto pb-2">
 
-<!-- ============================================== -->
-<!-- TATA LETAK BARU (TIKTOK STYLE)                 -->
-<!-- ============================================== -->
+    <div class="relative cursor-pointer hover:scale-105 transition-transform" onclick="event.stopPropagation(); viewUserProfile('${vid.user_id}')">
+    <img src="${vid.avatar_url || 'https://ui-avatars.com/api/?name=User&background=1A1133&color=fff'}" loading="lazy" class="w-[46px] h-[46px] rounded-full object-cover border-[1.5px] border-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
+    <button id="feed-follow-btn-${vid.user_id}" onclick="event.stopPropagation(); feedToggleFollow('${vid.user_id}', this)" class="absolute -bottom-2.5 left-1/2 -translate-x-1/2 bg-[#FF007A] text-white rounded-full w-[22px] h-[22px] flex items-center justify-center border-[1.5px] border-brand-dark drop-shadow-md active:scale-90 transition-transform z-30">
+    <i class="fas fa-plus text-[10px]"></i>
+    </button>
+    </div>
 
-<!-- 1. Area Teks Kiri Bawah -->
-<div class="absolute bottom-6 left-2 z-40 w-[75%] pr-2 pointer-events-auto flex flex-col justify-end pb-2">
-<p onclick="event.stopPropagation(); viewUserProfile('${vid.user_id}')" class="font-bold text-[16px] text-white cursor-pointer hover:text-brand-info drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)] mb-1.5 flex items-center">
-@${vid.nickname || "Player"} ${getBadgeByLevelAndVideos(0, allVideosData.filter(v => v.user_id === vid.user_id).length)}
-</p>
-<div onclick="this.classList.toggle('expanded')" class="caption-text text-[14px] text-white/95 drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)] cursor-pointer leading-snug">
-${formatCaption(vid.caption)}
-</div>
+    <div class="like-container flex flex-col items-center gap-1" data-vid="${vid.id}">
+    <button onclick="likeVideo('${vid.id}', this)" class="hover:scale-110 transition-transform active:scale-90">
+    <i class="fas fa-heart text-[35px] text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]"></i>
+    </button>
+    <span class="like-count-display text-white text-[13px] font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">0</span>
+    </div>
 
-<!-- [BARU] Teks Berjalan "Suara Asli / Lagu" -->
-<div class="flex items-center gap-2 mt-2.5 overflow-hidden w-3/4">
-<i class="fas fa-music text-[10px] text-white animate-pulse drop-shadow-md"></i>
-<div class="overflow-hidden whitespace-nowrap relative w-full mask-text">
-<div class="inline-block text-[12px] text-white drop-shadow-md font-medium marquee-text">
-Suara Asli - @${vid.nickname || "Player"} 🎵 Original Audio
-</div>
-</div>
-</div>
-</div>
+    <div class="comment-count-container flex flex-col items-center gap-1" data-vid="${vid.id}">
+    <button onclick="openComments('${vid.id}')" class="hover:scale-110 transition-transform active:scale-90">
+    <i class="fas fa-comment-dots text-[35px] text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]" style="transform: scaleX(-1);"></i>
+    </button>
+    <span class="comment-count-display text-white text-[13px] font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">0</span>
+    </div>
 
-<!-- 2. Tombol Aksi Kanan Bawah -->
-<div class="absolute bottom-6 right-4 z-40 flex flex-col items-center gap-5 pointer-events-auto pb-2">
+    <div class="flex flex-col items-center gap-1">
+    <button onclick="shareVideo('${vid.id}', this)" class="hover:scale-110 transition-transform active:scale-90">
+    <i class="fas fa-share text-[35px] text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]"></i>
+    </button>
+    <span class="text-white text-[13px] font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">Share</span>
+    </div>
 
-<!-- Foto Profil & Tombol Plus -->
-<div class="relative cursor-pointer hover:scale-105 transition-transform" onclick="event.stopPropagation(); viewUserProfile('${vid.user_id}')">
-<img src="${vid.avatar_url || 'https://ui-avatars.com/api/?name=User&background=1A1133&color=fff'}" loading="lazy" class="w-[46px] h-[46px] rounded-full object-cover border-[1.5px] border-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
-<button id="feed-follow-btn-${vid.user_id}" onclick="event.stopPropagation(); feedToggleFollow('${vid.user_id}', this)" class="absolute -bottom-2.5 left-1/2 -translate-x-1/2 bg-[#FF007A] text-white rounded-full w-[22px] h-[22px] flex items-center justify-center border-[1.5px] border-brand-dark drop-shadow-md active:scale-90 transition-transform z-30">
-<i class="fas fa-plus text-[10px]"></i>
-</button>
-</div>
+    <div class="relative mt-2 flex items-center justify-center w-11 h-11 group cursor-pointer hover:scale-105 transition-transform" onclick="event.stopPropagation()">
+    <i class="fas fa-music absolute -top-4 -left-2 text-[10px] text-white/70 animate-ping opacity-0 group-hover:opacity-100 transition-opacity"></i>
+    <div class="w-10 h-10 rounded-full bg-[#1A1133] border-[3.5px] border-gray-800 flex items-center justify-center animate-[spin_4s_linear_infinite] shadow-[0_0_15px_rgba(0,0,0,0.8)]">
+    <img src="${vid.avatar_url || 'https://ui-avatars.com/api/?name=Music&background=1A1133&color=fff'}" class="w-4 h-4 rounded-full object-cover">
+    </div>
+    </div>
+    </div>
 
-<!-- Like -->
-<div class="like-container flex flex-col items-center gap-1" data-vid="${vid.id}">
-<button onclick="likeVideo('${vid.id}', this)" class="hover:scale-110 transition-transform active:scale-90">
-<i class="fas fa-heart text-[35px] text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]"></i>
-</button>
-<span class="like-count-display text-white text-[13px] font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">0</span>
-</div>
+    </div>
+    </div>`;
+}).join('');
 
-<!-- Comment -->
-<div class="comment-count-container flex flex-col items-center gap-1" data-vid="${vid.id}">
-<button onclick="openComments('${vid.id}')" class="hover:scale-110 transition-transform active:scale-90">
-<i class="fas fa-comment-dots text-[35px] text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]" style="transform: scaleX(-1);"></i>
-</button>
-<span class="comment-count-display text-white text-[13px] font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">0</span>
-</div>
-
-<!-- Share -->
-<div class="flex flex-col items-center gap-1">
-<button onclick="shareVideo('${vid.id}', this)" class="hover:scale-110 transition-transform active:scale-90">
-<i class="fas fa-share text-[35px] text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]"></i>
-</button>
-<span class="text-white text-[13px] font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">Share</span>
-</div>
-
-<!-- [BARU] Piringan Musik Berputar -->
-<div class="relative mt-2 flex items-center justify-center w-11 h-11 group cursor-pointer hover:scale-105 transition-transform" onclick="event.stopPropagation()">
-<i class="fas fa-music absolute -top-4 -left-2 text-[10px] text-white/70 animate-ping opacity-0 group-hover:opacity-100 transition-opacity"></i>
-<div class="w-10 h-10 rounded-full bg-[#1A1133] border-[3.5px] border-gray-800 flex items-center justify-center animate-[spin_4s_linear_infinite] shadow-[0_0_15px_rgba(0,0,0,0.8)]">
-<img src="${vid.avatar_url || 'https://ui-avatars.com/api/?name=Music&background=1A1133&color=fff'}" class="w-4 h-4 rounded-full object-cover">
-</div>
-</div>
-</div>
-
-</div>
-</div>`).join('');
 
 // --- SISTEM ANTI DOM BLOAT (MENCEGAH HP CRASH) ---
 if (container.children.length > 40) {
