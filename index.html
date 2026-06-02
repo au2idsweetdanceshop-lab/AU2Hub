@@ -419,6 +419,29 @@ nav::-webkit-scrollbar { display: none; }
     word-break: break-all;
 }
 
+    /* Efek teks kepotong (Truncation) 2 baris ala TikTok */
+    .caption-text {
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        transition: all 0.3s ease;
+    }
+    .caption-text.expanded {
+        -webkit-line-clamp: unset;
+    }
+
+    /* Animasi Not Balok Musik Melayang */
+    @keyframes floatMusic {
+        0% { transform: translate(0, 0) scale(0.8) rotate(0deg); opacity: 0; }
+        20% { opacity: 1; }
+        80% { opacity: 0.8; }
+        100% { transform: translate(-20px, -60px) scale(1.2) rotate(-20deg); opacity: 0; }
+    }
+    .animate-float-music {
+        animation: floatMusic 2.5s linear infinite;
+    }
+
 </style> </head>
 <body class="pl-[60px]">
 
