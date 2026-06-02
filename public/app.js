@@ -9964,6 +9964,7 @@ async function prosesTarikSaldo() {
 // === 1. Variabel Global untuk Mode Edit ===
 let editFileArray = []; // Untuk menampung file foto baru dari HP
 let existingImagesEdit = []; // Untuk menampung URL foto lama dari database
+let deletedImagesEdit = []; // [BARU] Menampung antrean foto lama yang dibuang saat sesi edit
 
 // === 2. Modifikasi Fungsi Buka & Tutup Modal Edit ===
 async function bukaModalEditProduk(idProduk) {
@@ -9984,6 +9985,7 @@ async function bukaModalEditProduk(idProduk) {
         
         editFileArray = [];
         existingImagesEdit = [];
+        deletedImagesEdit = [];
         
         if (data.image_url) {
             existingImagesEdit = data.image_url.split(',').map(u => u.trim()).filter(u => u !== "");
@@ -10013,6 +10015,7 @@ function tutupModalEditProduk(dariTombolBackHP = false) {
     
     editFileArray = [];
     existingImagesEdit = [];
+    deletedImagesEdit = [];
     document.getElementById('input-foto-edit').value = '';
     
     // Mencegah looping history jika ditutup dari tombol Back HP
@@ -10090,9 +10093,16 @@ function renderPreviewEditProduk() {
 }
 
 function hapusFotoLamaEdit(index) {
+    // [BARU] Ambil URL foto lama yang didelete, masukkan ke antrean eksekusi
+    const fotoDibuang = existingImagesEdit[index];
+    if (fotoDibuang) {
+        deletedImagesEdit.push(fotoDibuang);
+    }
+
     existingImagesEdit.splice(index, 1);
     renderPreviewEditProduk();
 }
+
 
 function hapusFotoBaruEdit(index) {
     editFileArray.splice(index, 1);
@@ -10163,6 +10173,21 @@ async function prosesEditProduk() {
         }
 
         showToast("Produk berhasil diperbarui!", "success");
+
+        // [BARU] EKSEKUSI PENGHAPUSAN FISIK FOTO YANG DIANTREKAN DARI BIZNET GIO
+        if (deletedImagesEdit.length > 0) {
+            for (const urlFoto of deletedImagesEdit) {
+                if (urlFoto.trim() !== "") {
+                    await fetch('/api/delete-file', {
+                        method: 'DELETE',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ fileUrl: urlFoto.trim() })
+                    }).catch(e => console.log("Abaikan jika file S3 sudah tidak ada:", e));
+                }
+            }
+            deletedImagesEdit = []; // Kosongkan antrean setelah dibasmi tuntas
+        }
+
         tutupModalEditProduk();
         
         await loadProdukSaya();
@@ -10170,15 +10195,12 @@ async function prosesEditProduk() {
 
     } catch (err) {
         showToast("Gagal: " + err.message, "error");
-        console.error("Error Edit Produk:", err);
-    } finally {
+        console.error("Error Edit">_ Produk:", err);
+    } finaly {
         btn.innerHTML = 'Simpan Perubahan';
         btn.disabled = false;
     }
 }
-
-
-
 
 async function hapusProdukSaya(productId, productName) {
     const konfirmasi = await customConfirm("Yakin hapus produk: " + productName + "?");
