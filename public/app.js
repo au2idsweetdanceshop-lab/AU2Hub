@@ -2581,6 +2581,8 @@ function handleVideoClick(event, videoElement, vidId) {
     if (tutorial) {
         tutorial.style.opacity = '0';
         setTimeout(() => tutorial.remove(), 500);
+        // 🔥 GEMBOK PERMANEN: Catat di HP bahwa user sudah ngerti caranya
+        localStorage.setItem('tutorialPaham', 'true'); 
     }
 
     if (videoClickTimer) {
@@ -3614,7 +3616,8 @@ const nextBatch = allVideosData.slice(currentVideoIndex, currentVideoIndex + BAT
 if (nextBatch.length === 0) return;
 
 const htmlString = nextBatch.map((vid, index) => {
-    const isFirstVideo = (currentVideoIndex === 0 && index === 0);
+    // 🔥 CEK MEMORI: Hanya munculkan jika user BELUM PERNAH mengetuk layar
+    const isFirstVideo = (currentVideoIndex === 0 && index === 0 && localStorage.getItem('tutorialPaham') !== 'true');
     const tutorialHtml = isFirstVideo ? `
         <div id="tutorial-tap" class="absolute top-[35%] left-1/2 -translate-x-1/2 z-[70] bg-black/80 backdrop-blur-md text-white text-[12px] text-center font-bold px-5 py-4 rounded-3xl border border-white/20 pointer-events-none shadow-[0_10px_40px_rgba(0,0,0,0.8)] transition-opacity duration-500 w-[80%] max-w-[260px]">
             <div class="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-3 border border-white/10">
@@ -3680,11 +3683,6 @@ const htmlString = nextBatch.map((vid, index) => {
 
     <div class="relative cursor-pointer hover:scale-105 transition-transform" onclick="event.stopPropagation(); viewUserProfile('${vid.user_id}')">
     <img src="${vid.avatar_url || 'https://ui-avatars.com/api/?name=User&background=1A1133&color=fff'}" loading="lazy" class="w-[46px] h-[46px] rounded-full object-cover border-[1.5px] border-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
-    ${(!currentUser || (vid.user_id !== currentUser.id && !myFollowingList.includes(vid.user_id))) ? `
-    <button id="feed-follow-btn-${vid.user_id}" onclick="event.stopPropagation(); feedToggleFollow('${vid.user_id}', this)" class="absolute -bottom-2.5 left-1/2 -translate-x-1/2 bg-[#FF007A] text-white rounded-full w-[22px] h-[22px] flex items-center justify-center border-[1.5px] border-brand-dark drop-shadow-md active:scale-90 transition-transform z-30">
-    <i class="fas fa-plus text-[10px]"></i>
-    </button>
-    ` : ''}
     </div>
 
     <div class="like-container flex flex-col items-center gap-1" data-vid="${vid.id}">
