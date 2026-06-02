@@ -9361,6 +9361,15 @@ async function loadTokoSaya() {
     const loggedOut = document.getElementById('toko-logged-out');
     const loggedIn = document.getElementById('toko-logged-in');
     
+    // 1. AMBIL ELEMEN BADGE & TEKS EXPIRED DULU DI AWAL
+    const elExpired = document.getElementById('toko-vip-expired');
+    const elBadge = document.getElementById('badge-toko-vip');
+    
+    // 2. 🔥 FIX: SELALU SEMBUNYIKAN (RESET) MEREKA SETIAP KALI FUNGSI DIPANGGIL
+    // Biar gak ada 'bayang-bayang' VIP nyangkut dari akun sebelumnya
+    if (elExpired) elExpired.classList.add('hidden');
+    if (elBadge) elBadge.classList.add('hidden');
+
     if (!currentUser) {
         loggedOut.querySelector('h3').innerText = "Akses Tertutup";
         loggedOut.querySelector('p').innerText = "Silakan login untuk mulai mengelola etalase toko dan melacak pesanan masuk Anda.";
@@ -9387,7 +9396,6 @@ async function loadTokoSaya() {
     // Jika bukan VIP atau masa aktif habis
     if (!isVip || expiredAt < now) {
         loggedOut.querySelector('h3').innerText = "Akses Khusus VIP Seller";
-        // Teks ini lebih pendek biar rapi
         loggedOut.querySelector('p').innerText = "Tingkatkan akunmu menjadi VIP Seller untuk mengelola toko, menambah etalase, dan menerima pesanan.";
         
         loggedOut.querySelector('button').innerText = "BERLANGGANAN SEKARANG";
@@ -9404,10 +9412,8 @@ async function loadTokoSaya() {
     loggedOut.classList.remove('flex');
     loggedIn.classList.remove('hidden');
 
-    // 🔥 TAMPILKAN INFO MASA AKTIF VIP KE LAYAR
-    const elExpired = document.getElementById('toko-vip-expired');
-    const elBadge = document.getElementById('badge-toko-vip');
-    
+    // 🔥 TAMPILKAN INFO MASA AKTIF VIP KE LAYAR 
+    // (Ini hanya tereksekusi kalau kodenya selamat dari perintah 'return' di atas / Akunnya benar-benar VIP)
     if (elExpired && elBadge) {
         // Hitung sisa hari
         const sisaHari = Math.ceil((expiredAt - now) / (1000 * 60 * 60 * 24));
@@ -9416,6 +9422,8 @@ async function loadTokoSaya() {
         const formatTanggal = expiredAt.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
         
         elExpired.innerHTML = `<i class="fas fa-clock text-[#FF5722] mr-1"></i> Aktif s/d: <b class="text-white">${formatTanggal}</b> (${sisaHari} Hari)`;
+        
+        // Munculkan kembali karena dia valid VIP
         elExpired.classList.remove('hidden');
         elBadge.classList.remove('hidden');
     }
@@ -9424,8 +9432,6 @@ async function loadTokoSaya() {
     await updateUiSaldoSeller();
     switchTokoTab(tokoTabAktif);
 }
-
-
 
 async function updateUiSaldoSeller() {
     try {
