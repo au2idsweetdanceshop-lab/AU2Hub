@@ -2510,6 +2510,13 @@ let videoClickTimer = null;
 
 // 1. FUNGSI KLIK FEED UTAMA (SOSMED)
 function handleVideoClick(event, videoElement, vidId) {
+    // Hilangkan panduan tutorial seketika saat layar diketuk
+    const tutorial = document.getElementById('tutorial-tap');
+    if (tutorial) {
+        tutorial.style.opacity = '0';
+        setTimeout(() => tutorial.remove(), 500);
+    }
+
     if (videoClickTimer) {
         clearTimeout(videoClickTimer);
         videoClickTimer = null;
