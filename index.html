@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>AU2Hub - Pusat Komunitas & Joki</title>
 <meta name="description" content="AU2Hub - Pusat Komunitas, Joki, Rekber, dan Toko Player AU2ID Sweet Dance. Aman dan Terpercaya.">
 <link rel="icon" type="image/png" sizes="32x32" href="/app-icon-19v2.png?v=2">
@@ -23,11 +23,12 @@
 <link rel="preload" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
 <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap"></noscript>
 
-<link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+<link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" media="print" onload="this.media='all'">
 <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"></noscript>
 
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script defer src="./app.js?v=7"></script>
+<script defer src="./app.js?v=8"></script>
 
 <style>
 /* ========================================== */
@@ -447,7 +448,7 @@ nav::-webkit-scrollbar { display: none; }
 
 <div id="custom-splash" class="fixed inset-0 z-[9999999] bg-[#0F0920] flex flex-col items-center justify-center transition-all duration-500 ease-out">
     <div class="relative flex flex-col items-center">
-        <div class="absolute inset-0 bg-brand-accent blur-3xl opacity-30 animate-pulse"></div>
+        <div class="absolute inset-0 bg-brand-accent opacity-30 animate-pulse" style="filter: blur(48px); will-change: filter, opacity; transform: translateZ(0);"></div>
         
         <!-- ID 'splash-logo' kita gunakan untuk mengganti gambar lewat JS -->
         <img id="splash-logo" src="https://nos.wjv-1.neo.id/au2hub/Picsart_26-05-30_04-29-46-305.webp" alt="Loading Logo AU2Hub" width="128" height="128"
@@ -1254,7 +1255,7 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
 
 <!-- MENGAMBANG LIGHTBOX FOTO DI CHAT -->
 <div id="lightbox-modal" class="fixed inset-0 z-[400] hidden items-center justify-center bg-black/95 backdrop-blur-md opacity-0 transition-opacity duration-300" onclick="closeLightbox()">
-<button onclick="closeLightbox()" class="absolute top-6 right-6 text-white bg-white/10 w-12 h-12 rounded-full flex items-center justify-center active:scale-90 z-[410]"><i class="fas fa-times text-xl"></i></button>
+<button aria-label="Tutup pratinjau gambar" onclick="closeLightbox()" class="absolute top-6 right-6 text-white bg-white/10 w-12 h-12 rounded-full flex items-center justify-center active:scale-90 z-[410]"><i class="fas fa-times text-xl"></i></button>
 <img id="lightbox-img" src="" class="max-w-[90%] max-h-[80vh] object-contain rounded-lg shadow-2xl scale-95 transition-transform duration-300">
 </div>
 
@@ -1272,10 +1273,10 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
         <h3 id="prompt-title" class="text-sm font-bold text-white mb-4 leading-relaxed relative z-10">Judul</h3>
         <input type="text" id="prompt-input" class="w-full bg-black/40 border border-white/10 rounded-2xl px-4 py-3.5 text-sm text-white outline-none focus:border-brand-purple focus:bg-white/5 focus:ring-4 focus:ring-brand-purple/20 transition-all duration-300 mb-6 relative z-10">
         
-        <div class="flex flex-col gap-2 relative z-10">
-            <button id="prompt-ok" class="w-full bg-brand-purple text-white py-3.5 rounded-2xl font-extrabold active:scale-95 transition-all text-sm shadow-[0_4px_15px_rgba(162,119,255,0.3)] hover:bg-[#8e5cff]">Simpan</button>
-            <button id="prompt-cancel" class="w-full bg-transparent border border-white/5 hover:bg-white/5 text-gray-400 hover:text-white py-3.5 rounded-2xl font-bold active:scale-95 transition-all text-sm">Batal</button>
-        </div>
+<div class="flex flex-col gap-2 relative z-10">
+    <button aria-label="Simpan input" id="prompt-ok" class="w-full bg-brand-purple text-white py-3.5 rounded-2xl font-extrabold active:scale-95 transition-all text-sm shadow-[0_4px_15px_rgba(162,119,255,0.3)] hover:bg-[#8e5cff]">Simpan</button>
+    <button aria-label="Batalkan input" id="prompt-cancel" class="w-full bg-transparent border border-white/5 hover:bg-white/5 text-gray-400 hover:text-white py-3.5 rounded-2xl font-bold active:scale-95 transition-all text-sm">Batal</button>
+</div>
     </div>
 </div>
 
@@ -1327,7 +1328,7 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
 
 <button id="btn-del-msg-me" onclick="deleteMsgForMe()" class="w-full text-white py-4 font-bold border-t border-white/5 active:bg-white/5 transition-colors text-sm hover:text-brand-info"><i class="fas fa-trash-alt mr-2"></i> Hapus untuk Saya</button>
 <button id="btn-del-msg-all" onclick="deleteMsgForAll()" class="w-full text-red-500 py-4 font-bold border-t border-white/5 active:bg-white/5 transition-colors text-sm hover:text-red-400"><i class="fas fa-globe mr-2"></i> Hapus untuk Semua</button>
-<button onclick="document.getElementById('modal-msg-option').classList.replace('flex', 'hidden')" class="w-full text-gray-500 py-4 font-bold border-t border-white/5 active:bg-white/5 transition-colors text-sm">Batal</button>
+<button aria-label="Batal opsi pesan" onclick="document.getElementById('modal-msg-option').classList.replace('flex', 'hidden')" class="w-full text-gray-500 py-4 font-bold border-t border-white/5 active:bg-white/5 transition-colors text-sm">Batal</button>
 </div>
 </div>
 
@@ -1478,7 +1479,7 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
 
 <div class="relative">
 <input type="password" id="auth-pass" placeholder="Password" class="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3.5 text-sm text-white outline-none focus:border-brand-info pr-10">
-<button onclick="togglePassword('auth-pass', 'icon-auth-pass')" class="absolute right-4 top-4 text-gray-400 hover:text-white transition-colors"><i id="icon-auth-pass" class="fas fa-eye"></i></button>
+<button aria-label="Tampilkan atau sembunyikan kata sandi" onclick="togglePassword('auth-pass', 'icon-auth-pass')" class="absolute right-4 top-4 text-gray-400 hover:text-white transition-colors"><i id="icon-auth-pass" class="fas fa-eye"></i></button>
 </div>
 
 <div id="nickname-field" class="hidden">
@@ -1533,7 +1534,7 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
 <div id="video-preview-container" class="hidden absolute inset-0 bg-black">
     <video id="video-preview-element" class="w-full h-full object-cover opacity-90" loop muted playsinline></video>
     
-    <button type="button" onclick="bukaPratinjauVideo(event)" class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 bg-black/50 backdrop-blur-md rounded-full flex items-center justify-center text-white border border-white/20 active:scale-90 z-20 hover:bg-brand-accent transition-colors">
+    <button aria-label="Putar pratinjau video" type="button" onclick="bukaPratinjauVideo(event)" class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 bg-black/50 backdrop-blur-md rounded-full flex items-center justify-center text-white border border-white/20 active:scale-90 z-20 hover:bg-brand-accent transition-colors">
         <i class="fas fa-play text-xs ml-0.5"></i>
     </button>
     
@@ -1656,7 +1657,7 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
 <ul class="text-xs text-gray-300 space-y-2.5 mb-6 bg-black/20 p-3 rounded-xl border border-white/5">
 <li class="flex items-start"><i class="fas fa-star text-brand-accent mt-0.5 mr-2"></i> <span>Gacha Kostum Limited Edition rilis.</span></li>
 </ul>
-<a href="https://www.facebook.com/story.php?story_fbid=1373226878158377&id=100064132326306&rdid=7emuowRLGF3B8ay6#/" target="_blank" class="flex justify-center items-center w-full bg-[#1877F2]/10 hover:bg-[#1877F2]/20 border border-[#1877F2]/30 text-[#1877F2] font-bold py-3.5 rounded-xl active:scale-95 transition-all text-xs">
+<a aria-label="Buka postingan detail event di Facebook" href="https://www.facebook.com/story.php?story_fbid=1373226878158377&id=100064132326306&rdid=7emuowRLGF3B8ay6#/" target="_blank" class="flex justify-center items-center w-full bg-[#1877F2]/10 hover:bg-[#1877F2]/20 border border-[#1877F2]/30 text-[#1877F2] font-bold py-3.5 rounded-xl active:scale-95 transition-all text-xs">
 <i class="fab fa-facebook text-base mr-2"></i> Buka Postingan Asli (Opsional)
 </a>
 </div>
@@ -1721,44 +1722,45 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
     <div class="w-6 h-[2px] bg-white/10 rounded-full mb-2"></div>
     
     <a href="#info" aria-label="Pusat Informasi" onclick="switchTab('info', event)" class="nav-item flex items-center justify-center w-[44px] h-[44px] text-gray-500" title="Info">
-        <i class="fas fa-bullhorn text-lg pointer-events-none"></i>
+        <i class="fas fa-bullhorn text-lg pointer-events-none" aria-hidden="true"></i>
     </a>
     
     <a href="#sosial" aria-label="Feed Komunitas" onclick="switchTab('sosial', event)" class="nav-item flex items-center justify-center w-[44px] h-[44px] text-gray-500" title="Sosial">
-        <i class="fas fa-camera-retro text-lg pointer-events-none"></i>
+        <i class="fas fa-camera-retro text-lg pointer-events-none" aria-hidden="true"></i>
     </a>
     
     <a href="#rekber" aria-label="Admin Rekber" onclick="switchTab('rekber', event)" class="nav-item flex items-center justify-center w-[44px] h-[44px] text-gray-500" title="Admin">
-        <i class="fas fa-shield-alt text-lg pointer-events-none"></i>
+        <i class="fas fa-shield-alt text-lg pointer-events-none" aria-hidden="true"></i>
     </a>
     
     <a href="#ripper" aria-label="Database Ripper" onclick="switchTab('ripper', event)" class="nav-item flex items-center justify-center w-[44px] h-[44px] text-gray-500" title="Ripper">
-        <i class="fas fa-user-ninja text-lg pointer-events-none"></i>
+        <i class="fas fa-user-ninja text-lg pointer-events-none" aria-hidden="true"></i>
     </a>
 
     <div class="w-6 h-[2px] bg-white/10 rounded-full mt-2 mb-2"></div>
     
     <a href="#profile" aria-label="Profil Saya" onclick="switchTab('profile', event)" class="nav-item flex items-center justify-center w-[44px] h-[44px] text-gray-500 mt-auto" title="Profil">
-        <i class="fas fa-user-circle text-lg pointer-events-none"></i>
+        <i class="fas fa-user-circle text-lg pointer-events-none" aria-hidden="true"></i>
     </a>
     
     <a href="#toko" aria-label="Toko Saya" onclick="switchTab('toko', event)" class="nav-item flex items-center justify-center w-[44px] h-[44px] text-gray-500" title="Toko Saya">
-        <i class="fas fa-store-alt text-lg pointer-events-none"></i>
+        <i class="fas fa-store-alt text-lg pointer-events-none" aria-hidden="true"></i>
     </a>
     
     <a href="#pesanan" aria-label="Pesanan Saya" onclick="switchTab('pesanan', event)" class="nav-item flex items-center justify-center w-[44px] h-[44px] text-gray-500" title="Pesanan">
-        <i class="fas fa-receipt text-lg pointer-events-none"></i>
+        <i class="fas fa-receipt text-lg pointer-events-none" aria-hidden="true"></i>
     </a>
 
     <a href="#pasar" aria-label="Pasar Player" onclick="switchTab('pasar', event)" class="nav-item flex items-center justify-center w-[44px] h-[44px] text-gray-500" title="Pasar Player">
-        <i class="fas fa-store text-lg pointer-events-none"></i>
+        <i class="fas fa-store text-lg pointer-events-none" aria-hidden="true"></i>
     </a>
 
-    <button aria-label="Buka Chat Global" onclick="toggleWidget()" class="nav-item flex items-center justify-center w-[44px] h-[44px] text-gray-500 relative cursor-pointer" title="Chat">
-        <i class="fas fa-comment-dots text-lg pointer-events-none"></i>
+    <button aria-label="Buka Obrolan" onclick="toggleWidget()" class="nav-item flex items-center justify-center w-[44px] h-[44px] text-gray-500 relative cursor-pointer" title="Chat">
+        <i class="fas fa-comment-dots text-lg pointer-events-none" aria-hidden="true"></i>
         <span id="global-chat-badge" class="hidden absolute top-0 right-0 bg-red-500 text-white text-[8px] font-bold w-4 h-4 flex items-center justify-center rounded-full border border-brand-dark pointer-events-none">0</span>
     </button>
 </nav>
+
 
 
 <!-- MODAL RIWAYAT PESANAN -->
