@@ -1696,6 +1696,21 @@ window.addEventListener('popstate', () => {
         return;
     }
     
+        // TANGKAP LACI BUAT GRUP BARU
+    const modalCreateGroup = document.getElementById('modal-create-group');
+    if (modalCreateGroup && !modalCreateGroup.classList.contains('hidden')) {
+        closeCreateGroupModal(true);
+        return;
+    }
+
+    // TANGKAP LACI TERUSKAN PESAN (FORWARD)
+    const modalForward = document.getElementById('modal-forward-msg');
+    if (modalForward && !modalForward.classList.contains('hidden')) {
+        closeForwardModal(true);
+        return;
+    }
+
+    
     // TANGKAP LACI VIP SELLER
     const modalLangganan = document.getElementById('modal-langganan-seller');
     if (modalLangganan && !modalLangganan.classList.contains('hidden')) {
@@ -1862,10 +1877,20 @@ window.addEventListener('popstate', () => {
         viewedUserId = currentUser?.id;
         checkSession();
     }
-    switchTab(newHash.split('?')[0], null, false);
+    
+    // 🔥 PERBAIKAN: Jaring Pengaman Mutlak
+    // Jika URL yang tersisa bukan nama tab asli (misal nyangkut di hashtag aneh), 
+    // paksa kembalikan ke tab sebelumnya, JANGAN lempar ke Home!
+    const cleanHash = newHash.split('?')[0];
+    const validTabs = ['home', 'sosial', 'pasar', 'toko', 'layanan', 'pesanan', 'profile', 'pembayaran', 'superadmin'];
+    
+    if (!validTabs.includes(cleanHash)) {
+        history.replaceState(null, null, '#' + tabSebelumnya);
+        switchTab(tabSebelumnya, null, false);
+    } else {
+        switchTab(cleanHash, null, false);
+    }
 });
-
-
 
 
 // FUNGSI KEMBALI DARI PROFIL YANG SUDAH DIPERBAIKI SANGAT AMAN
@@ -1958,19 +1983,19 @@ document.body.style.overflow = 'auto';
 }
 
 function openUploadModal() {
-// Matikan efek floating otomatis saat buka modal upload TANPA memicu history.back()
-if (document.body.classList.contains('video-focused')) {
-toggleFloatingMode(true);
+    // Matikan efek floating otomatis saat buka modal upload TANPA memicu history.back()
+    if (document.body.classList.contains('video-focused')) {
+        toggleFloatingMode(true);
+        // 🔥 PERBAIKAN: Hapus jejak #focused dari URL agar tidak nyangkut saat dibatalkan
+        history.replaceState(null, null, '#' + tabSebelumnya);
+    }
+
+    // Tambahkan history baru untuk modal upload
+    history.pushState({ popup: 'upload' }, null, '#upload');
+    const m = document.getElementById('modal-upload');
+    m.classList.remove('hidden');
+    m.classList.add('flex');
 }
-
-// Tambahkan history baru untuk modal upload
-history.pushState({ popup: 'upload' }, null, '#upload');
-const m = document.getElementById('modal-upload');
-m.classList.remove('hidden');
-m.classList.add('flex');
-}
-
-
 
 // Tombol Pintasan # dan @ ala TikTok
 function insertUploadShortcut(char) {
@@ -5534,14 +5559,21 @@ function setupVideoObserver() {
 
 // 1. Buka / Tutup Modal Buat Grup
 function openCreateGroupModal() {
-document.getElementById('modal-create-group').classList.remove('hidden');
-document.getElementById('modal-create-group').classList.add('flex');
+    history.pushState({ popup: 'create_group' }, null, '#creategroup'); // <-- JEJAK URL BARU
+    document.getElementById('modal-create-group').classList.remove('hidden');
+    document.getElementById('modal-create-group').classList.add('flex');
 }
 
-function closeCreateGroupModal() {
-document.getElementById('modal-create-group').classList.add('hidden');
-document.getElementById('modal-create-group').classList.remove('flex');
+function closeCreateGroupModal(dariTombolBack = false) {
+    document.getElementById('modal-create-group').classList.add('hidden');
+    document.getElementById('modal-create-group').classList.remove('flex');
+
+    // <-- SINKRONISASI TOMBOL BACK HP
+    if (!dariTombolBack && window.location.hash === '#creategroup') {
+        history.back();
+    }
 }
+
 
 // 2. Preview Foto Grup Saat Dipilih
 function previewGroupAvatar(input, imgId) {
@@ -8338,6 +8370,8 @@ document.getElementById('btn-forward-msg').addEventListener('click', () => {
 
     // Langsung tutup modal opsi dan buka laci kontak (Tanpa pusing membaca HTML layar)
     closeMsgOptions(); 
+    
+    history.pushState({ popup: 'forward_msg' }, null, '#forward'); // <-- JEJAK URL BARU
     document.getElementById('modal-forward-msg').classList.remove('hidden');
     document.getElementById('modal-forward-msg').classList.add('flex');
     loadForwardContacts(); 
@@ -8442,7 +8476,7 @@ async function executeForward(targetId, isGroup, targetName) {
 
 
 // 4. Fungsi Menutup Modal
-function closeForwardModal() {
+function closeForwardModal(dariTombolBack = false) {
     const modal = document.getElementById('modal-forward-msg');
     modal.classList.add('hidden');
     modal.classList.remove('flex');
@@ -8450,6 +8484,11 @@ function closeForwardModal() {
     // Reset Data
     document.getElementById('forward-search-input').value = ''; 
     messageToForward = ""; 
+
+    // <-- SINKRONISASI TOMBOL BACK HP
+    if (!dariTombolBack && window.location.hash === '#forward') {
+        history.back();
+    }
 }
 
 // 5. Event Listener Kotak Pencarian Kontak
