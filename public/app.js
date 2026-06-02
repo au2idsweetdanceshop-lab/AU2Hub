@@ -3485,11 +3485,24 @@ currentVideoIndex = 0;
 const nextBatch = allVideosData.slice(currentVideoIndex, currentVideoIndex + BATCH_SIZE);
 if (nextBatch.length === 0) return;
 
-const htmlString = nextBatch.map((vid) => `
+const htmlString = nextBatch.map((vid, index) => {
+// Memunculkan tutorial hanya di video paling pertama
+const isFirstVideo = (currentVideoIndex === 0 && index === 0);
+const tutorialHtml = isFirstVideo ? `
+    <div id="tutorial-tap" class="absolute top-[35%] left-1/2 -translate-x-1/2 z-[70] bg-black/80 backdrop-blur-md text-white text-[12px] text-center font-bold px-5 py-4 rounded-3xl border border-white/20 pointer-events-none shadow-[0_10px_40px_rgba(0,0,0,0.8)] transition-opacity duration-500 w-[80%] max-w-[260px]">
+        <div class="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-3 border border-white/10">
+            <i class="fas fa-hand-pointer text-brand-accent text-2xl animate-bounce"></i>
+        </div>
+        Ketuk layar sekali untuk pengalaman seperti di TikTok<br>
+        <span class="text-brand-info text-[10px] font-normal mt-2 block">Ketuk sekali lagi untuk menutup</span>
+    </div>
+` : '';
+
+return `
 <div class="snap-start w-full h-full flex-shrink-0 relative flex items-center justify-center bg-black">
 
 <div class="video-inner-wrap w-full h-full relative bg-brand-dark ${!isGlobalMuted ? 'floating-focus' : ''}">
-
+${tutorialHtml}
 <div class="absolute inset-0 flex items-center justify-center z-0"><div class="w-12 h-12 border-4 border-brand-accent/20 border-t-brand-accent rounded-full animate-spin"></div></div>
 <video class="absolute inset-0 m-auto w-full h-full object-cover video-player transition-opacity duration-500 opacity-0 z-10"
 onloadeddata="this.classList.remove('opacity-0')" loop ${isGlobalMuted ? 'muted' : ''} playsinline preload="metadata"
