@@ -2,7 +2,8 @@
 module.exports = {
   content: [
     "./index.html",
-    "./*.js"
+    "./*.js",
+    "./public/**/*.js" // <--- Ini kunci utamanya agar desain di app.js ikut terbaca
   ],
   theme: {
     extend: {
