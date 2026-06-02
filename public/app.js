@@ -2375,9 +2375,6 @@ function closeFloatingVideo(skipHistory = false) {
     }, 300);
 }
 
-
-
-
 function renderProfileVideoBatch(customAmount = 3) {
     const container = document.getElementById('floating-feed-container');
 
@@ -2385,11 +2382,10 @@ function renderProfileVideoBatch(customAmount = 3) {
         return;
     }
 
-    // 🚀 PERBAIKAN: Gunakan customAmount, bukan angka 3 mati
     const nextBatch = currentProfileVideos.slice(profileFeedIndex, profileFeedIndex + customAmount);
     if (nextBatch.length === 0) return;
 
-const htmlString = nextBatch.map((vid) => `
+    const htmlString = nextBatch.map((vid) => `
     <div class="snap-start w-full h-full flex-shrink-0 relative flex items-center justify-center bg-black/95 px-0 sm:px-4 py-0 sm:py-6">
     <div class="w-full max-w-sm aspect-[9/16] relative bg-brand-dark mx-auto h-full sm:h-auto sm:rounded-3xl overflow-hidden shadow-2xl">
     
@@ -2488,11 +2484,8 @@ const htmlString = nextBatch.map((vid) => `
     </div>
     </div>`).join('');
 
-
-
     container.insertAdjacentHTML('beforeend', htmlString);
     
-    // 🚀 PERBAIKAN: Tambah index sesuai dengan jumlah yang benar-benar dirender
     profileFeedIndex += nextBatch.length;
 
     const videoActions = container.querySelectorAll('.snap-start:not(.data-loaded)');
@@ -2510,7 +2503,6 @@ const htmlString = nextBatch.map((vid) => `
             const lastVideoObserver = new IntersectionObserver(entries => {
                 if(entries[0].isIntersecting) { 
                     lastVideoObserver.disconnect(); 
-                    // 🚀 PERBAIKAN: Ketika di-scroll ke mentok bawah, tetap muat 3 per 3 secara standar
                     renderProfileVideoBatch(3); 
                 }
             }, { threshold: 0.1 });
@@ -2518,6 +2510,7 @@ const htmlString = nextBatch.map((vid) => `
         }
     });
 }
+
 
 
 // FUNGSI KHUSUS UNTUK MENGONTROL SUARA DI VIDEO PROFIL (KLIK 1 KALI)
