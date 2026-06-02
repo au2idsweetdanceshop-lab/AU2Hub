@@ -1,5 +1,5 @@
-import { S3Client, DeleteObjectCommand } from "@aws-sdk/client-s3";
-import { createClient } from "@supabase/supabase-js";
+const { S3Client, DeleteObjectCommand } = require("@aws-sdk/client-s3");
+const { createClient } = require("@supabase/supabase-js");
 
 // Setup Supabase
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
@@ -15,12 +15,10 @@ const s3Client = new S3Client({
     forcePathStyle: true,
 });
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
     try {
-        // 1. Hitung mundur 24 Jam yang lalu
         const batasWaktu = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 
-        // 2. Cari semua story di Supabase yang umurnya sudah LEBIH TUA dari 24 jam
         const { data: expiredStories, error } = await supabase
             .from('stories')
             .select('id, media_url')
@@ -33,7 +31,6 @@ export default async function handler(req, res) {
 
         const bucketName = process.env.BIZNET_BUCKET_NAME;
 
-        // 3. Loop: Hapus file fisik satu per satu dari Biznet
         for (const story of expiredStories) {
             if (story.media_url) {
                 try {
@@ -46,18 +43,16 @@ export default async function handler(req, res) {
                     }));
                 } catch (s3Error) {
                     console.error("Gagal hapus file S3:", story.media_url, s3Error);
-                    // Lanjut ke file berikutnya walau 1 file gagal
                 }
             }
         }
 
-        // 4. Hapus data status dari database Supabase secara massal
         const listIds = expiredStories.map(s => s.id);
         await supabase.from('stories').delete().in('id', listIds);
 
         return res.status(200).json({ 
             success: true, 
-            message: `${expiredStories.length} status berhasil disapu bersih dari Biznet dan Supabase!` 
+            message: `${expiredStories.length} status berhasil disapu bersih!` 
         });
 
     } catch (error) {
