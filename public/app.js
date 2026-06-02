@@ -2404,7 +2404,8 @@ function renderProfileVideoBatch(customAmount = 3) {
     <video class="absolute inset-0 m-auto w-full h-full object-cover float-video-player transition-opacity duration-500 opacity-0 z-10"
     onloadeddata="this.classList.remove('opacity-0')" loop ${isGlobalMuted ? 'muted' : ''} playsinline preload="metadata"
     ontimeupdate="updateVideoProgress(this)"
-    onclick="handleFloatVideoClick(event, this, '${vid.id}')">
+    onclick="handleFloatVideoClick(event, this, '${vid.id}')"
+    controlsList="nodownload" oncontextmenu="return false;" style="-webkit-touch-callout: none; -webkit-user-select: none; user-select: none;">
     <source src="${vid.video_url}" type="video/mp4">
     </video>
 
@@ -2475,23 +2476,16 @@ function renderProfileVideoBatch(customAmount = 3) {
     </div>
 
     ${currentUser && vid.user_id === currentUser.id ? `
-    <!-- Tombol Download -->
     <button onclick="downloadVideoSaya('${vid.video_url}', '${vid.id}')" class="hover:scale-110 transition-transform mt-2 active:scale-90" title="Download Video">
         <div class="bg-black/50 p-2 rounded-full border border-white/20 backdrop-blur-sm">
             <i class="fas fa-download text-brand-info text-lg drop-shadow-md"></i>
         </div>
     </button>
 
-    <!-- Tombol Hapus -->
     <button onclick="deleteVideo('${vid.id}')" class="hover:scale-110 transition-transform mt-3 active:scale-90" title="Hapus Video">
         <div class="bg-black/50 p-2 rounded-full border border-white/20 backdrop-blur-sm">
             <i class="fas fa-trash text-red-500 text-lg drop-shadow-md"></i>
         </div>
-    </button>
-    ` : ''}
-    <div class="bg-black/50 p-2 rounded-full border border-white/20 backdrop-blur-sm">
-    <i class="fas fa-trash text-red-500 text-lg drop-shadow-md"></i>
-    </div>
     </button>
     ` : ''}
 
@@ -2501,8 +2495,8 @@ function renderProfileVideoBatch(customAmount = 3) {
     <img src="${vid.avatar_url || 'https://ui-avatars.com/api/?name=Music&background=1A1133&color=fff'}" class="w-4 h-4 rounded-full object-cover">
     </div>
     </div>
-    
     </div>
+
 
     </div>
     </div>`).join('');
@@ -3614,7 +3608,7 @@ const htmlString = nextBatch.map((vid, index) => {
     onloadeddata="this.classList.remove('opacity-0')" loop ${isGlobalMuted ? 'muted' : ''} playsinline preload="metadata"
     ontimeupdate="updateVideoProgress(this)"
     onclick="handleVideoClick(event, this, '${vid.id}')" onerror="handleVideoError(this)"
-    controlsList="nodownload" oncontextmenu="return false;" style="-webkit-touch-callout: none;">
+    controlsList="nodownload" oncontextmenu="return false;" style="-webkit-touch-callout: none; -webkit-user-select: none; user-select: none;">
     <source src="${vid.video_url}" type="video/mp4">
     </video>
 
@@ -3684,6 +3678,20 @@ const htmlString = nextBatch.map((vid, index) => {
     <span class="text-white text-[13px] font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">Share</span>
     </div>
 
+    ${currentUser && vid.user_id === currentUser.id ? `
+    <button onclick="downloadVideoSaya('${vid.video_url}', '${vid.id}')" class="hover:scale-110 transition-transform mt-2 active:scale-90" title="Download Video">
+        <div class="bg-black/50 p-2 rounded-full border border-white/20 backdrop-blur-sm">
+            <i class="fas fa-download text-brand-info text-lg drop-shadow-md"></i>
+        </div>
+    </button>
+
+    <button onclick="deleteVideo('${vid.id}')" class="hover:scale-110 transition-transform mt-3 active:scale-90" title="Hapus Video">
+        <div class="bg-black/50 p-2 rounded-full border border-white/20 backdrop-blur-sm">
+            <i class="fas fa-trash text-red-500 text-lg drop-shadow-md"></i>
+        </div>
+    </button>
+    ` : ''}
+
     <div class="relative mt-2 flex items-center justify-center w-11 h-11 group cursor-pointer hover:scale-105 transition-transform" onclick="event.stopPropagation()">
     <i class="fas fa-music absolute -top-4 -left-2 text-[10px] text-white/80 animate-float-music pointer-events-none"></i>
     <div class="w-10 h-10 rounded-full bg-[#1A1133] border-[3.5px] border-gray-800 flex items-center justify-center animate-[spin_4s_linear_infinite] shadow-[0_0_15px_rgba(0,0,0,0.8)]">
@@ -3691,6 +3699,7 @@ const htmlString = nextBatch.map((vid, index) => {
     </div>
     </div>
     </div>
+
 
     </div>
     </div>`;
