@@ -330,6 +330,26 @@ let presenceChannel = null;
 let onlineUsersMap = new Map();
 let selectedMessageId = null;
 let blockedUsersList = [];
+// Memori untuk menyimpan ID siapa saja yang sudah kita follow
+let myFollowingList = [];
+
+// Fungsi untuk menarik data dari Supabase saat pertama kali login
+async function fetchMyFollowing() {
+    if (!currentUser) return;
+    try {
+        const { data } = await supabaseClient
+            .from('follows')
+            .select('following_id')
+            .eq('follower_id', currentUser.id);
+            
+        if (data) {
+            myFollowingList = data.map(f => f.following_id);
+        }
+    } catch (e) {
+        console.error("Gagal menarik data following", e);
+    }
+}
+
 let typingTimer; // VARIABEL TYPING INDICATOR
 
 
@@ -989,6 +1009,7 @@ async function checkSession() {
         loadOrderTracker(user.id);
 
         await fetchBlockedUsers();
+        await fetchMyFollowing();
         checkGlobalUnreadMessages();
         document.querySelectorAll('#profile-logged-in').forEach(el => el.classList.remove('hidden'));
         document.getElementById('profile-logged-out').classList.add('hidden');
@@ -2368,9 +2389,10 @@ function renderProfileVideoBatch(customAmount = 3) {
     const nextBatch = currentProfileVideos.slice(profileFeedIndex, profileFeedIndex + customAmount);
     if (nextBatch.length === 0) return;
 
-    const htmlString = nextBatch.map((vid) => `
+const htmlString = nextBatch.map((vid) => `
     <div class="snap-start w-full h-full flex-shrink-0 relative flex items-center justify-center bg-black/95 px-0 sm:px-4 py-0 sm:py-6">
     <div class="w-full max-w-sm aspect-[9/16] relative bg-brand-dark mx-auto h-full sm:h-auto sm:rounded-3xl overflow-hidden shadow-2xl">
+    
     <div class="absolute inset-0 flex items-center justify-center z-0"><div class="w-12 h-12 border-4 border-brand-accent/20 border-t-brand-accent rounded-full animate-spin"></div></div>
 
     <video class="absolute inset-0 m-auto w-full h-full object-cover float-video-player transition-opacity duration-500 opacity-0 z-10"
@@ -2379,6 +2401,8 @@ function renderProfileVideoBatch(customAmount = 3) {
     onclick="handleFloatVideoClick(event, this, '${vid.id}')">
     <source src="${vid.video_url}" type="video/mp4">
     </video>
+
+    <div class="absolute bottom-0 left-0 w-full h-2/5 z-20 pointer-events-none bg-gradient-to-t from-black/90 via-black/40 to-transparent"></div>
 
     <div class="volume-indicator absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-white bg-black/60 w-16 h-16 rounded-full flex items-center justify-center z-[60] pointer-events-none opacity-0 transition-all duration-300 scale-150">
     <i class="fas fa-volume-up text-2xl"></i>
@@ -2393,14 +2417,36 @@ function renderProfileVideoBatch(customAmount = 3) {
     </div>
     </div>
 
-    <div class="absolute bottom-0 left-0 w-full p-6 flex justify-between items-end z-20 pointer-events-none bg-gradient-to-t from-black/80 to-transparent pb-10 sm:pb-6">
-<div class="text-white drop-shadow-lg w-[75%] pointer-events-auto">
-<p onclick="event.stopPropagation(); viewUserProfile('${vid.user_id}')" class="font-bold text-[15px] shadow-black drop-shadow-md mb-1.5 cursor-pointer hover:text-brand-info transition-colors">@${vid.nickname || "Player"}</p>
+    <div class="absolute bottom-[calc(1.5rem+env(safe-area-inset-bottom))] left-2 z-40 w-[75%] pr-2 pointer-events-auto flex flex-col justify-end pb-2">
+    <p onclick="event.stopPropagation(); viewUserProfile('${vid.user_id}')" class="font-bold text-[15px] text-white cursor-pointer hover:text-brand-info drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)] mb-1.5 flex items-center">
+    @${vid.nickname || "Player"}
+    </p>
 
-    <div onclick="this.classList.toggle('expanded')" class="caption-text text-[13px] opacity-90 shadow-black drop-shadow-md cursor-pointer pr-2 leading-relaxed">${formatCaption(vid.caption)}</div>
+    <div onclick="this.classList.toggle('expanded')" class="caption-text text-[13px] text-white/95 drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)] cursor-pointer leading-snug">
+    ${formatCaption(vid.caption)}
     </div>
 
-    <div class="flex flex-col gap-4 items-center pointer-events-auto mb-2 mr-1">
+    <div class="flex items-center gap-2 mt-2.5 overflow-hidden w-3/4">
+    <i class="fas fa-music text-[10px] text-white animate-pulse drop-shadow-md"></i>
+    <div class="overflow-hidden whitespace-nowrap relative w-full mask-text">
+    <div class="inline-block text-[12px] text-white drop-shadow-md font-medium marquee-text">
+    Suara Asli - @${vid.nickname || "Player"} 🎵 Original Audio
+    </div>
+    </div>
+    </div>
+    </div>
+
+    <div class="absolute bottom-[calc(1.5rem+env(safe-area-inset-bottom))] right-4 z-40 flex flex-col items-center gap-4 pointer-events-auto pb-2">
+
+    <div class="relative cursor-pointer hover:scale-105 transition-transform" onclick="event.stopPropagation(); viewUserProfile('${vid.user_id}')">
+    <img src="${vid.avatar_url || 'https://ui-avatars.com/api/?name=User&background=1A1133&color=fff'}" loading="lazy" class="w-[42px] h-[42px] rounded-full object-cover border-[1.5px] border-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
+    ${(!currentUser || (vid.user_id !== currentUser.id && !myFollowingList.includes(vid.user_id))) ? `
+    <button onclick="event.stopPropagation(); feedToggleFollow('${vid.user_id}', this)" class="absolute -bottom-2.5 left-1/2 -translate-x-1/2 bg-[#FF007A] text-white rounded-full w-[20px] h-[20px] flex items-center justify-center border-[1.5px] border-brand-dark drop-shadow-md active:scale-90 transition-transform z-30">
+    <i class="fas fa-plus text-[9px]"></i>
+    </button>
+    ` : ''}
+    </div>
+
     <div class="like-container flex flex-col items-center gap-0.5" data-vid="${vid.id}">
     <button onclick="likeVideo('${vid.id}', this)" class="hover:scale-110 transition-transform active:scale-90">
     <i class="fas fa-heart text-[32px] text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]"></i>
@@ -2423,16 +2469,26 @@ function renderProfileVideoBatch(customAmount = 3) {
     </div>
 
     ${currentUser && vid.user_id === currentUser.id ? `
-    <button onclick="deleteVideo('${vid.id}')" class="hover:scale-110 transition-transform mt-3 active:scale-90">
+    <button onclick="deleteVideo('${vid.id}')" class="hover:scale-110 transition-transform mt-2 active:scale-90">
     <div class="bg-black/50 p-2 rounded-full border border-white/20 backdrop-blur-sm">
-    <i class="fas fa-trash text-red-500 text-xl drop-shadow-md"></i>
+    <i class="fas fa-trash text-red-500 text-lg drop-shadow-md"></i>
     </div>
     </button>
     ` : ''}
+
+    <div class="relative mt-1 flex items-center justify-center w-10 h-10 group cursor-pointer hover:scale-105 transition-transform" onclick="event.stopPropagation()">
+    <i class="fas fa-music absolute -top-4 -left-2 text-[9px] text-white/80 animate-float-music pointer-events-none"></i>
+    <div class="w-9 h-9 rounded-full bg-[#1A1133] border-[3px] border-gray-800 flex items-center justify-center animate-[spin_4s_linear_infinite] shadow-[0_0_15px_rgba(0,0,0,0.8)]">
+    <img src="${vid.avatar_url || 'https://ui-avatars.com/api/?name=Music&background=1A1133&color=fff'}" class="w-4 h-4 rounded-full object-cover">
     </div>
     </div>
+    
+    </div>
+
     </div>
     </div>`).join('');
+
+
 
     container.insertAdjacentHTML('beforeend', htmlString);
     
@@ -3486,7 +3542,6 @@ const nextBatch = allVideosData.slice(currentVideoIndex, currentVideoIndex + BAT
 if (nextBatch.length === 0) return;
 
 const htmlString = nextBatch.map((vid, index) => {
-    // Memunculkan tutorial hanya di video paling pertama
     const isFirstVideo = (currentVideoIndex === 0 && index === 0);
     const tutorialHtml = isFirstVideo ? `
         <div id="tutorial-tap" class="absolute top-[35%] left-1/2 -translate-x-1/2 z-[70] bg-black/80 backdrop-blur-md text-white text-[12px] text-center font-bold px-5 py-4 rounded-3xl border border-white/20 pointer-events-none shadow-[0_10px_40px_rgba(0,0,0,0.8)] transition-opacity duration-500 w-[80%] max-w-[260px]">
@@ -3506,12 +3561,15 @@ const htmlString = nextBatch.map((vid, index) => {
     ${tutorialHtml}
 
     <div class="absolute inset-0 flex items-center justify-center z-0"><div class="w-12 h-12 border-4 border-brand-accent/20 border-t-brand-accent rounded-full animate-spin"></div></div>
+    
     <video class="absolute inset-0 m-auto w-full h-full object-cover video-player transition-opacity duration-500 opacity-0 z-10"
     onloadeddata="this.classList.remove('opacity-0')" loop ${isGlobalMuted ? 'muted' : ''} playsinline preload="metadata"
     ontimeupdate="updateVideoProgress(this)"
     onclick="handleVideoClick(event, this, '${vid.id}')" onerror="handleVideoError(this)">
     <source src="${vid.video_url}" type="video/mp4">
     </video>
+
+    <div class="absolute bottom-0 left-0 w-full h-2/5 z-20 pointer-events-none bg-gradient-to-t from-black/90 via-black/40 to-transparent"></div>
 
     <div class="time-indicator absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-white font-extrabold text-4xl drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)] opacity-0 transition-opacity z-[60] pointer-events-none tracking-wider bg-black/40 px-6 py-2 rounded-2xl">
     <span class="time-current">00:00</span> <span class="text-white/50 text-2xl mx-1">/</span> <span class="time-total text-white/70">00:00</span>
@@ -3526,10 +3584,11 @@ const htmlString = nextBatch.map((vid, index) => {
     </div>
     </div>
 
-    <div class="absolute bottom-6 left-2 z-40 w-[75%] pr-2 pointer-events-auto flex flex-col justify-end pb-2">
+    <div class="absolute bottom-[calc(1.5rem+env(safe-area-inset-bottom))] left-2 z-40 w-[75%] pr-2 pointer-events-auto flex flex-col justify-end pb-2">
     <p onclick="event.stopPropagation(); viewUserProfile('${vid.user_id}')" class="font-bold text-[16px] text-white cursor-pointer hover:text-brand-info drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)] mb-1.5 flex items-center">
     @${vid.nickname || "Player"} ${getBadgeByLevelAndVideos(0, allVideosData.filter(v => v.user_id === vid.user_id).length)}
     </p>
+    
     <div onclick="this.classList.toggle('expanded')" class="caption-text text-[14px] text-white/95 drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)] cursor-pointer leading-snug">
     ${formatCaption(vid.caption)}
     </div>
@@ -3544,13 +3603,15 @@ const htmlString = nextBatch.map((vid, index) => {
     </div>
     </div>
 
-    <div class="absolute bottom-6 right-4 z-40 flex flex-col items-center gap-5 pointer-events-auto pb-2">
+    <div class="absolute bottom-[calc(1.5rem+env(safe-area-inset-bottom))] right-4 z-40 flex flex-col items-center gap-5 pointer-events-auto pb-2">
 
     <div class="relative cursor-pointer hover:scale-105 transition-transform" onclick="event.stopPropagation(); viewUserProfile('${vid.user_id}')">
     <img src="${vid.avatar_url || 'https://ui-avatars.com/api/?name=User&background=1A1133&color=fff'}" loading="lazy" class="w-[46px] h-[46px] rounded-full object-cover border-[1.5px] border-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
+    ${(!currentUser || (vid.user_id !== currentUser.id && !myFollowingList.includes(vid.user_id))) ? `
     <button id="feed-follow-btn-${vid.user_id}" onclick="event.stopPropagation(); feedToggleFollow('${vid.user_id}', this)" class="absolute -bottom-2.5 left-1/2 -translate-x-1/2 bg-[#FF007A] text-white rounded-full w-[22px] h-[22px] flex items-center justify-center border-[1.5px] border-brand-dark drop-shadow-md active:scale-90 transition-transform z-30">
     <i class="fas fa-plus text-[10px]"></i>
     </button>
+    ` : ''}
     </div>
 
     <div class="like-container flex flex-col items-center gap-1" data-vid="${vid.id}">
@@ -3575,7 +3636,7 @@ const htmlString = nextBatch.map((vid, index) => {
     </div>
 
     <div class="relative mt-2 flex items-center justify-center w-11 h-11 group cursor-pointer hover:scale-105 transition-transform" onclick="event.stopPropagation()">
-    <i class="fas fa-music absolute -top-4 -left-2 text-[10px] text-white/70 animate-ping opacity-0 group-hover:opacity-100 transition-opacity"></i>
+    <i class="fas fa-music absolute -top-4 -left-2 text-[10px] text-white/80 animate-float-music pointer-events-none"></i>
     <div class="w-10 h-10 rounded-full bg-[#1A1133] border-[3.5px] border-gray-800 flex items-center justify-center animate-[spin_4s_linear_infinite] shadow-[0_0_15px_rgba(0,0,0,0.8)]">
     <img src="${vid.avatar_url || 'https://ui-avatars.com/api/?name=Music&background=1A1133&color=fff'}" class="w-4 h-4 rounded-full object-cover">
     </div>
@@ -3585,6 +3646,8 @@ const htmlString = nextBatch.map((vid, index) => {
     </div>
     </div>`;
 }).join('');
+
+
 
 
 // --- SISTEM ANTI DOM BLOAT (MENCEGAH HP CRASH) ---
@@ -3892,33 +3955,34 @@ fetchFollowStats(targetUserId);
 
 // FUNGSI AUTO-FOLLOW DARI FEED VIDEO
 async function feedToggleFollow(targetUserId, btnElement) {
-if (!currentUser) return openAuthModal();
+    if (!currentUser) return openAuthModal();
 
-// Cegah user mem-follow dirinya sendiri
-if (currentUser.id === targetUserId) {
-showToast("Ini video milikmu sendiri!", "info");
-return;
+    if (currentUser.id === targetUserId) {
+        showToast("Ini video milikmu sendiri!", "info");
+        return;
+    }
+
+    const icon = btnElement.querySelector('i');
+    icon.className = 'fas fa-spinner fa-spin text-[10px]';
+
+    try {
+        await toggleFollow(targetUserId);
+
+        // [BARU] Masukkan ke memori agar video lain dari kreator ini otomatis hilang tombol (+)-nya
+        if (!myFollowingList.includes(targetUserId)) {
+            myFollowingList.push(targetUserId);
+        }
+
+        btnElement.classList.add('scale-0', 'opacity-0');
+        setTimeout(() => {
+            btnElement.style.display = 'none';
+        }, 300);
+
+    } catch(e) {
+        icon.className = 'fas fa-plus text-[10px]';
+    }
 }
 
-// Ubah ikon jadi loading berputar
-const icon = btnElement.querySelector('i');
-icon.className = 'fas fa-spinner fa-spin text-[10px]';
-
-try {
-// Panggil fungsi toggleFollow utama yang sudah kamu buat sebelumnya
-await toggleFollow(targetUserId);
-
-// Animasi pop-out menghilang ala TikTok saat sukses di-follow
-btnElement.classList.add('scale-0', 'opacity-0');
-setTimeout(() => {
-btnElement.style.display = 'none';
-}, 300);
-
-} catch(e) {
-// Jika gagal, kembalikan ikon menjadi plus
-icon.className = 'fas fa-plus text-[10px]';
-}
-}
 
 async function initPresence() {
 if (!currentUser || presenceChannel) return;
