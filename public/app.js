@@ -2674,36 +2674,66 @@ async function deleteVideo(vidId) {
 }
 
 // ==========================================
-// FITUR DOWNLOAD VIDEO MILIK SENDIRI
+// FITUR DOWNLOAD VIDEO MILIK SENDIRI (DISEMPURNAKAN UNTUK HP)
 // ==========================================
 async function downloadVideoSaya(urlVideo, vidId) {
-    showToast("Memulai unduhan...", "info");
+    showToast("Memproses unduhan...", "info");
+
     try {
-        // Tarik video sebagai data Blob agar langsung terunduh (tidak terputar di browser)
-        const response = await fetch(urlVideo);
+        // Trik: Memaksa browser HP meminta izin (CORS) ke server Biznet
+        // Tambahkan parameter waktu agar browser tidak mengambil file rusak dari cache
+        const response = await fetch(urlVideo + "?t=" + new Date().getTime(), {
+            method: 'GET',
+            mode: 'cors'
+        });
+
+        if (!response.ok) throw new Error("Diblokir oleh keamanan browser HP");
+
         const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        
+        const blobUrl = window.URL.createObjectURL(blob);
+
         const a = document.createElement('a');
         a.style.display = 'none';
-        a.href = url;
-        a.download = `AU2Hub_${vidId}.mp4`; // Nama file saat disimpan
+        a.href = blobUrl;
+        // Nama file saat diunduh
+        a.download = `AU2Hub_Video_${vidId}.mp4`; 
         document.body.appendChild(a);
         a.click();
-        
-        window.URL.revokeObjectURL(url);
-        showToast("Video berhasil disimpan ke Galeri!", "success");
+
+        // Bersihkan memori HP setelah 1 detik
+        setTimeout(() => {
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(blobUrl);
+        }, 1000);
+
+        showToast("Video sedang diunduh ke Galeri!", "success");
+
     } catch (error) {
-        // Fallback jika API Storage memblokir metode Blob
-        const a = document.createElement('a');
-        a.href = urlVideo;
-        a.download = `AU2Hub_${vidId}.mp4`;
-        a.target = '_blank';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
+        // ========================================================
+        // JALUR CADANGAN (FALLBACK) JIKA BROWSER HP TETAP MEMBLOKIR
+        // ========================================================
+        console.log("Download background gagal, pindah ke mode tab baru:", error);
+
+        // Beri tahu user yang sebenarnya terjadi agar tidak merasa tertipu
+        showToast("Membuka pemutar video...", "info");
+
+        // Munculkan instruksi cara download manual di tab baru
+        setTimeout(() => {
+            showToast("💡 Tips: Klik titik tiga (⋮) di pojok kanan bawah lalu pilih 'Download'", "success");
+        }, 1500);
+
+        // Buka tab videonya
+        setTimeout(() => {
+            const a = document.createElement('a');
+            a.href = urlVideo;
+            a.target = '_blank';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }, 3000);
     }
 }
+
 
 
 // FITUR SHARE VIDEO (DIPERBAIKI)
