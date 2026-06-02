@@ -3919,34 +3919,57 @@ const elMengikuti = document.getElementById('stat-mengikuti'); if(elMengikuti) e
 }
 
 async function toggleFollow(targetUserId) {
-if (!currentUser) return openAuthModal();
-if (currentUser.id === targetUserId) return;
+    if (!currentUser) return openAuthModal();
+    if (currentUser.id === targetUserId) return;
 
-const btns = document.querySelectorAll('#btn-follow');
-btns.forEach(btn => btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>');
+    const btns = document.querySelectorAll('#btn-follow');
+    btns.forEach(btn => btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>');
 
-const { data } = await supabaseClient.from('follows').select('*').eq('follower_id', currentUser.id).eq('following_id', targetUserId).single();
+    const { data } = await supabaseClient.from('follows').select('*').eq('follower_id', currentUser.id).eq('following_id', targetUserId).single();
 
-if (data) {
-await supabaseClient.from('follows').delete().eq('follower_id', currentUser.id).eq('following_id', targetUserId);
-btns.forEach(btn => {
-btn.innerText = 'IKUTI';
-btn.classList.replace('bg-white/10', 'bg-brand-accent');
-});
-showToast("Batal mengikuti", "info");
-} else {
-await supabaseClient.from('follows').insert({ follower_id: currentUser.id, following_id: targetUserId });
-btns.forEach(btn => {
-btn.innerText = 'MENGIKUTI';
-btn.classList.replace('bg-brand-accent', 'bg-white/10');
-});
-showToast("Berhasil mengikuti!", "success");
+    if (data) {
+        // --- PROSES UNFOLLOW ---
+        await supabaseClient.from('follows').delete().eq('follower_id', currentUser.id).eq('following_id', targetUserId);
+        btns.forEach(btn => {
+            btn.innerText = 'IKUTI';
+            btn.classList.replace('bg-white/10', 'bg-brand-accent');
+        });
+        showToast("Batal mengikuti", "info");
+
+        // 1. Cabut ID dari memori agar video selanjutnya memunculkan tombol (+)
+        myFollowingList = myFollowingList.filter(id => id !== targetUserId);
+
+        // 2. Jika tombol (+) di video masih tersimpan di HTML (hanya disembunyikan), kita munculkan lagi secara real-time
+        document.querySelectorAll(`#feed-follow-btn-${targetUserId}`).forEach(btn => {
+            btn.style.display = 'flex';
+            setTimeout(() => btn.classList.remove('scale-0', 'opacity-0'), 10);
+        });
+
+    } else {
+        // --- PROSES FOLLOW ---
+        await supabaseClient.from('follows').insert({ follower_id: currentUser.id, following_id: targetUserId });
+        btns.forEach(btn => {
+            btn.innerText = 'MENGIKUTI';
+            btn.classList.replace('bg-brand-accent', 'bg-white/10');
+        });
+        showToast("Berhasil mengikuti!", "success");
+
+        // 1. Tambahkan ID ke memori
+        if (!myFollowingList.includes(targetUserId)) {
+            myFollowingList.push(targetUserId);
+        }
+
+        // 2. Sembunyikan SEMUA tombol (+) di video orang ini secara Real-Time (Tanpa perlu refresh!)
+        document.querySelectorAll(`#feed-follow-btn-${targetUserId}`).forEach(btn => {
+            btn.classList.add('scale-0', 'opacity-0');
+            setTimeout(() => btn.style.display = 'none', 300); // Tunggu animasi mengecil selesai
+        });
+    }
+
+    fetchFollowStats(targetUserId);
 }
 
-fetchFollowStats(targetUserId);
-}
-
-// FUNGSI AUTO-FOLLOW DARI FEED VIDEO
+// Fungsi klik Follow langsung dari Feed Video (Dipersingkat karena sudah diurus fungsi di atas)
 async function feedToggleFollow(targetUserId, btnElement) {
     if (!currentUser) return openAuthModal();
 
@@ -3959,22 +3982,14 @@ async function feedToggleFollow(targetUserId, btnElement) {
     icon.className = 'fas fa-spinner fa-spin text-[10px]';
 
     try {
+        // Panggil fungsi utama. Fungsi utama otomatis akan menghilangkan tombol di layar.
         await toggleFollow(targetUserId);
-
-        // [BARU] Masukkan ke memori agar video lain dari kreator ini otomatis hilang tombol (+)-nya
-        if (!myFollowingList.includes(targetUserId)) {
-            myFollowingList.push(targetUserId);
-        }
-
-        btnElement.classList.add('scale-0', 'opacity-0');
-        setTimeout(() => {
-            btnElement.style.display = 'none';
-        }, 300);
-
     } catch(e) {
+        // Jika gagal (sinyal jelek), kembalikan ikon ke Plus (+)
         icon.className = 'fas fa-plus text-[10px]';
     }
 }
+
 
 
 async function initPresence() {
