@@ -451,8 +451,9 @@ nav::-webkit-scrollbar { display: none; }
         <div class="absolute inset-0 bg-brand-accent opacity-30 animate-pulse" style="filter: blur(48px); will-change: filter, opacity; transform: translateZ(0);"></div>
         
         <!-- ID 'splash-logo' kita gunakan untuk mengganti gambar lewat JS -->
-        <img id="splash-logo" src="https://nos.wjv-1.neo.id/au2hub/Picsart_26-05-30_04-29-46-305.webp" alt="Loading Logo AU2Hub" width="128" height="128"
-             class="w-32 h-32 relative z-10 splash-logo-anim drop-shadow-[0_0_20px_rgba(0,240,255,0.5)] transition-opacity duration-500">
+        <img id="splash-logo" fetchpriority="high" src="https://nos.wjv-1.neo.id/au2hub/Picsart_26-05-30_04-29-46-305.webp" alt="Loading Logo AU2Hub" width="128" height="128"
+     class="w-32 h-32 relative z-10 splash-logo-anim drop-shadow-[0_0_20px_rgba(0,240,255,0.5)] transition-opacity duration-500">
+
         
         <div class="mt-8 flex gap-2 items-center text-brand-info text-xs font-bold tracking-widest animate-pulse">
             <i class="fas fa-circle-notch fa-spin"></i> MEMUAT AU2HUB...
@@ -1219,7 +1220,7 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
 
 <!-- MENGAMBANG VIDEO PLAYER (PROFIL FEED SCROLL) -->
 <div id="floating-video-player" class="fixed inset-0 z-[150] hidden flex-col bg-black/95 backdrop-blur-lg">
-<button onclick="closeFloatingVideo()" class="absolute top-6 right-6 text-white bg-white/10 w-12 h-12 rounded-full flex items-center justify-center active:scale-90 z-[160]"><i class="fas fa-times text-xl"></i></button>
+<button aria-label="Tutup" onclick="closeFloatingVideo()" class="absolute top-6 right-6 text-white bg-white/10 w-12 h-12 rounded-full flex items-center justify-center active:scale-90 z-[160]"><i class="fas fa-times text-xl"></i></button>
 
 <!-- Wadah Scroll Profil -->
 <div id="floating-feed-container" class="flex-1 overflow-y-scroll snap-y snap-mandatory hide-scroll relative w-full h-full pb-5">
@@ -1230,7 +1231,7 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
 <div id="comment-drawer" class="fixed inset-x-0 bottom-0 z-[160] h-[75vh] glass border-t border-white/10 rounded-t-3xl comment-drawer flex flex-col max-w-md mx-auto">
     <div class="flex justify-between items-center p-5 border-b border-white/5 shrink-0 bg-brand-dark/50 rounded-t-3xl">
         <h4 class="font-bold text-white text-sm">Komentar (<span id="drawer-comment-count">0</span>)</h4>
-        <button onclick="closeComments()" class="text-gray-400 text-lg w-8 h-8 rounded-full bg-white/5 flex items-center justify-center active:scale-95 transition-colors"><i class="fas fa-times"></i></button>
+        <button aria-label="Tutup" onclick="closeComments()" class="text-gray-400 text-lg w-8 h-8 rounded-full bg-white/5 flex items-center justify-center active:scale-95 transition-colors"><i class="fas fa-times"></i></button>
     </div>
 
     <div id="comment-list" class="flex-1 overflow-y-auto p-5 space-y-2 hide-scroll"></div>
@@ -1363,7 +1364,7 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
 
 <div id="modal-edit-profile" class="fixed inset-0 z-[200] hidden items-center justify-center bg-black/90 backdrop-blur-md px-6">
 <div class="bg-brand-card w-full max-w-sm rounded-3xl border border-white/10 p-6 shadow-2xl relative modal-anim">
-<button onclick="closeEditProfileModal()" class="absolute top-4 right-4 text-gray-500 w-8 h-8 flex justify-center items-center rounded-full bg-white/5"><i class="fas fa-times"></i></button>
+<button aria-label="Tutup" onclick="closeEditProfileModal()" class="absolute top-4 right-4 text-gray-500 w-8 h-8 flex justify-center items-center rounded-full bg-white/5"><i class="fas fa-times"></i></button>
 <h3 class="text-xl font-extrabold mb-5 text-white"><i class="fas fa-user-edit mr-2 text-brand-info"></i> Edit Profil</h3>
 <div class="space-y-4">
 <div>
@@ -1378,7 +1379,7 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
 <label class="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-2 block">Ganti Password (Opsional)</label>
 <div class="relative">
 <input type="password" id="edit-pass" placeholder="Biarkan kosong jika tidak diganti" class="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-brand-accent">
-<button onclick="togglePassword('edit-pass', 'icon-edit-pass')" class="absolute right-4 top-3 text-gray-400 hover:text-white transition-colors"><i id="icon-edit-pass" class="fas fa-eye"></i></button>
+<button aria-label="Tampilkan atau sembunyikan kata sandi" onclick="togglePassword('edit-pass', 'icon-edit-pass')" class="absolute right-4 top-3 text-gray-400 hover:text-white transition-colors"><i id="icon-edit-pass" class="fas fa-eye"></i></button>
 </div>
 </div>
 <button onclick="saveProfileInfo()" class="w-full bg-gradient-to-r from-brand-accent to-brand-purple text-white py-3.5 rounded-xl font-bold active:scale-95 transition-transform mt-2 shadow-[0_0_15px_rgba(255,0,122,0.3)]">Simpan Perubahan</button>
@@ -1641,7 +1642,7 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
 <h3 class="font-bold text-white text-sm flex items-center gap-2">
 <i class="fas fa-bullhorn text-brand-info text-lg"></i> Maintenance Weekly
 </h3>
-<button onclick="closeModalEvent()" class="text-gray-400 hover:text-white bg-black/30 border border-white/10 w-8 h-8 rounded-full flex items-center justify-center transition-colors active:scale-90"><i class="fas fa-times"></i></button>
+<button aria-label="Tutup" onclick="closeModalEvent()" class="text-gray-400 hover:text-white bg-black/30 border border-white/10 w-8 h-8 rounded-full flex items-center justify-center transition-colors active:scale-90"><i class="fas fa-times"></i></button>
 </div>
 <div class="relative flex-1 overflow-y-auto p-5">
 <div class="relative mb-5 w-full overflow-hidden rounded-xl bg-black/20 pb-8 pt-2 border border-white/5">
@@ -1691,7 +1692,7 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
             <h3 class="font-extrabold text-white text-sm flex items-center gap-2">
                 <i class="fas fa-trophy text-yellow-400"></i> LEADERBOARD
             </h3>
-            <button onclick="closeLeaderboardModal()" class="text-gray-400 hover:text-white w-8 h-8 rounded-full bg-white/5 flex items-center justify-center active:scale-95 transition-all"><i class="fas fa-times"></i></button>
+            <button aria-label="Tutup" onclick="closeLeaderboardModal()" class="text-gray-400 hover:text-white w-8 h-8 rounded-full bg-white/5 flex items-center justify-center active:scale-95 transition-all"><i class="fas fa-times"></i></button>
         </div>
 
         <div class="flex p-2 bg-black/40 shrink-0 gap-1 border-b border-white/5">
@@ -1793,9 +1794,9 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
             <h3 class="font-extrabold text-white text-sm flex items-center gap-2 tracking-tight">
                 <i class="fas fa-receipt text-brand-info"></i> Struk Pesanan
             </h3>
-            <button onclick="closeDetailPesanan()" class="text-gray-400 hover:text-white w-8 h-8 flex justify-center items-center rounded-full bg-white/5 active:scale-95 transition-colors">
-                <i class="fas fa-times"></i>
-            </button>
+<button aria-label="Tutup" onclick="closeDetailPesanan()" class="text-gray-400 hover:text-white w-8 h-8 flex justify-center items-center rounded-full bg-white/5 active:scale-95 transition-colors">
+    <i class="fas fa-times"></i>
+</button>
         </div>
 
         <div class="flex-1 overflow-y-auto hide-scroll p-6 space-y-6">
@@ -1933,7 +1934,7 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
         <!-- Header -->
         <div class="flex justify-between items-center p-5 sm:p-6 shrink-0 z-10">
             <h3 class="font-extrabold text-white text-base flex items-center gap-2 tracking-tight"><i class="fas fa-store text-[#EE4D2D]"></i> Jual Produk Baru</h3>
-            <button onclick="tutupModalJualBarang()" class="text-gray-400 hover:text-white w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center active:scale-95 transition-all"><i class="fas fa-times"></i></button>
+            <button aria-label="Tutup" onclick="tutupModalJualBarang()" class="text-gray-400 hover:text-white w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center active:scale-95 transition-all"><i class="fas fa-times"></i></button>
         </div>
 
         <div class="flex-1 overflow-y-auto p-5 sm:px-6 hide-scroll space-y-5">
@@ -2012,7 +2013,7 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
         <!-- Header -->
         <div class="flex justify-between items-center p-5 sm:p-6 shrink-0 z-10">
             <h3 class="font-extrabold text-white text-base flex items-center gap-2 tracking-tight"><i class="fas fa-pen text-[#EE4D2D]"></i> Edit Produk</h3>
-            <button onclick="tutupModalEditProduk()" class="text-gray-400 hover:text-white w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center active:scale-95 transition-all"><i class="fas fa-times"></i></button>
+            <button aria-label="Tutup" onclick="tutupModalEditProduk()" class="text-gray-400 hover:text-white w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center active:scale-95 transition-all"><i class="fas fa-times"></i></button>
         </div>
 
         <div class="flex-1 overflow-y-auto p-5 sm:px-6 hide-scroll space-y-5">
@@ -2173,7 +2174,7 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
     <div class="bg-brand-card w-full max-w-md sm:rounded-3xl rounded-t-[2.5rem] border border-white/10 shadow-2xl relative modal-anim flex flex-col h-[85vh] sm:h-auto sm:max-h-[85vh] overflow-hidden">
         <div class="flex justify-between items-center p-5 border-b border-white/5 bg-brand-dark/80 backdrop-blur-xl shrink-0">
             <h3 class="font-extrabold text-white text-sm flex items-center gap-2"><i class="fas fa-wallet text-brand-info"></i> Dompet Seller</h3>
-            <button onclick="tutupModalSaldoDompet()" class="text-gray-400 hover:text-white w-8 h-8 rounded-full bg-white/5 flex items-center justify-center active:scale-95 transition-all"><i class="fas fa-times"></i></button>
+            <button aria-label="Tutup" onclick="tutupModalSaldoDompet()" class="text-gray-400 hover:text-white w-8 h-8 rounded-full bg-white/5 flex items-center justify-center active:scale-95 transition-all"><i class="fas fa-times"></i></button>
         </div>
         <div class="p-5 bg-black/20 border-b border-white/5 shrink-0 text-center relative overflow-hidden">
             <div class="absolute -right-10 -top-10 w-32 h-32 bg-brand-success/10 rounded-full blur-2xl"></div>
@@ -2192,7 +2193,7 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
             <h3 class="font-black text-white text-sm flex items-center gap-2">
                 <i class="fas fa-crown text-yellow-400"></i> AU2Hub VIP Seller
             </h3>
-            <button onclick="tutupModalLangganan()" class="text-gray-400 hover:text-white w-8 h-8 rounded-full bg-white/5 flex items-center justify-center active:scale-95 transition-all"><i class="fas fa-times"></i></button>
+            <button aria-label="Tutup" onclick="tutupModalLangganan()" class="text-gray-400 hover:text-white w-8 h-8 rounded-full bg-white/5 flex items-center justify-center active:scale-95 transition-all"><i class="fas fa-times"></i></button>
         </div>
 
         <div class="flex-1 overflow-y-auto hide-scroll p-6">
