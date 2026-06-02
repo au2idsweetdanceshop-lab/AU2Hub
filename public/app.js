@@ -10195,12 +10195,13 @@ async function prosesEditProduk() {
 
     } catch (err) {
         showToast("Gagal: " + err.message, "error");
-        console.error("Error Edit">_ Produk:", err);
-    } finaly {
+        console.error("Error Edit Produk:", err);
+    } finally {
         btn.innerHTML = 'Simpan Perubahan';
         btn.disabled = false;
     }
 }
+
 
 async function hapusProdukSaya(productId, productName) {
     const konfirmasi = await customConfirm("Yakin hapus produk: " + productName + "?");
