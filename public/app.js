@@ -1244,15 +1244,14 @@ async function handleLogout() {
     // 2. BERSIHKAN VARIABEL GLOBAL (Wajib!)
     currentUser = null;
     userProfile = null;
-    viewedUserId = null; // Tambahkan ini agar tidak nyangkut ke profil orang lain
+    viewedUserId = null; 
     blockedUsersList = [];
-    allVideosData = []; // Bersihkan cache video biar tidak nyangkut
+    allVideosData = []; 
     globalPersonalList = [];
     globalGroupList = [];
 
     // 3. BERSIHKAN LOCAL STORAGE (PENTING)
     localStorage.removeItem('optimistic_vip');
-    // Opsional: hapus semua cache terkait session jika ada
     localStorage.clear(); 
 
     // 4. BERSIHKAN REALTIME SUBSCRIPTION
@@ -1265,6 +1264,19 @@ async function handleLogout() {
         presenceChannel = null;
     }
 
+    // 🔥 [TAMBAHAN BARU] Bantai UI VIP saat tombol Logout dipencet
+    const elExpired = document.getElementById('toko-vip-expired');
+    const elBadge = document.getElementById('badge-toko-vip');
+    if (elExpired) {
+        elExpired.classList.add('hidden');
+        elExpired.style.display = 'none';
+        elExpired.innerHTML = ''; 
+    }
+    if (elBadge) {
+        elBadge.classList.add('hidden');
+        elBadge.style.display = 'none';
+    }
+
     // 5. Reset UI ke tampilan "Logged Out"
     updateUIForLoggedOut();
     
@@ -1272,10 +1284,8 @@ async function handleLogout() {
     checkSession();
     
     showToast("Anda telah keluar.", "info");
-    
-    // 7. Opsional: Force Reload kalau masih membandel (paling ampuh)
-    // window.location.reload(); 
 }
+
 
 
 function updateUIForLoggedIn() {
@@ -2465,7 +2475,20 @@ function renderProfileVideoBatch(customAmount = 3) {
     </div>
 
     ${currentUser && vid.user_id === currentUser.id ? `
-    <button onclick="deleteVideo('${vid.id}')" class="hover:scale-110 transition-transform mt-2 active:scale-90">
+    <!-- Tombol Download -->
+    <button onclick="downloadVideoSaya('${vid.video_url}', '${vid.id}')" class="hover:scale-110 transition-transform mt-2 active:scale-90" title="Download Video">
+        <div class="bg-black/50 p-2 rounded-full border border-white/20 backdrop-blur-sm">
+            <i class="fas fa-download text-brand-info text-lg drop-shadow-md"></i>
+        </div>
+    </button>
+
+    <!-- Tombol Hapus -->
+    <button onclick="deleteVideo('${vid.id}')" class="hover:scale-110 transition-transform mt-3 active:scale-90" title="Hapus Video">
+        <div class="bg-black/50 p-2 rounded-full border border-white/20 backdrop-blur-sm">
+            <i class="fas fa-trash text-red-500 text-lg drop-shadow-md"></i>
+        </div>
+    </button>
+    ` : ''}
     <div class="bg-black/50 p-2 rounded-full border border-white/20 backdrop-blur-sm">
     <i class="fas fa-trash text-red-500 text-lg drop-shadow-md"></i>
     </div>
@@ -2653,6 +2676,38 @@ async function deleteVideo(vidId) {
         } catch (err) {
             showToast("Gagal menghapus ke server: " + err.message, "error");
         }
+    }
+}
+
+// ==========================================
+// FITUR DOWNLOAD VIDEO MILIK SENDIRI
+// ==========================================
+async function downloadVideoSaya(urlVideo, vidId) {
+    showToast("Memulai unduhan...", "info");
+    try {
+        // Tarik video sebagai data Blob agar langsung terunduh (tidak terputar di browser)
+        const response = await fetch(urlVideo);
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = `AU2Hub_${vidId}.mp4`; // Nama file saat disimpan
+        document.body.appendChild(a);
+        a.click();
+        
+        window.URL.revokeObjectURL(url);
+        showToast("Video berhasil disimpan ke Galeri!", "success");
+    } catch (error) {
+        // Fallback jika API Storage memblokir metode Blob
+        const a = document.createElement('a');
+        a.href = urlVideo;
+        a.download = `AU2Hub_${vidId}.mp4`;
+        a.target = '_blank';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
     }
 }
 
@@ -3558,7 +3613,8 @@ const htmlString = nextBatch.map((vid, index) => {
     <video class="absolute inset-0 m-auto w-full h-full object-cover video-player transition-opacity duration-500 opacity-0 z-10"
     onloadeddata="this.classList.remove('opacity-0')" loop ${isGlobalMuted ? 'muted' : ''} playsinline preload="metadata"
     ontimeupdate="updateVideoProgress(this)"
-    onclick="handleVideoClick(event, this, '${vid.id}')" onerror="handleVideoError(this)">
+    onclick="handleVideoClick(event, this, '${vid.id}')" onerror="handleVideoError(this)"
+    controlsList="nodownload" oncontextmenu="return false;" style="-webkit-touch-callout: none;">
     <source src="${vid.video_url}" type="video/mp4">
     </video>
 
@@ -3644,23 +3700,26 @@ const htmlString = nextBatch.map((vid, index) => {
 
 
 // --- SISTEM ANTI DOM BLOAT (MENCEGAH HP CRASH) ---
-if (container.children.length > 40) {
+if (container.children.length > 15) { // Kurangi jadi 15 agar RAM lega
     const tinggiVideo = container.firstElementChild.clientHeight;
-    // Hapus 5 video teratas beserta memori medianya
+    
+    // Hapus 5 video teratas agar DOM tetap ringan
     for (let i = 0; i < 5; i++) {
         const elToRemove = container.firstElementChild;
-        const vidToKill = elToRemove.querySelector('video');
-        if (vidToKill) {
-            vidToKill.pause();
-            vidToKill.removeAttribute('src');
-            if (vidToKill.querySelector('source')) vidToKill.querySelector('source').removeAttribute('src');
-            vidToKill.load(); 
+        if (elToRemove) {
+            const vidToKill = elToRemove.querySelector('video');
+            if (vidToKill) {
+                vidToKill.pause();
+                vidToKill.removeAttribute('src'); // Di sini baru kita boleh hapus src karena elemen fisiknya benar-benar dibuang
+                vidToKill.load(); 
+            }
+            elToRemove.remove();
         }
-        elToRemove.remove();
     }
     // Tarik scroll ke atas agar layar tidak lompat tiba-tiba
     container.scrollBy({ top: -(tinggiVideo * 5), behavior: 'instant' });
 }
+
 
 container.insertAdjacentHTML('beforeend', htmlString);
 currentVideoIndex += BATCH_SIZE;
@@ -5383,123 +5442,67 @@ btn.style.pointerEvents = 'auto';
 }
 
 
-
-
-
-
-
 // ==========================================
-// OPTIMASI V6 (ANTI-STUTTER & MEMORY LEAK)
+// OPTIMASI V6 (ANTI-STUTTER & MEMORY LEAK) - DIPERBAIKI
 // ==========================================
 function setupVideoObserver() {
-if (typeof obs !== 'undefined' && obs) obs.disconnect();
+    if (typeof obs !== 'undefined' && obs) obs.disconnect();
 
-if (!document.getElementById('gpu-hack')) {
-const style = document.createElement('style');
-style.id = 'gpu-hack';
-style.innerHTML = `
-.snap-start { transform: translateZ(0); will-change: transform, opacity; content-visibility: auto; }
-video { will-change: contents; }
-`;
-document.head.appendChild(style);
-}
-
-window.videoClearTimers = window.videoClearTimers || new WeakMap();
-window.videoPlayTimers = window.videoPlayTimers || new WeakMap();
-
-obs = new IntersectionObserver(es => {
-const isFloatingOpen = !document.getElementById('floating-video-player').classList.contains('hidden');
-
-es.forEach(e => {
-const video = e.target;
-
-if (e.isIntersecting && !isFloatingOpen) {
-if (window.videoClearTimers.has(video)) {
-clearTimeout(window.videoClearTimers.get(video));
-window.videoClearTimers.delete(video);
-}
-
-const playTimerId = setTimeout(() => {
-if (video.dataset.savedSrc) {
-video.src = video.dataset.savedSrc;
-video.dataset.savedSrc = '';
-video.load();
-}
-
-video.muted = (typeof isGlobalMuted !== 'undefined') ? isGlobalMuted : true;
-
-const wrap = video.closest('.video-inner-wrap');
-if (wrap) {
-if (!isGlobalMuted) wrap.classList.add('floating-focus');
-else wrap.classList.remove('floating-focus');
-}
-
-requestAnimationFrame(() => {
-const playPromise = video.play();
-if (playPromise !== undefined) {
-playPromise.catch(err => {
-    // JURUS ANTI-BLOKIR (AUTOPLAY POLICY)
-    // Jika browser ngeblokir suara karena user belum sentuh layar sama sekali, 
-    // paksa bisukan dulu supaya videonya tetap jalan (nggak macet/blank)
-    if (err.name === 'NotAllowedError') {
-        video.muted = true;
-        isGlobalMuted = true; // Sinkronkan sistem global ke bisu
-        video.play().catch(e => {}); // Mainkan ulang
+    if (!document.getElementById('gpu-hack')) {
+        const style = document.createElement('style');
+        style.id = 'gpu-hack';
+        // Hapus content-visibility: auto karena sering bug di browser mobile saat scroll
+        style.innerHTML = `
+        .snap-start { transform: translateZ(0); will-change: transform, opacity; }
+        video { will-change: contents; transform: translateZ(0); }
+        `;
+        document.head.appendChild(style);
     }
-});
-}
-video.classList.remove('opacity-0');
-});
 
-const card = video.closest('.snap-start');
-if (card && card.nextElementSibling) {
-const nextVid = card.nextElementSibling.querySelector('video');
-if (nextVid && nextVid.dataset.savedSrc && !nextVid.src) {
-nextVid.src = nextVid.dataset.savedSrc;
-nextVid.dataset.savedSrc = '';
-nextVid.setAttribute('preload', 'auto');
-}
-}
-}, 100);
+    obs = new IntersectionObserver(es => {
+        const isFloatingOpen = !document.getElementById('floating-video-player').classList.contains('hidden');
 
-window.videoPlayTimers.set(video, playTimerId);
+        es.forEach(e => {
+            const video = e.target;
 
-} else {
-if (window.videoPlayTimers.has(video)) {
-clearTimeout(window.videoPlayTimers.get(video));
-window.videoPlayTimers.delete(video);
+            if (e.isIntersecting && !isFloatingOpen) {
+                // 1. Muncul di layar -> Mainkan
+                video.muted = (typeof isGlobalMuted !== 'undefined') ? isGlobalMuted : true;
+                
+                const wrap = video.closest('.video-inner-wrap');
+                if (wrap) {
+                    if (!isGlobalMuted) wrap.classList.add('floating-focus');
+                    else wrap.classList.remove('floating-focus');
+                }
+
+                // Gunakan promise catch yang aman
+                const playPromise = video.play();
+                if (playPromise !== undefined) {
+                    playPromise.catch(err => {
+                        if (err.name === 'NotAllowedError') {
+                            video.muted = true;
+                            isGlobalMuted = true; 
+                            video.play().catch(e => {}); 
+                        }
+                    });
+                }
+                video.classList.remove('opacity-0');
+
+            } else {
+                // 2. Keluar dari layar -> CUKUP PAUSE SAJA (Jangan hapus src-nya)
+                video.pause();
+                video.currentTime = 0; // Kembalikan ke awal agar rapi jika di-scroll balik
+            }
+        });
+    }, { 
+        threshold: 0.6, // Ubah ke 0.6 agar video tidak berebut nyala saat posisi scroll nanggung
+        rootMargin: "0px" 
+    });
+
+    const videos = document.querySelectorAll('.video-player, .float-video-player');
+    videos.forEach(v => obs.observe(v));
 }
 
-video.pause();
-
-const timerId = setTimeout(() => {
-const hapusMemori = () => {
-let currentUrl = video.currentSrc || video.src || (video.querySelector('source') ? video.querySelector('source').src : '');
-if (currentUrl && currentUrl.length > 5) {
-video.dataset.savedSrc = currentUrl;
-video.removeAttribute('src');
-if (video.querySelector('source')) video.querySelector('source').removeAttribute('src');
-video.removeAttribute('preload');
-video.load();
-}
-window.videoClearTimers.delete(video);
-};
-
-if ('requestIdleCallback' in window) {
-requestIdleCallback(hapusMemori, { timeout: 1000 });
-} else {
-hapusMemori();
-}
-}, 1000);
-
-window.videoClearTimers.set(video, timerId);
-}
-});
-}, { threshold: 0.5 });
-
-const videos = document.querySelectorAll('.video-player, .float-video-player');
-videos.forEach(v => obs.observe(v));
-}
 
 
 // ==========================================
@@ -5807,20 +5810,22 @@ return `${m}:${s}`;
 }
 
 function updateVideoProgress(video) {
-if (video.isDragging) return;
+    if (video.isDragging) return;
 
-if (!video.progressFill) {
-const container = video.closest('.snap-start');
-if (container) video.progressFill = container.querySelector('.progress-fill');
+    if (!video.progressFill) {
+        const container = video.closest('.snap-start');
+        if (container) video.progressFill = container.querySelector('.progress-fill');
+    }
+
+    if (video.progressFill && video.duration) {
+        requestAnimationFrame(() => {
+            const percent = (video.currentTime / video.duration) * 100;
+            // Gunakan toFixed(1) untuk menghindari update koma yang terlalu panjang dan berat dirender
+            video.progressFill.style.width = `${percent.toFixed(1)}%`;
+        });
+    }
 }
 
-if (video.progressFill && video.duration) {
-requestAnimationFrame(() => {
-const percent = (video.currentTime / video.duration) * 100;
-video.progressFill.style.width = `${percent}%`;
-});
-}
-}
 
 // 11. FUNGSI UBAH STATUS ADMIN (Hanya Admin)
 async function toggleAdminStatus(userId, currentRole, nickname) {
@@ -9361,14 +9366,20 @@ async function loadTokoSaya() {
     const loggedOut = document.getElementById('toko-logged-out');
     const loggedIn = document.getElementById('toko-logged-in');
     
-    // 1. AMBIL ELEMEN BADGE & TEKS EXPIRED DULU DI AWAL
+    // 1. AMBIL ELEMEN BADGE & TEKS EXPIRED
     const elExpired = document.getElementById('toko-vip-expired');
     const elBadge = document.getElementById('badge-toko-vip');
     
-    // 2. 🔥 FIX: SELALU SEMBUNYIKAN (RESET) MEREKA SETIAP KALI FUNGSI DIPANGGIL
-    // Biar gak ada 'bayang-bayang' VIP nyangkut dari akun sebelumnya
-    if (elExpired) elExpired.classList.add('hidden');
-    if (elBadge) elBadge.classList.add('hidden');
+    // 2. 🔥 JURUS SAPU BERSIH MUTLAK: Paksa hilang & kosongkan teksnya dulu!
+    if (elExpired) {
+        elExpired.classList.add('hidden');
+        elExpired.style.display = 'none'; 
+        elExpired.innerHTML = ''; // Hapus teks "hantu" dari akun lama
+    }
+    if (elBadge) {
+        elBadge.classList.add('hidden');
+        elBadge.style.display = 'none';
+    }
 
     if (!currentUser) {
         loggedOut.querySelector('h3').innerText = "Akses Tertutup";
@@ -9413,25 +9424,26 @@ async function loadTokoSaya() {
     loggedIn.classList.remove('hidden');
 
     // 🔥 TAMPILKAN INFO MASA AKTIF VIP KE LAYAR 
-    // (Ini hanya tereksekusi kalau kodenya selamat dari perintah 'return' di atas / Akunnya benar-benar VIP)
     if (elExpired && elBadge) {
-        // Hitung sisa hari
         const sisaHari = Math.ceil((expiredAt - now) / (1000 * 60 * 60 * 24));
-        
-        // Format tanggal jadi cantik (Contoh: 15 Okt 2024)
         const formatTanggal = expiredAt.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
         
+        // Isi ulang teksnya untuk akun yang SAH
         elExpired.innerHTML = `<i class="fas fa-clock text-[#FF5722] mr-1"></i> Aktif s/d: <b class="text-white">${formatTanggal}</b> (${sisaHari} Hari)`;
         
-        // Munculkan kembali karena dia valid VIP
+        // Paksa Muncul kembali
         elExpired.classList.remove('hidden');
+        elExpired.style.display = ''; // Kembalikan ke display bawaan Tailwind
+        
         elBadge.classList.remove('hidden');
+        elBadge.style.display = ''; 
     }
 
     await cekPencairanDanaH1();
     await updateUiSaldoSeller();
     switchTokoTab(tokoTabAktif);
 }
+
 
 async function updateUiSaldoSeller() {
     try {
