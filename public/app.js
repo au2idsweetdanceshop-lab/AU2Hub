@@ -10059,9 +10059,9 @@ async function bukaModalEditProduk(idProduk) {
         document.getElementById('edit-produk-kategori').value = data.category;
         document.getElementById('edit-produk-deskripsi').value = data.description;
         
-        // [BARU] Masukkan data stok lama ke form, lalu atur tampilannya (muncul/sembunyi)
+        // 🔥 SINKRONISASI VISUAL KATEGORI BARU
         document.getElementById('edit-produk-stock').value = data.stock_list || '';
-        toggleStockInput(data.category, 'wadah-stock-edit');
+        ubahKategoriVisual(data.category, 'edit');
         
         editFileArray = [];
         existingImagesEdit = [];
@@ -10697,4 +10697,34 @@ async function toggleStatusAdmin(targetId, isCurrentlyAdmin, nickname) {
     } catch (err) {
         showToast("Gagal mengubah status admin.", "error");
     }
+}
+
+// ==========================================
+// SISTEM KATEGORI CHIPS (MARKETPLACE STYLE)
+// ==========================================
+function ubahKategoriVisual(kategoriTerpilih, tipeModal) {
+    // 1. Simpan value ke input rahasia agar sistem upload/edit tetap jalan
+    const inputId = tipeModal === 'edit' ? 'edit-produk-kategori' : 'jualan-kategori';
+    document.getElementById(inputId).value = kategoriTerpilih;
+
+    // 2. Reset semua tombol di laci yang aktif menjadi abu-abu
+    const wadah = document.getElementById(`wadah-kategori-${tipeModal}`);
+    const semuaTombol = wadah.querySelectorAll('button');
+    
+    semuaTombol.forEach(btn => {
+        // Cek apakah tombol ini yang dipilih user
+        const isCocok = btn.innerText.trim().includes(kategoriTerpilih) || (kategoriTerpilih === 'APK Premium' && btn.innerText.includes('Premium'));
+        
+        if (isCocok) {
+            // Nyalakan tombol (Warna Oren Terang)
+            btn.className = `flex items-center gap-1.5 px-3 py-2.5 rounded-xl border border-[#EE4D2D] bg-[#EE4D2D]/10 text-[#EE4D2D] text-[11px] font-bold transition-all active:scale-95 shadow-[0_0_10px_rgba(238,77,45,0.2)]`;
+        } else {
+            // Matikan tombol (Warna Abu-abu Gelap)
+            btn.className = `flex items-center gap-1.5 px-3 py-2.5 rounded-xl border border-white/10 bg-black/40 text-gray-400 hover:text-white hover:bg-white/5 transition-all active:scale-95 text-[11px] font-medium`;
+        }
+    });
+
+    // 3. Panggil sistem Stok otomatis
+    const wadahStockId = tipeModal === 'edit' ? 'wadah-stock-edit' : 'wadah-stock-jualan';
+    toggleStockInput(kategoriTerpilih, wadahStockId);
 }
