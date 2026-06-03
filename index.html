@@ -28,7 +28,7 @@
 <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"></noscript>
 
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script defer src="./app.js?v=14"></script>
+<script defer src="./app.js?v=15"></script>
 
 <style>
 /* ========================================== */
@@ -1971,26 +1971,40 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
                 <input type="text" id="jualan-nama" placeholder="Contoh: Joki GB Level 1-10" class="w-full bg-black/40 border border-transparent rounded-2xl px-4 py-3.5 text-sm text-white outline-none focus:bg-black/60 focus:ring-1 focus:ring-[#EE4D2D]/50 transition-all">
             </div>
 
-            <!-- GRID HARGA & KATEGORI -->
-            <div class="grid grid-cols-2 gap-4">
-                <div>
-                    <label class="text-[10px] text-gray-400/80 font-bold uppercase tracking-widest mb-2 block pl-1">Harga (Rp)</label>
-                    <input type="text" id="jualan-harga" placeholder="10.000" class="w-full bg-black/40 border border-transparent rounded-2xl px-4 py-3.5 text-sm text-white outline-none focus:bg-black/60 focus:ring-1 focus:ring-[#EE4D2D]/50 transition-all">
-                    <p class="text-[8px] text-brand-success mt-2 italic leading-tight pl-1">*Pendapatan bersih akan dipotong pajak layanan 5%</p>
-                </div>
+            <!-- HARGA (Dibuat Memanjang) -->
+            <div>
+                <label class="text-[10px] text-gray-400/80 font-bold uppercase tracking-widest mb-2 block pl-1">Harga (Rp)</label>
+                <input type="text" id="jualan-harga" placeholder="10.000" class="w-full bg-black/40 border border-transparent rounded-2xl px-4 py-3.5 text-sm text-white outline-none focus:bg-black/60 focus:ring-1 focus:ring-[#EE4D2D]/50 transition-all">
+                <p class="text-[8px] text-brand-success mt-2 italic leading-tight pl-1">*Pendapatan bersih dipotong pajak layanan 5%</p>
+            </div>
 
-                <div>
-                    <label class="text-[10px] text-gray-400/80 font-bold uppercase tracking-widest mb-2 block pl-1">Kategori</label>
-                    <select id="jualan-kategori" onchange="toggleStockInput(this.value, 'wadah-stock-jualan')" class="w-full bg-black/40 border border-transparent rounded-2xl px-4 py-3.5 text-sm text-white outline-none focus:bg-black/60 focus:ring-1 focus:ring-[#EE4D2D]/50 transition-all appearance-none">
-                        <option value="Joki" class="bg-brand-dark">Joki</option>
-                        <option value="APK Premium" class="bg-brand-dark">APK Premium</option>
-                        <option value="Akun" class="bg-brand-dark">Akun</option>
-                        <option value="Item" class="bg-brand-dark">Item / Gift</option>
-                        <option value="Top Up" class="bg-brand-dark">Top Up</option>
-                        <option value="Lainnya" class="bg-brand-dark">Lainnya</option>
-                    </select>
+            <!-- KATEGORI CHIPS (DESAIN MARKETPLACE MODERN) -->
+            <div>
+                <label class="text-[10px] text-gray-400/80 font-bold uppercase tracking-widest mb-2 block pl-1">Kategori Produk</label>
+                <!-- Input rahasia agar sistem JS lama tetap berjalan normal -->
+                <input type="hidden" id="jualan-kategori" value="Joki">
+                
+                <div class="flex flex-wrap gap-2" id="wadah-kategori-jualan">
+                    <button type="button" onclick="ubahKategoriVisual('Joki', 'jualan')" class="flex items-center gap-1.5 px-3 py-2.5 rounded-xl border border-[#EE4D2D] bg-[#EE4D2D]/10 text-[#EE4D2D] text-[11px] font-bold transition-all active:scale-95 shadow-[0_0_10px_rgba(238,77,45,0.2)]">
+                        <i class="fas fa-gamepad"></i> Joki
+                    </button>
+                    <button type="button" onclick="ubahKategoriVisual('Akun', 'jualan')" class="flex items-center gap-1.5 px-3 py-2.5 rounded-xl border border-white/10 bg-black/40 text-gray-400 hover:text-white hover:bg-white/5 transition-all active:scale-95 text-[11px] font-medium">
+                        <i class="fas fa-user-astronaut"></i> Akun
+                    </button>
+                    <button type="button" onclick="ubahKategoriVisual('Item', 'jualan')" class="flex items-center gap-1.5 px-3 py-2.5 rounded-xl border border-white/10 bg-black/40 text-gray-400 hover:text-white hover:bg-white/5 transition-all active:scale-95 text-[11px] font-medium">
+                        <i class="fas fa-box-open"></i> Item / Gift
+                    </button>
+                    <button type="button" onclick="ubahKategoriVisual('Top Up', 'jualan')" class="flex items-center gap-1.5 px-3 py-2.5 rounded-xl border border-white/10 bg-black/40 text-gray-400 hover:text-white hover:bg-white/5 transition-all active:scale-95 text-[11px] font-medium">
+                        <i class="fas fa-bolt"></i> Top Up
+                    </button>
+                    <button type="button" onclick="ubahKategoriVisual('APK Premium', 'jualan')" class="flex items-center gap-1.5 px-3 py-2.5 rounded-xl border border-white/10 bg-black/40 text-gray-400 hover:text-white hover:bg-white/5 transition-all active:scale-95 text-[11px] font-medium">
+                        <i class="fas fa-gem"></i> Premium
+                    </button>
+                    <button type="button" onclick="ubahKategoriVisual('Lainnya', 'jualan')" class="flex items-center gap-1.5 px-3 py-2.5 rounded-xl border border-white/10 bg-black/40 text-gray-400 hover:text-white hover:bg-white/5 transition-all active:scale-95 text-[11px] font-medium">
+                        <i class="fas fa-ellipsis-h"></i> Lainnya
+                    </button>
                 </div>
-            </div> 
+            </div>
 
             <!-- STOK AUTO-KIRIM -->
             <div id="wadah-stock-jualan" class="hidden mt-2">
@@ -2053,26 +2067,39 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
                 <input type="text" id="edit-produk-nama" class="w-full bg-black/40 border border-transparent rounded-2xl px-4 py-3.5 text-sm text-white outline-none focus:bg-black/60 focus:ring-1 focus:ring-[#EE4D2D]/50 transition-all">
             </div>
 
-            <!-- GRID HARGA & KATEGORI -->
-            <div class="grid grid-cols-2 gap-4">
-                <div>
-                    <label class="text-[10px] text-gray-400/80 font-bold uppercase tracking-widest mb-2 block pl-1">Harga (Rp)</label>
-                    <input type="text" id="edit-produk-harga" class="w-full bg-black/40 border border-transparent rounded-2xl px-4 py-3.5 text-sm text-white outline-none focus:bg-black/60 focus:ring-1 focus:ring-[#EE4D2D]/50 transition-all">
-                    <p class="text-[8px] text-brand-info mt-2 italic leading-tight pl-1">*Pendapatan bersih akan dipotong pajak layanan 5%</p>
-                </div>
+            <!-- HARGA -->
+            <div>
+                <label class="text-[10px] text-gray-400/80 font-bold uppercase tracking-widest mb-2 block pl-1">Harga (Rp)</label>
+                <input type="text" id="edit-produk-harga" class="w-full bg-black/40 border border-transparent rounded-2xl px-4 py-3.5 text-sm text-white outline-none focus:bg-black/60 focus:ring-1 focus:ring-[#EE4D2D]/50 transition-all">
+                <p class="text-[8px] text-brand-info mt-2 italic leading-tight pl-1">*Pendapatan bersih dipotong pajak layanan 5%</p>
+            </div>
 
-                <div>
-                    <label class="text-[10px] text-gray-400/80 font-bold uppercase tracking-widest mb-2 block pl-1">Kategori</label>
-                    <select id="edit-produk-kategori" onchange="toggleStockInput(this.value, 'wadah-stock-edit')" class="w-full bg-black/40 border border-transparent rounded-2xl px-4 py-3.5 text-sm text-white outline-none focus:bg-black/60 focus:ring-1 focus:ring-[#EE4D2D]/50 transition-all appearance-none">
-                        <option value="Joki" class="bg-brand-dark">Joki</option>
-                        <option value="Akun" class="bg-brand-dark">Akun</option>
-                        <option value="APK Premium" class="bg-brand-dark">APK Premium</option>
-                        <option value="Item" class="bg-brand-dark">Item / Gift</option>
-                        <option value="Top Up" class="bg-brand-dark">Top Up</option>
-                        <option value="Lainnya" class="bg-brand-dark">Lainnya</option>
-                    </select>
+            <!-- KATEGORI CHIPS -->
+            <div>
+                <label class="text-[10px] text-gray-400/80 font-bold uppercase tracking-widest mb-2 block pl-1">Kategori Produk</label>
+                <input type="hidden" id="edit-produk-kategori" value="Joki">
+                <div class="flex flex-wrap gap-2" id="wadah-kategori-edit">
+                    <button type="button" onclick="ubahKategoriVisual('Joki', 'edit')" class="flex items-center gap-1.5 px-3 py-2.5 rounded-xl border border-[#EE4D2D] bg-[#EE4D2D]/10 text-[#EE4D2D] text-[11px] font-bold transition-all active:scale-95 shadow-[0_0_10px_rgba(238,77,45,0.2)]">
+                        <i class="fas fa-gamepad"></i> Joki
+                    </button>
+                    <button type="button" onclick="ubahKategoriVisual('Akun', 'edit')" class="flex items-center gap-1.5 px-3 py-2.5 rounded-xl border border-white/10 bg-black/40 text-gray-400 hover:text-white hover:bg-white/5 transition-all active:scale-95 text-[11px] font-medium">
+                        <i class="fas fa-user-astronaut"></i> Akun
+                    </button>
+                    <button type="button" onclick="ubahKategoriVisual('Item', 'edit')" class="flex items-center gap-1.5 px-3 py-2.5 rounded-xl border border-white/10 bg-black/40 text-gray-400 hover:text-white hover:bg-white/5 transition-all active:scale-95 text-[11px] font-medium">
+                        <i class="fas fa-box-open"></i> Item / Gift
+                    </button>
+                    <button type="button" onclick="ubahKategoriVisual('Top Up', 'edit')" class="flex items-center gap-1.5 px-3 py-2.5 rounded-xl border border-white/10 bg-black/40 text-gray-400 hover:text-white hover:bg-white/5 transition-all active:scale-95 text-[11px] font-medium">
+                        <i class="fas fa-bolt"></i> Top Up
+                    </button>
+                    <button type="button" onclick="ubahKategoriVisual('APK Premium', 'edit')" class="flex items-center gap-1.5 px-3 py-2.5 rounded-xl border border-white/10 bg-black/40 text-gray-400 hover:text-white hover:bg-white/5 transition-all active:scale-95 text-[11px] font-medium">
+                        <i class="fas fa-gem"></i> Premium
+                    </button>
+                    <button type="button" onclick="ubahKategoriVisual('Lainnya', 'edit')" class="flex items-center gap-1.5 px-3 py-2.5 rounded-xl border border-white/10 bg-black/40 text-gray-400 hover:text-white hover:bg-white/5 transition-all active:scale-95 text-[11px] font-medium">
+                        <i class="fas fa-ellipsis-h"></i> Lainnya
+                    </button>
                 </div>
-            </div> 
+            </div>
+
 
             <!-- STOK AUTO-KIRIM -->
             <div id="wadah-stock-edit" class="hidden mt-2">
