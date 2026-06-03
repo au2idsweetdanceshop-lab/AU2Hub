@@ -8664,7 +8664,7 @@ function renderKategoriPasarTabs(data) {
                 <img src="${logoUrl}" alt="${k}" class="w-7 h-7 object-contain ${isActive ? 'brightness-100' : 'opacity-80 group-hover:opacity-100 transition-opacity'}"
                 onerror="this.src='https://img.icons8.com/neon/96/folder-invoices.png'">
             </div>
-            <span class="text-[9px] font-extrabold tracking-wide truncate w-full uppercase leading-tight ${isActive ? 'text-[#EE4D2D]' : 'text-gray-400 group-hover:text-white'}">
+            <span class="text-[9px] font-extrabold tracking-wide break-words w-full uppercase leading-snug px-0.5 ${isActive ? 'text-[#EE4D2D]' : 'text-gray-400 group-hover:text-white'}">
                 ${k}
             </span>
         </div>
