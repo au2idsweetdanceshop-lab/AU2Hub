@@ -8766,7 +8766,8 @@ function renderGridPasar(dataList) {
             <div class="relative w-full aspect-square bg-black/40 overflow-hidden">
                 <img src="${fotoPertama}" alt="${item.title}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 relative z-0" onerror="this.src='https://placehold.co/400x400/1a1133/2BD975?text=PASAR'">
                 <!-- Watermark AU2Hub Thumbnail -->
-                <img src="https://nos.wjv-1.neo.id/au2hub/Picsart_26-05-22_23-46-22-498.png" class="absolute inset-0 m-auto w-20 h-20 object-contain opacity-[0.25] pointer-events-none z-10 drop-shadow-lg group-hover:scale-105 transition-transform duration-300">
+                <img src="https://nos.wjv-1.neo.id/au2hub/Picsart_26-05-30_04-29-46-305.webp" class="absolute inset-0 m-auto w-20 h-20 object-contain opacity-[0.25] pointer-events-none z-10 drop-shadow-lg group-hover:scale-105 transition-transform duration-300" onerror="this.style.display='none'">
+ class="absolute inset-0 m-auto w-20 h-20 object-contain opacity-[0.25] pointer-events-none z-10 drop-shadow-lg group-hover:scale-105 transition-transform duration-300">
                 ${badgeStok}
             </div>
             <div class="p-3 flex-1 flex flex-col justify-between gap-1">
@@ -9885,7 +9886,7 @@ function bukaGalleryPasar(idProduk, startIndex) {
                 <div class="w-full h-full flex-shrink-0 snap-center flex items-center justify-center p-2 relative">
                     <img src="${img}" draggable="false" class="max-w-full max-h-[85vh] object-contain rounded-xl shadow-2xl pointer-events-none relative z-0">
                     <!-- Watermark AU2Hub untuk Full Screen -->
-                    <img src="https://nos.wjv-1.neo.id/au2hub/Picsart_26-05-22_23-46-22-498.png" class="absolute inset-0 m-auto w-48 h-48 object-contain opacity-[0.25] pointer-events-none z-10 drop-shadow-lg">
+                    <img src="https://nos.wjv-1.neo.id/au2hub/Picsart_26-05-30_04-29-46-305.webp" class="absolute inset-0 m-auto w-48 h-48 object-contain opacity-[0.25] pointer-events-none z-10 drop-shadow-lg" onerror="this.style.display='none'">
                 </div>
             `).join('')}
         </div>
