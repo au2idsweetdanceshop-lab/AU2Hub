@@ -9092,7 +9092,8 @@ function bukaDetailPasar(idProduk) {
         <div class="w-full h-full flex-shrink-0 snap-center relative cursor-pointer flex items-center justify-center" onclick="bukaGalleryPasar('${produk.id}', ${index})">
             <img src="${imgUrl}" draggable="false" class="w-full h-full object-cover pointer-events-none relative z-0" onerror="this.src='https://placehold.co/400x400/1a1133/2BD975?text=PASAR'">
             <!-- Watermark AU2Hub -->
-            <img src="https://nos.wjv-1.neo.id/au2hub/Picsart_26-05-22_23-46-22-498.png" class="absolute inset-0 m-auto w-36 h-36 object-contain opacity-[0.25] pointer-events-none z-10 drop-shadow-lg">
+            <img src="https://nos.wjv-1.neo.id/au2hub/Picsart_26-05-30_04-29-46-305.webp" class="absolute inset-0 m-auto w-36 h-36 object-contain opacity-[0.25] pointer-events-none z-10 drop-shadow-lg" onerror="this.style.display='none'">
+
         </div>
     `).join('');
 
