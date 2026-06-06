@@ -10511,7 +10511,7 @@ async function loadAdminDashboard() {
     try {
         const { data, error } = await supabaseClient
             .from('withdrawals')
-            .select('*, profiles:user_id(nickname)')
+            .select('*, profiles(nickname)')
             .eq('status', 'PENDING')
             .order('created_at', { ascending: true });
 
