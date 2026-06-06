@@ -33,7 +33,7 @@ export default async function handler(req, res) {
         let isPasarPlayer = false;
 
         // 1. Cari Pesanan di Database
-        const { data: orderPlayer } = await supabase.from('orders_player').select('*').eq('id', order_id).single();
+        const { data: orderPlayer, error: errOrderPlayer } = await supabase.from('orders_player').select('*').eq('id', order_id).single();
         
         if (orderPlayer) {
             orderData = orderPlayer;
@@ -44,7 +44,7 @@ export default async function handler(req, res) {
         }
 
         if (!orderData) {
-            return res.status(404).json({ success: false, message: 'Pesanan tidak ditemukan.' });
+            return res.status(404).json({ success: false, message: 'Pesanan tidak ditemukan di sistem.' });
         }
 
         let finalVerifiedPrice = parseInt(orderData.price); 
@@ -53,14 +53,17 @@ export default async function handler(req, res) {
         // 🛡️ FITUR KEAMANAN MUTLAK: VALIDASI HARGA ASLI (SOURCE OF TRUTH)
         // =================================================================
         if (isPasarPlayer && orderData.product_id) {
-            // Tarik data produk master, termasuk setting fee dan variasi
+            
+            // PERBAIKAN: Gunakan select('*') agar tidak crash jika ada kolom yang belum dibuat di Supabase
             const { data: productMaster, error: errMaster } = await supabase
                 .from('player_products')
-                .select('price, fee_ditanggung_pembeli, variations, variasi')
+                .select('*')
                 .eq('id', orderData.product_id)
                 .single();
 
+            // PERBAIKAN: Tampilkan error asli DB ke Log Vercel
             if (errMaster || !productMaster) {
+                console.error("DB Error (Master Product):", errMaster);
                 return res.status(400).json({ success: false, message: 'Produk asli tidak ditemukan.' });
             }
 
@@ -75,7 +78,7 @@ export default async function handler(req, res) {
             let hargaCustomerUtama = Math.floor(baseHarga + (baseHarga * 0.007) + 500);
             validUnitPrices.push(hargaCustomerUtama);
 
-            // B. Kalkulasi Harga Variasi (Jika Penjual Punya Variasi)
+            // B. Kalkulasi Harga Variasi (Aman dari error walau kolom variasi tidak ada)
             let rawVariasi = productMaster.variations || productMaster.variasi || [];
             if (Array.isArray(rawVariasi)) {
                 rawVariasi.forEach(v => {
@@ -90,7 +93,7 @@ export default async function handler(req, res) {
                 });
             }
 
-            // C. Deteksi Kuantitas (QTY) dari teks nama produk (contoh: "Akun Sultan (x3)")
+            // C. Deteksi Kuantitas (QTY) dari nama produk
             let qty = 1;
             const namaProduk = orderData.product_name || "";
             const qtyMatch = namaProduk.match(/\(x(\d+)\)$/);
@@ -98,11 +101,11 @@ export default async function handler(req, res) {
                 qty = parseInt(qtyMatch[1]);
             }
 
-            // D. Pengecekan Final: Harga Order / Qty harus cocok dengan salah satu harga SAH di list
+            // D. Pengecekan Final
             const calculatedUnitPrice = finalVerifiedPrice / qty;
 
             if (!validUnitPrices.includes(calculatedUnitPrice)) {
-                console.error(`[HACK ATTEMPT!] User: ${orderData.user_id} | Harga Masuk: ${calculatedUnitPrice} | Harga Sah Sistem: ${validUnitPrices.join(', ')}`);
+                console.error(`[HACK ATTEMPT!] Harga Masuk: ${calculatedUnitPrice} | Harga Asli DB: ${validUnitPrices.join(', ')}`);
                 await supabase.from('orders_player').delete().eq('id', order_id);
                 return res.status(400).json({ success: false, message: 'Terdeteksi manipulasi harga! Transaksi digagalkan.' });
             }
@@ -110,7 +113,6 @@ export default async function handler(req, res) {
         } else {
             // Keamanan untuk Toko Admin
             if (finalVerifiedPrice < 1000) {
-                console.error(`[HACK ATTEMPT!] Order Admin tidak wajar. Harga: Rp ${finalVerifiedPrice}`);
                 await supabase.from('orders').delete().eq('id', order_id);
                 return res.status(400).json({ success: false, message: 'Harga di bawah batas minimal sistem!' });
             }
@@ -119,8 +121,6 @@ export default async function handler(req, res) {
 
         const safeCustomerId = orderData.user_id ? String(orderData.user_id).slice(0, 8) : "UNKNOWN";
         const safeProductId = orderData.product_id ? String(orderData.product_id).slice(0, 20) : "SKU-001";
-        
-        // Mencegah Xoftware menolak transaksi akibat customer_name " " (kosong spasi dari frontend)
         const finalCustomerName = (customer_name && customer_name.trim() !== "") ? customer_name : "Player AU2Hub";
 
         // SUSUN PAYLOAD KE XOFTWARE
@@ -188,7 +188,7 @@ export default async function handler(req, res) {
         }
 
     } catch (error) {
-        console.error("QRIS Error:", error);
+        console.error("QRIS Server Error:", error);
         return res.status(500).json({ success: false, message: "Terjadi kesalahan pada server." });
     }
 }
