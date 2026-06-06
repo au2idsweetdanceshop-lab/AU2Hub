@@ -9105,10 +9105,10 @@ function bukaDetailPasar(idProduk) {
         else wadahQty.classList.replace('hidden', 'flex');
     }
 
-    // Harga Markup Customer (+ 650 + 0.7%)
-    let baseHarga = produk.price;
+    // Harga Markup Customer (+ 500 + 0.7%)
+    let baseHarga = Number(produk.price); // <-- TAMBAHKAN Number() DI SINI
     if (produk.fee_ditanggung_pembeli) {
-        baseHarga += hitungPotonganSeller(produk.price);
+        baseHarga += hitungPotonganSeller(baseHarga); // <-- Gunakan baseHarga
     }
     const hargaCustomer = Math.floor(baseHarga + (baseHarga * 0.007) + 500);
     currentPasarPrice = hargaCustomer;
@@ -9121,11 +9121,18 @@ function bukaDetailPasar(idProduk) {
         rawVariasi.forEach(v => {
             if (typeof v === 'object' && v !== null) {
                 let hargaVarAsli = parseFloat(v.harga || v.price || 0);
+                
+                // [TAMBAHAN] Masukkan biaya admin ke harga variasi jika ditanggung pembeli
+                if (produk.fee_ditanggung_pembeli) {
+                    hargaVarAsli += hitungPotonganSeller(hargaVarAsli);
+                }
+                
                 let hargaVarMarkup = Math.floor(hargaVarAsli + (hargaVarAsli * 0.007) + 500);
                 arrVariasi.push({ name: v.nama_variasi || v.name, price: hargaVarMarkup });
             }
         });
     }
+
 
     const variasiContainer = document.getElementById('pasar-variasi-container');
     const variasiList = document.getElementById('pasar-variasi-list');
@@ -9253,8 +9260,11 @@ async function checkoutPasar(namaFinal, totalHarga, id) {
         
         tutupDetailPasar(); 
         
-        // Lempar ke fungsi pembayaran XoftwarePay Anda yang asli
-        checkoutXoftwarePay("[PASAR] " + namaFinal, totalHarga, "Pembelian item dari Pasar Player.", produkAsli.user_id, id);
+        // 🔥 PERBAIKAN: Beri jeda 300ms agar history.back() dari penutupan laci selesai dulu.
+        // Mencegah pop-up konfirmasi pembayaran terbunuh secara instan oleh sistem HP.
+        setTimeout(() => {
+            checkoutXoftwarePay("[PASAR] " + namaFinal, totalHarga, "Pembelian item dari Pasar Player.", produkAsli.user_id, id);
+        }, 300);
         
     } catch (err) {
         showToast("Gagal memverifikasi keamanan: " + err.message, "error");
@@ -9263,6 +9273,7 @@ async function checkoutPasar(namaFinal, totalHarga, id) {
         btnBeli.innerHTML = '<i class="fas fa-shopping-cart"></i> Beli Sekarang';
     }
 }
+
 
 // ==========================================
 // LOGIKA PEMBAYARAN VIP SELLER (DIPERBARUI DENGAN QTY & BIAYA ADMIN)
