@@ -27,7 +27,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script defer src="./app.js?v=18"></script>
+<script defer src="./app.js?v=19"></script>
 
 <style>
 
@@ -1706,7 +1706,6 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
         </div>
         
         <div id="riwayat-pesanan-list" class="flex-1 overflow-y-auto p-4 hide-scroll space-y-3 bg-black/40 pb-10">
-            <!-- Data dari database Supabase akan disuntikkan ke sini -->
         </div>
 
     </div>
@@ -1877,7 +1876,19 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
             <div>
                 <label class="text-[10px] text-gray-400/80 font-bold uppercase tracking-widest mb-2 block pl-1">Harga (Rp)</label>
                 <input type="text" id="jualan-harga" placeholder="10.000" class="w-full bg-black/40 border border-transparent rounded-2xl px-4 py-3.5 text-sm text-white outline-none focus:bg-black/60 focus:ring-1 focus:ring-[#EE4D2D]/50 transition-all">
-                <p class="text-[8px] text-brand-success mt-2 italic leading-tight pl-1">*Pendapatan bersih dipotong pajak layanan 5%</p>
+<p class="text-[8px] text-brand-success mt-2 italic leading-tight pl-1">
+    *Pendapatan bersih dipotong otomatis sesuai 
+    <span onclick="customAlert('Tabel Fee Seller AU2Hub:\
+\
+🔹 Harga ≤ Rp 25.000 = Potongan Rp 1.000\
+🔹 Harga ≤ Rp 50.000 = Potongan Rp 2.000\
+🔹 Harga ≤ Rp 99.999 = Potongan Rp 3.000\
+🔹 Harga ≤ Rp 499.999 = Potongan Rp 10.000\
+🔹 Harga ≤ Rp 1.499.999 = Potongan Rp 20.000\
+🔹 Harga ≤ Rp 1.999.999 = Potongan Rp 25.000\
+🔹 Harga ≥ Rp 2.000.000 = Potongan Rp 35.000')" class="underline cursor-pointer text-white font-bold hover:text-brand-info">Tabel Fee</span> 
+    (Mulai Rp 1.000).
+</p>
             </div>
 
             <div>
@@ -1961,7 +1972,19 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
             <div>
                 <label class="text-[10px] text-gray-400/80 font-bold uppercase tracking-widest mb-2 block pl-1">Harga (Rp)</label>
                 <input type="text" id="edit-produk-harga" class="w-full bg-black/40 border border-transparent rounded-2xl px-4 py-3.5 text-sm text-white outline-none focus:bg-black/60 focus:ring-1 focus:ring-[#EE4D2D]/50 transition-all">
-                <p class="text-[8px] text-brand-info mt-2 italic leading-tight pl-1">*Pendapatan bersih dipotong pajak layanan 5%</p>
+<p class="text-[8px] text-brand-success mt-2 italic leading-tight pl-1">
+    *Pendapatan bersih dipotong otomatis sesuai 
+    <span onclick="customAlert('Tabel Fee Seller AU2Hub:\
+\
+🔹 Harga ≤ Rp 25.000 = Potongan Rp 1.000\
+🔹 Harga ≤ Rp 50.000 = Potongan Rp 2.000\
+🔹 Harga ≤ Rp 99.999 = Potongan Rp 3.000\
+🔹 Harga ≤ Rp 499.999 = Potongan Rp 10.000\
+🔹 Harga ≤ Rp 1.499.999 = Potongan Rp 20.000\
+🔹 Harga ≤ Rp 1.999.999 = Potongan Rp 25.000\
+🔹 Harga ≥ Rp 2.000.000 = Potongan Rp 35.000')" class="underline cursor-pointer text-white font-bold hover:text-brand-info">Tabel Fee</span> 
+    (Mulai Rp 1.000).
+</p>
             </div>
 
             <div>
@@ -2095,7 +2118,8 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
         <div class="p-5 bg-black/20 border-b border-white/5 shrink-0 text-center relative overflow-hidden">
             <div class="absolute -right-10 -top-10 w-32 h-32 bg-brand-success/10 rounded-full blur-2xl"></div>
             <span class="text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-1 block">Total Saldo</span>
-            <div id="dompet-angka-saldo" class="text-3xl font-black text-brand-success tracking-tight mb-4">Rp 0</div>
+            <div id="dompet-angka-saldo" class="text-3xl font-black text-brand-success tracking-tight mb-2">Rp 0</div>
+<p class="text-[9px] text-red-400 font-bold mb-4 italic">*Biaya transfer ke bank: Rp 3.500 / penarikan</p>
             <button onclick="prosesTarikSaldo()" class="w-full bg-brand-info text-brand-dark py-3 rounded-xl font-extrabold text-xs uppercase active:scale-95 transition-all"><i class="fas fa-money-bill-wave mr-1"></i> Tarik Saldo</button>
         </div>
         <div id="dompet-history-list" class="flex-1 overflow-y-auto p-4 hide-scroll space-y-3 bg-black/40 pb-10"></div>
@@ -2117,28 +2141,25 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
                 <div class="w-14 h-14 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-full flex items-center justify-center mx-auto mb-3 shadow-[0_0_20px_rgba(250,204,21,0.5)]">
                     <i class="fas fa-store text-xl text-brand-dark"></i>
                 </div>
-                <h2 class="text-xl font-extrabold text-white tracking-tight">Buka Tokomu Sendiri</h2>
+                <h2 class="text-xl font-extrabold text-white tracking-tight">Sewa Lapak VIP</h2>
+                <p class="text-[11px] text-brand-info font-bold mt-1">Cuma nyisihin 333 perak / hari!</p>
             </div>
 
             <div class="bg-brand-info/10 border border-brand-info/30 rounded-xl p-4 mb-6 relative overflow-hidden">
                 <div class="absolute -right-4 -bottom-4 opacity-10 text-6xl text-brand-info"><i class="fas fa-info-circle"></i></div>
-                <h4 class="text-[11px] font-bold text-brand-info mb-2 uppercase tracking-wider relative z-10"><i class="fas fa-star mr-1"></i> Benefit & Skema Biaya</h4>
+                <h4 class="text-[11px] font-bold text-brand-info mb-2 uppercase tracking-wider relative z-10"><i class="fas fa-star mr-1"></i> Skema Baru Paling Adil!</h4>
                 <ul class="text-[10px] text-gray-300 space-y-1.5 relative z-10 leading-relaxed">
                     <li><b class="text-white">Bebas Jualan:</b> Akses fitur Etalase Toko, Auto-Delivery, dan Manajemen Pesanan.</li>
-                    <li><b class="text-brand-success">Potongan Seller:</b> Pendapatan bersih hanya dipotong <b>5%</b> (Pajak Layanan).</li>
-                    <li><b class="text-red-400">Biaya Pembeli:</b> Dikenakan biaya Gateway QRIS flat <b>Rp 500 + 0,7%</b> per transaksi.</li>
+                    <li><b class="text-brand-success">Fee Seller Merakyat:</b> Potongan mulai dari Rp 1.000 saja per barang laku!</li>
+                    <li><b class="text-red-400">Pajak QRIS:</b> Ditanggung pembeli di awal secara otomatis. Saldo Anda utuh!</li>
                 </ul>
             </div>
 
             <div id="card-bulanan" onclick="pilihPaketSeller('bulanan')" class="group cursor-pointer bg-black/40 border border-white/10 hover:border-brand-info rounded-2xl p-4 mb-4 transition-all relative overflow-hidden active:scale-95 pt-6">
-
-                <div class="absolute right-0 top-0 bg-gradient-to-r from-red-500 to-red-600 text-white text-[9px] font-black px-3 py-1 rounded-bl-xl shadow-lg z-20 tracking-wider">HEMAT 20%</div>
-                
                 <div class="flex justify-between items-center relative z-10">
                     <div class="flex-1">
                         <div class="text-[10px] font-bold text-brand-info tracking-widest uppercase mb-1">Paket Bulanan</div>
-                        <div class="text-gray-500 line-through text-[11px] font-medium mb-0.5" id="coret-bulanan">Rp 50.000</div>
-                        <div class="text-2xl font-black text-white" id="harga-bulanan">Rp 40.000<span class="text-[10px] text-gray-500 font-normal"> /30 hari</span></div>
+                        <div class="text-2xl font-black text-white" id="harga-bulanan">Rp 10.000<span class="text-[10px] text-gray-500 font-normal"> /30 hari</span></div>
                     </div>
                     
                     <div class="flex flex-col items-end gap-2">
@@ -2155,14 +2176,13 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
             </div>
 
             <div id="card-tahunan" onclick="pilihPaketSeller('tahunan')" class="group cursor-pointer bg-gradient-to-br from-[#1A1133] to-[#2A0815] border border-brand-accent rounded-2xl p-4 mb-2 transition-all relative overflow-hidden active:scale-95 shadow-[0_0_15px_rgba(255,0,122,0.2)] pt-6">
-
-                <div class="absolute right-0 top-0 bg-gradient-to-r from-red-500 to-red-600 text-white text-[9px] font-black px-3 py-1 rounded-bl-xl shadow-lg z-20 tracking-wider">HEMAT Rp 200.000</div>
+                <div class="absolute right-0 top-0 bg-gradient-to-r from-red-500 to-red-600 text-white text-[9px] font-black px-3 py-1 rounded-bl-xl shadow-lg z-20 tracking-wider">GRATIS 2 BULAN</div>
                 
                 <div class="flex justify-between items-center relative z-10">
                     <div>
                         <div class="text-[10px] font-bold text-brand-accent tracking-widest uppercase mb-1 flex items-center gap-1"><i class="fas fa-fire"></i> Paket Tahunan</div>
-                        <div class="text-gray-500 line-through text-[11px] font-medium mb-0.5">Rp 600.000</div>
-                        <div class="text-2xl font-black text-white">Rp 400.000<span class="text-xs text-gray-500 font-normal"> /365 hari</span></div>
+                        <div class="text-gray-500 line-through text-[11px] font-medium mb-0.5">Rp 120.000</div>
+                        <div class="text-2xl font-black text-white">Rp 100.000<span class="text-xs text-gray-500 font-normal"> /365 hari</span></div>
                     </div>
                     <div id="radio-tahunan" class="w-6 h-6 rounded-full border-2 border-brand-accent flex items-center justify-center transition-colors">
                         <div class="w-3 h-3 rounded-full bg-brand-accent scale-100 transition-transform"></div>
@@ -2173,7 +2193,7 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
         
         <div class="p-4 border-t border-white/5 bg-brand-dark shrink-0">
             <button id="btn-bayar-langganan" onclick="lanjutkanBayarLangganan()" class="w-full bg-gradient-to-r from-[#FF5722] to-[#FF007A] text-white py-3.5 rounded-xl font-extrabold active:scale-95 transition-all uppercase tracking-wider text-sm shadow-[0_4px_15px_rgba(255,87,34,0.4)] flex flex-col items-center justify-center leading-tight">
-                <span>Berlangganan Rp 400.000</span>
+                <span>Berlangganan Rp 10.000</span>
             </button>
         </div>
     </div>
