@@ -10680,13 +10680,16 @@ Biaya Transfer: Rp 3.500
 Silakan cek mutasi rekening Anda.`
         });
 
-        // 4B. ---> KIRIM PENCATATAN KE RIWAYAT DOMPET SELLER <---
-        await supabaseClient.from('wallet_transactions').insert({
-            user_id: wdData.user_id,
-            amount: 0,
-            type: 'INCOME',
-            description: `✅ BERHASIL: Dana Cair Rp ${(Number(wdData.nominal) - 3500).toLocaleString('id-ID')} (Dipotong Admin 3.500)`
-        });
+        // 4B. ---> UPDATE STATUS PENDING DI RIWAYAT DOMPET SELLER <---
+        // Ubah teks riwayat lama dari PENDING menjadi BERHASIL
+        await supabaseClient.from('wallet_transactions')
+            .update({ 
+                description: `✅ BERHASIL: Dana Cair Rp ${(Number(wdData.nominal) - 3500).toLocaleString('id-ID')} (Potong Admin 3.500)` 
+            })
+            .eq('user_id', wdData.user_id)
+            .ilike('description', '%PENDING%') // Cari mutasi yang masih ada kata PENDING
+            .ilike('description', `%${wdData.rekening}%`); // Pastikan rekeningnya cocok dengan yang dicairkan
+
 
         // Efek visual hilang perlahan di laci admin
         if (card) {
