@@ -10681,14 +10681,33 @@ Silakan cek mutasi rekening Anda.`
         });
 
         // 4B. ---> UPDATE STATUS PENDING DI RIWAYAT DOMPET SELLER <---
-        // Ubah teks riwayat lama dari PENDING menjadi BERHASIL
-        await supabaseClient.from('wallet_transactions')
-            .update({ 
-                description: `✅ BERHASIL: Dana Cair Rp ${(Number(wdData.nominal) - 3500).toLocaleString('id-ID')} (Potong Admin 3.500)` 
-            })
+        // 1. Cari dulu ID spesifik mutasi PENDING milik seller tersebut
+        const { data: pendingTx } = await supabaseClient
+            .from('wallet_transactions')
+            .select('id')
             .eq('user_id', wdData.user_id)
-            .ilike('description', '%PENDING%') // Cari mutasi yang masih ada kata PENDING
-            .ilike('description', `%${wdData.rekening}%`); // Pastikan rekeningnya cocok dengan yang dicairkan
+            .eq('amount', wdData.nominal) // Cari nominal yang persis sama
+            .ilike('description', '%PENDING%') // Cari yang masih berstatus PENDING
+            .order('created_at', { ascending: false })
+            .limit(1);
+
+        if (pendingTx && pendingTx.length > 0) {
+            // 2. Jika ketemu, timpa tulisan PENDING tersebut menjadi BERHASIL
+            const { error: updateErr } = await supabaseClient
+                .from('wallet_transactions')
+                .update({ 
+                    description: `✅ BERHASIL: Dana Cair Rp ${(Number(wdData.nominal) - 3500).toLocaleString('id-ID')} (Potong Admin 3.500)` 
+                })
+                .eq('id', pendingTx[0].id);
+                
+            if (updateErr) {
+                console.error("Terblokir RLS Supabase:", updateErr);
+                showToast("Database menolak! Cek izin RLS Supabase Anda.", "error");
+            }
+        } else {
+            console.log("Mutasi PENDING tidak ditemukan, mungkin diblokir oleh RLS SELECT.");
+        }
+
 
 
         // Efek visual hilang perlahan di laci admin
