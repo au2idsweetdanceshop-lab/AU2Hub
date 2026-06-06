@@ -1,4 +1,47 @@
 // ==========================================
+// FUNGSI TOGGLE PILIHAN BIAYA ADMIN (SELLER / PEMBELI)
+// ==========================================
+function setFeeBearer(bearer, mode) {
+    const inputId = mode === 'jualan' ? 'jualan-fee-bearer' : 'edit-fee-bearer';
+    const btnSeller = mode === 'jualan' ? document.getElementById('btn-fee-seller') : document.getElementById('btn-edit-fee-seller');
+    const btnPembeli = mode === 'jualan' ? document.getElementById('btn-fee-pembeli') : document.getElementById('btn-edit-fee-pembeli');
+    const infoText = mode === 'jualan' ? document.getElementById('jualan-fee-info') : document.getElementById('edit-fee-info');
+
+    document.getElementById(inputId).value = bearer;
+
+    const activeClass = "flex-1 border border-[#EE4D2D] bg-[#EE4D2D]/10 text-[#EE4D2D] py-2 rounded-xl text-[11px] font-bold transition-all shadow-[0_0_10px_rgba(238,77,45,0.2)]";
+    const inactiveClass = "flex-1 border border-white/10 bg-black/40 text-gray-400 py-2 rounded-xl text-[11px] font-bold transition-all hover:bg-white/5";
+
+    if (bearer === 'seller') {
+        btnSeller.className = activeClass;
+        btnPembeli.className = inactiveClass;
+        infoText.innerHTML = `*Pendapatan Anda akan dipotong sesuai <span onclick="customAlert('Tabel Fee...')" class="underline cursor-pointer font-bold hover:text-brand-info text-white">Tabel Fee</span>. Pembeli melihat harga normal.`;
+    } else {
+        btnPembeli.className = activeClass;
+        btnSeller.className = inactiveClass;
+        infoText.innerHTML = `*Anda menerima pendapatan UTUH. Harga ke pembeli otomatis dinaikkan menyesuaikan <span onclick="customAlert('Tabel Fee...')" class="underline cursor-pointer font-bold hover:text-brand-info text-white">Tabel Fee</span>.`;
+    }
+}
+
+// Helper: Menghitung bersih pencairan jika buyer yang nanggung biaya
+function hitungPendapatanBersih(hargaGateway, ditanggungPembeli) {
+    const hargaBase = Math.round((hargaGateway - 500) / 1.007); // Hapus markup QRIS Xoftware
+    if (ditanggungPembeli) {
+        // Balikkan rumus tabel fee agar mendapatkan harga aslinya
+        if (hargaBase <= 26000) return hargaBase - 1000;
+        if (hargaBase <= 52000) return hargaBase - 2000;
+        if (hargaBase <= 102999) return hargaBase - 3000;
+        if (hargaBase <= 509999) return hargaBase - 10000;
+        if (hargaBase <= 1519999) return hargaBase - 20000;
+        if (hargaBase <= 2024999) return hargaBase - 25000;
+        return hargaBase - 35000;
+    } else {
+        return hargaBase - hitungPotonganSeller(hargaBase);
+    }
+}
+
+
+// ==========================================
 // RUMUS TABEL FEE SELLER MERAKYAT (AU2HUB)
 // ==========================================
 function hitungPotonganSeller(harga) {
@@ -8748,7 +8791,11 @@ function renderGridPasar(dataList) {
         const sellerName = item.profiles?.nickname || 'Anonim';
         
         // 🔥 LOGIKA BARU: Harga Markup Customer (+ 650 + 0.7%)
-        const hargaCustomer = Math.floor(item.price + (item.price * 0.007) + 500);
+        let baseHarga = item.price;
+        if (item.fee_ditanggung_pembeli) {
+            baseHarga += hitungPotonganSeller(item.price);
+        }
+        const hargaCustomer = Math.floor(baseHarga + (baseHarga * 0.007) + 500);
         const formatHarga = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(hargaCustomer);
 
         // 🔥 LOGIKA HARGA CORET MARKETING AUTOMATIC (Sama seperti Xoftware)
@@ -8782,7 +8829,6 @@ function renderGridPasar(dataList) {
                 <img src="${fotoPertama}" alt="${item.title}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 relative z-0" onerror="this.src='https://placehold.co/400x400/1a1133/2BD975?text=PASAR'">
                 <!-- Watermark AU2Hub Thumbnail -->
                 <img src="https://nos.wjv-1.neo.id/au2hub/Picsart_26-05-30_04-29-46-305.webp" class="absolute inset-0 m-auto w-20 h-20 object-contain opacity-[0.25] pointer-events-none z-10 drop-shadow-lg group-hover:scale-105 transition-transform duration-300" onerror="this.style.display='none'">
- class="absolute inset-0 m-auto w-20 h-20 object-contain opacity-[0.25] pointer-events-none z-10 drop-shadow-lg group-hover:scale-105 transition-transform duration-300">
                 ${badgeStok}
             </div>
             <div class="p-3 flex-1 flex flex-col justify-between gap-1">
@@ -8903,6 +8949,7 @@ const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent(pathLe
 
         uploadedUrls = await Promise.all(uploadPromises);
         const finalImageUrl = uploadedUrls.join(',');
+        const isFeePembeli = document.getElementById('jualan-fee-bearer').value === 'pembeli';
 
         // [BARU] Masukkan stock_list ke dalam payload Supabase
         const { error } = await supabaseClient.from('player_products').insert({
@@ -8912,7 +8959,8 @@ const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent(pathLe
             category: kategori, 
             description: deskripsi, 
             image_url: finalImageUrl,
-            stock_list: (kategori === 'Akun' || kategori === 'Item' || kategori === 'APK Premium') ? stockList : null
+            stock_list: (kategori === 'Akun' || kategori === 'Item' || kategori === 'APK Premium') ? stockList : null,
+            fee_ditanggung_pembeli: isFeePembeli
         });
 
         if (error) throw error;
@@ -9058,7 +9106,11 @@ function bukaDetailPasar(idProduk) {
     }
 
     // Harga Markup Customer (+ 650 + 0.7%)
-    const hargaCustomer = Math.floor(produk.price + (produk.price * 0.007) + 500);
+    let baseHarga = produk.price;
+    if (produk.fee_ditanggung_pembeli) {
+        baseHarga += hitungPotonganSeller(produk.price);
+    }
+    const hargaCustomer = Math.floor(baseHarga + (baseHarga * 0.007) + 500);
     currentPasarPrice = hargaCustomer;
 
     // LOGIKA VARIASI
@@ -9544,17 +9596,16 @@ async function updateUiSaldoSeller() {
         // Tarik Saldo Tertahan (Pesanan selesai yang dana_cair = false)
         const { data: pendingFunds } = await supabaseClient
             .from('orders_player')
-            .select('price')
+            .select('price, player_products(fee_ditanggung_pembeli)')
             .eq('seller_id', currentUser.id)
             .eq('status', 'selesai')
             .eq('dana_cair', false);
         
         let totalTertahan = 0;
         if(pendingFunds && pendingFunds.length > 0) {
-            pendingFunds.forEach(p => {
-                const hargaBase = Math.round((order.price - 500) / 1.007);
-const pendapatanBersih = hargaBase - hitungPotonganSeller(hargaBase);
-                totalTertahan += bersih;
+                        pendingFunds.forEach(order => {
+                const isPembeli = order.player_products?.fee_ditanggung_pembeli || false;
+                totalTertahan += hitungPendapatanBersih(order.price, isPembeli);
             });
         }
         document.getElementById('toko-saldo-tertahan').innerText = 'Rp ' + totalTertahan.toLocaleString('id-ID');
@@ -9569,7 +9620,7 @@ async function cekPencairanDanaH1() {
         // Cari semua order milik Seller ini yang statusnya 'selesai' TAPI 'dana_cair' masih false
         const { data: ordersToClear } = await supabaseClient
             .from('orders_player')
-            .select('id, price, product_name, waktu_selesai')
+            .select('id, price, product_name, waktu_selesai, player_products(fee_ditanggung_pembeli)')
             .eq('seller_id', currentUser.id)
             .eq('status', 'selesai')
             .eq('dana_cair', false);
@@ -9591,8 +9642,8 @@ async function cekPencairanDanaH1() {
 
             // JIKA UMURNYA SUDAH LEBIH DARI 24 JAM (H+1)
             if (selisihJam >= 24) {
-                const hargaBase = Math.round((order.price - 650) / 1.007);
-                const pendapatanBersih = hargaBase - Math.floor(hargaBase * 0.05);
+                const isPembeli = order.player_products?.fee_ditanggung_pembeli || false;
+            const pendapatanBersih = hitungPendapatanBersih(order.price, isPembeli);
 
                 // 1. Tembak RPC Cairkan Saldo
                 await supabaseClient.rpc('proses_pencairan_otomatis', {
@@ -9739,8 +9790,15 @@ async function loadProdukSaya() {
         if (data && data.length > 0) {
             container.innerHTML = data.map(item => {
                 const hargaAsli = Number(item.price);
-const pajakAdmin = hitungPotonganSeller(hargaAsli);
-const pendapatanBersih = hargaAsli - pajakAdmin;
+                let pendapatanBersih = 0;
+                let hargaTampilEtalase = hargaAsli;
+
+                if (item.fee_ditanggung_pembeli) {
+                    pendapatanBersih = hargaAsli; // Uang diterima utuh!
+                    hargaTampilEtalase = hargaAsli + hitungPotonganSeller(hargaAsli); // Harga diubah buat pembeli
+                } else {
+                    pendapatanBersih = hargaAsli - hitungPotonganSeller(hargaAsli);
+                }
                 const foto = (item.image_url || '').split(',')[0];
                 
                 // Hitung Stok jika produknya adalah barang otomatis
@@ -9759,7 +9817,7 @@ const pendapatanBersih = hargaAsli - pajakAdmin;
                         <div class="flex-1 min-w-0">
                             <h4 class="text-sm font-bold text-white line-clamp-1 mb-1">${item.title}</h4>
                             <div class="flex flex-col gap-0.5">
-                                <span class="text-[10px] text-gray-500 font-medium">Harga Jual: Rp ${hargaAsli.toLocaleString('id-ID')}</span>
+                                <span class="text-[10px] text-gray-500 font-medium">Harga Jual: Rp ${hargaTampilEtalase.toLocaleString('id-ID')}</span>
                                 <span class="text-[11px] text-[#EE4D2D] font-bold tracking-tight">Pendapatan: Rp ${pendapatanBersih.toLocaleString('id-ID')}</span>
                             </div>
                         </div>
@@ -10082,6 +10140,8 @@ async function bukaModalEditProduk(idProduk) {
         document.getElementById('edit-produk-harga').value = data.price;
         document.getElementById('edit-produk-kategori').value = data.category;
         document.getElementById('edit-produk-deskripsi').value = data.description;
+        const isPembeli = data.fee_ditanggung_pembeli === true;
+        setFeeBearer(isPembeli ? 'pembeli' : 'seller', 'edit');
         
         // 🔥 SINKRONISASI VISUAL KATEGORI BARU
         document.getElementById('edit-produk-stock').value = data.stock_list || '';
@@ -10255,6 +10315,7 @@ async function prosesEditProduk() {
 
         const finalImageArray = [...existingImagesEdit, ...uploadedUrls];
         const finalImageUrl = finalImageArray.join(',');
+        const isFeePembeli = document.getElementById('edit-fee-bearer').value === 'pembeli';
 
         // [BARU] Update kolom stock_list ke Supabase
         const { data: updatedData, error } = await supabaseClient.from('player_products')
@@ -10265,6 +10326,7 @@ async function prosesEditProduk() {
                 description: deskripsi, 
                 image_url: finalImageUrl,
                 stock_list: (kategori === 'Akun' || kategori === 'Item' || kategori === 'APK Premium') ? stockList : null,
+                fee_ditanggung_pembeli: isFeePembeli,
                 user_id: currentUser.id 
             })
             .eq('id', idProduk)
@@ -10447,7 +10509,6 @@ async function loadAdminDashboard() {
         </div>`;
 
     try {
-        // ASUMSI: Mas sudah membuat tabel 'withdrawals' di Supabase
         const { data, error } = await supabaseClient
             .from('withdrawals')
             .select('*, profiles:user_id(nickname)')
@@ -10455,23 +10516,12 @@ async function loadAdminDashboard() {
             .order('created_at', { ascending: true });
 
         if (error) throw error;
-
-        // Update angka antrean merah
         document.getElementById('admin-count-pending').innerText = data.length;
 
         if (data.length > 0) {
             listContainer.innerHTML = data.map(req => {
-                // Deteksi otomatis Nama Bank dan No Rekening (Format: "DANA - 08123")
+                // LOGIKA PEMISAH BANK YANG BENAR (Hanya satu kali)
                 let namaBank = "BANK";
-                let noRek = req.rekening;
-                if (req.rekening.includes('-')) {
-                    const parts = req.rekening.split('-');
-                    namaBank = parts[0].trim();
-                    noRek = parts[1].trim();
-                }
-
-                return `
-                                let namaBank = "BANK";
                 let noRek = req.rekening;
                 if (req.rekening.includes('-')) {
                     const parts = req.rekening.split('-');
@@ -10483,54 +10533,10 @@ async function loadAdminDashboard() {
                 if (nominalBersih < 0) nominalBersih = 0;
 
                 return `
-
                 <div class="bg-[#161B2E] border border-white/5 p-4 rounded-[1.5rem] flex flex-col gap-3 shadow-lg relative overflow-hidden transition-all" id="wd-${req.id}">
                     <div class="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-brand-accent to-brand-info"></div>
-
-                    <div class="flex justify-between items-start mb-1">
-                        <div class="flex items-center gap-2">
-                            <div class="w-7 h-7 rounded-full bg-brand-info/20 text-brand-info flex items-center justify-center shrink-0">
-                                <i class="fas fa-store text-[10px]"></i>
-                            </div>
-                            <div>
-                                <h4 class="text-xs font-bold text-white">@${req.profiles?.nickname || 'Seller'}</h4>
-                                <p class="text-[9px] text-gray-500"><i class="far fa-clock"></i> ${timeAgo(req.created_at)}</p>
-                            </div>
-                        </div>
-                        <span class="bg-yellow-500/10 text-yellow-500 border border-yellow-500/30 text-[8px] font-black px-2 py-1 rounded-md uppercase tracking-wider animate-pulse">Menunggu Transfer</span>
-                    </div>
-                    
-                    <div class="bg-black/40 p-3 rounded-xl border border-white/5 relative group">
-                        
-                        <div class="flex justify-between items-center mb-1">
-                            <span class="text-[9px] font-bold text-gray-500 uppercase tracking-widest">${namaBank}</span>
-                            <span class="text-[10px] text-brand-info font-bold flex items-center gap-1 cursor-pointer active:scale-95 transition-all bg-brand-info/10 px-2 py-0.5 rounded" onclick="salinTeksAdmin('${noRek}', this, 'info')">
-                                Salin Rek <i class="fas fa-copy"></i>
-                            </span>
-                        </div>
-                        <p class="text-sm font-bold text-white tracking-widest font-mono mb-2">${noRek}</p>
-                        
-                        <div class="border-t border-white/10 pt-2 mt-1 flex justify-between items-center">
-                            <span class="text-[9px] text-gray-400">Total Cair</span>
-                            <div class="flex items-center gap-2">
-                                <p class="text-sm font-black text-[#25D366] tracking-tight">Rp ${nominalBersih.toLocaleString('id-ID')}</p>
-                                <button onclick="salinTeksAdmin('${nominalBersih}', this, 'success')" class="bg-brand-success/20 text-brand-success w-7 h-7 rounded-lg flex items-center justify-center active:scale-95 transition-all" title="Salin Nominal Bersih">
-                                    <i class="fas fa-copy text-[11px]"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="flex gap-2 mt-1">
-                        <button onclick="setujuiPenarikan('${req.id}', '${req.profiles?.nickname}')" class="flex-1 bg-brand-success text-brand-dark font-extrabold py-3 rounded-xl text-[10px] uppercase active:scale-95 transition-transform shadow-[0_4px_10px_rgba(37,211,102,0.3)]">
-                            <i class="fas fa-check-circle mr-1"></i> Setujui (Telah Ditransfer)
-                        </button>
-                        <button onclick="tolakPenarikan('${req.id}', '${req.user_id}', ${req.nominal})" class="w-12 bg-white/5 text-gray-400 hover:bg-red-500/20 hover:text-red-500 hover:border-red-500/50 border border-white/5 flex items-center justify-center rounded-xl active:scale-95 transition-all" title="Tolak / Refund">
-                            <i class="fas fa-times"></i>
-                        </button>
-                    </div>
-                </div>
-                `;
+                    ...
+                </div>`;
             }).join('');
         } else {
             listContainer.innerHTML = `
