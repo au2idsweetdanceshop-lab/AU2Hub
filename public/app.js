@@ -8159,8 +8159,13 @@ async function checkoutXoftwarePay(namaProduk, harga, deskripsi, sellerId = null
         setTimeout(() => clearInterval(intervalJemputBola), 600000);
 
     } catch (error) {
-        showToast("Gangguan Server/Koneksi Pembayaran.", "error");
-        history.back(); // Auto tutup layar bayar jika error
+        console.error("Detail Error QRIS:", error); // <--- Biar ketahuan error aslinya di F12
+        showToast("Error: " + (error.message || "Gangguan Server/Koneksi Pembayaran"), "error");
+        
+        // Jeda 3 detik agar pesan error sempat terbaca sebelum layar QRIS ditutup otomatis
+        setTimeout(() => {
+            history.back();
+        }, 3000); 
     }
 }
 
@@ -9255,13 +9260,10 @@ async function checkoutPasar(namaFinal, totalHarga, id) {
         const { data: produkAsli, error } = await supabaseClient.from('player_products').select('user_id').eq('id', id).single();
         if (error || !produkAsli) throw new Error("Barang tidak ditemukan di server.");
         
-        tutupDetailPasar(); 
+        tutupDetailPasar(true); // <--- Tambah kata true
         
-        // 🔥 PERBAIKAN: Beri jeda 300ms agar history.back() dari penutupan laci selesai dulu.
-        // Mencegah pop-up konfirmasi pembayaran terbunuh secara instan oleh sistem HP.
-        setTimeout(() => {
-            checkoutXoftwarePay("[PASAR] " + namaFinal, totalHarga, "Pembelian item dari Pasar Player.", produkAsli.user_id, id);
-        }, 300);
+        // Langsung panggil tanpa setTimeout karena history.back() sudah kita cegah
+        checkoutXoftwarePay("[PASAR] " + namaFinal, totalHarga, "Pembelian item dari Pasar Player.", produkAsli.user_id, id);
         
     } catch (err) {
         showToast("Gagal memverifikasi keamanan: " + err.message, "error");
@@ -9402,7 +9404,7 @@ function pilihPaketSeller(tipe) {
 }
 
 async function lanjutkanBayarLangganan() {
-    tutupModalLangganan();
+    tutupModalLangganan(true); // <--- Tambahkan kata true di sini
     
     let namaPaket = '';
     let hargaAwal = 0;
