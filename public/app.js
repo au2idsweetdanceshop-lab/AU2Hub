@@ -1238,7 +1238,7 @@ function closeAuthModal() {
 
         // Ganti history.back() dengan replaceState untuk menghindari PWA terjebak di loop hash
         if (window.location.hash === '#auth') {
-            history.replaceState(null, null, '#home');
+            history.replaceState(null, null, '#' + tabSebelumnya); // <--- Kembalikan ke tempat asalnya
         }
     }, 300);
 }
@@ -7028,6 +7028,10 @@ document.addEventListener('DOMContentLoaded', () => {
   let tabAwal = window.location.hash.substring(1);
   if (!tabAwal) {
     tabAwal = localStorage.getItem('lastTab') || 'home';
+    
+    // 🔥 [PERBAIKAN ANTI-PENTAL]: Tuliskan tab ke URL secara diam-diam saat pertama kali buka
+    // Agar saat laci ditutup dan memicu history.back(), browser tahu harus pulang ke tab mana
+    history.replaceState(null, null, '#' + tabAwal); 
   }
 
   // --- LOGIKA BARU: Pisahkan parameter dan atur tab background yang benar ---
@@ -9276,8 +9280,12 @@ async function checkoutPasar(namaFinal, totalHarga, id) {
 
 
 // ==========================================
-// LOGIKA PEMBAYARAN VIP SELLER (DIPERBARUI DENGAN QTY & BIAYA ADMIN)
+// LOGIKA PEMBAYARAN VIP SELLER (BASED ON 333/HARI)
 // ==========================================
+const HARGA_PER_HARI = 333;
+const HARGA_CORET_PER_HARI = 1000; // Asumsi harga coret (normal) adalah Rp 1.000/hari
+
+let qtyVipHari = 1;
 let qtyVipBulan = 1;
 let paketSellerTerpilih = 'tahunan';
 
@@ -9285,8 +9293,6 @@ function bukaModalLangganan() {
     history.pushState({ popup: 'langganan' }, null, '#langganan');
     const modal = document.getElementById('modal-langganan-seller');
     modal.classList.replace('hidden', 'flex');
-    
-    // Efek transisi halus masuk
     modal.style.opacity = '0';
     modal.style.transition = 'opacity 0.3s ease';
     setTimeout(() => modal.style.opacity = '1', 10);
@@ -9294,113 +9300,111 @@ function bukaModalLangganan() {
 
 function tutupModalLangganan(dariTombolBack = false) {
     const modal = document.getElementById('modal-langganan-seller');
-    
-    // Efek memudar saat ditutup
     modal.style.opacity = '0';
-    
-    // Sinkronisasi dengan tombol Back HP
     if (!dariTombolBack && window.location.hash === '#langganan') {
         history.back();
     }
-
     setTimeout(() => {
         modal.classList.replace('flex', 'hidden');
-        modal.style.opacity = '1'; // Reset untuk dibuka lagi nanti
+        modal.style.opacity = '1';
     }, 300);
 }
 
-
-
-// Fungsi untuk menambah/mengurangi bulan
-function ubahQtyVIP(delta) {
-    qtyVipBulan = Math.max(1, qtyVipBulan + delta);
-    document.getElementById('qty-vip-bulan').value = qtyVipBulan;
-    
-    // Kalkulasi Harga Tampil
-    const hargaAsli = 40000 * qtyVipBulan;
-    const hargaCoret = 50000 * qtyVipBulan;
-    
-    // Update Text di Layar
-    document.getElementById('harga-bulanan').innerHTML = `Rp ${hargaAsli.toLocaleString('id-ID')}<span class="text-[10px] text-gray-500 font-normal"> /${qtyVipBulan * 30} hari</span>`;
-    document.getElementById('coret-bulanan').innerText = `Rp ${hargaCoret.toLocaleString('id-ID')}`;
-    
-    // Paksa auto-select ke paket bulanan setiap kali dipencet plus/minus
-    pilihPaketSeller('bulanan');
+function ubahQtyVIP(tipe, delta) {
+    if (tipe === 'harian') {
+        qtyVipHari = Math.max(1, qtyVipHari + delta);
+        document.getElementById('qty-vip-hari').value = qtyVipHari;
+    } else {
+        qtyVipBulan = Math.max(1, qtyVipBulan + delta);
+        document.getElementById('qty-vip-bulan').value = qtyVipBulan;
+    }
+    updateUIPaket(tipe);
 }
 
-// Fungsi saat user mengetik angka langsung
-function inputQtyVIP(val) {
+function inputQtyVIP(tipe, val) {
     let parsed = parseInt(val);
-    // Jika dikosongkan/dihapus, sementara anggap 1 agar harga tidak error/NaN
-    qtyVipBulan = (isNaN(parsed) || parsed < 1) ? 1 : parsed; 
-    
-    // Kalkulasi Harga Tampil
-    const hargaAsli = 40000 * qtyVipBulan;
-    const hargaCoret = 50000 * qtyVipBulan;
-    
-    // Update Text di Layar
-    document.getElementById('harga-bulanan').innerHTML = `Rp ${hargaAsli.toLocaleString('id-ID')}<span class="text-[10px] text-gray-500 font-normal"> /${qtyVipBulan * 30} hari</span>`;
-    document.getElementById('coret-bulanan').innerText = `Rp ${hargaCoret.toLocaleString('id-ID')}`;
-    
-    // Paksa pindah fokus ke paket bulanan
-    pilihPaketSeller('bulanan');
+    if (tipe === 'harian') {
+        qtyVipHari = (isNaN(parsed) || parsed < 1) ? 1 : parsed; 
+    } else {
+        qtyVipBulan = (isNaN(parsed) || parsed < 1) ? 1 : parsed; 
+    }
+    updateUIPaket(tipe);
 }
 
-// Fungsi saat user selesai ngetik (klik di luar kotak)
-function validasiQtyVIP(el) {
+function validasiQtyVIP(tipe, el) {
     let parsed = parseInt(el.value);
-    // Kalau user sengaja ngosongin kotak lalu ditinggal, paksa balik ke angka 1
     if (isNaN(parsed) || parsed < 1) { 
         parsed = 1; 
         el.value = 1; 
     } else {
-        el.value = parsed; // Menghilangkan angka nol di depan (misal "05" jadi "5")
+        el.value = parsed;
     }
-    qtyVipBulan = parsed;
-    inputQtyVIP(parsed);
+    if (tipe === 'harian') qtyVipHari = parsed;
+    else qtyVipBulan = parsed;
+    updateUIPaket(tipe);
 }
 
+function updateUIPaket(tipe) {
+    if (tipe === 'harian') {
+        const hargaAsli = HARGA_PER_HARI * qtyVipHari;
+        const hargaCoret = HARGA_CORET_PER_HARI * qtyVipHari;
+        
+        document.getElementById('harga-harian').innerHTML = `Rp ${hargaAsli.toLocaleString('id-ID')}<span class="text-[10px] text-gray-500 font-normal"> /${qtyVipHari} hari</span>`;
+        document.getElementById('coret-harian').innerText = `Rp ${hargaCoret.toLocaleString('id-ID')}`;
+    } else if (tipe === 'bulanan') {
+        const totalHari = qtyVipBulan * 30;
+        const hargaAsli = HARGA_PER_HARI * totalHari;
+        const hargaCoret = HARGA_CORET_PER_HARI * totalHari;
+        
+        document.getElementById('harga-bulanan').innerHTML = `Rp ${hargaAsli.toLocaleString('id-ID')}<span class="text-[10px] text-gray-500 font-normal"> /${totalHari} hari</span>`;
+        document.getElementById('coret-bulanan').innerText = `Rp ${hargaCoret.toLocaleString('id-ID')}`;
+    }
+    pilihPaketSeller(tipe);
+}
 
 function pilihPaketSeller(tipe) {
     paketSellerTerpilih = tipe;
-    
     let hargaAwal = 0;
-    if (tipe === 'bulanan') {
-        hargaAwal = 40000 * qtyVipBulan;
+    
+    if (tipe === 'harian') {
+        hargaAwal = HARGA_PER_HARI * qtyVipHari;
+    } else if (tipe === 'bulanan') {
+        hargaAwal = HARGA_PER_HARI * 30 * qtyVipBulan;
     } else {
-        hargaAwal = 400000;
+        hargaAwal = HARGA_PER_HARI * 365; // Rp 121.545
     }
     
-    // LOGIKA PENAMBAHAN BIAYA ADMIN (Flat 500 + 0,7%)
+    // Fee Gateway (Flat 500 + 0,7%)
     const biayaGateway = 500 + Math.floor(hargaAwal * 0.007);
     const hargaFinal = hargaAwal + biayaGateway;
     
-    // Update Teks Tombol (Menampilkan total termasuk fee gateway)
     document.getElementById('btn-bayar-langganan').innerHTML = `
         <span>Berlangganan Rp ${hargaFinal.toLocaleString('id-ID')}</span>
         <span class="text-[9px] font-normal text-white/80 normal-case mt-0.5">(Termasuk Admin QRIS: Rp ${biayaGateway.toLocaleString('id-ID')})</span>
     `;
     
-    // Update Animasi Kotak (Aktif/Tidak Aktif)
-    const radioBulanan = document.getElementById('radio-bulanan').querySelector('div');
-    const radioTahunan = document.getElementById('radio-tahunan').querySelector('div');
-    const cardBulanan = document.getElementById('card-bulanan');
-    const cardTahunan = document.getElementById('card-tahunan');
+    // Reset Kartu
+    ['harian', 'bulanan', 'tahunan'].forEach(t => {
+        document.getElementById(`radio-${t}`).querySelector('div').classList.replace('scale-100', 'scale-0');
+        const card = document.getElementById(`card-${t}`);
+        card.classList.add('border-white/10');
+        card.classList.remove('border-brand-success', 'border-brand-info', 'border-brand-accent', 
+                              'shadow-[0_0_15px_rgba(37,211,102,0.2)]', 
+                              'shadow-[0_0_15px_rgba(70,179,255,0.2)]', 
+                              'shadow-[0_0_15px_rgba(255,0,122,0.2)]');
+    });
 
-    if (tipe === 'bulanan') {
-        radioBulanan.classList.replace('scale-0', 'scale-100');
-        radioTahunan.classList.replace('scale-100', 'scale-0');
-        cardBulanan.classList.add('border-brand-info', 'shadow-[0_0_15px_rgba(70,179,255,0.2)]');
-        cardBulanan.classList.remove('border-white/10');
-        cardTahunan.classList.remove('border-brand-accent', 'shadow-[0_0_15px_rgba(255,0,122,0.2)]');
-        cardTahunan.classList.add('border-white/10');
+    // Aktifkan Kartu
+    document.getElementById(`radio-${tipe}`).querySelector('div').classList.replace('scale-0', 'scale-100');
+    const activeCard = document.getElementById(`card-${tipe}`);
+    activeCard.classList.remove('border-white/10');
+
+    if (tipe === 'harian') {
+        activeCard.classList.add('border-brand-success', 'shadow-[0_0_15px_rgba(37,211,102,0.2)]');
+    } else if (tipe === 'bulanan') {
+        activeCard.classList.add('border-brand-info', 'shadow-[0_0_15px_rgba(70,179,255,0.2)]');
     } else {
-        radioTahunan.classList.replace('scale-0', 'scale-100');
-        radioBulanan.classList.replace('scale-100', 'scale-0');
-        cardTahunan.classList.add('border-brand-accent', 'shadow-[0_0_15px_rgba(255,0,122,0.2)]');
-        cardTahunan.classList.remove('border-white/10');
-        cardBulanan.classList.remove('border-brand-info', 'shadow-[0_0_15px_rgba(70,179,255,0.2)]');
-        cardBulanan.classList.add('border-white/10');
+        activeCard.classList.add('border-brand-accent', 'shadow-[0_0_15px_rgba(255,0,122,0.2)]');
     }
 }
 
@@ -9410,20 +9414,20 @@ async function lanjutkanBayarLangganan() {
     let namaPaket = '';
     let hargaAwal = 0;
     
-    // Setup nama dan harga dasar tergantung paket yang dipilih
-    if (paketSellerTerpilih === 'tahunan') {
-        namaPaket = '[VIP] Langganan Seller 1 Tahun';
-        hargaAwal = 400000;
-    } else {
+    if (paketSellerTerpilih === 'harian') {
+        namaPaket = `[VIP] Langganan Seller ${qtyVipHari} Hari`;
+        hargaAwal = HARGA_PER_HARI * qtyVipHari;
+    } else if (paketSellerTerpilih === 'bulanan') {
         namaPaket = `[VIP] Langganan Seller ${qtyVipBulan} Bulan`;
-        hargaAwal = 40000 * qtyVipBulan;
+        hargaAwal = HARGA_PER_HARI * 30 * qtyVipBulan;
+    } else {
+        namaPaket = '[VIP] Langganan Seller 1 Tahun';
+        hargaAwal = HARGA_PER_HARI * 365;
     }
     
-    // Terapkan Biaya Gateway ke Total Checkout (500 + 0,7%)
     const biayaGateway = 500 + Math.floor(hargaAwal * 0.007);
     const hargaFinal = hargaAwal + biayaGateway;
     
-    // Tembak API XoftwarePay menggunakan harga akhir
     checkoutXoftwarePay(namaPaket, hargaFinal, "Aktivasi VIP Seller AU2Hub", null, null);
 }
 
