@@ -10532,21 +10532,49 @@ async function loadAdminDashboard() {
                 let nominalBersih = Number(req.nominal) - 3500;
                 if (nominalBersih < 0) nominalBersih = 0;
 
-                return `
-                <div class="bg-[#161B2E] border border-white/5 p-4 rounded-[1.5rem] flex flex-col gap-3 shadow-lg relative overflow-hidden transition-all" id="wd-${req.id}">
-                    <div class="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-brand-accent to-brand-info"></div>
-                    ...
-                </div>`;
-            }).join('');
-        } else {
-            listContainer.innerHTML = `
-                <div class="flex flex-col items-center justify-center py-10 px-6 text-center bg-white/5 rounded-[1.5rem] border border-white/5">
-                    <div class="w-14 h-14 bg-brand-success/10 rounded-full flex items-center justify-center mb-3 border border-brand-success/20">
-                        <i class="fas fa-check text-2xl text-brand-success/50"></i>
-                    </div>
-                    <h4 class="text-white font-bold text-xs mb-1 tracking-tight">Semua Clear!</h4>
-                    <p class="text-[10px] text-gray-500 leading-relaxed">Tidak ada antrean pencairan dana.</p>
-                </div>`;
+return `
+<div class="bg-[#161B2E] border border-white/5 p-4 rounded-[1.5rem] flex flex-col gap-3 shadow-lg relative overflow-hidden transition-all" id="wd-${req.id}">
+    <div class="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-brand-accent to-brand-info"></div>
+    
+    <div class="flex justify-between items-start pl-2">
+        <div>
+            <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-0.5">Penjual</p>
+            <h4 class="text-sm font-extrabold text-white">@${req.profiles?.nickname || 'Player'}</h4>
+        </div>
+        <div class="text-right">
+            <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-0.5">Potong Saldo</p>
+            <h4 class="text-sm font-black text-red-400">-Rp ${Number(req.nominal).toLocaleString('id-ID')}</h4>
+        </div>
+    </div>
+
+    <div class="bg-black/40 border border-white/5 rounded-xl p-3 flex flex-col gap-2 relative">
+        <div class="flex justify-between items-center">
+            <span class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Penerima</span>
+            <span class="text-xs font-extrabold text-brand-info">${namaBank}</span>
+        </div>
+        <div class="flex justify-between items-center">
+            <span class="text-lg font-mono font-bold text-white tracking-widest">${noRek}</span>
+            <button onclick="salinTeksAdmin('${noRek}', this, 'info')" class="w-8 h-8 rounded-lg bg-brand-info/10 text-brand-info flex items-center justify-center hover:bg-brand-info hover:text-white transition-all active:scale-95 shrink-0" title="Salin Rekening">
+                <i class="fas fa-copy text-xs"></i>
+            </button>
+        </div>
+    </div>
+
+    <div class="flex items-center justify-between pl-2 pr-1 mt-1">
+        <div>
+            <p class="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-0.5">Transfer Bersih</p>
+            <h4 class="text-base font-black text-brand-success flex items-center gap-2">
+                Rp ${nominalBersih.toLocaleString('id-ID')}
+                <button onclick="salinTeksAdmin('${nominalBersih}', this, 'success')" class="text-[9px] bg-brand-success/10 border border-brand-success/20 text-brand-success px-2 py-1 rounded-md active:scale-90 transition-all font-bold">Salin Nominal</button>
+            </h4>
+        </div>
+    </div>
+
+    <div class="flex gap-2 mt-2">
+        <button onclick="tolakPenarikan('${req.id}', '${req.user_id}', ${req.nominal})" class="flex-1 bg-transparent border border-red-500/50 hover:bg-red-500/10 text-red-500 py-3 rounded-xl font-bold active:scale-95 transition-all text-xs">Tolak</button>
+        <button onclick="setujuiPenarikan('${req.id}', '${req.profiles?.nickname || 'Player'}')" class="flex-1 bg-brand-success hover:bg-[#20bd5a] text-brand-dark py-3 rounded-xl font-extrabold active:scale-95 transition-all text-xs uppercase tracking-wider shadow-[0_4px_15px_rgba(37,211,102,0.3)]"><i class="fas fa-check-double mr-1"></i> Selesai Transfer</button>
+    </div>
+</div>`;
         }
 
         // Ambil angka total Seller di ekosistem
