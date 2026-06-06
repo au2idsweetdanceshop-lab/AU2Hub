@@ -8013,13 +8013,6 @@ async function checkoutXoftwarePay(namaProduk, harga, deskripsi, sellerId = null
         const { data: orderData, error: orderError } = await supabaseClient.from(targetTabel).insert(dataInsert).select().single();
         if (orderError) throw orderError;
         
-        if (sellerId) {
-            const namaAsli = namaProduk.replace("[PASAR] ", "");
-            const produkTerjual = globalDataPasar.find(p => p.title === namaAsli && p.user_id === sellerId);
-            if (produkTerjual && (produkTerjual.category === 'Akun' || produkTerjual.category === 'Item' || produkTerjual.category === 'APK Premium')) {
-                await supabaseClient.from('player_products').delete().eq('id', produkTerjual.id);
-            }
-        }
 
         // 2. Minta QRIS Xoftware
         const responsePG = await fetch('/api/create-qris', { 
