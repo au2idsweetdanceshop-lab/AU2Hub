@@ -1,3 +1,18 @@
+// ==========================================
+// RUMUS TABEL FEE SELLER MERAKYAT (AU2HUB)
+// ==========================================
+function hitungPotonganSeller(harga) {
+    if (harga <= 25000) return 1000;
+    if (harga <= 50000) return 2000;
+    if (harga <= 99999) return 3000;
+    if (harga <= 499999) return 10000;
+    if (harga <= 1000000) return 20000;
+    if (harga <= 1499999) return 20000;
+    if (harga <= 1999999) return 25000;
+    return 35000; // Harga 2 juta ke atas
+}
+
+
     // Script mandiri agar splash screen 100% dijamin hilang walau script utama error
     function removeSplashScreen() {
         const splashScreen = document.getElementById('custom-splash');
@@ -8733,7 +8748,7 @@ function renderGridPasar(dataList) {
         const sellerName = item.profiles?.nickname || 'Anonim';
         
         // 🔥 LOGIKA BARU: Harga Markup Customer (+ 650 + 0.7%)
-        const hargaCustomer = Math.floor(item.price + 650 + (item.price * 0.007));
+        const hargaCustomer = Math.floor(item.price + (item.price * 0.007) + 500);
         const formatHarga = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(hargaCustomer);
 
         // 🔥 LOGIKA HARGA CORET MARKETING AUTOMATIC (Sama seperti Xoftware)
@@ -9043,7 +9058,7 @@ function bukaDetailPasar(idProduk) {
     }
 
     // Harga Markup Customer (+ 650 + 0.7%)
-    const hargaCustomer = Math.floor(produk.price + 650 + (produk.price * 0.007));
+    const hargaCustomer = Math.floor(produk.price + (produk.price * 0.007) + 500);
     currentPasarPrice = hargaCustomer;
 
     // LOGIKA VARIASI
@@ -9054,7 +9069,7 @@ function bukaDetailPasar(idProduk) {
         rawVariasi.forEach(v => {
             if (typeof v === 'object' && v !== null) {
                 let hargaVarAsli = parseFloat(v.harga || v.price || 0);
-                let hargaVarMarkup = Math.floor(hargaVarAsli + 650 + (hargaVarAsli * 0.007));
+                let hargaVarMarkup = Math.floor(hargaVarAsli + (hargaVarAsli * 0.007) + 500);
                 arrVariasi.push({ name: v.nama_variasi || v.name, price: hargaVarMarkup });
             }
         });
@@ -9537,8 +9552,8 @@ async function updateUiSaldoSeller() {
         let totalTertahan = 0;
         if(pendingFunds && pendingFunds.length > 0) {
             pendingFunds.forEach(p => {
-                const hargaBase = Math.round((p.price - 650) / 1.007);
-                const bersih = hargaBase - Math.floor(hargaBase * 0.05);
+                const hargaBase = Math.round((order.price - 500) / 1.007);
+const pendapatanBersih = hargaBase - hitungPotonganSeller(hargaBase);
                 totalTertahan += bersih;
             });
         }
@@ -9724,8 +9739,8 @@ async function loadProdukSaya() {
         if (data && data.length > 0) {
             container.innerHTML = data.map(item => {
                 const hargaAsli = Number(item.price);
-                const pajakAdmin = Math.floor(hargaAsli * 0.05);
-                const pendapatanBersih = hargaAsli - pajakAdmin;
+const pajakAdmin = hitungPotonganSeller(hargaAsli);
+const pendapatanBersih = hargaAsli - pajakAdmin;
                 const foto = (item.image_url || '').split(',')[0];
                 
                 // Hitung Stok jika produknya adalah barang otomatis
@@ -9987,7 +10002,9 @@ async function prosesTarikSaldo() {
         }
         
         // 3. Minta nominal yang ingin ditarik
-        const nominalInput = await customPrompt(`Masukkan nominal yang ingin ditarik (Saldo: Rp ${saldoMurni.toLocaleString('id-ID')}):`, "10000");
+        const nominalInput = await customPrompt(`Masukkan nominal yang ingin ditarik (Saldo: Rp ${saldoMurni.toLocaleString('id-ID')}).
+
+Catatan: Akan ada potongan biaya transfer Rp 3.500 dari nominal yang ditarik.`, "10000");
         if (!nominalInput) return; // Batal jika di-cancel / kosong
         
         // Bersihkan inputan dari huruf atau titik
@@ -10019,7 +10036,12 @@ async function prosesTarikSaldo() {
         if (rpcError) throw rpcError;
 
         // 8. Arahkan ke WhatsApp Admin (Penomoran langsung lompat ke 8 sesuai kodemu)
-        const teks = encodeURIComponent(`Halo Admin, saya ${profile.nickname} ingin tarik saldo Rp ${nominalTarik.toLocaleString('id-ID')} ke ${rek}`);
+        const danaBersih = nominalTarik - 3500;
+const teks = encodeURIComponent(`Halo Admin, saya ${profile.nickname} ingin tarik saldo.
+Nominal Potong Saldo: Rp ${nominalTarik.toLocaleString('id-ID')}
+*Terima Bersih (Setelah Potong 3.500): Rp ${danaBersih.toLocaleString('id-ID')}*
+
+Ke Rekening: ${rek}`);
         window.open(`https://wa.me/6283815584661?text=${teks}`, '_blank');
         
         // 9. Tutup laci dan refresh UI secara instan (Optimistic UI)
@@ -10449,6 +10471,19 @@ async function loadAdminDashboard() {
                 }
 
                 return `
+                                let namaBank = "BANK";
+                let noRek = req.rekening;
+                if (req.rekening.includes('-')) {
+                    const parts = req.rekening.split('-');
+                    namaBank = parts[0].trim();
+                    noRek = parts[1].trim();
+                }
+                
+                let nominalBersih = Number(req.nominal) - 3500;
+                if (nominalBersih < 0) nominalBersih = 0;
+
+                return `
+
                 <div class="bg-[#161B2E] border border-white/5 p-4 rounded-[1.5rem] flex flex-col gap-3 shadow-lg relative overflow-hidden transition-all" id="wd-${req.id}">
                     <div class="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-brand-accent to-brand-info"></div>
 
@@ -10478,8 +10513,8 @@ async function loadAdminDashboard() {
                         <div class="border-t border-white/10 pt-2 mt-1 flex justify-between items-center">
                             <span class="text-[9px] text-gray-400">Total Cair</span>
                             <div class="flex items-center gap-2">
-                                <p class="text-sm font-black text-[#25D366] tracking-tight">Rp ${Number(req.nominal).toLocaleString('id-ID')}</p>
-                                <button onclick="salinTeksAdmin('${req.nominal}', this, 'success')" class="bg-brand-success/20 text-brand-success w-7 h-7 rounded-lg flex items-center justify-center active:scale-95 transition-all" title="Salin Nominal Saja">
+                                <p class="text-sm font-black text-[#25D366] tracking-tight">Rp ${nominalBersih.toLocaleString('id-ID')}</p>
+                                <button onclick="salinTeksAdmin('${nominalBersih}', this, 'success')" class="bg-brand-success/20 text-brand-success w-7 h-7 rounded-lg flex items-center justify-center active:scale-95 transition-all" title="Salin Nominal Bersih">
                                     <i class="fas fa-copy text-[11px]"></i>
                                 </button>
                             </div>
@@ -10591,7 +10626,13 @@ async function setujuiPenarikan(wdId, nickname) {
         await supabaseClient.from('messages').insert({
             sender_id: currentUser.id,
             receiver_id: wdData.user_id,
-            message: `[SISTEM] Penarikan saldo sebesar Rp ${Number(wdData.nominal).toLocaleString('id-ID')} telah berhasil ditransfer ke rekening Anda oleh Admin. Silakan cek mutasi rekening Anda.`
+            message: `[SISTEM] Penarikan saldo berhasil diproses!
+
+Potong Saldo: Rp ${Number(wdData.nominal).toLocaleString('id-ID')}
+Biaya Transfer: Rp 3.500
+*Dana Masuk ke Bank: Rp ${(Number(wdData.nominal) - 3500).toLocaleString('id-ID')}*
+
+Silakan cek mutasi rekening Anda.`
         });
 
         // 4B. ---> KIRIM PENCATATAN KE RIWAYAT DOMPET SELLER <---
@@ -10599,7 +10640,7 @@ async function setujuiPenarikan(wdId, nickname) {
             user_id: wdData.user_id,
             amount: 0,
             type: 'INCOME',
-            description: `✅ BERHASIL: Dana Rp ${Number(wdData.nominal).toLocaleString('id-ID')} telah ditransfer Admin`
+            description: `✅ BERHASIL: Dana Cair Rp ${(Number(wdData.nominal) - 3500).toLocaleString('id-ID')} (Dipotong Admin 3.500)`
         });
 
         // Efek visual hilang perlahan di laci admin
