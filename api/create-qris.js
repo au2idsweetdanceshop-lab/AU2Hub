@@ -5,6 +5,20 @@ const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY; 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
+// ==========================================
+// RUMUS POTONGAN SELLER (SAMA PERSIS DGN APP.JS)
+// ==========================================
+function hitungPotonganSeller(harga) {
+    if (harga <= 25000) return 1000;
+    if (harga <= 50000) return 2000;
+    if (harga <= 99999) return 3000;
+    if (harga <= 499999) return 10000;
+    if (harga <= 1000000) return 20000;
+    if (harga <= 1499999) return 20000;
+    if (harga <= 1999999) return 25000;
+    return 35000;
+}
+
 export default async function handler(req, res) {
     if (req.method !== 'POST') {
         return res.status(405).json({ success: false, message: 'Method Not Allowed' });
@@ -39,9 +53,10 @@ export default async function handler(req, res) {
         // 🛡️ FITUR KEAMANAN MUTLAK: VALIDASI HARGA ASLI (SOURCE OF TRUTH)
         // =================================================================
         if (isPasarPlayer && orderData.product_id) {
+            // Tarik data produk master, termasuk setting fee dan variasi
             const { data: productMaster, error: errMaster } = await supabase
                 .from('player_products')
-                .select('price')
+                .select('price, fee_ditanggung_pembeli, variations, variasi')
                 .eq('id', orderData.product_id)
                 .single();
 
@@ -49,17 +64,51 @@ export default async function handler(req, res) {
                 return res.status(400).json({ success: false, message: 'Produk asli tidak ditemukan.' });
             }
 
-            const basePrice = parseInt(productMaster.price);
-            const expectedPrice = Math.floor(basePrice + 650 + (basePrice * 0.007));
+            // Kumpulkan semua daftar harga yang SAH (Harga utama + Harga Variasi)
+            let validUnitPrices = [];
 
-            if (finalVerifiedPrice !== expectedPrice) {
-                console.error(`[HACK ATTEMPT!] User: ${orderData.user_id} mengubah harga pasar dari ${expectedPrice} menjadi ${finalVerifiedPrice}`);
+            // A. Kalkulasi Harga Utama
+            let baseHarga = parseInt(productMaster.price);
+            if (productMaster.fee_ditanggung_pembeli === true) {
+                baseHarga += hitungPotonganSeller(baseHarga);
+            }
+            let hargaCustomerUtama = Math.floor(baseHarga + (baseHarga * 0.007) + 500);
+            validUnitPrices.push(hargaCustomerUtama);
+
+            // B. Kalkulasi Harga Variasi (Jika Penjual Punya Variasi)
+            let rawVariasi = productMaster.variations || productMaster.variasi || [];
+            if (Array.isArray(rawVariasi)) {
+                rawVariasi.forEach(v => {
+                    if (typeof v === 'object' && v !== null) {
+                        let hargaVarAsli = parseFloat(v.harga || v.price || 0);
+                        if (productMaster.fee_ditanggung_pembeli === true) {
+                            hargaVarAsli += hitungPotonganSeller(hargaVarAsli);
+                        }
+                        let hargaVarMarkup = Math.floor(hargaVarAsli + (hargaVarAsli * 0.007) + 500);
+                        validUnitPrices.push(hargaVarMarkup);
+                    }
+                });
+            }
+
+            // C. Deteksi Kuantitas (QTY) dari teks nama produk (contoh: "Akun Sultan (x3)")
+            let qty = 1;
+            const namaProduk = orderData.product_name || "";
+            const qtyMatch = namaProduk.match(/\(x(\d+)\)$/);
+            if (qtyMatch) {
+                qty = parseInt(qtyMatch[1]);
+            }
+
+            // D. Pengecekan Final: Harga Order / Qty harus cocok dengan salah satu harga SAH di list
+            const calculatedUnitPrice = finalVerifiedPrice / qty;
+
+            if (!validUnitPrices.includes(calculatedUnitPrice)) {
+                console.error(`[HACK ATTEMPT!] User: ${orderData.user_id} | Harga Masuk: ${calculatedUnitPrice} | Harga Sah Sistem: ${validUnitPrices.join(', ')}`);
                 await supabase.from('orders_player').delete().eq('id', order_id);
                 return res.status(400).json({ success: false, message: 'Terdeteksi manipulasi harga! Transaksi digagalkan.' });
             }
-            
-            finalVerifiedPrice = expectedPrice;
+
         } else {
+            // Keamanan untuk Toko Admin
             if (finalVerifiedPrice < 1000) {
                 console.error(`[HACK ATTEMPT!] Order Admin tidak wajar. Harga: Rp ${finalVerifiedPrice}`);
                 await supabase.from('orders').delete().eq('id', order_id);
@@ -70,6 +119,9 @@ export default async function handler(req, res) {
 
         const safeCustomerId = orderData.user_id ? String(orderData.user_id).slice(0, 8) : "UNKNOWN";
         const safeProductId = orderData.product_id ? String(orderData.product_id).slice(0, 20) : "SKU-001";
+        
+        // Mencegah Xoftware menolak transaksi akibat customer_name " " (kosong spasi dari frontend)
+        const finalCustomerName = (customer_name && customer_name.trim() !== "") ? customer_name : "Player AU2Hub";
 
         // SUSUN PAYLOAD KE XOFTWARE
         const payload = {
@@ -81,15 +133,13 @@ export default async function handler(req, res) {
             notify_url: "https://au2idsweetdance.com/api/webhook", 
             note: `Pembayaran: ${product_name || 'AU2Hub Order'}`, 
             
-            // 🛠️ PERBAIKAN BERDASARKAN DOKUMENTASI RESMI
             metadata: {
                 customer: {
                     id: `CUST-${safeCustomerId}`, 
-                    name: customer_name || "Player AU2Hub",
+                    name: finalCustomerName,
                     phone: "081234567890",
                     email: "buyer@au2hub.com"
                 },
-                // Sistem Xoftware meminta "minimal 1 item" di dalam produk
                 products: [
                     {
                         product_code: safeProductId,
