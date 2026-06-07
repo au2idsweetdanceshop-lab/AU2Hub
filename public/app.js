@@ -1679,6 +1679,14 @@ if (isPush && window.location.hash !== `#${tabId}`) history.pushState(null, null
 window.addEventListener('popstate', () => {
     let isPopupClosed = false;
 
+        // TANGKAP LACI MODAL NETFLIX
+    const modalNetflix = document.getElementById('modal-netflix');
+    if (modalNetflix && !modalNetflix.classList.contains('hidden')) {
+        modalNetflix.classList.add('hidden');
+        modalNetflix.classList.remove('flex');
+        return;
+    }
+
     // 🚀 1. TANGKAP POP-UP ALERT, PROMPT, & CONFIRM (Anti Terpental)
     const modalAlert = document.getElementById('modal-alert');
     if (modalAlert && !modalAlert.classList.contains('hidden')) {
@@ -10847,4 +10855,73 @@ function ubahKategoriVisual(kategoriTerpilih, tipeModal) {
     // 3. Panggil sistem Stok otomatis
     const wadahStockId = tipeModal === 'edit' ? 'wadah-stock-edit' : 'wadah-stock-jualan';
     toggleStockInput(kategoriTerpilih, wadahStockId);
+}
+
+// ==========================================
+// FITUR KLAIM KODE NETFLIX OTOMATIS
+// ==========================================
+
+// Fungsi untuk membuka layar modal Netflix
+function bukaModalNetflix() {
+    // Opsional: Wajib login
+    if (!currentUser) return showToast("Silakan login dulu untuk klaim Netflix!", "error");
+    
+    // Daftarkan ke history agar tombol Back HP berfungsi
+    history.pushState({ popup: 'netflix' }, null, '#netflix');
+    
+    const modal = document.getElementById('modal-netflix');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    
+    // Reset tampilan form setiap kali dibuka
+    document.getElementById('input-token-netflix').value = '';
+    document.getElementById('hasil-kode-netflix').classList.add('hidden');
+    document.getElementById('angka-kode-netflix').innerText = '----';
+}
+
+// Fungsi utama penarik data ke server Vercel
+async function klaimKodeNetflix() {
+    const inputToken = document.getElementById('input-token-netflix').value.trim();
+    
+    if (!inputToken) {
+        return showToast("Token tidak boleh kosong!", "error");
+    }
+
+    const btn = document.getElementById('btn-klaim-netflix');
+    const originalText = btn.innerHTML;
+    
+    // Ubah tombol jadi mode loading
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sedang Mengambil...';
+    btn.disabled = true;
+
+    try {
+        // Tembak ke API Vercel rahasia Anda
+        const response = await fetch('/api/get-netflix', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ token: inputToken })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+            throw new Error(data.message || "Gagal mengambil kode.");
+        }
+
+        // Jika berhasil, munculkan angkanya di layar HTML
+        document.getElementById('angka-kode-netflix').innerText = data.code;
+        document.getElementById('hasil-kode-netflix').classList.remove('hidden');
+        
+        showToast("Kode berhasil didapatkan!", "success");
+
+    } catch (error) {
+        // Tampilkan pesan error (seperti Token Hangus, Gmail Kosong, dsb)
+        showToast(error.message, "error");
+    } finally {
+        // Kembalikan tombol ke bentuk semula
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    }
 }
