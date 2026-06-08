@@ -24,10 +24,24 @@ function setFeeBearer(bearer, mode) {
 }
 
 // Helper: Menghitung bersih pencairan jika buyer yang nanggung biaya
-function hitungPendapatanBersih(hargaGateway, ditanggungPembeli) {
-    const hargaBase = Math.round((hargaGateway - 500) / 1.007); // Hapus markup QRIS Xoftware
+function hitungPendapatanBersih(hargaGateway, ditanggungPembeli, namaProduk = "") {
+    let hargaAktual = hargaGateway;
+
+    // 1. Saring Jatah Admin Rekber: Jika pembeli pakai voucher rekber
+    if (namaProduk.includes('[+Rekber]')) {
+        // Amankan jatah admin berdasarkan rentang harga tagihan (Reverse Logic)
+        if (hargaAktual >= 2035000) hargaAktual -= 35000;
+        else if (hargaAktual >= 1525000) hargaAktual -= 25000;
+        else if (hargaAktual >= 520000) hargaAktual -= 20000;
+        else if (hargaAktual >= 110000) hargaAktual -= 10000;
+        else hargaAktual -= 5000;
+    }
+
+    // 2. Hapus markup QRIS Xoftware
+    const hargaBase = Math.round((hargaAktual - 500) / 1.007); 
+    
+    // 3. Kalkulasi jatah final Seller
     if (ditanggungPembeli) {
-        // Balikkan rumus tabel fee agar mendapatkan harga aslinya
         if (hargaBase <= 26000) return hargaBase - 1000;
         if (hargaBase <= 52000) return hargaBase - 2000;
         if (hargaBase <= 102999) return hargaBase - 3000;
@@ -39,6 +53,7 @@ function hitungPendapatanBersih(hargaGateway, ditanggungPembeli) {
         return hargaBase - hitungPotonganSeller(hargaBase);
     }
 }
+
 
 
 // ==========================================
@@ -54,6 +69,19 @@ function hitungPotonganSeller(harga) {
     if (harga <= 1999999) return 25000;
     return 35000; // Harga 2 juta ke atas
 }
+
+// ==========================================
+// RUMUS FEE ADMIN REKBER (KHUSUS PEMBELI)
+// Berdasarkan tabel 69156.jpg
+// ==========================================
+function hitungFeeRekber(harga) {
+    if (harga <= 99999) return 5000;
+    if (harga <= 499999) return 10000;
+    if (harga <= 1499999) return 20000; // Range 500k sampai di bawah 1.5jt
+    if (harga <= 1999999) return 25000; // Range 1.5jt sampai di bawah 2jt
+    return 35000;                       // Range 2jt ke atas
+}
+
 
 
     // Script mandiri agar splash screen 100% dijamin hilang walau script utama error
@@ -9078,6 +9106,29 @@ function pilihVariasiPasar(namaVariasi, hargaVariasi) {
 function updateHargaPasarLayar() {
     let totalPrice = currentPasarPrice * currentPasarQty;
 
+    // --- LOGIKA BARU: CEK STATUS TOGGLE REKBER ---
+    const toggleRekber = document.getElementById('toggle-rekber');
+    const infoFee = document.getElementById('info-fee-rekber');
+    const angkaFee = document.getElementById('angka-fee-rekber');
+    let feeRekber = 0;
+
+    if (toggleRekber && toggleRekber.checked) {
+        // Hitung fee dari subtotal harga produk
+        feeRekber = hitungFeeRekber(totalPrice); 
+        
+        // Munculkan info ke layar
+        angkaFee.innerText = `+ Rp ${feeRekber.toLocaleString('id-ID')}`;
+        infoFee.classList.remove('hidden');
+        infoFee.classList.add('flex');
+        
+        // Tambahkan fee rekber ke tagihan akhir
+        totalPrice += feeRekber; 
+    } else if (infoFee) {
+        infoFee.classList.add('hidden');
+        infoFee.classList.remove('flex');
+    }
+    // ---------------------------------------------
+
     // Harga Coret Marketing
     let baseHargaCoret = Math.ceil((currentPasarPrice * 1.3) / 1000) * 1000;
     if (currentPasarPrice > 100000) baseHargaCoret = Math.ceil((currentPasarPrice * 1.2) / 5000) * 5000;
@@ -9089,6 +9140,7 @@ function updateHargaPasarLayar() {
 
     document.getElementById('pasar-detail-harga').innerHTML = `<span class="text-gray-500 line-through text-sm font-medium mr-2">${formatHargaCoret}</span>${formatHarga}`;
 }
+
 
 
 // ==========================================
@@ -9104,6 +9156,9 @@ function bukaDetailPasar(idProduk) {
     currentPasarQty = 1;
     currentPasarVariation = "";
     document.getElementById('pasar-detail-qty').value = "1";
+        const toggleRekber = document.getElementById('toggle-rekber');
+    if (toggleRekber) toggleRekber.checked = false;
+
 
     const isAutoItem = produk.category === 'Akun' || produk.category === 'Item' || produk.category === 'APK Premium';
     const sisaStok = isAutoItem && produk.stock_list ? produk.stock_list.split(/\r?\n/).filter(s=>s.trim() !== '').length : 0;
@@ -9212,13 +9267,23 @@ function bukaDetailPasar(idProduk) {
     document.getElementById('pasar-detail-avatar').src = produk.profiles?.avatar_url || 'https://placehold.co/100x100/1a1133/2BD975?text=AV';
     document.getElementById('pasar-detail-penjual').innerHTML = `${produk.profiles?.nickname || 'Anonim'} <span class="scale-[0.85] origin-left inline-flex ml-1">${badgeHtml}</span>`;
 
-    // Tombol Beli Dinamis (Dengan Qty & Variasi)
+    // Tombol Beli Dinamis (Dengan Qty, Variasi, & Ekstra Rekber)
     const btnBeli = document.getElementById('btn-beli-pasar');
     btnBeli.onclick = () => {
         let namaProdukFinal = produk.title;
         if (currentPasarVariation !== "") namaProdukFinal += ` - ${currentPasarVariation}`;
         if (currentPasarQty > 1) namaProdukFinal += ` (x${currentPasarQty})`;
+        
         let totalHargaCheckout = currentPasarPrice * currentPasarQty;
+
+        // --- BACA JIKA PEMBELI PAKAI REKBER ---
+        const toggleRekber = document.getElementById('toggle-rekber');
+        if (toggleRekber && toggleRekber.checked) {
+            const feeRekber = hitungFeeRekber(totalHargaCheckout);
+            totalHargaCheckout += feeRekber; // Tambahkan fee ke tagihan akhir!
+            namaProdukFinal += ` [+Rekber]`; // Beri tanda rekber di struk pesanan
+        }
+
         checkoutPasar(namaProdukFinal, totalHargaCheckout, produk.id);
     };
 
@@ -9623,7 +9688,7 @@ async function updateUiSaldoSeller() {
         if(pendingFunds && pendingFunds.length > 0) {
                         pendingFunds.forEach(order => {
                 const isPembeli = order.player_products?.fee_ditanggung_pembeli || false;
-                totalTertahan += hitungPendapatanBersih(order.price, isPembeli);
+                totalTertahan += hitungPendapatanBersih(order.price, isPembeli, order.product_name);
             });
         }
         document.getElementById('toko-saldo-tertahan').innerText = 'Rp ' + totalTertahan.toLocaleString('id-ID');
@@ -9661,7 +9726,7 @@ async function cekPencairanDanaH1() {
             // JIKA UMURNYA SUDAH LEBIH DARI 24 JAM (H+1)
             if (selisihJam >= 24) {
                 const isPembeli = order.player_products?.fee_ditanggung_pembeli || false;
-            const pendapatanBersih = hitungPendapatanBersih(order.price, isPembeli);
+            const pendapatanBersih = hitungPendapatanBersih(order.price, isPembeli, order.product_name);
 
                 // 1. Tembak RPC Cairkan Saldo
                 await supabaseClient.rpc('proses_pencairan_otomatis', {
