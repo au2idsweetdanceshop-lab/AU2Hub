@@ -54,14 +54,13 @@ export default async function handler(req, res) {
         // =================================================================
         if (isPasarPlayer && orderData.product_id) {
             
-            // PERBAIKAN: Gunakan select('*') agar tidak crash jika ada kolom yang belum dibuat di Supabase
+            // Gunakan select('*') agar tidak crash jika ada kolom yang belum dibuat di Supabase
             const { data: productMaster, error: errMaster } = await supabase
                 .from('player_products')
                 .select('*')
                 .eq('id', orderData.product_id)
                 .single();
 
-            // PERBAIKAN: Tampilkan error asli DB ke Log Vercel
             if (errMaster || !productMaster) {
                 console.error("DB Error (Master Product):", errMaster);
                 return res.status(400).json({ success: false, message: 'Produk asli tidak ditemukan.' });
@@ -101,11 +100,23 @@ export default async function handler(req, res) {
                 qty = parseInt(qtyMatch[1]);
             }
 
-            // D. Pengecekan Final
-            const calculatedUnitPrice = finalVerifiedPrice / qty;
+            // D. Pengecekan Final (Dengan Penyaring Reverse Rekber)
+            let hargaTanpaRekber = finalVerifiedPrice;
+
+            // Jika pembeli memakai voucher Rekber, kita pisahkan dulu fee admin dari total harga
+            // agar harga dasar per-item (unit price) tidak dianggap sebagai manipulasi hacker
+            if (namaProduk && namaProduk.includes('[+Rekber]')) {
+                if (hargaTanpaRekber >= 2035000) hargaTanpaRekber -= 35000;
+                else if (hargaTanpaRekber >= 1525000) hargaTanpaRekber -= 25000;
+                else if (hargaTanpaRekber >= 520000) hargaTanpaRekber -= 20000;
+                else if (hargaTanpaRekber >= 110000) hargaTanpaRekber -= 10000;
+                else hargaTanpaRekber -= 5000;
+            }
+
+            const calculatedUnitPrice = hargaTanpaRekber / qty;
 
             if (!validUnitPrices.includes(calculatedUnitPrice)) {
-                console.error(`[HACK ATTEMPT!] Harga Masuk: ${calculatedUnitPrice} | Harga Asli DB: ${validUnitPrices.join(', ')}`);
+                console.error(`[HACK ATTEMPT!] Harga Tanpa Rekber: ${hargaTanpaRekber} | QTY: ${qty} | Harga Asli DB: ${validUnitPrices.join(', ')}`);
                 await supabase.from('orders_player').delete().eq('id', order_id);
                 return res.status(400).json({ success: false, message: 'Terdeteksi manipulasi harga! Transaksi digagalkan.' });
             }
