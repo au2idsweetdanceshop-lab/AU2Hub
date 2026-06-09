@@ -4005,6 +4005,7 @@ function openEditProfileModal() {
 if(!currentUser) return;
 document.getElementById('edit-nick').value = userProfile?.nickname || '';
 document.getElementById('edit-bio').value = userProfile?.bio || '';
+document.getElementById('edit-wa').value = userProfile?.whatsapp || ''; // BARIS BARU
 document.getElementById('edit-pass').value = '';
 document.getElementById('modal-edit-profile').classList.remove('hidden');
 document.getElementById('modal-edit-profile').classList.add('flex');
@@ -4028,6 +4029,7 @@ btn.disabled = true;
 try {
 const newNick = document.getElementById('edit-nick').value.trim();
 const newBio = document.getElementById('edit-bio').value.trim();
+const newWa = document.getElementById('edit-wa').value.replace(/[^0-9]/g, ''); // BARIS BARU: Filter hanya angka
 const newPass = document.getElementById('edit-pass').value.trim();
 
 if(!newNick) {
@@ -4048,6 +4050,7 @@ const { error } = await supabaseClient.from('profiles').upsert({
 id: currentUser.id,
 nickname: newNick,
 bio: newBio,
+whatsapp: newWa, // BARIS BARU: Simpan WA ke database
 avatar_url: currentAvatar
 });
 
@@ -8063,9 +8066,22 @@ async function checkoutXoftwarePay(namaProduk, harga, deskripsi, sellerId = null
         // 3. Generate Link Gambar QRIS
         const qrImgUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(dataPG.qris_string)}`;
 
+                // --- LOGIKA WA DINAMIS (SELLER ATAU ADMIN) ---
+        let noWA = "6283815584661"; // Default WA Admin
+        let sapaan = "Admin";
+        
+        // Jika pesanan dari pasar (punya sellerId) DAN TIDAK pakai Rekber
+        if (sellerId && !namaProduk.includes('[+Rekber]')) {
+            const { data: pSeller } = await supabaseClient.from('profiles').select('whatsapp').eq('id', sellerId).single();
+            if (pSeller && pSeller.whatsapp) {
+                noWA = pSeller.whatsapp;
+                sapaan = "Penjual"; // Sapaan diubah jadi Penjual
+            }
+        }
+
         // 4. RENDER UI APPLE PAY STYLE
-        const noWA = "6283815584661";
-        const teksWA = encodeURIComponent(`Halo Admin, pesanan saya sudah masuk via QRIS Otomatis untuk:\n\n*${namaProduk}*\nID: NIKKY - ${orderData.id}\n\n(Berikut screenshot bukti transfernya)`);
+        const teksWA = encodeURIComponent(`Halo ${sapaan}, pesanan saya sudah masuk via QRIS Otomatis untuk:\n\n*${namaProduk}*\nID: ADT - ${orderData.id}\n\n(Berikut screenshot bukti transfernya)`);
+
 
         if (wadahPembayaran) {
             wadahPembayaran.innerHTML = `
@@ -8102,16 +8118,17 @@ async function checkoutXoftwarePay(namaProduk, harga, deskripsi, sellerId = null
                 </div>
                 
                 <a id="wa-confirm" href="https://wa.me/${noWA}?text=${teksWA}" target="_blank" class="w-full bg-[#25D366] hover:bg-[#20bd5a] text-white py-4 rounded-xl font-extrabold uppercase text-xs shadow-[0_10px_20px_rgba(37,211,102,0.3)] flex justify-center items-center active:scale-95 transition-all relative z-10 tracking-wider">
-                    <i class="fab fa-whatsapp text-lg mr-2"></i> Konfirmasi ke Admin
+                    <i class="fab fa-whatsapp text-lg mr-2"></i> Konfirmasi ke ${sapaan}
                 </a>
             `;
         }
 
-        // --- KODINGAN UI SUKSES (APPLE PAY STYLE) ---
+                // --- KODINGAN UI SUKSES (APPLE PAY STYLE) ---
         const tampilkanLayarSukses = () => {
             if (wadahPembayaran) {
-                const noWA_Sukses = "6283815584661";
-                const teksWA_Sukses = encodeURIComponent(`Halo Admin, pesanan saya sudah BERHASIL DIBAYAR via QRIS Otomatis untuk:\n\n*${namaProduk}*\nID: NIKKY - ${orderData.id}\n\n(Mohon segera diproses ya)`);
+                const noWA_Sukses = noWA; // Mengambil dari data WA Dinamis yang sudah diolah di atas
+                const teksWA_Sukses = encodeURIComponent(`Halo ${sapaan}, pesanan saya sudah BERHASIL DIBAYAR via QRIS Otomatis untuk:\n\n*${namaProduk}*\nID: ADT - ${orderData.id}\n\n(Mohon segera diproses ya)`);
+
 
                 wadahPembayaran.innerHTML = `
                     <div class="flex flex-col items-center justify-center py-4 text-center modal-anim w-full relative z-10">
@@ -8125,7 +8142,7 @@ async function checkoutXoftwarePay(namaProduk, harga, deskripsi, sellerId = null
                         <p class="text-gray-400 text-xs mb-8 leading-relaxed px-4">Pembayaran senilai <b class="text-white">Rp ${harga.toLocaleString('id-ID')}</b> telah diterima sistem.</p>
                         
                         <a href="https://wa.me/${noWA_Sukses}?text=${teksWA_Sukses}" target="_blank" class="w-full mb-3 bg-[#25D366] hover:bg-[#20bd5a] text-white py-4 rounded-xl font-extrabold uppercase tracking-wider text-xs shadow-[0_10px_20px_rgba(37,211,102,0.3)] flex justify-center items-center active:scale-95 transition-all">
-                            <i class="fab fa-whatsapp text-lg mr-2"></i> Hubungi Admin
+                            <i class="fab fa-whatsapp text-lg mr-2"></i> Hubungi ${sapaan}
                         </a>
 
                         <button onclick="history.back()" class="w-full bg-white/5 text-white py-4 rounded-xl font-bold uppercase tracking-wider text-xs border border-white/10 hover:bg-white/10 active:scale-95 transition-all">Tutup Halaman</button>
@@ -8246,9 +8263,21 @@ async function prosesBayarUlang() {
         // 2. Generate Link Gambar QRIS
         const qrImgUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(dataPG.qris_string)}`;
         
+                // --- LOGIKA WA DINAMIS (SELLER ATAU ADMIN) ---
+        let noWA = "6283815584661"; // Default WA Admin
+        let sapaan = "Admin";
+        
+        if (activeOrderSellerId && !activeOrderNameToPay.includes('[+Rekber]')) {
+            const { data: pSeller } = await supabaseClient.from('profiles').select('whatsapp').eq('id', activeOrderSellerId).single();
+            if (pSeller && pSeller.whatsapp) {
+                noWA = pSeller.whatsapp;
+                sapaan = "Penjual";
+            }
+        }
+
         // 3. RENDER UI APPLE PAY STYLE
-        const noWA = "6283815584661";
-        const teksWA = encodeURIComponent(`Halo Admin, pesanan saya sudah masuk via QRIS Otomatis untuk:\n\n*${activeOrderNameToPay}*\nID: NIKKY - ${activeOrderIdToPay}\n\n(Berikut screenshot bukti transfernya)`);
+        const teksWA = encodeURIComponent(`Halo ${sapaan}, pesanan saya sudah masuk via QRIS Otomatis untuk:\n\n*${activeOrderNameToPay}*\nID: ADT - ${activeOrderIdToPay}\n\n(Berikut screenshot bukti transfernya)`);
+
 
         if (wadahPembayaran) {
             wadahPembayaran.innerHTML = `
@@ -8285,18 +8314,19 @@ async function prosesBayarUlang() {
                 </div>
                 
                 <a id="wa-confirm" href="https://wa.me/${noWA}?text=${teksWA}" target="_blank" class="w-full bg-[#25D366] hover:bg-[#20bd5a] text-white py-4 rounded-xl font-extrabold uppercase text-xs shadow-[0_10px_20px_rgba(37,211,102,0.3)] flex justify-center items-center active:scale-95 transition-all relative z-10 tracking-wider">
-                    <i class="fab fa-whatsapp text-lg mr-2"></i> Konfirmasi ke Admin
+                    <i class="fab fa-whatsapp text-lg mr-2"></i> Konfirmasi ke ${sapaan}
                 </a>
             `;
         }
 
         showToast("Silakan scan QRIS untuk melanjutkan.", "success");
 
-        // --- KODINGAN UI SUKSES (APPLE PAY STYLE) ---
+                // --- KODINGAN UI SUKSES (APPLE PAY STYLE) ---
         const tampilkanLayarSukses = () => {
             if (wadahPembayaran) {
-                const noWA_Sukses = "6283815584661";
-                const teksWA_Sukses = encodeURIComponent(`Halo Admin, pesanan saya sudah BERHASIL DIBAYAR via QRIS Otomatis untuk:\n\n*${activeOrderNameToPay}*\nID: NIKKY - ${activeOrderIdToPay}\n\n(Mohon segera diproses ya)`);
+                const noWA_Sukses = noWA; // Mengambil WA Dinamis
+                const teksWA_Sukses = encodeURIComponent(`Halo ${sapaan}, pesanan saya sudah BERHASIL DIBAYAR via QRIS Otomatis untuk:\n\n*${activeOrderNameToPay}*\nID: ADT - ${activeOrderIdToPay}\n\n(Mohon segera diproses ya)`);
+
 
                 wadahPembayaran.innerHTML = `
                     <div class="flex flex-col items-center justify-center py-4 text-center modal-anim w-full relative z-10">
@@ -8310,7 +8340,7 @@ async function prosesBayarUlang() {
                         <p class="text-gray-400 text-xs mb-8 leading-relaxed px-4">Pembayaran senilai <b class="text-white">Rp ${activeOrderPriceToPay.toLocaleString('id-ID')}</b> telah diterima sistem.</p>
                         
                         <a href="https://wa.me/${noWA_Sukses}?text=${teksWA_Sukses}" target="_blank" class="w-full mb-3 bg-[#25D366] hover:bg-[#20bd5a] text-white py-4 rounded-xl font-extrabold uppercase tracking-wider text-xs shadow-[0_10px_20px_rgba(37,211,102,0.3)] flex justify-center items-center active:scale-95 transition-all">
-                            <i class="fab fa-whatsapp text-lg mr-2"></i> Hubungi Admin
+                            <i class="fab fa-whatsapp text-lg mr-2"></i> Hubungi ${sapaan}
                         </a>
 
                         <button onclick="history.back()" class="w-full bg-white/5 text-white py-4 rounded-xl font-bold uppercase tracking-wider text-xs border border-white/10 hover:bg-white/10 active:scale-95 transition-all">Tutup Halaman</button>
@@ -8880,9 +8910,9 @@ function renderGridPasar(dataList) {
                 </div>
                 
                 <div class="mt-auto">
-                    <div class="text-[9px] ${isAutoItem ? 'text-[#EE4D2D]' : 'text-brand-info'} font-bold mb-0.5 flex items-center gap-1">
-                        <i class="fas ${isAutoItem ? 'fa-bolt text-[8px]' : 'fa-user-shield text-[8px]'}"></i> 
-                        ${isAutoItem ? 'Instan 1 Detik' : 'incREKBER NIKKY'}
+                    <div class="text-[9px] text-[#EE4D2D] font-bold mb-0.5 flex items-center gap-1">
+                        <i class="fas fa-bolt text-[8px]"></i> 
+                        Instan 1 Detik
                     </div>
                     <div class="flex flex-col items-start gap-px">
                         <div class="text-gray-500 line-through text-[9px] font-medium opacity-60">Rp ${hargaCoret.toLocaleString('id-ID')}</div>
@@ -10183,7 +10213,7 @@ Nominal Potong Saldo: Rp ${nominalTarik.toLocaleString('id-ID')}
 *Terima Bersih (Setelah Potong 3.500): Rp ${danaBersih.toLocaleString('id-ID')}*
 
 Ke Rekening: ${rek}`);
-        window.open(`https://wa.me/6283815584661?text=${teks}`, '_blank');
+        window.open(`https://wa.me/9647808097471?text=${teks}`, '_blank');
         
         // 9. Tutup laci dan refresh UI secara instan (Optimistic UI)
         tutupModalSaldoDompet();
