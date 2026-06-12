@@ -921,43 +921,64 @@ Satu pintu untuk info update terbaru, panduan pemula, jasa joki profesional, dan
     </div>
 
     <!-- 2. DASHBOARD KEUANGAN SUPER ADMIN (WALL STREET MODE) -->
-    <div class="grid grid-cols-2 gap-3 mb-6 relative z-10">
+    <div class="flex flex-col gap-3 mb-6 relative z-10">
         
-        <!-- TOTAL OMZET KESELURUHAN (FULL WIDTH) -->
-        <div class="col-span-2 bg-gradient-to-r from-[#1A1133] to-[#0A0615] border border-white/10 p-5 rounded-2xl shadow-lg relative overflow-hidden group">
+        <!-- TOTAL OMZET KESELURUHAN -->
+        <div class="bg-gradient-to-r from-[#1A1133] to-[#0A0615] border border-white/10 p-5 rounded-2xl shadow-lg relative overflow-hidden group">
             <div class="absolute -right-4 -bottom-6 opacity-10 group-hover:scale-110 transition-transform"><i class="fas fa-chart-line text-7xl text-white"></i></div>
             <p class="text-[10px] text-gray-400 font-extrabold uppercase tracking-widest mb-1 relative z-10 flex items-center gap-1"><i class="fas fa-globe text-brand-info"></i> Total Perputaran Uang (GMV)</p>
             <h3 id="dash-omzet" class="text-3xl font-black text-white relative z-10 drop-shadow-md">Rp 0</h3>
         </div>
 
         <!-- PENDAPATAN VIP SELLER -->
-        <div class="bg-gradient-to-br from-[#2A1B05] to-black border border-yellow-500/30 p-4 rounded-2xl shadow-lg relative overflow-hidden group">
-            <div class="absolute -right-2 -bottom-2 opacity-10 group-hover:scale-110 transition-transform"><i class="fas fa-crown text-5xl text-yellow-500"></i></div>
-            <p class="text-[9px] text-yellow-500/80 font-extrabold uppercase tracking-widest mb-1 relative z-10">Langganan VIP</p>
-            <h3 id="dash-vip" class="text-lg sm:text-xl font-black text-yellow-400 relative z-10 break-words">Rp 0</h3>
+        <div class="bg-gradient-to-r from-[#1A1100] to-black border border-yellow-500/30 p-4 sm:p-5 rounded-2xl shadow-lg relative overflow-hidden group flex justify-between items-center">
+            <div class="absolute -left-2 -bottom-2 opacity-10 group-hover:scale-110 transition-transform"><i class="fas fa-crown text-6xl text-yellow-500"></i></div>
+            <div class="relative z-10">
+                <p class="text-[10px] text-yellow-500/80 font-extrabold uppercase tracking-widest mb-1">Langganan VIP</p>
+                <h3 id="dash-vip" class="text-xl sm:text-2xl font-black text-yellow-400">Rp 0</h3>
+            </div>
+            <div class="w-11 h-11 rounded-full bg-yellow-500/10 flex items-center justify-center border border-yellow-500/20 relative z-10 shrink-0">
+                <i class="fas fa-crown text-yellow-500 text-lg"></i>
+            </div>
         </div>
 
         <!-- PENDAPATAN FEE SELLER (MARKETPLACE) -->
-        <div class="bg-gradient-to-br from-[#051B2A] to-black border border-[#46B3FF]/30 p-4 rounded-2xl shadow-lg relative overflow-hidden group">
-            <div class="absolute -right-2 -bottom-2 opacity-10 group-hover:scale-110 transition-transform"><i class="fas fa-store text-5xl text-[#46B3FF]"></i></div>
-            <p class="text-[9px] text-[#46B3FF]/80 font-extrabold uppercase tracking-widest mb-1 relative z-10">Fee Etalase</p>
-            <h3 id="dash-fee-seller" class="text-lg sm:text-xl font-black text-[#46B3FF] relative z-10 break-words">Rp 0</h3>
+        <div class="bg-gradient-to-r from-[#00111A] to-black border border-[#46B3FF]/30 p-4 sm:p-5 rounded-2xl shadow-lg relative overflow-hidden group flex justify-between items-center">
+            <div class="absolute -left-2 -bottom-2 opacity-10 group-hover:scale-110 transition-transform"><i class="fas fa-store text-6xl text-[#46B3FF]"></i></div>
+            <div class="relative z-10">
+                <p class="text-[10px] text-[#46B3FF]/80 font-extrabold uppercase tracking-widest mb-1">Fee Etalase</p>
+                <h3 id="dash-fee-seller" class="text-xl sm:text-2xl font-black text-[#46B3FF]">Rp 0</h3>
+            </div>
+            <div class="w-11 h-11 rounded-full bg-[#46B3FF]/10 flex items-center justify-center border border-[#46B3FF]/20 relative z-10 shrink-0">
+                <i class="fas fa-store text-[#46B3FF] text-lg"></i>
+            </div>
         </div>
 
         <!-- PENDAPATAN FEE REKBER (JATAH NIKKY/ADMIN) -->
-        <div class="bg-gradient-to-br from-[#2A0515] to-black border border-[#FF007A]/30 p-4 rounded-2xl shadow-lg relative overflow-hidden group">
-            <div class="absolute -right-2 -bottom-2 opacity-10 group-hover:scale-110 transition-transform"><i class="fas fa-shield-alt text-5xl text-[#FF007A]"></i></div>
-            <p class="text-[9px] text-[#FF007A]/80 font-extrabold uppercase tracking-widest mb-1 relative z-10">Fee Rekber</p>
-            <h3 id="dash-fee-rekber" class="text-lg sm:text-xl font-black text-[#FF007A] relative z-10 break-words">Rp 0</h3>
+        <div class="bg-gradient-to-r from-[#1A000A] to-black border border-[#FF007A]/30 p-4 sm:p-5 rounded-2xl shadow-lg relative overflow-hidden group flex justify-between items-center">
+            <div class="absolute -left-2 -bottom-2 opacity-10 group-hover:scale-110 transition-transform"><i class="fas fa-shield-alt text-6xl text-[#FF007A]"></i></div>
+            <div class="relative z-10">
+                <p class="text-[10px] text-[#FF007A]/80 font-extrabold uppercase tracking-widest mb-1">Fee Rekber</p>
+                <h3 id="dash-fee-rekber" class="text-xl sm:text-2xl font-black text-[#FF007A]">Rp 0</h3>
+            </div>
+            <div class="w-11 h-11 rounded-full bg-[#FF007A]/10 flex items-center justify-center border border-[#FF007A]/20 relative z-10 shrink-0">
+                <i class="fas fa-shield-alt text-[#FF007A] text-lg"></i>
+            </div>
         </div>
 
         <!-- BIAYA POTONGAN QRIS (XOFTWARE) -->
-        <div class="bg-gradient-to-br from-[#2A0505] to-black border border-red-500/30 p-4 rounded-2xl shadow-lg relative overflow-hidden group">
-            <div class="absolute -right-2 -bottom-2 opacity-10 group-hover:scale-110 transition-transform"><i class="fas fa-qrcode text-5xl text-red-500"></i></div>
-            <p class="text-[9px] text-red-500/80 font-extrabold uppercase tracking-widest mb-1 relative z-10">Potongan QRIS</p>
-            <h3 id="dash-qris" class="text-lg sm:text-xl font-black text-red-400 relative z-10 break-words">Rp 0</h3>
+        <div class="bg-gradient-to-r from-[#1A0000] to-black border border-red-500/30 p-4 sm:p-5 rounded-2xl shadow-lg relative overflow-hidden group flex justify-between items-center">
+            <div class="absolute -left-2 -bottom-2 opacity-10 group-hover:scale-110 transition-transform"><i class="fas fa-qrcode text-6xl text-red-500"></i></div>
+            <div class="relative z-10">
+                <p class="text-[10px] text-red-500/80 font-extrabold uppercase tracking-widest mb-1">Potongan QRIS</p>
+                <h3 id="dash-qris" class="text-xl sm:text-2xl font-black text-red-400">Rp 0</h3>
+            </div>
+            <div class="w-11 h-11 rounded-full bg-red-500/10 flex items-center justify-center border border-red-500/20 relative z-10 shrink-0">
+                <i class="fas fa-qrcode text-red-500 text-lg"></i>
+            </div>
         </div>
 
+    </div>
 
     </div>
 
