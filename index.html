@@ -27,7 +27,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script defer src="./app.js?v=32"></script>
+<script defer src="./app.js?v=33"></script>
 <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
 <style>
 
@@ -906,7 +906,8 @@ Satu pintu untuk info update terbaru, panduan pemula, jasa joki profesional, dan
         </button>
     </div>
 
-    <div class="grid grid-cols-2 gap-3 mb-6 relative z-10">
+    <!-- 1. DASHBOARD OPERASIONAL -->
+    <div class="grid grid-cols-2 gap-3 mb-4 relative z-10">
         <div class="bg-gradient-to-br from-[#1A1133] to-black border border-brand-accent/20 p-4 rounded-2xl shadow-lg relative overflow-hidden group">
             <div class="absolute -right-2 -bottom-2 opacity-10 group-hover:scale-110 transition-transform"><i class="fas fa-wallet text-5xl text-brand-accent"></i></div>
             <p class="text-[9px] text-gray-400 font-extrabold uppercase tracking-widest mb-1 relative z-10">Antrean Tarik</p>
@@ -919,6 +920,47 @@ Satu pintu untuk info update terbaru, panduan pemula, jasa joki profesional, dan
         </div>
     </div>
 
+    <!-- 2. DASHBOARD KEUANGAN SUPER ADMIN (WALL STREET MODE) -->
+    <div class="grid grid-cols-2 gap-3 mb-6 relative z-10">
+        
+        <!-- TOTAL OMZET KESELURUHAN (FULL WIDTH) -->
+        <div class="col-span-2 bg-gradient-to-r from-[#1A1133] to-[#0A0615] border border-white/10 p-5 rounded-2xl shadow-lg relative overflow-hidden group">
+            <div class="absolute -right-4 -bottom-6 opacity-10 group-hover:scale-110 transition-transform"><i class="fas fa-chart-line text-7xl text-white"></i></div>
+            <p class="text-[10px] text-gray-400 font-extrabold uppercase tracking-widest mb-1 relative z-10 flex items-center gap-1"><i class="fas fa-globe text-brand-info"></i> Total Perputaran Uang (GMV)</p>
+            <h3 id="dash-omzet" class="text-3xl font-black text-white relative z-10 drop-shadow-md">Rp 0</h3>
+        </div>
+
+        <!-- PENDAPATAN VIP SELLER -->
+        <div class="bg-gradient-to-br from-[#2A1B05] to-black border border-yellow-500/30 p-4 rounded-2xl shadow-lg relative overflow-hidden group">
+            <div class="absolute -right-2 -bottom-2 opacity-10 group-hover:scale-110 transition-transform"><i class="fas fa-crown text-5xl text-yellow-500"></i></div>
+            <p class="text-[9px] text-yellow-500/80 font-extrabold uppercase tracking-widest mb-1 relative z-10">Langganan VIP</p>
+            <h3 id="dash-vip" class="text-xl font-black text-yellow-400 relative z-10 truncate">Rp 0</h3>
+        </div>
+
+        <!-- PENDAPATAN FEE SELLER (MARKETPLACE) -->
+        <div class="bg-gradient-to-br from-[#051B2A] to-black border border-[#46B3FF]/30 p-4 rounded-2xl shadow-lg relative overflow-hidden group">
+            <div class="absolute -right-2 -bottom-2 opacity-10 group-hover:scale-110 transition-transform"><i class="fas fa-store text-5xl text-[#46B3FF]"></i></div>
+            <p class="text-[9px] text-[#46B3FF]/80 font-extrabold uppercase tracking-widest mb-1 relative z-10">Fee Etalase</p>
+            <h3 id="dash-fee-seller" class="text-xl font-black text-[#46B3FF] relative z-10 truncate">Rp 0</h3>
+        </div>
+
+        <!-- PENDAPATAN FEE REKBER (JATAH NIKKY/ADMIN) -->
+        <div class="bg-gradient-to-br from-[#2A0515] to-black border border-[#FF007A]/30 p-4 rounded-2xl shadow-lg relative overflow-hidden group">
+            <div class="absolute -right-2 -bottom-2 opacity-10 group-hover:scale-110 transition-transform"><i class="fas fa-shield-alt text-5xl text-[#FF007A]"></i></div>
+            <p class="text-[9px] text-[#FF007A]/80 font-extrabold uppercase tracking-widest mb-1 relative z-10">Fee Rekber</p>
+            <h3 id="dash-fee-rekber" class="text-xl font-black text-[#FF007A] relative z-10 truncate">Rp 0</h3>
+        </div>
+
+        <!-- BIAYA POTONGAN QRIS (XOFTWARE) -->
+        <div class="bg-gradient-to-br from-[#2A0505] to-black border border-red-500/30 p-4 rounded-2xl shadow-lg relative overflow-hidden group">
+            <div class="absolute -right-2 -bottom-2 opacity-10 group-hover:scale-110 transition-transform"><i class="fas fa-qrcode text-5xl text-red-500"></i></div>
+            <p class="text-[9px] text-red-500/80 font-extrabold uppercase tracking-widest mb-1 relative z-10">Potongan QRIS</p>
+            <h3 id="dash-qris" class="text-xl font-black text-red-400 relative z-10 truncate">Rp 0</h3>
+        </div>
+
+    </div>
+
+    <!-- 3. ANTREAN TRANSFER -->
     <div class="flex items-center gap-2.5 mb-4 relative z-10">
         <div class="w-1.5 h-4 bg-yellow-500 rounded-full"></div>
         <h3 class="text-xs font-extrabold text-gray-400 uppercase tracking-widest">Daftar Antrean Transfer</h3>
@@ -931,6 +973,7 @@ Satu pintu untuk info update terbaru, panduan pemula, jasa joki profesional, dan
         </div>
     </div>
 </section>
+
 
 
 <div id="floating-widget" class="fixed bottom-24 right-5 sm:right-10 z-[150] w-[90%] max-w-[380px] h-[80vh] max-h-[800px] bg-brand-card border border-white/10 rounded-3xl shadow-2xl opacity-0 pointer-events-none translate-y-8 scale-95 flex flex-col overflow-hidden glass origin-bottom-right" style="transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);">
