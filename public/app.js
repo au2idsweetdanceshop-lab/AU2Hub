@@ -10645,13 +10645,30 @@ function bukaSuperAdmin() {
 
 
 // 2. Fungsi Load Antrean & Dashboard Keuangan (Lengkap dengan Tombol Salin Sat-Set)
-async function loadAdminDashboard() {
+async function loadAdminDashboard(isRefresh = false) {
     const listContainer = document.getElementById('admin-withdrawal-list');
-    listContainer.innerHTML = `
-        <div class="text-center py-10 flex flex-col items-center justify-center bg-black/20 rounded-[1.5rem] border border-white/5">
-            <div class="w-10 h-10 border-4 border-brand-accent border-t-transparent rounded-full animate-spin mb-3"></div>
-            <span class="text-[10px] text-gray-500 font-bold tracking-widest uppercase">Menarik Data Sistem...</span>
-        </div>`;
+    const iconRefresh = document.getElementById('icon-refresh-admin');
+    
+    // EFEK LOADING JIKA TOMBOL REFRESH DIPENCET
+    if (isRefresh) {
+        if (iconRefresh) iconRefresh.classList.add('fa-spin');
+        showToast("Menyinkronkan data Wall Street...", "info");
+        
+        // Ubah sementara angka jadi efek loading biar kerasa refresh-nya
+        const ids = ['dash-omzet', 'dash-vip', 'dash-fee-seller', 'dash-fee-rekber', 'dash-qris', 'dash-hak-seller', 'admin-nominal-pending'];
+        ids.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.innerHTML = '<i class="fas fa-circle-notch fa-spin text-sm"></i>';
+        });
+    }
+
+    if (!isRefresh) {
+        listContainer.innerHTML = `
+            <div class="text-center py-10 flex flex-col items-center justify-center bg-black/20 rounded-[1.5rem] border border-white/5">
+                <div class="w-10 h-10 border-4 border-brand-accent border-t-transparent rounded-full animate-spin mb-3"></div>
+                <span class="text-[10px] text-gray-500 font-bold tracking-widest uppercase">Menarik Data Sistem...</span>
+            </div>`;
+    }
 
     try {
         // ========================================================
@@ -10668,7 +10685,7 @@ async function loadAdminDashboard() {
         const elCountPending = document.getElementById('admin-count-pending');
         if (elCountPending) elCountPending.innerText = data.length;
 
-        let totalNominalTransfer = 0; // <--- VAR BARU BUAT NGITUNG TOTAL TAGIHAN HARI INI
+        let totalNominalTransfer = 0; 
 
         if (data.length > 0) {
             listContainer.innerHTML = data.map(req => {
@@ -10683,7 +10700,7 @@ async function loadAdminDashboard() {
                 let nominalBersih = Number(req.nominal) - 3500;
                 if (nominalBersih < 0) nominalBersih = 0;
                 
-                totalNominalTransfer += nominalBersih; // Tambahin ke keranjang tagihan
+                totalNominalTransfer += nominalBersih; 
 
                 return `
                 <div class="bg-[#161B2E] border border-white/5 p-4 rounded-[1.5rem] flex flex-col gap-3 shadow-lg relative overflow-hidden transition-all" id="wd-${req.id}">
@@ -10740,7 +10757,6 @@ async function loadAdminDashboard() {
                 </div>`;
         }
         
-        // Tampilkan Total Nominal Tagihan ke Layar
         const elNominalPending = document.getElementById('admin-nominal-pending');
         if (elNominalPending) elNominalPending.innerText = 'Rp ' + totalNominalTransfer.toLocaleString('id-ID');
 
@@ -10764,13 +10780,12 @@ async function loadAdminDashboard() {
         let totalFeeSeller = 0;
         let totalFeeRekber = 0;
         let totalQRIS = 0;
-        let totalHakSeller = 0; // <--- VAR BARU BUAT HAK SELLER (GMV BERSIH MEREKA)
+        let totalHakSeller = 0; 
 
-        // Bedah Uang dari Tabel Orders (Admin Manual / VIP Seller)
+        // Bedah Uang dari Tabel Orders
         (resAdminTrx.data || []).forEach(order => {
             let hargaDB = Number(order.price) || 0;
             totalOmzet += hargaDB;
-
             let estimasiQris = Math.floor(hargaDB * 0.007) + 500;
             totalQRIS += estimasiQris;
 
@@ -10781,15 +10796,13 @@ async function loadAdminDashboard() {
             }
         });
 
-        // Bedah Uang dari Tabel Pasar Player (Marketplace)
+        // Bedah Uang dari Tabel Pasar Player
         (resPlayerTrx.data || []).forEach(order => {
             let hargaDB = Number(order.price) || 0;
             totalOmzet += hargaDB;
-
             let estimasiQris = Math.floor(hargaDB * 0.007) + 500;
             totalQRIS += estimasiQris;
 
-            // Hitung Duit Hak Milik Seller (Duit Bersih Mereka)
             let isPembeli = order.player_products?.fee_ditanggung_pembeli || false;
             let hakSeller = hitungPendapatanBersih(hargaDB, isPembeli, order.product_name || "");
             totalHakSeller += hakSeller;
@@ -10809,13 +10822,21 @@ async function loadAdminDashboard() {
         if (document.getElementById('dash-fee-seller')) document.getElementById('dash-fee-seller').innerText = 'Rp ' + totalFeeSeller.toLocaleString('id-ID');
         if (document.getElementById('dash-fee-rekber')) document.getElementById('dash-fee-rekber').innerText = 'Rp ' + totalFeeRekber.toLocaleString('id-ID');
         if (document.getElementById('dash-qris')) document.getElementById('dash-qris').innerText = 'Rp ' + totalQRIS.toLocaleString('id-ID');
-        if (document.getElementById('dash-hak-seller')) document.getElementById('dash-hak-seller').innerText = 'Rp ' + totalHakSeller.toLocaleString('id-ID'); // <--- SUNTIKAN BARU
+        if (document.getElementById('dash-hak-seller')) document.getElementById('dash-hak-seller').innerText = 'Rp ' + totalHakSeller.toLocaleString('id-ID');
+
+        // MATIKAN EFEK LOADING DAN KASIH NOTIFIKASI
+        if (isRefresh) {
+            if (iconRefresh) iconRefresh.classList.remove('fa-spin');
+            showToast("Dashboard Keuangan berhasil diperbarui!", "success");
+        }
 
     } catch (err) {
         console.error("Error Super Admin:", err);
         listContainer.innerHTML = '<div class="text-center py-4 text-xs text-red-500">Gagal memuat data dari server.</div>';
+        if (isRefresh && iconRefresh) iconRefresh.classList.remove('fa-spin');
     }
 }
+
 
 // 3. Fungsi Salin Cepat dengan Visual Feedback
 function salinTeksAdmin(teks, btnElement, colorType) {
