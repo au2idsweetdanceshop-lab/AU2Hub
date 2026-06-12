@@ -27,7 +27,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script defer src="./app.js?v=36"></script>
+<script defer src="./app.js?v=37"></script>
 <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
 <style>
 
@@ -909,111 +909,84 @@ Satu pintu untuk info update terbaru, panduan pemula, jasa joki profesional, dan
         <h2 class="text-xl font-extrabold text-white flex items-center gap-2 tracking-tight">
             <span class="w-1.5 h-6 bg-brand-accent rounded-full"></span> Pusat Kendali
         </h2>
-<button onclick="loadAdminDashboard(true)" class="text-brand-accent bg-brand-accent/10 w-8 h-8 rounded-full flex items-center justify-center active:scale-90 transition-all border border-brand-accent/30 shadow-sm mr-2 ml-auto">
-    <i id="icon-refresh-admin" class="fas fa-sync-alt text-sm"></i>
-</button>
-
+        <button onclick="loadAdminDashboard(true)" class="text-brand-accent bg-brand-accent/10 w-8 h-8 rounded-full flex items-center justify-center active:scale-90 transition-all border border-brand-accent/30 shadow-sm mr-2 ml-auto">
+            <i id="icon-refresh-admin" class="fas fa-sync-alt text-sm"></i>
+        </button>
         <button onclick="switchTab('profile')" class="text-gray-400 bg-white/5 w-8 h-8 rounded-full flex items-center justify-center active:scale-90 transition-all border border-white/10 shadow-sm">
             <i class="fas fa-times text-sm"></i>
         </button>
     </div>
 
-    <!-- 1. DASHBOARD OPERASIONAL (DITAMBAH NOMINAL TAGIHAN) -->
-    <div class="grid grid-cols-2 gap-3 mb-4 relative z-10">
-        <div class="col-span-2 sm:col-span-1 bg-gradient-to-br from-[#1A1133] to-black border border-brand-accent/20 p-4 rounded-2xl shadow-lg relative overflow-hidden group">
+    <div class="grid grid-cols-2 gap-3 mb-5 relative z-10">
+        <div class="bg-gradient-to-br from-[#1A1133] to-black border border-brand-accent/20 p-4 rounded-2xl shadow-lg relative overflow-hidden group flex flex-col justify-between">
             <div class="absolute -right-2 -bottom-2 opacity-10 group-hover:scale-110 transition-transform"><i class="fas fa-wallet text-5xl text-brand-accent"></i></div>
-            <p class="text-[9px] text-gray-400 font-extrabold uppercase tracking-widest mb-1 relative z-10">Antrean Transfer</p>
-            <div class="flex justify-between items-end relative z-10">
-                <h3 id="admin-count-pending" class="text-3xl font-black text-white">0</h3>
-                <div class="text-right">
-                    <p class="text-[8px] text-brand-accent font-bold uppercase tracking-widest mb-0.5">Total Tagihan Transfer</p>
-                    <h4 id="admin-nominal-pending" class="text-sm font-black text-brand-accent">Rp 0</h4>
-                </div>
+            <div class="relative z-10">
+                <p class="text-[9px] text-gray-400 font-extrabold uppercase tracking-widest mb-0.5">Antrean Tarik</p>
+                <h3 id="admin-count-pending" class="text-2xl font-black text-white">0</h3>
+            </div>
+            <div class="mt-2 pt-2 border-t border-white/10 relative z-10">
+                <p class="text-[8px] text-brand-accent/80 font-bold uppercase tracking-widest mb-0.5">Tagihan Transfer</p>
+                <h4 id="admin-nominal-pending" class="text-sm font-black text-brand-accent break-words">Rp 0</h4>
             </div>
         </div>
-        <div class="col-span-2 sm:col-span-1 bg-gradient-to-br from-[#1A1133] to-black border border-brand-info/20 p-4 rounded-2xl shadow-lg relative overflow-hidden group">
+
+        <div class="bg-gradient-to-br from-[#051B2A] to-black border border-brand-info/20 p-4 rounded-2xl shadow-lg relative overflow-hidden group flex flex-col justify-between">
             <div class="absolute -right-2 -bottom-2 opacity-10 group-hover:scale-110 transition-transform"><i class="fas fa-users text-5xl text-brand-info"></i></div>
-            <p class="text-[9px] text-gray-400 font-extrabold uppercase tracking-widest mb-1 relative z-10">Total Mitra (Seller)</p>
-            <h3 id="admin-count-seller" class="text-3xl font-black text-white relative z-10 mt-1">0</h3>
+            <div class="relative z-10">
+                <p class="text-[9px] text-gray-400 font-extrabold uppercase tracking-widest mb-0.5">Total Mitra</p>
+                <h3 id="admin-count-seller" class="text-2xl font-black text-white mt-1">0</h3>
+            </div>
+            <div class="mt-2 pt-2 border-t border-white/10 relative z-10">
+                <p class="text-[8px] text-brand-info/80 font-bold uppercase tracking-widest mb-0.5">Status Sistem</p>
+                <h4 class="text-xs font-black text-brand-info">Aktif <i class="fas fa-check-circle ml-1"></i></h4>
+            </div>
         </div>
     </div>
 
-    <!-- 2. DASHBOARD KEUANGAN SUPER ADMIN (WALL STREET MODE) -->
-    <div class="flex flex-col gap-3 mb-6 relative z-10">
+    <div class="grid grid-cols-2 gap-3 mb-6 relative z-10">
         
-        <!-- TOTAL OMZET KESELURUHAN -->
-        <div class="bg-gradient-to-r from-[#1A1133] to-[#0A0615] border border-white/10 p-5 rounded-2xl shadow-lg relative overflow-hidden group">
+        <div class="col-span-2 bg-gradient-to-r from-[#1A1133] to-[#0A0615] border border-white/10 p-5 rounded-2xl shadow-lg relative overflow-hidden group flex justify-between items-center">
             <div class="absolute -right-4 -bottom-6 opacity-10 group-hover:scale-110 transition-transform"><i class="fas fa-chart-line text-7xl text-white"></i></div>
-            <p class="text-[10px] text-gray-400 font-extrabold uppercase tracking-widest mb-1 relative z-10 flex items-center gap-1"><i class="fas fa-globe text-brand-info"></i> Total Perputaran Uang (GMV)</p>
-            <h3 id="dash-omzet" class="text-3xl font-black text-white relative z-10 drop-shadow-md">Rp 0</h3>
+            <div class="relative z-10">
+                <p class="text-[10px] text-gray-400 font-extrabold uppercase tracking-widest mb-1 flex items-center gap-1"><i class="fas fa-globe text-brand-info"></i> Total Perputaran (GMV)</p>
+                <h3 id="dash-omzet" class="text-2xl sm:text-3xl font-black text-white drop-shadow-md">Rp 0</h3>
+            </div>
         </div>
 
-        <!-- HAK MILIK SELLER (UANG TITIPAN) - INI KOTAK BARU COK -->
-        <div class="bg-gradient-to-r from-[#001A0A] to-black border border-[#2BD975]/30 p-4 sm:p-5 rounded-2xl shadow-lg relative overflow-hidden group flex justify-between items-center">
+        <div class="col-span-2 bg-gradient-to-r from-[#001A0A] to-black border border-[#2BD975]/30 p-5 rounded-2xl shadow-lg relative overflow-hidden group flex justify-between items-center">
             <div class="absolute -left-2 -bottom-2 opacity-10 group-hover:scale-110 transition-transform"><i class="fas fa-users-cog text-6xl text-[#2BD975]"></i></div>
-            <div class="relative z-10">
+            <div class="relative z-10 w-full text-right">
                 <p class="text-[10px] text-[#2BD975]/80 font-extrabold uppercase tracking-widest mb-1">Hak Milik Seller (Duit Orang)</p>
-                <h3 id="dash-hak-seller" class="text-xl sm:text-2xl font-black text-[#2BD975]">Rp 0</h3>
-            </div>
-            <div class="w-11 h-11 rounded-full bg-[#2BD975]/10 flex items-center justify-center border border-[#2BD975]/20 relative z-10 shrink-0">
-                <i class="fas fa-users-cog text-[#2BD975] text-lg"></i>
+                <h3 id="dash-hak-seller" class="text-2xl sm:text-3xl font-black text-[#2BD975]">Rp 0</h3>
             </div>
         </div>
 
-        <!-- PENDAPATAN VIP SELLER -->
-        <div class="bg-gradient-to-r from-[#1A1100] to-black border border-yellow-500/30 p-4 sm:p-5 rounded-2xl shadow-lg relative overflow-hidden group flex justify-between items-center">
-            <div class="absolute -left-2 -bottom-2 opacity-10 group-hover:scale-110 transition-transform"><i class="fas fa-crown text-6xl text-yellow-500"></i></div>
-            <div class="relative z-10">
-                <p class="text-[10px] text-yellow-500/80 font-extrabold uppercase tracking-widest mb-1">Langganan VIP</p>
-                <h3 id="dash-vip" class="text-xl sm:text-2xl font-black text-yellow-400">Rp 0</h3>
-            </div>
-            <div class="w-11 h-11 rounded-full bg-yellow-500/10 flex items-center justify-center border border-yellow-500/20 relative z-10 shrink-0">
-                <i class="fas fa-crown text-yellow-500 text-lg"></i>
-            </div>
+        <div class="bg-gradient-to-br from-[#2A1B05] to-black border border-yellow-500/30 p-4 rounded-2xl shadow-lg relative overflow-hidden group">
+            <div class="absolute -right-2 -bottom-2 opacity-10 group-hover:scale-110 transition-transform"><i class="fas fa-crown text-4xl text-yellow-500"></i></div>
+            <p class="text-[8px] sm:text-[9px] text-yellow-500/80 font-extrabold uppercase tracking-widest mb-1 relative z-10">Langganan VIP</p>
+            <h3 id="dash-vip" class="text-sm sm:text-lg font-black text-yellow-400 relative z-10 break-words">Rp 0</h3>
         </div>
 
-        <!-- PENDAPATAN FEE SELLER (MARKETPLACE) -->
-        <div class="bg-gradient-to-r from-[#00111A] to-black border border-[#46B3FF]/30 p-4 sm:p-5 rounded-2xl shadow-lg relative overflow-hidden group flex justify-between items-center">
-            <div class="absolute -left-2 -bottom-2 opacity-10 group-hover:scale-110 transition-transform"><i class="fas fa-store text-6xl text-[#46B3FF]"></i></div>
-            <div class="relative z-10">
-                <p class="text-[10px] text-[#46B3FF]/80 font-extrabold uppercase tracking-widest mb-1">Fee Etalase</p>
-                <h3 id="dash-fee-seller" class="text-xl sm:text-2xl font-black text-[#46B3FF]">Rp 0</h3>
-            </div>
-            <div class="w-11 h-11 rounded-full bg-[#46B3FF]/10 flex items-center justify-center border border-[#46B3FF]/20 relative z-10 shrink-0">
-                <i class="fas fa-store text-[#46B3FF] text-lg"></i>
-            </div>
+        <div class="bg-gradient-to-br from-[#00111A] to-black border border-[#46B3FF]/30 p-4 rounded-2xl shadow-lg relative overflow-hidden group">
+            <div class="absolute -right-2 -bottom-2 opacity-10 group-hover:scale-110 transition-transform"><i class="fas fa-store text-4xl text-[#46B3FF]"></i></div>
+            <p class="text-[8px] sm:text-[9px] text-[#46B3FF]/80 font-extrabold uppercase tracking-widest mb-1 relative z-10">Fee Etalase</p>
+            <h3 id="dash-fee-seller" class="text-sm sm:text-lg font-black text-[#46B3FF] relative z-10 break-words">Rp 0</h3>
         </div>
 
-        <!-- PENDAPATAN FEE REKBER (JATAH NIKKY/ADMIN) -->
-        <div class="bg-gradient-to-r from-[#1A000A] to-black border border-[#FF007A]/30 p-4 sm:p-5 rounded-2xl shadow-lg relative overflow-hidden group flex justify-between items-center">
-            <div class="absolute -left-2 -bottom-2 opacity-10 group-hover:scale-110 transition-transform"><i class="fas fa-shield-alt text-6xl text-[#FF007A]"></i></div>
-            <div class="relative z-10">
-                <p class="text-[10px] text-[#FF007A]/80 font-extrabold uppercase tracking-widest mb-1">Fee Rekber</p>
-                <h3 id="dash-fee-rekber" class="text-xl sm:text-2xl font-black text-[#FF007A]">Rp 0</h3>
-            </div>
-            <div class="w-11 h-11 rounded-full bg-[#FF007A]/10 flex items-center justify-center border border-[#FF007A]/20 relative z-10 shrink-0">
-                <i class="fas fa-shield-alt text-[#FF007A] text-lg"></i>
-            </div>
+        <div class="bg-gradient-to-br from-[#2A0515] to-black border border-[#FF007A]/30 p-4 rounded-2xl shadow-lg relative overflow-hidden group">
+            <div class="absolute -right-2 -bottom-2 opacity-10 group-hover:scale-110 transition-transform"><i class="fas fa-shield-alt text-4xl text-[#FF007A]"></i></div>
+            <p class="text-[8px] sm:text-[9px] text-[#FF007A]/80 font-extrabold uppercase tracking-widest mb-1 relative z-10">Fee Rekber</p>
+            <h3 id="dash-fee-rekber" class="text-sm sm:text-lg font-black text-[#FF007A] relative z-10 break-words">Rp 0</h3>
         </div>
 
-        <!-- BIAYA POTONGAN QRIS (XOFTWARE) -->
-        <div class="bg-gradient-to-r from-[#1A0000] to-black border border-red-500/30 p-4 sm:p-5 rounded-2xl shadow-lg relative overflow-hidden group flex justify-between items-center">
-            <div class="absolute -left-2 -bottom-2 opacity-10 group-hover:scale-110 transition-transform"><i class="fas fa-qrcode text-6xl text-red-500"></i></div>
-            <div class="relative z-10">
-                <p class="text-[10px] text-red-500/80 font-extrabold uppercase tracking-widest mb-1">Potongan QRIS</p>
-                <h3 id="dash-qris" class="text-xl sm:text-2xl font-black text-red-400">Rp 0</h3>
-            </div>
-            <div class="w-11 h-11 rounded-full bg-red-500/10 flex items-center justify-center border border-red-500/20 relative z-10 shrink-0">
-                <i class="fas fa-qrcode text-red-500 text-lg"></i>
-            </div>
+        <div class="bg-gradient-to-br from-[#2A0505] to-black border border-red-500/30 p-4 rounded-2xl shadow-lg relative overflow-hidden group">
+            <div class="absolute -right-2 -bottom-2 opacity-10 group-hover:scale-110 transition-transform"><i class="fas fa-qrcode text-4xl text-red-500"></i></div>
+            <p class="text-[8px] sm:text-[9px] text-red-500/80 font-extrabold uppercase tracking-widest mb-1 relative z-10">Potongan QRIS</p>
+            <h3 id="dash-qris" class="text-sm sm:text-lg font-black text-red-400 relative z-10 break-words">Rp 0</h3>
         </div>
 
     </div>
 
-
-    </div>
-
-    <!-- 3. ANTREAN TRANSFER -->
     <div class="flex items-center gap-2.5 mb-4 relative z-10">
         <div class="w-1.5 h-4 bg-yellow-500 rounded-full"></div>
         <h3 class="text-xs font-extrabold text-gray-400 uppercase tracking-widest">Daftar Antrean Transfer</h3>
@@ -1026,6 +999,7 @@ Satu pintu untuk info update terbaru, panduan pemula, jasa joki profesional, dan
         </div>
     </div>
 </section>
+
 
 
 
@@ -2232,6 +2206,43 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
             <button id="btn-beli-pasar" class="w-full bg-gradient-to-r from-[#FF5722] to-[#EE4D2D] text-white py-3.5 rounded-xl font-extrabold active:scale-95 transition-all uppercase tracking-wider text-sm shadow-[0_4px_15px_rgba(238,77,45,0.3)] flex justify-center items-center gap-2">
                 <i class="fas fa-shopping-cart"></i> Beli Sekarang
             </button>
+        </div>
+    </div>
+</div>
+
+<div id="modal-saldo-dompet" class="fixed inset-0 z-[700] hidden items-end sm:items-center justify-center bg-black/90 backdrop-blur-md px-0 sm:px-6 transition-all duration-300">
+    <div class="bg-brand-card w-full max-w-md sm:rounded-[2rem] rounded-t-[2.5rem] border-t sm:border border-white/10 shadow-2xl relative modal-anim flex flex-col h-[85vh] sm:h-auto sm:max-h-[85vh] overflow-hidden">
+        
+        <div class="flex justify-between items-center p-5 border-b border-white/5 bg-brand-dark/80 backdrop-blur-xl shrink-0 z-20">
+            <h3 class="font-black text-white text-sm flex items-center gap-2 tracking-tight">
+                <i class="fas fa-wallet text-brand-info"></i> Dompet Seller
+            </h3>
+            <button aria-label="Tutup" onclick="tutupModalSaldoDompet()" class="text-gray-400 hover:text-white w-8 h-8 rounded-full bg-white/5 flex items-center justify-center active:scale-95 transition-all border border-white/10 shadow-sm"><i class="fas fa-times"></i></button>
+        </div>
+
+        <div class="flex-1 overflow-y-auto hide-scroll p-5 pt-6 bg-black/40">
+            
+            <div class="bg-gradient-to-br from-brand-info/20 to-[#0A1A2A] border border-brand-info/30 p-6 rounded-[1.5rem] mb-6 relative overflow-hidden shadow-lg">
+                <div class="absolute -right-4 -bottom-4 opacity-10"><i class="fas fa-coins text-8xl text-brand-info"></i></div>
+                
+                <p class="text-[10px] text-brand-info font-extrabold uppercase tracking-widest mb-1 relative z-10">Saldo Tersedia</p>
+                <h2 id="dompet-angka-saldo" class="text-3xl font-black text-white mb-5 relative z-10 tracking-tight">Rp 0</h2>
+                
+                <button onclick="prosesTarikSaldo()" class="w-full bg-brand-info hover:bg-[#32a2f2] text-brand-dark py-3.5 rounded-xl font-extrabold text-xs active:scale-95 transition-all shadow-[0_0_15px_rgba(70,179,255,0.4)] relative z-10 tracking-wider">
+                    <i class="fas fa-university mr-1"></i> TARIK KE REKENING
+                </button>
+                <p class="text-[8px] text-gray-400 mt-2 text-center relative z-10 italic">*Dikenakan biaya admin bank Rp 3.500 per penarikan.</p>
+            </div>
+
+            <div class="flex items-center gap-2.5 mb-3">
+                <div class="w-1.5 h-4 bg-gray-500 rounded-full"></div>
+                <h4 class="text-xs font-extrabold text-gray-400 uppercase tracking-widest">Riwayat Mutasi Saldo</h4>
+            </div>
+            
+            <div id="dompet-history-list" class="space-y-2 flex-1 pb-10">
+                <div class="text-center py-10 text-gray-500 text-xs"><i class="fas fa-spinner fa-spin text-2xl mb-2"></i></div>
+            </div>
+            
         </div>
     </div>
 </div>
