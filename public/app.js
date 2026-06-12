@@ -10612,16 +10612,19 @@ function bukaSuperAdmin() {
 }
 
 
-// 2. Fungsi Load Antrean (Lengkap dengan Tombol Salin Sat-Set)
+// 2. Fungsi Load Antrean & Dashboard Keuangan (Lengkap dengan Tombol Salin Sat-Set)
 async function loadAdminDashboard() {
     const listContainer = document.getElementById('admin-withdrawal-list');
     listContainer.innerHTML = `
         <div class="text-center py-10 flex flex-col items-center justify-center bg-black/20 rounded-[1.5rem] border border-white/5">
             <div class="w-10 h-10 border-4 border-brand-accent border-t-transparent rounded-full animate-spin mb-3"></div>
-            <span class="text-[10px] text-gray-500 font-bold tracking-widest uppercase">Menarik Data Antrean...</span>
+            <span class="text-[10px] text-gray-500 font-bold tracking-widest uppercase">Menarik Data Sistem...</span>
         </div>`;
 
     try {
+        // ========================================================
+        // BAGIAN 1: TARIK DATA ANTREAN PENARIKAN (WITHDRAWAL)
+        // ========================================================
         const { data, error } = await supabaseClient
             .from('withdrawals')
             .select('*, profiles(nickname)')
@@ -10629,7 +10632,9 @@ async function loadAdminDashboard() {
             .order('created_at', { ascending: true });
 
         if (error) throw error;
-        document.getElementById('admin-count-pending').innerText = data.length;
+        
+        const elCountPending = document.getElementById('admin-count-pending');
+        if (elCountPending) elCountPending.innerText = data.length;
 
         if (data.length > 0) {
             listContainer.innerHTML = data.map(req => {
@@ -10700,14 +10705,79 @@ async function loadAdminDashboard() {
                 </div>`;
         }
 
-        // Ambil angka total Seller di ekosistem
+        // ========================================================
+        // BAGIAN 2: HITUNG TOTAL MITRA / SELLER
+        // ========================================================
         const { count } = await supabaseClient.from('profiles').select('*', { count: 'exact', head: true }).eq('is_seller', true);
-        document.getElementById('admin-count-seller').innerText = count || 0;
+        const elCountSeller = document.getElementById('admin-count-seller');
+        if (elCountSeller) elCountSeller.innerText = count || 0;
+
+        // ========================================================
+        // BAGIAN 3: KALKULATOR DASHBOARD KEUANGAN SUPER ADMIN
+        // ========================================================
+        // 1. Tarik semua pesanan yang statusnya 'selesai' dari kedua tabel
+        const reqAdminTrx = supabaseClient.from('orders').select('price, product_name').eq('status', 'selesai');
+        const reqPlayerTrx = supabaseClient.from('orders_player').select('price, product_name').eq('status', 'selesai');
+        
+        const [resAdminTrx, resPlayerTrx] = await Promise.all([reqAdminTrx, reqPlayerTrx]);
+
+        let totalOmzet = 0;
+        let totalVIP = 0;
+        let totalFeeSeller = 0;
+        let totalFeeRekber = 0;
+        let totalQRIS = 0;
+
+        // 2. Bedah Uang dari Tabel Orders (Admin Manual / VIP Seller)
+        (resAdminTrx.data || []).forEach(order => {
+            let hargaDB = Number(order.price) || 0;
+            totalOmzet += hargaDB;
+
+            // Estimasi Biaya QRIS Xoftware (0.7% + 500)
+            let estimasiQris = Math.floor(hargaDB * 0.007) + 500;
+            totalQRIS += estimasiQris;
+
+            if (order.product_name && order.product_name.includes('[VIP]')) {
+                // Ini murni uang masuk dari langganan Seller
+                totalVIP += (hargaDB - estimasiQris); 
+            } else {
+                // Ini pesanan manual/jasa lewat Admin biasa (Dihitung sbg fee Rekber full)
+                totalFeeRekber += hitungFeeRekber(hargaDB);
+            }
+        });
+
+        // 3. Bedah Uang dari Tabel Pasar Player (Marketplace)
+        (resPlayerTrx.data || []).forEach(order => {
+            let hargaDB = Number(order.price) || 0;
+            totalOmzet += hargaDB;
+
+            // Estimasi Biaya QRIS Xoftware (0.7% + 500)
+            let estimasiQris = Math.floor(hargaDB * 0.007) + 500;
+            totalQRIS += estimasiQris;
+
+            // Hitung Pajak Marketplace (Fee Seller) menggunakan fungsi global lu
+            let feePlatform = hitungPotonganSeller(hargaDB);
+            totalFeeSeller += feePlatform;
+
+            // Hitung Fee Rekber (JIKA buyer mengaktifkan fitur rekber admin NIKKY)
+            if (order.product_name && order.product_name.includes('[+Rekber]')) {
+                let feeRekber = hitungFeeRekber(hargaDB);
+                totalFeeRekber += feeRekber;
+            }
+        });
+
+        // 4. Suntikkan hasil hitungan ke Layar UI HTML
+        if (document.getElementById('dash-omzet')) document.getElementById('dash-omzet').innerText = 'Rp ' + totalOmzet.toLocaleString('id-ID');
+        if (document.getElementById('dash-vip')) document.getElementById('dash-vip').innerText = 'Rp ' + totalVIP.toLocaleString('id-ID');
+        if (document.getElementById('dash-fee-seller')) document.getElementById('dash-fee-seller').innerText = 'Rp ' + totalFeeSeller.toLocaleString('id-ID');
+        if (document.getElementById('dash-fee-rekber')) document.getElementById('dash-fee-rekber').innerText = 'Rp ' + totalFeeRekber.toLocaleString('id-ID');
+        if (document.getElementById('dash-qris')) document.getElementById('dash-qris').innerText = 'Rp ' + totalQRIS.toLocaleString('id-ID');
 
     } catch (err) {
+        console.error("Error Super Admin:", err);
         listContainer.innerHTML = '<div class="text-center py-4 text-xs text-red-500">Gagal memuat data dari server.</div>';
     }
 }
+
 
 
 // 3. Fungsi Salin Cepat dengan Visual Feedback
