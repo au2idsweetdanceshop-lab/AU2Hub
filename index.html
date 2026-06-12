@@ -27,7 +27,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script defer src="./app.js?v=34"></script>
+<script defer src="./app.js?v=35"></script>
 <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
 <style>
 
@@ -814,28 +814,17 @@ Satu pintu untuk info update terbaru, panduan pemula, jasa joki profesional, dan
 
     <div id="toko-container" class="w-full relative z-10">
         
-<div id="toko-logged-out" class="hidden flex-col items-center justify-center py-12 px-5 mt-4 w-full max-w-sm mx-auto bg-gradient-to-b from-brand-card/60 to-transparent rounded-[2rem] border border-white/5 shadow-inner">
-    
-    <div class="w-20 h-20 bg-[#EE4D2D]/10 rounded-full flex items-center justify-center mb-5 border border-[#EE4D2D]/20 shadow-[0_0_30px_rgba(238,77,45,0.2)] shrink-0">
-        <!-- Ikon digeser sedikit ke kanan biar pas di tengah -->
-        <i class="fas fa-store-slash text-4xl text-[#EE4D2D]/50 translate-x-1"></i>
-    </div>
-    
-    <h3 class="text-xl font-black text-white mb-2 tracking-tight text-center w-full">Akses Tertutup</h3>
-    
-    <p class="text-[11px] text-gray-400 mb-8 text-center leading-relaxed w-full max-w-[260px] mx-auto">
-        Silakan login untuk mulai mengelola etalase toko dan melacak pesanan masuk Anda.
-    </p>
-    
-    <button onclick="openAuthModal()" class="w-full max-w-[250px] mx-auto flex items-center justify-center bg-gradient-to-r from-[#FF5722] to-[#EE4D2D] text-white py-3.5 rounded-xl font-extrabold active:scale-95 transition-all shadow-[0_8px_20px_rgba(238,77,45,0.3)] uppercase tracking-wider text-[11px] whitespace-nowrap shrink-0">
-        LOGIN SEKARANG
-    </button>
-
-</div>
+        <div id="toko-logged-out" class="hidden flex-col items-center justify-center py-12 px-5 mt-4 w-full max-w-sm mx-auto bg-gradient-to-b from-brand-card/60 to-transparent rounded-[2rem] border border-white/5 shadow-inner">
+            <div class="w-20 h-20 bg-[#EE4D2D]/10 rounded-full flex items-center justify-center mb-5 border border-[#EE4D2D]/20 shadow-[0_0_30px_rgba(238,77,45,0.2)] shrink-0">
+                <i class="fas fa-store-slash text-4xl text-[#EE4D2D]/50 translate-x-1"></i>
+            </div>
+            <h3 class="text-xl font-black text-white mb-2 tracking-tight text-center w-full">Akses Tertutup</h3>
+            <p class="text-[11px] text-gray-400 mb-8 text-center leading-relaxed w-full max-w-[260px] mx-auto">Silakan login untuk mulai mengelola etalase toko dan melacak pesanan masuk Anda.</p>
+            <button onclick="openAuthModal()" class="w-full max-w-[250px] mx-auto flex items-center justify-center bg-gradient-to-r from-[#FF5722] to-[#EE4D2D] text-white py-3.5 rounded-xl font-extrabold active:scale-95 transition-all shadow-[0_8px_20px_rgba(238,77,45,0.3)] uppercase tracking-wider text-[11px]">LOGIN SEKARANG</button>
+        </div>
 
         <div id="toko-logged-in" class="w-full hidden">
-
-            
+            <!-- Saldo Utama -->
             <div class="bg-gradient-to-br from-[#FF5722] to-[#EE4D2D] rounded-[2rem] p-6 shadow-[0_10px_40px_rgba(238,77,45,0.4)] mb-6 relative overflow-hidden">
                 <div class="relative z-10">
                     <div class="flex justify-between items-center mb-2">
@@ -843,10 +832,9 @@ Satu pintu untuk info update terbaru, panduan pemula, jasa joki profesional, dan
                         <i class="fas fa-wallet text-white/70 text-lg"></i>
                     </div>
                     <div class="mb-6 flex items-baseline gap-1.5 flex-wrap" id="toko-saldo-aktif">
-    <span class="text-xl font-bold text-white/80">Rp</span>
-    <span class="text-4xl font-black text-white tracking-tighter drop-shadow-sm" id="saldo-angka">0</span>
-</div>
-                    
+                        <span class="text-xl font-bold text-white/80">Rp</span>
+                        <span class="text-4xl font-black text-white tracking-tighter drop-shadow-sm" id="saldo-angka">0</span>
+                    </div>
                     <div class="flex items-center justify-between border-t border-white/20 pt-4">
                         <div class="flex flex-col">
                             <p class="text-[9px] text-white/80 font-bold uppercase tracking-widest flex items-center gap-1.5 mb-1"><i class="fas fa-clock text-[10px]"></i> Saldo Tertahan (H+1)</p>
@@ -855,41 +843,64 @@ Satu pintu untuk info update terbaru, panduan pemula, jasa joki profesional, dan
                         <button onclick="bukaModalSaldoDompet()" class="bg-white text-[#EE4D2D] text-[11px] font-black px-6 py-3 rounded-[1rem] shadow-lg active:scale-95 transition-transform tracking-wider">TARIK DANA</button>
                     </div>
                 </div>
-                <!-- Efek cahaya putih di pojok kanan bawah -->
-                <div class="absolute -bottom-12 -right-12 w-48 h-48 bg-white/10 rounded-full blur-2xl pointer-events-none"></div>
             </div>
 
-            <div class="grid grid-cols-3 gap-3 mb-6">
+            <!-- ANALITIK SELLER (WALL STREET MODE) -->
+            <div class="flex items-center gap-2.5 mb-3 mt-2">
+                <div class="w-1.5 h-4 bg-brand-info rounded-full"></div>
+                <h3 class="text-xs font-extrabold text-gray-400 uppercase tracking-widest">Performa Toko Anda</h3>
+            </div>
+            <div class="flex flex-col gap-3 mb-6">
+                <!-- 1. PENDAPATAN BERSIH -->
+                <div class="bg-gradient-to-r from-[#0A2010] to-black border border-brand-success/30 p-4 sm:p-5 rounded-2xl shadow-lg relative overflow-hidden group flex justify-between items-center">
+                    <div class="absolute -left-2 -bottom-2 opacity-10 group-hover:scale-110 transition-transform"><i class="fas fa-hand-holding-usd text-6xl text-brand-success"></i></div>
+                    <div class="relative z-10">
+                        <p class="text-[9px] text-brand-success/80 font-extrabold uppercase tracking-widest mb-1">Pendapatan Bersih</p>
+                        <h3 id="seller-stat-bersih" class="text-xl sm:text-2xl font-black text-brand-success">Rp 0</h3>
+                    </div>
+                    <div class="w-10 h-10 rounded-full bg-brand-success/10 flex items-center justify-center border border-brand-success/20 relative z-10 shrink-0">
+                        <i class="fas fa-hand-holding-usd text-brand-success text-sm"></i>
+                    </div>
+                </div>
+                <!-- 2. OMZET & PESANAN -->
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="bg-[#161B2E] border border-white/5 p-4 rounded-2xl shadow-md">
+                        <p class="text-[8px] text-gray-400 font-extrabold uppercase tracking-widest mb-1 flex items-center gap-1"><i class="fas fa-chart-line text-brand-info"></i> Omzet Kotor</p>
+                        <h3 id="seller-stat-gmv" class="text-sm font-black text-white truncate">Rp 0</h3>
+                    </div>
+                    <div class="bg-[#161B2E] border border-white/5 p-4 rounded-2xl shadow-md">
+                        <p class="text-[8px] text-gray-400 font-extrabold uppercase tracking-widest mb-1 flex items-center gap-1"><i class="fas fa-box-open text-[#EE4D2D]"></i> Pesanan Selesai</p>
+                        <h3 id="seller-stat-terjual" class="text-sm font-black text-white truncate">0 Pesanan</h3>
+                    </div>
+                </div>
+            </div>
 
+            <!-- MENU CEPAT -->
+            <div class="grid grid-cols-3 gap-3 mb-6">
                 <div id="menu-toko-pesanan" onclick="switchTokoTab('pesanan')" class="bg-[#161B2E] border border-transparent p-4 py-5 rounded-[1.5rem] flex flex-col items-center justify-center gap-3 cursor-pointer transition-all active:scale-95 shadow-lg">
                     <div class="w-11 h-11 rounded-full bg-[#1A2A4A] text-[#46B3FF] flex items-center justify-center text-lg"><i class="fas fa-clipboard-list"></i></div>
                     <span class="text-[11px] font-bold text-gray-300 text-center leading-tight">Pesanan<br>Masuk</span>
                 </div>
-
                 <div id="menu-toko-produk" onclick="switchTokoTab('produk')" class="bg-[#161B2E] border border-transparent p-4 py-5 rounded-[1.5rem] flex flex-col items-center justify-center gap-3 cursor-pointer transition-all active:scale-95 shadow-lg">
                     <div class="w-11 h-11 rounded-full bg-[#3A2218] text-[#EE4D2D] flex items-center justify-center text-lg"><i class="fas fa-box-open"></i></div>
                     <span class="text-[11px] font-bold text-gray-300 text-center leading-tight">Etalase<br>Saya</span>
                 </div>
-
                 <div onclick="bukaModalJualBarang()" class="bg-[#161B2E] border border-transparent p-4 py-5 rounded-[1.5rem] flex flex-col items-center justify-center gap-3 cursor-pointer transition-all active:scale-95 shadow-lg hover:border-brand-success/30">
                     <div class="w-11 h-11 rounded-full bg-[#0A2A1A] text-[#2BD975] flex items-center justify-center text-lg"><i class="fas fa-plus"></i></div>
                     <span class="text-[11px] font-bold text-gray-300 text-center leading-tight">Tambah<br>Produk</span>
                 </div>
             </div>
 
-
             <div class="flex items-center gap-2.5 mb-4">
                 <div class="w-1.5 h-5 bg-[#EE4D2D] rounded-full"></div>
                 <h3 id="toko-section-title" class="text-sm font-extrabold text-white tracking-wide">Daftar Pesanan Masuk</h3>
             </div>
-
-            
             <div id="toko-produk-container" class="space-y-3 hidden pb-10"></div>
             <div id="toko-pesanan-container" class="space-y-3 block pb-10"></div>
-            
         </div>
     </div>
 </section>
+
 
 <section id="superadmin" class="tab-content py-5 min-h-[60vh] flex flex-col justify-start relative px-4">
     <div class="absolute top-0 right-0 w-40 h-40 bg-brand-accent/10 rounded-full blur-3xl pointer-events-none"></div>
@@ -906,17 +917,23 @@ Satu pintu untuk info update terbaru, panduan pemula, jasa joki profesional, dan
         </button>
     </div>
 
-    <!-- 1. DASHBOARD OPERASIONAL -->
+    <!-- 1. DASHBOARD OPERASIONAL (DITAMBAH NOMINAL TAGIHAN) -->
     <div class="grid grid-cols-2 gap-3 mb-4 relative z-10">
-        <div class="bg-gradient-to-br from-[#1A1133] to-black border border-brand-accent/20 p-4 rounded-2xl shadow-lg relative overflow-hidden group">
+        <div class="col-span-2 sm:col-span-1 bg-gradient-to-br from-[#1A1133] to-black border border-brand-accent/20 p-4 rounded-2xl shadow-lg relative overflow-hidden group">
             <div class="absolute -right-2 -bottom-2 opacity-10 group-hover:scale-110 transition-transform"><i class="fas fa-wallet text-5xl text-brand-accent"></i></div>
-            <p class="text-[9px] text-gray-400 font-extrabold uppercase tracking-widest mb-1 relative z-10">Antrean Tarik</p>
-            <h3 id="admin-count-pending" class="text-2xl font-black text-white relative z-10">0</h3>
+            <p class="text-[9px] text-gray-400 font-extrabold uppercase tracking-widest mb-1 relative z-10">Antrean Transfer</p>
+            <div class="flex justify-between items-end relative z-10">
+                <h3 id="admin-count-pending" class="text-3xl font-black text-white">0</h3>
+                <div class="text-right">
+                    <p class="text-[8px] text-brand-accent font-bold uppercase tracking-widest mb-0.5">Total Tagihan Transfer</p>
+                    <h4 id="admin-nominal-pending" class="text-sm font-black text-brand-accent">Rp 0</h4>
+                </div>
+            </div>
         </div>
-        <div class="bg-gradient-to-br from-[#1A1133] to-black border border-brand-info/20 p-4 rounded-2xl shadow-lg relative overflow-hidden group">
+        <div class="col-span-2 sm:col-span-1 bg-gradient-to-br from-[#1A1133] to-black border border-brand-info/20 p-4 rounded-2xl shadow-lg relative overflow-hidden group">
             <div class="absolute -right-2 -bottom-2 opacity-10 group-hover:scale-110 transition-transform"><i class="fas fa-users text-5xl text-brand-info"></i></div>
-            <p class="text-[9px] text-gray-400 font-extrabold uppercase tracking-widest mb-1 relative z-10">Total Mitra</p>
-            <h3 id="admin-count-seller" class="text-2xl font-black text-white relative z-10">0</h3>
+            <p class="text-[9px] text-gray-400 font-extrabold uppercase tracking-widest mb-1 relative z-10">Total Mitra (Seller)</p>
+            <h3 id="admin-count-seller" class="text-3xl font-black text-white relative z-10 mt-1">0</h3>
         </div>
     </div>
 
@@ -928,6 +945,18 @@ Satu pintu untuk info update terbaru, panduan pemula, jasa joki profesional, dan
             <div class="absolute -right-4 -bottom-6 opacity-10 group-hover:scale-110 transition-transform"><i class="fas fa-chart-line text-7xl text-white"></i></div>
             <p class="text-[10px] text-gray-400 font-extrabold uppercase tracking-widest mb-1 relative z-10 flex items-center gap-1"><i class="fas fa-globe text-brand-info"></i> Total Perputaran Uang (GMV)</p>
             <h3 id="dash-omzet" class="text-3xl font-black text-white relative z-10 drop-shadow-md">Rp 0</h3>
+        </div>
+
+        <!-- HAK MILIK SELLER (UANG TITIPAN) - INI KOTAK BARU COK -->
+        <div class="bg-gradient-to-r from-[#001A0A] to-black border border-[#2BD975]/30 p-4 sm:p-5 rounded-2xl shadow-lg relative overflow-hidden group flex justify-between items-center">
+            <div class="absolute -left-2 -bottom-2 opacity-10 group-hover:scale-110 transition-transform"><i class="fas fa-users-cog text-6xl text-[#2BD975]"></i></div>
+            <div class="relative z-10">
+                <p class="text-[10px] text-[#2BD975]/80 font-extrabold uppercase tracking-widest mb-1">Hak Milik Seller (Duit Orang)</p>
+                <h3 id="dash-hak-seller" class="text-xl sm:text-2xl font-black text-[#2BD975]">Rp 0</h3>
+            </div>
+            <div class="w-11 h-11 rounded-full bg-[#2BD975]/10 flex items-center justify-center border border-[#2BD975]/20 relative z-10 shrink-0">
+                <i class="fas fa-users-cog text-[#2BD975] text-lg"></i>
+            </div>
         </div>
 
         <!-- PENDAPATAN VIP SELLER -->
@@ -979,6 +1008,7 @@ Satu pintu untuk info update terbaru, panduan pemula, jasa joki profesional, dan
         </div>
 
     </div>
+
 
     </div>
 
