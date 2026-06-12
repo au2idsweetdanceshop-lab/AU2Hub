@@ -1,4 +1,9 @@
 // ==========================================
+// TEKS GLOBAL TABEL FEE (BIAR GAK CAPEK NGETIK ULANG)
+// ==========================================
+const TEKS_TABEL_FEE = "Tabel Fee Seller AU2Hub:\n\n🔹 Harga ≤ Rp 25.000 = Potongan Rp 1.000\n🔹 Harga ≤ Rp 50.000 = Potongan Rp 2.000\n🔹 Harga ≤ Rp 99.999 = Potongan Rp 3.000\n🔹 Harga ≤ Rp 499.999 = Potongan Rp 10.000\n🔹 Harga ≤ Rp 1.499.999 = Potongan Rp 20.000\n🔹 Harga ≤ Rp 1.999.999 = Potongan Rp 25.000\n🔹 Harga ≥ Rp 2.000.000 = Potongan Rp 35.000";
+
+// ==========================================
 // FUNGSI TOGGLE PILIHAN BIAYA ADMIN (SELLER / PEMBELI)
 // ==========================================
 function setFeeBearer(bearer, mode) {
@@ -15,13 +20,16 @@ function setFeeBearer(bearer, mode) {
     if (bearer === 'seller') {
         btnSeller.className = activeClass;
         btnPembeli.className = inactiveClass;
-        infoText.innerHTML = `*Pendapatan Anda akan dipotong sesuai <span onclick="customAlert('Tabel Fee...')" class="underline cursor-pointer font-bold hover:text-brand-info text-white">Tabel Fee</span>. Pembeli melihat harga normal.`;
+        // Panggil variabel TEKS_TABEL_FEE langsung tanpa tanda kutip
+        infoText.innerHTML = `*Pendapatan Anda akan dipotong sesuai <span onclick="customAlert(TEKS_TABEL_FEE)" class="underline cursor-pointer font-bold hover:text-brand-info text-white">Tabel Fee</span>. Pembeli melihat harga normal.`;
     } else {
         btnPembeli.className = activeClass;
         btnSeller.className = inactiveClass;
-        infoText.innerHTML = `*Anda menerima pendapatan UTUH. Harga ke pembeli otomatis dinaikkan menyesuaikan <span onclick="customAlert('Tabel Fee...')" class="underline cursor-pointer font-bold hover:text-brand-info text-white">Tabel Fee</span>.`;
+        // Panggil variabel TEKS_TABEL_FEE langsung tanpa tanda kutip
+        infoText.innerHTML = `*Anda menerima pendapatan UTUH. Harga ke pembeli otomatis dinaikkan menyesuaikan <span onclick="customAlert(TEKS_TABEL_FEE)" class="underline cursor-pointer font-bold hover:text-brand-info text-white">Tabel Fee</span>.`;
     }
 }
+
 
 // Helper: Menghitung bersih pencairan jika buyer yang nanggung biaya
 function hitungPendapatanBersih(hargaGateway, ditanggungPembeli, namaProduk = "") {
@@ -9691,41 +9699,65 @@ async function loadTokoSaya() {
 
 async function updateUiSaldoSeller() {
     try {
-        // Tarik Saldo Aktif
+        // 1. Tarik Saldo Aktif dari tabel profiles
         const { data: profile } = await supabaseClient.from('profiles').select('balance').eq('id', currentUser.id).single();
         
-        // PERBAIKAN: Targetkan ke ID 'toko-saldo-aktif' (lengkap dengan awalan Rp)
         const elSaldoAktif = document.getElementById('toko-saldo-aktif');
-        if (elSaldoAktif) {
-            elSaldoAktif.innerText = 'Rp ' + (profile?.balance || 0).toLocaleString('id-ID');
-        }
+        if (elSaldoAktif) elSaldoAktif.innerText = 'Rp ' + (profile?.balance || 0).toLocaleString('id-ID');
 
-        // Tetap biarkan 'saldo-angka' berjaga-jaga jika ada elemen lain yang menggunakan ID ini
         const elSaldoAngka = document.getElementById('saldo-angka');
-        if (elSaldoAngka) {
-            elSaldoAngka.innerText = (profile?.balance || 0).toLocaleString('id-ID');
-        }
+        if (elSaldoAngka) elSaldoAngka.innerText = (profile?.balance || 0).toLocaleString('id-ID');
 
-        // Tarik Saldo Tertahan (Pesanan selesai yang dana_cair = false)
-        const { data: pendingFunds } = await supabaseClient
+        // 2. Tarik SEMUA Pesanan Selesai milik Seller ini (Bypass Supabase RLS dengan aman karena eq seller_id)
+        const { data: allSales } = await supabaseClient
             .from('orders_player')
-            .select('price, player_products(fee_ditanggung_pembeli)')
+            .select('price, dana_cair, product_name, player_products(fee_ditanggung_pembeli)')
             .eq('seller_id', currentUser.id)
-            .eq('status', 'selesai')
-            .eq('dana_cair', false);
+            .eq('status', 'selesai');
         
         let totalTertahan = 0;
-        if(pendingFunds && pendingFunds.length > 0) {
-                        pendingFunds.forEach(order => {
+        let totalGMV = 0;
+        let totalBersih = 0;
+
+        // 3. Mesin Kalkulator Analitik Seller
+        if (allSales && allSales.length > 0) {
+            allSales.forEach(order => {
                 const isPembeli = order.player_products?.fee_ditanggung_pembeli || false;
-                totalTertahan += hitungPendapatanBersih(order.price, isPembeli, order.product_name);
+                const hargaKotor = Number(order.price) || 0;
+                
+                // Gunakan rumus rahasia AU2Hub buat ngitung net profit
+                const pendapatanBersih = hitungPendapatanBersih(hargaKotor, isPembeli, order.product_name || "");
+
+                // Tambahkan ke statistik Seumur Hidup
+                totalGMV += hargaKotor;
+                totalBersih += pendapatanBersih;
+
+                // Cek apakah dana ini masih nyangkut di H+1
+                if (order.dana_cair === false) {
+                    totalTertahan += pendapatanBersih;
+                }
             });
         }
-        document.getElementById('toko-saldo-tertahan').innerText = 'Rp ' + totalTertahan.toLocaleString('id-ID');
+
+        // 4. Suntikkan ke UI Saldo Tertahan
+        const elTertahan = document.getElementById('toko-saldo-tertahan');
+        if (elTertahan) elTertahan.innerText = 'Rp ' + totalTertahan.toLocaleString('id-ID');
+
+        // 5. Suntikkan ke UI Dashboard Analitik yang Baru Dibuat
+        const elTotalGMV = document.getElementById('seller-stat-gmv');
+        if (elTotalGMV) elTotalGMV.innerText = 'Rp ' + totalGMV.toLocaleString('id-ID');
+
+        const elTotalBersih = document.getElementById('seller-stat-bersih');
+        if (elTotalBersih) elTotalBersih.innerText = 'Rp ' + totalBersih.toLocaleString('id-ID');
+
+        const elTotalTerjual = document.getElementById('seller-stat-terjual');
+        if (elTotalTerjual) elTotalTerjual.innerText = (allSales ? allSales.length : 0) + ' Pesanan';
+
     } catch(e) {
         console.error("Gagal update UI Saldo Seller:", e);
     }
 }
+
 
 
 async function cekPencairanDanaH1() {
@@ -10636,9 +10668,10 @@ async function loadAdminDashboard() {
         const elCountPending = document.getElementById('admin-count-pending');
         if (elCountPending) elCountPending.innerText = data.length;
 
+        let totalNominalTransfer = 0; // <--- VAR BARU BUAT NGITUNG TOTAL TAGIHAN HARI INI
+
         if (data.length > 0) {
             listContainer.innerHTML = data.map(req => {
-                // LOGIKA PEMISAH BANK YANG BENAR (Hanya satu kali)
                 let namaBank = "BANK";
                 let noRek = req.rekening;
                 if (req.rekening.includes('-')) {
@@ -10649,6 +10682,8 @@ async function loadAdminDashboard() {
                 
                 let nominalBersih = Number(req.nominal) - 3500;
                 if (nominalBersih < 0) nominalBersih = 0;
+                
+                totalNominalTransfer += nominalBersih; // Tambahin ke keranjang tagihan
 
                 return `
                 <div class="bg-[#161B2E] border border-white/5 p-4 rounded-[1.5rem] flex flex-col gap-3 shadow-lg relative overflow-hidden transition-all" id="wd-${req.id}">
@@ -10704,6 +10739,10 @@ async function loadAdminDashboard() {
                     <p class="text-[10px] text-gray-500 leading-relaxed">Tidak ada antrean pencairan dana.</p>
                 </div>`;
         }
+        
+        // Tampilkan Total Nominal Tagihan ke Layar
+        const elNominalPending = document.getElementById('admin-nominal-pending');
+        if (elNominalPending) elNominalPending.innerText = 'Rp ' + totalNominalTransfer.toLocaleString('id-ID');
 
         // ========================================================
         // BAGIAN 2: HITUNG TOTAL MITRA / SELLER
@@ -10715,9 +10754,8 @@ async function loadAdminDashboard() {
         // ========================================================
         // BAGIAN 3: KALKULATOR DASHBOARD KEUANGAN SUPER ADMIN
         // ========================================================
-        // 1. Tarik semua pesanan yang statusnya 'selesai' dari kedua tabel
         const reqAdminTrx = supabaseClient.from('orders').select('price, product_name').eq('status', 'selesai');
-        const reqPlayerTrx = supabaseClient.from('orders_player').select('price, product_name').eq('status', 'selesai');
+        const reqPlayerTrx = supabaseClient.from('orders_player').select('price, product_name, player_products(fee_ditanggung_pembeli)').eq('status', 'selesai');
         
         const [resAdminTrx, resPlayerTrx] = await Promise.all([reqAdminTrx, reqPlayerTrx]);
 
@@ -10726,39 +10764,39 @@ async function loadAdminDashboard() {
         let totalFeeSeller = 0;
         let totalFeeRekber = 0;
         let totalQRIS = 0;
+        let totalHakSeller = 0; // <--- VAR BARU BUAT HAK SELLER (GMV BERSIH MEREKA)
 
-        // 2. Bedah Uang dari Tabel Orders (Admin Manual / VIP Seller)
+        // Bedah Uang dari Tabel Orders (Admin Manual / VIP Seller)
         (resAdminTrx.data || []).forEach(order => {
             let hargaDB = Number(order.price) || 0;
             totalOmzet += hargaDB;
 
-            // Estimasi Biaya QRIS Xoftware (0.7% + 500)
             let estimasiQris = Math.floor(hargaDB * 0.007) + 500;
             totalQRIS += estimasiQris;
 
             if (order.product_name && order.product_name.includes('[VIP]')) {
-                // Ini murni uang masuk dari langganan Seller
                 totalVIP += (hargaDB - estimasiQris); 
             } else {
-                // Ini pesanan manual/jasa lewat Admin biasa (Dihitung sbg fee Rekber full)
                 totalFeeRekber += hitungFeeRekber(hargaDB);
             }
         });
 
-        // 3. Bedah Uang dari Tabel Pasar Player (Marketplace)
+        // Bedah Uang dari Tabel Pasar Player (Marketplace)
         (resPlayerTrx.data || []).forEach(order => {
             let hargaDB = Number(order.price) || 0;
             totalOmzet += hargaDB;
 
-            // Estimasi Biaya QRIS Xoftware (0.7% + 500)
             let estimasiQris = Math.floor(hargaDB * 0.007) + 500;
             totalQRIS += estimasiQris;
 
-            // Hitung Pajak Marketplace (Fee Seller) menggunakan fungsi global lu
+            // Hitung Duit Hak Milik Seller (Duit Bersih Mereka)
+            let isPembeli = order.player_products?.fee_ditanggung_pembeli || false;
+            let hakSeller = hitungPendapatanBersih(hargaDB, isPembeli, order.product_name || "");
+            totalHakSeller += hakSeller;
+
             let feePlatform = hitungPotonganSeller(hargaDB);
             totalFeeSeller += feePlatform;
 
-            // Hitung Fee Rekber (JIKA buyer mengaktifkan fitur rekber admin NIKKY)
             if (order.product_name && order.product_name.includes('[+Rekber]')) {
                 let feeRekber = hitungFeeRekber(hargaDB);
                 totalFeeRekber += feeRekber;
@@ -10771,14 +10809,13 @@ async function loadAdminDashboard() {
         if (document.getElementById('dash-fee-seller')) document.getElementById('dash-fee-seller').innerText = 'Rp ' + totalFeeSeller.toLocaleString('id-ID');
         if (document.getElementById('dash-fee-rekber')) document.getElementById('dash-fee-rekber').innerText = 'Rp ' + totalFeeRekber.toLocaleString('id-ID');
         if (document.getElementById('dash-qris')) document.getElementById('dash-qris').innerText = 'Rp ' + totalQRIS.toLocaleString('id-ID');
+        if (document.getElementById('dash-hak-seller')) document.getElementById('dash-hak-seller').innerText = 'Rp ' + totalHakSeller.toLocaleString('id-ID'); // <--- SUNTIKAN BARU
 
     } catch (err) {
         console.error("Error Super Admin:", err);
         listContainer.innerHTML = '<div class="text-center py-4 text-xs text-red-500">Gagal memuat data dari server.</div>';
     }
 }
-
-
 
 // 3. Fungsi Salin Cepat dengan Visual Feedback
 function salinTeksAdmin(teks, btnElement, colorType) {
