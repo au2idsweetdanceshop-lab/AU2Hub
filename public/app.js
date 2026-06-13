@@ -1,3 +1,11 @@
+function debounce(func, wait) {
+    let timeout;
+    return function(...args) {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func.apply(this, args), wait);
+    };
+}
+
 // ==========================================
 // TEKS GLOBAL TABEL FEE (BIAR GAK CAPEK NGETIK ULANG)
 // ==========================================
@@ -2898,11 +2906,10 @@ if (data.length === 0) { container.innerHTML = `<div class="text-center text-xs 
 container.innerHTML = data.map(f => `<details class="bg-brand-card rounded-2xl border border-white/5 group"><summary class="flex justify-between items-center font-bold text-xs cursor-pointer text-white p-4">${f.t} <i class="fas fa-chevron-down text-brand-accent transition-transform group-open:rotate-180"></i></summary><div class="px-4 pb-4 text-xs text-gray-400 leading-relaxed border-t border-white/5 pt-3 mt-1">${f.j}</div></details>`).join('');
 }
 
-document.getElementById('faqSearch').addEventListener('input', (e) => {
+document.getElementById('faqSearch').addEventListener('input', debounce((e) => {
 const val = e.target.value.toLowerCase();
-// UBAH kata 'faqs' jadi 'globalFaqData' sebelum kata .filter
 renderFaqs(globalFaqData.filter(f => f.t.toLowerCase().includes(val) || f.j.toLowerCase().includes(val)));
-});
+}, 300));
 
 function salinNominal() {
 const nominalMurni = document.getElementById('nominal-asli').value;
@@ -2958,32 +2965,26 @@ function salinIdTransaksi() {
 // ==========================================
 // FITUR PENCARIAN LEADERBOARD (DOM FILTERING)
 // ==========================================
-document.getElementById('leaderboardSearch').addEventListener('input', function(e) {
+document.getElementById('leaderboardSearch').addEventListener('input', debounce(function(e) {
     const keyword = e.target.value.toLowerCase();
-
-    // Fungsi pembantu untuk memfilter elemen di dalam container secara otomatis
     const filterLeaderboard = (containerId) => {
         const list = document.querySelectorAll(`${containerId} > div`);
         list.forEach(item => {
-            // Ambil teks nama dari dalam tag <h4>
             const nameElement = item.querySelector('h4');
             if (nameElement) {
                 const name = nameElement.innerText.toLowerCase();
-                // Jika nama cocok dengan ketikan, tampilkan. Jika tidak, sembunyikan.
                 if (name.includes(keyword)) {
-                    item.style.display = ''; // Kembali ke tampilan bawaan (flex/block)
+                    item.style.display = ''; 
                 } else {
-                    item.style.display = 'none'; // Sembunyikan
+                    item.style.display = 'none'; 
                 }
             }
         });
     };
-
-    // Jalankan penyaringan untuk ketiga tab leaderboard secara serentak
     filterLeaderboard('#leaderboard-container-creator');
     filterLeaderboard('#leaderboard-container-level');
     filterLeaderboard('#leaderboard-container-sultan');
-});
+}, 300));
 
 
 
@@ -3002,27 +3003,22 @@ if (!isSearch && !isRipperExpanded && data.length > 5) { container.innerHTML += 
 // ==========================================
 // FITUR PENCARIAN PENGIKUT/MENGIKUTI (INSTAN DOM FILTERING)
 // ==========================================
-document.getElementById('userListSearch').addEventListener('input', function(e) {
+document.getElementById('userListSearch').addEventListener('input', debounce(function(e) {
     const keyword = e.target.value.toLowerCase();
     const container = document.getElementById('user-list-container');
-    
-    // Ambil semua elemen baris user (div) di dalam container
     const listItems = container.querySelectorAll('div.flex.items-center.p-3'); 
-    
     listItems.forEach(item => {
-        // Ambil nama dari tag h4
         const nameElement = item.querySelector('h4');
         if (nameElement) {
             const name = nameElement.innerText.toLowerCase();
-            // Cek kecocokan
             if (name.includes(keyword)) {
-                item.style.display = ''; // Tampilkan
+                item.style.display = ''; 
             } else {
-                item.style.display = 'none'; // Sembunyikan
+                item.style.display = 'none'; 
             }
         }
     });
-});
+}, 300));
 
 
 function tampilkanSemuaRipper(tombol) {
@@ -3036,12 +3032,30 @@ document.getElementById('ripper-container').insertAdjacentHTML('beforeend', html
 }, 150);
 }
 
-document.getElementById('ripperSearch').addEventListener('input', (e) => {
+// ==========================================
+// 1. FUNGSI PEMBANTU (DEBOUNCE)
+// Taruh di bagian atas app.js (cukup tulis 1 kali saja untuk dipakai di mana-mana)
+// ==========================================
+function debounce(func, wait) {
+    let timeout;
+    return function(...args) {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func.apply(this, args), wait);
+    };
+}
+
+// ==========================================
+// 2. EVENT LISTENER PENCARIAN RIPPER (OPTIMIZED)
+// Ganti kode ripperSearch lama Anda dengan yang ini
+// ==========================================
+document.getElementById('ripperSearch').addEventListener('input', debounce((e) => {
 const val = e.target.value.toLowerCase();
 if(val === '') { renderRippers(dataRipperGlobal, false); return; }
 const hasilFilter = dataRipperGlobal.filter(r => { const nama = (r["Nama / Keterangan"] || r.nama || r.Nama || "").toLowerCase(); const idGame = (r["ID"] || r.id || "").toLowerCase(); const rekening = (r["Rekening / Kontak (WA/Dana)"] || r.rekening || r.Rekening || "").toLowerCase(); return nama.includes(val) || idGame.includes(val) || rekening.includes(val); });
 renderRippers(hasilFilter, true);
-});
+}, 300));
+
+
 
 function updateCarouselDots() {
 const carousel = document.getElementById('image-carousel'); const dots = document.querySelectorAll('.dot-indicator');
@@ -8626,9 +8640,9 @@ function closeForwardModal(dariTombolBack = false) {
 }
 
 // 5. Event Listener Kotak Pencarian Kontak
-document.getElementById('forward-search-input').addEventListener('input', (e) => {
+document.getElementById('forward-search-input').addEventListener('input', debounce((e) => {
     loadForwardContacts(e.target.value);
-});
+}, 300));
 
 // ==========================================
 // FITUR SWIPE (GESER) UNTUK WIDGET CHAT
@@ -8762,7 +8776,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Jalankan sistem pembaca input Rupiah dan auto-load data
     setTimeout(() => {
         const searchInput = document.getElementById('cari-pasar');
-        if (searchInput) searchInput.addEventListener('input', terapkanFilterPasar);
+        if (searchInput) searchInput.addEventListener('input', debounce(terapkanFilterPasar, 300));
 
         const jualanHarga = document.getElementById('jualan-harga');
         const editHarga = document.getElementById('edit-produk-harga');
@@ -8815,6 +8829,7 @@ function pilihKategoriPasar(kat) {
     renderKategoriPasarTabs(globalDataPasar); 
     terapkanFilterPasar();
 }
+
 
 function terapkanFilterPasar() {
     const keyword = (document.getElementById('cari-pasar')?.value || '').toLowerCase();
@@ -9708,56 +9723,31 @@ async function updateUiSaldoSeller() {
         const elSaldoAngka = document.getElementById('saldo-angka');
         if (elSaldoAngka) elSaldoAngka.innerText = (profile?.balance || 0).toLocaleString('id-ID');
 
-        // 2. Tarik SEMUA Pesanan Selesai milik Seller ini (Bypass Supabase RLS dengan aman karena eq seller_id)
-        const { data: allSales } = await supabaseClient
-            .from('orders_player')
-            .select('price, dana_cair, product_name, player_products(fee_ditanggung_pembeli)')
-            .eq('seller_id', currentUser.id)
-            .eq('status', 'selesai');
-        
-        let totalTertahan = 0;
-        let totalGMV = 0;
-        let totalBersih = 0;
+        // 2. Tarik Data Kalkulasi dari RPC Supabase (SUPER CEPAT KARENA DIHITUNG SERVER)
+        const { data: stats, error } = await supabaseClient.rpc('get_seller_stats', {
+            p_seller_id: currentUser.id
+        });
 
-        // 3. Mesin Kalkulator Analitik Seller
-        if (allSales && allSales.length > 0) {
-            allSales.forEach(order => {
-                const isPembeli = order.player_products?.fee_ditanggung_pembeli || false;
-                const hargaKotor = Number(order.price) || 0;
-                
-                // Gunakan rumus rahasia AU2Hub buat ngitung net profit
-                const pendapatanBersih = hitungPendapatanBersih(hargaKotor, isPembeli, order.product_name || "");
+        if (error) throw error;
 
-                // Tambahkan ke statistik Seumur Hidup
-                totalGMV += hargaKotor;
-                totalBersih += pendapatanBersih;
-
-                // Cek apakah dana ini masih nyangkut di H+1
-                if (order.dana_cair === false) {
-                    totalTertahan += pendapatanBersih;
-                }
-            });
-        }
-
-        // 4. Suntikkan ke UI Saldo Tertahan
+        // 3. Suntikkan ke UI Saldo Tertahan
         const elTertahan = document.getElementById('toko-saldo-tertahan');
-        if (elTertahan) elTertahan.innerText = 'Rp ' + totalTertahan.toLocaleString('id-ID');
+        if (elTertahan) elTertahan.innerText = 'Rp ' + (stats.total_tertahan || 0).toLocaleString('id-ID');
 
-        // 5. Suntikkan ke UI Dashboard Analitik yang Baru Dibuat
+        // 4. Suntikkan ke UI Dashboard Analitik
         const elTotalGMV = document.getElementById('seller-stat-gmv');
-        if (elTotalGMV) elTotalGMV.innerText = 'Rp ' + totalGMV.toLocaleString('id-ID');
+        if (elTotalGMV) elTotalGMV.innerText = 'Rp ' + (stats.total_gmv || 0).toLocaleString('id-ID');
 
         const elTotalBersih = document.getElementById('seller-stat-bersih');
-        if (elTotalBersih) elTotalBersih.innerText = 'Rp ' + totalBersih.toLocaleString('id-ID');
+        if (elTotalBersih) elTotalBersih.innerText = 'Rp ' + (stats.total_bersih || 0).toLocaleString('id-ID');
 
         const elTotalTerjual = document.getElementById('seller-stat-terjual');
-        if (elTotalTerjual) elTotalTerjual.innerText = (allSales ? allSales.length : 0) + ' Pesanan';
+        if (elTotalTerjual) elTotalTerjual.innerText = (stats.total_terjual || 0) + ' Pesanan';
 
     } catch(e) {
         console.error("Gagal update UI Saldo Seller:", e);
     }
 }
-
 
 
 async function cekPencairanDanaH1() {
@@ -10768,61 +10758,20 @@ async function loadAdminDashboard(isRefresh = false) {
         if (elCountSeller) elCountSeller.innerText = count || 0;
 
         // ========================================================
+                // ========================================================
         // BAGIAN 3: KALKULATOR DASHBOARD KEUANGAN SUPER ADMIN
         // ========================================================
-        const reqAdminTrx = supabaseClient.from('orders').select('price, product_name').eq('status', 'selesai');
-        const reqPlayerTrx = supabaseClient.from('orders_player').select('price, product_name, player_products(fee_ditanggung_pembeli)').eq('status', 'selesai');
+        const { data: statsAdmin, error: errStats } = await supabaseClient.rpc('get_super_admin_stats');
         
-        const [resAdminTrx, resPlayerTrx] = await Promise.all([reqAdminTrx, reqPlayerTrx]);
+        if (errStats) throw errStats;
 
-        let totalOmzet = 0;
-        let totalVIP = 0;
-        let totalFeeSeller = 0;
-        let totalFeeRekber = 0;
-        let totalQRIS = 0;
-        let totalHakSeller = 0; 
-
-        // Bedah Uang dari Tabel Orders
-        (resAdminTrx.data || []).forEach(order => {
-            let hargaDB = Number(order.price) || 0;
-            totalOmzet += hargaDB;
-            let estimasiQris = Math.floor(hargaDB * 0.007) + 500;
-            totalQRIS += estimasiQris;
-
-            if (order.product_name && order.product_name.includes('[VIP]')) {
-                totalVIP += (hargaDB - estimasiQris); 
-            } else {
-                totalFeeRekber += hitungFeeRekber(hargaDB);
-            }
-        });
-
-        // Bedah Uang dari Tabel Pasar Player
-        (resPlayerTrx.data || []).forEach(order => {
-            let hargaDB = Number(order.price) || 0;
-            totalOmzet += hargaDB;
-            let estimasiQris = Math.floor(hargaDB * 0.007) + 500;
-            totalQRIS += estimasiQris;
-
-            let isPembeli = order.player_products?.fee_ditanggung_pembeli || false;
-            let hakSeller = hitungPendapatanBersih(hargaDB, isPembeli, order.product_name || "");
-            totalHakSeller += hakSeller;
-
-            let feePlatform = hitungPotonganSeller(hargaDB);
-            totalFeeSeller += feePlatform;
-
-            if (order.product_name && order.product_name.includes('[+Rekber]')) {
-                let feeRekber = hitungFeeRekber(hargaDB);
-                totalFeeRekber += feeRekber;
-            }
-        });
-
-        // 4. Suntikkan hasil hitungan ke Layar UI HTML
-        if (document.getElementById('dash-omzet')) document.getElementById('dash-omzet').innerText = 'Rp ' + totalOmzet.toLocaleString('id-ID');
-        if (document.getElementById('dash-vip')) document.getElementById('dash-vip').innerText = 'Rp ' + totalVIP.toLocaleString('id-ID');
-        if (document.getElementById('dash-fee-seller')) document.getElementById('dash-fee-seller').innerText = 'Rp ' + totalFeeSeller.toLocaleString('id-ID');
-        if (document.getElementById('dash-fee-rekber')) document.getElementById('dash-fee-rekber').innerText = 'Rp ' + totalFeeRekber.toLocaleString('id-ID');
-        if (document.getElementById('dash-qris')) document.getElementById('dash-qris').innerText = 'Rp ' + totalQRIS.toLocaleString('id-ID');
-        if (document.getElementById('dash-hak-seller')) document.getElementById('dash-hak-seller').innerText = 'Rp ' + totalHakSeller.toLocaleString('id-ID');
+        // 4. Suntikkan hasil hitungan server ke Layar UI HTML
+        if (document.getElementById('dash-omzet')) document.getElementById('dash-omzet').innerText = 'Rp ' + (statsAdmin.total_omzet || 0).toLocaleString('id-ID');
+        if (document.getElementById('dash-vip')) document.getElementById('dash-vip').innerText = 'Rp ' + (statsAdmin.total_vip || 0).toLocaleString('id-ID');
+        if (document.getElementById('dash-fee-seller')) document.getElementById('dash-fee-seller').innerText = 'Rp ' + (statsAdmin.total_fee_seller || 0).toLocaleString('id-ID');
+        if (document.getElementById('dash-fee-rekber')) document.getElementById('dash-fee-rekber').innerText = 'Rp ' + (statsAdmin.total_fee_rekber || 0).toLocaleString('id-ID');
+        if (document.getElementById('dash-qris')) document.getElementById('dash-qris').innerText = 'Rp ' + (statsAdmin.total_qris || 0).toLocaleString('id-ID');
+        if (document.getElementById('dash-hak-seller')) document.getElementById('dash-hak-seller').innerText = 'Rp ' + (statsAdmin.total_hak_seller || 0).toLocaleString('id-ID');
 
         // MATIKAN EFEK LOADING DAN KASIH NOTIFIKASI
         if (isRefresh) {
@@ -10836,7 +10785,6 @@ async function loadAdminDashboard(isRefresh = false) {
         if (isRefresh && iconRefresh) iconRefresh.classList.remove('fa-spin');
     }
 }
-
 
 // 3. Fungsi Salin Cepat dengan Visual Feedback
 function salinTeksAdmin(teks, btnElement, colorType) {
