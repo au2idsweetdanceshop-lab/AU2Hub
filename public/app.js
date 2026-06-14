@@ -8188,7 +8188,7 @@ async function checkoutXoftwarePay(namaProduk, harga, deskripsi, sellerId = null
         // 3. Generate Link Gambar QRIS
         const qrImgUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(dataPG.qris_string)}`;
 
-                // --- LOGIKA WA DINAMIS (SELLER ATAU ADMIN) ---
+        // --- LOGIKA WA DINAMIS (SELLER ATAU ADMIN) ---
         let noWA = "6283815584661"; // Default WA Admin
         let sapaan = "Admin";
         
@@ -8203,7 +8203,6 @@ async function checkoutXoftwarePay(namaProduk, harga, deskripsi, sellerId = null
 
         // 4. RENDER UI APPLE PAY STYLE
         const teksWA = encodeURIComponent(`Halo ${sapaan}, pesanan saya sudah masuk via QRIS Otomatis untuk:\n\n*${namaProduk}*\nID: ADT - ${orderData.id}\n\n(Berikut screenshot bukti transfernya)`);
-
 
         if (wadahPembayaran) {
             wadahPembayaran.innerHTML = `
@@ -8242,15 +8241,18 @@ async function checkoutXoftwarePay(namaProduk, harga, deskripsi, sellerId = null
                 <a id="wa-confirm" href="https://wa.me/${noWA}?text=${teksWA}" target="_blank" class="w-full bg-[#25D366] hover:bg-[#20bd5a] text-white py-4 rounded-xl font-extrabold uppercase text-xs shadow-[0_10px_20px_rgba(37,211,102,0.3)] flex justify-center items-center active:scale-95 transition-all relative z-10 tracking-wider">
                     <i class="fab fa-whatsapp text-lg mr-2"></i> Konfirmasi ke ${sapaan}
                 </a>
+
+                <button onclick="cekStatusManualXoftware('${orderData.id}', '${targetTabel}', this)" class="w-full bg-white/5 hover:bg-white/10 text-white py-3 mt-3 rounded-xl font-bold uppercase text-[11px] border border-white/20 active:scale-95 transition-all relative z-10">
+                    <i class="fas fa-sync-alt mr-2"></i> Saya Sudah Bayar
+                </button>
             `;
         }
 
-                // --- KODINGAN UI SUKSES (APPLE PAY STYLE) ---
+        // --- KODINGAN UI SUKSES (APPLE PAY STYLE) ---
         const tampilkanLayarSukses = () => {
             if (wadahPembayaran) {
-                const noWA_Sukses = noWA; // Mengambil dari data WA Dinamis yang sudah diolah di atas
+                const noWA_Sukses = noWA; 
                 const teksWA_Sukses = encodeURIComponent(`Halo ${sapaan}, pesanan saya sudah BERHASIL DIBAYAR via QRIS Otomatis untuk:\n\n*${namaProduk}*\nID: ADT - ${orderData.id}\n\n(Mohon segera diproses ya)`);
-
 
                 wadahPembayaran.innerHTML = `
                     <div class="flex flex-col items-center justify-center py-4 text-center modal-anim w-full relative z-10">
@@ -8272,24 +8274,18 @@ async function checkoutXoftwarePay(namaProduk, harga, deskripsi, sellerId = null
                 `;
             }
             
-            // Cek apakah ini pembayaran VIP
             if (namaProduk.includes('[VIP]')) {
-                // 1. TANAMKAN BUKTI VIP KE MEMORI HP (Bertahan 60 detik)
                 localStorage.setItem('optimistic_vip', currentUser.id);
-                
-                // 2. Cegat tombol "Tutup Halaman" agar langsung diarahkan masuk ke Toko!
                 const btnTutup = wadahPembayaran.querySelector('button[onclick="history.back()"]');
                 if (btnTutup) {
                     btnTutup.onclick = () => {
-                        history.back(); // Tutup layar hijau
+                        history.back(); 
                         setTimeout(() => {
-                            switchTab('toko'); // Pindah otomatis ke Tab Toko
-                            loadTokoSaya();    // Langsung buka pintunya
+                            switchTab('toko'); 
+                            loadTokoSaya();    
                         }, 300);
                     };
                 }
-                
-                // 3. Bersihkan memori bayangan setelah 1 menit
                 setTimeout(() => { 
                     localStorage.removeItem('optimistic_vip'); 
                     fetchProfile();
@@ -8302,9 +8298,7 @@ async function checkoutXoftwarePay(namaProduk, harga, deskripsi, sellerId = null
         // 5. Radar Supabase (Langsung memantau perubahan Database)
         activeChannelPembayaran = supabaseClient.channel(`tunggu-pembayaran-${orderData.id}`)
             .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: targetTabel, filter: `id=eq.${orderData.id}` }, (payload) => {
-                // Konversi ke huruf besar agar tidak sensitif huruf kapital
                 const statusBaru = String(payload.new.status).toUpperCase();
-                
                 if (statusBaru === 'SELESAI' || statusBaru === 'SUCCESS' || statusBaru === 'PROSES' || statusBaru === 'PAID') {
                     tampilkanLayarSukses();
                     supabaseClient.removeChannel(activeChannelPembayaran);
@@ -8312,19 +8306,33 @@ async function checkoutXoftwarePay(namaProduk, harga, deskripsi, sellerId = null
                 }
             }).subscribe();
 
-
+        // 6. Radar Jemput Bola API (Memantau status tiap 10 detik biar server aman)
+        intervalJemputBola = setInterval(async () => {
+            try {
+                const res = await fetch(`/api/check-status?order_id=${orderData.id}&table=${targetTabel}`);
+                const responseData = await res.json();
+                
+                const apiStatus = String(responseData.status || responseData.data?.status || responseData.payment_status || '').toUpperCase();
+                
+                if (apiStatus === 'SUCCESS' || apiStatus === 'SUCCEEDED' || apiStatus === 'PAID' || apiStatus === 'SELESAI' || apiStatus === 'PROSES') {
+                    clearInterval(intervalJemputBola); 
+                    supabaseClient.removeChannel(activeChannelPembayaran);
+                    tampilkanLayarSukses(); 
+                }
+            } catch (e) {}
+        }, 10000);
+        
+        setTimeout(() => clearInterval(intervalJemputBola), 600000);
 
     } catch (error) {
-        console.error("Detail Error QRIS:", error); // <--- Biar ketahuan error aslinya di F12
+        console.error("Detail Error QRIS:", error);
         showToast("Error: " + (error.message || "Gangguan Server/Koneksi Pembayaran"), "error");
         
-        // Jeda 3 detik agar pesan error sempat terbaca sebelum layar QRIS ditutup otomatis
         setTimeout(() => {
             history.back();
         }, 3000); 
     }
 }
-
 
 async function prosesBayarUlang() {
     if (!activeOrderIdToPay) return;
@@ -8335,7 +8343,6 @@ async function prosesBayarUlang() {
     // Pindah layar ke mode Loading QRIS DULUAN biar mulus transisinya
     switchTab('pembayaran');
     
-    // Kembalikan kotak QRIS ke mode loading (jika sebelumnya bekas dipakai)
     const wadahPembayaran = document.getElementById('qris-container');
     if (wadahPembayaran) {
         wadahPembayaran.innerHTML = `
@@ -8348,7 +8355,6 @@ async function prosesBayarUlang() {
     }
 
     try {
-        // 1. Tembak API Backend Vercel TERLEBIH DAHULU
         const responsePG = await fetch('/api/create-qris', { 
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -8363,11 +8369,9 @@ async function prosesBayarUlang() {
         const dataPG = await responsePG.json();
         if (!dataPG.success) throw new Error("Gagal mengambil QRIS");
 
-        // 2. Generate Link Gambar QRIS
         const qrImgUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(dataPG.qris_string)}`;
         
-                // --- LOGIKA WA DINAMIS (SELLER ATAU ADMIN) ---
-        let noWA = "6283815584661"; // Default WA Admin
+        let noWA = "6283815584661"; 
         let sapaan = "Admin";
         
         if (activeOrderSellerId && !activeOrderNameToPay.includes('[+Rekber]')) {
@@ -8378,9 +8382,7 @@ async function prosesBayarUlang() {
             }
         }
 
-        // 3. RENDER UI APPLE PAY STYLE
         const teksWA = encodeURIComponent(`Halo ${sapaan}, pesanan saya sudah masuk via QRIS Otomatis untuk:\n\n*${activeOrderNameToPay}*\nID: ADT - ${activeOrderIdToPay}\n\n(Berikut screenshot bukti transfernya)`);
-
 
         if (wadahPembayaran) {
             wadahPembayaran.innerHTML = `
@@ -8419,17 +8421,19 @@ async function prosesBayarUlang() {
                 <a id="wa-confirm" href="https://wa.me/${noWA}?text=${teksWA}" target="_blank" class="w-full bg-[#25D366] hover:bg-[#20bd5a] text-white py-4 rounded-xl font-extrabold uppercase text-xs shadow-[0_10px_20px_rgba(37,211,102,0.3)] flex justify-center items-center active:scale-95 transition-all relative z-10 tracking-wider">
                     <i class="fab fa-whatsapp text-lg mr-2"></i> Konfirmasi ke ${sapaan}
                 </a>
+
+                <button onclick="cekStatusManualXoftware('${activeOrderIdToPay}', '${activeOrderTable}', this)" class="w-full bg-white/5 hover:bg-white/10 text-white py-3 mt-3 rounded-xl font-bold uppercase text-[11px] border border-white/20 active:scale-95 transition-all relative z-10">
+                    <i class="fas fa-sync-alt mr-2"></i> Saya Sudah Bayar
+                </button>
             `;
         }
 
         showToast("Silakan scan QRIS untuk melanjutkan.", "success");
 
-                // --- KODINGAN UI SUKSES (APPLE PAY STYLE) ---
         const tampilkanLayarSukses = () => {
             if (wadahPembayaran) {
-                const noWA_Sukses = noWA; // Mengambil WA Dinamis
+                const noWA_Sukses = noWA;
                 const teksWA_Sukses = encodeURIComponent(`Halo ${sapaan}, pesanan saya sudah BERHASIL DIBAYAR via QRIS Otomatis untuk:\n\n*${activeOrderNameToPay}*\nID: ADT - ${activeOrderIdToPay}\n\n(Mohon segera diproses ya)`);
-
 
                 wadahPembayaran.innerHTML = `
                     <div class="flex flex-col items-center justify-center py-4 text-center modal-anim w-full relative z-10">
@@ -8451,24 +8455,18 @@ async function prosesBayarUlang() {
                 `;
             }
             
-            // Cek apakah ini pembayaran VIP
-            if (namaProduk.includes('[VIP]')) {
-                // 1. TANAMKAN BUKTI VIP KE MEMORI HP (Bertahan 60 detik)
+            if (activeOrderNameToPay.includes('[VIP]')) {
                 localStorage.setItem('optimistic_vip', currentUser.id);
-                
-                // 2. Cegat tombol "Tutup Halaman" agar langsung diarahkan masuk ke Toko!
                 const btnTutup = wadahPembayaran.querySelector('button[onclick="history.back()"]');
                 if (btnTutup) {
                     btnTutup.onclick = () => {
-                        history.back(); // Tutup layar hijau
+                        history.back(); 
                         setTimeout(() => {
-                            switchTab('toko'); // Pindah otomatis ke Tab Toko
-                            loadTokoSaya();    // Langsung buka pintunya
+                            switchTab('toko'); 
+                            loadTokoSaya();    
                         }, 300);
                     };
                 }
-                
-                // 3. Bersihkan memori bayangan setelah 1 menit
                 setTimeout(() => { 
                     localStorage.removeItem('optimistic_vip'); 
                     fetchProfile();
@@ -8478,14 +8476,14 @@ async function prosesBayarUlang() {
             }
         };
 
-        // Radar Supabase untuk Pembayaran Ulang
         activeChannelPembayaran = supabaseClient
             .channel(`tunggu-pembayaran-ulang-${activeOrderIdToPay}`)
             .on(
                 'postgres_changes',
                 { event: 'UPDATE', schema: 'public', table: activeOrderTable, filter: `id=eq.${activeOrderIdToPay}` },
                 (payload) => {
-                    if (payload.new.status === 'selesai' || payload.new.status === 'SUCCESS' || payload.new.status === 'proses') {
+                    const statusBaru = String(payload.new.status).toUpperCase();
+                    if (statusBaru === 'SELESAI' || statusBaru === 'SUCCESS' || statusBaru === 'PROSES' || statusBaru === 'PAID') {
                         tampilkanLayarSukses();
                         supabaseClient.removeChannel(activeChannelPembayaran);
                         clearInterval(intervalJemputBola);
@@ -8493,14 +8491,30 @@ async function prosesBayarUlang() {
                 }
             ).subscribe();
             
+        // Radar Jemput Bola API (Memantau status tiap 10 detik)
+        intervalJemputBola = setInterval(async () => {
+            try {
+                const res = await fetch(`/api/check-status?order_id=${activeOrderIdToPay}&table=${activeOrderTable}`);
+                const data = await res.json();
+                const apiStatus = String(data.status || data.data?.status || data.payment_status || '').toUpperCase();
+                
+                if (apiStatus === 'SUCCESS' || apiStatus === 'SUCCEEDED' || apiStatus === 'PAID' || apiStatus === 'SELESAI' || apiStatus === 'PROSES') {
+                    clearInterval(intervalJemputBola); 
+                    supabaseClient.removeChannel(activeChannelPembayaran);
+                    tampilkanLayarSukses(); 
+                }
+            } catch (e) {}
+        }, 10000);
 
+        setTimeout(() => clearInterval(intervalJemputBola), 600000);
 
     } catch (e) {
         showToast("Gagal memuat ulang QRIS. Silakan coba lagi.", "error");
         console.error(e);
-        history.back(); // Menutup layar loading jika error
+        history.back();
     }
 }
+
 
 
 
@@ -11216,4 +11230,33 @@ function eksekusiHapusKreator() {
     const vidId = document.getElementById('temp-kreator-vid').value;
     tutupMenuKreator();
     deleteVideo(vidId); // Panggil fungsi aslimu
+}
+
+// ==========================================
+// FUNGSI TOMBOL "SAYA SUDAH BAYAR" (MANUAL CHECK)
+// ==========================================
+async function cekStatusManualXoftware(orderId, tableName, btnElement) {
+    const originalText = btnElement.innerHTML;
+    btnElement.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Mengecek...';
+    btnElement.disabled = true;
+
+    try {
+        const res = await fetch(`/api/check-status?order_id=${orderId}&table=${tableName}`);
+        const data = await res.json();
+
+        const apiStatus = String(data.status || data.data?.status || data.payment_status || '').toUpperCase();
+        
+        if (apiStatus === 'SUCCESS' || apiStatus === 'SUCCEEDED' || apiStatus === 'PAID' || apiStatus === 'SELESAI' || apiStatus === 'PROSES') {
+            showToast("Pembayaran berhasil dikonfirmasi!", "success");
+            // Biarkan Supabase Realtime / setInterval 10 detik yang memicu layar hijaunya
+        } else {
+            showToast("Pembayaran belum terdeteksi. Tunggu sebentar lalu coba lagi.", "info");
+            btnElement.innerHTML = originalText;
+            btnElement.disabled = false;
+        }
+    } catch (error) {
+        showToast("Gagal mengecek status ke server.", "error");
+        btnElement.innerHTML = originalText;
+        btnElement.disabled = false;
+    }
 }
