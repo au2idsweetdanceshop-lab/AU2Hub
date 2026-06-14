@@ -10022,6 +10022,10 @@ async function loadPasarPlayer(forceRefresh = false) {
 
 
     } catch (err) {
+        // [BARU] Tambahkan dua baris ini agar mesin mencatat errornya
+        console.error("ERROR DETAIL PASAR PLAYER:", err);
+        console.log("Pesan Error:", err.message);
+
         gridPasar.innerHTML = '<div class="col-span-2 text-center py-10 text-red-500 text-xs">Gagal menarik data pasar. Cek koneksi.</div>';
     }
 }
