@@ -454,6 +454,7 @@ async function fetchMyFollowing() {
 
 let typingTimer; // VARIABEL TYPING INDICATOR
 
+let currentRoomMembers = []; // Memori untuk nyimpen anggota grup pas ngetik @
 
         let globalFaqData = [];
         let isInfoLoaded = false;
@@ -910,14 +911,27 @@ function initGlobalMessageListener() {
             const isForMe = msg.receiver_id === currentUser.id;
             const isForMyGroup = msg.group_id && globalGroupList.some(g => g.id === msg.group_id);
 
+            // [BARU] DETEKSI MENTION (CEK APAKAH NAMA KITA ADA DI DALAM PESAN)
+            let isMentioned = false;
+            const myNickname = userProfile?.nickname;
+            if (myNickname && msg.message && msg.message.includes(`@${myNickname}`)) {
+                isMentioned = true;
+            }
+
             // Cek apakah pesan untuk saya/grup dan pengirimnya bukan saya & tidak diblokir
             if ((isForMe || isForMyGroup) && msg.sender_id !== currentUser.id && !blockedUsersList.includes(msg.sender_id)) {
                 
-                showToast("Ada pesan baru masuk!", "info");
+                // NOTIFIKASI DI DALAM APLIKASI (TOAST)
+                if (isMentioned) {
+                    showToast("🔔 Ada yang ngetag kamu di Grup!", "success");
+                } else {
+                    showToast("Ada pesan baru masuk!", "info");
+                }
                 
+                // NOTIFIKASI POP-UP HP (PUSH NOTIFICATION JIKA APLIKASI DI-MINIMIZE)
                 if ("Notification" in window && Notification.permission === "granted" && document.hidden) {
                     new Notification("AU2Hub", {
-                        body: isForMyGroup ? "Ada pesan baru di Grup!" : "Anda menerima pesan baru!",
+                        body: isMentioned ? "Seseorang menyebut (tag) Anda di Grup!" : (isForMyGroup ? "Ada pesan baru di Grup!" : "Anda menerima pesan baru!"),
                         icon: "/app-icon-192.png"
                     });
                 }
@@ -935,7 +949,6 @@ function initGlobalMessageListener() {
         
     checkGlobalUnreadMessages();
 }
-
 
 async function showUserList(type) {
     if (!currentUser && viewedUserId === null) return;
@@ -3978,15 +3991,87 @@ sendMessageRoom();
 }
 
 function handleTyping(el) {
-// 1. Auto-resize tinggi kotak sesuai dengan teks (Maksimal 120px dari HTML)
-el.style.height = 'auto';
-el.style.height = el.scrollHeight + 'px';
+    // 1. Auto-resize tinggi kotak
+    el.style.height = 'auto';
+    el.style.height = el.scrollHeight + 'px';
 
-// 2. Panggil fungsi asli milik Anda untuk urus Ikon Mic & Sinyal Typing
-sendTypingStatus();
+    // 2. Panggil sinyal Typing
+    sendTypingStatus();
+
+    // 3. LOGIKA AUTO-COMPLETE MENTION (@)
+    if (activeGroupId && currentRoomMembers.length > 0) {
+        const cursorPosition = el.selectionStart;
+        const textBeforeCursor = el.value.substring(0, cursorPosition);
+        const lastAtPos = textBeforeCursor.lastIndexOf('@');
+
+        if (lastAtPos !== -1) {
+            // Cek apakah @ ada di awal teks, atau setelah spasi/enter
+            const isAtStartOrSpace = lastAtPos === 0 || textBeforeCursor[lastAtPos - 1] === ' ' || textBeforeCursor[lastAtPos - 1] === '\n';
+            
+            if (isAtStartOrSpace) {
+                const searchText = textBeforeCursor.substring(lastAtPos + 1).toLowerCase();
+                // Pastikan tidak ada spasi di dalam pencarian nama
+                if (!searchText.includes(' ')) {
+                    tampilkanMentionPopup(searchText);
+                    return;
+                }
+            }
+        }
+    }
+    tutupMentionPopup();
 }
 
+function tampilkanMentionPopup(searchText) {
+    const popup = document.getElementById('mention-popup');
+    const list = document.getElementById('mention-list');
+    if (!popup || !list) return;
 
+    // Cari user yang nicknamenya cocok dan BUKAN diri sendiri
+    const myNick = userProfile?.nickname || "";
+    const filtered = currentRoomMembers.filter(m => 
+        m.nickname.toLowerCase().includes(searchText) && m.nickname !== myNick
+    );
+
+    if (filtered.length > 0) {
+        list.innerHTML = filtered.map(m => {
+            const ava = m.avatar_url || `https://ui-avatars.com/api/?name=${m.nickname}&background=1A1133&color=fff`;
+            const safeNick = m.nickname.replace(/'/g, "\\'");
+            return `
+            <div onclick="pilihMention('${safeNick}')" class="flex items-center gap-3 p-2.5 hover:bg-white/10 rounded-xl cursor-pointer transition-colors active:scale-95">
+                <img src="${ava}" class="w-7 h-7 rounded-full object-cover border border-white/10 shrink-0">
+                <span class="text-xs font-bold text-white">@${m.nickname}</span>
+            </div>`;
+        }).join('');
+        popup.classList.remove('hidden');
+    } else {
+        tutupMentionPopup();
+    }
+}
+
+function tutupMentionPopup() {
+    const popup = document.getElementById('mention-popup');
+    if (popup) popup.classList.add('hidden');
+}
+
+function pilihMention(nickname) {
+    const el = document.getElementById('chat-room-input');
+    const cursorPosition = el.selectionStart;
+    const textBeforeCursor = el.value.substring(0, cursorPosition);
+    const textAfterCursor = el.value.substring(cursorPosition);
+    
+    const lastAtPos = textBeforeCursor.lastIndexOf('@');
+    if (lastAtPos !== -1) {
+        const newTextBefore = textBeforeCursor.substring(0, lastAtPos);
+        el.value = newTextBefore + '@' + nickname + ' ' + textAfterCursor;
+        
+        // Kembalikan fokus kursor tepat setelah nama yang di-tag ditambah spasi
+        const newCursorPos = lastAtPos + nickname.length + 2;
+        el.focus();
+        el.setSelectionRange(newCursorPos, newCursorPos);
+    }
+    tutupMentionPopup();
+    handleTyping(el); // Trigger resize & ganti tombol mic -> send
+}
 
 let lastTypingTime = 0; // Tambahkan variabel ini di luar fungsi
 
@@ -4354,14 +4439,22 @@ document.getElementById('active-chat-avatar').src = avatar;
 
 // 3. Set ID yang sedang aktif agar fungsi kirim pesan tahu mau dikirim ke mana
 if (isGroup) {
-activeGroupId = id;
-activeChatUserId = null;
-document.getElementById('active-chat-status').innerText = 'Grup Obrolan';
-document.getElementById('active-chat-online-dot').classList.add('hidden');
+    activeGroupId = id;
+    activeChatUserId = null;
+    document.getElementById('active-chat-status').innerText = 'Grup Obrolan';
+    document.getElementById('active-chat-online-dot').classList.add('hidden');
+    
+    // --- TAMBAHAN MENTION: Tarik data member untuk auto-complete ---
+    supabaseClient.from('group_members').select('profiles(nickname, avatar_url)').eq('group_id', id)
+    .then(({data}) => {
+        if(data) currentRoomMembers = data.map(d => d.profiles).filter(Boolean);
+    });
 } else {
-activeChatUserId = id;
-activeGroupId = null;
+    activeChatUserId = id;
+    activeGroupId = null;
+    currentRoomMembers = []; // Kosongkan kalau personal chat
 }
+
 
 // 4. Bersihkan kontainer chat lama sebelum memuat yang baru
 document.getElementById('chat-messages-container').innerHTML = '<div class="flex justify-center mt-10"><i class="fas fa-spinner fa-spin text-brand-accent text-2xl"></i></div>';
@@ -6457,85 +6550,88 @@ showToast("Pesan asli tidak ditemukan atau sudah terlalu lama dibersihkan.", "in
 }
 }
 
-
-
 // ==========================================
 // FITUR TYPING INDICATOR & REAL-TIME CHAT
 // ==========================================
 
 function setupChatRoomListener() {
-// Bersihkan langganan (subscription) lama jika ada, agar tidak double
-if (messageSubscription) {
-supabaseClient.removeChannel(messageSubscription);
+    // Bersihkan langganan (subscription) lama jika ada, agar tidak double
+    if (messageSubscription) {
+        supabaseClient.removeChannel(messageSubscription);
+    }
+
+    // Tentukan target chat (Grup atau Personal)
+    const targetId = activeGroupId ? activeGroupId : activeChatUserId;
+    if (!targetId) return;
+
+    // Buat nama ruangan khusus. Untuk personal, urutkan ID agar selalu sama terlepas dari siapa yang memulai
+    const roomName = activeGroupId
+        ? `room_group_${targetId}`
+        : `room_personal_${[currentUser.id, targetId].sort().join('_')}`;
+
+    messageSubscription = supabaseClient.channel(roomName)
+        // 1. Tangkap sinyal saat lawan bicara mengetik
+        .on('broadcast', { event: 'typing' }, payload => {
+            // Pastikan sinyal yang ditangkap bukan dari diri kita sendiri
+            if (payload.payload.userId !== currentUser.id) {
+                showTypingIndicator();
+            }
+        })
+        // 2. TANGKAP PESAN BARU DAN MUNCULKAN TANPA REFRESH
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, async payload => {
+            const msg = payload.new;
+
+            // Cek apakah pesan ini milik ruangan yang sedang terbuka
+            const isGroup = !!activeGroupId;
+            const validRoom = isGroup
+                ? msg.group_id === activeGroupId
+                : ((msg.sender_id === activeChatUserId && msg.receiver_id === currentUser.id) ||
+                (msg.sender_id === currentUser.id && msg.receiver_id === activeChatUserId));
+
+            if (validRoom) {
+                // Sembunyikan tulisan "Sedang mengetik..." begitu pesan masuk
+                const indicator = document.getElementById('typing-indicator');
+                if (indicator) indicator.classList.add('hidden');
+
+                if (msg.sender_id !== currentUser.id) {
+                    // --- JIKA PESAN DARI ORANG LAIN ---
+
+                    // [BARU] DETEKSI MENTION (Notif Toast jika di-tag)
+                    const myNickname = userProfile?.nickname;
+                    if (isGroup && myNickname && msg.message && msg.message.includes(`@${myNickname}`)) {
+                        showToast("🔔 Ada yang ngetag kamu!", "success");
+                    }
+
+                    // Ambil data nama & foto jika ini di dalam Grup
+                    if (isGroup) {
+                        const { data: p } = await supabaseClient.from('profiles').select('nickname, avatar_url').eq('id', msg.sender_id).single();
+                        msg.profiles = p;
+                    }
+
+                    // Suntikkan langsung ke layar bawah secara mulus!
+                    appendMessageBubble(msg);
+                    scrollToBottomChat();
+
+                    // Langsung tandai Centang Biru (Read) secara otomatis
+                    if (!isGroup) {
+                        supabaseClient.from('messages').update({ is_read: true }).eq('id', msg.id).then();
+                    }
+                } else {
+                    // --- JIKA PESAN DARI KITA SENDIRI ---
+                    // Hapus balon sementara agar tidak dobel
+                    const tempBubble = document.querySelector('[id^="msg-chat-temp-"]');
+                    if (tempBubble) {
+                        tempBubble.remove();
+                    }
+
+                    // Pasang pesan asli dari database
+                    appendMessageBubble(msg);
+                    scrollToBottomChat();
+                }
+            }
+        })
+        .subscribe();
 }
-
-// Tentukan target chat (Grup atau Personal)
-const targetId = activeGroupId ? activeGroupId : activeChatUserId;
-if (!targetId) return;
-
-// Buat nama ruangan khusus. Untuk personal, urutkan ID agar selalu sama terlepas dari siapa yang memulai
-const roomName = activeGroupId
-? `room_group_${targetId}`
-: `room_personal_${[currentUser.id, targetId].sort().join('_')}`;
-
-messageSubscription = supabaseClient.channel(roomName)
-// 1. Tangkap sinyal saat lawan bicara mengetik
-.on('broadcast', { event: 'typing' }, payload => {
-// Pastikan sinyal yang ditangkap bukan dari diri kita sendiri
-if (payload.payload.userId !== currentUser.id) {
-showTypingIndicator();
-}
-})
-// 2. TANGKAP PESAN BARU DAN MUNCULKAN TANPA REFRESH
-.on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, async payload => {
-const msg = payload.new;
-
-// Cek apakah pesan ini milik ruangan yang sedang terbuka
-const isGroup = !!activeGroupId;
-const validRoom = isGroup
-? msg.group_id === activeGroupId
-: ((msg.sender_id === activeChatUserId && msg.receiver_id === currentUser.id) ||
-(msg.sender_id === currentUser.id && msg.receiver_id === activeChatUserId));
-
-if (validRoom) {
-// Sembunyikan tulisan "Sedang mengetik..." begitu pesan masuk
-const indicator = document.getElementById('typing-indicator');
-if (indicator) indicator.classList.add('hidden');
-
-if (msg.sender_id !== currentUser.id) {
-// --- JIKA PESAN DARI ORANG LAIN ---
-// Ambil data nama & foto jika ini di dalam Grup
-if (isGroup) {
-const { data: p } = await supabaseClient.from('profiles').select('nickname, avatar_url').eq('id', msg.sender_id).single();
-msg.profiles = p;
-}
-
-// Suntikkan langsung ke layar bawah secara mulus!
-appendMessageBubble(msg);
-scrollToBottomChat();
-
-// Langsung tandai Centang Biru (Read) secara otomatis
-if (!isGroup) {
-supabaseClient.from('messages').update({ is_read: true }).eq('id', msg.id).then();
-}
-} else {
-// --- JIKA PESAN DARI KITA SENDIRI ---
-// Hapus balon sementara agar tidak dobel
-const tempBubble = document.querySelector('[id^="msg-chat-temp-"]');
-if (tempBubble) {
-    tempBubble.remove();
-}
-
-// Pasang pesan asli dari database
-appendMessageBubble(msg);
-scrollToBottomChat();
-}
-}
-})
-.subscribe();
-
-}
-
 
 function showTypingIndicator() {
 const indicator = document.getElementById('typing-indicator');
