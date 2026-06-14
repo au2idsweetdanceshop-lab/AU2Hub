@@ -7178,7 +7178,16 @@ function autoCleanLocalStorage() {
 // ==========================================
 document.addEventListener('DOMContentLoaded', () => {
   autoCleanLocalStorage(); // Eksekusi pembersih memori saat buka web
-  
+
+    // 🔥 1. TANGKAP LINK SHARE TOKO DARI LUAR 🔥
+    const path = window.location.pathname;
+    if (path.startsWith('/toko/')) {
+        // Ambil nama seller dari link
+        const sellerName = path.replace('/toko/', '').replace('/', '');
+        // Sulap URL-nya jadi hash agar sistem navigasi SPA kamu (switchTab) bisa ngebaca
+        window.history.replaceState(null, null, `/#pasar?seller=${sellerName}`);
+    }
+
   setTimeout(() => {
         if(document.getElementById('btn-bayar-langganan')) {
             pilihPaketSeller('tahunan'); // Set default awal beserta biaya gateway-nya
@@ -9808,14 +9817,8 @@ async function loadTokoSaya() {
     await updateUiSaldoSeller();
     switchTokoTab(tokoTabAktif);
 
-document.addEventListener('DOMContentLoaded', () => {
-    // Override loadTokoSaya dikit buat manggil updateLinkToko()
-    const originalLoadTokoSaya = window.loadTokoSaya;
-    window.loadTokoSaya = async function() {
-        await originalLoadTokoSaya();
-        updateLinkToko();
-    };
-});
+    // 🔥 PANGGIL LANGSUNG DI SINI
+    updateLinkToko(); 
 }
 
 
@@ -9988,15 +9991,35 @@ async function loadPasarPlayer(forceRefresh = false) {
         renderKategoriPasarTabs(globalDataPasar);
         terapkanFilterPasar(); // Gunakan fungsi filter cerdas
 
-        // --- INI LOGIKA PENDETEKSI LINK YANG SEBELUMNYA TERTIMPA ---
+        // --- INI LOGIKA PENDETEKSI LINK ---
         const urlHash = window.location.hash.substring(1);
+        
         if (urlHash.startsWith('detailpasar?id=')) {
             const produkId = urlHash.split('=')[1];
             if (produkId) {
-                // Beri jeda 800ms agar data selesai dimuat sebelum membuka laci
                 setTimeout(() => { bukaDetailPasar(produkId); }, 800); 
             }
+            terapkanFilterPasar(); // Tetap render list
         }
+        // 🔥 2. TAMBAHAN LOGIKA BUKA TOKO SELLER 🔥
+        else if (urlHash.startsWith('pasar?seller=')) {
+            // Ambil nama dari link, hilangkan %20 jadi spasi normal lagi
+            const sellerName = decodeURIComponent(urlHash.split('=')[1]);
+            const searchInput = document.getElementById('cari-pasar');
+            
+            if (searchInput) {
+                searchInput.value = sellerName; // Otomatis isi kotak pencarian pasar!
+            }
+            
+            terapkanFilterPasar(); // Langsung saring produknya!
+            
+            // Kasih notif ke pembeli
+            setTimeout(() => showToast(`Menampilkan etalase toko @${sellerName}`, "success"), 1000);
+        } 
+        else {
+            terapkanFilterPasar();
+        }
+
 
     } catch (err) {
         gridPasar.innerHTML = '<div class="col-span-2 text-center py-10 text-red-500 text-xs">Gagal menarik data pasar. Cek koneksi.</div>';
@@ -11325,20 +11348,38 @@ setInterval(() => {
 // 2. Set Link Toko Publik
 function updateLinkToko() {
     const linkEl = document.getElementById('public-shop-link');
-    if (linkEl && currentUser) {
-        // Asumsi link toko berformat au2hub.com/toko?id=USER_ID
-        linkEl.innerText = `https://au2hub.com/#profile?id=${currentUser.id}`;
+    if (linkEl && currentUser && userProfile) {
+        // Pakai encodeURIComponent agar spasi aman jadi %20 (Contoh: Budi%20Santoso)
+        let namaToko = userProfile.nickname ? encodeURIComponent(userProfile.nickname.trim()) : currentUser.id;
+        linkEl.textContent = `https://au2hub.com/toko/${namaToko}`;
     }
 }
 
 // 3. Salin Link Toko
 function salinLinkToko() {
-    const link = document.getElementById('public-shop-link').innerText;
-    if (navigator.clipboard) {
-        navigator.clipboard.writeText(link);
+    const linkEl = document.getElementById('public-shop-link');
+    if (!linkEl) return;
+    
+    // Ambil textContent murni (anti truncate ...)
+    const link = linkEl.textContent; 
+
+    // Eksekusi Salin
+    if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(link).then(() => {
+            showToast("Link toko berhasil disalin!", "success");
+        });
+    } else {
+        // Fallback untuk browser HP yang rewel
+        let tempInput = document.createElement("textarea");
+        tempInput.value = link;
+        document.body.appendChild(tempInput);
+        tempInput.select();
+        document.execCommand("copy");
+        document.body.removeChild(tempInput);
         showToast("Link toko berhasil disalin!", "success");
     }
 }
+
 
 // 4. Modifikasi Switch Tab biar gaya tombolnya cocok dengan UI Baru
 function switchTokoTab(tab) {
