@@ -27,7 +27,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script defer src="./app.js?v=40"></script>
+<script defer src="./app.js?v=41"></script>
 <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
 <style>
 
@@ -1086,6 +1086,10 @@ Satu pintu untuk info update terbaru, panduan pemula, jasa joki profesional, dan
 
 <div class="p-4 border-t border-white/5 bg-brand-card/80 backdrop-blur-lg shrink-0 flex flex-col relative">
 
+
+<div id="mention-popup" class="hidden absolute bottom-[100%] left-0 w-full bg-[#161B2E] border-t border-x border-white/10 rounded-t-2xl shadow-[0_-10px_30px_rgba(0,0,0,0.8)] max-h-48 overflow-y-auto hide-scroll z-50">
+    <div id="mention-list" class="p-2 space-y-1"></div>
+</div>
 
 <div id="chat-reply-preview" class="hidden w-full max-w-md mx-auto mb-2 bg-black/40 border-l-4 border-brand-info rounded-r-xl p-2 relative transition-all">
 <div class="flex justify-between items-start pr-6">
