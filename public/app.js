@@ -8307,7 +8307,14 @@ async function checkoutXoftwarePay(namaProduk, harga, deskripsi, sellerId = null
 
         showToast("Silakan scan QRIS untuk melanjutkan.", "success");
 
+        // 🔥 GEMBOK ANTI-DOBEL: Mencegah layar sukses dipanggil 2x oleh sistem
+        let isLayarSuksesTampil = false;
+
         const tampilkanLayarSukses = async () => {
+            // Jika layar sukses sudah pernah dipanggil, hentikan!
+            if (isLayarSuksesTampil) return;
+            isLayarSuksesTampil = true;
+
             if (wadahPembayaran) {
                 wadahPembayaran.innerHTML = `
                     <div class="flex flex-col items-center justify-center py-20 mt-10">
@@ -8533,7 +8540,14 @@ async function prosesBayarUlang() {
 
         showToast("Silakan scan QRIS untuk melanjutkan.", "success");
 
+        // 🔥 GEMBOK ANTI-DOBEL: Mencegah layar sukses dipanggil 2x oleh sistem
+        let isLayarSuksesTampil = false;
+
         const tampilkanLayarSukses = async () => {
+            // Jika layar sukses sudah pernah dipanggil, hentikan!
+            if (isLayarSuksesTampil) return;
+            isLayarSuksesTampil = true;
+
             if (wadahPembayaran) {
                 wadahPembayaran.innerHTML = `
                     <div class="flex flex-col items-center justify-center py-20 mt-10">
