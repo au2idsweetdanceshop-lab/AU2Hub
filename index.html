@@ -827,151 +827,143 @@ Satu pintu untuk info update terbaru, panduan pemula, jasa joki profesional, dan
 
         <div id="toko-logged-in" class="w-full hidden pb-24">
             
-            <div class="bg-gradient-to-br from-[#1E143A] to-[#120B24] rounded-[1.5rem] p-6 shadow-lg mb-5 relative overflow-hidden border border-brand-purple/20">
-                <div class="absolute top-0 right-0 w-32 h-32 bg-brand-purple/20 rounded-full blur-3xl pointer-events-none"></div>
-                <div class="absolute bottom-0 left-0 w-24 h-24 bg-brand-info/10 rounded-full blur-2xl pointer-events-none"></div>
+            <!-- 1. KARTU SAPAAN (HEADER) - KEMBALI KE WARNA ASLI KESUKAANMU -->
+            <div class="bg-gradient-to-r from-[#6A74FF] to-[#8D96FF] rounded-[1.5rem] p-6 shadow-[0_10px_25px_rgba(106,116,255,0.3)] mb-6 relative overflow-hidden">
+                <div class="relative z-10">
+                    <h2 class="text-xl font-extrabold text-white mb-2 flex items-center gap-2">Halo Owner <span class="text-xl animate-bounce">😘</span></h2>
+                    <p class="text-[11px] text-white/90 italic mb-4 font-medium">"Kesuksesan bukan soal keberuntungan, tapi soal konsistensi." 🚀</p>
+                    <div class="inline-flex items-center gap-1.5 bg-black/20 backdrop-blur-sm px-3 py-1.5 rounded-full border border-white/10">
+                        <div class="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></div>
+                        <p class="text-[9px] text-white font-bold tracking-widest uppercase" id="live-time-dashboard">--.--.-- WIB</p>
+                    </div>
+                </div>
+            </div>
 
-                <div class="relative z-10 flex justify-between items-start">
+            <!-- 2. GRID STATISTIK 8 KOTAK (DIKUNCI BIAR GAK BERANTAKAN) -->
+            <div class="grid grid-cols-2 gap-3 mb-6">
+                
+                <!-- Saldo Tersedia (Dibuat Paling Atas & Lebar Biar Lega) -->
+                <div onclick="bukaModalSaldoDompet()" class="col-span-2 bg-[#1C233A] rounded-[1.2rem] p-5 flex justify-between items-center border border-white/5 cursor-pointer hover:bg-[#232A45] active:scale-95 transition-all shadow-md">
                     <div class="flex-1 pr-4">
-                        <h2 class="text-xl font-black text-white mb-1.5 tracking-tight flex items-center gap-2">
-                            Halo Owner <span>👋</span>
-                        </h2>
-                        <p class="text-[10px] text-gray-300 italic mb-4 leading-relaxed font-medium">
-                            "Kesuksesan bukan soal keberuntungan, tapi soal konsistensi."
-                        </p>
-                        <div class="inline-flex items-center gap-2 bg-black/40 backdrop-blur-sm px-3 py-1.5 rounded-full border border-white/5">
-                            <div class="w-1.5 h-1.5 bg-brand-success rounded-full animate-pulse"></div>
-                            <p class="text-[9px] text-gray-300 font-bold tracking-widest uppercase" id="live-time-dashboard">--.--.-- WIB</p>
-                        </div>
+                        <p class="text-[9px] text-gray-400 font-extrabold uppercase tracking-widest mb-1.5">Saldo Tersedia</p>
+                        <!-- break-all mencegah teks nabrak batas kalau saldonya miliaran -->
+                        <h3 id="toko-saldo-aktif" class="text-2xl sm:text-3xl font-black text-[#2BD975] leading-none break-all w-full">Rp 0</h3>
+                    </div>
+                    <div class="w-12 h-12 rounded-full bg-[#2BD975]/10 flex items-center justify-center shrink-0 border border-[#2BD975]/20">
+                        <i class="fas fa-wallet text-[#2BD975] text-xl"></i>
+                    </div>
+                </div>
+                
+                <!-- Saldo Pending -->
+                <div class="bg-[#1C233A] rounded-xl p-3 flex items-center gap-2.5 border border-white/5 shadow-sm">
+                    <div class="w-8 h-8 rounded-lg bg-yellow-500/10 flex items-center justify-center shrink-0">
+                        <i class="fas fa-clock text-yellow-500 text-[11px]"></i>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-[8px] text-gray-400 font-bold uppercase tracking-wider mb-0.5 truncate">Pending</p>
+                        <h3 id="toko-saldo-tertahan" class="text-[11px] font-extrabold text-white break-words">Rp 0</h3>
+                    </div>
+                </div>
+
+                <!-- Saldo Keluar -->
+                <div class="bg-[#1C233A] rounded-xl p-3 flex items-center gap-2.5 border border-white/5 shadow-sm">
+                    <div class="w-8 h-8 rounded-lg bg-gray-400/10 flex items-center justify-center shrink-0">
+                        <i class="fas fa-arrow-down text-gray-400 text-[11px]"></i>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-[8px] text-gray-400 font-bold uppercase tracking-wider mb-0.5 truncate">Keluar</p>
+                        <h3 class="text-[11px] font-extrabold text-white break-words">Rp 0</h3>
+                    </div>
+                </div>
+
+                <!-- Omzet Total -->
+                <div class="bg-[#1C233A] rounded-xl p-3 flex items-center gap-2.5 border border-white/5 shadow-sm">
+                    <div class="w-8 h-8 rounded-lg bg-[#EC4899]/10 flex items-center justify-center shrink-0">
+                        <i class="fas fa-chart-line text-[#EC4899] text-[11px]"></i>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-[8px] text-gray-400 font-bold uppercase tracking-wider mb-0.5 truncate">Omzet Total</p>
+                        <h3 id="seller-stat-gmv" class="text-[11px] font-extrabold text-white break-words">Rp 0</h3>
+                    </div>
+                </div>
+
+                <!-- Nett Bersih -->
+                <div class="bg-[#1C233A] rounded-xl p-3 flex items-center gap-2.5 border border-white/5 shadow-sm">
+                    <div class="w-8 h-8 rounded-lg bg-[#D946EF]/10 flex items-center justify-center shrink-0">
+                        <i class="fas fa-check-double text-[#D946EF] text-[11px]"></i>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-[8px] text-gray-400 font-bold uppercase tracking-wider mb-0.5 truncate">Nett Bersih</p>
+                        <h3 id="seller-stat-bersih" class="text-[11px] font-extrabold text-white break-words">Rp 0</h3>
+                    </div>
+                </div>
+
+                <!-- Jumlah Produk (Yang sebelumnya berantakan, sekarang dirapikan ukurannya) -->
+                <div class="bg-[#1C233A] rounded-xl p-3 flex items-center gap-2.5 border border-white/5 shadow-sm">
+                    <div class="w-8 h-8 rounded-lg bg-[#84CC16]/10 flex items-center justify-center shrink-0">
+                        <i class="fas fa-box text-[#84CC16] text-[11px]"></i>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-[8px] text-gray-400 font-bold uppercase tracking-wider mb-0.5 truncate">Produk</p>
+                        <h3 id="seller-stat-produk" class="text-[11px] font-extrabold text-white break-words">0</h3>
+                    </div>
+                </div>
+
+                <!-- Jumlah Pesanan (Masalah Teks "7 Pesanan" diselesaikan di sini) -->
+                <div class="bg-[#1C233A] rounded-xl p-3 flex items-center gap-2.5 border border-white/5 shadow-sm">
+                    <div class="w-8 h-8 rounded-lg bg-[#06B6D4]/10 flex items-center justify-center shrink-0">
+                        <i class="fas fa-exchange-alt text-[#06B6D4] text-[11px]"></i>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-[8px] text-gray-400 font-bold uppercase tracking-wider mb-0.5 truncate">Pesanan</p>
+                        <h3 id="seller-stat-terjual" class="text-[11px] font-extrabold text-white break-words">0</h3>
                     </div>
                 </div>
             </div>
 
-            <div class="grid grid-cols-2 gap-3 mb-8">
-                
-                <div onclick="bukaModalSaldoDompet()" class="col-span-2 bg-[#161B2E]/80 backdrop-blur-xl border border-[#2BD975]/20 rounded-[1.25rem] p-5 relative overflow-hidden group cursor-pointer active:scale-95 transition-all shadow-[0_4px_20px_rgba(0,0,0,0.2)]">
-                    <div class="absolute -right-6 -bottom-6 w-32 h-32 bg-[#2BD975]/10 rounded-full blur-2xl group-hover:bg-[#2BD975]/20 transition-all duration-500"></div>
-                    
-                    <div class="flex justify-between items-start mb-2 relative z-10">
-                        <div class="flex items-center gap-2">
-                            <div class="w-7 h-7 rounded-full bg-[#2BD975]/10 flex items-center justify-center border border-[#2BD975]/30">
-                                <i class="fas fa-wallet text-[#2BD975] text-[10px]"></i>
-                            </div>
-                            <span class="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Saldo Tersedia</span>
-                        </div>
-                        <div class="w-7 h-7 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-white/10 transition-colors">
-                            <i class="fas fa-chevron-right text-gray-400 text-[10px] group-hover:translate-x-0.5 transition-transform"></i>
-                        </div>
-                    </div>
-                    
-                    <div class="relative z-10 mt-2">
-                        <h3 id="toko-saldo-aktif" class="text-3xl font-black text-white tracking-tight truncate w-full">Rp 0</h3>
-                    </div>
-                </div>
-                
-                <div class="bg-[#161B2E]/60 backdrop-blur-md border border-white/5 rounded-[1.2rem] p-4 flex flex-col justify-center hover:bg-white/5 transition-all group">
-                    <div class="flex items-center gap-2 mb-2">
-                        <div class="w-6 h-6 rounded-md bg-yellow-500/10 flex items-center justify-center border border-yellow-500/20 group-hover:scale-110 transition-transform">
-                            <i class="fas fa-clock text-yellow-500 text-[10px]"></i>
-                        </div>
-                        <span class="text-[9px] text-gray-400 font-bold uppercase tracking-wider truncate">Pending</span>
-                    </div>
-                    <h3 id="toko-saldo-tertahan" class="text-[13px] font-extrabold text-white truncate w-full">Rp 0</h3>
-                </div>
-
-                <div class="bg-[#161B2E]/60 backdrop-blur-md border border-white/5 rounded-[1.2rem] p-4 flex flex-col justify-center hover:bg-white/5 transition-all group">
-                    <div class="flex items-center gap-2 mb-2">
-                        <div class="w-6 h-6 rounded-md bg-gray-500/10 flex items-center justify-center border border-gray-500/20 group-hover:scale-110 transition-transform">
-                            <i class="fas fa-arrow-down text-gray-400 text-[10px]"></i>
-                        </div>
-                        <span class="text-[9px] text-gray-400 font-bold uppercase tracking-wider truncate">Keluar</span>
-                    </div>
-                    <h3 class="text-[13px] font-extrabold text-white truncate w-full">Rp 0</h3>
-                </div>
-
-                <div class="bg-[#161B2E]/60 backdrop-blur-md border border-white/5 rounded-[1.2rem] p-4 flex flex-col justify-center hover:bg-white/5 transition-all group">
-                    <div class="flex items-center gap-2 mb-2">
-                        <div class="w-6 h-6 rounded-md bg-[#00F0FF]/10 flex items-center justify-center border border-[#00F0FF]/20 group-hover:scale-110 transition-transform">
-                            <i class="fas fa-chart-line text-[#00F0FF] text-[10px]"></i>
-                        </div>
-                        <span class="text-[9px] text-gray-400 font-bold uppercase tracking-wider truncate">Omzet Total</span>
-                    </div>
-                    <h3 id="seller-stat-gmv" class="text-[13px] font-extrabold text-white truncate w-full">Rp 0</h3>
-                </div>
-
-                <div class="bg-[#161B2E]/60 backdrop-blur-md border border-white/5 rounded-[1.2rem] p-4 flex flex-col justify-center hover:bg-white/5 transition-all group">
-                    <div class="flex items-center gap-2 mb-2">
-                        <div class="w-6 h-6 rounded-md bg-[#FF007A]/10 flex items-center justify-center border border-[#FF007A]/20 group-hover:scale-110 transition-transform">
-                            <i class="fas fa-check-double text-[#FF007A] text-[10px]"></i>
-                        </div>
-                        <span class="text-[9px] text-gray-400 font-bold uppercase tracking-wider truncate">Nett Bersih</span>
-                    </div>
-                    <h3 id="seller-stat-bersih" class="text-[13px] font-extrabold text-white truncate w-full">Rp 0</h3>
-                </div>
-
-                <div class="col-span-2 bg-[#161B2E]/60 backdrop-blur-md border border-white/5 rounded-[1.2rem] p-4 flex items-center justify-between hover:bg-white/5 transition-all">
-                    <div class="flex items-center gap-3 w-1/2 pr-2">
-                        <div class="w-9 h-9 rounded-full bg-[#84CC16]/10 flex items-center justify-center border border-[#84CC16]/20 shrink-0">
-                            <i class="fas fa-box text-[#84CC16] text-[11px]"></i>
-                        </div>
-                        <div class="min-w-0">
-                            <p class="text-[9px] text-gray-400 font-bold uppercase tracking-wider mb-0.5 truncate">Produk</p>
-                            <h3 id="seller-stat-produk" class="text-sm font-extrabold text-white truncate">0</h3>
-                        </div>
-                    </div>
-                    
-                    <div class="w-[1px] h-8 bg-white/10 shrink-0"></div>
-                    
-                    <div class="flex items-center justify-end gap-3 w-1/2 pl-2">
-                        <div class="min-w-0 text-right">
-                            <p class="text-[9px] text-gray-400 font-bold uppercase tracking-wider mb-0.5 truncate">Pesanan</p>
-                            <h3 id="seller-stat-terjual" class="text-sm font-extrabold text-white truncate">0</h3>
-                        </div>
-                        <div class="w-9 h-9 rounded-full bg-[#06B6D4]/10 flex items-center justify-center border border-[#06B6D4]/20 shrink-0">
-                            <i class="fas fa-exchange-alt text-[#06B6D4] text-[11px]"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
+            <!-- 3. HALAMAN PUBLIK -->
             <div class="mb-8">
-                <div class="flex items-center justify-between mb-3 px-1">
-                    <h3 class="text-xs font-extrabold text-gray-400 tracking-widest uppercase flex items-center gap-2">
-                        <i class="fas fa-link text-brand-info"></i> Link Toko Publik
-                    </h3>
-                </div>
-                <div class="bg-[#161B2E]/80 border border-white/10 rounded-[1rem] p-2 flex justify-between items-center cursor-pointer hover:border-brand-info/50 transition-all group shadow-inner" onclick="salinLinkToko()">
+                <h3 class="text-xs font-extrabold text-gray-400 mb-3 tracking-widest uppercase flex items-center gap-2">
+                    <i class="fas fa-link text-brand-info"></i> Link Toko Publik
+                </h3>
+                <div class="bg-black/30 border border-white/10 rounded-2xl p-1.5 flex justify-between items-center cursor-pointer hover:border-brand-info/50 transition-all group shadow-inner" onclick="salinLinkToko()">
                     <div class="overflow-hidden px-3 flex-1">
-                        <span class="text-xs text-brand-info font-medium opacity-80 group-hover:opacity-100 transition-opacity block truncate" id="public-shop-link">https://au2idsweetdance.com/#pasar...</span>
+                        <!-- block truncate agar link sepanjang apapun gak akan jebol -->
+                        <span class="text-xs text-[#8D96FF] font-medium opacity-80 group-hover:opacity-100 transition-opacity block truncate" id="public-shop-link">https://au2idsweetdance.com/#pasar...</span>
                     </div>
-                    <div class="bg-brand-info/10 text-brand-info group-hover:bg-brand-info group-hover:text-black w-9 h-9 rounded-[0.8rem] flex items-center justify-center transition-colors shrink-0 font-bold">
+                    <div class="bg-[#6A74FF]/20 group-hover:bg-[#6A74FF] group-hover:text-white text-[#8D96FF] w-9 h-9 rounded-xl flex items-center justify-center transition-colors shrink-0">
                         <i class="fas fa-copy text-sm"></i>
                     </div>
                 </div>
             </div>
 
-            <div class="mb-8">
-                <h3 class="text-xs font-extrabold text-gray-400 mb-3 tracking-widest uppercase px-1">Grafik 7 Hari Terakhir</h3>
-                <div class="bg-[#161B2E]/60 backdrop-blur-md rounded-[1.2rem] p-4 border border-white/5 shadow-sm relative w-full h-56">
+            <!-- 4. GRAFIK HARIAN (REAL-TIME CHART) -->
+            <div class="mb-6">
+                <h3 class="text-xs font-extrabold text-gray-400 mb-3 tracking-widest uppercase">Grafik 7 Hari Terakhir</h3>
+                <div class="bg-[#1C233A] rounded-xl p-4 border border-white/5 shadow-sm relative w-full h-56">
+                    <!-- Ini wadah kosongnya, nanti digambar otomatis sama JS -->
                     <canvas id="sellerChart"></canvas>
                 </div>
             </div>
-
-            <div class="flex items-center gap-2.5 mb-4 mt-2 px-1">
-                <div class="w-1.5 h-4 bg-[#6A74FF] rounded-full"></div>
+            
+            <!-- 5. TOMBOL MANAJEMEN TOKO -->
+            <div class="flex items-center gap-2.5 mb-4 mt-8 px-1">
+                <div class="w-1.5 h-5 bg-[#6A74FF] rounded-full"></div>
                 <h3 id="toko-section-title" class="text-xs font-extrabold text-gray-400 tracking-widest uppercase">Daftar Pesanan Masuk</h3>
             </div>
             
-            <div class="flex p-1.5 bg-black/40 rounded-[1rem] mb-5 border border-white/5 shadow-inner">
-                <button id="menu-toko-pesanan" onclick="switchTokoTab('pesanan')" class="flex-1 py-3 text-[11px] font-bold rounded-xl bg-[#2A3452] text-white shadow-sm transition-all">Pesanan Masuk</button>
-                <button id="menu-toko-produk" onclick="switchTokoTab('produk')" class="flex-1 py-3 text-[11px] font-bold rounded-xl text-gray-400 hover:text-white transition-all">Etalase Toko</button>
-                <button onclick="bukaModalJualBarang()" class="flex-1 py-3 text-[11px] font-extrabold rounded-xl text-[#2BD975] hover:bg-[#2BD975]/10 transition-all"><i class="fas fa-plus"></i> Tambah</button>
+            <div class="flex p-1.5 bg-[#1C233A] rounded-[1rem] mb-4 border border-white/5 shadow-sm">
+                <button id="menu-toko-pesanan" onclick="switchTokoTab('pesanan')" class="flex-1 py-3 text-[11px] font-bold rounded-lg bg-[#2A3452] text-white shadow-sm transition-all">Pesanan</button>
+                <button id="menu-toko-produk" onclick="switchTokoTab('produk')" class="flex-1 py-3 text-[11px] font-bold rounded-lg text-gray-400 hover:text-white transition-all">Etalase</button>
+                <button onclick="bukaModalJualBarang()" class="flex-1 py-3 text-[11px] font-extrabold rounded-lg text-[#2BD975] hover:bg-[#2BD975]/10 transition-all"><i class="fas fa-plus"></i> Tambah</button>
             </div>
 
+            <!-- Kontainer Render JS (Etalase & Pesanan) -->
             <div id="toko-produk-container" class="space-y-3 hidden"></div>
             <div id="toko-pesanan-container" class="space-y-3 block"></div>
 
-        </div> </div> </section>
+        </div>
+ </div> </section>
 
 
 
