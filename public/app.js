@@ -11349,11 +11349,13 @@ setInterval(() => {
 function updateLinkToko() {
     const linkEl = document.getElementById('public-shop-link');
     if (linkEl && currentUser && userProfile) {
-        // Pakai encodeURIComponent agar spasi aman jadi %20 (Contoh: Budi%20Santoso)
+        // Otomatis ngambil nickname, bersihin spasi, biar linknya rapi
         let namaToko = userProfile.nickname ? encodeURIComponent(userProfile.nickname.trim()) : currentUser.id;
-        linkEl.textContent = `https://au2hub.com/toko/${namaToko}`;
+        
+        linkEl.textContent = `https://au2idsweetdance.com/toko/${namaToko}`;
     }
 }
+
 
 // 3. Salin Link Toko
 function salinLinkToko() {
