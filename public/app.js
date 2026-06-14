@@ -10145,7 +10145,7 @@ async function loadPesananMasuk() {
         // [UPDATE] Tambahkan avatar_url agar foto profil pembeli bisa muncul
         const { data, error } = await supabaseClient
             .from('orders_player')
-            .select('*, profiles:user_id(nickname, avatar_url)')
+            .select('*, profiles!orders_player_user_id_fkey(nickname, avatar_url)')
             .eq('seller_id', currentUser.id)
             .order('created_at', { ascending: false });
 
