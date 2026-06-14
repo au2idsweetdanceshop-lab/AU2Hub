@@ -1723,6 +1723,13 @@ if (isPush && window.location.hash !== `#${tabId}`) history.pushState(null, null
 window.addEventListener('popstate', () => {
     let isPopupClosed = false;
 
+    // TANGKAP LACI OPSI KREATOR
+    const modalKreator = document.getElementById('modal-kreator-option');
+    if (modalKreator && !modalKreator.classList.contains('hidden')) {
+        tutupMenuKreator(true);
+        return;
+    }
+
         // TANGKAP LACI MODAL NETFLIX
     const modalNetflix = document.getElementById('modal-netflix');
     if (modalNetflix && !modalNetflix.classList.contains('hidden')) {
@@ -2611,15 +2618,12 @@ function renderProfileVideoBatch(customAmount = 3) {
     </div>
 
     ${currentUser && vid.user_id === currentUser.id ? `
-    <!-- KONTROL KREATOR (MODERN HORIZONTAL KAPSUL) -->
-    <div class="flex items-center gap-1.5 mt-2 bg-black/60 p-1 rounded-full border border-white/20 backdrop-blur-md shadow-[0_4px_15px_rgba(0,0,0,0.5)]">
-        <button onclick="downloadVideoSaya('${vid.video_url}', '${vid.id}')" class="w-9 h-9 flex items-center justify-center rounded-full hover:bg-white/20 active:scale-90 transition-all" title="Download Video">
-            <i class="fas fa-download text-brand-info text-[15px] drop-shadow-md"></i>
+    <!-- KONTROL KREATOR (3 DOTS INSTAGRAM STYLE) -->
+    <div class="flex flex-col items-center gap-0.5 mt-1">
+        <button onclick="bukaMenuKreator('${vid.video_url}', '${vid.id}')" class="hover:scale-110 transition-transform active:scale-90">
+            <i class="fas fa-ellipsis-h text-[28px] text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]"></i>
         </button>
-        <div class="w-[1px] h-5 bg-white/20"></div>
-        <button onclick="deleteVideo('${vid.id}')" class="w-9 h-9 flex items-center justify-center rounded-full hover:bg-white/20 active:scale-90 transition-all" title="Hapus Video">
-            <i class="fas fa-trash text-red-500 text-[15px] drop-shadow-md"></i>
-        </button>
+        <span class="text-white text-[11px] font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">Lainnya</span>
     </div>
     ` : ''}
 
@@ -11095,4 +11099,56 @@ async function klaimKodeNetflix() {
         btn.innerHTML = originalText;
         btn.disabled = false;
     }
+}
+
+// ==========================================
+// MENU KREATOR (TITIK TIGA INSTAGRAM STYLE)
+// ==========================================
+function bukaMenuKreator(urlVideo, vidId) {
+    // Simpan data video ke input rahasia
+    document.getElementById('temp-kreator-vid').value = vidId;
+    document.getElementById('temp-kreator-url').value = urlVideo;
+
+    const modal = document.getElementById('modal-kreator-option');
+    const box = document.getElementById('kreator-drawer-box');
+
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+
+    // Beri jeda sangat sedikit agar animasi laci naik (slide up) terlihat mulus
+    setTimeout(() => {
+        box.classList.remove('translate-y-full');
+    }, 10);
+    
+    // Daftarkan history agar jika tombol back HP dipencet, yang ketutup lacinya, bukan aplikasinya
+    history.pushState({ popup: 'kreator_menu' }, null, '#opsivideo');
+}
+
+function tutupMenuKreator(dariTombolBack = false) {
+    const modal = document.getElementById('modal-kreator-option');
+    const box = document.getElementById('kreator-drawer-box');
+
+    if (box) box.classList.add('translate-y-full');
+
+    if (!dariTombolBack && window.location.hash === '#opsivideo') {
+        history.back();
+    }
+
+    setTimeout(() => {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }, 300);
+}
+
+function eksekusiDownloadKreator() {
+    const vidId = document.getElementById('temp-kreator-vid').value;
+    const urlVideo = document.getElementById('temp-kreator-url').value;
+    tutupMenuKreator();
+    downloadVideoSaya(urlVideo, vidId); // Panggil fungsi aslimu
+}
+
+function eksekusiHapusKreator() {
+    const vidId = document.getElementById('temp-kreator-vid').value;
+    tutupMenuKreator();
+    deleteVideo(vidId); // Panggil fungsi aslimu
 }
