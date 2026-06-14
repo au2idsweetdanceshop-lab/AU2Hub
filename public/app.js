@@ -7239,7 +7239,7 @@ supabaseClient.auth.onAuthStateChange((event, session) => {
 
   // 1. Daftarkan Service Worker & Pasang Radar Update
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('./sw.js')
+  navigator.serviceWorker.register('/sw.js')
       .then((reg) => {
         console.log('SW Berhasil Terdaftar!');
 
