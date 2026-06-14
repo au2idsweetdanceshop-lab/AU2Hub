@@ -27,7 +27,8 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script defer src="./app.js?v=44"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script defer src="./app.js?v=46"></script>
 <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
 <style>
 
@@ -823,80 +824,129 @@ Satu pintu untuk info update terbaru, panduan pemula, jasa joki profesional, dan
             <button onclick="openAuthModal()" class="w-full max-w-[250px] mx-auto flex items-center justify-center bg-gradient-to-r from-[#FF5722] to-[#EE4D2D] text-white py-3.5 rounded-xl font-extrabold active:scale-95 transition-all shadow-[0_8px_20px_rgba(238,77,45,0.3)] uppercase tracking-wider text-[11px]">LOGIN SEKARANG</button>
         </div>
 
-        <div id="toko-logged-in" class="w-full hidden">
-            <!-- Saldo Utama -->
-            <div class="bg-gradient-to-br from-[#FF5722] to-[#EE4D2D] rounded-[2rem] p-6 shadow-[0_10px_40px_rgba(238,77,45,0.4)] mb-6 relative overflow-hidden">
+                <div id="toko-logged-in" class="w-full hidden pb-24">
+            
+            <!-- 1. KARTU SAPAAN (HEADER) -->
+            <div class="bg-gradient-to-r from-[#6A74FF] to-[#8D96FF] rounded-2xl p-5 shadow-[0_10px_25px_rgba(106,116,255,0.3)] mb-5 relative overflow-hidden">
                 <div class="relative z-10">
-                    <div class="flex justify-between items-center mb-2">
-                        <p class="text-[10px] text-white/90 font-extrabold uppercase tracking-widest">Saldo Aktif (Bisa Ditarik)</p>
-                        <i class="fas fa-wallet text-white/70 text-lg"></i>
+                    <h2 class="text-xl font-bold text-white mb-2 flex items-center gap-2">Halo Owner <span class="text-xl">😘</span></h2>
+                    <p class="text-[10px] text-white/90 italic mb-4">"Kesuksesan bukan soal keberuntungan, tapi soal konsistensi." 🚀</p>
+                    <p class="text-[10px] text-white/80 font-bold tracking-wide" id="live-time-dashboard">Waktu (now): --.--.-- WIB</p>
+                </div>
+            </div>
+
+            <!-- 2. GRID STATISTIK 8 KOTAK -->
+            <div class="grid grid-cols-2 gap-3 mb-6">
+                <!-- Saldo Tersedia -->
+                <div onclick="bukaModalSaldoDompet()" class="bg-[#1C233A] rounded-xl p-4 flex items-center gap-3 border border-white/5 cursor-pointer hover:bg-[#232A45] transition-colors active:scale-95 shadow-sm">
+                    <div class="w-8 h-8 rounded-lg bg-[#2BD975]/10 flex items-center justify-center shrink-0"><i class="fas fa-wallet text-[#2BD975]"></i></div>
+                    <div class="min-w-0">
+                        <p class="text-[8px] text-gray-400 mb-0.5 uppercase tracking-wider">Saldo Tersedia</p>
+                        <h3 id="toko-saldo-aktif" class="text-xs font-bold text-[#2BD975] truncate">Rp 0</h3>
                     </div>
-                    <div class="mb-6 flex items-baseline gap-1.5 flex-wrap" id="toko-saldo-aktif">
-                        <span class="text-xl font-bold text-white/80">Rp</span>
-                        <span class="text-4xl font-black text-white tracking-tighter drop-shadow-sm" id="saldo-angka">0</span>
+                </div>
+                
+                <!-- Saldo Pending -->
+                <div class="bg-[#1C233A] rounded-xl p-4 flex items-center gap-3 border border-white/5 shadow-sm">
+                    <div class="w-8 h-8 rounded-lg bg-yellow-500/10 flex items-center justify-center shrink-0"><i class="fas fa-clock text-yellow-500"></i></div>
+                    <div class="min-w-0">
+                        <p class="text-[8px] text-gray-400 mb-0.5 uppercase tracking-wider">Saldo Pending</p>
+                        <h3 id="toko-saldo-tertahan" class="text-xs font-bold text-yellow-500 truncate">Rp 0</h3>
                     </div>
-                    <div class="flex items-center justify-between border-t border-white/20 pt-4">
-                        <div class="flex flex-col">
-                            <p class="text-[9px] text-white/80 font-bold uppercase tracking-widest flex items-center gap-1.5 mb-1"><i class="fas fa-clock text-[10px]"></i> Saldo Tertahan (H+1)</p>
-                            <p class="text-sm font-extrabold text-white" id="toko-saldo-tertahan">Rp 0</p>
-                        </div>
-                        <button onclick="bukaModalSaldoDompet()" class="bg-white text-[#EE4D2D] text-[11px] font-black px-6 py-3 rounded-[1rem] shadow-lg active:scale-95 transition-transform tracking-wider">TARIK DANA</button>
+                </div>
+
+                <!-- Saldo Terkunci -->
+                <div class="bg-[#1C233A] rounded-xl p-4 flex items-center gap-3 border border-white/5 shadow-sm">
+                    <div class="w-8 h-8 rounded-lg bg-red-500/10 flex items-center justify-center shrink-0"><i class="fas fa-lock text-red-500"></i></div>
+                    <div class="min-w-0">
+                        <p class="text-[8px] text-gray-400 mb-0.5 uppercase tracking-wider">Saldo Terkunci</p>
+                        <h3 class="text-xs font-bold text-red-500 truncate">Rp 0</h3>
+                    </div>
+                </div>
+
+                <!-- Saldo Keluar -->
+                <div class="bg-[#1C233A] rounded-xl p-4 flex items-center gap-3 border border-white/5 shadow-sm">
+                    <div class="w-8 h-8 rounded-lg bg-gray-400/10 flex items-center justify-center shrink-0"><i class="fas fa-arrow-down text-gray-400"></i></div>
+                    <div class="min-w-0">
+                        <p class="text-[8px] text-gray-400 mb-0.5 uppercase tracking-wider">Saldo Keluar</p>
+                        <h3 class="text-xs font-bold text-gray-400 truncate">Rp 0</h3>
+                    </div>
+                </div>
+
+                <!-- Jumlah Produk -->
+                <div class="bg-[#1C233A] rounded-xl p-4 flex items-center gap-3 border border-white/5 shadow-sm">
+                    <div class="w-8 h-8 rounded-lg bg-[#84CC16]/10 flex items-center justify-center shrink-0"><i class="fas fa-box text-[#84CC16]"></i></div>
+                    <div class="min-w-0">
+                        <p class="text-[8px] text-gray-400 mb-0.5 uppercase tracking-wider">Jumlah Produk</p>
+                        <h3 id="seller-stat-produk" class="text-xs font-bold text-[#84CC16] truncate">0</h3>
+                    </div>
+                </div>
+
+                <!-- Jumlah Transaksi -->
+                <div class="bg-[#1C233A] rounded-xl p-4 flex items-center gap-3 border border-white/5 shadow-sm">
+                    <div class="w-8 h-8 rounded-lg bg-[#06B6D4]/10 flex items-center justify-center shrink-0"><i class="fas fa-exchange-alt text-[#06B6D4]"></i></div>
+                    <div class="min-w-0">
+                        <p class="text-[8px] text-gray-400 mb-0.5 uppercase tracking-wider">Jumlah Transaksi</p>
+                        <h3 id="seller-stat-terjual" class="text-xs font-bold text-[#06B6D4] truncate">0</h3>
+                    </div>
+                </div>
+
+                <!-- Pendapatan Harian -->
+                <div class="bg-[#1C233A] rounded-xl p-4 flex items-center gap-3 border border-white/5 shadow-sm">
+                    <div class="w-8 h-8 rounded-lg bg-[#EC4899]/10 flex items-center justify-center shrink-0"><i class="fas fa-calendar-day text-[#EC4899]"></i></div>
+                    <div class="min-w-0">
+                        <p class="text-[8px] text-gray-400 mb-0.5 uppercase tracking-wider">Omzet Total</p>
+                        <h3 id="seller-stat-gmv" class="text-xs font-bold text-[#EC4899] truncate">Rp 0</h3>
+                    </div>
+                </div>
+
+                <!-- Pendapatan Bulanan -->
+                <div class="bg-[#1C233A] rounded-xl p-4 flex items-center gap-3 border border-white/5 shadow-sm">
+                    <div class="w-8 h-8 rounded-lg bg-[#D946EF]/10 flex items-center justify-center shrink-0"><i class="fas fa-calendar-alt text-[#D946EF]"></i></div>
+                    <div class="min-w-0">
+                        <p class="text-[8px] text-gray-400 mb-0.5 uppercase tracking-wider">Pendapatan Bersih</p>
+                        <h3 id="seller-stat-bersih" class="text-xs font-bold text-[#D946EF] truncate">Rp 0</h3>
                     </div>
                 </div>
             </div>
 
-            <!-- ANALITIK SELLER (WALL STREET MODE) -->
-            <div class="flex items-center gap-2.5 mb-3 mt-2">
-                <div class="w-1.5 h-4 bg-brand-info rounded-full"></div>
-                <h3 class="text-xs font-extrabold text-gray-400 uppercase tracking-widest">Performa Toko Anda</h3>
-            </div>
-            <div class="flex flex-col gap-3 mb-6">
-                <!-- 1. PENDAPATAN BERSIH -->
-                <div class="bg-gradient-to-r from-[#0A2010] to-black border border-brand-success/30 p-4 sm:p-5 rounded-2xl shadow-lg relative overflow-hidden group flex justify-between items-center">
-                    <div class="absolute -left-2 -bottom-2 opacity-10 group-hover:scale-110 transition-transform"><i class="fas fa-hand-holding-usd text-6xl text-brand-success"></i></div>
-                    <div class="relative z-10">
-                        <p class="text-[9px] text-brand-success/80 font-extrabold uppercase tracking-widest mb-1">Pendapatan Bersih</p>
-                        <h3 id="seller-stat-bersih" class="text-xl sm:text-2xl font-black text-brand-success">Rp 0</h3>
-                    </div>
-                    <div class="w-10 h-10 rounded-full bg-brand-success/10 flex items-center justify-center border border-brand-success/20 relative z-10 shrink-0">
-                        <i class="fas fa-hand-holding-usd text-brand-success text-sm"></i>
-                    </div>
-                </div>
-                <!-- 2. OMZET & PESANAN -->
-                <div class="grid grid-cols-2 gap-3">
-                    <div class="bg-[#161B2E] border border-white/5 p-4 rounded-2xl shadow-md">
-                        <p class="text-[8px] text-gray-400 font-extrabold uppercase tracking-widest mb-1 flex items-center gap-1"><i class="fas fa-chart-line text-brand-info"></i> Omzet Kotor</p>
-                        <h3 id="seller-stat-gmv" class="text-sm font-black text-white truncate">Rp 0</h3>
-                    </div>
-                    <div class="bg-[#161B2E] border border-white/5 p-4 rounded-2xl shadow-md">
-                        <p class="text-[8px] text-gray-400 font-extrabold uppercase tracking-widest mb-1 flex items-center gap-1"><i class="fas fa-box-open text-[#EE4D2D]"></i> Pesanan Selesai</p>
-                        <h3 id="seller-stat-terjual" class="text-sm font-black text-white truncate">0 Pesanan</h3>
-                    </div>
+            <!-- 3. HALAMAN PUBLIK -->
+            <div class="mb-6">
+                <h3 class="text-sm font-bold text-white mb-3 tracking-wide">Halaman Publik</h3>
+                <div class="bg-transparent border border-[#3A4259] rounded-lg p-3 flex justify-between items-center cursor-pointer hover:bg-white/5 transition-colors" onclick="salinLinkToko()">
+                    <span class="text-xs text-[#8D96FF] truncate" id="public-shop-link">https://au2hub.com/toko/...</span>
+                    <i class="fas fa-copy text-gray-400 text-xs ml-2"></i>
                 </div>
             </div>
 
-            <!-- MENU CEPAT -->
-            <div class="grid grid-cols-3 gap-3 mb-6">
-                <div id="menu-toko-pesanan" onclick="switchTokoTab('pesanan')" class="bg-[#161B2E] border border-transparent p-4 py-5 rounded-[1.5rem] flex flex-col items-center justify-center gap-3 cursor-pointer transition-all active:scale-95 shadow-lg">
-                    <div class="w-11 h-11 rounded-full bg-[#1A2A4A] text-[#46B3FF] flex items-center justify-center text-lg"><i class="fas fa-clipboard-list"></i></div>
-                    <span class="text-[11px] font-bold text-gray-300 text-center leading-tight">Pesanan<br>Masuk</span>
-                </div>
-                <div id="menu-toko-produk" onclick="switchTokoTab('produk')" class="bg-[#161B2E] border border-transparent p-4 py-5 rounded-[1.5rem] flex flex-col items-center justify-center gap-3 cursor-pointer transition-all active:scale-95 shadow-lg">
-                    <div class="w-11 h-11 rounded-full bg-[#3A2218] text-[#EE4D2D] flex items-center justify-center text-lg"><i class="fas fa-box-open"></i></div>
-                    <span class="text-[11px] font-bold text-gray-300 text-center leading-tight">Etalase<br>Saya</span>
-                </div>
-                <div onclick="bukaModalJualBarang()" class="bg-[#161B2E] border border-transparent p-4 py-5 rounded-[1.5rem] flex flex-col items-center justify-center gap-3 cursor-pointer transition-all active:scale-95 shadow-lg hover:border-brand-success/30">
-                    <div class="w-11 h-11 rounded-full bg-[#0A2A1A] text-[#2BD975] flex items-center justify-center text-lg"><i class="fas fa-plus"></i></div>
-                    <span class="text-[11px] font-bold text-gray-300 text-center leading-tight">Tambah<br>Produk</span>
-                </div>
-            </div>
+            <!-- 4. GRAFIK HARIAN (REAL-TIME CHART) -->
+<div class="mb-6">
+    <h3 class="text-sm font-bold text-white mb-3 tracking-wide">Grafik Harian (7 Hari)</h3>
+    <div class="bg-[#1C233A] rounded-xl p-4 border border-white/5 shadow-sm relative w-full h-56">
+        <!-- Ini wadah kosongnya, nanti digambar otomatis sama JS -->
+        <canvas id="sellerChart"></canvas>
+    </div>
+</div>
 
-            <div class="flex items-center gap-2.5 mb-4">
-                <div class="w-1.5 h-5 bg-[#EE4D2D] rounded-full"></div>
+            
+            <!-- 5. TOMBOL MANAJEMEN TOKO (Karena UI berubah, kita taruh sebagai Tab Switcher di bawah) -->
+            <div class="flex items-center gap-2.5 mb-4 mt-8">
+                <div class="w-1.5 h-5 bg-[#6A74FF] rounded-full"></div>
                 <h3 id="toko-section-title" class="text-sm font-extrabold text-white tracking-wide">Daftar Pesanan Masuk</h3>
             </div>
-            <div id="toko-produk-container" class="space-y-3 hidden pb-10"></div>
-            <div id="toko-pesanan-container" class="space-y-3 block pb-10"></div>
+            
+            <div class="flex p-1 bg-black/40 rounded-xl mb-4 border border-white/5">
+                <button id="menu-toko-pesanan" onclick="switchTokoTab('pesanan')" class="flex-1 py-2.5 text-xs font-bold rounded-lg bg-[#2A3452] text-white shadow-sm transition-all">Pesanan</button>
+                <button id="menu-toko-produk" onclick="switchTokoTab('produk')" class="flex-1 py-2.5 text-xs font-bold rounded-lg text-gray-400 hover:text-white transition-all">Etalase</button>
+                <button onclick="bukaModalJualBarang()" class="flex-1 py-2.5 text-xs font-bold rounded-lg text-[#2BD975] hover:bg-[#2BD975]/10 transition-all"><i class="fas fa-plus"></i> Tambah</button>
+            </div>
+
+            <!-- Kontainer Render JS (Etalase & Pesanan) -->
+            <div id="toko-produk-container" class="space-y-3 hidden"></div>
+            <div id="toko-pesanan-container" class="space-y-3 block"></div>
+
+        </div>
+
         </div>
     </div>
 </section>
