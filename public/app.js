@@ -10729,53 +10729,79 @@ async function hapusProdukSaya(productId, productName) {
 async function prosesAutoDeliveryTertunda() {
     if (!currentUser) return;
 
-    // Cari pesanan Pasar Player berstatus 'SUCCESS' (sudah dibayar via Xoftware tapi barang belum dikirim)
+    // 1. PERBAIKAN FILTER: Cari semua status yang berarti "Sudah Dibayar"
     const { data: pendingOrders } = await supabaseClient
         .from('orders_player')
         .select('*')
         .eq('user_id', currentUser.id)
-        .eq('status', 'SUCCESS');
+        .in('status', ['SUCCESS', 'PAID', 'proses']); // Tambahkan 'PAID' dan 'proses'
 
     if (pendingOrders && pendingOrders.length > 0) {
         for (let order of pendingOrders) {
-            let autoDeliveryData = "";
+            if (!order.product_id) continue;
+
+            const { data: prodData } = await supabaseClient
+                .from('player_products')
+                .select('stock_list, category, user_id')
+                .eq('id', order.product_id)
+                .single();
+
+            const isAutoItem = prodData && (prodData.category === 'Akun' || prodData.category === 'Item' || prodData.category === 'APK Premium');
+
+            // Mencegah Infinite Loop: Jika BUKAN barang auto-delivery, ubah ke 'proses' lalu lewati
+            if (!isAutoItem) {
+                if (order.status !== 'proses') {
+                    await supabaseClient.from('orders_player').update({ status: 'proses' }).eq('id', order.id);
+                }
+                continue;
+            }
+
+            // --- LOGIKA AUTO DELIVERY ---
+            let autoDeliveryData = [];
             
-            if (order.product_id) {
-                const { data: prodData } = await supabaseClient
-                    .from('player_products')
-                    .select('stock_list, category')
-                    .eq('id', order.product_id)
-                    .single();
+            if (prodData.stock_list) {
+                let lines = prodData.stock_list.split(/\r?\n/).filter(l => l.trim() !== '');
+                
+                // 2. PERBAIKAN QTY: Ekstrak jumlah pesanan dari nama produk (contoh: "Akun FF (x2)")
+                let qty = 1;
+                const matchQty = order.product_name.match(/\(x(\d+)\)/);
+                if (matchQty) qty = parseInt(matchQty[1]);
 
-                if (prodData && (prodData.category === 'Akun' || prodData.category === 'Item' || prodData.category === 'APK Premium') && prodData.stock_list) {
-                    let lines = prodData.stock_list.split(/\r?\n/).filter(l => l.trim() !== '');
-                    
-                    if (lines.length > 0) {
-                        autoDeliveryData = lines.shift();
-                        const newStockList = lines.join('\n');
-                        
-                        // 1. Kurangi stok di database etalase
-                        await supabaseClient.from('player_products').update({stock_list: newStockList}).eq('id', order.product_id);
-                        
-                        // 2. Kirim pesan inbox ke pembeli berisi item-nya
-                        await supabaseClient.from('messages').insert({
-                            sender_id: order.seller_id,
-                            receiver_id: order.user_id,
-                            message: `[SISTEM] Transaksi berhasil! Berikut detail pesanan *${order.product_name}* Anda:\n\n${autoDeliveryData}`
-                        });
-
-                        // ⚠️ PENTING: Fitur pencairan instan (tambah_saldo) telah dihapus dari sini.
-                        // Dana kini menjadi "Saldo Tertahan" dan akan dicairkan oleh sistem H+1.
+                if (lines.length >= qty) {
+                    // Ambil stok sebanyak jumlah yang dibeli
+                    for (let i = 0; i < qty; i++) {
+                        autoDeliveryData.push(lines.shift());
                     }
+                    
+                    const newStockList = lines.join('\n');
+                    
+                    // 3. PERBAIKAN RLS: Tangkap error jika Supabase menolak potong stok
+                    const { error: errUpdate } = await supabaseClient
+                        .from('player_products')
+                        .update({ stock_list: newStockList })
+                        .eq('id', order.product_id);
+                        
+                    if (errUpdate) {
+                        console.error("Gagal potong stok! Diblokir RLS Supabase:", errUpdate);
+                        showToast("Pengiriman tertunda: Izin RLS memblokir pemotongan stok.", "error");
+                        continue; // Hentikan di sini agar tidak mengirim barang secara gratis!
+                    }
+                    
+                    // Kirim detail barang ke inbox pembeli
+                    const detailItem = autoDeliveryData.join('\n\n');
+                    await supabaseClient.from('messages').insert({
+                        sender_id: order.seller_id,
+                        receiver_id: order.user_id,
+                        message: `[SISTEM] Transaksi berhasil! Berikut detail pesanan *${order.product_name}* Anda:\n\n${detailItem}`
+                    });
                 }
             }
 
-            // 4. Ubah status jadi selesai dan catat WAKTU SELESAI agar argo H+1 mulai berjalan
-            const finalStatus = autoDeliveryData ? 'selesai' : 'proses';
+            // 4. Update Status Order Sesuai Ketersediaan
+            const finalStatus = (autoDeliveryData.length > 0) ? 'selesai' : 'proses';
             
             if (finalStatus === 'selesai') {
                 const waktuSelesaiBot = new Date().toISOString();
-                
                 await supabaseClient.from('orders_player')
                     .update({ 
                         status: finalStatus, 
@@ -10783,15 +10809,14 @@ async function prosesAutoDeliveryTertunda() {
                         dana_cair: false 
                     })
                     .eq('id', order.id);
-            } else {
-                // Jika gagal auto-delivery, biarkan status "proses" tanpa menahan dana dulu
-                await supabaseClient.from('orders_player')
-                    .update({ status: finalStatus })
-                    .eq('id', order.id);
+            } else if (order.status !== 'proses') {
+                // Jika stok habis saat dibeli, biarkan status "proses" menunggu penjual restock
+                await supabaseClient.from('orders_player').update({ status: 'proses' }).eq('id', order.id);
             }
         }
     }
 }
+
 
 // ==========================================
 // SISTEM ANTI KLIK KANAN PADA GAMBAR
