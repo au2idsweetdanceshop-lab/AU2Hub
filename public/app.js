@@ -8293,33 +8293,104 @@ async function checkoutXoftwarePay(namaProduk, harga, deskripsi, sellerId = null
         }
 
         // --- KODINGAN UI SUKSES (APPLE PAY STYLE) ---
-        const tampilkanLayarSukses = () => {
+                const tampilkanLayarSukses = async () => { // <--- TAMBAHKAN KATA async
+            // 1. MUNCULKAN LOADING DULU SAMBIL NUNGGU BOT MOTONG STOK
+            if (wadahPembayaran) {
+                wadahPembayaran.innerHTML = `
+                    <div class="flex flex-col items-center justify-center py-20 mt-10">
+                        <i class="fas fa-spinner fa-spin text-brand-success text-5xl mb-4"></i>
+                        <p class="text-white font-bold animate-pulse tracking-wide">Menyiapkan Pesananmu...</p>
+                    </div>`;
+            }
+
+            let autoDeliveryContent = null;
+            let isAutoItem = false;
+
+            if (namaProduk.includes('[VIP]')) {
+                // Biarkan VIP diproses oleh kode di bawah nanti
+            } else {
+                // 2. TUNGGU BOT AUTO-DELIVERY BEKERJA SAMPAI SELESAI
+                await prosesAutoDeliveryTertunda();
+
+                // 3. CEK KATEGORI DAN TARIK DATA AKUN DARI PESAN SISTEM (INBOX)
+                if (productId) {
+                    const { data: prodInfo } = await supabaseClient.from('player_products').select('category').eq('id', productId).single();
+                    
+                    if (prodInfo && (prodInfo.category === 'Akun' || prodInfo.category === 'Item' || prodInfo.category === 'APK Premium')) {
+                        isAutoItem = true;
+                        
+                        // Cek kotak masuk (inbox) pembeli untuk mengambil data akun yang baru dikirim
+                        const { data: sysMsg } = await supabaseClient
+                            .from('messages')
+                            .select('message')
+                            .eq('receiver_id', currentUser.id)
+                            .ilike('message', '%Transaksi berhasil!%')
+                            .order('created_at', { ascending: false })
+                            .limit(1);
+
+                        if (sysMsg && sysMsg.length > 0) {
+                            const splitText = sysMsg[0].message.split('Anda:\n\n');
+                            if (splitText.length > 1) {
+                                autoDeliveryContent = splitText[1];
+                            }
+                        }
+                    }
+                }
+            }
+
+            // 4. RENDER LAYAR FINAL (BARANG OTOMATIS VS MANUAL)
             if (wadahPembayaran) {
                 const noWA_Sukses = noWA; 
                 const teksWA_Sukses = encodeURIComponent(`Halo ${sapaan}, pesanan saya sudah BERHASIL DIBAYAR via QRIS Otomatis untuk:\n\n*${namaProduk}*\nID: ADT - ${orderData.id}\n\n(Mohon segera diproses ya)`);
 
-                wadahPembayaran.innerHTML = `
-                    <div class="flex flex-col items-center justify-center py-4 text-center modal-anim w-full relative z-10">
-                        <div class="relative w-28 h-28 mb-6 mt-4">
-                            <div class="absolute inset-0 bg-brand-success rounded-full animate-ping opacity-20"></div>
-                            <div class="w-full h-full bg-brand-success/20 rounded-full flex items-center justify-center border border-brand-success/50 backdrop-blur-md">
-                                <i class="fas fa-check text-5xl text-brand-success drop-shadow-[0_0_15px_rgba(37,211,102,0.8)]"></i>
+                if (isAutoItem && autoDeliveryContent) {
+                    // ---> UI KHUSUS BARANG OTOMATIS (MUNCULKAN DATA AKUN) <---
+                    wadahPembayaran.innerHTML = `
+                        <div class="flex flex-col items-center justify-center py-4 text-center modal-anim w-full relative z-10">
+                            <div class="w-16 h-16 bg-brand-success/20 rounded-full flex items-center justify-center border border-brand-success/50 mb-4">
+                                <i class="fas fa-check text-3xl text-brand-success"></i>
                             </div>
-                        </div>
-                        <h2 class="text-3xl font-black text-white mb-2 tracking-tight">Sukses!</h2>
-                        <p class="text-gray-400 text-xs mb-8 leading-relaxed px-4">Pembayaran senilai <b class="text-white">Rp ${harga.toLocaleString('id-ID')}</b> telah diterima sistem.</p>
-                        
-                        <a href="https://wa.me/${noWA_Sukses}?text=${teksWA_Sukses}" target="_blank" class="w-full mb-3 bg-[#25D366] hover:bg-[#20bd5a] text-white py-4 rounded-xl font-extrabold uppercase tracking-wider text-xs shadow-[0_10px_20px_rgba(37,211,102,0.3)] flex justify-center items-center active:scale-95 transition-all">
-                            <i class="fab fa-whatsapp text-lg mr-2"></i> Hubungi ${sapaan}
-                        </a>
+                            <h2 class="text-2xl font-black text-white mb-1 tracking-tight">Pesanan Berhasil!</h2>
+                            <p class="text-gray-400 text-[11px] mb-4">Ini adalah detail data pesanan otomatis Anda:</p>
+                            
+                            <div class="w-full bg-black/50 border border-brand-info/50 rounded-xl p-4 text-left mb-6 relative">
+                                <span class="absolute -top-2.5 left-4 bg-brand-info text-brand-dark text-[9px] font-extrabold px-2 py-0.5 rounded uppercase tracking-wider">DATA PESANAN</span>
+                                <pre class="text-white text-xs whitespace-pre-wrap font-mono leading-relaxed mt-2" style="font-family: monospace;">${autoDeliveryContent}</pre>
+                                
+                                <button onclick="navigator.clipboard.writeText(\`${autoDeliveryContent.replace(/`/g, '\\`')}\`); this.innerHTML='<i class=\\'fas fa-check\\'></i> Tersalin!'; setTimeout(()=>this.innerHTML='<i class=\\'fas fa-copy mr-1\\'></i> Salin Data', 2000);" class="mt-4 w-full bg-brand-info/10 text-brand-info border border-brand-info/30 py-2.5 rounded-lg text-[11px] font-bold active:scale-95 transition-all">
+                                    <i class="fas fa-copy mr-1"></i> Salin Data
+                                </button>
+                            </div>
 
-                        <button onclick="history.back()" class="w-full bg-white/5 text-white py-4 rounded-xl font-bold uppercase tracking-wider text-xs border border-white/10 hover:bg-white/10 active:scale-95 transition-all">Tutup Halaman</button>
-                    </div>
-                `;
+                            <p class="text-[9px] text-gray-500 mb-4 italic">*Data ini juga telah dikirimkan ke fitur Chat (Inbox) Anda.</p>
+                            <button onclick="history.back()" class="w-full bg-white/5 text-white py-3.5 rounded-xl font-bold uppercase tracking-wider text-xs border border-white/10 hover:bg-white/10 active:scale-95 transition-all">Tutup Halaman</button>
+                        </div>
+                    `;
+                } else {
+                    // ---> UI KHUSUS BARANG MANUAL (TOMBOL WHATSAPP SAJA) <---
+                    wadahPembayaran.innerHTML = `
+                        <div class="flex flex-col items-center justify-center py-4 text-center modal-anim w-full relative z-10">
+                            <div class="relative w-28 h-28 mb-6 mt-4">
+                                <div class="absolute inset-0 bg-brand-success rounded-full animate-ping opacity-20"></div>
+                                <div class="w-full h-full bg-brand-success/20 rounded-full flex items-center justify-center border border-brand-success/50 backdrop-blur-md">
+                                    <i class="fas fa-check text-5xl text-brand-success drop-shadow-[0_0_15px_rgba(37,211,102,0.8)]"></i>
+                                </div>
+                            </div>
+                            <h2 class="text-3xl font-black text-white mb-2 tracking-tight">Sukses!</h2>
+                            <p class="text-gray-400 text-xs mb-8 leading-relaxed px-4">Pembayaran senilai <b class="text-white">Rp ${harga.toLocaleString('id-ID')}</b> telah diterima sistem.</p>
+                            
+                            <a href="https://wa.me/${noWA_Sukses}?text=${teksWA_Sukses}" target="_blank" class="w-full mb-3 bg-[#25D366] hover:bg-[#20bd5a] text-white py-4 rounded-xl font-extrabold uppercase tracking-wider text-xs shadow-[0_10px_20px_rgba(37,211,102,0.3)] flex justify-center items-center active:scale-95 transition-all">
+                                <i class="fab fa-whatsapp text-lg mr-2"></i> Hubungi ${sapaan}
+                            </a>
+
+                            <button onclick="history.back()" class="w-full bg-white/5 text-white py-4 rounded-xl font-bold uppercase tracking-wider text-xs border border-white/10 hover:bg-white/10 active:scale-95 transition-all">Tutup Halaman</button>
+                        </div>
+                    `;
+                }
             }
             
+            // Logika VIP (biarkan seperti aslinya)
             if (namaProduk.includes('[VIP]')) {
-                // Ekstrak durasi dari nama produk biar UI gak salah paham lagi
                 let durasiSementara = 30;
                 if (namaProduk.includes('1 Tahun')) durasiSementara = 365;
                 else if (namaProduk.match(/(\d+)\s+Bulan/i)) durasiSementara = parseInt(namaProduk.match(/(\d+)\s+Bulan/i)[1]) * 30;
@@ -8330,20 +8401,13 @@ async function checkoutXoftwarePay(namaProduk, harga, deskripsi, sellerId = null
                 if (btnTutup) {
                     btnTutup.onclick = () => {
                         history.back(); 
-                        setTimeout(() => {
-                            switchTab('toko'); 
-                            loadTokoSaya();    
-                        }, 300);
+                        setTimeout(() => { switchTab('toko'); loadTokoSaya(); }, 300);
                     };
                 }
-                setTimeout(() => { 
-                    localStorage.removeItem('optimistic_vip'); 
-                    fetchProfile();
-                }, 60000);
-            } else {
-                prosesAutoDeliveryTertunda();
+                setTimeout(() => { localStorage.removeItem('optimistic_vip'); fetchProfile(); }, 60000);
             }
         };
+
 
         // 5. Radar Supabase (Langsung memantau perubahan Database)
         activeChannelPembayaran = supabaseClient.channel(`tunggu-pembayaran-${orderData.id}`)
@@ -8480,56 +8544,121 @@ async function prosesBayarUlang() {
 
         showToast("Silakan scan QRIS untuk melanjutkan.", "success");
 
-        const tampilkanLayarSukses = () => {
+                const tampilkanLayarSukses = async () => { // <--- TAMBAHKAN KATA async
+            // 1. MUNCULKAN LOADING DULU SAMBIL NUNGGU BOT MOTONG STOK
             if (wadahPembayaran) {
-                const noWA_Sukses = noWA;
-                const teksWA_Sukses = encodeURIComponent(`Halo ${sapaan}, pesanan saya sudah BERHASIL DIBAYAR via QRIS Otomatis untuk:\n\n*${activeOrderNameToPay}*\nID: ADT - ${activeOrderIdToPay}\n\n(Mohon segera diproses ya)`);
-
                 wadahPembayaran.innerHTML = `
-                    <div class="flex flex-col items-center justify-center py-4 text-center modal-anim w-full relative z-10">
-                        <div class="relative w-28 h-28 mb-6 mt-4">
-                            <div class="absolute inset-0 bg-brand-success rounded-full animate-ping opacity-20"></div>
-                            <div class="w-full h-full bg-brand-success/20 rounded-full flex items-center justify-center border border-brand-success/50 backdrop-blur-md">
-                                <i class="fas fa-check text-5xl text-brand-success drop-shadow-[0_0_15px_rgba(37,211,102,0.8)]"></i>
-                            </div>
-                        </div>
-                        <h2 class="text-3xl font-black text-white mb-2 tracking-tight">Sukses!</h2>
-                        <p class="text-gray-400 text-xs mb-8 leading-relaxed px-4">Pembayaran senilai <b class="text-white">Rp ${activeOrderPriceToPay.toLocaleString('id-ID')}</b> telah diterima sistem.</p>
-                        
-                        <a href="https://wa.me/${noWA_Sukses}?text=${teksWA_Sukses}" target="_blank" class="w-full mb-3 bg-[#25D366] hover:bg-[#20bd5a] text-white py-4 rounded-xl font-extrabold uppercase tracking-wider text-xs shadow-[0_10px_20px_rgba(37,211,102,0.3)] flex justify-center items-center active:scale-95 transition-all">
-                            <i class="fab fa-whatsapp text-lg mr-2"></i> Hubungi ${sapaan}
-                        </a>
+                    <div class="flex flex-col items-center justify-center py-20 mt-10">
+                        <i class="fas fa-spinner fa-spin text-brand-success text-5xl mb-4"></i>
+                        <p class="text-white font-bold animate-pulse tracking-wide">Menyiapkan Pesananmu...</p>
+                    </div>`;
+            }
 
-                        <button onclick="history.back()" class="w-full bg-white/5 text-white py-4 rounded-xl font-bold uppercase tracking-wider text-xs border border-white/10 hover:bg-white/10 active:scale-95 transition-all">Tutup Halaman</button>
-                    </div>
-                `;
+            let autoDeliveryContent = null;
+            let isAutoItem = false;
+
+            if (namaProduk.includes('[VIP]')) {
+                // Biarkan VIP diproses oleh kode di bawah nanti
+            } else {
+                // 2. TUNGGU BOT AUTO-DELIVERY BEKERJA SAMPAI SELESAI
+                await prosesAutoDeliveryTertunda();
+
+                // 3. CEK KATEGORI DAN TARIK DATA AKUN DARI PESAN SISTEM (INBOX)
+                if (productId) {
+                    const { data: prodInfo } = await supabaseClient.from('player_products').select('category').eq('id', productId).single();
+                    
+                    if (prodInfo && (prodInfo.category === 'Akun' || prodInfo.category === 'Item' || prodInfo.category === 'APK Premium')) {
+                        isAutoItem = true;
+                        
+                        // Cek kotak masuk (inbox) pembeli untuk mengambil data akun yang baru dikirim
+                        const { data: sysMsg } = await supabaseClient
+                            .from('messages')
+                            .select('message')
+                            .eq('receiver_id', currentUser.id)
+                            .ilike('message', '%Transaksi berhasil!%')
+                            .order('created_at', { ascending: false })
+                            .limit(1);
+
+                        if (sysMsg && sysMsg.length > 0) {
+                            const splitText = sysMsg[0].message.split('Anda:\n\n');
+                            if (splitText.length > 1) {
+                                autoDeliveryContent = splitText[1];
+                            }
+                        }
+                    }
+                }
+            }
+
+            // 4. RENDER LAYAR FINAL (BARANG OTOMATIS VS MANUAL)
+            if (wadahPembayaran) {
+                const noWA_Sukses = noWA; 
+                const teksWA_Sukses = encodeURIComponent(`Halo ${sapaan}, pesanan saya sudah BERHASIL DIBAYAR via QRIS Otomatis untuk:\n\n*${namaProduk}*\nID: ADT - ${orderData.id}\n\n(Mohon segera diproses ya)`);
+
+                if (isAutoItem && autoDeliveryContent) {
+                    // ---> UI KHUSUS BARANG OTOMATIS (MUNCULKAN DATA AKUN) <---
+                    wadahPembayaran.innerHTML = `
+                        <div class="flex flex-col items-center justify-center py-4 text-center modal-anim w-full relative z-10">
+                            <div class="w-16 h-16 bg-brand-success/20 rounded-full flex items-center justify-center border border-brand-success/50 mb-4">
+                                <i class="fas fa-check text-3xl text-brand-success"></i>
+                            </div>
+                            <h2 class="text-2xl font-black text-white mb-1 tracking-tight">Pesanan Berhasil!</h2>
+                            <p class="text-gray-400 text-[11px] mb-4">Ini adalah detail data pesanan otomatis Anda:</p>
+                            
+                            <div class="w-full bg-black/50 border border-brand-info/50 rounded-xl p-4 text-left mb-6 relative">
+                                <span class="absolute -top-2.5 left-4 bg-brand-info text-brand-dark text-[9px] font-extrabold px-2 py-0.5 rounded uppercase tracking-wider">DATA PESANAN</span>
+                                <pre class="text-white text-xs whitespace-pre-wrap font-mono leading-relaxed mt-2" style="font-family: monospace;">${autoDeliveryContent}</pre>
+                                
+                                <button onclick="navigator.clipboard.writeText(\`${autoDeliveryContent.replace(/`/g, '\\`')}\`); this.innerHTML='<i class=\\'fas fa-check\\'></i> Tersalin!'; setTimeout(()=>this.innerHTML='<i class=\\'fas fa-copy mr-1\\'></i> Salin Data', 2000);" class="mt-4 w-full bg-brand-info/10 text-brand-info border border-brand-info/30 py-2.5 rounded-lg text-[11px] font-bold active:scale-95 transition-all">
+                                    <i class="fas fa-copy mr-1"></i> Salin Data
+                                </button>
+                            </div>
+
+                            <p class="text-[9px] text-gray-500 mb-4 italic">*Data ini juga telah dikirimkan ke fitur Chat (Inbox) Anda.</p>
+                            <button onclick="history.back()" class="w-full bg-white/5 text-white py-3.5 rounded-xl font-bold uppercase tracking-wider text-xs border border-white/10 hover:bg-white/10 active:scale-95 transition-all">Tutup Halaman</button>
+                        </div>
+                    `;
+                } else {
+                    // ---> UI KHUSUS BARANG MANUAL (TOMBOL WHATSAPP SAJA) <---
+                    wadahPembayaran.innerHTML = `
+                        <div class="flex flex-col items-center justify-center py-4 text-center modal-anim w-full relative z-10">
+                            <div class="relative w-28 h-28 mb-6 mt-4">
+                                <div class="absolute inset-0 bg-brand-success rounded-full animate-ping opacity-20"></div>
+                                <div class="w-full h-full bg-brand-success/20 rounded-full flex items-center justify-center border border-brand-success/50 backdrop-blur-md">
+                                    <i class="fas fa-check text-5xl text-brand-success drop-shadow-[0_0_15px_rgba(37,211,102,0.8)]"></i>
+                                </div>
+                            </div>
+                            <h2 class="text-3xl font-black text-white mb-2 tracking-tight">Sukses!</h2>
+                            <p class="text-gray-400 text-xs mb-8 leading-relaxed px-4">Pembayaran senilai <b class="text-white">Rp ${harga.toLocaleString('id-ID')}</b> telah diterima sistem.</p>
+                            
+                            <a href="https://wa.me/${noWA_Sukses}?text=${teksWA_Sukses}" target="_blank" class="w-full mb-3 bg-[#25D366] hover:bg-[#20bd5a] text-white py-4 rounded-xl font-extrabold uppercase tracking-wider text-xs shadow-[0_10px_20px_rgba(37,211,102,0.3)] flex justify-center items-center active:scale-95 transition-all">
+                                <i class="fab fa-whatsapp text-lg mr-2"></i> Hubungi ${sapaan}
+                            </a>
+
+                            <button onclick="history.back()" class="w-full bg-white/5 text-white py-4 rounded-xl font-bold uppercase tracking-wider text-xs border border-white/10 hover:bg-white/10 active:scale-95 transition-all">Tutup Halaman</button>
+                        </div>
+                    `;
+                }
             }
             
-            if (activeOrderNameToPay.includes('[VIP]')) {
+            // Logika VIP (biarkan seperti aslinya)
+            if (namaProduk.includes('[VIP]')) {
                 let durasiSementara = 30;
-                if (activeOrderNameToPay.includes('1 Tahun')) durasiSementara = 365;
-                else if (activeOrderNameToPay.match(/(\d+)\s+Bulan/i)) durasiSementara = parseInt(activeOrderNameToPay.match(/(\d+)\s+Bulan/i)[1]) * 30;
-                else if (activeOrderNameToPay.match(/(\d+)\s+Hari/i)) durasiSementara = parseInt(activeOrderNameToPay.match(/(\d+)\s+Hari/i)[1]);
+                if (namaProduk.includes('1 Tahun')) durasiSementara = 365;
+                else if (namaProduk.match(/(\d+)\s+Bulan/i)) durasiSementara = parseInt(namaProduk.match(/(\d+)\s+Bulan/i)[1]) * 30;
+                else if (namaProduk.match(/(\d+)\s+Hari/i)) durasiSementara = parseInt(namaProduk.match(/(\d+)\s+Hari/i)[1]);
                 
                 localStorage.setItem('optimistic_vip', `${currentUser.id}_${durasiSementara}`);
                 const btnTutup = wadahPembayaran.querySelector('button[onclick="history.back()"]');
                 if (btnTutup) {
                     btnTutup.onclick = () => {
                         history.back(); 
-                        setTimeout(() => {
-                            switchTab('toko'); 
-                            loadTokoSaya();    
-                        }, 300);
+                        setTimeout(() => { switchTab('toko'); loadTokoSaya(); }, 300);
                     };
                 }
-                setTimeout(() => { 
-                    localStorage.removeItem('optimistic_vip'); 
-                    fetchProfile();
-                }, 60000);
-            } else {
-                prosesAutoDeliveryTertunda();
+                setTimeout(() => { localStorage.removeItem('optimistic_vip'); fetchProfile(); }, 60000);
             }
         };
+
 
         activeChannelPembayaran = supabaseClient
             .channel(`tunggu-pembayaran-ulang-${activeOrderIdToPay}`)
@@ -10816,7 +10945,6 @@ async function prosesAutoDeliveryTertunda() {
         }
     }
 }
-
 
 // ==========================================
 // SISTEM ANTI KLIK KANAN PADA GAMBAR
