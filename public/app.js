@@ -8212,7 +8212,6 @@ async function checkoutXoftwarePay(namaProduk, harga, deskripsi, sellerId = null
     // Pindah layar ke mode Loading QRIS DULUAN biar mulus transisinya
     switchTab('pembayaran');
     
-    // Kembalikan kotak QRIS ke mode loading (jika sebelumnya bekas dipakai)
     const wadahPembayaran = document.getElementById('qris-container');
     if (wadahPembayaran) {
         wadahPembayaran.innerHTML = `
@@ -8232,7 +8231,6 @@ async function checkoutXoftwarePay(namaProduk, harga, deskripsi, sellerId = null
 
         const { data: orderData, error: orderError } = await supabaseClient.from(targetTabel).insert(dataInsert).select().single();
         if (orderError) throw orderError;
-        
 
         // 2. Minta QRIS Xoftware
         const responsePG = await fetch('/api/create-qris', { 
@@ -8251,18 +8249,18 @@ async function checkoutXoftwarePay(namaProduk, harga, deskripsi, sellerId = null
         let noWA = "6283815584661"; // Default WA Admin
         let sapaan = "Admin";
         
-        // Jika pesanan dari pasar (punya sellerId) DAN TIDAK pakai Rekber
         if (sellerId && !namaProduk.includes('[+Rekber]')) {
             const { data: pSeller } = await supabaseClient.from('profiles').select('whatsapp').eq('id', sellerId).single();
             if (pSeller && pSeller.whatsapp) {
                 noWA = pSeller.whatsapp;
-                sapaan = "Penjual"; // Sapaan diubah jadi Penjual
+                sapaan = "Penjual"; 
             }
         }
 
         // 4. RENDER UI APPLE PAY STYLE
         const teksWA = encodeURIComponent(`Halo ${sapaan}, pesanan saya sudah masuk via QRIS Otomatis untuk:\n\n*${namaProduk}*\nID: ADT - ${orderData.id}\n\n(Berikut screenshot bukti transfernya)`);
 
+        // 🔥 INI BAGIAN YANG KEMARIN TERHAPUS OLEHMU 🔥
         if (wadahPembayaran) {
             wadahPembayaran.innerHTML = `
                 <div class="absolute top-0 inset-x-0 h-32 bg-gradient-to-b from-brand-info/10 to-transparent pointer-events-none z-0"></div>
@@ -8307,8 +8305,9 @@ async function checkoutXoftwarePay(namaProduk, harga, deskripsi, sellerId = null
             `;
         }
 
+        showToast("Silakan scan QRIS untuk melanjutkan.", "success");
+
         const tampilkanLayarSukses = async () => {
-            // 1. MUNCULKAN LOADING DULU (Biar user nggak bingung)
             if (wadahPembayaran) {
                 wadahPembayaran.innerHTML = `
                     <div class="flex flex-col items-center justify-center py-20 mt-10">
@@ -8321,49 +8320,25 @@ async function checkoutXoftwarePay(namaProduk, harga, deskripsi, sellerId = null
             let isAutoItem = false;
 
             if (!namaProduk.includes('[VIP]')) {
-                // 2. TUNGGU BOT MOTONG STOK & KIRIM INBOX
-                await prosesAutoDeliveryTertunda();
+                // Panggil fungsi bot & tangkap datanya ke variabel
+                autoDeliveryContent = await prosesAutoDeliveryTertunda();
 
-                // 3. CEK KATEGORI (Sekarang kebal huruf besar/kecil!)
                 if (productId) {
                     const { data: prodInfo } = await supabaseClient.from('player_products').select('category').eq('id', productId).single();
-                    
                     if (prodInfo) {
-                        const kat = (prodInfo.category || '').toLowerCase(); // Ubah jadi huruf kecil semua
+                        const kat = (prodInfo.category || '').toLowerCase(); 
                         if (kat === 'akun' || kat === 'item' || kat === 'apk premium') {
                             isAutoItem = true;
-                            
-                            // 4. TARIK PESAN DARI INBOX PEMBELI (Cari yang paling baru)
-                            const { data: sysMsg } = await supabaseClient
-                                .from('messages')
-                                .select('message')
-                                .eq('receiver_id', currentUser.id)
-                                .ilike('message', '%Berikut detail pesanan%')
-                                .order('created_at', { ascending: false })
-                                .limit(1);
-
-                            if (sysMsg && sysMsg.length > 0) {
-                                // Ekstrak murni data akunnya saja tanpa teks basa-basi bot
-                                const msgText = sysMsg[0].message;
-                                const indexSplit = msgText.indexOf('\n\n');
-                                if (indexSplit !== -1) {
-                                    autoDeliveryContent = msgText.substring(indexSplit + 2).trim();
-                                } else {
-                                    autoDeliveryContent = msgText; 
-                                }
-                            }
                         }
                     }
                 }
             }
 
-            // 5. RENDER LAYAR FINAL
             if (wadahPembayaran) {
                 const noWA_Sukses = noWA; 
                 const teksWA_Sukses = encodeURIComponent(`Halo ${sapaan}, pesanan saya sudah BERHASIL DIBAYAR via QRIS Otomatis untuk:\n\n*${namaProduk}*\nID: ADT - ${orderData.id}\n\n(Mohon segera diproses ya)`);
 
-                if (isAutoItem && autoDeliveryContent) {
-                    // ---> LAYAR KHUSUS BARANG OTOMATIS (DATA AKUN MUNCUL) <---
+                if (isAutoItem && autoDeliveryContent && autoDeliveryContent !== "") { 
                     wadahPembayaran.innerHTML = `
                         <div class="flex flex-col items-center justify-center py-4 text-center modal-anim w-full relative z-10">
                             <div class="w-16 h-16 bg-brand-success/20 rounded-full flex items-center justify-center border border-brand-success/50 mb-4 shadow-[0_0_15px_rgba(37,211,102,0.5)]">
@@ -8387,7 +8362,6 @@ async function checkoutXoftwarePay(namaProduk, harga, deskripsi, sellerId = null
                         </div>
                     `;
                 } else {
-                    // ---> LAYAR KHUSUS BARANG MANUAL (JOKI / TOPUP) <---
                     wadahPembayaran.innerHTML = `
                         <div class="flex flex-col items-center justify-center py-4 text-center modal-anim w-full relative z-10">
                             <div class="relative w-28 h-28 mb-6 mt-4">
@@ -8409,7 +8383,6 @@ async function checkoutXoftwarePay(namaProduk, harga, deskripsi, sellerId = null
                 }
             }
             
-            // Logika VIP Seller (Jika Membeli Layanan VIP)
             if (namaProduk.includes('[VIP]')) {
                 let durasiSementara = 30;
                 if (namaProduk.includes('1 Tahun')) durasiSementara = 365;
@@ -8428,9 +8401,6 @@ async function checkoutXoftwarePay(namaProduk, harga, deskripsi, sellerId = null
             }
         };
 
-
-
-        // 5. Radar Supabase (Langsung memantau perubahan Database)
         activeChannelPembayaran = supabaseClient.channel(`tunggu-pembayaran-${orderData.id}`)
             .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: targetTabel, filter: `id=eq.${orderData.id}` }, (payload) => {
                 const statusBaru = String(payload.new.status).toUpperCase();
@@ -8441,7 +8411,6 @@ async function checkoutXoftwarePay(namaProduk, harga, deskripsi, sellerId = null
                 }
             }).subscribe();
 
-        // 6. Radar Jemput Bola API (Memantau status tiap 10 detik biar server aman)
         intervalJemputBola = setInterval(async () => {
             try {
                 const res = await fetch(`/api/check-status?order_id=${orderData.id}&table=${targetTabel}`);
@@ -8475,7 +8444,6 @@ async function prosesBayarUlang() {
     closeDetailPesanan(); 
     closeRiwayatPesanan(); 
     
-    // Pindah layar ke mode Loading QRIS DULUAN biar mulus transisinya
     switchTab('pembayaran');
     
     const wadahPembayaran = document.getElementById('qris-container');
@@ -8566,7 +8534,6 @@ async function prosesBayarUlang() {
         showToast("Silakan scan QRIS untuk melanjutkan.", "success");
 
         const tampilkanLayarSukses = async () => {
-            // 1. MUNCULKAN LOADING DULU (Biar user nggak bingung)
             if (wadahPembayaran) {
                 wadahPembayaran.innerHTML = `
                     <div class="flex flex-col items-center justify-center py-20 mt-10">
@@ -8578,50 +8545,25 @@ async function prosesBayarUlang() {
             let autoDeliveryContent = null;
             let isAutoItem = false;
 
-            if (!namaProduk.includes('[VIP]')) {
-                // 2. TUNGGU BOT MOTONG STOK & KIRIM INBOX
-                await prosesAutoDeliveryTertunda();
+            if (!activeOrderNameToPay.includes('[VIP]')) {
+                autoDeliveryContent = await prosesAutoDeliveryTertunda();
 
-                // 3. CEK KATEGORI (Sekarang kebal huruf besar/kecil!)
-                if (productId) {
-                    const { data: prodInfo } = await supabaseClient.from('player_products').select('category').eq('id', productId).single();
-                    
+                if (activeOrderProductId) {
+                    const { data: prodInfo } = await supabaseClient.from('player_products').select('category').eq('id', activeOrderProductId).single();
                     if (prodInfo) {
-                        const kat = (prodInfo.category || '').toLowerCase(); // Ubah jadi huruf kecil semua
+                        const kat = (prodInfo.category || '').toLowerCase(); 
                         if (kat === 'akun' || kat === 'item' || kat === 'apk premium') {
                             isAutoItem = true;
-                            
-                            // 4. TARIK PESAN DARI INBOX PEMBELI (Cari yang paling baru)
-                            const { data: sysMsg } = await supabaseClient
-                                .from('messages')
-                                .select('message')
-                                .eq('receiver_id', currentUser.id)
-                                .ilike('message', '%Berikut detail pesanan%')
-                                .order('created_at', { ascending: false })
-                                .limit(1);
-
-                            if (sysMsg && sysMsg.length > 0) {
-                                // Ekstrak murni data akunnya saja tanpa teks basa-basi bot
-                                const msgText = sysMsg[0].message;
-                                const indexSplit = msgText.indexOf('\n\n');
-                                if (indexSplit !== -1) {
-                                    autoDeliveryContent = msgText.substring(indexSplit + 2).trim();
-                                } else {
-                                    autoDeliveryContent = msgText; 
-                                }
-                            }
                         }
                     }
                 }
             }
 
-            // 5. RENDER LAYAR FINAL
             if (wadahPembayaran) {
                 const noWA_Sukses = noWA; 
-                const teksWA_Sukses = encodeURIComponent(`Halo ${sapaan}, pesanan saya sudah BERHASIL DIBAYAR via QRIS Otomatis untuk:\n\n*${namaProduk}*\nID: ADT - ${orderData.id}\n\n(Mohon segera diproses ya)`);
+                const teksWA_Sukses = encodeURIComponent(`Halo ${sapaan}, pesanan saya sudah BERHASIL DIBAYAR via QRIS Otomatis untuk:\n\n*${activeOrderNameToPay}*\nID: ADT - ${activeOrderIdToPay}\n\n(Mohon segera diproses ya)`);
 
-                if (isAutoItem && autoDeliveryContent) {
-                    // ---> LAYAR KHUSUS BARANG OTOMATIS (DATA AKUN MUNCUL) <---
+                if (isAutoItem && autoDeliveryContent && autoDeliveryContent !== "") { 
                     wadahPembayaran.innerHTML = `
                         <div class="flex flex-col items-center justify-center py-4 text-center modal-anim w-full relative z-10">
                             <div class="w-16 h-16 bg-brand-success/20 rounded-full flex items-center justify-center border border-brand-success/50 mb-4 shadow-[0_0_15px_rgba(37,211,102,0.5)]">
@@ -8645,7 +8587,6 @@ async function prosesBayarUlang() {
                         </div>
                     `;
                 } else {
-                    // ---> LAYAR KHUSUS BARANG MANUAL (JOKI / TOPUP) <---
                     wadahPembayaran.innerHTML = `
                         <div class="flex flex-col items-center justify-center py-4 text-center modal-anim w-full relative z-10">
                             <div class="relative w-28 h-28 mb-6 mt-4">
@@ -8655,7 +8596,7 @@ async function prosesBayarUlang() {
                                 </div>
                             </div>
                             <h2 class="text-3xl font-black text-white mb-2 tracking-tight">Sukses!</h2>
-                            <p class="text-gray-400 text-xs mb-8 leading-relaxed px-4">Pembayaran senilai <b class="text-white">Rp ${harga.toLocaleString('id-ID')}</b> telah diterima sistem.</p>
+                            <p class="text-gray-400 text-xs mb-8 leading-relaxed px-4">Pembayaran senilai <b class="text-white">Rp ${activeOrderPriceToPay.toLocaleString('id-ID')}</b> telah diterima sistem.</p>
                             
                             <a href="https://wa.me/${noWA_Sukses}?text=${teksWA_Sukses}" target="_blank" class="w-full mb-3 bg-[#25D366] hover:bg-[#20bd5a] text-white py-4 rounded-xl font-extrabold uppercase tracking-wider text-xs shadow-[0_10px_20px_rgba(37,211,102,0.3)] flex justify-center items-center active:scale-95 transition-all">
                                 <i class="fab fa-whatsapp text-lg mr-2"></i> Hubungi ${sapaan}
@@ -8667,12 +8608,11 @@ async function prosesBayarUlang() {
                 }
             }
             
-            // Logika VIP Seller (Jika Membeli Layanan VIP)
-            if (namaProduk.includes('[VIP]')) {
+            if (activeOrderNameToPay.includes('[VIP]')) {
                 let durasiSementara = 30;
-                if (namaProduk.includes('1 Tahun')) durasiSementara = 365;
-                else if (namaProduk.match(/(\d+)\s+Bulan/i)) durasiSementara = parseInt(namaProduk.match(/(\d+)\s+Bulan/i)[1]) * 30;
-                else if (namaProduk.match(/(\d+)\s+Hari/i)) durasiSementara = parseInt(namaProduk.match(/(\d+)\s+Hari/i)[1]);
+                if (activeOrderNameToPay.includes('1 Tahun')) durasiSementara = 365;
+                else if (activeOrderNameToPay.match(/(\d+)\s+Bulan/i)) durasiSementara = parseInt(activeOrderNameToPay.match(/(\d+)\s+Bulan/i)[1]) * 30;
+                else if (activeOrderNameToPay.match(/(\d+)\s+Hari/i)) durasiSementara = parseInt(activeOrderNameToPay.match(/(\d+)\s+Hari/i)[1]);
                 
                 localStorage.setItem('optimistic_vip', `${currentUser.id}_${durasiSementara}`);
                 const btnTutup = wadahPembayaran.querySelector('button[onclick="tutupLayarSuksesDanRefresh()"]');
@@ -8685,8 +8625,6 @@ async function prosesBayarUlang() {
                 setTimeout(() => { localStorage.removeItem('optimistic_vip'); fetchProfile(); }, 60000);
             }
         };
-
-
 
         activeChannelPembayaran = supabaseClient
             .channel(`tunggu-pembayaran-ulang-${activeOrderIdToPay}`)
@@ -8703,7 +8641,6 @@ async function prosesBayarUlang() {
                 }
             ).subscribe();
             
-        // Radar Jemput Bola API (Memantau status tiap 10 detik)
         intervalJemputBola = setInterval(async () => {
             try {
                 const res = await fetch(`/api/check-status?order_id=${activeOrderIdToPay}&table=${activeOrderTable}`);
@@ -8727,8 +8664,96 @@ async function prosesBayarUlang() {
     }
 }
 
+async function prosesAutoDeliveryTertunda() {
+    if (!currentUser) return null;
+    let hasilDataAkun = ""; 
 
+    // Cari pesanan yang sukses dibayar
+    const { data: pendingOrders } = await supabaseClient
+        .from('orders_player')
+        .select('*')
+        .eq('user_id', currentUser.id)
+        .in('status', ['SUCCESS', 'PAID', 'proses']);
 
+    if (pendingOrders && pendingOrders.length > 0) {
+        for (let order of pendingOrders) {
+            if (!order.product_id) continue;
+
+            const { data: prodData } = await supabaseClient
+                .from('player_products')
+                .select('stock_list, category, user_id')
+                .eq('id', order.product_id)
+                .single();
+
+            const isAutoItem = prodData && (prodData.category === 'Akun' || prodData.category === 'Item' || prodData.category === 'APK Premium');
+
+            if (!isAutoItem) {
+                if (order.status !== 'proses') {
+                    await supabaseClient.from('orders_player').update({ status: 'proses' }).eq('id', order.id);
+                }
+                continue;
+            }
+
+            // --- LOGIKA AUTO DELIVERY ---
+            let autoDeliveryData = [];
+            
+            if (prodData.stock_list) {
+                let lines = prodData.stock_list.split(/\r?\n/).filter(l => l.trim() !== '');
+                
+                let qty = 1;
+                const matchQty = order.product_name.match(/\(x(\d+)\)/);
+                if (matchQty) qty = parseInt(matchQty[1]);
+
+                if (lines.length >= qty) {
+                    for (let i = 0; i < qty; i++) {
+                        autoDeliveryData.push(lines.shift());
+                    }
+                    
+                    const newStockList = lines.join('\n');
+                    
+                    const { error: errUpdate } = await supabaseClient
+                        .from('player_products')
+                        .update({ stock_list: newStockList })
+                        .eq('id', order.product_id);
+                        
+                    if (errUpdate) {
+                        console.error("Gagal potong stok:", errUpdate);
+                        continue; 
+                    }
+                    
+                    const detailItem = autoDeliveryData.join('\n\n');
+                    hasilDataAkun += detailItem + "\n\n"; 
+
+                    await supabaseClient.from('messages').insert({
+    sender_id: currentUser.id, 
+    receiver_id: order.seller_id,
+    message: `[SISTEM] Transaksi Selesai! Sistem telah mengirimkan data otomatis ke pembeli untuk pesanan: *${order.product_name}*\n\n${detailItem}`
+});
+                } else {
+    // TAMBAHAN BARU: Peringatan ke Seller jika stok otomatis kurang/habis
+    await supabaseClient.from('messages').insert({
+        sender_id: currentUser.id,
+        receiver_id: order.seller_id,
+        message: `[SISTEM] Pembeli telah membayar pesanan *${order.product_name}*, namun sisa stok otomatis di etalase tidak mencukupi untuk dikirim.\n\nHarap segera hubungi pembeli dan proses pengiriman barang secara MANUAL.`
+    });
+}
+            }
+
+            const finalStatus = (autoDeliveryData.length > 0) ? 'selesai' : 'proses';
+            
+            if (finalStatus === 'selesai') {
+                const waktuSelesaiBot = new Date().toISOString();
+                await supabaseClient.from('orders_player')
+                    .update({ status: finalStatus, waktu_selesai: waktuSelesaiBot, dana_cair: false })
+                    .eq('id', order.id);
+            } else if (order.status !== 'proses') {
+                await supabaseClient.from('orders_player').update({ status: 'proses' }).eq('id', order.id);
+            }
+        }
+    }
+    
+    return hasilDataAkun.trim(); 
+}
 
 // FUNCTIONS UNTUK KONTROL ANIMASI BUKA TUTUP LACI MENU
 function openAssistiveMenu() {
@@ -10880,97 +10905,6 @@ async function hapusProdukSaya(productId, productName) {
         loadPasarPlayer(true);
     } catch (e) { 
         showToast("Gagal menghapus produk.", "error"); 
-    }
-}
-
-async function prosesAutoDeliveryTertunda() {
-    if (!currentUser) return;
-
-    // 1. PERBAIKAN FILTER: Cari semua status yang berarti "Sudah Dibayar"
-    const { data: pendingOrders } = await supabaseClient
-        .from('orders_player')
-        .select('*')
-        .eq('user_id', currentUser.id)
-        .in('status', ['SUCCESS', 'PAID', 'proses']); // Tambahkan 'PAID' dan 'proses'
-
-    if (pendingOrders && pendingOrders.length > 0) {
-        for (let order of pendingOrders) {
-            if (!order.product_id) continue;
-
-            const { data: prodData } = await supabaseClient
-                .from('player_products')
-                .select('stock_list, category, user_id')
-                .eq('id', order.product_id)
-                .single();
-
-            const isAutoItem = prodData && (prodData.category === 'Akun' || prodData.category === 'Item' || prodData.category === 'APK Premium');
-
-            // Mencegah Infinite Loop: Jika BUKAN barang auto-delivery, ubah ke 'proses' lalu lewati
-            if (!isAutoItem) {
-                if (order.status !== 'proses') {
-                    await supabaseClient.from('orders_player').update({ status: 'proses' }).eq('id', order.id);
-                }
-                continue;
-            }
-
-            // --- LOGIKA AUTO DELIVERY ---
-            let autoDeliveryData = [];
-            
-            if (prodData.stock_list) {
-                let lines = prodData.stock_list.split(/\r?\n/).filter(l => l.trim() !== '');
-                
-                // 2. PERBAIKAN QTY: Ekstrak jumlah pesanan dari nama produk (contoh: "Akun FF (x2)")
-                let qty = 1;
-                const matchQty = order.product_name.match(/\(x(\d+)\)/);
-                if (matchQty) qty = parseInt(matchQty[1]);
-
-                if (lines.length >= qty) {
-                    // Ambil stok sebanyak jumlah yang dibeli
-                    for (let i = 0; i < qty; i++) {
-                        autoDeliveryData.push(lines.shift());
-                    }
-                    
-                    const newStockList = lines.join('\n');
-                    
-                    // 3. PERBAIKAN RLS: Tangkap error jika Supabase menolak potong stok
-                    const { error: errUpdate } = await supabaseClient
-                        .from('player_products')
-                        .update({ stock_list: newStockList })
-                        .eq('id', order.product_id);
-                        
-                    if (errUpdate) {
-                        console.error("Gagal potong stok! Diblokir RLS Supabase:", errUpdate);
-                        showToast("Pengiriman tertunda: Izin RLS memblokir pemotongan stok.", "error");
-                        continue; // Hentikan di sini agar tidak mengirim barang secara gratis!
-                    }
-                    
-                    // Kirim detail barang ke inbox pembeli
-                    const detailItem = autoDeliveryData.join('\n\n');
-                    await supabaseClient.from('messages').insert({
-                        sender_id: order.seller_id,
-                        receiver_id: order.user_id,
-                        message: `[SISTEM] Transaksi berhasil! Berikut detail pesanan *${order.product_name}* Anda:\n\n${detailItem}`
-                    });
-                }
-            }
-
-            // 4. Update Status Order Sesuai Ketersediaan
-            const finalStatus = (autoDeliveryData.length > 0) ? 'selesai' : 'proses';
-            
-            if (finalStatus === 'selesai') {
-                const waktuSelesaiBot = new Date().toISOString();
-                await supabaseClient.from('orders_player')
-                    .update({ 
-                        status: finalStatus, 
-                        waktu_selesai: waktuSelesaiBot, 
-                        dana_cair: false 
-                    })
-                    .eq('id', order.id);
-            } else if (order.status !== 'proses') {
-                // Jika stok habis saat dibeli, biarkan status "proses" menunggu penjual restock
-                await supabaseClient.from('orders_player').update({ status: 'proses' }).eq('id', order.id);
-            }
-        }
     }
 }
 
