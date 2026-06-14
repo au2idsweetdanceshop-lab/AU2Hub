@@ -9982,7 +9982,7 @@ async function loadPasarPlayer(forceRefresh = false) {
     try {
         const { data, error } = await supabaseClient
             .from('player_products')
-            .select('*, profiles:user_id(nickname, avatar_url, exp)') 
+            .select('*, profiles!fk_player_products_user_id(nickname, avatar_url, exp)') 
             .order('created_at', { ascending: false });
 
         if (error) throw error;
