@@ -2890,29 +2890,70 @@ async function downloadVideoSaya(urlVideo, vidId) {
 
 
 
-// FITUR SHARE VIDEO (DIPERBAIKI)
-function shareVideo(vidId, btn) {
-const finalId = vidId && vidId !== 'undefined' ? vidId : '';
+// ==========================================
+// FITUR SHARE VIDEO (NATIVE ANDROID/IOS STYLE)
+// ==========================================
+async function shareVideo(vidId, btn) {
+    const finalId = vidId && vidId !== 'undefined' ? vidId : '';
 
-if (!finalId) {
-showToast("Gagal menyalin link: ID Video tidak ditemukan", "error");
-return;
-}
+    if (!finalId) {
+        showToast("Gagal menyalin link: ID Video tidak ditemukan", "error");
+        return;
+    }
 
-const link = window.location.origin + window.location.pathname + '#sosial?vid=' + finalId;
+    const link = window.location.origin + window.location.pathname + '#sosial?vid=' + finalId;
 
-navigator.clipboard.writeText(link).then(() => {
-showToast("Link video disalin ke clipboard!", "success");
-const icon = btn.querySelector('i');
-icon.classList.replace('fa-share', 'fa-check');
-icon.classList.add('text-brand-success');
-setTimeout(() => {
-icon.classList.replace('fa-check', 'fa-share');
-icon.classList.remove('text-brand-success');
-}, 2000);
-}).catch(() => {
-showToast("Gagal menyalin link otomatis", "error");
-});
+    // Ambil data video dari memori agar teks share-nya dinamis (Pintar)
+    const videoData = allVideosData.find(v => v.id === finalId);
+    let namaKreator = "Player";
+    let teksCaption = "video keren ini";
+
+    if (videoData) {
+        namaKreator = videoData.nickname || "Player";
+        // Potong caption maksimal 30 huruf biar teks WhatsApp-nya gak kepanjangan
+        if (videoData.caption) {
+            let cap = videoData.caption.replace(/[
+
+]+/g, ' ').trim();
+            teksCaption = `"${cap.substring(0, 30)}${cap.length > 30 ? '...' : ''}"`;
+        }
+    }
+
+    const teksShare = `Tonton ${teksCaption} dari @${namaKreator} di AU2Hub! 🎵✨`;
+
+    // 1. Cek apakah HP/Browser mendukung fitur menu Share bawaan (Web Share API)
+    if (navigator.share) {
+        try {
+            await navigator.share({
+                title: 'Video AU2Hub',
+                text: teksShare,
+                url: link
+            });
+        } catch (err) {
+            console.log("Membagikan dibatalkan oleh pengguna.");
+        }
+    } 
+    // 2. JALUR CADANGAN: Untuk PC atau browser lawas, kembalikan ke sistem Copy Clipboard
+    else {
+        navigator.clipboard.writeText(`${teksShare}
+
+${link}`).then(() => {
+            showToast("Link video disalin ke clipboard!", "success");
+            
+            const icon = btn.querySelector('i');
+            // Simpan class asli (biar ukuran ikon feed vs ukuran ikon profil gak berantakan)
+            const classAsli = icon.className; 
+            
+            // Ubah ikon jadi centang hijau sebentar
+            icon.className = 'fas fa-check text-brand-success text-[35px] drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] transition-all';
+            
+            setTimeout(() => {
+                icon.className = classAsli; // Kembalikan ke wujud aslinya
+            }, 2000);
+        }).catch(() => {
+            showToast("Gagal menyalin link", "error");
+        });
+    }
 }
 
 
@@ -11356,10 +11397,10 @@ function updateLinkToko() {
         // Otomatis ngambil nickname, bersihin spasi, biar linknya rapi
         let namaToko = userProfile.nickname ? encodeURIComponent(userProfile.nickname.trim()) : currentUser.id;
         
-        linkEl.textContent = `https://au2idsweetdance.com/toko/${namaToko}`;
+        // 🔥 KITA UBAH BARIS INI JADI PAKAI HASH (#) 🔥
+        linkEl.textContent = `https://au2idsweetdance.com/#pasar?seller=${namaToko}`;
     }
 }
-
 
 // 3. Salin Link Toko
 function salinLinkToko() {
