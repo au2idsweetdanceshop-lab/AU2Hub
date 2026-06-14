@@ -19,18 +19,26 @@ async function prosesPembayaranLunas(order_id, targetTable, orderData) {
         let waktuSekarang = new Date();
         let waktuExpired = profile?.seller_expired_at ? new Date(profile.seller_expired_at) : new Date();
 
+        // Kalau kadaluarsa, mulai hitung dari hari ini
         if (waktuExpired < waktuSekarang) {
             waktuExpired = waktuSekarang;
         }
 
+        // Deteksi durasi dari nama produk dengan REGEX yang lebih pintar
         if (productName.includes('1 Tahun')) {
             waktuExpired.setDate(waktuExpired.getDate() + 365);
         } else {
-            const match = productName.match(/(\d+)\s+Bulan/i);
-            if (match) {
-                const jumlahBulan = parseInt(match[1]);
+            const matchBulan = productName.match(/(\d+)\s+Bulan/i);
+            const matchHari = productName.match(/(\d+)\s+Hari/i);
+
+            if (matchBulan) {
+                const jumlahBulan = parseInt(matchBulan[1]);
                 waktuExpired.setDate(waktuExpired.getDate() + (jumlahBulan * 30));
+            } else if (matchHari) {
+                const jumlahHari = parseInt(matchHari[1]);
+                waktuExpired.setDate(waktuExpired.getDate() + jumlahHari); // <--- HARI SUDAH TERBACA AKURAT
             } else {
+                // Default aman jika format nama produk tidak dikenali
                 waktuExpired.setDate(waktuExpired.getDate() + 30); 
             }
         }
@@ -43,6 +51,7 @@ async function prosesPembayaranLunas(order_id, targetTable, orderData) {
             })
             .eq('id', userId);
 
+        // Update order jadi 'selesai'
         let updatePayload = { status: 'selesai' };
         if (targetTable === 'orders_player') {
             updatePayload.waktu_selesai = new Date().toISOString();
