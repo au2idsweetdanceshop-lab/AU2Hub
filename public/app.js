@@ -8275,7 +8275,13 @@ async function checkoutXoftwarePay(namaProduk, harga, deskripsi, sellerId = null
             }
             
             if (namaProduk.includes('[VIP]')) {
-                localStorage.setItem('optimistic_vip', currentUser.id);
+                // Ekstrak durasi dari nama produk biar UI gak salah paham lagi
+                let durasiSementara = 30;
+                if (namaProduk.includes('1 Tahun')) durasiSementara = 365;
+                else if (namaProduk.match(/(\d+)\s+Bulan/i)) durasiSementara = parseInt(namaProduk.match(/(\d+)\s+Bulan/i)[1]) * 30;
+                else if (namaProduk.match(/(\d+)\s+Hari/i)) durasiSementara = parseInt(namaProduk.match(/(\d+)\s+Hari/i)[1]);
+                
+                localStorage.setItem('optimistic_vip', `${currentUser.id}_${durasiSementara}`);
                 const btnTutup = wadahPembayaran.querySelector('button[onclick="history.back()"]');
                 if (btnTutup) {
                     btnTutup.onclick = () => {
@@ -8456,7 +8462,12 @@ async function prosesBayarUlang() {
             }
             
             if (activeOrderNameToPay.includes('[VIP]')) {
-                localStorage.setItem('optimistic_vip', currentUser.id);
+                let durasiSementara = 30;
+                if (activeOrderNameToPay.includes('1 Tahun')) durasiSementara = 365;
+                else if (activeOrderNameToPay.match(/(\d+)\s+Bulan/i)) durasiSementara = parseInt(activeOrderNameToPay.match(/(\d+)\s+Bulan/i)[1]) * 30;
+                else if (activeOrderNameToPay.match(/(\d+)\s+Hari/i)) durasiSementara = parseInt(activeOrderNameToPay.match(/(\d+)\s+Hari/i)[1]);
+                
+                localStorage.setItem('optimistic_vip', `${currentUser.id}_${durasiSementara}`);
                 const btnTutup = wadahPembayaran.querySelector('button[onclick="history.back()"]');
                 if (btnTutup) {
                     btnTutup.onclick = () => {
@@ -9688,10 +9699,12 @@ function bukaModalJualBarang() {
     let expiredAt = userProfile?.seller_expired_at ? new Date(userProfile.seller_expired_at) : new Date(0);
     const now = new Date();
 
-    // 🔥 KUNCI ANTI-GAGAL: Paksa akses terbuka jika baru saja sukses bayar!
-    if (localStorage.getItem('optimistic_vip') === currentUser.id) {
+    // 🔥 KUNCI ANTI-GAGAL: Paksa akses terbuka sesuai durasi yang dibeli!
+    const optVipData = localStorage.getItem('optimistic_vip');
+    if (optVipData && optVipData.startsWith(currentUser.id)) {
         isVip = true;
-        expiredAt = new Date(Date.now() + (30 * 24 * 60 * 60 * 1000)); // +30 Hari Sementara
+        const durasiHari = parseInt(optVipData.split('_')[1]) || 30; // Ambil durasi asli, default 30
+        expiredAt = new Date(Date.now() + (durasiHari * 24 * 60 * 60 * 1000)); 
     }
 
     // Jika bukan VIP atau masa aktif habis
@@ -9748,10 +9761,12 @@ async function loadTokoSaya() {
     let expiredAt = userProfile?.seller_expired_at ? new Date(userProfile.seller_expired_at) : new Date(0);
     const now = new Date();
 
-    // 🔥 KUNCI ANTI-GAGAL: Paksa akses terbuka jika baru saja sukses bayar!
-    if (localStorage.getItem('optimistic_vip') === currentUser.id) {
+    // 🔥 KUNCI ANTI-GAGAL: Paksa akses terbuka sesuai durasi yang dibeli!
+    const optVipData = localStorage.getItem('optimistic_vip');
+    if (optVipData && optVipData.startsWith(currentUser.id)) {
         isVip = true;
-        expiredAt = new Date(Date.now() + (30 * 24 * 60 * 60 * 1000)); // +30 Hari Sementara
+        const durasiHari = parseInt(optVipData.split('_')[1]) || 30; // Ambil durasi asli, default 30
+        expiredAt = new Date(Date.now() + (durasiHari * 24 * 60 * 60 * 1000)); 
     }
 
     // Jika bukan VIP atau masa aktif habis
@@ -9792,6 +9807,15 @@ async function loadTokoSaya() {
     await cekPencairanDanaH1();
     await updateUiSaldoSeller();
     switchTokoTab(tokoTabAktif);
+
+document.addEventListener('DOMContentLoaded', () => {
+    // Override loadTokoSaya dikit buat manggil updateLinkToko()
+    const originalLoadTokoSaya = window.loadTokoSaya;
+    window.loadTokoSaya = async function() {
+        await originalLoadTokoSaya();
+        updateLinkToko();
+    };
+});
 }
 
 
@@ -9806,18 +9830,17 @@ async function updateUiSaldoSeller() {
         const elSaldoAngka = document.getElementById('saldo-angka');
         if (elSaldoAngka) elSaldoAngka.innerText = (profile?.balance || 0).toLocaleString('id-ID');
 
-        // 2. Tarik Data Kalkulasi dari RPC Supabase (SUPER CEPAT KARENA DIHITUNG SERVER)
+        // 2. Tarik Data Kalkulasi dari RPC Supabase
         const { data: stats, error } = await supabaseClient.rpc('get_seller_stats', {
             p_seller_id: currentUser.id
         });
 
         if (error) throw error;
 
-        // 3. Suntikkan ke UI Saldo Tertahan
+        // 3. Suntikkan ke UI
         const elTertahan = document.getElementById('toko-saldo-tertahan');
         if (elTertahan) elTertahan.innerText = 'Rp ' + (stats.total_tertahan || 0).toLocaleString('id-ID');
 
-        // 4. Suntikkan ke UI Dashboard Analitik
         const elTotalGMV = document.getElementById('seller-stat-gmv');
         if (elTotalGMV) elTotalGMV.innerText = 'Rp ' + (stats.total_gmv || 0).toLocaleString('id-ID');
 
@@ -9827,11 +9850,69 @@ async function updateUiSaldoSeller() {
         const elTotalTerjual = document.getElementById('seller-stat-terjual');
         if (elTotalTerjual) elTotalTerjual.innerText = (stats.total_terjual || 0) + ' Pesanan';
 
+        // =========================================================
+        // 🔥 MESIN GRAFIK REAL-TIME (7 HARI TERAKHIR)
+        // =========================================================
+        
+        // A. Siapkan array kosong untuk 7 hari terakhir
+        const labels = [];
+        const dataBerhasil = [0, 0, 0, 0, 0, 0, 0];
+        const dataPending = [0, 0, 0, 0, 0, 0, 0];
+        const dataGagal = [0, 0, 0, 0, 0, 0, 0];
+
+        const today = new Date();
+        for (let i = 6; i >= 0; i--) {
+            const d = new Date(today);
+            d.setDate(today.getDate() - i);
+            // Format jadi kayak "14 Jun"
+            labels.push(d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short' }));
+        }
+
+        // B. Batas waktu tarikan database (7 hari lalu dari jam 00:00)
+        const past7Days = new Date(today);
+        past7Days.setDate(today.getDate() - 6);
+        past7Days.setHours(0, 0, 0, 0);
+
+        // C. Tarik histori orderan lu dari Supabase
+        const { data: orders } = await supabaseClient
+            .from('orders_player')
+            .select('price, status, created_at')
+            .eq('seller_id', currentUser.id)
+            .gte('created_at', past7Days.toISOString());
+
+        // D. Olah dan kelompokkan uangnya sesuai tanggal & status
+        if (orders && orders.length > 0) {
+            orders.forEach(order => {
+                const orderDate = new Date(order.created_at);
+                const orderDateString = orderDate.toLocaleDateString('id-ID', { day: '2-digit', month: 'short' });
+                
+                const index = labels.indexOf(orderDateString);
+                
+                if (index !== -1) {
+                    const nominal = Number(order.price) || 0;
+                    const status = String(order.status).toUpperCase();
+
+                    // Masukkan omzet ke keranjang yang sesuai
+                    if (status === 'SELESAI' || status === 'SUCCESS' || status === 'PROSES') {
+                        dataBerhasil[index] += nominal;
+                    } else if (status === 'PENDING') {
+                        dataPending[index] += nominal;
+                    } else if (status === 'DIBATALKAN' || status === 'FAILED' || status === 'DITOLAK') {
+                        dataGagal[index] += nominal;
+                    }
+                }
+            });
+        }
+
+        // E. Render Chart.js dengan data ASLI
+        if (typeof renderGrafikSeller === 'function') {
+            renderGrafikSeller(labels, dataBerhasil, dataPending, dataGagal);
+        }
+
     } catch(e) {
         console.error("Gagal update UI Saldo Seller:", e);
     }
 }
-
 
 async function cekPencairanDanaH1() {
     try {
@@ -9883,42 +9964,6 @@ async function cekPencairanDanaH1() {
 
     } catch(e) {
         console.error("Gagal menjalankan cron pencairan H+1", e);
-    }
-}
-
-
-
-// --- FUNGSI MANAJEMEN TOKO & PASAR ---
-
-function switchTokoTab(tab) {
-    tokoTabAktif = tab; // Simpan tab yang sedang diklik ke dalam memori
-
-    const contProduk = document.getElementById('toko-produk-container');
-    const contPesanan = document.getElementById('toko-pesanan-container');
-    const menuProduk = document.getElementById('menu-toko-produk');
-    const menuPesanan = document.getElementById('menu-toko-pesanan');
-    const title = document.getElementById('toko-section-title');
-
-    // Style modern vertical cards (tanpa ring putih)
-    const activeClass = 'bg-[#1A2642] border-[#2A3C65] shadow-lg transform -translate-y-1';
-    const inactiveClass = 'bg-[#161B2E] border-transparent shadow-md opacity-80 hover:opacity-100';
-
-    if (tab === 'produk') {
-        title.innerText = "Etalase Produk Saya";
-        menuProduk.className = `p-4 rounded-2xl flex flex-col items-center gap-2 cursor-pointer transition-all active:scale-95 ${activeClass}`;
-        menuPesanan.className = `p-4 rounded-2xl flex flex-col items-center gap-2 cursor-pointer transition-all active:scale-95 hover:bg-white/5 ${inactiveClass}`;
-        
-        contProduk.classList.replace('hidden', 'block');
-        contPesanan.classList.replace('block', 'hidden');
-        if(currentUser) loadProdukSaya();
-    } else {
-        title.innerText = "Daftar Pesanan Masuk";
-        menuPesanan.className = `p-4 rounded-2xl flex flex-col items-center gap-2 cursor-pointer transition-all active:scale-95 ${activeClass}`;
-        menuProduk.className = `p-4 rounded-2xl flex flex-col items-center gap-2 cursor-pointer transition-all active:scale-95 hover:bg-white/5 ${inactiveClass}`;
-        
-        contPesanan.classList.replace('hidden', 'block');
-        contProduk.classList.replace('block', 'hidden');
-        if(currentUser) loadPesananMasuk();
     }
 }
 
@@ -11259,4 +11304,164 @@ async function cekStatusManualXoftware(orderId, tableName, btnElement) {
         btnElement.innerHTML = originalText;
         btnElement.disabled = false;
     }
+}
+
+// ==========================================
+// UPDATE: LOGIKA TAMBAHAN UNTUK UI SELLER CENTER BARU
+// ==========================================
+
+// 1. Jam Real-time untuk Header
+setInterval(() => {
+    const timeEl = document.getElementById('live-time-dashboard');
+    if (timeEl) {
+        const now = new Date();
+        const jam = now.getHours().toString().padStart(2, '0');
+        const menit = now.getMinutes().toString().padStart(2, '0');
+        const detik = now.getSeconds().toString().padStart(2, '0');
+        timeEl.innerText = `Waktu (now): ${jam}.${menit}.${detik} WIB`;
+    }
+}, 1000);
+
+// 2. Set Link Toko Publik
+function updateLinkToko() {
+    const linkEl = document.getElementById('public-shop-link');
+    if (linkEl && currentUser) {
+        // Asumsi link toko berformat au2hub.com/toko?id=USER_ID
+        linkEl.innerText = `https://au2hub.com/#profile?id=${currentUser.id}`;
+    }
+}
+
+// 3. Salin Link Toko
+function salinLinkToko() {
+    const link = document.getElementById('public-shop-link').innerText;
+    if (navigator.clipboard) {
+        navigator.clipboard.writeText(link);
+        showToast("Link toko berhasil disalin!", "success");
+    }
+}
+
+// 4. Modifikasi Switch Tab biar gaya tombolnya cocok dengan UI Baru
+function switchTokoTab(tab) {
+    tokoTabAktif = tab; 
+
+    const contProduk = document.getElementById('toko-produk-container');
+    const contPesanan = document.getElementById('toko-pesanan-container');
+    const menuProduk = document.getElementById('menu-toko-produk');
+    const menuPesanan = document.getElementById('menu-toko-pesanan');
+    const title = document.getElementById('toko-section-title');
+
+    // Style tombol Switcher Baru
+    const activeClass = 'bg-[#2A3452] text-white shadow-sm';
+    const inactiveClass = 'bg-transparent text-gray-400 hover:text-white';
+
+    if (tab === 'produk') {
+        title.innerText = "Etalase Produk Saya";
+        menuProduk.className = `flex-1 py-2.5 text-xs font-bold rounded-lg transition-all ${activeClass}`;
+        menuPesanan.className = `flex-1 py-2.5 text-xs font-bold rounded-lg transition-all ${inactiveClass}`;
+        
+        contProduk.classList.replace('hidden', 'block');
+        contPesanan.classList.replace('block', 'hidden');
+        if(currentUser) loadProdukSaya();
+    } else {
+        title.innerText = "Daftar Pesanan Masuk";
+        menuPesanan.className = `flex-1 py-2.5 text-xs font-bold rounded-lg transition-all ${activeClass}`;
+        menuProduk.className = `flex-1 py-2.5 text-xs font-bold rounded-lg transition-all ${inactiveClass}`;
+        
+        contPesanan.classList.replace('hidden', 'block');
+        contProduk.classList.replace('block', 'hidden');
+        if(currentUser) loadPesananMasuk();
+    }
+}
+
+// ==========================================
+// MESIN GRAFIK CHART.JS (REAL-TIME DATA)
+// ==========================================
+let sellerChartInstance = null; // Memori biar grafik gak numpuk pas di-refresh
+
+function renderGrafikSeller(labels, dataBerhasil, dataPending, dataGagal) {
+    const ctx = document.getElementById('sellerChart').getContext('2d');
+
+    // Hancurkan grafik lama kalau ada (wajib biar gak nge-glitch)
+    if (sellerChartInstance) {
+        sellerChartInstance.destroy();
+    }
+
+    // Bikin efek gradient biar garisnya ada "Glow/Cahaya" ke bawah
+    let gradientBerhasil = ctx.createLinearGradient(0, 0, 0, 400);
+    gradientBerhasil.addColorStop(0, 'rgba(6, 182, 212, 0.5)'); // Cyan transparan
+    gradientBerhasil.addColorStop(1, 'rgba(6, 182, 212, 0)');   // Pudar ke bawah
+
+    // Render Grafik Baru
+    sellerChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels, // Tanggal-tanggal di sumbu X
+            datasets: [
+                {
+                    label: 'Berhasil',
+                    data: dataBerhasil,
+                    borderColor: '#06B6D4',
+                    backgroundColor: gradientBerhasil,
+                    borderWidth: 2,
+                    pointBackgroundColor: '#1C233A',
+                    pointBorderColor: '#06B6D4',
+                    pointRadius: 4,
+                    fill: true,
+                    tension: 0.4 // Bikin garisnya melengkung mulus (smooth)
+                },
+                {
+                    label: 'Pending',
+                    data: dataPending,
+                    borderColor: '#3B82F6', // Biru
+                    borderWidth: 2,
+                    pointBackgroundColor: '#1C233A',
+                    pointBorderColor: '#3B82F6',
+                    pointRadius: 4,
+                    tension: 0.4
+                },
+                {
+                    label: 'Gagal',
+                    data: dataGagal,
+                    borderColor: '#D946EF', // Ungu/Pink
+                    borderWidth: 2,
+                    pointBackgroundColor: '#1C233A',
+                    pointBorderColor: '#D946EF',
+                    pointRadius: 4,
+                    tension: 0.4
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+                mode: 'index',
+                intersect: false, // Kalau di-hover muncul tooltip informasinya
+            },
+            plugins: {
+                legend: {
+                    display: true,
+                    labels: { color: '#9CA3AF', boxWidth: 12, font: { size: 10, family: "'Plus Jakarta Sans', sans-serif" } }
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(15, 9, 32, 0.9)',
+                    titleColor: '#fff',
+                    bodyColor: '#fff',
+                    borderColor: 'rgba(255,255,255,0.1)',
+                    borderWidth: 1,
+                    padding: 10
+                }
+            },
+            scales: {
+                x: {
+                    grid: { display: false, drawBorder: false },
+                    ticks: { color: '#6B7280', font: { size: 9 } }
+                },
+                y: {
+                    grid: { color: 'rgba(255,255,255,0.05)', drawBorder: false },
+                    ticks: { color: '#6B7280', font: { size: 9 } }
+                }
+            }
+        }
+    });
 }
