@@ -11391,8 +11391,9 @@ function updateLinkToko() {
         // Otomatis ngambil nickname, bersihin spasi, biar linknya rapi
         let namaToko = userProfile.nickname ? encodeURIComponent(userProfile.nickname.trim()) : currentUser.id;
         
-        // 🔥 KITA UBAH BARIS INI JADI PAKAI HASH (#) 🔥
-        linkEl.textContent = `https://au2idsweetdance.com/#pasar?seller=${namaToko}`;
+        // 🔥 PERBAIKAN: Gunakan origin dan pathname agar dikenali 100% oleh PWA Android
+        const baseUrl = window.location.origin + window.location.pathname;
+        linkEl.textContent = `${baseUrl}#pasar?seller=${namaToko}`;
     }
 }
 
