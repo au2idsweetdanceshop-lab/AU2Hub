@@ -8312,26 +8312,7 @@ async function checkoutXoftwarePay(namaProduk, harga, deskripsi, sellerId = null
                 }
             }).subscribe();
 
-        // 6. Radar Jemput Bola API (Memantau status asli dari endpoint Anda)
-        intervalJemputBola = setInterval(async () => {
-            try {
-                const res = await fetch(`/api/check-status?order_id=${orderData.id}&table=${targetTabel}`);
-                const responseData = await res.json();
-                
-                // Pastikan kita mengekstrak status dengan aman (termasuk jika bentuk responsnya nested)
-                const apiStatus = String(responseData.status || responseData.data?.status || responseData.payment_status || '').toUpperCase();
-                
-                // Cek semua kemungkinan indikator "Lunas" dari Xoftware/Database
-                if (apiStatus === 'SUCCESS' || apiStatus === 'SUCCEEDED' || apiStatus === 'PAID' || apiStatus === 'SELESAI' || apiStatus === 'PROSES') {
-                    clearInterval(intervalJemputBola); 
-                    supabaseClient.removeChannel(activeChannelPembayaran);
-                    tampilkanLayarSukses(); 
-                }
-            } catch (e) {}
-        }, 3000);
-        
-        // Hentikan radar setelah 10 menit (agar tidak membebani server jika user membiarkan HP menyala)
-        setTimeout(() => clearInterval(intervalJemputBola), 600000);
+
 
     } catch (error) {
         console.error("Detail Error QRIS:", error); // <--- Biar ketahuan error aslinya di F12
@@ -8512,19 +8493,7 @@ async function prosesBayarUlang() {
                 }
             ).subscribe();
             
-        // Radar Jemput Bola API
-        intervalJemputBola = setInterval(async () => {
-            try {
-                const res = await fetch(`/api/check-status?order_id=${activeOrderIdToPay}&table=${activeOrderTable}`);
-                const data = await res.json();
-                if (data.status === 'SUCCESS') {
-                    clearInterval(intervalJemputBola); 
-                    supabaseClient.removeChannel(activeChannelPembayaran);
-                    tampilkanLayarSukses(); 
-                }
-            } catch (e) {}
-        }, 3000);
-        setTimeout(() => clearInterval(intervalJemputBola), 600000);
+
 
     } catch (e) {
         showToast("Gagal memuat ulang QRIS. Silakan coba lagi.", "error");
