@@ -14,17 +14,22 @@ async function prosesPembayaranLunas(order_id, targetTable, orderData) {
     const userId = orderData.user_id;
 
     if (productName.includes('[VIP]')) {
-        const { data: profile } = await supabase.from('profiles').select('seller_expired_at').eq('id', userId).single();
+        // Gunakan maybeSingle() agar aman jika profile bermasalah
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('seller_expired_at')
+            .eq('id', userId)
+            .maybeSingle(); 
         
         let waktuSekarang = new Date();
         let waktuExpired = profile?.seller_expired_at ? new Date(profile.seller_expired_at) : new Date();
 
-        // Kalau kadaluarsa, mulai hitung dari hari ini
+        // Kalau masa aktif sudah kadaluarsa, mulai hitung ulang dari hari ini
         if (waktuExpired < waktuSekarang) {
             waktuExpired = waktuSekarang;
         }
 
-        // Deteksi durasi dari nama produk dengan REGEX yang lebih pintar
+        // Deteksi durasi dari nama produk dengan REGEX
         if (productName.includes('1 Tahun')) {
             waktuExpired.setDate(waktuExpired.getDate() + 365);
         } else {
@@ -36,14 +41,14 @@ async function prosesPembayaranLunas(order_id, targetTable, orderData) {
                 waktuExpired.setDate(waktuExpired.getDate() + (jumlahBulan * 30));
             } else if (matchHari) {
                 const jumlahHari = parseInt(matchHari[1]);
-                waktuExpired.setDate(waktuExpired.getDate() + jumlahHari); // <--- HARI SUDAH TERBACA AKURAT
+                waktuExpired.setDate(waktuExpired.getDate() + jumlahHari); 
             } else {
                 // Default aman jika format nama produk tidak dikenali
                 waktuExpired.setDate(waktuExpired.getDate() + 30); 
             }
         }
 
-        // Tembak Profil Jadi VIP
+        // Tembak Profil Jadi VIP Seller
         await supabase.from('profiles')
             .update({ 
                 is_seller: true, 
@@ -51,15 +56,16 @@ async function prosesPembayaranLunas(order_id, targetTable, orderData) {
             })
             .eq('id', userId);
 
-        // Update order jadi 'selesai'
+        // Update order jadi 'selesai' langsung (karena VIP adalah layanan instan otomatis dari sistem)
         let updatePayload = { status: 'selesai' };
         if (targetTable === 'orders_player') {
             updatePayload.waktu_selesai = new Date().toISOString();
+            updatePayload.dana_cair = false; // Sinkronisasi dengan webhook cron H+1
         }
         await supabase.from(targetTable).update(updatePayload).eq('id', order_id);
 
     } else {
-        // Order biasa
+        // Order biasa (Barang dari admin / player) status -> SUCCESS (Akan dibaca 'DIPROSES' di UI)
         await supabase.from(targetTable).update({ status: 'SUCCESS' }).eq('id', order_id);
     }
 }
@@ -79,12 +85,12 @@ export default async function handler(req, res) {
 
             if (!order_id) return res.status(400).json({ message: 'Missing order_id' });
 
-            // Deteksi pesanan ini berasal dari tabel mana
+            // Deteksi pesanan ini berasal dari tabel mana (Aman tanpa melempar error)
             let targetTable = 'orders';
-            let { data: orderData } = await supabase.from('orders').select('*').eq('id', order_id).single();
+            let { data: orderData } = await supabase.from('orders').select('*').eq('id', order_id).maybeSingle();
 
             if (!orderData) {
-                const { data: playerOrderData } = await supabase.from('orders_player').select('*').eq('id', order_id).single();
+                const { data: playerOrderData } = await supabase.from('orders_player').select('*').eq('id', order_id).maybeSingle();
                 if (playerOrderData) {
                     orderData = playerOrderData;
                     targetTable = 'orders_player';
@@ -92,6 +98,11 @@ export default async function handler(req, res) {
             }
 
             if (!orderData) return res.status(404).json({ message: 'Order tidak ditemukan' });
+
+            // Cegah pemrosesan ulang (Double-hit) jika status sudah pernah sukses
+            if (orderData.status === 'SUCCESS' || orderData.status === 'selesai') {
+                return res.status(200).json({ success: true, message: 'Order sudah lunas sebelumnya' });
+            }
 
             // Jika statusnya berhasil, eksekusi pembaruan database
             if (
@@ -111,7 +122,7 @@ export default async function handler(req, res) {
     }
 
     // =================================================================
-    // 🔍 JALUR 2: CEK MANUAL (Tarikan API dari Frontend aplikasimu)
+    // 🔍 JALUR 2: CEK MANUAL (Tarikan API dari tombol "Saya Sudah Bayar")
     // =================================================================
     if (req.method === 'GET') {
         const { order_id, table } = req.query;
@@ -123,6 +134,13 @@ export default async function handler(req, res) {
         const timestamp = Math.floor(Date.now() / 1000).toString();
         
         try {
+            // Cek status terlebih dahulu di database lokal (Hemat kuota API API Xoftware)
+            const { data: existingOrder } = await supabase.from(targetTable).select('*').eq('id', order_id).maybeSingle();
+            
+            if (existingOrder && (existingOrder.status === 'SUCCESS' || existingOrder.status === 'selesai')) {
+                return res.status(200).json({ success: true, status: 'SUCCESS', source: 'cache' });
+            }
+
             const path = '/v1/api/transactions/status';
             const payloadObject = { ref_id: order_id };
             const payloadString = JSON.stringify(payloadObject);
@@ -148,7 +166,7 @@ export default async function handler(req, res) {
             try {
                 result = JSON.parse(rawText);
             } catch (e) {
-                return res.status(200).json({ success: false, status: 'PENDING', message: 'Respons bukan JSON' });
+                return res.status(200).json({ success: false, status: 'PENDING', message: 'Respons bukan JSON dari server Xoftware' });
             }
             
             const statusUtama = result.data?.status || '';
@@ -161,11 +179,10 @@ export default async function handler(req, res) {
                 statusPembayaran.toUpperCase() === 'SETTLED' || 
                 statusUtama.toUpperCase() === 'PAID'
             ) {
-                const { data: orderData } = await supabase.from(targetTable).select('*').eq('id', order_id).single();
-                if (orderData) {
-                    await prosesPembayaranLunas(order_id, targetTable, orderData);
+                if (existingOrder) {
+                    await prosesPembayaranLunas(order_id, targetTable, existingOrder);
                 } else {
-                    // Fallback darurat
+                    // Fallback darurat (Mencegah kegagalan absolut)
                     await supabase.from(targetTable).update({ status: 'SUCCESS' }).eq('id', order_id);
                 }
                 return res.status(200).json({ success: true, status: 'SUCCESS' });
@@ -179,6 +196,6 @@ export default async function handler(req, res) {
         }
     }
 
-    // Jika metode selain GET/POST
+    // Blokir jika metode selain GET/POST
     return res.status(405).json({ message: 'Method Not Allowed' });
 }
