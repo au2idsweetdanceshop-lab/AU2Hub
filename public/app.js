@@ -7,6 +7,21 @@ function debounce(func, wait) {
 }
 
 // ==========================================
+// FUNGSI AUTO-REFRESH SETELAH BAYAR
+// ==========================================
+window.tutupLayarSuksesDanRefresh = () => {
+    history.back(); // Tutup layar hijau
+    
+    // Beri jeda sedikit sampai animasi tutup selesai, lalu refresh data
+    setTimeout(() => {
+        if (typeof loadPasarPlayer === 'function') loadPasarPlayer(true);
+        if (typeof loadProdukSaya === 'function' && document.getElementById('toko') && document.getElementById('toko').classList.contains('active')) {
+            loadProdukSaya(); // Refresh juga di dashboard seller
+        }
+    }, 400);
+};
+
+// ==========================================
 // TEKS GLOBAL TABEL FEE (BIAR GAK CAPEK NGETIK ULANG)
 // ==========================================
 const TEKS_TABEL_FEE = "Tabel Fee Seller AU2Hub:\n\n🔹 Harga ≤ Rp 25.000 = Potongan Rp 1.000\n🔹 Harga ≤ Rp 50.000 = Potongan Rp 2.000\n🔹 Harga ≤ Rp 99.999 = Potongan Rp 3.000\n🔹 Harga ≤ Rp 499.999 = Potongan Rp 10.000\n🔹 Harga ≤ Rp 1.499.999 = Potongan Rp 20.000\n🔹 Harga ≤ Rp 1.999.999 = Potongan Rp 25.000\n🔹 Harga ≥ Rp 2.000.000 = Potongan Rp 35.000";
@@ -8292,62 +8307,66 @@ async function checkoutXoftwarePay(namaProduk, harga, deskripsi, sellerId = null
             `;
         }
 
-        // --- KODINGAN UI SUKSES (APPLE PAY STYLE) ---
-                const tampilkanLayarSukses = async () => { // <--- TAMBAHKAN KATA async
-            // 1. MUNCULKAN LOADING DULU SAMBIL NUNGGU BOT MOTONG STOK
+        const tampilkanLayarSukses = async () => {
+            // 1. MUNCULKAN LOADING DULU (Biar user nggak bingung)
             if (wadahPembayaran) {
                 wadahPembayaran.innerHTML = `
                     <div class="flex flex-col items-center justify-center py-20 mt-10">
                         <i class="fas fa-spinner fa-spin text-brand-success text-5xl mb-4"></i>
-                        <p class="text-white font-bold animate-pulse tracking-wide">Menyiapkan Pesananmu...</p>
+                        <p class="text-white font-bold animate-pulse tracking-wide">Mengambil Data Akun...</p>
                     </div>`;
             }
 
             let autoDeliveryContent = null;
             let isAutoItem = false;
 
-            if (namaProduk.includes('[VIP]')) {
-                // Biarkan VIP diproses oleh kode di bawah nanti
-            } else {
-                // 2. TUNGGU BOT AUTO-DELIVERY BEKERJA SAMPAI SELESAI
+            if (!namaProduk.includes('[VIP]')) {
+                // 2. TUNGGU BOT MOTONG STOK & KIRIM INBOX
                 await prosesAutoDeliveryTertunda();
 
-                // 3. CEK KATEGORI DAN TARIK DATA AKUN DARI PESAN SISTEM (INBOX)
+                // 3. CEK KATEGORI (Sekarang kebal huruf besar/kecil!)
                 if (productId) {
                     const { data: prodInfo } = await supabaseClient.from('player_products').select('category').eq('id', productId).single();
                     
-                    if (prodInfo && (prodInfo.category === 'Akun' || prodInfo.category === 'Item' || prodInfo.category === 'APK Premium')) {
-                        isAutoItem = true;
-                        
-                        // Cek kotak masuk (inbox) pembeli untuk mengambil data akun yang baru dikirim
-                        const { data: sysMsg } = await supabaseClient
-                            .from('messages')
-                            .select('message')
-                            .eq('receiver_id', currentUser.id)
-                            .ilike('message', '%Transaksi berhasil!%')
-                            .order('created_at', { ascending: false })
-                            .limit(1);
+                    if (prodInfo) {
+                        const kat = (prodInfo.category || '').toLowerCase(); // Ubah jadi huruf kecil semua
+                        if (kat === 'akun' || kat === 'item' || kat === 'apk premium') {
+                            isAutoItem = true;
+                            
+                            // 4. TARIK PESAN DARI INBOX PEMBELI (Cari yang paling baru)
+                            const { data: sysMsg } = await supabaseClient
+                                .from('messages')
+                                .select('message')
+                                .eq('receiver_id', currentUser.id)
+                                .ilike('message', '%Berikut detail pesanan%')
+                                .order('created_at', { ascending: false })
+                                .limit(1);
 
-                        if (sysMsg && sysMsg.length > 0) {
-                            const splitText = sysMsg[0].message.split('Anda:\n\n');
-                            if (splitText.length > 1) {
-                                autoDeliveryContent = splitText[1];
+                            if (sysMsg && sysMsg.length > 0) {
+                                // Ekstrak murni data akunnya saja tanpa teks basa-basi bot
+                                const msgText = sysMsg[0].message;
+                                const indexSplit = msgText.indexOf('\n\n');
+                                if (indexSplit !== -1) {
+                                    autoDeliveryContent = msgText.substring(indexSplit + 2).trim();
+                                } else {
+                                    autoDeliveryContent = msgText; 
+                                }
                             }
                         }
                     }
                 }
             }
 
-            // 4. RENDER LAYAR FINAL (BARANG OTOMATIS VS MANUAL)
+            // 5. RENDER LAYAR FINAL
             if (wadahPembayaran) {
                 const noWA_Sukses = noWA; 
                 const teksWA_Sukses = encodeURIComponent(`Halo ${sapaan}, pesanan saya sudah BERHASIL DIBAYAR via QRIS Otomatis untuk:\n\n*${namaProduk}*\nID: ADT - ${orderData.id}\n\n(Mohon segera diproses ya)`);
 
                 if (isAutoItem && autoDeliveryContent) {
-                    // ---> UI KHUSUS BARANG OTOMATIS (MUNCULKAN DATA AKUN) <---
+                    // ---> LAYAR KHUSUS BARANG OTOMATIS (DATA AKUN MUNCUL) <---
                     wadahPembayaran.innerHTML = `
                         <div class="flex flex-col items-center justify-center py-4 text-center modal-anim w-full relative z-10">
-                            <div class="w-16 h-16 bg-brand-success/20 rounded-full flex items-center justify-center border border-brand-success/50 mb-4">
+                            <div class="w-16 h-16 bg-brand-success/20 rounded-full flex items-center justify-center border border-brand-success/50 mb-4 shadow-[0_0_15px_rgba(37,211,102,0.5)]">
                                 <i class="fas fa-check text-3xl text-brand-success"></i>
                             </div>
                             <h2 class="text-2xl font-black text-white mb-1 tracking-tight">Pesanan Berhasil!</h2>
@@ -8362,12 +8381,13 @@ async function checkoutXoftwarePay(namaProduk, harga, deskripsi, sellerId = null
                                 </button>
                             </div>
 
-                            <p class="text-[9px] text-gray-500 mb-4 italic">*Data ini juga telah dikirimkan ke fitur Chat (Inbox) Anda.</p>
-                            <button onclick="history.back()" class="w-full bg-white/5 text-white py-3.5 rounded-xl font-bold uppercase tracking-wider text-xs border border-white/10 hover:bg-white/10 active:scale-95 transition-all">Tutup Halaman</button>
+                            <p class="text-[9px] text-gray-500 mb-4 italic">*Data ini juga otomatis tersimpan di fitur Chat (Inbox) Anda.</p>
+                            
+                            <button onclick="tutupLayarSuksesDanRefresh()" class="w-full bg-white/5 text-white py-3.5 rounded-xl font-bold uppercase tracking-wider text-xs border border-white/10 hover:bg-white/10 active:scale-95 transition-all">Tutup Halaman</button>
                         </div>
                     `;
                 } else {
-                    // ---> UI KHUSUS BARANG MANUAL (TOMBOL WHATSAPP SAJA) <---
+                    // ---> LAYAR KHUSUS BARANG MANUAL (JOKI / TOPUP) <---
                     wadahPembayaran.innerHTML = `
                         <div class="flex flex-col items-center justify-center py-4 text-center modal-anim w-full relative z-10">
                             <div class="relative w-28 h-28 mb-6 mt-4">
@@ -8383,13 +8403,13 @@ async function checkoutXoftwarePay(namaProduk, harga, deskripsi, sellerId = null
                                 <i class="fab fa-whatsapp text-lg mr-2"></i> Hubungi ${sapaan}
                             </a>
 
-                            <button onclick="history.back()" class="w-full bg-white/5 text-white py-4 rounded-xl font-bold uppercase tracking-wider text-xs border border-white/10 hover:bg-white/10 active:scale-95 transition-all">Tutup Halaman</button>
+                            <button onclick="tutupLayarSuksesDanRefresh()" class="w-full bg-white/5 text-white py-4 rounded-xl font-bold uppercase tracking-wider text-xs border border-white/10 hover:bg-white/10 active:scale-95 transition-all">Tutup Halaman</button>
                         </div>
                     `;
                 }
             }
             
-            // Logika VIP (biarkan seperti aslinya)
+            // Logika VIP Seller (Jika Membeli Layanan VIP)
             if (namaProduk.includes('[VIP]')) {
                 let durasiSementara = 30;
                 if (namaProduk.includes('1 Tahun')) durasiSementara = 365;
@@ -8397,7 +8417,7 @@ async function checkoutXoftwarePay(namaProduk, harga, deskripsi, sellerId = null
                 else if (namaProduk.match(/(\d+)\s+Hari/i)) durasiSementara = parseInt(namaProduk.match(/(\d+)\s+Hari/i)[1]);
                 
                 localStorage.setItem('optimistic_vip', `${currentUser.id}_${durasiSementara}`);
-                const btnTutup = wadahPembayaran.querySelector('button[onclick="history.back()"]');
+                const btnTutup = wadahPembayaran.querySelector('button[onclick="tutupLayarSuksesDanRefresh()"]');
                 if (btnTutup) {
                     btnTutup.onclick = () => {
                         history.back(); 
@@ -8407,6 +8427,7 @@ async function checkoutXoftwarePay(namaProduk, harga, deskripsi, sellerId = null
                 setTimeout(() => { localStorage.removeItem('optimistic_vip'); fetchProfile(); }, 60000);
             }
         };
+
 
 
         // 5. Radar Supabase (Langsung memantau perubahan Database)
@@ -8544,61 +8565,66 @@ async function prosesBayarUlang() {
 
         showToast("Silakan scan QRIS untuk melanjutkan.", "success");
 
-                const tampilkanLayarSukses = async () => { // <--- TAMBAHKAN KATA async
-            // 1. MUNCULKAN LOADING DULU SAMBIL NUNGGU BOT MOTONG STOK
+        const tampilkanLayarSukses = async () => {
+            // 1. MUNCULKAN LOADING DULU (Biar user nggak bingung)
             if (wadahPembayaran) {
                 wadahPembayaran.innerHTML = `
                     <div class="flex flex-col items-center justify-center py-20 mt-10">
                         <i class="fas fa-spinner fa-spin text-brand-success text-5xl mb-4"></i>
-                        <p class="text-white font-bold animate-pulse tracking-wide">Menyiapkan Pesananmu...</p>
+                        <p class="text-white font-bold animate-pulse tracking-wide">Mengambil Data Akun...</p>
                     </div>`;
             }
 
             let autoDeliveryContent = null;
             let isAutoItem = false;
 
-            if (namaProduk.includes('[VIP]')) {
-                // Biarkan VIP diproses oleh kode di bawah nanti
-            } else {
-                // 2. TUNGGU BOT AUTO-DELIVERY BEKERJA SAMPAI SELESAI
+            if (!namaProduk.includes('[VIP]')) {
+                // 2. TUNGGU BOT MOTONG STOK & KIRIM INBOX
                 await prosesAutoDeliveryTertunda();
 
-                // 3. CEK KATEGORI DAN TARIK DATA AKUN DARI PESAN SISTEM (INBOX)
+                // 3. CEK KATEGORI (Sekarang kebal huruf besar/kecil!)
                 if (productId) {
                     const { data: prodInfo } = await supabaseClient.from('player_products').select('category').eq('id', productId).single();
                     
-                    if (prodInfo && (prodInfo.category === 'Akun' || prodInfo.category === 'Item' || prodInfo.category === 'APK Premium')) {
-                        isAutoItem = true;
-                        
-                        // Cek kotak masuk (inbox) pembeli untuk mengambil data akun yang baru dikirim
-                        const { data: sysMsg } = await supabaseClient
-                            .from('messages')
-                            .select('message')
-                            .eq('receiver_id', currentUser.id)
-                            .ilike('message', '%Transaksi berhasil!%')
-                            .order('created_at', { ascending: false })
-                            .limit(1);
+                    if (prodInfo) {
+                        const kat = (prodInfo.category || '').toLowerCase(); // Ubah jadi huruf kecil semua
+                        if (kat === 'akun' || kat === 'item' || kat === 'apk premium') {
+                            isAutoItem = true;
+                            
+                            // 4. TARIK PESAN DARI INBOX PEMBELI (Cari yang paling baru)
+                            const { data: sysMsg } = await supabaseClient
+                                .from('messages')
+                                .select('message')
+                                .eq('receiver_id', currentUser.id)
+                                .ilike('message', '%Berikut detail pesanan%')
+                                .order('created_at', { ascending: false })
+                                .limit(1);
 
-                        if (sysMsg && sysMsg.length > 0) {
-                            const splitText = sysMsg[0].message.split('Anda:\n\n');
-                            if (splitText.length > 1) {
-                                autoDeliveryContent = splitText[1];
+                            if (sysMsg && sysMsg.length > 0) {
+                                // Ekstrak murni data akunnya saja tanpa teks basa-basi bot
+                                const msgText = sysMsg[0].message;
+                                const indexSplit = msgText.indexOf('\n\n');
+                                if (indexSplit !== -1) {
+                                    autoDeliveryContent = msgText.substring(indexSplit + 2).trim();
+                                } else {
+                                    autoDeliveryContent = msgText; 
+                                }
                             }
                         }
                     }
                 }
             }
 
-            // 4. RENDER LAYAR FINAL (BARANG OTOMATIS VS MANUAL)
+            // 5. RENDER LAYAR FINAL
             if (wadahPembayaran) {
                 const noWA_Sukses = noWA; 
                 const teksWA_Sukses = encodeURIComponent(`Halo ${sapaan}, pesanan saya sudah BERHASIL DIBAYAR via QRIS Otomatis untuk:\n\n*${namaProduk}*\nID: ADT - ${orderData.id}\n\n(Mohon segera diproses ya)`);
 
                 if (isAutoItem && autoDeliveryContent) {
-                    // ---> UI KHUSUS BARANG OTOMATIS (MUNCULKAN DATA AKUN) <---
+                    // ---> LAYAR KHUSUS BARANG OTOMATIS (DATA AKUN MUNCUL) <---
                     wadahPembayaran.innerHTML = `
                         <div class="flex flex-col items-center justify-center py-4 text-center modal-anim w-full relative z-10">
-                            <div class="w-16 h-16 bg-brand-success/20 rounded-full flex items-center justify-center border border-brand-success/50 mb-4">
+                            <div class="w-16 h-16 bg-brand-success/20 rounded-full flex items-center justify-center border border-brand-success/50 mb-4 shadow-[0_0_15px_rgba(37,211,102,0.5)]">
                                 <i class="fas fa-check text-3xl text-brand-success"></i>
                             </div>
                             <h2 class="text-2xl font-black text-white mb-1 tracking-tight">Pesanan Berhasil!</h2>
@@ -8613,12 +8639,13 @@ async function prosesBayarUlang() {
                                 </button>
                             </div>
 
-                            <p class="text-[9px] text-gray-500 mb-4 italic">*Data ini juga telah dikirimkan ke fitur Chat (Inbox) Anda.</p>
-                            <button onclick="history.back()" class="w-full bg-white/5 text-white py-3.5 rounded-xl font-bold uppercase tracking-wider text-xs border border-white/10 hover:bg-white/10 active:scale-95 transition-all">Tutup Halaman</button>
+                            <p class="text-[9px] text-gray-500 mb-4 italic">*Data ini juga otomatis tersimpan di fitur Chat (Inbox) Anda.</p>
+                            
+                            <button onclick="tutupLayarSuksesDanRefresh()" class="w-full bg-white/5 text-white py-3.5 rounded-xl font-bold uppercase tracking-wider text-xs border border-white/10 hover:bg-white/10 active:scale-95 transition-all">Tutup Halaman</button>
                         </div>
                     `;
                 } else {
-                    // ---> UI KHUSUS BARANG MANUAL (TOMBOL WHATSAPP SAJA) <---
+                    // ---> LAYAR KHUSUS BARANG MANUAL (JOKI / TOPUP) <---
                     wadahPembayaran.innerHTML = `
                         <div class="flex flex-col items-center justify-center py-4 text-center modal-anim w-full relative z-10">
                             <div class="relative w-28 h-28 mb-6 mt-4">
@@ -8634,13 +8661,13 @@ async function prosesBayarUlang() {
                                 <i class="fab fa-whatsapp text-lg mr-2"></i> Hubungi ${sapaan}
                             </a>
 
-                            <button onclick="history.back()" class="w-full bg-white/5 text-white py-4 rounded-xl font-bold uppercase tracking-wider text-xs border border-white/10 hover:bg-white/10 active:scale-95 transition-all">Tutup Halaman</button>
+                            <button onclick="tutupLayarSuksesDanRefresh()" class="w-full bg-white/5 text-white py-4 rounded-xl font-bold uppercase tracking-wider text-xs border border-white/10 hover:bg-white/10 active:scale-95 transition-all">Tutup Halaman</button>
                         </div>
                     `;
                 }
             }
             
-            // Logika VIP (biarkan seperti aslinya)
+            // Logika VIP Seller (Jika Membeli Layanan VIP)
             if (namaProduk.includes('[VIP]')) {
                 let durasiSementara = 30;
                 if (namaProduk.includes('1 Tahun')) durasiSementara = 365;
@@ -8648,7 +8675,7 @@ async function prosesBayarUlang() {
                 else if (namaProduk.match(/(\d+)\s+Hari/i)) durasiSementara = parseInt(namaProduk.match(/(\d+)\s+Hari/i)[1]);
                 
                 localStorage.setItem('optimistic_vip', `${currentUser.id}_${durasiSementara}`);
-                const btnTutup = wadahPembayaran.querySelector('button[onclick="history.back()"]');
+                const btnTutup = wadahPembayaran.querySelector('button[onclick="tutupLayarSuksesDanRefresh()"]');
                 if (btnTutup) {
                     btnTutup.onclick = () => {
                         history.back(); 
@@ -8658,6 +8685,7 @@ async function prosesBayarUlang() {
                 setTimeout(() => { localStorage.removeItem('optimistic_vip'); fetchProfile(); }, 60000);
             }
         };
+
 
 
         activeChannelPembayaran = supabaseClient
