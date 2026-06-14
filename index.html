@@ -28,7 +28,7 @@
 
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script defer src="/app.js?v=50"></script>
+<script defer src="/app.js?v=51"></script>
 
 <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
 <style>
@@ -837,15 +837,71 @@ Satu pintu untuk info update terbaru, panduan pemula, jasa joki profesional, dan
             </div>
 
             <!-- 2. GRID STATISTIK 8 KOTAK -->
-            <div class="grid grid-cols-2 gap-2.5 sm:gap-3 mb-6">
-                <!-- Saldo Tersedia -->
-                <div onclick="bukaModalSaldoDompet()" class="bg-[#1C233A] rounded-xl p-3 sm:p-4 flex items-center gap-2 sm:gap-3 border border-white/5 cursor-pointer hover:bg-[#232A45] transition-colors active:scale-95 shadow-sm overflow-hidden">
-                    <div class="w-8 h-8 rounded-lg bg-[#2BD975]/10 flex items-center justify-center shrink-0"><i class="fas fa-wallet text-[#2BD975]"></i></div>
-                    <div class="flex-1 min-w-0">
-                        <p class="text-[8px] text-gray-400 mb-0.5 uppercase tracking-wider leading-none truncate">Saldo Tersedia</p>
-                        <h3 id="toko-saldo-aktif" class="text-xs font-bold text-[#2BD975] truncate">Rp 0</h3>
+                        <div class="grid grid-cols-2 gap-2 sm:gap-3 mb-6">
+                <div onclick="bukaModalSaldoDompet()" class="bg-[#1C233A] rounded-xl p-3 flex items-center gap-2 border border-white/5 cursor-pointer hover:bg-[#232A45] transition-colors active:scale-95 shadow-sm min-w-0">
+                    <div class="w-7 h-7 rounded-md bg-[#2BD975]/10 flex items-center justify-center shrink-0"><i class="fas fa-wallet text-[#2BD975] text-[10px]"></i></div>
+                    <div class="flex-1 min-w-0 overflow-hidden">
+                        <p class="text-[7.5px] sm:text-[8px] text-gray-400 mb-0.5 uppercase tracking-wider truncate leading-tight">Saldo Tersedia</p>
+                        <h3 id="toko-saldo-aktif" class="text-[11px] sm:text-xs font-bold text-[#2BD975] truncate leading-tight">Rp 0</h3>
                     </div>
                 </div>
+                
+                <div class="bg-[#1C233A] rounded-xl p-3 flex items-center gap-2 border border-white/5 shadow-sm min-w-0">
+                    <div class="w-7 h-7 rounded-md bg-yellow-500/10 flex items-center justify-center shrink-0"><i class="fas fa-clock text-yellow-500 text-[10px]"></i></div>
+                    <div class="flex-1 min-w-0 overflow-hidden">
+                        <p class="text-[7.5px] sm:text-[8px] text-gray-400 mb-0.5 uppercase tracking-wider truncate leading-tight">Saldo Pending</p>
+                        <h3 id="toko-saldo-tertahan" class="text-[11px] sm:text-xs font-bold text-yellow-500 truncate leading-tight">Rp 0</h3>
+                    </div>
+                </div>
+
+                <div class="bg-[#1C233A] rounded-xl p-3 flex items-center gap-2 border border-white/5 shadow-sm min-w-0">
+                    <div class="w-7 h-7 rounded-md bg-red-500/10 flex items-center justify-center shrink-0"><i class="fas fa-lock text-red-500 text-[10px]"></i></div>
+                    <div class="flex-1 min-w-0 overflow-hidden">
+                        <p class="text-[7.5px] sm:text-[8px] text-gray-400 mb-0.5 uppercase tracking-wider truncate leading-tight">Saldo Terkunci</p>
+                        <h3 class="text-[11px] sm:text-xs font-bold text-red-500 truncate leading-tight">Rp 0</h3>
+                    </div>
+                </div>
+
+                <div class="bg-[#1C233A] rounded-xl p-3 flex items-center gap-2 border border-white/5 shadow-sm min-w-0">
+                    <div class="w-7 h-7 rounded-md bg-gray-400/10 flex items-center justify-center shrink-0"><i class="fas fa-arrow-down text-gray-400 text-[10px]"></i></div>
+                    <div class="flex-1 min-w-0 overflow-hidden">
+                        <p class="text-[7.5px] sm:text-[8px] text-gray-400 mb-0.5 uppercase tracking-wider truncate leading-tight">Saldo Keluar</p>
+                        <h3 class="text-[11px] sm:text-xs font-bold text-gray-400 truncate leading-tight">Rp 0</h3>
+                    </div>
+                </div>
+
+                <div class="bg-[#1C233A] rounded-xl p-3 flex items-center gap-2 border border-white/5 shadow-sm min-w-0">
+                    <div class="w-7 h-7 rounded-md bg-[#84CC16]/10 flex items-center justify-center shrink-0"><i class="fas fa-box text-[#84CC16] text-[10px]"></i></div>
+                    <div class="flex-1 min-w-0 overflow-hidden">
+                        <p class="text-[7.5px] sm:text-[8px] text-gray-400 mb-0.5 uppercase tracking-wider truncate leading-tight">Jumlah Produk</p>
+                        <h3 id="seller-stat-produk" class="text-[11px] sm:text-xs font-bold text-[#84CC16] truncate leading-tight">0</h3>
+                    </div>
+                </div>
+
+                <div class="bg-[#1C233A] rounded-xl p-3 flex items-center gap-2 border border-white/5 shadow-sm min-w-0">
+                    <div class="w-7 h-7 rounded-md bg-[#06B6D4]/10 flex items-center justify-center shrink-0"><i class="fas fa-exchange-alt text-[#06B6D4] text-[10px]"></i></div>
+                    <div class="flex-1 min-w-0 overflow-hidden">
+                        <p class="text-[7.5px] sm:text-[8px] text-gray-400 mb-0.5 uppercase tracking-wider truncate leading-tight">Jml Transaksi</p>
+                        <h3 id="seller-stat-terjual" class="text-[11px] sm:text-xs font-bold text-[#06B6D4] truncate leading-tight">0</h3>
+                    </div>
+                </div>
+
+                <div class="bg-[#1C233A] rounded-xl p-3 flex items-center gap-2 border border-white/5 shadow-sm min-w-0">
+                    <div class="w-7 h-7 rounded-md bg-[#EC4899]/10 flex items-center justify-center shrink-0"><i class="fas fa-calendar-day text-[#EC4899] text-[10px]"></i></div>
+                    <div class="flex-1 min-w-0 overflow-hidden">
+                        <p class="text-[7.5px] sm:text-[8px] text-gray-400 mb-0.5 uppercase tracking-wider truncate leading-tight">Omzet Total</p>
+                        <h3 id="seller-stat-gmv" class="text-[11px] sm:text-xs font-bold text-[#EC4899] truncate leading-tight">Rp 0</h3>
+                    </div>
+                </div>
+
+                <div class="bg-[#1C233A] rounded-xl p-3 flex items-center gap-2 border border-white/5 shadow-sm min-w-0">
+                    <div class="w-7 h-7 rounded-md bg-[#D946EF]/10 flex items-center justify-center shrink-0"><i class="fas fa-calendar-alt text-[#D946EF] text-[10px]"></i></div>
+                    <div class="flex-1 min-w-0 overflow-hidden">
+                        <p class="text-[7.5px] sm:text-[8px] text-gray-400 mb-0.5 uppercase tracking-wider truncate leading-tight">Bersih / Nett</p>
+                        <h3 id="seller-stat-bersih" class="text-[11px] sm:text-xs font-bold text-[#D946EF] truncate leading-tight">Rp 0</h3>
+                    </div>
+                </div>
+            </div>
                 
                 <!-- Saldo Pending -->
                 <div class="bg-[#1C233A] rounded-xl p-3 sm:p-4 flex items-center gap-2 sm:gap-3 border border-white/5 shadow-sm overflow-hidden">
