@@ -1,8 +1,0 @@
-[{
-      "relation": ["delegate_permission/common.handle_all_urls"],
-      "target": {
-        "namespace": "android_app",
-        "package_name": "com.au2idsweetdance.twa",
-        "sha256_cert_fingerprints": ["18:42:7B:5D:E8:43:0C:B1:0F:E2:81:E8:93:BD:6D:06:BE:37:A6:94:C4:89:00:E6:40:74:84:EE:AC:C8:3C:A2"]
-      }
-    }]
