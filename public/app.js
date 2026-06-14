@@ -2888,10 +2888,8 @@ async function downloadVideoSaya(urlVideo, vidId) {
     }
 }
 
-
-
 // ==========================================
-// FITUR SHARE VIDEO (NATIVE ANDROID/IOS STYLE)
+// FITUR SHARE VIDEO (NATIVE ANDROID/IOS STYLE) - DIPERBAIKI
 // ==========================================
 async function shareVideo(vidId, btn) {
     const finalId = vidId && vidId !== 'undefined' ? vidId : '';
@@ -2912,9 +2910,8 @@ async function shareVideo(vidId, btn) {
         namaKreator = videoData.nickname || "Player";
         // Potong caption maksimal 30 huruf biar teks WhatsApp-nya gak kepanjangan
         if (videoData.caption) {
-            let cap = videoData.caption.replace(/[
-
-]+/g, ' ').trim();
+            // PERBAIKAN DI SINI: Gunakan regex satu baris yang aman
+            let cap = videoData.caption.replace(/[\n\r]+/g, ' ').trim();
             teksCaption = `"${cap.substring(0, 30)}${cap.length > 30 ? '...' : ''}"`;
         }
     }
@@ -2935,9 +2932,8 @@ async function shareVideo(vidId, btn) {
     } 
     // 2. JALUR CADANGAN: Untuk PC atau browser lawas, kembalikan ke sistem Copy Clipboard
     else {
-        navigator.clipboard.writeText(`${teksShare}
-
-${link}`).then(() => {
+        // PERBAIKAN DI SINI: Template literal satu baris dengan \n
+        navigator.clipboard.writeText(`${teksShare}\n\n${link}`).then(() => {
             showToast("Link video disalin ke clipboard!", "success");
             
             const icon = btn.querySelector('i');
@@ -2955,8 +2951,6 @@ ${link}`).then(() => {
         });
     }
 }
-
-
 
 function renderFaqs(data = globalFaqData) {
 const container = document.getElementById('faq-container');
