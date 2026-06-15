@@ -10681,7 +10681,12 @@ async function bukaModalEditProduk(idProduk) {
         if (document.getElementById('edit-produk-snk')) {
             document.getElementById('edit-produk-snk').value = data.snk || ''; 
         }
+        if (document.getElementById('edit-produk-stock')) {
+            document.getElementById('edit-produk-stock').value = data.stock_list || ''; 
+        }
+
         ubahKategoriVisual(data.category, 'edit');
+
         
         editFileArray = [];
         existingImagesEdit = [];
