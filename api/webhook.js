@@ -40,11 +40,28 @@ export default async function handler(req, res) {
     // ==========================================
 
     const callbackData = req.body;
-    const orderId = callbackData.provider_ref || callbackData.ref_id || callbackData.order_id; 
+    let orderId = callbackData.provider_ref || callbackData.ref_id || callbackData.order_id; 
 
     if (!orderId) {
         return res.status(200).json({ success: false, message: 'ID Order tidak ditemukan' });
     }
+
+    // ==========================================
+    // 🔥 PERBAIKAN: POTONG BUNTUT TIMESTAMP DARI ID
+    // Jika ID dari Xoftware adalah "12345-1718000000" atau "UUID-1718000000"
+    // Kita harus membuang "-1718000000" untuk mendapatkan ID aslinya
+    // ==========================================
+    const lastDashIndex = orderId.lastIndexOf('-');
+    if (lastDashIndex !== -1) {
+        // Ekstrak string setelah tanda strip terakhir
+        const possibleTimestamp = orderId.substring(lastDashIndex + 1);
+        // Jika isinya murni angka (seperti timestamp), buang bagian itu!
+        if (/^\d+$/.test(possibleTimestamp)) {
+            orderId = orderId.substring(0, lastDashIndex); 
+            console.log(`✂️ ID Dipotong jadi ID asli DB: ${orderId}`);
+        }
+    }
+    // ==========================================
 
     // Ambil status dari berbagai kemungkinan parameter Xoftware
     const statusXoftware = callbackData.status ? String(callbackData.status).toUpperCase() : '';
