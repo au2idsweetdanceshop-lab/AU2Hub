@@ -6,7 +6,7 @@ const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 // ==========================================
-// RUMUS POTONGAN SELLER (SAMA PERSIS DGN APP.JS)
+// RUMUS POTONGAN SELLER
 // ==========================================
 function hitungPotonganSeller(harga) {
     if (harga <= 25000) return 1000;
@@ -54,7 +54,6 @@ export default async function handler(req, res) {
         // =================================================================
         if (isPasarPlayer && orderData.product_id) {
             
-            // Gunakan select('*') agar tidak crash jika ada kolom yang belum dibuat di Supabase
             const { data: productMaster, error: errMaster } = await supabase
                 .from('player_products')
                 .select('*')
@@ -66,10 +65,7 @@ export default async function handler(req, res) {
                 return res.status(400).json({ success: false, message: 'Produk asli tidak ditemukan.' });
             }
 
-            // Kumpulkan semua daftar harga yang SAH (Harga utama + Harga Variasi)
             let validUnitPrices = [];
-
-            // A. Kalkulasi Harga Utama
             let baseHarga = parseInt(productMaster.price);
             if (productMaster.fee_ditanggung_pembeli === true) {
                 baseHarga += hitungPotonganSeller(baseHarga);
@@ -77,7 +73,6 @@ export default async function handler(req, res) {
             let hargaCustomerUtama = Math.floor(baseHarga + (baseHarga * 0.007) + 500);
             validUnitPrices.push(hargaCustomerUtama);
 
-            // B. Kalkulasi Harga Variasi (Aman dari error walau kolom variasi tidak ada)
             let rawVariasi = productMaster.variations || productMaster.variasi || [];
             if (Array.isArray(rawVariasi)) {
                 rawVariasi.forEach(v => {
@@ -92,7 +87,6 @@ export default async function handler(req, res) {
                 });
             }
 
-            // C. Deteksi Kuantitas (QTY) dari nama produk
             let qty = 1;
             const namaProduk = orderData.product_name || "";
             const qtyMatch = namaProduk.match(/\(x(\d+)\)$/);
@@ -100,11 +94,8 @@ export default async function handler(req, res) {
                 qty = parseInt(qtyMatch[1]);
             }
 
-            // D. Pengecekan Final (Dengan Penyaring Reverse Rekber)
             let hargaTanpaRekber = finalVerifiedPrice;
 
-            // Jika pembeli memakai voucher Rekber, kita pisahkan dulu fee admin dari total harga
-            // agar harga dasar per-item (unit price) tidak dianggap sebagai manipulasi hacker
             if (namaProduk && namaProduk.includes('[+Rekber]')) {
                 if (hargaTanpaRekber >= 2035000) hargaTanpaRekber -= 35000;
                 else if (hargaTanpaRekber >= 1525000) hargaTanpaRekber -= 25000;
@@ -122,7 +113,6 @@ export default async function handler(req, res) {
             }
 
         } else {
-            // Keamanan untuk Toko Admin
             if (finalVerifiedPrice < 1000) {
                 await supabase.from('orders').delete().eq('id', order_id);
                 return res.status(400).json({ success: false, message: 'Harga di bawah batas minimal sistem!' });
@@ -185,7 +175,17 @@ export default async function handler(req, res) {
             body: payloadString
         });
 
-        const dataXoftware = await response.json();
+        // 🔥 PERBAIKAN: Tangkap respon secara aman tanpa memicu crash (502)
+        const textResponse = await response.text();
+        let dataXoftware;
+        
+        try {
+            dataXoftware = JSON.parse(textResponse);
+        } catch (e) {
+            console.error("Xoftware merespons format aneh (Bukan JSON):", textResponse);
+            return res.status(400).json({ success: false, message: 'Provider Gateway sedang down atau error.' });
+        }
+
         const qrisString = dataXoftware.qris_text || (dataXoftware.data && dataXoftware.data.qris_text);
 
         if (qrisString) {
@@ -194,8 +194,12 @@ export default async function handler(req, res) {
                 qris_string: qrisString 
             });
         } else {
-            console.error("Xoftware API Error:", dataXoftware);
-            return res.status(502).json({ success: false, message: 'Gagal mendapatkan QRIS dari Provider.' });
+            console.error("Xoftware API Error Detailed:", dataXoftware);
+            // 🔥 PERBAIKAN: Ubah status dari 502 menjadi 400 agar Frontend memunculkan Toast, bukan HTML Error
+            return res.status(400).json({ 
+                success: false, 
+                message: dataXoftware.message || dataXoftware.error || 'Provider Gateway menolak (Tagihan mungkin terduplikat).' 
+            });
         }
 
     } catch (error) {
