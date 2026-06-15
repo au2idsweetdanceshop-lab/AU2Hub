@@ -8176,7 +8176,6 @@ async function checkoutXoftwarePay(namaProduk, harga, deskripsi, sellerId = null
     const konfirmasi = await customConfirm(`Lanjutkan pesanan untuk:\n\n${namaProduk}\n\nTotal: Rp ${harga.toLocaleString('id-ID')} via QRIS Otomatis?`);
     if (!konfirmasi) return;
 
-    // Pindah layar ke mode Loading QRIS DULUAN biar mulus transisinya
     switchTab('pembayaran');
     
     const wadahPembayaran = document.getElementById('qris-container');
@@ -8192,7 +8191,6 @@ async function checkoutXoftwarePay(namaProduk, harga, deskripsi, sellerId = null
     }
 
     try {
-        // 1. Simpan antrean ke Supabase
         const targetTabel = sellerId ? 'orders_player' : 'orders';
         const dataInsert = { user_id: currentUser.id, product_name: namaProduk, price: harga, status: 'PENDING', product_id: productId };
         if (sellerId) dataInsert.seller_id = sellerId;
@@ -8200,7 +8198,6 @@ async function checkoutXoftwarePay(namaProduk, harga, deskripsi, sellerId = null
         const { data: orderData, error: orderError } = await supabaseClient.from(targetTabel).insert(dataInsert).select().single();
         if (orderError) throw orderError;
 
-        // 2. Minta QRIS Xoftware
         const responsePG = await fetch('/api/create-qris', { 
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -8210,11 +8207,9 @@ async function checkoutXoftwarePay(namaProduk, harga, deskripsi, sellerId = null
         const dataPG = await responsePG.json();
         if (!dataPG.success) throw new Error("Gagal mengambil tagihan Xoftware");
 
-        // 3. Generate Link Gambar QRIS
         const qrImgUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(dataPG.qris_string)}`;
 
-        // --- LOGIKA WA DINAMIS (SELLER ATAU ADMIN) ---
-        let noWA = "6283815584661"; // Default WA Admin
+        let noWA = "6283815584661"; 
         let sapaan = "Admin";
         
         if (sellerId && !namaProduk.includes('[+Rekber]')) {
@@ -8225,41 +8220,26 @@ async function checkoutXoftwarePay(namaProduk, harga, deskripsi, sellerId = null
             }
         }
 
-        // 4. RENDER UI APPLE PAY STYLE
         const teksWA = encodeURIComponent(`Halo ${sapaan}, pesanan saya sudah masuk via QRIS Otomatis untuk:\n\n*${namaProduk}*\nID: ADT - ${orderData.id}\n\n(Berikut screenshot bukti transfernya)`);
 
         if (wadahPembayaran) {
             wadahPembayaran.innerHTML = `
                 <div class="absolute top-0 inset-x-0 h-32 bg-gradient-to-b from-brand-info/10 to-transparent pointer-events-none z-0"></div>
-                
                 <div class="text-[9px] font-extrabold text-white bg-white/10 px-3 py-1 rounded-full border border-white/20 uppercase tracking-widest mb-6 relative z-10 backdrop-blur-sm">XOFTWARE PAY</div>
-                
                 <div class="text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-1 relative z-10">Total Tagihan</div>
                 <div class="flex items-center justify-center gap-3 mb-6 relative z-10 w-full px-6">
                     <div id="pay-total" class="text-4xl font-black text-white tracking-tighter drop-shadow-md truncate">Rp ${harga.toLocaleString('id-ID')}</div>
-                    <button onclick="salinNominal()" id="btn-salin" class="bg-brand-info/20 text-brand-info w-8 h-8 rounded-full flex items-center justify-center active:scale-90 transition-all shrink-0">
-                        <i class="fas fa-copy text-xs"></i>
-                    </button>
+                    <button onclick="salinNominal()" id="btn-salin" class="bg-brand-info/20 text-brand-info w-8 h-8 rounded-full flex items-center justify-center active:scale-90 transition-all shrink-0"><i class="fas fa-copy text-xs"></i></button>
                     <input type="hidden" id="nominal-asli" value="${harga}">
                 </div>
                 
                 <div class="bg-white p-4 rounded-[1.5rem] mb-6 shadow-[0_0_40px_rgba(255,255,255,0.15)] relative z-10 group overflow-hidden">
                     <img id="qris-image-target" src="${qrImgUrl}" alt="QRIS" class="w-48 h-48 object-cover rounded-xl relative z-10">
-                    <div class="absolute inset-0 bg-black/70 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-sm cursor-pointer z-20">
-                        <i class="fas fa-camera text-white text-3xl mb-2 drop-shadow-md"></i>
-                        <span class="text-white text-[10px] font-extrabold tracking-widest uppercase">Screenshot QR</span>
-                    </div>
                 </div>
                 
                 <div class="w-full bg-black/40 border border-white/10 rounded-2xl p-4 mb-6 relative z-10 text-left">
-                    <div class="flex justify-between items-start text-xs mb-2">
-                        <span class="text-gray-400 shrink-0">Pesanan</span>
-                        <span class="text-white font-bold text-right pl-4 line-clamp-2">${namaProduk}</span>
-                    </div>
-                    <div class="flex justify-between items-center text-xs border-t border-white/5 pt-2">
-                        <span class="text-gray-400">Admin Rekber</span>
-                        <span class="text-brand-success font-bold flex items-center gap-1"><i class="fas fa-shield-check"></i> NIKKY (Aman)</span>
-                    </div>
+                    <div class="flex justify-between items-start text-xs mb-2"><span class="text-gray-400 shrink-0">Pesanan</span><span class="text-white font-bold text-right pl-4 line-clamp-2">${namaProduk}</span></div>
+                    <div class="flex justify-between items-center text-xs border-t border-white/5 pt-2"><span class="text-gray-400">Admin Rekber</span><span class="text-brand-success font-bold flex items-center gap-1"><i class="fas fa-shield-check"></i> NIKKY (Aman)</span></div>
                 </div>
                 
                 <a id="wa-confirm" href="https://wa.me/${noWA}?text=${teksWA}" target="_blank" class="w-full bg-[#25D366] hover:bg-[#20bd5a] text-white py-4 rounded-xl font-extrabold uppercase text-xs shadow-[0_10px_20px_rgba(37,211,102,0.3)] flex justify-center items-center active:scale-95 transition-all relative z-10 tracking-wider">
@@ -8289,28 +8269,18 @@ async function checkoutXoftwarePay(namaProduk, harga, deskripsi, sellerId = null
             }
 
             let autoDeliveryContent = null;
-            let isAutoItem = false;
 
+            // 🔥 PERBAIKAN: Hilangkan syarat ribet isAutoItem. Kalau ada data, otomatis tayang!
             if (!namaProduk.includes('[VIP]')) {
-                // Panggil fungsi bot & tangkap datanya ke variabel
                 autoDeliveryContent = await prosesAutoDeliveryTertunda();
-
-                if (productId) {
-                    const { data: prodInfo } = await supabaseClient.from('player_products').select('category').eq('id', productId).single();
-                    if (prodInfo) {
-                        const kat = (prodInfo.category || '').toLowerCase(); 
-                        if (kat === 'akun' || kat === 'item' || kat === 'apk premium') {
-                            isAutoItem = true;
-                        }
-                    }
-                }
             }
 
             if (wadahPembayaran) {
                 const noWA_Sukses = noWA; 
                 const teksWA_Sukses = encodeURIComponent(`Halo ${sapaan}, pesanan saya sudah BERHASIL DIBAYAR via QRIS Otomatis untuk:\n\n*${namaProduk}*\nID: ADT - ${orderData.id}\n\n(Mohon segera diproses ya)`);
 
-                if (isAutoItem && autoDeliveryContent && autoDeliveryContent !== "") { 
+                if (autoDeliveryContent && autoDeliveryContent !== "") { 
+                    // TAMPILAN AUTO-DELIVERY (KOTAK HITAM)
                     wadahPembayaran.innerHTML = `
                         <div class="flex flex-col items-center justify-center py-4 text-center modal-anim w-full relative z-10">
                             <div class="w-16 h-16 bg-brand-success/20 rounded-full flex items-center justify-center border border-brand-success/50 mb-4 shadow-[0_0_15px_rgba(37,211,102,0.5)]">
@@ -8334,6 +8304,7 @@ async function checkoutXoftwarePay(namaProduk, harga, deskripsi, sellerId = null
                         </div>
                     `;
                 } else {
+                    // TAMPILAN SUKSES BIASA (TANPA DATA OTOMATIS)
                     wadahPembayaran.innerHTML = `
                         <div class="flex flex-col items-center justify-center py-4 text-center modal-anim w-full relative z-10">
                             <div class="relative w-28 h-28 mb-6 mt-4">
@@ -8383,12 +8354,8 @@ async function checkoutXoftwarePay(namaProduk, harga, deskripsi, sellerId = null
                 }
             }).subscribe();
 
-        // ========================================================
-        // 🔥 THE MAGIC FIX: Tambah _t=Date.now() Anti-Cache PWA!
-        // ========================================================
         intervalJemputBola = setInterval(async () => {
             try {
-                // Sengaja dikasih URL dinamis agar Service Worker HP menyerah dan meneruskannya ke Vercel!
                 const res = await fetch(`/api/check-status?order_id=${orderData.id}&table=${targetTabel}&_t=${Date.now()}`);
                 const responseData = await res.json();
                 
@@ -8413,6 +8380,7 @@ async function checkoutXoftwarePay(namaProduk, harga, deskripsi, sellerId = null
         }, 3000); 
     }
 }
+
 
 
 async function prosesBayarUlang() {
@@ -8479,13 +8447,28 @@ async function prosesAutoDeliveryTertunda() {
 
     if (pendingOrders && pendingOrders.length > 0) {
         for (let order of pendingOrders) {
-            if (!order.product_id) continue;
+            let activeProductId = order.product_id;
+
+            // 🔥 JURUS PENYELAMAT: Jika ID Produk kosong (karena ini pesanan lama), cari via Nama!
+            if (!activeProductId) {
+                let cleanName = order.product_name.replace('[PASAR] ', '').replace(/ \[\+Rekber\]/g, '').replace(/ \(x\d+\)$/, '').split(' - ')[0].trim();
+                const { data: searchProd } = await supabaseClient.from('player_products').select('id').ilike('title', cleanName).limit(1);
+                
+                if (searchProd && searchProd.length > 0) {
+                    activeProductId = searchProd[0].id;
+                    // Update ke database biar gak kosong lagi
+                    await supabaseClient.from('orders_player').update({ product_id: activeProductId }).eq('id', order.id);
+                } else {
+                    if (order.status !== 'proses') await supabaseClient.from('orders_player').update({ status: 'proses' }).eq('id', order.id);
+                    continue;
+                }
+            }
 
             // Tarik data stok dan S&K dari produk
             const { data: prodData } = await supabaseClient
                 .from('player_products')
                 .select('stock_list, category, user_id, snk')
-                .eq('id', order.product_id)
+                .eq('id', activeProductId)
                 .single();
 
             const isAutoItem = prodData && (prodData.category === 'Akun' || prodData.category === 'Item' || prodData.category === 'APK Premium');
@@ -8516,7 +8499,7 @@ async function prosesAutoDeliveryTertunda() {
                     
                     // Gunakan RPC agar Pembeli (Buyer) diizinkan memotong stok Penjual
                     const { error: errUpdate } = await supabaseClient.rpc('potong_stok_otomatis', {
-                        p_product_id: order.product_id,
+                        p_product_id: activeProductId,
                         p_new_stock: newStockList
                     });
                         
@@ -8524,9 +8507,8 @@ async function prosesAutoDeliveryTertunda() {
                     if (!errUpdate) { 
                         const detailItem = autoDeliveryData.join('\n\n');
                     
-                        // 🔥 LOGIKA S&K DIPERKUAT (ANTI-NULL/UNDEFINED)
                         let teksFinalData = detailItem;
-                        let snkText = String(prodData.snk || ""); // Konversi paksa ke string agar aman
+                        let snkText = String(prodData.snk || ""); 
 
                         if (snkText && snkText.trim() !== '' && snkText !== 'null' && snkText !== 'undefined') {
                             teksFinalData += `\n\n━━━━━━━━━━━━━━━━━━\n📋 *Syarat & Ketentuan Penjual:*\n${snkText.trim()}`;
@@ -8566,6 +8548,7 @@ async function prosesAutoDeliveryTertunda() {
     
     return hasilDataAkun.trim(); 
 }
+
 
 
 // FUNCTIONS UNTUK KONTROL ANIMASI BUKA TUTUP LACI MENU
