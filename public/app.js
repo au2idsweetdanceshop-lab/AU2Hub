@@ -1669,9 +1669,6 @@ function toggleFloatingMode(skipHistory = false) {
     }
 }
 
-
-
-
 function switchTab(tabId, event = null, isPush = true) {
     if (event) event.preventDefault();
 
@@ -1691,31 +1688,67 @@ function switchTab(tabId, event = null, isPush = true) {
     if (tabId === 'profile' && event !== null && currentUser) {
         viewedUserId = currentUser.id;
 
-// Bersihkan sisa query string (?id=...) dari URL biar balik murni mentereng ke #profile
-history.replaceState({ popup: 'my_profile' }, null, '#profile');
+        // Bersihkan sisa query string (?id=...) dari URL biar balik murni mentereng ke #profile
+        history.replaceState({ popup: 'my_profile' }, null, '#profile');
 
-openUserProfile(currentUser.id);
-return; // hentikan karena openUserProfile akan mengeksekusi switchTab secara mandiri
+        openUserProfile(currentUser.id);
+        return; // hentikan karena openUserProfile akan mengeksekusi switchTab secara mandiri
+    }
+
+
+    if (tabId !== 'profile' && tabId !== 'pembayaran' && tabId !== 'upload') {tabSebelumnya = tabId;}
+    if (tabId === 'layanan' && isPush && document.getElementById('pembayaran').classList.contains('active')) {
+        window.scrollTo({ top: 0, behavior: 'smooth' }); return;
+    }
+
+    const targetSection = document.getElementById(tabId) || document.getElementById('home');
+    if (!targetSection) return;
+
+    // 🚨 PERBAIKAN: Jangan pernah simpan layar pembayaran/upload sebagai layar terakhir
+    if (tabId !== 'pembayaran' && tabId !== 'upload') {
+        localStorage.setItem('lastTab', tabId);
+    }
+
+    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+    
+    // 👇 INI YANG TADI HILANG 👇
+    document.querySelectorAll('.nav-item').forEach(n => {
+        n.classList.remove('active');
+        const icon = n.querySelector('i');
+        if (icon) icon.style.animation = 'none';
+    });
+    // 👆 -------------------- 👆
+
+    targetSection.classList.add('active');
+
+    if (tabId === 'sosial') {
+        loadVideos();
+    }
+
+    if (tabId === 'toko') {
+        loadTokoSaya();
+    }
+
+    // Solusi Warna Navigasi Cerdas (Anti-Nyangkut)
+    let activeNav = document.querySelector(`.nav-item[href="#${tabId}"]`);
+    
+    // Pengecualian khusus: Saat buka Pembayaran, nyalakan ikon Layanan
+    if (tabId === 'pembayaran') {
+        activeNav = document.querySelector(`.nav-item[href="#layanan"]`);
+    }
+
+    if (activeNav) {
+        activeNav.classList.add('active');
+        const icon = activeNav.querySelector('i');
+        if (icon) { 
+            void icon.offsetWidth; 
+            icon.style.animation = 'popBounce 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards'; 
+        }
+    }
+
+    setTimeout(() => { window.scrollTo({ top: 0, behavior: 'auto' }); }, 10);
+    if (isPush && window.location.hash !== `#${tabId}`) history.pushState(null, null, `#${tabId}`);
 }
-
-
-if (tabId !== 'profile' && tabId !== 'pembayaran' && tabId !== 'upload') {tabSebelumnya = tabId;}
-if (tabId === 'layanan' && isPush && document.getElementById('pembayaran').classList.contains('active')) {
-window.scrollTo({ top: 0, behavior: 'smooth' }); return;
-}
-
-const targetSection = document.getElementById(tabId) || document.getElementById('home');
-if (!targetSection) return;
-
-// 🚨 PERBAIKAN: Jangan pernah simpan layar pembayaran/upload sebagai layar terakhir
-if (tabId !== 'pembayaran' && tabId !== 'upload') {
-    localStorage.setItem('lastTab', tabId);
-}
-
-document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-const icon = n.querySelector('i');
-if (icon) icon.style.animation = 'none';
-});
 
 targetSection.classList.add('active');
 
