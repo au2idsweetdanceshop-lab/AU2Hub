@@ -8731,32 +8731,34 @@ async function prosesAutoDeliveryTertunda() {
                         p_new_stock: newStockList
                     });
                         
-                    if (errUpdate) {
+                    // 🚨 PERBAIKAN 1: Tambah tanda seru (!). Harusnya kirim barang jika TIDAK error (!errUpdate)
+                    if (!errUpdate) { 
+                        const detailItem = autoDeliveryData.join('\n\n');
                     
-                                        const detailItem = autoDeliveryData.join('\n\n');
-                    
-                    // 🔥 LOGIKA S&K MUNCUL 1 KALI SAJA DI PALING BAWAH
-                    let teksFinalData = detailItem;
-                    if (prodData.snk && prodData.snk.trim() !== '') {
-                        teksFinalData += `\n\n━━━━━━━━━━━━━━━━━━\n📋 *Syarat & Ketentuan Penjual:*\n${prodData.snk.trim()}`;
-                    }
+                        // 🔥 LOGIKA S&K MUNCUL 1 KALI SAJA DI PALING BAWAH
+                        let teksFinalData = detailItem;
+                        if (prodData.snk && prodData.snk.trim() !== '') {
+                            teksFinalData += `\n\n━━━━━━━━━━━━━━━━━━\n📋 *Syarat & Ketentuan Penjual:*\n${prodData.snk.trim()}`;
+                        }
 
-                    hasilDataAkun += teksFinalData + "\n\n"; 
+                        hasilDataAkun += teksFinalData + "\n\n"; 
 
-                    await supabaseClient.from('messages').insert({
-                        sender_id: currentUser.id, 
-                        receiver_id: order.seller_id,
-                        message: `[SISTEM] Transaksi Selesai! Sistem telah mengirimkan data otomatis ke pembeli untuk pesanan: *${order.product_name}*\n\n${teksFinalData}`
-                    });
+                        await supabaseClient.from('messages').insert({
+                            sender_id: currentUser.id, 
+                            receiver_id: order.seller_id,
+                            message: `[SISTEM] Transaksi Selesai! Sistem telah mengirimkan data otomatis ke pembeli untuk pesanan: *${order.product_name}*\n\n${teksFinalData}`
+                        });
+                    } // <--- 🚨 PERBAIKAN 2: Kurung tutup ini sebelumnya hilang!
+
                 } else {
-    // TAMBAHAN BARU: Peringatan ke Seller jika stok otomatis kurang/habis
-    await supabaseClient.from('messages').insert({
-        sender_id: currentUser.id,
-        receiver_id: order.seller_id,
-        message: `[SISTEM] Pembeli telah membayar pesanan *${order.product_name}*, namun sisa stok otomatis di etalase tidak mencukupi untuk dikirim.\n\nHarap segera hubungi pembeli dan proses pengiriman barang secara MANUAL.`
-    });
-}
-            }
+                    // TAMBAHAN BARU: Peringatan ke Seller jika stok otomatis kurang/habis
+                    await supabaseClient.from('messages').insert({
+                        sender_id: currentUser.id,
+                        receiver_id: order.seller_id,
+                        message: `[SISTEM] Pembeli telah membayar pesanan *${order.product_name}*, namun sisa stok otomatis di etalase tidak mencukupi untuk dikirim.\n\nHarap segera hubungi pembeli dan proses pengiriman barang secara MANUAL.`
+                    });
+                }
+            } // <--- 🚨 PERBAIKAN 3: Kurung tutup ini juga sebelumnya hilang!
 
             const finalStatus = (autoDeliveryData.length > 0) ? 'selesai' : 'proses';
             
