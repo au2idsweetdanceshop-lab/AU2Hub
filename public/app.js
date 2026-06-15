@@ -8267,7 +8267,6 @@ async function checkoutXoftwarePay(namaProduk, harga, deskripsi, sellerId = null
         showToast("Silakan scan QRIS untuk melanjutkan.", "success");
 
         let isLayarSuksesTampil = false;
-        let isLayarSuksesTampil = false;
         
         window.tampilkanLayarSuksesFinal = () => {
             if (!isLayarSuksesTampil) tampilkanLayarSukses();
