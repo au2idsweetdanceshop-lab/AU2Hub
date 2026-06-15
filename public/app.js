@@ -8392,10 +8392,29 @@ async function prosesBayarUlang() {
     showToast("Memperbarui tagihan...", "info");
 
     try {
-        // 1. HAPUS TAGIHAN LAMA (Agar tidak double di database dan memicu ID baru)
+        // 🔥 JURUS RADAR WILDCARD: Cari ID barang yang hilang secara agresif!
+        let finalProductId = activeOrderProductId;
+
+        if (!finalProductId || finalProductId === 'null' || finalProductId === 'undefined') {
+            let baseName = activeOrderNameToPay.replace('[PASAR] ', '').replace(/ \[\+Rekber\]/g, '').replace(/ \(x\d+\)$/, '');
+            let shortName = baseName.split(' - ')[0].trim(); // Ambil kata depannya saja
+            
+            // Cari di database pakai wildcard (%) biar PASTI ketemu!
+            const { data: searchProd } = await supabaseClient.from('player_products')
+                .select('id')
+                .ilike('title', `%${shortName}%`)
+                .limit(1);
+
+            if (searchProd && searchProd.length > 0) {
+                finalProductId = searchProd[0].id;
+                console.log("🔥 ID Produk Berhasil Diselamatkan: ", finalProductId);
+            }
+        }
+
+        // 1. HAPUS TAGIHAN LAMA
         await supabaseClient.from(activeOrderTable).delete().eq('id', activeOrderIdToPay);
 
-        // 2. TUTUP LACI INVOICE & RIWAYAT FISIK SECARA PAKSA (Anti-bug animasi history.back)
+        // 2. TUTUP LACI INVOICE & RIWAYAT (Bypass efek history.back)
         const modalInvoice = document.getElementById('modal-detail-pesanan');
         if (modalInvoice) {
             modalInvoice.classList.add('hidden');
@@ -8407,25 +8426,16 @@ async function prosesBayarUlang() {
             modalRiwayat.classList.remove('flex');
         }
 
-        // Hentikan radar pencarian lama jika ada yang nyangkut
-        if (intervalJemputBola) {
-            clearInterval(intervalJemputBola);
-            intervalJemputBola = null;
-        }
-        if (activeChannelPembayaran) {
-            supabaseClient.removeChannel(activeChannelPembayaran);
-            activeChannelPembayaran = null;
-        }
+        if (intervalJemputBola) { clearInterval(intervalJemputBola); intervalJemputBola = null; }
+        if (activeChannelPembayaran) { supabaseClient.removeChannel(activeChannelPembayaran); activeChannelPembayaran = null; }
 
-        // 🔥 3. KUNCI UTAMANYA DI SINI 🔥
-        // Daripada nulis ulang kode QRIS panjang-panjang, kita langsung panggil
-        // fungsi "checkoutXoftwarePay" yang sudah TERBUKTI sukses menampilkan data auto-delivery!
+        // 3. PANGGIL CHECKOUT DENGAN ID YANG SUDAH DISELAMATKAN
         checkoutXoftwarePay(
             activeOrderNameToPay, 
             activeOrderPriceToPay, 
             "Melanjutkan pembayaran tertunda.", 
             activeOrderSellerId, 
-            activeOrderProductId
+            finalProductId
         );
 
     } catch (error) {
@@ -8433,6 +8443,7 @@ async function prosesBayarUlang() {
         console.error(error);
     }
 }
+
 
 async function prosesAutoDeliveryTertunda() {
     if (!currentUser) return null;
@@ -8449,18 +8460,19 @@ async function prosesAutoDeliveryTertunda() {
         for (let order of pendingOrders) {
             let activeProductId = order.product_id;
 
-            // 🔥 JURUS PENYELAMAT: Jika ID Produk kosong (karena ini pesanan lama), cari via Nama!
-            if (!activeProductId) {
+            // 🔥 JURUS RADAR WILDCARD: Sama seperti di atas, kita pasang penjaga gawang di sini juga
+            if (!activeProductId || activeProductId === 'null' || activeProductId === 'undefined') {
                 let cleanName = order.product_name.replace('[PASAR] ', '').replace(/ \[\+Rekber\]/g, '').replace(/ \(x\d+\)$/, '').split(' - ')[0].trim();
-                const { data: searchProd } = await supabaseClient.from('player_products').select('id').ilike('title', cleanName).limit(1);
+                
+                // PAKE % WILDCARD BIAR SUPER AKURAT!
+                const { data: searchProd } = await supabaseClient.from('player_products').select('id').ilike('title', `%${cleanName}%`).limit(1);
                 
                 if (searchProd && searchProd.length > 0) {
                     activeProductId = searchProd[0].id;
-                    // Update ke database biar gak kosong lagi
                     await supabaseClient.from('orders_player').update({ product_id: activeProductId }).eq('id', order.id);
                 } else {
                     if (order.status !== 'proses') await supabaseClient.from('orders_player').update({ status: 'proses' }).eq('id', order.id);
-                    continue;
+                    continue; // Kalau tetep gak ketemu, relakan dan lanjut ke pesanan berikutnya
                 }
             }
 
@@ -8548,8 +8560,6 @@ async function prosesAutoDeliveryTertunda() {
     
     return hasilDataAkun.trim(); 
 }
-
-
 
 // FUNCTIONS UNTUK KONTROL ANIMASI BUKA TUTUP LACI MENU
 function openAssistiveMenu() {
