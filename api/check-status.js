@@ -71,7 +71,7 @@ export default async function handler(req, res) {
             const productName = existingOrder.product_name || '';
             const userId = existingOrder.user_id;
 
-            if (productName.includes('[VIP]')) {
+            if (productName.includes('[VIP]') && targetTable === 'orders') {
                 const { data: profile } = await supabase.from('profiles').select('seller_expired_at').eq('id', userId).single();
                 let waktuSekarang = new Date();
                 let waktuExpired = profile?.seller_expired_at ? new Date(profile.seller_expired_at) : new Date();
