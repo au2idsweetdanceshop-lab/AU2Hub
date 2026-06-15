@@ -1,201 +1,63 @@
 import { createClient } from '@supabase/supabase-js';
-import crypto from 'crypto';
 
+// Gunakan Service Role Key agar punya akses 'Dewa' menembus RLS
 const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
     process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-// ==========================================
-// 👑 FUNGSI INTI: UPDATE DATABASE & VIP LOGIC
-// ==========================================
-async function prosesPembayaranLunas(order_id, targetTable, orderData) {
-    const productName = orderData.product_name || '';
-    const userId = orderData.user_id;
-
-    if (productName.includes('[VIP]')) {
-        // Gunakan maybeSingle() agar aman jika profile bermasalah
-        const { data: profile } = await supabase
-            .from('profiles')
-            .select('seller_expired_at')
-            .eq('id', userId)
-            .maybeSingle(); 
-        
-        let waktuSekarang = new Date();
-        let waktuExpired = profile?.seller_expired_at ? new Date(profile.seller_expired_at) : new Date();
-
-        // Kalau masa aktif sudah kadaluarsa, mulai hitung ulang dari hari ini
-        if (waktuExpired < waktuSekarang) {
-            waktuExpired = waktuSekarang;
-        }
-
-        // Deteksi durasi dari nama produk dengan REGEX
-        if (productName.includes('1 Tahun')) {
-            waktuExpired.setDate(waktuExpired.getDate() + 365);
-        } else {
-            const matchBulan = productName.match(/(\d+)\s+Bulan/i);
-            const matchHari = productName.match(/(\d+)\s+Hari/i);
-
-            if (matchBulan) {
-                const jumlahBulan = parseInt(matchBulan[1]);
-                waktuExpired.setDate(waktuExpired.getDate() + (jumlahBulan * 30));
-            } else if (matchHari) {
-                const jumlahHari = parseInt(matchHari[1]);
-                waktuExpired.setDate(waktuExpired.getDate() + jumlahHari); 
-            } else {
-                // Default aman jika format nama produk tidak dikenali
-                waktuExpired.setDate(waktuExpired.getDate() + 30); 
-            }
-        }
-
-        // Tembak Profil Jadi VIP Seller
-        await supabase.from('profiles')
-            .update({ 
-                is_seller: true, 
-                seller_expired_at: waktuExpired.toISOString() 
-            })
-            .eq('id', userId);
-
-        // Update order jadi 'selesai' langsung (karena VIP adalah layanan instan otomatis dari sistem)
-        let updatePayload = { status: 'selesai' };
-        if (targetTable === 'orders_player') {
-            updatePayload.waktu_selesai = new Date().toISOString();
-            updatePayload.dana_cair = false; // Sinkronisasi dengan webhook cron H+1
-        }
-        await supabase.from(targetTable).update(updatePayload).eq('id', order_id);
-
-    } else {
-        // Order biasa (Barang dari admin / player) status -> SUCCESS (Akan dibaca 'DIPROSES' di UI)
-        await supabase.from(targetTable).update({ status: 'SUCCESS' }).eq('id', order_id);
-    }
-}
-
 export default async function handler(req, res) {
-    // =================================================================
-    // 🔔 JALUR 1: WEBHOOK (Otomatis Menerima Laporan dari Xoftware)
-    // =================================================================
-    if (req.method === 'POST') {
-        try {
-            const payload = req.body;
-            console.log("🔔 Webhook Masuk dari Xoftware:", payload);
-
-            // Sesuaikan key (ref_id/order_id) dengan format dokumentasi Webhook Xoftware
-            const order_id = payload.ref_id || payload.order_id || payload.external_id;
-            const statusUtama = payload.status || payload.payment_status || '';
-
-            if (!order_id) return res.status(400).json({ message: 'Missing order_id' });
-
-            // Deteksi pesanan ini berasal dari tabel mana (Aman tanpa melempar error)
-            let targetTable = 'orders';
-            let { data: orderData } = await supabase.from('orders').select('*').eq('id', order_id).maybeSingle();
-
-            if (!orderData) {
-                const { data: playerOrderData } = await supabase.from('orders_player').select('*').eq('id', order_id).maybeSingle();
-                if (playerOrderData) {
-                    orderData = playerOrderData;
-                    targetTable = 'orders_player';
-                }
-            }
-
-            if (!orderData) return res.status(404).json({ message: 'Order tidak ditemukan' });
-
-            // Cegah pemrosesan ulang (Double-hit) jika status sudah pernah sukses
-            if (orderData.status === 'SUCCESS' || orderData.status === 'selesai') {
-                return res.status(200).json({ success: true, message: 'Order sudah lunas sebelumnya' });
-            }
-
-            // Jika statusnya berhasil, eksekusi pembaruan database
-            if (
-                statusUtama.toUpperCase() === 'SUCCESS' || 
-                statusUtama.toUpperCase() === 'SUCCEEDED' || 
-                statusUtama.toUpperCase() === 'SETTLED' || 
-                statusUtama.toUpperCase() === 'PAID'
-            ) {
-                await prosesPembayaranLunas(order_id, targetTable, orderData);
-            }
-
-            return res.status(200).json({ success: true, message: 'Webhook berhasil diproses' });
-        } catch (error) {
-            console.error("🔥 Webhook Error:", error.message);
-            return res.status(500).json({ success: false, message: error.message });
-        }
+    // Endpoint ini hanya bertugas melayani method GET dari aplikasi frontend 
+    // (Interval jemput bola & tombol "Saya Sudah Bayar")
+    if (req.method !== 'GET') {
+        return res.status(405).json({ success: false, message: 'Method Not Allowed' });
     }
 
-    // =================================================================
-    // 🔍 JALUR 2: CEK MANUAL (Tarikan API dari tombol "Saya Sudah Bayar")
-    // =================================================================
-    if (req.method === 'GET') {
-        const { order_id, table } = req.query;
-        if (!order_id) return res.status(400).json({ message: 'Missing order_id' });
+    const { order_id, table } = req.query;
 
-        const targetTable = table === 'orders_player' ? 'orders_player' : 'orders';
-        const baseUrl = process.env.XOFTWARE_BASE_URL;       
-        const apiKey = process.env.XOFTWARE_API_KEY;         
-        const timestamp = Math.floor(Date.now() / 1000).toString();
+    if (!order_id) {
+        return res.status(400).json({ success: false, message: 'Missing order_id' });
+    }
+
+    const targetTable = table === 'orders_player' ? 'orders_player' : 'orders';
+
+    try {
+        // =================================================================
+        // 🔍 CEK STATUS LANGSUNG KE DATABASE SUPABASE
+        // =================================================================
+        // Karena api/webhook.js sudah bekerja secara instan mengupdate database, 
+        // kita jadikan Supabase sebagai SUMBER KEBENARAN mutlak (Source of Truth).
         
-        try {
-            // Cek status terlebih dahulu di database lokal (Hemat kuota API API Xoftware)
-            const { data: existingOrder } = await supabase.from(targetTable).select('*').eq('id', order_id).maybeSingle();
-            
-            if (existingOrder && (existingOrder.status === 'SUCCESS' || existingOrder.status === 'selesai')) {
-                return res.status(200).json({ success: true, status: 'SUCCESS', source: 'cache' });
-            }
+        const { data: existingOrder, error } = await supabase
+            .from(targetTable)
+            .select('status')
+            .eq('id', order_id)
+            .single();
 
-            const path = '/v1/api/transactions/status';
-            const payloadObject = { ref_id: order_id };
-            const payloadString = JSON.stringify(payloadObject);
-            
-            const method = 'POST';
-            const messageToSign = `${timestamp}\n${method}\n${path}\n${payloadString}`;
-            const signature = crypto.createHmac('sha256', apiKey).update(messageToSign, 'utf8').digest('base64');
-
-            const response = await fetch(`${baseUrl}${path}`, {
-                method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'X-API-Key': apiKey, 
-                    'X-Timestamp': timestamp, 
-                    'X-Signature': signature 
-                },
-                body: payloadString
-            });
-            
-            const rawText = await response.text();
-
-            let result;
-            try {
-                result = JSON.parse(rawText);
-            } catch (e) {
-                return res.status(200).json({ success: false, status: 'PENDING', message: 'Respons bukan JSON dari server Xoftware' });
-            }
-            
-            const statusUtama = result.data?.status || '';
-            const statusPembayaran = result.data?.payment_status || '';
-
-            if (
-                statusUtama.toUpperCase() === 'SUCCESS' || 
-                statusPembayaran.toUpperCase() === 'SUCCEEDED' || 
-                statusUtama.toUpperCase() === 'SETTLED' || 
-                statusPembayaran.toUpperCase() === 'SETTLED' || 
-                statusUtama.toUpperCase() === 'PAID'
-            ) {
-                if (existingOrder) {
-                    await prosesPembayaranLunas(order_id, targetTable, existingOrder);
-                } else {
-                    // Fallback darurat (Mencegah kegagalan absolut)
-                    await supabase.from(targetTable).update({ status: 'SUCCESS' }).eq('id', order_id);
-                }
-                return res.status(200).json({ success: true, status: 'SUCCESS' });
-            }
-
-            return res.status(200).json({ success: true, status: 'PENDING', detail: statusUtama });
-            
-        } catch (error) {
-            console.error("🔥 CRITICAL ERROR:", error.message);
-            return res.status(200).json({ success: false, status: 'PENDING', message: error.message });
+        if (error || !existingOrder) {
+            return res.status(404).json({ success: false, status: 'ERROR', message: 'Pesanan tidak ditemukan di database' });
         }
-    }
 
-    // Blokir jika metode selain GET/POST
-    return res.status(405).json({ message: 'Method Not Allowed' });
+        const currentStatus = String(existingOrder.status).toUpperCase();
+
+        // Jika Webhook Xoftware sudah sukses mengubah status di database menjadi lunas
+        if (currentStatus === 'SUCCESS' || currentStatus === 'SELESAI' || currentStatus === 'PROSES' || currentStatus === 'PAID') {
+            return res.status(200).json({ 
+                success: true, 
+                status: 'SUCCESS', // <-- Kata kunci ini akan memicu Layar Hijau Sukses di aplikasi
+                message: 'Pembayaran telah lunas dan dikonfirmasi' 
+            });
+        }
+
+        // Jika status di database masih PENDING
+        return res.status(200).json({ 
+            success: true, 
+            status: 'PENDING', 
+            message: 'Menunggu pembayaran masuk...' 
+        });
+
+    } catch (error) {
+        console.error("🔥 Cek Status Error:", error.message);
+        return res.status(500).json({ success: false, status: 'ERROR', message: error.message });
+    }
 }
