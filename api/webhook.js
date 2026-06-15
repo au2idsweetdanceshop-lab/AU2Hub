@@ -7,6 +7,7 @@ const supabase = createClient(
 );
 
 export default async function handler(req, res) {
+    // Tolak semua akses browser biasa
     if (req.method !== 'POST') return res.status(405).send('Method Not Allowed');
 
     const payload = req.body;
@@ -25,24 +26,14 @@ export default async function handler(req, res) {
 
     let orderId = String(rawOrderId);
 
-    // 3. Potong Timestamp unik yang kita buat di create-qris.js (Fitur Lanjutkan Pembayaran)
-    const lastDashIndex = orderId.lastIndexOf('-');
-    if (lastDashIndex !== -1) {
-        const possibleTimestamp = orderId.substring(lastDashIndex + 1);
-        if (/^\d+$/.test(possibleTimestamp)) {
-            orderId = orderId.substring(0, lastDashIndex);
-            console.log(`✂️ ID Dipotong jadi ID asli DB: ${orderId}`);
-        }
-    }
-
-    // 4. Tangkap Status dari segala jenis format yang mungkin dikirim Xoftware
+    // 3. Tangkap Status dari segala jenis format yang mungkin dikirim Xoftware
     const statusXoftware = dataCore.status ? String(dataCore.status).toUpperCase() : '';
     const paymentStatus = dataCore.payment_status ? String(dataCore.payment_status).toUpperCase() : '';
     const statusTrans = dataCore.transaction_status ? String(dataCore.transaction_status).toUpperCase() : '';
 
     console.log(`🔍 Memeriksa Status: status=${statusXoftware}, payment=${paymentStatus}, trans=${statusTrans}`);
 
-    // 5. Eksekusi Lunas
+    // 4. Eksekusi Lunas
     if (
         statusXoftware === 'SUCCESS' || statusXoftware === 'PAID' || statusXoftware === 'SETTLED' || 
         paymentStatus === 'SUCCEEDED' || paymentStatus === 'SETTLED' || paymentStatus === 'SUCCESS' ||
@@ -74,7 +65,6 @@ export default async function handler(req, res) {
             return res.status(200).json({ success: false, message: 'Order tidak ditemukan di DB' });
         }
 
-        // Karena kita sudah pakai orderData, ReferenceError orderPlayer musnah!
         const productName = orderData.product_name || '';
         const userId = orderData.user_id;
 
