@@ -10,6 +10,19 @@ export default async function handler(req, res) {
     // Tolak semua akses browser biasa
     if (req.method !== 'POST') return res.status(405).send('Method Not Allowed');
 
+    // ========================================================
+    // 🛡️ PERBAIKAN BUG #3: VALIDASI KEAMANAN WEBHOOK 
+    // ========================================================
+    // Buka komentar di bawah jika Xoftware menggunakan Callback Token di headernya.
+    // Pastikan kamu men-setting 'XOFTWARE_CALLBACK_TOKEN' di Environment Variables Vercel/Hosting-mu.
+    /*
+    const callbackToken = req.headers['x-callback-token']; 
+    if (callbackToken !== process.env.XOFTWARE_CALLBACK_TOKEN) {
+        console.log("❌ Webhook ditolak: Token autentikasi tidak valid.");
+        return res.status(401).send('Unauthorized');
+    }
+    */
+
     const payload = req.body;
     console.log("📥 WEBHOOK MASUK FULL PAYLOAD:", JSON.stringify(payload));
 
@@ -65,11 +78,22 @@ export default async function handler(req, res) {
             return res.status(200).json({ success: false, message: 'Order tidak ditemukan di DB' });
         }
 
+        // ========================================================
+        // 🛡️ PERBAIKAN BUG #2: MENCEGAH RACE CONDITION (DOUBLE EXECUTION)
+        // ========================================================
+        const currentDbStatus = String(orderData.status).toUpperCase();
+        if (['SUCCESS', 'SELESAI', 'PROSES', 'PAID'].includes(currentDbStatus)) {
+            console.log(`⚠️ Order ${orderId} sudah berstatus ${currentDbStatus}. Mengabaikan webhook ganda.`);
+            return res.status(200).json({ success: true, message: 'Sudah diproses sebelumnya' });
+        }
+
         const productName = orderData.product_name || '';
         const userId = orderData.user_id;
 
-        // LOGIKA VIP SELLER
-        if (productName.includes('[VIP]')) {
+        // ========================================================
+        // 🛡️ PERBAIKAN BUG #1: MENCEGAH VIP PALSU (Cek targetTable)
+        // ========================================================
+        if (productName.includes('[VIP]') && targetTable === 'orders') {
             const { data: profile } = await supabase.from('profiles').select('seller_expired_at').eq('id', userId).single();
             let waktuSekarang = new Date();
             let waktuExpired = profile?.seller_expired_at ? new Date(profile.seller_expired_at) : new Date();
