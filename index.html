@@ -28,7 +28,7 @@
 
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script defer src="/app.js?v=67"></script>
+<script defer src="/app.js?v=68"></script>
 
 <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
 <style>
@@ -636,12 +636,15 @@ Satu pintu untuk info update terbaru, panduan pemula, jasa joki profesional, dan
 
     <div id="qris-container" class="w-full max-w-sm bg-[#121319] border border-white/10 rounded-[2.5rem] p-6 shadow-[0_25px_50px_rgba(0,0,0,0.8)] relative overflow-hidden flex flex-col items-center justify-center min-h-[450px] transform transition-all modal-anim">
         
-        <!-- Loading State Bawaan -->
-        <div class="text-center flex flex-col items-center animate-pulse w-full">
-            <div class="w-20 h-20 bg-brand-info/10 rounded-full flex items-center justify-center mb-4 border border-brand-info/30 shadow-[0_0_30px_rgba(70,179,255,0.3)]">
-                <i class="fas fa-qrcode text-brand-info text-4xl"></i>
+        <!-- Loading State Custom Logo -->
+        <div class="text-center flex flex-col items-center w-full mt-6">
+            <div class="relative flex flex-col items-center mb-6">
+                <!-- Efek cahaya blur di belakang logo -->
+                <div class="absolute inset-0 bg-brand-accent opacity-30 animate-pulse rounded-full" style="filter: blur(30px);"></div>
+                <!-- Logo AU2Hub Berdenyut -->
+                <img src="https://nos.wjv-1.neo.id/au2hub/Picsart_26-05-30_04-29-46-305.webp" class="w-28 h-28 relative z-10 splash-logo-anim drop-shadow-[0_0_20px_rgba(0,240,255,0.5)]" alt="Loading">
             </div>
-            <p class="text-[10px] text-gray-400 font-extrabold tracking-widest uppercase mt-2">Menghubungkan ke Gateway...</p>
+            <p class="text-[10px] text-gray-400 font-extrabold tracking-widest uppercase mt-4 animate-pulse">Menghubungkan ke Gateway...</p>
         </div>
 
     </div>
