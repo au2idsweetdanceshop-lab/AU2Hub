@@ -8170,11 +8170,14 @@ async function selesaikanPesanan() {
 }
 
 
-async function checkoutXoftwarePay(namaProduk, harga, deskripsi, sellerId = null, productId = null) {
+async function checkoutXoftwarePay(namaProduk, harga, deskripsi, sellerId = null, productId = null, isBayarUlang = false) {
     if (!currentUser) return showToast("Silakan login dulu untuk membeli!", "error");
 
-    const konfirmasi = await customConfirm(`Lanjutkan pesanan untuk:\n\n${namaProduk}\n\nTotal: Rp ${harga.toLocaleString('id-ID')} via QRIS Otomatis?`);
-    if (!konfirmasi) return;
+    // 1. CEGAH POPUP DOBEL (Hanya nanya kalau ini beli langsung)
+    if (!isBayarUlang) {
+        const konfirmasi = await customConfirm(`Lanjutkan pesanan untuk:\n\n${namaProduk}\n\nTotal: Rp ${harga.toLocaleString('id-ID')} via QRIS Otomatis?`);
+        if (!konfirmasi) return;
+    }
 
     switchTab('pembayaran');
     
@@ -8192,11 +8195,20 @@ async function checkoutXoftwarePay(namaProduk, harga, deskripsi, sellerId = null
 
     try {
         const targetTabel = sellerId ? 'orders_player' : 'orders';
-        const dataInsert = { user_id: currentUser.id, product_name: namaProduk, price: harga, status: 'PENDING', product_id: productId };
-        if (sellerId) dataInsert.seller_id = sellerId;
+        let orderData;
 
-        const { data: orderData, error: orderError } = await supabaseClient.from(targetTabel).insert(dataInsert).select().single();
-        if (orderError) throw orderError;
+        // 2. CEGAH ERROR 404 (Gak ada lagi sistem Delete, kita pakai ID yang sudah ada)
+        if (isBayarUlang) {
+            // Update ID produknya agar bot Auto-Delivery gak buta
+            await supabaseClient.from(targetTabel).update({ product_id: productId, status: 'PENDING' }).eq('id', activeOrderIdToPay);
+            orderData = { id: activeOrderIdToPay }; 
+        } else {
+            const dataInsert = { user_id: currentUser.id, product_name: namaProduk, price: harga, status: 'PENDING', product_id: productId };
+            if (sellerId) dataInsert.seller_id = sellerId;
+            const { data: newOrder, error: orderError } = await supabaseClient.from(targetTabel).insert(dataInsert).select().single();
+            if (orderError) throw orderError;
+            orderData = newOrder;
+        }
 
         const responsePG = await fetch('/api/create-qris', { 
             method: 'POST',
@@ -8269,17 +8281,30 @@ async function checkoutXoftwarePay(namaProduk, harga, deskripsi, sellerId = null
             }
 
             let autoDeliveryContent = null;
+            let isAutoItem = false;
 
-            // 🔥 PERBAIKAN: Hilangkan syarat ribet isAutoItem. Kalau ada data, otomatis tayang!
             if (!namaProduk.includes('[VIP]')) {
+                // Panggil fungsi bot
                 autoDeliveryContent = await prosesAutoDeliveryTertunda();
+
+                // Pastikan productId ada untuk memvalidasi kategori otomatis
+                let targetProdId = productId || activeOrderProductId;
+                if (targetProdId && targetProdId !== 'null') {
+                    const { data: prodInfo } = await supabaseClient.from('player_products').select('category').eq('id', targetProdId).single();
+                    if (prodInfo) {
+                        const kat = (prodInfo.category || '').toLowerCase(); 
+                        if (kat === 'akun' || kat === 'item' || kat === 'apk premium') {
+                            isAutoItem = true;
+                        }
+                    }
+                }
             }
 
             if (wadahPembayaran) {
                 const noWA_Sukses = noWA; 
                 const teksWA_Sukses = encodeURIComponent(`Halo ${sapaan}, pesanan saya sudah BERHASIL DIBAYAR via QRIS Otomatis untuk:\n\n*${namaProduk}*\nID: ADT - ${orderData.id}\n\n(Mohon segera diproses ya)`);
 
-                if (autoDeliveryContent && autoDeliveryContent !== "") { 
+                if (isAutoItem && autoDeliveryContent && autoDeliveryContent !== "") { 
                     // TAMPILAN AUTO-DELIVERY (KOTAK HITAM)
                     wadahPembayaran.innerHTML = `
                         <div class="flex flex-col items-center justify-center py-4 text-center modal-anim w-full relative z-10">
@@ -8381,61 +8406,50 @@ async function checkoutXoftwarePay(namaProduk, harga, deskripsi, sellerId = null
     }
 }
 
-
-
 async function prosesBayarUlang() {
     if (!activeOrderIdToPay) return;
     
+    // HANYA 1 KONFIRMASI DI SINI
     const konfirmasi = await customConfirm(`Lanjutkan pembayaran untuk:\n\n${activeOrderNameToPay}?`);
     if (!konfirmasi) return;
 
     showToast("Memperbarui tagihan...", "info");
 
     try {
-        // 🔥 JURUS RADAR WILDCARD: Cari ID barang yang hilang secara agresif!
-        let finalProductId = activeOrderProductId;
-
-        if (!finalProductId || finalProductId === 'null' || finalProductId === 'undefined') {
-            let baseName = activeOrderNameToPay.replace('[PASAR] ', '').replace(/ \[\+Rekber\]/g, '').replace(/ \(x\d+\)$/, '');
-            let shortName = baseName.split(' - ')[0].trim(); // Ambil kata depannya saja
+        // 🔥 JURUS PENYELAMAT PESANAN LAMA: Cari paksa ID barang yang hilang!
+        let safeProductId = activeOrderProductId;
+        if (!safeProductId || safeProductId === 'null' || safeProductId === 'undefined' || String(safeProductId).trim() === '') {
+            let cleanName = activeOrderNameToPay.replace('[PASAR] ', '').replace(/ \[\+Rekber\]/g, '').replace(/ \(x\d+\)$/, '').split(' - ')[0].trim();
             
-            // Cari di database pakai wildcard (%) biar PASTI ketemu!
             const { data: searchProd } = await supabaseClient.from('player_products')
                 .select('id')
-                .ilike('title', `%${shortName}%`)
+                .ilike('title', `%${cleanName}%`)
                 .limit(1);
 
             if (searchProd && searchProd.length > 0) {
-                finalProductId = searchProd[0].id;
-                console.log("🔥 ID Produk Berhasil Diselamatkan: ", finalProductId);
+                safeProductId = searchProd[0].id;
+                activeOrderProductId = safeProductId; // Update global
             }
         }
 
-        // 1. HAPUS TAGIHAN LAMA
-        await supabaseClient.from(activeOrderTable).delete().eq('id', activeOrderIdToPay);
-
-        // 2. TUTUP LACI INVOICE & RIWAYAT (Bypass efek history.back)
+        // TUTUP LACI INVOICE & RIWAYAT FISIK SECARA PAKSA (Anti-bug animasi history.back)
         const modalInvoice = document.getElementById('modal-detail-pesanan');
-        if (modalInvoice) {
-            modalInvoice.classList.add('hidden');
-            modalInvoice.classList.remove('flex');
-        }
+        if (modalInvoice) { modalInvoice.classList.add('hidden'); modalInvoice.classList.remove('flex'); }
         const modalRiwayat = document.getElementById('modal-riwayat-pesanan');
-        if (modalRiwayat) {
-            modalRiwayat.classList.add('hidden');
-            modalRiwayat.classList.remove('flex');
-        }
+        if (modalRiwayat) { modalRiwayat.classList.add('hidden'); modalRiwayat.classList.remove('flex'); }
 
         if (intervalJemputBola) { clearInterval(intervalJemputBola); intervalJemputBola = null; }
         if (activeChannelPembayaran) { supabaseClient.removeChannel(activeChannelPembayaran); activeChannelPembayaran = null; }
 
-        // 3. PANGGIL CHECKOUT DENGAN ID YANG SUDAH DISELAMATKAN
+        // PANGGIL CHECKOUT DENGAN MODE BAYAR ULANG (True)
+        // Ini tidak akan menghapus ID lama, tidak membuat ID baru, dan tidak nanya 2x!
         checkoutXoftwarePay(
             activeOrderNameToPay, 
             activeOrderPriceToPay, 
             "Melanjutkan pembayaran tertunda.", 
             activeOrderSellerId, 
-            finalProductId
+            safeProductId,
+            true // <--- KUNCI PENYELAMAT
         );
 
     } catch (error) {
@@ -8443,7 +8457,6 @@ async function prosesBayarUlang() {
         console.error(error);
     }
 }
-
 
 async function prosesAutoDeliveryTertunda() {
     if (!currentUser) return null;
@@ -8460,11 +8473,10 @@ async function prosesAutoDeliveryTertunda() {
         for (let order of pendingOrders) {
             let activeProductId = order.product_id;
 
-            // 🔥 JURUS RADAR WILDCARD: Sama seperti di atas, kita pasang penjaga gawang di sini juga
-            if (!activeProductId || activeProductId === 'null' || activeProductId === 'undefined') {
+            // 🔥 JURUS PENYELAMAT PESANAN LAMA (DI BOT)
+            if (!activeProductId || activeProductId === 'null' || activeProductId === 'undefined' || String(activeProductId).trim() === '') {
                 let cleanName = order.product_name.replace('[PASAR] ', '').replace(/ \[\+Rekber\]/g, '').replace(/ \(x\d+\)$/, '').split(' - ')[0].trim();
                 
-                // PAKE % WILDCARD BIAR SUPER AKURAT!
                 const { data: searchProd } = await supabaseClient.from('player_products').select('id').ilike('title', `%${cleanName}%`).limit(1);
                 
                 if (searchProd && searchProd.length > 0) {
@@ -8472,7 +8484,7 @@ async function prosesAutoDeliveryTertunda() {
                     await supabaseClient.from('orders_player').update({ product_id: activeProductId }).eq('id', order.id);
                 } else {
                     if (order.status !== 'proses') await supabaseClient.from('orders_player').update({ status: 'proses' }).eq('id', order.id);
-                    continue; // Kalau tetep gak ketemu, relakan dan lanjut ke pesanan berikutnya
+                    continue;
                 }
             }
 
@@ -8515,10 +8527,8 @@ async function prosesAutoDeliveryTertunda() {
                         p_new_stock: newStockList
                     });
                         
-                    // Eksekusi jika berhasil memotong stok tanpa error
                     if (!errUpdate) { 
                         const detailItem = autoDeliveryData.join('\n\n');
-                    
                         let teksFinalData = detailItem;
                         let snkText = String(prodData.snk || ""); 
 
@@ -8536,7 +8546,6 @@ async function prosesAutoDeliveryTertunda() {
                     }
 
                 } else {
-                    // Peringatan ke Seller jika stok otomatis kurang/habis
                     await supabaseClient.from('messages').insert({
                         sender_id: currentUser.id,
                         receiver_id: order.seller_id,
