@@ -8444,16 +8444,24 @@ async function prosesBayarUlang() {
     }
 
     try {
-        // Mengambil data tagihan yang sudah ada dari endpoint check-status Anda
-        const responsePG = await fetch(`/api/check-status?order_id=${activeOrderIdToPay}&table=${activeOrderTable}`);
+        // 🔥 KITA LANGSUNG PANGGIL CREATE-QRIS DENGAN ID LAMA!
+        // Xoftware tidak akan menolak karena di backend (create-qris.js) 
+        // ID ini sudah otomatis ditambahkan timestamp agar dianggap unik.
+        const responsePG = await fetch('/api/create-qris', { 
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                order_id: activeOrderIdToPay,       // <-- Pake ID Database yang Asli
+                amount: activeOrderPriceToPay,      // <-- Harga Asli
+                product_name: activeOrderNameToPay, // <-- Nama Produk Asli
+                customer_name: userProfile?.nickname || 'Player'
+            })
+        });
+
         const dataPG = await responsePG.json();
+        if (!dataPG.success) throw new Error(dataPG.message || "Gagal mengambil QRIS");
 
-        // Menangkap string QRIS dari respons backend (menyesuaikan format Xoftware)
-        const qrisString = dataPG.qris_string || dataPG.data?.qris_string || (dataPG.data && dataPG.data[0]?.qris_string);
-
-        if (!qrisString) throw new Error("Gagal mengambil ulang data QRIS dari server.");
-
-        const qrImgUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qrisString)}`;
+        const qrImgUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(dataPG.qris_string)}`;
         
         let noWA = "6283815584661"; 
         let sapaan = "Admin";
@@ -8518,7 +8526,6 @@ async function prosesBayarUlang() {
         let isLayarSuksesTampil = false;
 
         const tampilkanLayarSukses = async () => {
-            // Jika layar sukses sudah pernah dipanggil, hentikan!
             if (isLayarSuksesTampil) return;
             isLayarSuksesTampil = true;
 
@@ -8649,21 +8656,19 @@ async function prosesBayarUlang() {
         showToast("Gagal memuat ulang QRIS. Silakan coba lagi.", "error");
         console.error(e);
         
-        // Tambahkan ini biar kalau error, layarnya nggak stuck di loading gateway
         const wadahPembayaran = document.getElementById('qris-container');
         if (wadahPembayaran) {
             wadahPembayaran.innerHTML = `
                 <div class="flex flex-col items-center justify-center py-10 mt-10">
                     <i class="fas fa-exclamation-triangle text-red-500 text-5xl mb-4"></i>
-                    <h3 class="text-white font-bold text-lg mb-2">Server Gangguan (502)</h3>
-                    <p class="text-gray-400 text-xs text-center mb-6">API Pembayaran tidak merespons. Coba beberapa saat lagi.</p>
+                    <h3 class="text-white font-bold text-lg mb-2">Gagal Mengambil QRIS</h3>
+                    <p class="text-gray-400 text-xs text-center mb-6">${e.message}</p>
                     <button onclick="history.back()" class="bg-white/10 text-white px-6 py-2.5 rounded-xl text-xs font-bold border border-white/20 active:scale-95 transition-all">Kembali</button>
                 </div>
             `;
         }
     }
-  }
-
+}
 
 async function prosesAutoDeliveryTertunda() {
     if (!currentUser) return null;
