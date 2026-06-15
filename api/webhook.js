@@ -25,7 +25,7 @@ export default async function handler(req, res) {
 
     let orderId = String(rawOrderId);
 
-    // 3. Potong Timestamp unik yang kita buat di create-qris.js
+    // 3. Potong Timestamp unik yang kita buat di create-qris.js (Fitur Lanjutkan Pembayaran)
     const lastDashIndex = orderId.lastIndexOf('-');
     if (lastDashIndex !== -1) {
         const possibleTimestamp = orderId.substring(lastDashIndex + 1);
@@ -42,7 +42,7 @@ export default async function handler(req, res) {
 
     console.log(`🔍 Memeriksa Status: status=${statusXoftware}, payment=${paymentStatus}, trans=${statusTrans}`);
 
-    // 5. Eksekusi Lunas (Jangkauan lebih luas)
+    // 5. Eksekusi Lunas
     if (
         statusXoftware === 'SUCCESS' || statusXoftware === 'PAID' || statusXoftware === 'SETTLED' || 
         paymentStatus === 'SUCCEEDED' || paymentStatus === 'SETTLED' || paymentStatus === 'SUCCESS' ||
@@ -51,21 +51,30 @@ export default async function handler(req, res) {
         console.log(`🔄 Memproses ID Lunas: ${orderId}`);
 
         let targetTable = 'orders';
-        let { data: orderAdmin } = await supabase.from('orders').select('*').eq('id', orderId).single();
+        let orderData = null;
 
-        let orderData = orderAdmin;
-
-        if (!orderAdmin) {
-            let { data: orderPlayer } = await supabase.from('orders_player').select('*').eq('id', orderId).single();
+        // 🔥 PERBAIKAN FATAL: Cari di orders dulu
+        const { data: orderAdmin } = await supabase.from('orders').select('*').eq('id', orderId).single();
+        
+        if (orderAdmin) {
+            orderData = orderAdmin;
+            targetTable = 'orders';
+        } else {
+            // Jika tidak ada di orders, cari di orders_player
+            const { data: orderPlayer } = await supabase.from('orders_player').select('*').eq('id', orderId).single();
             if (orderPlayer) {
-                targetTable = 'orders_player';
                 orderData = orderPlayer;
-            } else {
-                console.log(`❌ Gagal: Order ID ${orderId} tidak ditemukan di database.`);
-                return res.status(200).json({ success: false, message: 'Order tidak ditemukan di DB' });
+                targetTable = 'orders_player';
             }
         }
 
+        // Jika di kedua tabel tidak ada
+        if (!orderData) {
+            console.log(`❌ Gagal: Order ID ${orderId} tidak ditemukan di database.`);
+            return res.status(200).json({ success: false, message: 'Order tidak ditemukan di DB' });
+        }
+
+        // Karena kita sudah pakai orderData, ReferenceError orderPlayer musnah!
         const productName = orderData.product_name || '';
         const userId = orderData.user_id;
 
