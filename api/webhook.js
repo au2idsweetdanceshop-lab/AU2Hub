@@ -12,9 +12,6 @@ export default async function handler(req, res) {
     const callbackData = req.body;
     console.log("📥 WEBHOOK MASUK:", JSON.stringify(callbackData));
 
-    // ==========================================
-    // 🛡️ VERIFIKASI SIGNATURE (DIPERLONGGAR)
-    // ==========================================
     const apiKey = process.env.XOFTWARE_API_KEY;
     const incomingSignature = req.headers['x-signature'] || req.headers['x-callback-signature'];
 
@@ -25,19 +22,18 @@ export default async function handler(req, res) {
 
         if (incomingSignature !== generatedSignatureBase64 && incomingSignature !== generatedSignatureHex) {
              console.log("⚠️ Signature beda format spasi. Tetap dilanjutkan untuk mencegah gagal bayar...");
-             // KUNCI PERBAIKAN: JANGAN ADA return res.status(401) DI SINI BIAR GAK DIBLOKIR!
         }
     }
 
-    let orderId = callbackData.provider_ref || callbackData.ref_id || callbackData.order_id;
-
-    if (!orderId) {
+    // 🔥 KUNCI PERBAIKAN 1: PAKSA JADI STRING AGAR TIDAK CRASH SAAT DIPOTONG
+    let rawOrderId = callbackData.provider_ref || callbackData.ref_id || callbackData.order_id;
+    if (!rawOrderId) {
         return res.status(200).json({ success: false, message: 'ID Order tidak ditemukan' });
     }
+    
+    let orderId = String(rawOrderId);
 
-    // ==========================================
     // ✂️ POTONG BUNTUT TIMESTAMP DARI ID (KUNCI BAYAR ULANG)
-    // ==========================================
     const lastDashIndex = orderId.lastIndexOf('-');
     if (lastDashIndex !== -1) {
         const possibleTimestamp = orderId.substring(lastDashIndex + 1);
@@ -50,8 +46,8 @@ export default async function handler(req, res) {
     const statusXoftware = callbackData.status ? String(callbackData.status).toUpperCase() : '';
     const paymentStatus = callbackData.payment_status ? String(callbackData.payment_status).toUpperCase() : '';
 
-    // 🔥 CEK STATUS LUNAS
-    if (statusXoftware === 'SUCCESS' || statusXoftware === 'PAID' || statusXoftware === 'SETTLED' || paymentStatus === 'SUCCEEDED' || paymentStatus === 'SETTLED') {
+    // 🔥 KUNCI PERBAIKAN 2: JANGKAUAN STATUS LUNAS LEBIH LUAS
+    if (statusXoftware === 'SUCCESS' || statusXoftware === 'PAID' || statusXoftware === 'SETTLED' || paymentStatus === 'SUCCEEDED' || paymentStatus === 'SETTLED' || paymentStatus === 'SUCCESS') {
         console.log(`🔄 Memproses ID Lunas: ${orderId}`);
 
         let targetTable = 'orders';
