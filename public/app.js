@@ -1750,39 +1750,6 @@ function switchTab(tabId, event = null, isPush = true) {
     if (isPush && window.location.hash !== `#${tabId}`) history.pushState(null, null, `#${tabId}`);
 }
 
-targetSection.classList.add('active');
-
-if (tabId === 'sosial') {
-loadVideos();
-}
-
-if (tabId === 'toko') {
-    loadTokoSaya();
-}
-
-
-        // Solusi Warna Navigasi Cerdas (Anti-Nyangkut)
-        let activeNav = document.querySelector(`.nav-item[href="#${tabId}"]`);
-        
-        // Pengecualian khusus: Saat buka Pembayaran, nyalakan ikon Layanan
-        if (tabId === 'pembayaran') {
-            activeNav = document.querySelector(`.nav-item[href="#layanan"]`);
-        }
-
-        if (activeNav) {
-            activeNav.classList.add('active');
-            const icon = activeNav.querySelector('i');
-            if (icon) { 
-                void icon.offsetWidth; 
-                icon.style.animation = 'popBounce 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards'; 
-            }
-        }
-
-setTimeout(() => { window.scrollTo({ top: 0, behavior: 'auto' }); }, 10);
-if (isPush && window.location.hash !== `#${tabId}`) history.pushState(null, null, `#${tabId}`);
-}
-
-
 window.addEventListener('popstate', () => {
     let isPopupClosed = false;
 
