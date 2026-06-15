@@ -1707,10 +1707,12 @@ window.scrollTo({ top: 0, behavior: 'smooth' }); return;
 const targetSection = document.getElementById(tabId) || document.getElementById('home');
 if (!targetSection) return;
 
-localStorage.setItem('lastTab', tabId);
+// 🚨 PERBAIKAN: Jangan pernah simpan layar pembayaran/upload sebagai layar terakhir
+if (tabId !== 'pembayaran' && tabId !== 'upload') {
+    localStorage.setItem('lastTab', tabId);
+}
+
 document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-document.querySelectorAll('.nav-item').forEach(n => {
-n.classList.remove('active');
 const icon = n.querySelector('i');
 if (icon) icon.style.animation = 'none';
 });
@@ -7261,6 +7263,10 @@ document.addEventListener('DOMContentLoaded', () => {
   if (tabMurni === 'detailpasar') tabMurni = 'pasar';
   if (tabMurni === 'detail') tabMurni = 'layanan';
   if (tabMurni === 'invoice') tabMurni = 'pesanan';
+  
+  // 🚨 PERBAIKAN: Jika pas buka web malah nyasar ke loading pembayaran/upload, lempar ke pesanan/home
+  if (tabMurni === 'pembayaran') tabMurni = 'pesanan';
+  if (tabMurni === 'upload') tabMurni = 'home';
 
   switchTab(tabMurni, null, false);
 
@@ -8215,11 +8221,12 @@ async function checkoutXoftwarePay(namaProduk, harga, deskripsi, sellerId = null
     const wadahPembayaran = document.getElementById('qris-container');
     if (wadahPembayaran) {
         wadahPembayaran.innerHTML = `
-        <div class="text-center flex flex-col items-center animate-pulse w-full">
-            <div class="w-20 h-20 bg-brand-info/10 rounded-full flex items-center justify-center mb-4 border border-brand-info/30 shadow-[0_0_30px_rgba(70,179,255,0.3)]">
-                <i class="fas fa-qrcode text-brand-info text-4xl"></i>
+        <div class="text-center flex flex-col items-center w-full mt-6">
+            <div class="relative flex flex-col items-center mb-6">
+                <div class="absolute inset-0 bg-brand-accent opacity-30 animate-pulse rounded-full" style="filter: blur(30px);"></div>
+                <img src="https://nos.wjv-1.neo.id/au2hub/Picsart_26-05-30_04-29-46-305.webp" class="w-28 h-28 relative z-10 splash-logo-anim drop-shadow-[0_0_20px_rgba(0,240,255,0.5)]" alt="Loading">
             </div>
-            <p class="text-[10px] text-gray-400 font-extrabold tracking-widest uppercase mt-2">Menghubungkan ke Gateway...</p>
+            <p class="text-[10px] text-gray-400 font-extrabold tracking-widest uppercase mt-4 animate-pulse">Menghubungkan ke Gateway...</p>
         </div>`;
     }
 
@@ -8456,11 +8463,12 @@ async function prosesBayarUlang() {
     const wadahPembayaran = document.getElementById('qris-container');
     if (wadahPembayaran) {
         wadahPembayaran.innerHTML = `
-        <div class="text-center flex flex-col items-center animate-pulse w-full">
-            <div class="w-20 h-20 bg-brand-info/10 rounded-full flex items-center justify-center mb-4 border border-brand-info/30 shadow-[0_0_30px_rgba(70,179,255,0.3)]">
-                <i class="fas fa-qrcode text-brand-info text-4xl"></i>
+        <div class="text-center flex flex-col items-center w-full mt-6">
+            <div class="relative flex flex-col items-center mb-6">
+                <div class="absolute inset-0 bg-brand-accent opacity-30 animate-pulse rounded-full" style="filter: blur(30px);"></div>
+                <img src="https://nos.wjv-1.neo.id/au2hub/Picsart_26-05-30_04-29-46-305.webp" class="w-28 h-28 relative z-10 splash-logo-anim drop-shadow-[0_0_20px_rgba(0,240,255,0.5)]" alt="Loading">
             </div>
-            <p class="text-[10px] text-gray-400 font-extrabold tracking-widest uppercase mt-2">Menghubungkan ke Gateway...</p>
+            <p class="text-[10px] text-gray-400 font-extrabold tracking-widest uppercase mt-4 animate-pulse">Menghubungkan ke Gateway...</p>
         </div>`;
     }
 
