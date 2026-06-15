@@ -8197,7 +8197,7 @@ async function checkoutXoftwarePay(namaProduk, harga, deskripsi, sellerId = null
         const targetTabel = sellerId ? 'orders_player' : 'orders';
         let orderData;
 
-        // 2. CEGAH ERROR 404 (Gak ada lagi sistem Delete, kita pakai ID yang sudah ada)
+        // 2. CEGAH ERROR 404 (Kita pakai ID yang sudah ada)
         if (isBayarUlang) {
             // Update ID produknya agar bot Auto-Delivery gak buta
             await supabaseClient.from(targetTabel).update({ product_id: productId, status: 'PENDING' }).eq('id', activeOrderIdToPay);
@@ -8258,7 +8258,8 @@ async function checkoutXoftwarePay(namaProduk, harga, deskripsi, sellerId = null
                     <i class="fab fa-whatsapp text-lg mr-2"></i> Konfirmasi ke ${sapaan}
                 </a>
 
-                <button onclick="cekStatusManualXoftware('${orderData.id}', '${targetTabel}', this)" class="w-full bg-white/5 hover:bg-white/10 text-white py-3 mt-3 rounded-xl font-bold uppercase text-[11px] border border-white/20 active:scale-95 transition-all relative z-10">
+                <!-- 🔥 FIX: type="button" ditambahkan untuk mencegah Status 0 (Browser Request Cancelled) -->
+                <button type="button" onclick="cekStatusManualXoftware('${orderData.id}', '${targetTabel}', this)" class="w-full bg-white/5 hover:bg-white/10 text-white py-3 mt-3 rounded-xl font-bold uppercase text-[11px] border border-white/20 active:scale-95 transition-all relative z-10">
                     <i class="fas fa-sync-alt mr-2"></i> Saya Sudah Bayar
                 </button>
             `;
@@ -8266,6 +8267,7 @@ async function checkoutXoftwarePay(namaProduk, harga, deskripsi, sellerId = null
 
         showToast("Silakan scan QRIS untuk melanjutkan.", "success");
 
+        // 🔥 FIX: Variabel duplikat sudah dihapus
         let isLayarSuksesTampil = false;
         
         window.tampilkanLayarSuksesFinal = () => {
@@ -8287,13 +8289,10 @@ async function checkoutXoftwarePay(namaProduk, harga, deskripsi, sellerId = null
             let autoDeliveryContent = null;
             let isAutoItem = false;
 
-            // 🔥 PERBAIKAN 1: BUNGKUS DENGAN TRY-CATCH AGAR ERROR DATABASE TIDAK MEMBUAT LAYAR BLANK
             try {
                 if (!namaProduk.includes('[VIP]')) {
-                    // Panggil fungsi bot pengirim data
                     autoDeliveryContent = await prosesAutoDeliveryTertunda();
 
-                    // Pastikan productId aman dan bukan string 'undefined'
                     let targetProdId = productId || activeOrderProductId;
                     if (targetProdId && targetProdId !== 'null' && targetProdId !== 'undefined' && String(targetProdId).trim() !== '') {
                         const { data: prodInfo, error: errProd } = await supabaseClient.from('player_products').select('category').eq('id', targetProdId).single();
@@ -8308,7 +8307,6 @@ async function checkoutXoftwarePay(namaProduk, harga, deskripsi, sellerId = null
                 }
             } catch (err) {
                 console.warn("Pengecekan kategori auto-delivery dilewati. Menggunakan layar sukses standar.", err);
-                // Jika error (misal pesanan Joki / Admin), biarkan isAutoItem tetap false agar layar hijau muncul
             }
 
             if (wadahPembayaran) {
@@ -8316,7 +8314,6 @@ async function checkoutXoftwarePay(namaProduk, harga, deskripsi, sellerId = null
                 const teksWA_Sukses = encodeURIComponent(`Halo ${sapaan}, pesanan saya sudah BERHASIL DIBAYAR via QRIS Otomatis untuk:\n\n*${namaProduk}*\nID: ADT - ${orderData.id}\n\n(Mohon segera diproses ya)`);
 
                 if (isAutoItem && autoDeliveryContent && autoDeliveryContent !== "") { 
-                    // TAMPILAN AUTO-DELIVERY (KOTAK HITAM)
                     wadahPembayaran.innerHTML = `
                         <div class="flex flex-col items-center justify-center py-4 text-center modal-anim w-full relative z-10">
                             <div class="w-16 h-16 bg-brand-success/20 rounded-full flex items-center justify-center border border-brand-success/50 mb-4 shadow-[0_0_15px_rgba(37,211,102,0.5)]">
@@ -8329,18 +8326,17 @@ async function checkoutXoftwarePay(namaProduk, harga, deskripsi, sellerId = null
                                 <span class="absolute -top-2.5 left-4 bg-brand-info text-brand-dark text-[9px] font-extrabold px-2 py-0.5 rounded uppercase tracking-wider">DATA PESANAN</span>
                                 <pre class="text-white text-xs whitespace-pre-wrap break-all font-mono leading-relaxed mt-2 max-h-40 overflow-y-auto hide-scroll" style="font-family: monospace;">${autoDeliveryContent}</pre>
                                 
-                                <button onclick="navigator.clipboard.writeText(\`${autoDeliveryContent.replace(/`/g, '\\`')}\`); this.innerHTML='<i class=\\'fas fa-check\\'></i> Tersalin!'; setTimeout(()=>this.innerHTML='<i class=\\'fas fa-copy mr-1\\'></i> Salin Data', 2000);" class="mt-4 w-full bg-brand-info/10 text-brand-info border border-brand-info/30 py-2.5 rounded-lg text-[11px] font-bold active:scale-95 transition-all">
+                                <button type="button" onclick="navigator.clipboard.writeText(\`${autoDeliveryContent.replace(/`/g, '\\`')}\`); this.innerHTML='<i class=\\'fas fa-check\\'></i> Tersalin!'; setTimeout(()=>this.innerHTML='<i class=\\'fas fa-copy mr-1\\'></i> Salin Data', 2000);" class="mt-4 w-full bg-brand-info/10 text-brand-info border border-brand-info/30 py-2.5 rounded-lg text-[11px] font-bold active:scale-95 transition-all">
                                     <i class="fas fa-copy mr-1"></i> Salin Data
                                 </button>
                             </div>
 
                             <p class="text-[9px] text-gray-500 mb-4 italic">*Data ini juga otomatis tersimpan di fitur Chat (Inbox) Anda.</p>
                             
-                            <button onclick="tutupLayarSuksesDanRefresh()" class="w-full bg-white/5 text-white py-3.5 rounded-xl font-bold uppercase tracking-wider text-xs border border-white/10 hover:bg-white/10 active:scale-95 transition-all">Tutup Halaman</button>
+                            <button type="button" onclick="tutupLayarSuksesDanRefresh()" class="w-full bg-white/5 text-white py-3.5 rounded-xl font-bold uppercase tracking-wider text-xs border border-white/10 hover:bg-white/10 active:scale-95 transition-all">Tutup Halaman</button>
                         </div>
                     `;
                 } else {
-                    // TAMPILAN SUKSES BIASA (LAYAR HIJAU STANDAR)
                     wadahPembayaran.innerHTML = `
                         <div class="flex flex-col items-center justify-center py-4 text-center modal-anim w-full relative z-10">
                             <div class="relative w-28 h-28 mb-6 mt-4">
@@ -8356,7 +8352,7 @@ async function checkoutXoftwarePay(namaProduk, harga, deskripsi, sellerId = null
                                 <i class="fab fa-whatsapp text-lg mr-2"></i> Hubungi ${sapaan}
                             </a>
 
-                            <button onclick="tutupLayarSuksesDanRefresh()" class="w-full bg-white/5 text-white py-4 rounded-xl font-bold uppercase tracking-wider text-xs border border-white/10 hover:bg-white/10 active:scale-95 transition-all">Tutup Halaman</button>
+                            <button type="button" onclick="tutupLayarSuksesDanRefresh()" class="w-full bg-white/5 text-white py-4 rounded-xl font-bold uppercase tracking-wider text-xs border border-white/10 hover:bg-white/10 active:scale-95 transition-all">Tutup Halaman</button>
                         </div>
                     `;
                 }
@@ -8379,7 +8375,6 @@ async function checkoutXoftwarePay(namaProduk, harga, deskripsi, sellerId = null
                 setTimeout(() => { localStorage.removeItem('optimistic_vip'); fetchProfile(); }, 60000);
             }
         };
-
 
         activeChannelPembayaran = supabaseClient.channel(`tunggu-pembayaran-${orderData.id}`)
             .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: targetTabel, filter: `id=eq.${orderData.id}` }, (payload) => {
