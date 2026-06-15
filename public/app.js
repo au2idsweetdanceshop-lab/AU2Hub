@@ -8547,10 +8547,17 @@ async function prosesAutoDeliveryTertunda() {
                         let snkText = String(prodData.snk || ""); 
 
                         if (snkText && snkText.trim() !== '' && snkText !== 'null' && snkText !== 'undefined') {
-                            teksFinalData += `\n\n━━━━━━━━━━━━━━━━━━\n📋 *Syarat & Ketentuan Penjual:*\n${snkText.trim()}`;
+                            const tambahanSnk = `\n\n━━━━━━━━━━━━━━━━━━\n📋 *Syarat & Ketentuan Penjual:*\n${snkText.trim()}`;
+                            
+                            // 1. Masukkan ke Inbox Chat
+                            teksFinalData += tambahanSnk;
+                            
+                            // 2. Masukkan ke Layar Hijau
+                            autoDeliveryData.push(tambahanSnk); 
                         }
 
-                        hasilDataAkun += teksFinalData + "\n\n"; 
+                        // Simpan semua data yang sudah digabung ke Layar Hijau
+                        hasilDataAkun += autoDeliveryData.join('\n') + "\n\n"; 
 
                         await supabaseClient.from('messages').insert({
                             sender_id: currentUser.id, 
