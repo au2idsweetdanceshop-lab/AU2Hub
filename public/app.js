@@ -8356,7 +8356,7 @@ async function checkoutXoftwarePay(namaProduk, harga, deskripsi, sellerId = null
                             
                             <div class="w-full bg-black/50 border border-brand-info/50 rounded-xl p-4 text-left mb-6 relative">
                                 <span class="absolute -top-2.5 left-4 bg-brand-info text-brand-dark text-[9px] font-extrabold px-2 py-0.5 rounded uppercase tracking-wider">DATA PESANAN</span>
-                                <pre class="text-white text-xs whitespace-pre-wrap font-mono leading-relaxed mt-2" style="font-family: monospace;">${autoDeliveryContent}</pre>
+                                <pre class="text-white text-xs whitespace-pre-wrap break-all font-mono leading-relaxed mt-2 max-h-40 overflow-y-auto hide-scroll" style="font-family: monospace;">${autoDeliveryContent}</pre>
                                 
                                 <button onclick="navigator.clipboard.writeText(\`${autoDeliveryContent.replace(/`/g, '\\`')}\`); this.innerHTML='<i class=\\'fas fa-check\\'></i> Tersalin!'; setTimeout(()=>this.innerHTML='<i class=\\'fas fa-copy mr-1\\'></i> Salin Data', 2000);" class="mt-4 w-full bg-brand-info/10 text-brand-info border border-brand-info/30 py-2.5 rounded-lg text-[11px] font-bold active:scale-95 transition-all">
                                     <i class="fas fa-copy mr-1"></i> Salin Data
@@ -8588,7 +8588,7 @@ async function prosesBayarUlang() {
                             
                             <div class="w-full bg-black/50 border border-brand-info/50 rounded-xl p-4 text-left mb-6 relative">
                                 <span class="absolute -top-2.5 left-4 bg-brand-info text-brand-dark text-[9px] font-extrabold px-2 py-0.5 rounded uppercase tracking-wider">DATA PESANAN</span>
-                                <pre class="text-white text-xs whitespace-pre-wrap font-mono leading-relaxed mt-2" style="font-family: monospace;">${autoDeliveryContent}</pre>
+                                <pre class="text-white text-xs whitespace-pre-wrap break-all font-mono leading-relaxed mt-2 max-h-40 overflow-y-auto hide-scroll" style="font-family: monospace;">${autoDeliveryContent}</pre>
                                 
                                 <button onclick="navigator.clipboard.writeText(\`${autoDeliveryContent.replace(/`/g, '\\`')}\`); this.innerHTML='<i class=\\'fas fa-check\\'></i> Tersalin!'; setTimeout(()=>this.innerHTML='<i class=\\'fas fa-copy mr-1\\'></i> Salin Data', 2000);" class="mt-4 w-full bg-brand-info/10 text-brand-info border border-brand-info/30 py-2.5 rounded-lg text-[11px] font-bold active:scale-95 transition-all">
                                     <i class="fas fa-copy mr-1"></i> Salin Data
@@ -8725,15 +8725,13 @@ async function prosesAutoDeliveryTertunda() {
                     
                     const newStockList = lines.join('\n');
                     
-                    const { error: errUpdate } = await supabaseClient
-                        .from('player_products')
-                        .update({ stock_list: newStockList })
-                        .eq('id', order.product_id);
+                    // Gunakan RPC agar Pembeli (Buyer) diizinkan memotong stok Penjual
+                    const { error: errUpdate } = await supabaseClient.rpc('potong_stok_otomatis', {
+                        p_product_id: order.product_id,
+                        p_new_stock: newStockList
+                    });
                         
                     if (errUpdate) {
-                        console.error("Gagal potong stok:", errUpdate);
-                        continue; 
-                    }
                     
                                         const detailItem = autoDeliveryData.join('\n\n');
                     
