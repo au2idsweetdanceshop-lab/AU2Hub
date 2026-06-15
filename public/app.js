@@ -1695,7 +1695,6 @@ function switchTab(tabId, event = null, isPush = true) {
         return; // hentikan karena openUserProfile akan mengeksekusi switchTab secara mandiri
     }
 
-
     if (tabId !== 'profile' && tabId !== 'pembayaran' && tabId !== 'upload') {tabSebelumnya = tabId;}
     if (tabId === 'layanan' && isPush && document.getElementById('pembayaran').classList.contains('active')) {
         window.scrollTo({ top: 0, behavior: 'smooth' }); return;
@@ -1711,44 +1710,11 @@ function switchTab(tabId, event = null, isPush = true) {
 
     document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
     
-    // 👇 INI YANG TADI HILANG 👇
     document.querySelectorAll('.nav-item').forEach(n => {
         n.classList.remove('active');
         const icon = n.querySelector('i');
         if (icon) icon.style.animation = 'none';
     });
-    // 👆 -------------------- 👆
-
-    targetSection.classList.add('active');
-
-    if (tabId === 'sosial') {
-        loadVideos();
-    }
-
-    if (tabId === 'toko') {
-        loadTokoSaya();
-    }
-
-    // Solusi Warna Navigasi Cerdas (Anti-Nyangkut)
-    let activeNav = document.querySelector(`.nav-item[href="#${tabId}"]`);
-    
-    // Pengecualian khusus: Saat buka Pembayaran, nyalakan ikon Layanan
-    if (tabId === 'pembayaran') {
-        activeNav = document.querySelector(`.nav-item[href="#layanan"]`);
-    }
-
-    if (activeNav) {
-        activeNav.classList.add('active');
-        const icon = activeNav.querySelector('i');
-        if (icon) { 
-            void icon.offsetWidth; 
-            icon.style.animation = 'popBounce 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards'; 
-        }
-    }
-
-    setTimeout(() => { window.scrollTo({ top: 0, behavior: 'auto' }); }, 10);
-    if (isPush && window.location.hash !== `#${tabId}`) history.pushState(null, null, `#${tabId}`);
-}
 
 window.addEventListener('popstate', () => {
     let isPopupClosed = false;
@@ -8682,9 +8648,21 @@ async function prosesBayarUlang() {
     } catch (e) {
         showToast("Gagal memuat ulang QRIS. Silakan coba lagi.", "error");
         console.error(e);
-        history.back();
+        
+        // Tambahkan ini biar kalau error, layarnya nggak stuck di loading gateway
+        const wadahPembayaran = document.getElementById('qris-container');
+        if (wadahPembayaran) {
+            wadahPembayaran.innerHTML = `
+                <div class="flex flex-col items-center justify-center py-10 mt-10">
+                    <i class="fas fa-exclamation-triangle text-red-500 text-5xl mb-4"></i>
+                    <h3 class="text-white font-bold text-lg mb-2">Server Gangguan (502)</h3>
+                    <p class="text-gray-400 text-xs text-center mb-6">API Pembayaran tidak merespons. Coba beberapa saat lagi.</p>
+                    <button onclick="history.back()" class="bg-white/10 text-white px-6 py-2.5 rounded-xl text-xs font-bold border border-white/20 active:scale-95 transition-all">Kembali</button>
+                </div>
+            `;
+        }
     }
-}
+
 
 async function prosesAutoDeliveryTertunda() {
     if (!currentUser) return null;
