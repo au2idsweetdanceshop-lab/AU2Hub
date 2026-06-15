@@ -53,6 +53,7 @@ export default async function handler(req, res) {
         // 🛡️ FITUR KEAMANAN MUTLAK: VALIDASI HARGA ASLI (SOURCE OF TRUTH)
         // =================================================================
         if (isPasarPlayer && orderData.product_id) {
+            
             const { data: productMaster, error: errMaster } = await supabase
                 .from('player_products')
                 .select('*')
@@ -60,6 +61,7 @@ export default async function handler(req, res) {
                 .single();
 
             if (errMaster || !productMaster) {
+                console.error("DB Error (Master Product):", errMaster);
                 return res.status(400).json({ success: false, message: 'Produk asli tidak ditemukan.' });
             }
 
@@ -105,6 +107,7 @@ export default async function handler(req, res) {
             const calculatedUnitPrice = hargaTanpaRekber / qty;
 
             if (!validUnitPrices.includes(calculatedUnitPrice)) {
+                console.error(`[HACK ATTEMPT!] Harga Tanpa Rekber: ${hargaTanpaRekber} | QTY: ${qty} | Harga Asli DB: ${validUnitPrices.join(', ')}`);
                 await supabase.from('orders_player').delete().eq('id', order_id);
                 return res.status(400).json({ success: false, message: 'Terdeteksi manipulasi harga! Transaksi digagalkan.' });
             }
@@ -121,22 +124,14 @@ export default async function handler(req, res) {
         const safeProductId = orderData.product_id ? String(orderData.product_id).slice(0, 20) : "SKU-001";
         const finalCustomerName = (customer_name && customer_name.trim() !== "") ? customer_name : "Player AU2Hub";
 
-        // 🔥 PERBAIKAN 1: Bikin ref_id unik agar Xoftware tidak menolak pesanan yang diulang
-        const uniqueRefId = `${order_id}-${Math.floor(Date.now() / 1000)}`;
-
-        // 🔥 PERBAIKAN 2: AMBIL HOST ASLI SECARA DINAMIS AGAR WEBHOOK TIDAK DIBLOKIR 308 REDIRECT
-        const protocol = req.headers['x-forwarded-proto'] || 'https';
-        const host = req.headers.host || 'www.au2idsweetdance.com';
-        const webhookUrl = `${protocol}://${host}/api/webhook`;
-
-        // SUSUN PAYLOAD KE XOFTWARE
+        // 🔥 KEMBALIKAN KE PENGATURAN ASLI ANDA AGAR WEBHOOK XOFTWARE TIDAK DITOLAK
         const payload = {
             merchant_id: 129, 
             channel_code: "QRISREALTIME", 
             amount: finalVerifiedPrice, 
-            ref_id: uniqueRefId, 
+            ref_id: orderData.id, // <--- KEMBALI MURNI TANPA TIMESTAMP
             fee_direction: "merchant", 
-            notify_url: webhookUrl, // <--- KUNCI PENYELAMAT! Mencegah Gateway Terputus
+            notify_url: "https://au2idsweetdance.com/api/webhook", // <--- KEMBALI HARDCODE SEPERTI ASLINYA
             note: `Pembayaran: ${product_name || 'AU2Hub Order'}`, 
             
             metadata: {
@@ -201,7 +196,7 @@ export default async function handler(req, res) {
             console.error("Xoftware API Error Detailed:", dataXoftware);
             return res.status(400).json({ 
                 success: false, 
-                message: dataXoftware.message || dataXoftware.error || 'Provider Gateway menolak (Tagihan mungkin terduplikat).' 
+                message: dataXoftware.message || dataXoftware.error || 'Provider Gateway menolak pesanan ini.' 
             });
         }
 
