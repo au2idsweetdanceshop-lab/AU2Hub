@@ -9349,7 +9349,8 @@ async function prosesPostingJualan() {
     const kategori = document.getElementById('jualan-kategori').value;
     const deskripsi = document.getElementById('jualan-deskripsi').value.trim();
     
-    // [BARU] Ambil isi data stok dari textbox
+    // [BARU] Ambil isi data stok dan snk
+    const stockList = document.getElementById('jualan-stock').value.trim(); // <--- INI BARIS YANG HILANG TADI
     const snkInput = document.getElementById('jualan-snk') ? document.getElementById('jualan-snk').value.trim() : null;
     
     const btn = document.getElementById('btn-submit-jualan');
@@ -10817,7 +10818,8 @@ async function prosesEditProduk() {
     const kategori = document.getElementById('edit-produk-kategori').value;
     const deskripsi = document.getElementById('edit-produk-deskripsi').value.trim();
     
-    // [BARU] Ambil data stok hasil editan
+    // [BARU] Ambil data stok dan snk
+    const stockList = document.getElementById('edit-produk-stock').value.trim(); // <--- INI BARIS YANG HILANG TADI
     const snkInput = document.getElementById('edit-produk-snk') ? document.getElementById('edit-produk-snk').value.trim() : null;
     
     const btn = document.getElementById('btn-submit-edit-produk');
