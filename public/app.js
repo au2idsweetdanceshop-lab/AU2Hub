@@ -8228,7 +8228,6 @@ async function checkoutXoftwarePay(namaProduk, harga, deskripsi, sellerId = null
         // 4. RENDER UI APPLE PAY STYLE
         const teksWA = encodeURIComponent(`Halo ${sapaan}, pesanan saya sudah masuk via QRIS Otomatis untuk:\n\n*${namaProduk}*\nID: ADT - ${orderData.id}\n\n(Berikut screenshot bukti transfernya)`);
 
-        // 🔥 INI BAGIAN YANG KEMARIN TERHAPUS OLEHMU 🔥
         if (wadahPembayaran) {
             wadahPembayaran.innerHTML = `
                 <div class="absolute top-0 inset-x-0 h-32 bg-gradient-to-b from-brand-info/10 to-transparent pointer-events-none z-0"></div>
@@ -8275,11 +8274,9 @@ async function checkoutXoftwarePay(namaProduk, harga, deskripsi, sellerId = null
 
         showToast("Silakan scan QRIS untuk melanjutkan.", "success");
 
-        // 🔥 GEMBOK ANTI-DOBEL: Mencegah layar sukses dipanggil 2x oleh sistem
         let isLayarSuksesTampil = false;
 
         const tampilkanLayarSukses = async () => {
-            // Jika layar sukses sudah pernah dipanggil, hentikan!
             if (isLayarSuksesTampil) return;
             isLayarSuksesTampil = true;
 
@@ -8386,9 +8383,13 @@ async function checkoutXoftwarePay(namaProduk, harga, deskripsi, sellerId = null
                 }
             }).subscribe();
 
+        // ========================================================
+        // 🔥 THE MAGIC FIX: Tambah _t=Date.now() Anti-Cache PWA!
+        // ========================================================
         intervalJemputBola = setInterval(async () => {
             try {
-                const res = await fetch(`/api/check-status?order_id=${orderData.id}&table=${targetTabel}`);
+                // Sengaja dikasih URL dinamis agar Service Worker HP menyerah dan meneruskannya ke Vercel!
+                const res = await fetch(`/api/check-status?order_id=${orderData.id}&table=${targetTabel}&_t=${Date.now()}`);
                 const responseData = await res.json();
                 
                 const apiStatus = String(responseData.status || responseData.data?.status || responseData.payment_status || '').toUpperCase();
@@ -8412,6 +8413,7 @@ async function checkoutXoftwarePay(namaProduk, harga, deskripsi, sellerId = null
         }, 3000); 
     }
 }
+
 
 async function prosesBayarUlang() {
     if (!activeOrderIdToPay) return;
@@ -11289,7 +11291,8 @@ async function cekStatusManualXoftware(orderId, tableName, btnElement) {
     btnElement.disabled = true;
 
     try {
-        const res = await fetch(`/api/check-status?order_id=${orderId}&table=${tableName}`);
+        // 🔥 THE MAGIC FIX: Anti Cache PWA!
+        const res = await fetch(`/api/check-status?order_id=${orderId}&table=${tableName}&_t=${Date.now()}`);
         const data = await res.json();
 
         const apiStatus = String(data.status || data.data?.status || data.payment_status || '').toUpperCase();
@@ -11308,6 +11311,7 @@ async function cekStatusManualXoftware(orderId, tableName, btnElement) {
         btnElement.disabled = false;
     }
 }
+
 
 // ==========================================
 // UPDATE: LOGIKA TAMBAHAN UNTUK UI SELLER CENTER BARU
