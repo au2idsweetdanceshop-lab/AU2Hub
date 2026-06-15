@@ -67,9 +67,12 @@ export default async function handler(req, res) {
 
             let validUnitPrices = [];
             let baseHarga = parseInt(productMaster.price);
-            if (productMaster.fee_ditanggung_pembeli === true) {
+            
+            // 🔥 PERBAIKAN 1: Pengecekan dilonggarkan agar tidak tertipu string "true"
+            if (productMaster.fee_ditanggung_pembeli === true || String(productMaster.fee_ditanggung_pembeli) === "true") {
                 baseHarga += hitungPotonganSeller(baseHarga);
             }
+            
             let hargaCustomerUtama = Math.floor(baseHarga + (baseHarga * 0.007) + 500);
             validUnitPrices.push(hargaCustomerUtama);
 
@@ -78,9 +81,12 @@ export default async function handler(req, res) {
                 rawVariasi.forEach(v => {
                     if (typeof v === 'object' && v !== null) {
                         let hargaVarAsli = parseFloat(v.harga || v.price || 0);
-                        if (productMaster.fee_ditanggung_pembeli === true) {
+                        
+                        // 🔥 PERBAIKAN 1: Pengecekan dilonggarkan
+                        if (productMaster.fee_ditanggung_pembeli === true || String(productMaster.fee_ditanggung_pembeli) === "true") {
                             hargaVarAsli += hitungPotonganSeller(hargaVarAsli);
                         }
+                        
                         let hargaVarMarkup = Math.floor(hargaVarAsli + (hargaVarAsli * 0.007) + 500);
                         validUnitPrices.push(hargaVarMarkup);
                     }
@@ -89,13 +95,16 @@ export default async function handler(req, res) {
 
             let qty = 1;
             const namaProduk = orderData.product_name || "";
-            const qtyMatch = namaProduk.match(/\(x(\d+)\)$/);
+            
+            // 🔥 PERBAIKAN 2: Hapus tanda "$" di akhir agar sistem tetap bisa membaca (x2) meskipun ada tulisan [+Rekber] di depannya
+            const qtyMatch = namaProduk.match(/\(x(\d+)\)/);
             if (qtyMatch) {
                 qty = parseInt(qtyMatch[1]);
             }
 
             let hargaTanpaRekber = finalVerifiedPrice;
 
+            // Potong uang Rekber sebelum dicocokkan dengan harga database
             if (namaProduk && namaProduk.includes('[+Rekber]')) {
                 if (hargaTanpaRekber >= 2035000) hargaTanpaRekber -= 35000;
                 else if (hargaTanpaRekber >= 1525000) hargaTanpaRekber -= 25000;
@@ -104,6 +113,7 @@ export default async function handler(req, res) {
                 else hargaTanpaRekber -= 5000;
             }
 
+            // Hitung harga satuan murni (Harga Total yang udah dipotong Rekber / Jumlah Barang)
             const calculatedUnitPrice = hargaTanpaRekber / qty;
 
             if (!validUnitPrices.includes(calculatedUnitPrice)) {
