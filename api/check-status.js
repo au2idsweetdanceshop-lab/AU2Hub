@@ -2,11 +2,19 @@ import { createClient } from '@supabase/supabase-js';
 
 // Gunakan Service Role Key agar punya akses 'Dewa' menembus RLS
 const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL,
     process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
 export default async function handler(req, res) {
+    // =================================================================
+    // 🔥 WAJIB: MATIKAN CACHE VERCEL & BROWSER (ANTI GET 304)
+    // Agar setiap polling benar-benar mengambil data terbaru dari database
+    // =================================================================
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+
     // Endpoint ini hanya bertugas melayani method GET dari aplikasi frontend 
     // (Interval jemput bola & tombol "Saya Sudah Bayar")
     if (req.method !== 'GET') {
