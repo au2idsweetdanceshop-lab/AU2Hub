@@ -8693,6 +8693,7 @@ async function prosesAutoDeliveryTertunda() {
         for (let order of pendingOrders) {
             if (!order.product_id) continue;
 
+            // Tarik data stok dan S&K dari produk
             const { data: prodData } = await supabaseClient
                 .from('player_products')
                 .select('stock_list, category, user_id, snk')
@@ -8731,14 +8732,16 @@ async function prosesAutoDeliveryTertunda() {
                         p_new_stock: newStockList
                     });
                         
-                    // 🚨 PERBAIKAN 1: Tambah tanda seru (!). Harusnya kirim barang jika TIDAK error (!errUpdate)
+                    // Eksekusi jika berhasil memotong stok tanpa error
                     if (!errUpdate) { 
                         const detailItem = autoDeliveryData.join('\n\n');
                     
-                        // 🔥 LOGIKA S&K MUNCUL 1 KALI SAJA DI PALING BAWAH
+                        // 🔥 LOGIKA S&K DIPERKUAT (ANTI-NULL/UNDEFINED)
                         let teksFinalData = detailItem;
-                        if (prodData.snk && prodData.snk.trim() !== '') {
-                            teksFinalData += `\n\n━━━━━━━━━━━━━━━━━━\n📋 *Syarat & Ketentuan Penjual:*\n${prodData.snk.trim()}`;
+                        let snkText = String(prodData.snk || ""); // Konversi paksa ke string agar aman
+
+                        if (snkText && snkText.trim() !== '' && snkText !== 'null' && snkText !== 'undefined') {
+                            teksFinalData += `\n\n━━━━━━━━━━━━━━━━━━\n📋 *Syarat & Ketentuan Penjual:*\n${snkText.trim()}`;
                         }
 
                         hasilDataAkun += teksFinalData + "\n\n"; 
@@ -8748,17 +8751,17 @@ async function prosesAutoDeliveryTertunda() {
                             receiver_id: order.seller_id,
                             message: `[SISTEM] Transaksi Selesai! Sistem telah mengirimkan data otomatis ke pembeli untuk pesanan: *${order.product_name}*\n\n${teksFinalData}`
                         });
-                    } // <--- 🚨 PERBAIKAN 2: Kurung tutup ini sebelumnya hilang!
+                    }
 
                 } else {
-                    // TAMBAHAN BARU: Peringatan ke Seller jika stok otomatis kurang/habis
+                    // Peringatan ke Seller jika stok otomatis kurang/habis
                     await supabaseClient.from('messages').insert({
                         sender_id: currentUser.id,
                         receiver_id: order.seller_id,
                         message: `[SISTEM] Pembeli telah membayar pesanan *${order.product_name}*, namun sisa stok otomatis di etalase tidak mencukupi untuk dikirim.\n\nHarap segera hubungi pembeli dan proses pengiriman barang secara MANUAL.`
                     });
                 }
-            } // <--- 🚨 PERBAIKAN 3: Kurung tutup ini juga sebelumnya hilang!
+            } 
 
             const finalStatus = (autoDeliveryData.length > 0) ? 'selesai' : 'proses';
             
@@ -8775,6 +8778,7 @@ async function prosesAutoDeliveryTertunda() {
     
     return hasilDataAkun.trim(); 
 }
+
 
 // FUNCTIONS UNTUK KONTROL ANIMASI BUKA TUTUP LACI MENU
 function openAssistiveMenu() {
