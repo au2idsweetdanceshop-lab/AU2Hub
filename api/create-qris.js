@@ -1,7 +1,7 @@
 import crypto from 'crypto';
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.SUPABASE_URL; 
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL; 
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY; 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
@@ -53,7 +53,6 @@ export default async function handler(req, res) {
         // 🛡️ FITUR KEAMANAN MUTLAK: VALIDASI HARGA ASLI (SOURCE OF TRUTH)
         // =================================================================
         if (isPasarPlayer && orderData.product_id) {
-            
             const { data: productMaster, error: errMaster } = await supabase
                 .from('player_products')
                 .select('*')
@@ -61,7 +60,6 @@ export default async function handler(req, res) {
                 .single();
 
             if (errMaster || !productMaster) {
-                console.error("DB Error (Master Product):", errMaster);
                 return res.status(400).json({ success: false, message: 'Produk asli tidak ditemukan.' });
             }
 
@@ -107,7 +105,6 @@ export default async function handler(req, res) {
             const calculatedUnitPrice = hargaTanpaRekber / qty;
 
             if (!validUnitPrices.includes(calculatedUnitPrice)) {
-                console.error(`[HACK ATTEMPT!] Harga Tanpa Rekber: ${hargaTanpaRekber} | QTY: ${qty} | Harga Asli DB: ${validUnitPrices.join(', ')}`);
                 await supabase.from('orders_player').delete().eq('id', order_id);
                 return res.status(400).json({ success: false, message: 'Terdeteksi manipulasi harga! Transaksi digagalkan.' });
             }
@@ -124,17 +121,22 @@ export default async function handler(req, res) {
         const safeProductId = orderData.product_id ? String(orderData.product_id).slice(0, 20) : "SKU-001";
         const finalCustomerName = (customer_name && customer_name.trim() !== "") ? customer_name : "Player AU2Hub";
 
-        // 🔥 PERBAIKAN: Bikin ref_id unik agar Xoftware tidak menolak pesanan yang diulang
+        // 🔥 PERBAIKAN 1: Bikin ref_id unik agar Xoftware tidak menolak pesanan yang diulang
         const uniqueRefId = `${order_id}-${Math.floor(Date.now() / 1000)}`;
+
+        // 🔥 PERBAIKAN 2: AMBIL HOST ASLI SECARA DINAMIS AGAR WEBHOOK TIDAK DIBLOKIR 308 REDIRECT
+        const protocol = req.headers['x-forwarded-proto'] || 'https';
+        const host = req.headers.host || 'www.au2idsweetdance.com';
+        const webhookUrl = `${protocol}://${host}/api/webhook`;
 
         // SUSUN PAYLOAD KE XOFTWARE
         const payload = {
             merchant_id: 129, 
             channel_code: "QRISREALTIME", 
             amount: finalVerifiedPrice, 
-            ref_id: uniqueRefId, // <--- Sudah Menggunakan ID Unik
+            ref_id: uniqueRefId, 
             fee_direction: "merchant", 
-            notify_url: "https://au2idsweetdance.com/api/webhook", 
+            notify_url: webhookUrl, // <--- KUNCI PENYELAMAT! Mencegah Gateway Terputus
             note: `Pembayaran: ${product_name || 'AU2Hub Order'}`, 
             
             metadata: {
@@ -178,7 +180,6 @@ export default async function handler(req, res) {
             body: payloadString
         });
 
-        // 🔥 PERBAIKAN: Tangkap respon secara aman tanpa memicu crash (502)
         const textResponse = await response.text();
         let dataXoftware;
         
@@ -198,7 +199,6 @@ export default async function handler(req, res) {
             });
         } else {
             console.error("Xoftware API Error Detailed:", dataXoftware);
-            // 🔥 PERBAIKAN: Ubah status dari 502 menjadi 400 agar Frontend memunculkan Toast, bukan HTML Error
             return res.status(400).json({ 
                 success: false, 
                 message: dataXoftware.message || dataXoftware.error || 'Provider Gateway menolak (Tagihan mungkin terduplikat).' 
