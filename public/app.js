@@ -8267,6 +8267,11 @@ async function checkoutXoftwarePay(namaProduk, harga, deskripsi, sellerId = null
         showToast("Silakan scan QRIS untuk melanjutkan.", "success");
 
         let isLayarSuksesTampil = false;
+        let isLayarSuksesTampil = false;
+        
+        window.tampilkanLayarSuksesFinal = () => {
+            if (!isLayarSuksesTampil) tampilkanLayarSukses();
+        };
 
         const tampilkanLayarSukses = async () => {
             if (isLayarSuksesTampil) return;
@@ -8470,7 +8475,7 @@ async function prosesAutoDeliveryTertunda() {
     if (!currentUser) return null;
     let hasilDataAkun = ""; 
 
-    try { // 🔥 BUNGKUS SEMUANYA AGAR TIDAK CRASH JIKA ADA 1 PESANAN ERROR
+    try {
         // Cari pesanan yang sukses dibayar
         const { data: pendingOrders } = await supabaseClient
             .from('orders_player')
@@ -8503,8 +8508,7 @@ async function prosesAutoDeliveryTertunda() {
                     .eq('id', activeProductId)
                     .single();
 
-                // Lewati jika produk sudah dihapus seller
-                if (prodErr || !prodData) continue; 
+                if (prodErr || !prodData) continue; // Abaikan jika produk sudah dihapus seller
 
                 const isAutoItem = prodData && (prodData.category === 'Akun' || prodData.category === 'Item' || prodData.category === 'APK Premium');
 
@@ -8532,14 +8536,18 @@ async function prosesAutoDeliveryTertunda() {
                         
                         const newStockList = lines.join('\n');
                         
-                        // 🔥 PERBAIKAN 2: BYPASS RLS. Coba update via RPC, kalau ditolak, update normal. 
-                        // APAPUN HASILNYA, BERIKAN DATA AKUN KE PEMBELI KARENA DIA SUDAH BAYAR!
-                        try {
-                            await supabaseClient.rpc('potong_stok_otomatis', { p_product_id: activeProductId, p_new_stock: newStockList });
-                        } catch (e) {
+                        // 🔥 KUNCI PERBAIKAN: Jika update stok ditolak database, TETAP berikan datanya ke pembeli!
+                        const { error: errUpdate } = await supabaseClient.rpc('potong_stok_otomatis', {
+                            p_product_id: activeProductId,
+                            p_new_stock: newStockList
+                        });
+                            
+                        if (errUpdate) {
+                            console.warn("Update stok via RPC ditolak, mencoba jalur biasa...");
                             await supabaseClient.from('player_products').update({ stock_list: newStockList }).eq('id', activeProductId);
                         }
-                            
+
+                        // ---> BERIKAN DATANYA KE PEMBELI <---
                         const detailItem = autoDeliveryData.join('\n\n');
                         let teksFinalData = detailItem;
                         let snkText = String(prodData.snk || ""); 
@@ -8577,13 +8585,12 @@ async function prosesAutoDeliveryTertunda() {
                 }
             }
         }
-    } catch (fatalErr) {
-        console.error("Auto delivery logic crash:", fatalErr);
+    } catch (e) {
+        console.error("Auto delivery crash dicancel aman:", e);
     }
     
     return hasilDataAkun.trim(); 
 }
-
 
 // FUNCTIONS UNTUK KONTROL ANIMASI BUKA TUTUP LACI MENU
 function openAssistiveMenu() {
@@ -11308,7 +11315,6 @@ async function cekStatusManualXoftware(orderId, tableName, btnElement) {
     btnElement.disabled = true;
 
     try {
-        // 🔥 THE MAGIC FIX: Anti Cache PWA!
         const res = await fetch(`/api/check-status?order_id=${orderId}&table=${tableName}&_t=${Date.now()}`);
         const data = await res.json();
 
@@ -11316,7 +11322,11 @@ async function cekStatusManualXoftware(orderId, tableName, btnElement) {
         
         if (apiStatus === 'SUCCESS' || apiStatus === 'SUCCEEDED' || apiStatus === 'PAID' || apiStatus === 'SELESAI' || apiStatus === 'PROSES') {
             showToast("Pembayaran berhasil dikonfirmasi!", "success");
-            // Biarkan Supabase Realtime / setInterval 10 detik yang memicu layar hijaunya
+            
+            // 🔥 PAKSA MUNCULKAN LAYAR SUKSES SEKARANG JUGA!
+            if (window.tampilkanLayarSuksesFinal) {
+                window.tampilkanLayarSuksesFinal();
+            }
         } else {
             showToast("Pembayaran belum terdeteksi. Tunggu sebentar lalu coba lagi.", "info");
             btnElement.innerHTML = originalText;
@@ -11328,7 +11338,6 @@ async function cekStatusManualXoftware(orderId, tableName, btnElement) {
         btnElement.disabled = false;
     }
 }
-
 
 // ==========================================
 // UPDATE: LOGIKA TAMBAHAN UNTUK UI SELLER CENTER BARU
