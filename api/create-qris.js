@@ -124,12 +124,15 @@ export default async function handler(req, res) {
         const safeProductId = orderData.product_id ? String(orderData.product_id).slice(0, 20) : "SKU-001";
         const finalCustomerName = (customer_name && customer_name.trim() !== "") ? customer_name : "Player AU2Hub";
 
+        // 🔥 PERBAIKAN: Bikin ref_id unik agar Xoftware tidak menolak pesanan yang diulang
+        const uniqueRefId = `${order_id}-${Math.floor(Date.now() / 1000)}`;
+
         // SUSUN PAYLOAD KE XOFTWARE
         const payload = {
             merchant_id: 129, 
             channel_code: "QRISREALTIME", 
             amount: finalVerifiedPrice, 
-            ref_id: order_id, 
+            ref_id: uniqueRefId, // <--- Sudah Menggunakan ID Unik
             fee_direction: "merchant", 
             notify_url: "https://au2idsweetdance.com/api/webhook", 
             note: `Pembayaran: ${product_name || 'AU2Hub Order'}`, 
