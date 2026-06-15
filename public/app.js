@@ -1730,8 +1730,11 @@ function switchTab(tabId, event = null, isPush = true) {
     if (targetNav) {
         targetNav.classList.add('active');
     }
-}
 
+    if (tabId === 'toko') {
+        if (typeof loadTokoSaya === 'function') loadTokoSaya();
+    }
+  }
 
 window.addEventListener('popstate', () => {
     let isPopupClosed = false;
