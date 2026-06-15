@@ -131,7 +131,7 @@ export default async function handler(req, res) {
             amount: finalVerifiedPrice, 
             ref_id: orderData.id, // <--- KEMBALI MURNI TANPA TIMESTAMP
             fee_direction: "merchant", 
-            notify_url: "https://au2idsweetdance.com/api/webhook", // <--- KEMBALI HARDCODE SEPERTI ASLINYA
+            notify_url: "https://www.au2idsweetdance.com/api/webhook", // <--- KEMBALI HARDCODE SEPERTI ASLINYA
             note: `Pembayaran: ${product_name || 'AU2Hub Order'}`, 
             
             metadata: {
