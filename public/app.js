@@ -8426,6 +8426,10 @@ async function checkoutXoftwarePay(namaProduk, harga, deskripsi, sellerId = null
 async function prosesBayarUlang() {
     if (!activeOrderIdToPay) return;
     
+    // Tambahkan konfirmasi agar aman dari salah klik
+    const konfirmasi = await customConfirm(`Buat ulang tagihan QRIS untuk:\n\n${activeOrderNameToPay}?`);
+    if (!konfirmasi) return;
+
     closeDetailPesanan(); 
     closeRiwayatPesanan(); 
     
@@ -8439,21 +8443,43 @@ async function prosesBayarUlang() {
                 <div class="absolute inset-0 bg-brand-accent opacity-30 animate-pulse rounded-full" style="filter: blur(30px);"></div>
                 <img src="https://nos.wjv-1.neo.id/au2hub/Picsart_26-05-30_04-29-46-305.webp" class="w-28 h-28 relative z-10 splash-logo-anim drop-shadow-[0_0_20px_rgba(0,240,255,0.5)]" alt="Loading">
             </div>
-            <p class="text-[10px] text-gray-400 font-extrabold tracking-widest uppercase mt-4 animate-pulse">Menghubungkan ke Gateway...</p>
+            <p class="text-[10px] text-gray-400 font-extrabold tracking-widest uppercase mt-4 animate-pulse">Memperbarui Tagihan Baru...</p>
         </div>`;
     }
 
     try {
-        // 🔥 KITA LANGSUNG PANGGIL CREATE-QRIS DENGAN ID LAMA!
-        // Xoftware tidak akan menolak karena di backend (create-qris.js) 
-        // ID ini sudah otomatis ditambahkan timestamp agar dianggap unik.
+        // 🔥 1. HAPUS TAGIHAN LAMA YANG NYANGKUT/EXPIRED DI DATABASE
+        await supabaseClient.from(activeOrderTable).delete().eq('id', activeOrderIdToPay);
+
+        // 🔥 2. BUAT BARIS DATABASE BARU AGAR MENDAPAT ID YANG 100% FRESH
+        const dataInsert = { 
+            user_id: currentUser.id, 
+            product_name: activeOrderNameToPay, 
+            price: activeOrderPriceToPay, 
+            status: 'PENDING', 
+            product_id: activeOrderProductId 
+        };
+        if (activeOrderSellerId) dataInsert.seller_id = activeOrderSellerId;
+
+        const { data: orderData, error: orderError } = await supabaseClient
+            .from(activeOrderTable)
+            .insert(dataInsert)
+            .select()
+            .single();
+            
+        if (orderError) throw orderError;
+
+        // 🔥 3. UPDATE VARIABEL GLOBAL DENGAN ID YANG BARU!
+        activeOrderIdToPay = orderData.id;
+
+        // 4. MINTA QRIS BARU KE XOFTWARE DENGAN ID YANG BARU
         const responsePG = await fetch('/api/create-qris', { 
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                order_id: activeOrderIdToPay,       // <-- Pake ID Database yang Asli
-                amount: activeOrderPriceToPay,      // <-- Harga Asli
-                product_name: activeOrderNameToPay, // <-- Nama Produk Asli
+                order_id: activeOrderIdToPay,       // <-- Sekarang 100% Sinkron
+                amount: activeOrderPriceToPay,      
+                product_name: activeOrderNameToPay, 
                 customer_name: userProfile?.nickname || 'Player'
             })
         });
@@ -8522,7 +8548,6 @@ async function prosesBayarUlang() {
 
         showToast("Silakan scan QRIS untuk melanjutkan.", "success");
 
-        // 🔥 GEMBOK ANTI-DOBEL: Mencegah layar sukses dipanggil 2x oleh sistem
         let isLayarSuksesTampil = false;
 
         const tampilkanLayarSukses = async () => {
@@ -8654,7 +8679,7 @@ async function prosesBayarUlang() {
 
     } catch (e) {
         showToast("Gagal memuat ulang QRIS. Silakan coba lagi.", "error");
-        console.error(e);
+        console.error("Detail Error:", e);
         
         const wadahPembayaran = document.getElementById('qris-container');
         if (wadahPembayaran) {
@@ -8669,6 +8694,7 @@ async function prosesBayarUlang() {
         }
     }
 }
+
 
 async function prosesAutoDeliveryTertunda() {
     if (!currentUser) return null;
