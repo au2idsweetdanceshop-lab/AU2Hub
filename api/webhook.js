@@ -9,31 +9,23 @@ const supabase = createClient(
 export default async function handler(req, res) {
     if (req.method !== 'POST') return res.status(405).send('Method Not Allowed');
 
-    const callbackData = req.body;
-    console.log("📥 WEBHOOK MASUK:", JSON.stringify(callbackData));
+    const payload = req.body;
+    console.log("📥 WEBHOOK MASUK FULL PAYLOAD:", JSON.stringify(payload));
 
-    const apiKey = process.env.XOFTWARE_API_KEY;
-    const incomingSignature = req.headers['x-signature'] || req.headers['x-callback-signature'];
+    // 1. Gali objek data (Payment Gateway sering menyembunyikan data di dalam "data")
+    const dataCore = payload.data || payload;
 
-    if (incomingSignature) {
-        const payloadString = JSON.stringify(callbackData);
-        const generatedSignatureBase64 = crypto.createHmac('sha256', apiKey).update(payloadString, 'utf8').digest('base64');
-        const generatedSignatureHex = crypto.createHmac('sha256', apiKey).update(payloadString, 'utf8').digest('hex');
-
-        if (incomingSignature !== generatedSignatureBase64 && incomingSignature !== generatedSignatureHex) {
-             console.log("⚠️ Signature beda format spasi. Tetap dilanjutkan untuk mencegah gagal bayar...");
-        }
-    }
-
-    // 🔥 KUNCI PERBAIKAN 1: PAKSA JADI STRING AGAR TIDAK CRASH SAAT DIPOTONG
-    let rawOrderId = callbackData.provider_ref || callbackData.ref_id || callbackData.order_id;
+    // 2. Tangkap ID secara barbar dari segala kemungkinan
+    let rawOrderId = dataCore.provider_ref || dataCore.ref_id || dataCore.order_id || payload.ref_id || payload.order_id;
+    
     if (!rawOrderId) {
+        console.log("❌ Gagal: Tidak ada ID Order di dalam Webhook.");
         return res.status(200).json({ success: false, message: 'ID Order tidak ditemukan' });
     }
-    
+
     let orderId = String(rawOrderId);
 
-    // ✂️ POTONG BUNTUT TIMESTAMP DARI ID (KUNCI BAYAR ULANG)
+    // 3. Potong Timestamp unik yang kita buat di create-qris.js
     const lastDashIndex = orderId.lastIndexOf('-');
     if (lastDashIndex !== -1) {
         const possibleTimestamp = orderId.substring(lastDashIndex + 1);
@@ -43,27 +35,39 @@ export default async function handler(req, res) {
         }
     }
 
-    const statusXoftware = callbackData.status ? String(callbackData.status).toUpperCase() : '';
-    const paymentStatus = callbackData.payment_status ? String(callbackData.payment_status).toUpperCase() : '';
+    // 4. Tangkap Status dari segala jenis format yang mungkin dikirim Xoftware
+    const statusXoftware = dataCore.status ? String(dataCore.status).toUpperCase() : '';
+    const paymentStatus = dataCore.payment_status ? String(dataCore.payment_status).toUpperCase() : '';
+    const statusTrans = dataCore.transaction_status ? String(dataCore.transaction_status).toUpperCase() : '';
 
-    // 🔥 KUNCI PERBAIKAN 2: JANGKAUAN STATUS LUNAS LEBIH LUAS
-    if (statusXoftware === 'SUCCESS' || statusXoftware === 'PAID' || statusXoftware === 'SETTLED' || paymentStatus === 'SUCCEEDED' || paymentStatus === 'SETTLED' || paymentStatus === 'SUCCESS') {
+    console.log(`🔍 Memeriksa Status: status=${statusXoftware}, payment=${paymentStatus}, trans=${statusTrans}`);
+
+    // 5. Eksekusi Lunas (Jangkauan lebih luas)
+    if (
+        statusXoftware === 'SUCCESS' || statusXoftware === 'PAID' || statusXoftware === 'SETTLED' || 
+        paymentStatus === 'SUCCEEDED' || paymentStatus === 'SETTLED' || paymentStatus === 'SUCCESS' ||
+        statusTrans === 'SUCCESS' || statusTrans === 'SETTLED'
+    ) {
         console.log(`🔄 Memproses ID Lunas: ${orderId}`);
 
         let targetTable = 'orders';
         let { data: orderAdmin } = await supabase.from('orders').select('*').eq('id', orderId).single();
 
+        let orderData = orderAdmin;
+
         if (!orderAdmin) {
             let { data: orderPlayer } = await supabase.from('orders_player').select('*').eq('id', orderId).single();
             if (orderPlayer) {
                 targetTable = 'orders_player';
+                orderData = orderPlayer;
             } else {
-                return res.status(200).json({ success: false, message: 'Order tidak ditemukan' });
+                console.log(`❌ Gagal: Order ID ${orderId} tidak ditemukan di database.`);
+                return res.status(200).json({ success: false, message: 'Order tidak ditemukan di DB' });
             }
         }
 
-        const productName = orderAdmin?.product_name || orderPlayer?.product_name || '';
-        const userId = orderAdmin?.user_id || orderPlayer?.user_id;
+        const productName = orderData.product_name || '';
+        const userId = orderData.user_id;
 
         // LOGIKA VIP SELLER
         if (productName.includes('[VIP]')) {
@@ -83,15 +87,17 @@ export default async function handler(req, res) {
             
             let updatePayload = { status: 'selesai' };
             if (targetTable === 'orders_player') updatePayload.waktu_selesai = new Date().toISOString();
+            
             await supabase.from(targetTable).update(updatePayload).eq('id', orderId);
         } else {
-            // ORDER BIASA DIUBAH KE SUCCESS AGAR DITANGKAP OLEH FRONTEND
+            // ORDER BIASA & AUTO-DELIVERY DIUBAH KE SUCCESS
             await supabase.from(targetTable).update({ status: 'SUCCESS' }).eq('id', orderId);
         }
         
-        console.log(`✅ BERHASIL UPDATE STATUS KE SUCCESS!`);
-        return res.status(200).json({ success: true, message: 'Callback processed' });
+        console.log(`✅ BERHASIL UPDATE STATUS DB KE SUCCESS!`);
+        return res.status(200).json({ success: true, message: 'Callback processed successfully' });
     }
 
+    console.log(`⚠️ Status belum lunas / diabaikan.`);
     return res.status(200).json({ success: true, message: 'Ignored status' });
 }
