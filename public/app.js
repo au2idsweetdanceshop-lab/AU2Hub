@@ -8695,7 +8695,7 @@ async function prosesAutoDeliveryTertunda() {
 
             const { data: prodData } = await supabaseClient
                 .from('player_products')
-                .select('stock_list, category, user_id')
+                .select('stock_list, category, user_id, snk')
                 .eq('id', order.product_id)
                 .single();
 
@@ -8735,14 +8735,21 @@ async function prosesAutoDeliveryTertunda() {
                         continue; 
                     }
                     
-                    const detailItem = autoDeliveryData.join('\n\n');
-                    hasilDataAkun += detailItem + "\n\n"; 
+                                        const detailItem = autoDeliveryData.join('\n\n');
+                    
+                    // 🔥 LOGIKA S&K MUNCUL 1 KALI SAJA DI PALING BAWAH
+                    let teksFinalData = detailItem;
+                    if (prodData.snk && prodData.snk.trim() !== '') {
+                        teksFinalData += `\n\n━━━━━━━━━━━━━━━━━━\n📋 *Syarat & Ketentuan Penjual:*\n${prodData.snk.trim()}`;
+                    }
+
+                    hasilDataAkun += teksFinalData + "\n\n"; 
 
                     await supabaseClient.from('messages').insert({
-    sender_id: currentUser.id, 
-    receiver_id: order.seller_id,
-    message: `[SISTEM] Transaksi Selesai! Sistem telah mengirimkan data otomatis ke pembeli untuk pesanan: *${order.product_name}*\n\n${detailItem}`
-});
+                        sender_id: currentUser.id, 
+                        receiver_id: order.seller_id,
+                        message: `[SISTEM] Transaksi Selesai! Sistem telah mengirimkan data otomatis ke pembeli untuk pesanan: *${order.product_name}*\n\n${teksFinalData}`
+                    });
                 } else {
     // TAMBAHAN BARU: Peringatan ke Seller jika stok otomatis kurang/habis
     await supabaseClient.from('messages').insert({
@@ -9343,7 +9350,7 @@ async function prosesPostingJualan() {
     const deskripsi = document.getElementById('jualan-deskripsi').value.trim();
     
     // [BARU] Ambil isi data stok dari textbox
-    const stockList = document.getElementById('jualan-stock').value.trim();
+    const snkInput = document.getElementById('jualan-snk') ? document.getElementById('jualan-snk').value.trim() : null;
     
     const btn = document.getElementById('btn-submit-jualan');
 
@@ -9385,6 +9392,7 @@ const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent(pathLe
             description: deskripsi, 
             image_url: finalImageUrl,
             stock_list: (kategori === 'Akun' || kategori === 'Item' || kategori === 'APK Premium') ? stockList : null,
+            snk: (kategori === 'Akun' || kategori === 'Item' || kategori === 'APK Premium') ? snkInput : null,
             fee_ditanggung_pembeli: isFeePembeli
         });
 
@@ -9550,11 +9558,10 @@ function bukaDetailPasar(idProduk) {
     const isAutoItem = produk.category === 'Akun' || produk.category === 'Item' || produk.category === 'APK Premium';
     const sisaStok = isAutoItem && produk.stock_list ? produk.stock_list.split(/\r?\n/).filter(s=>s.trim() !== '').length : 0;
     
-    // Keamanan Pintar: Sembunyikan Input Jumlah jika produk pengiriman otomatis
+    // Tampilkan terus Input Jumlah agar buyer bisa beli lebih dari 1
     const wadahQty = document.getElementById('pasar-qty-container');
     if (wadahQty) {
-        if (isAutoItem) wadahQty.classList.replace('flex', 'hidden');
-        else wadahQty.classList.replace('hidden', 'flex');
+        wadahQty.classList.replace('hidden', 'flex');
     }
 
     // Harga Markup Customer (+ 500 + 0.7%)
@@ -9657,6 +9664,11 @@ function bukaDetailPasar(idProduk) {
     // Tombol Beli Dinamis (Dengan Qty, Variasi, & Ekstra Rekber)
     const btnBeli = document.getElementById('btn-beli-pasar');
     btnBeli.onclick = () => {
+        // 🔥 TAMBAHAN: Cegah buyer checkout kalau jumlah yang dibeli melebihi stok!
+        if (isAutoItem && currentPasarQty > sisaStok) {
+            return showToast(`Stok tidak mencukupi! Sisa stok otomatis hanya ${sisaStok}.`, "error");
+        }
+
         let namaProdukFinal = produk.title;
         if (currentPasarVariation !== "") namaProdukFinal += ` - ${currentPasarVariation}`;
         if (currentPasarQty > 1) namaProdukFinal += ` (x${currentPasarQty})`;
@@ -10665,7 +10677,9 @@ async function bukaModalEditProduk(idProduk) {
         setFeeBearer(isPembeli ? 'pembeli' : 'seller', 'edit');
         
         // 🔥 SINKRONISASI VISUAL KATEGORI BARU
-        document.getElementById('edit-produk-stock').value = data.stock_list || '';
+        if (document.getElementById('edit-produk-snk')) {
+            document.getElementById('edit-produk-snk').value = data.snk || ''; 
+        }
         ubahKategoriVisual(data.category, 'edit');
         
         editFileArray = [];
@@ -10804,7 +10818,7 @@ async function prosesEditProduk() {
     const deskripsi = document.getElementById('edit-produk-deskripsi').value.trim();
     
     // [BARU] Ambil data stok hasil editan
-    const stockList = document.getElementById('edit-produk-stock').value.trim();
+    const snkInput = document.getElementById('edit-produk-snk') ? document.getElementById('edit-produk-snk').value.trim() : null;
     
     const btn = document.getElementById('btn-submit-edit-produk');
 
@@ -10847,6 +10861,7 @@ async function prosesEditProduk() {
                 description: deskripsi, 
                 image_url: finalImageUrl,
                 stock_list: (kategori === 'Akun' || kategori === 'Item' || kategori === 'APK Premium') ? stockList : null,
+                snk: (kategori === 'Akun' || kategori === 'Item' || kategori === 'APK Premium') ? snkInput : null,
                 fee_ditanggung_pembeli: isFeePembeli,
                 user_id: currentUser.id 
             })
