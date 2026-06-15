@@ -8433,8 +8433,36 @@ async function prosesBayarUlang() {
     const konfirmasi = await customConfirm(`Buat ulang tagihan QRIS untuk:\n\n${activeOrderNameToPay}?`);
     if (!konfirmasi) return;
 
-    closeDetailPesanan(); 
-    closeRiwayatPesanan(); 
+    // 🚨 KUNCI PERBAIKAN MUTLAK (THE BUG FIX) 🚨
+    // Sembunyikan Laci Pesanan secara FISIK dan INSTAN.
+    // JANGAN pakai fungsi closeDetailPesanan() karena memicu animasi 300ms dan history.back()
+    // yang akan mengacaukan / membunuh interval polling kita dari belakang!
+    const modalInvoice = document.getElementById('modal-detail-pesanan');
+    if (modalInvoice) {
+        modalInvoice.classList.add('hidden');
+        modalInvoice.classList.remove('flex');
+        modalInvoice.style.opacity = '1';
+    }
+    
+    const modalRiwayat = document.getElementById('modal-riwayat-pesanan');
+    if (modalRiwayat) {
+        modalRiwayat.classList.add('hidden');
+        modalRiwayat.classList.remove('flex');
+        modalRiwayat.style.opacity = '1';
+    }
+
+    // Hentikan radar lama jika masih nyangkut
+    if (intervalJemputBola) {
+        clearInterval(intervalJemputBola);
+        intervalJemputBola = null;
+    }
+    if (activeChannelPembayaran) {
+        supabaseClient.removeChannel(activeChannelPembayaran);
+        activeChannelPembayaran = null;
+    }
+
+    // Set URL diam-diam ke layar pembayaran agar tombol back HP aman
+    history.replaceState(null, null, '#pembayaran');
     
     switchTab('pembayaran');
     
@@ -8678,6 +8706,7 @@ async function prosesBayarUlang() {
             } catch (e) {}
         }, 10000);
 
+        // Radar akan diam-diam mengecek hingga 10 menit
         setTimeout(() => clearInterval(intervalJemputBola), 600000);
 
     } catch (e) {
@@ -8697,6 +8726,7 @@ async function prosesBayarUlang() {
         }
     }
 }
+
 
 
 async function prosesAutoDeliveryTertunda() {
