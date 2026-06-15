@@ -7973,8 +7973,10 @@ function bukaDetailPesananDinamis(orderId, productName, price, status, tableSour
     activeOrderPriceToPay = price;
     activeOrderNameToPay = productName;
     activeOrderTable = tableSource; 
-    activeOrderSellerId = sellerId || null; 
-    activeOrderProductId = productId || null; 
+    
+    // 🔥 PERBAIKAN SANGAT PENTING: Bersihkan string 'null' atau kosong yang merusak bot
+    activeOrderSellerId = (sellerId && sellerId !== 'null' && sellerId !== 'undefined' && String(sellerId).trim() !== '') ? sellerId : null; 
+    activeOrderProductId = (productId && productId !== 'null' && productId !== 'undefined' && String(productId).trim() !== '') ? productId : null; 
 
     const modal = document.getElementById('modal-detail-pesanan');
     
@@ -7987,28 +7989,23 @@ function bukaDetailPesananDinamis(orderId, productName, price, status, tableSour
     const actionDiproses = document.getElementById('action-diproses');
     const pesanStatusLain = document.getElementById('pesan-status-lain');
 
-    // === 1. KONTROL ANIMASI TRACKER TIMELINE (DIRESET DULU) ===
     const trackLine = document.getElementById('track-line');
     const dot2 = document.getElementById('step-2-dot');
     const text2 = document.getElementById('step-2-text');
     const dot3 = document.getElementById('step-3-dot');
     const text3 = document.getElementById('step-3-text');
 
-    // Matikan transisi sementara biar reset-nya instan tanpa efek aneh
     trackLine.style.transition = 'none';
     trackLine.style.width = '0%';
     
-    // Reset Dot 2 (Balikin angkanya!)
     dot2.className = 'w-7 h-7 rounded-full bg-white/20 border-[3px] border-[#121319] flex items-center justify-center text-gray-400 font-bold text-[10px] transition-colors duration-500';
     dot2.innerHTML = '2'; 
     text2.className = 'text-[9px] font-bold text-gray-500 tracking-widest uppercase transition-colors';
     
-    // Reset Dot 3 (Balikin angkanya!)
     dot3.className = 'w-7 h-7 rounded-full bg-white/20 border-[3px] border-[#121319] flex items-center justify-center text-gray-400 font-bold text-[10px] transition-colors duration-500';
     dot3.innerHTML = '3';
     text3.className = 'text-[9px] font-bold text-gray-500 tracking-widest uppercase transition-colors';
 
-    // Set Teks & Tombol sesuai Status
     if (status === 'PENDING') {
         statusBadge.innerText = 'BELUM BAYAR';
         statusBadge.className = 'bg-red-500/20 text-red-500 border-red-500/50';
@@ -8031,18 +8028,11 @@ function bukaDetailPesananDinamis(orderId, productName, price, status, tableSour
         pesanStatusLain.innerText = 'Pesanan ini telah lunas dan selesai. Terima kasih!';
     }
 
-    // === 2. TAMPILKAN MODAL KE LAYAR (BUKA GEMBOK DISPLAY: NONE) ===
     modal.classList.replace('hidden', 'flex');
     
-    // Pastikan laci naik mulus dari bawah
-    setTimeout(() => {
-        modal.classList.remove('translate-y-full');
-    }, 10);
+    setTimeout(() => { modal.classList.remove('translate-y-full'); }, 10);
 
-    // === 3. JALANKAN ANIMASI TRACKER (SETELAH BROWSER SELESAI RENDER) ===
-    // Delay 150ms ini sangat krusial biar browser "napas" ngerender DOM sebelum animasi ditarik
     setTimeout(() => {
-        // Nyalakan lagi transisinya
         trackLine.style.transition = 'all 0.7s ease-in-out';
 
         if (status === 'proses') {
@@ -8056,7 +8046,6 @@ function bukaDetailPesananDinamis(orderId, productName, price, status, tableSour
             dot2.innerHTML = '<i class="fas fa-check text-[10px] font-bold"></i>';
             text2.className = 'text-[9px] font-bold text-white tracking-widest uppercase transition-colors';
             
-            // Titik 3 nyala belakangan biar dramatis
             setTimeout(() => {
                 dot3.className = 'w-7 h-7 rounded-full bg-brand-info border-[3px] border-[#121319] flex items-center justify-center text-brand-dark shadow-[0_0_10px_rgba(70,179,255,0.5)]';
                 dot3.innerHTML = '<i class="fas fa-check text-[10px] font-bold"></i>';
@@ -8067,8 +8056,6 @@ function bukaDetailPesananDinamis(orderId, productName, price, status, tableSour
     
     history.pushState({ popup: 'detail_pesanan' }, null, '#invoice');
 }
-
-
 
 // 🔥 FUNGSI MENUTUP MODAL INVOICE (DIPERBARUI DENGAN BACK DETECTION)
 function closeDetailPesanan(dariTombolBackHP = false) {
@@ -8429,305 +8416,53 @@ async function checkoutXoftwarePay(namaProduk, harga, deskripsi, sellerId = null
 async function prosesBayarUlang() {
     if (!activeOrderIdToPay) return;
     
-    // Tambahkan konfirmasi agar aman dari salah klik
-    const konfirmasi = await customConfirm(`Buat ulang tagihan QRIS untuk:\n\n${activeOrderNameToPay}?`);
+    const konfirmasi = await customConfirm(`Lanjutkan pembayaran untuk:\n\n${activeOrderNameToPay}?`);
     if (!konfirmasi) return;
 
-    // 🚨 KUNCI PERBAIKAN MUTLAK (THE BUG FIX) 🚨
-    // Sembunyikan Laci Pesanan secara FISIK dan INSTAN.
-    // JANGAN pakai fungsi closeDetailPesanan() karena memicu animasi 300ms dan history.back()
-    // yang akan mengacaukan / membunuh interval polling kita dari belakang!
-    const modalInvoice = document.getElementById('modal-detail-pesanan');
-    if (modalInvoice) {
-        modalInvoice.classList.add('hidden');
-        modalInvoice.classList.remove('flex');
-        modalInvoice.style.opacity = '1';
-    }
-    
-    const modalRiwayat = document.getElementById('modal-riwayat-pesanan');
-    if (modalRiwayat) {
-        modalRiwayat.classList.add('hidden');
-        modalRiwayat.classList.remove('flex');
-        modalRiwayat.style.opacity = '1';
-    }
-
-    // Hentikan radar lama jika masih nyangkut
-    if (intervalJemputBola) {
-        clearInterval(intervalJemputBola);
-        intervalJemputBola = null;
-    }
-    if (activeChannelPembayaran) {
-        supabaseClient.removeChannel(activeChannelPembayaran);
-        activeChannelPembayaran = null;
-    }
-
-    // Set URL diam-diam ke layar pembayaran agar tombol back HP aman
-    history.replaceState(null, null, '#pembayaran');
-    
-    switchTab('pembayaran');
-    
-    const wadahPembayaran = document.getElementById('qris-container');
-    if (wadahPembayaran) {
-        wadahPembayaran.innerHTML = `
-        <div class="text-center flex flex-col items-center w-full mt-6">
-            <div class="relative flex flex-col items-center mb-6">
-                <div class="absolute inset-0 bg-brand-accent opacity-30 animate-pulse rounded-full" style="filter: blur(30px);"></div>
-                <img src="https://nos.wjv-1.neo.id/au2hub/Picsart_26-05-30_04-29-46-305.webp" class="w-28 h-28 relative z-10 splash-logo-anim drop-shadow-[0_0_20px_rgba(0,240,255,0.5)]" alt="Loading">
-            </div>
-            <p class="text-[10px] text-gray-400 font-extrabold tracking-widest uppercase mt-4 animate-pulse">Memperbarui Tagihan Baru...</p>
-        </div>`;
-    }
+    showToast("Memperbarui tagihan...", "info");
 
     try {
-        // 🔥 1. HAPUS TAGIHAN LAMA YANG NYANGKUT/EXPIRED DI DATABASE
+        // 1. HAPUS TAGIHAN LAMA (Agar tidak double di database dan memicu ID baru)
         await supabaseClient.from(activeOrderTable).delete().eq('id', activeOrderIdToPay);
 
-        // 🔥 2. BUAT BARIS DATABASE BARU AGAR MENDAPAT ID YANG 100% FRESH
-        const dataInsert = { 
-            user_id: currentUser.id, 
-            product_name: activeOrderNameToPay, 
-            price: activeOrderPriceToPay, 
-            status: 'PENDING', 
-            product_id: activeOrderProductId 
-        };
-        if (activeOrderSellerId) dataInsert.seller_id = activeOrderSellerId;
-
-        const { data: orderData, error: orderError } = await supabaseClient
-            .from(activeOrderTable)
-            .insert(dataInsert)
-            .select()
-            .single();
-            
-        if (orderError) throw orderError;
-
-        // 🔥 3. UPDATE VARIABEL GLOBAL DENGAN ID YANG BARU!
-        activeOrderIdToPay = orderData.id;
-
-        // 4. MINTA QRIS BARU KE XOFTWARE DENGAN ID YANG BARU
-        const responsePG = await fetch('/api/create-qris', { 
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                order_id: activeOrderIdToPay,       // <-- Sekarang 100% Sinkron
-                amount: activeOrderPriceToPay,      
-                product_name: activeOrderNameToPay, 
-                customer_name: userProfile?.nickname || 'Player'
-            })
-        });
-
-        const dataPG = await responsePG.json();
-        if (!dataPG.success) throw new Error(dataPG.message || "Gagal mengambil QRIS");
-
-        const qrImgUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(dataPG.qris_string)}`;
-        
-        let noWA = "6283815584661"; 
-        let sapaan = "Admin";
-        
-        if (activeOrderSellerId && !activeOrderNameToPay.includes('[+Rekber]')) {
-            const { data: pSeller } = await supabaseClient.from('profiles').select('whatsapp').eq('id', activeOrderSellerId).single();
-            if (pSeller && pSeller.whatsapp) {
-                noWA = pSeller.whatsapp;
-                sapaan = "Penjual";
-            }
+        // 2. TUTUP LACI INVOICE & RIWAYAT FISIK SECARA PAKSA (Anti-bug animasi history.back)
+        const modalInvoice = document.getElementById('modal-detail-pesanan');
+        if (modalInvoice) {
+            modalInvoice.classList.add('hidden');
+            modalInvoice.classList.remove('flex');
+        }
+        const modalRiwayat = document.getElementById('modal-riwayat-pesanan');
+        if (modalRiwayat) {
+            modalRiwayat.classList.add('hidden');
+            modalRiwayat.classList.remove('flex');
         }
 
-        const teksWA = encodeURIComponent(`Halo ${sapaan}, pesanan saya sudah masuk via QRIS Otomatis untuk:\n\n*${activeOrderNameToPay}*\nID: ADT - ${activeOrderIdToPay}\n\n(Berikut screenshot bukti transfernya)`);
-
-        if (wadahPembayaran) {
-            wadahPembayaran.innerHTML = `
-                <div class="absolute top-0 inset-x-0 h-32 bg-gradient-to-b from-brand-info/10 to-transparent pointer-events-none z-0"></div>
-                
-                <div class="text-[9px] font-extrabold text-white bg-white/10 px-3 py-1 rounded-full border border-white/20 uppercase tracking-widest mb-6 relative z-10 backdrop-blur-sm">XOFTWARE PAY</div>
-                
-                <div class="text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-1 relative z-10">Total Tagihan</div>
-                <div class="flex items-center justify-center gap-3 mb-6 relative z-10 w-full px-6">
-                    <div id="pay-total" class="text-4xl font-black text-white tracking-tighter drop-shadow-md truncate">Rp ${activeOrderPriceToPay.toLocaleString('id-ID')}</div>
-                    <button onclick="salinNominal()" id="btn-salin" class="bg-brand-info/20 text-brand-info w-8 h-8 rounded-full flex items-center justify-center active:scale-90 transition-all shrink-0">
-                        <i class="fas fa-copy text-xs"></i>
-                    </button>
-                    <input type="hidden" id="nominal-asli" value="${activeOrderPriceToPay}">
-                </div>
-                
-                <div class="bg-white p-4 rounded-[1.5rem] mb-6 shadow-[0_0_40px_rgba(255,255,255,0.15)] relative z-10 group overflow-hidden">
-                    <img id="qris-image-target" src="${qrImgUrl}" alt="QRIS" class="w-48 h-48 object-cover rounded-xl relative z-10">
-                    <div class="absolute inset-0 bg-black/70 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-sm cursor-pointer z-20">
-                        <i class="fas fa-camera text-white text-3xl mb-2 drop-shadow-md"></i>
-                        <span class="text-white text-[10px] font-extrabold tracking-widest uppercase">Screenshot QR</span>
-                    </div>
-                </div>
-                
-                <div class="w-full bg-black/40 border border-white/10 rounded-2xl p-4 mb-6 relative z-10 text-left">
-                    <div class="flex justify-between items-start text-xs mb-2">
-                        <span class="text-gray-400 shrink-0">Pesanan</span>
-                        <span class="text-white font-bold text-right pl-4 line-clamp-2">${activeOrderNameToPay}</span>
-                    </div>
-                    <div class="flex justify-between items-center text-xs border-t border-white/5 pt-2">
-                        <span class="text-gray-400">Admin Rekber</span>
-                        <span class="text-brand-success font-bold flex items-center gap-1"><i class="fas fa-shield-check"></i> NIKKY (Aman)</span>
-                    </div>
-                </div>
-                
-                <a id="wa-confirm" href="https://wa.me/${noWA}?text=${teksWA}" target="_blank" class="w-full bg-[#25D366] hover:bg-[#20bd5a] text-white py-4 rounded-xl font-extrabold uppercase text-xs shadow-[0_10px_20px_rgba(37,211,102,0.3)] flex justify-center items-center active:scale-95 transition-all relative z-10 tracking-wider">
-                    <i class="fab fa-whatsapp text-lg mr-2"></i> Konfirmasi ke ${sapaan}
-                </a>
-
-                <button onclick="cekStatusManualXoftware('${activeOrderIdToPay}', '${activeOrderTable}', this)" class="w-full bg-white/5 hover:bg-white/10 text-white py-3 mt-3 rounded-xl font-bold uppercase text-[11px] border border-white/20 active:scale-95 transition-all relative z-10">
-                    <i class="fas fa-sync-alt mr-2"></i> Saya Sudah Bayar
-                </button>
-            `;
+        // Hentikan radar pencarian lama jika ada yang nyangkut
+        if (intervalJemputBola) {
+            clearInterval(intervalJemputBola);
+            intervalJemputBola = null;
+        }
+        if (activeChannelPembayaran) {
+            supabaseClient.removeChannel(activeChannelPembayaran);
+            activeChannelPembayaran = null;
         }
 
-        showToast("Silakan scan QRIS untuk melanjutkan.", "success");
+        // 🔥 3. KUNCI UTAMANYA DI SINI 🔥
+        // Daripada nulis ulang kode QRIS panjang-panjang, kita langsung panggil
+        // fungsi "checkoutXoftwarePay" yang sudah TERBUKTI sukses menampilkan data auto-delivery!
+        checkoutXoftwarePay(
+            activeOrderNameToPay, 
+            activeOrderPriceToPay, 
+            "Melanjutkan pembayaran tertunda.", 
+            activeOrderSellerId, 
+            activeOrderProductId
+        );
 
-        let isLayarSuksesTampil = false;
-
-        const tampilkanLayarSukses = async () => {
-            if (isLayarSuksesTampil) return;
-            isLayarSuksesTampil = true;
-
-            if (wadahPembayaran) {
-                wadahPembayaran.innerHTML = `
-                    <div class="flex flex-col items-center justify-center py-20 mt-10">
-                        <i class="fas fa-spinner fa-spin text-brand-success text-5xl mb-4"></i>
-                        <p class="text-white font-bold animate-pulse tracking-wide">Mengambil Data Akun...</p>
-                    </div>`;
-            }
-
-            let autoDeliveryContent = null;
-            let isAutoItem = false;
-
-            if (!activeOrderNameToPay.includes('[VIP]')) {
-                autoDeliveryContent = await prosesAutoDeliveryTertunda();
-
-                if (activeOrderProductId) {
-                    const { data: prodInfo } = await supabaseClient.from('player_products').select('category').eq('id', activeOrderProductId).single();
-                    if (prodInfo) {
-                        const kat = (prodInfo.category || '').toLowerCase(); 
-                        if (kat === 'akun' || kat === 'item' || kat === 'apk premium') {
-                            isAutoItem = true;
-                        }
-                    }
-                }
-            }
-
-            if (wadahPembayaran) {
-                const noWA_Sukses = noWA; 
-                const teksWA_Sukses = encodeURIComponent(`Halo ${sapaan}, pesanan saya sudah BERHASIL DIBAYAR via QRIS Otomatis untuk:\n\n*${activeOrderNameToPay}*\nID: ADT - ${activeOrderIdToPay}\n\n(Mohon segera diproses ya)`);
-
-                if (isAutoItem && autoDeliveryContent && autoDeliveryContent !== "") { 
-                    wadahPembayaran.innerHTML = `
-                        <div class="flex flex-col items-center justify-center py-4 text-center modal-anim w-full relative z-10">
-                            <div class="w-16 h-16 bg-brand-success/20 rounded-full flex items-center justify-center border border-brand-success/50 mb-4 shadow-[0_0_15px_rgba(37,211,102,0.5)]">
-                                <i class="fas fa-check text-3xl text-brand-success"></i>
-                            </div>
-                            <h2 class="text-2xl font-black text-white mb-1 tracking-tight">Pesanan Berhasil!</h2>
-                            <p class="text-gray-400 text-[11px] mb-4">Ini adalah detail data pesanan otomatis Anda:</p>
-                            
-                            <div class="w-full bg-black/50 border border-brand-info/50 rounded-xl p-4 text-left mb-6 relative">
-                                <span class="absolute -top-2.5 left-4 bg-brand-info text-brand-dark text-[9px] font-extrabold px-2 py-0.5 rounded uppercase tracking-wider">DATA PESANAN</span>
-                                <pre class="text-white text-xs whitespace-pre-wrap break-all font-mono leading-relaxed mt-2 max-h-40 overflow-y-auto hide-scroll" style="font-family: monospace;">${autoDeliveryContent}</pre>
-                                
-                                <button onclick="navigator.clipboard.writeText(\`${autoDeliveryContent.replace(/`/g, '\\`')}\`); this.innerHTML='<i class=\\'fas fa-check\\'></i> Tersalin!'; setTimeout(()=>this.innerHTML='<i class=\\'fas fa-copy mr-1\\'></i> Salin Data', 2000);" class="mt-4 w-full bg-brand-info/10 text-brand-info border border-brand-info/30 py-2.5 rounded-lg text-[11px] font-bold active:scale-95 transition-all">
-                                    <i class="fas fa-copy mr-1"></i> Salin Data
-                                </button>
-                            </div>
-
-                            <p class="text-[9px] text-gray-500 mb-4 italic">*Data ini juga otomatis tersimpan di fitur Chat (Inbox) Anda.</p>
-                            
-                            <button onclick="tutupLayarSuksesDanRefresh()" class="w-full bg-white/5 text-white py-3.5 rounded-xl font-bold uppercase tracking-wider text-xs border border-white/10 hover:bg-white/10 active:scale-95 transition-all">Tutup Halaman</button>
-                        </div>
-                    `;
-                } else {
-                    wadahPembayaran.innerHTML = `
-                        <div class="flex flex-col items-center justify-center py-4 text-center modal-anim w-full relative z-10">
-                            <div class="relative w-28 h-28 mb-6 mt-4">
-                                <div class="absolute inset-0 bg-brand-success rounded-full animate-ping opacity-20"></div>
-                                <div class="w-full h-full bg-brand-success/20 rounded-full flex items-center justify-center border border-brand-success/50 backdrop-blur-md">
-                                    <i class="fas fa-check text-5xl text-brand-success drop-shadow-[0_0_15px_rgba(37,211,102,0.8)]"></i>
-                                </div>
-                            </div>
-                            <h2 class="text-3xl font-black text-white mb-2 tracking-tight">Sukses!</h2>
-                            <p class="text-gray-400 text-xs mb-8 leading-relaxed px-4">Pembayaran senilai <b class="text-white">Rp ${activeOrderPriceToPay.toLocaleString('id-ID')}</b> telah diterima sistem.</p>
-                            
-                            <a href="https://wa.me/${noWA_Sukses}?text=${teksWA_Sukses}" target="_blank" class="w-full mb-3 bg-[#25D366] hover:bg-[#20bd5a] text-white py-4 rounded-xl font-extrabold uppercase tracking-wider text-xs shadow-[0_10px_20px_rgba(37,211,102,0.3)] flex justify-center items-center active:scale-95 transition-all">
-                                <i class="fab fa-whatsapp text-lg mr-2"></i> Hubungi ${sapaan}
-                            </a>
-
-                            <button onclick="tutupLayarSuksesDanRefresh()" class="w-full bg-white/5 text-white py-4 rounded-xl font-bold uppercase tracking-wider text-xs border border-white/10 hover:bg-white/10 active:scale-95 transition-all">Tutup Halaman</button>
-                        </div>
-                    `;
-                }
-            }
-            
-            if (activeOrderNameToPay.includes('[VIP]')) {
-                let durasiSementara = 30;
-                if (activeOrderNameToPay.includes('1 Tahun')) durasiSementara = 365;
-                else if (activeOrderNameToPay.match(/(\d+)\s+Bulan/i)) durasiSementara = parseInt(activeOrderNameToPay.match(/(\d+)\s+Bulan/i)[1]) * 30;
-                else if (activeOrderNameToPay.match(/(\d+)\s+Hari/i)) durasiSementara = parseInt(activeOrderNameToPay.match(/(\d+)\s+Hari/i)[1]);
-                
-                localStorage.setItem('optimistic_vip', `${currentUser.id}_${durasiSementara}`);
-                const btnTutup = wadahPembayaran.querySelector('button[onclick="tutupLayarSuksesDanRefresh()"]');
-                if (btnTutup) {
-                    btnTutup.onclick = () => {
-                        history.back(); 
-                        setTimeout(() => { switchTab('toko'); loadTokoSaya(); }, 300);
-                    };
-                }
-                setTimeout(() => { localStorage.removeItem('optimistic_vip'); fetchProfile(); }, 60000);
-            }
-        };
-
-        activeChannelPembayaran = supabaseClient
-            .channel(`tunggu-pembayaran-ulang-${activeOrderIdToPay}`)
-            .on(
-                'postgres_changes',
-                { event: 'UPDATE', schema: 'public', table: activeOrderTable, filter: `id=eq.${activeOrderIdToPay}` },
-                (payload) => {
-                    const statusBaru = String(payload.new.status).toUpperCase();
-                    if (statusBaru === 'SELESAI' || statusBaru === 'SUCCESS' || statusBaru === 'PROSES' || statusBaru === 'PAID') {
-                        tampilkanLayarSukses();
-                        supabaseClient.removeChannel(activeChannelPembayaran);
-                        clearInterval(intervalJemputBola);
-                    }
-                }
-            ).subscribe();
-            
-        intervalJemputBola = setInterval(async () => {
-            try {
-                const res = await fetch(`/api/check-status?order_id=${activeOrderIdToPay}&table=${activeOrderTable}`);
-                const data = await res.json();
-                const apiStatus = String(data.status || data.data?.status || data.payment_status || '').toUpperCase();
-                
-                if (apiStatus === 'SUCCESS' || apiStatus === 'SUCCEEDED' || apiStatus === 'PAID' || apiStatus === 'SELESAI' || apiStatus === 'PROSES') {
-                    clearInterval(intervalJemputBola); 
-                    supabaseClient.removeChannel(activeChannelPembayaran);
-                    tampilkanLayarSukses(); 
-                }
-            } catch (e) {}
-        }, 10000);
-
-        // Radar akan diam-diam mengecek hingga 10 menit
-        setTimeout(() => clearInterval(intervalJemputBola), 600000);
-
-    } catch (e) {
-        showToast("Gagal memuat ulang QRIS. Silakan coba lagi.", "error");
-        console.error("Detail Error:", e);
-        
-        const wadahPembayaran = document.getElementById('qris-container');
-        if (wadahPembayaran) {
-            wadahPembayaran.innerHTML = `
-                <div class="flex flex-col items-center justify-center py-10 mt-10">
-                    <i class="fas fa-exclamation-triangle text-red-500 text-5xl mb-4"></i>
-                    <h3 class="text-white font-bold text-lg mb-2">Gagal Mengambil QRIS</h3>
-                    <p class="text-gray-400 text-xs text-center mb-6">${e.message}</p>
-                    <button onclick="history.back()" class="bg-white/10 text-white px-6 py-2.5 rounded-xl text-xs font-bold border border-white/20 active:scale-95 transition-all">Kembali</button>
-                </div>
-            `;
-        }
+    } catch (error) {
+        showToast("Gagal memperbarui tagihan.", "error");
+        console.error(error);
     }
 }
-
-
 
 async function prosesAutoDeliveryTertunda() {
     if (!currentUser) return null;
