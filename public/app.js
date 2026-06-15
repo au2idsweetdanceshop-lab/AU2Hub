@@ -1695,9 +1695,13 @@ function switchTab(tabId, event = null, isPush = true) {
         return; // hentikan karena openUserProfile akan mengeksekusi switchTab secara mandiri
     }
 
-    if (tabId !== 'profile' && tabId !== 'pembayaran' && tabId !== 'upload') {tabSebelumnya = tabId;}
+    if (tabId !== 'profile' && tabId !== 'pembayaran' && tabId !== 'upload') {
+        tabSebelumnya = tabId;
+    }
+    
     if (tabId === 'layanan' && isPush && document.getElementById('pembayaran').classList.contains('active')) {
-        window.scrollTo({ top: 0, behavior: 'smooth' }); return;
+        window.scrollTo({ top: 0, behavior: 'smooth' }); 
+        return;
     }
 
     const targetSection = document.getElementById(tabId) || document.getElementById('home');
@@ -1708,13 +1712,26 @@ function switchTab(tabId, event = null, isPush = true) {
         localStorage.setItem('lastTab', tabId);
     }
 
+    // 1. Matikan semua tab
     document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
     
+    // 2. Matikan semua icon navbar
     document.querySelectorAll('.nav-item').forEach(n => {
         n.classList.remove('active');
         const icon = n.querySelector('i');
         if (icon) icon.style.animation = 'none';
     });
+
+    // 3. Nyalakan tab yang dituju
+    targetSection.classList.add('active');
+
+    // 4. Nyalakan icon navbar yang dituju (Cari yang onclick-nya mengandung nama tab)
+    const targetNav = document.querySelector(`.nav-item[onclick*="switchTab('${tabId}'"]`);
+    if (targetNav) {
+        targetNav.classList.add('active');
+    }
+}
+
 
 window.addEventListener('popstate', () => {
     let isPopupClosed = false;
@@ -3065,18 +3082,6 @@ const sisaData = dataRipperGlobal.slice(5);
 let htmlSisa = sisaData.map((r, index) => `<div class="p-4 border-b border-white/5 last:border-0 hover:bg-white/5 transition-colors smooth-reveal" style="animation-delay: ${index < 5 ? (index * 0.05) : 0}s; opacity: 0;"><div class="flex justify-between items-start mb-1"><div class="font-bold text-xs text-white">${r["Nama / Keterangan"] || r.nama || r.Nama || "Tanpa Nama"}</div><div class="text-[9px] text-red-500 font-bold bg-red-500/10 px-2 py-0.5 rounded border border-red-500/20 whitespace-nowrap ml-2"><i class="fas fa-ban mr-1"></i> RIPPER</div></div><div class="text-[10px] text-brand-info font-mono mb-1">ID: ${r["ID"] || r.id || "-"}</div><div class="text-[10px] text-gray-400"><i class="fas fa-credit-card mr-1"></i> ${r["Rekening / Kontak (WA/Dana)"] || r.rekening || r.Rekening || "-"}</div></div>`).join('');
 document.getElementById('ripper-container').insertAdjacentHTML('beforeend', htmlSisa);
 }, 150);
-}
-
-// ==========================================
-// 1. FUNGSI PEMBANTU (DEBOUNCE)
-// Taruh di bagian atas app.js (cukup tulis 1 kali saja untuk dipakai di mana-mana)
-// ==========================================
-function debounce(func, wait) {
-    let timeout;
-    return function(...args) {
-        clearTimeout(timeout);
-        timeout = setTimeout(() => func.apply(this, args), wait);
-    };
 }
 
 // ==========================================
