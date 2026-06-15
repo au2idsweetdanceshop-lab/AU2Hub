@@ -8444,21 +8444,16 @@ async function prosesBayarUlang() {
     }
 
     try {
-        const responsePG = await fetch('/api/create-qris', { 
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                order_id: activeOrderIdToPay,
-                amount: activeOrderPriceToPay,
-                product_name: activeOrderNameToPay,
-                customer_name: userProfile?.nickname || 'Player'
-            })
-        });
-
+        // Mengambil data tagihan yang sudah ada dari endpoint check-status Anda
+        const responsePG = await fetch(`/api/check-status?order_id=${activeOrderIdToPay}&table=${activeOrderTable}`);
         const dataPG = await responsePG.json();
-        if (!dataPG.success) throw new Error("Gagal mengambil QRIS");
 
-        const qrImgUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(dataPG.qris_string)}`;
+        // Menangkap string QRIS dari respons backend (menyesuaikan format Xoftware)
+        const qrisString = dataPG.qris_string || dataPG.data?.qris_string || (dataPG.data && dataPG.data[0]?.qris_string);
+
+        if (!qrisString) throw new Error("Gagal mengambil ulang data QRIS dari server.");
+
+        const qrImgUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qrisString)}`;
         
         let noWA = "6283815584661"; 
         let sapaan = "Admin";
@@ -8667,7 +8662,7 @@ async function prosesBayarUlang() {
             `;
         }
     }
-    }
+  }
 
 
 async function prosesAutoDeliveryTertunda() {
