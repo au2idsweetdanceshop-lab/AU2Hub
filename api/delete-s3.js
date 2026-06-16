@@ -1,6 +1,6 @@
 import { S3Client, DeleteObjectCommand, ListObjectsV2Command, DeleteObjectsCommand } from "@aws-sdk/client-s3";
 
-// Setup S3 Biznet (Dideklarasikan di luar handler agar lebih efisien)
+// Setup S3 Biznet (Dideklarasikan di luar handler agar lebih efisien pada serverless cold-start)
 const s3Client = new S3Client({
     region: "idn",
     endpoint: "https://nos.wjv-1.neo.id",
@@ -12,14 +12,17 @@ const s3Client = new S3Client({
 });
 
 export default async function handler(req, res) {
-    // Mengizinkan DELETE atau POST
+    // Mengizinkan metode DELETE atau POST
     if (req.method !== 'DELETE' && req.method !== 'POST') {
         res.setHeader('Allow', ['DELETE', 'POST']);
         return res.status(405).json({ success: false, error: "Method Not Allowed" });
     }
 
     const bucketName = process.env.BIZNET_BUCKET_NAME;
+    
+    // Validasi ketersediaan Environment Variables
     if (!bucketName || !process.env.BIZNET_ACCESS_KEY || !process.env.BIZNET_SECRET_KEY) {
+        console.error("[S3 Error]: Environment Variables untuk konfigurasi S3 belum lengkap.");
         return res.status(500).json({ success: false, error: "Konfigurasi S3 belum lengkap di Environment Variables." });
     }
 
@@ -28,23 +31,31 @@ export default async function handler(req, res) {
 
     try {
         // =========================================================
-        // MODE 1: HAPUS FILE SATUAN (Pengganti delete-file.js)
+        // MODE 1: HAPUS FILE SATUAN
         // =========================================================
         if (type === 'file') {
             const fileUrl = req.body?.fileUrl || req.query?.fileUrl;
-            if (!fileUrl) return res.status(400).json({ success: false, error: "URL file wajib disertakan" });
+            
+            if (!fileUrl) {
+                return res.status(400).json({ success: false, error: "URL file wajib disertakan" });
+            }
 
+            // Mendukung dua format URL Biznet Neo (Virtual-Hosted & Path style)
             const baseUrl1 = `https://${bucketName}.nos.wjv-1.neo.id/`;
             const baseUrl2 = `https://nos.wjv-1.neo.id/${bucketName}/`;
 
             let key = fileUrl;
-            if (fileUrl.startsWith(baseUrl1)) key = fileUrl.replace(baseUrl1, '');
-            else if (fileUrl.startsWith(baseUrl2)) key = fileUrl.replace(baseUrl2, '');
+            if (fileUrl.startsWith(baseUrl1)) {
+                key = fileUrl.replace(baseUrl1, '');
+            } else if (fileUrl.startsWith(baseUrl2)) {
+                key = fileUrl.replace(baseUrl2, '');
+            }
 
             if (!key || key === fileUrl) {
                 return res.status(400).json({ success: false, error: "Format URL tidak valid." });
             }
 
+            // Eksekusi penghapusan single file
             await s3Client.send(new DeleteObjectCommand({
                 Bucket: bucketName,
                 Key: decodeURIComponent(key) 
@@ -54,12 +65,16 @@ export default async function handler(req, res) {
         } 
         
         // =========================================================
-        // MODE 2: HAPUS FOLDER / SEMUA DATA (Pengganti delete-folder.js)
+        // MODE 2: HAPUS FOLDER / SEMUA DATA USER
         // =========================================================
         else if (type === 'folder') {
             const userId = req.query?.userId || req.body?.userId;
-            if (!userId) return res.status(400).json({ success: false, error: "User ID wajib disertakan" });
+            
+            if (!userId) {
+                return res.status(400).json({ success: false, error: "User ID wajib disertakan" });
+            }
 
+            // Target folder yang akan dihapus (Pastikan ada garis miring '/' di akhir)
             const foldersToDelete = [
                 `${userId}/`,
                 `avatars/${userId}/` 
@@ -69,6 +84,7 @@ export default async function handler(req, res) {
                 let isTruncated = true;
                 let continuationToken = undefined;
 
+                // Loop akan berjalan terus jika ada lebih dari 1000 object di dalam folder
                 while (isTruncated) {
                     const listCommand = new ListObjectsV2Command({
                         Bucket: bucketName,
@@ -87,6 +103,7 @@ export default async function handler(req, res) {
                         await s3Client.send(new DeleteObjectsCommand(deleteParams));
                     }
 
+                    // Cek apakah masih ada sisa file yang perlu diambil dari list
                     isTruncated = listedObjects.IsTruncated;
                     continuationToken = listedObjects.NextContinuationToken;
                 }
@@ -95,12 +112,20 @@ export default async function handler(req, res) {
             return res.status(200).json({ success: true, message: `Semua data user ${userId} berhasil dibersihkan.` });
         } 
         
+        // =========================================================
+        // MODE TIDAK DIKENAL
+        // =========================================================
         else {
-            return res.status(400).json({ success: false, error: "Parameter type (?type=file atau ?type=folder) wajib diisi." });
+            return res.status(400).json({ success: false, error: "Parameter type (?type=file atau ?type=folder) wajib diisi dengan benar." });
         }
 
     } catch (error) {
-        console.error("Error S3 Delete:", error);
-        return res.status(500).json({ success: false, error: "Gagal memproses penghapusan di storage server." });
+        // Log detail ke server console untuk kebutuhan debugging
+        console.error(`[S3 Delete Error - Type: ${type || 'unknown'}]:`, error);
+        return res.status(500).json({ 
+            success: false, 
+            error: "Gagal memproses penghapusan di storage server.",
+            details: error.message
+        });
     }
 }
