@@ -3511,47 +3511,59 @@ async function likeComment(cid, btn) {
 }
 
 
+window.cacheVideoStats = window.cacheVideoStats || {}; // [BARU] Penampung Memori Cache
+
 async function updateLikeCountUI(videoId, containerDiv) {
     if (!containerDiv) return;
+    
+    if (!window.cacheVideoStats[videoId]) window.cacheVideoStats[videoId] = {};
+
     try {
-        // 1. Dapatkan total jumlah like dari Supabase
-        const { count, error } = await supabaseClient
-            .from('video_likes')
-            .select('*', { count: 'exact', head: true })
-            .eq('video_id', videoId);
+        // 1. Dapatkan total jumlah like dari Supabase (Pakai Cache agar tidak boros kuota)
+        let countLike = window.cacheVideoStats[videoId].likes;
+
+        if (countLike === undefined) {
+            const { count, error } = await supabaseClient
+                .from('video_likes')
+                .select('*', { count: 'exact', head: true })
+                .eq('video_id', videoId);
+            
+            if (!error) {
+                countLike = count || 0;
+                window.cacheVideoStats[videoId].likes = countLike; // Simpan ke otak HP
+            }
+        }
 
         const countSpan = containerDiv.querySelector('.like-count-display');
-        if (countSpan && !error) countSpan.innerText = count || 0;
+        if (countSpan && countLike !== undefined) countSpan.innerText = countLike;
 
         // 2. Cek status LIKE Akurat dari Database untuk User yang sedang login
         const icon = containerDiv.querySelector('i');
         
         if (currentUser) {
+            // [BARU] Gunakan .limit(1).maybeSingle() agar kebal Error 406!
             const { data: isLikedDB } = await supabaseClient
                 .from('video_likes')
                 .select('id')
                 .eq('video_id', videoId)
                 .eq('user_id', currentUser.id)
-                .single();
+                .limit(1) // <--- INI OBAT ERROR MERAHNYA
+                .maybeSingle();
 
             if (isLikedDB) {
-                // Jika di database sudah di-like, ubah merah dan sinkronkan memori lokal
                 icon.classList.replace('text-white', 'text-brand-accent');
                 localStorage.setItem(`liked_${videoId}`, 'true');
             } else {
-                // Jika belum, pastikan ikon putih
                 icon.classList.replace('text-brand-accent', 'text-white');
                 localStorage.removeItem(`liked_${videoId}`);
             }
         } else {
-            // Jika belum login, gunakan deteksi memori HP sementara
             if(localStorage.getItem(`liked_${videoId}`)) {
                 icon.classList.replace('text-white', 'text-brand-accent');
             }
         }
 
     } catch(e) {
-        // Fallback jika query database gagal / koneksi lambat
         if(localStorage.getItem(`liked_${videoId}`)) {
             containerDiv.querySelector('i').classList.replace('text-white', 'text-brand-accent');
         }
@@ -3559,27 +3571,36 @@ async function updateLikeCountUI(videoId, containerDiv) {
     }
 }
 
-
 async function updateCommentCountUI(videoId, containerDiv) {
     if (!containerDiv) return;
+
+    if (!window.cacheVideoStats) window.cacheVideoStats = {};
+    if (!window.cacheVideoStats[videoId]) window.cacheVideoStats[videoId] = {};
+
     try {
-        // Hitung langsung ke Supabase dengan akurat (Bypass API Vercel)
-        const { count, error } = await supabaseClient
-            .from('comments')
-            .select('*', { count: 'exact', head: true })
-            .eq('video_id', videoId);
+        let countComment = window.cacheVideoStats[videoId].comments;
+
+        // Tarik dari Supabase HANYA jika memori kosong
+        if (countComment === undefined) {
+            const { count, error } = await supabaseClient
+                .from('comments')
+                .select('*', { count: 'exact', head: true })
+                .eq('video_id', videoId);
+            
+            if (!error) {
+                countComment = count || 0;
+                window.cacheVideoStats[videoId].comments = countComment; // Simpan ke otak HP
+            }
+        }
         
         const countSpan = containerDiv.querySelector('.comment-count-display');
-        if (countSpan && !error) {
-            countSpan.innerText = count || 0;
+        if (countSpan && countComment !== undefined) {
+            countSpan.innerText = countComment;
         }
     } catch(e) {
         console.error("Gagal update angka komentar:", e);
     }
 }
-
-
-
 
 async function likeVideo(videoId, btn) {
     // Wajib login untuk melike
@@ -3603,9 +3624,7 @@ async function likeVideo(videoId, btn) {
 
     try {
         if (isLiked) {
-            // ==========================================
-            // PROSES UNLIKE (BATAL SUKA)
-            // ==========================================
+            // === PROSES UNLIKE (BATAL SUKA) ===
             icon.classList.replace('text-brand-accent', 'text-white'); // Ubah warna jadi putih instan
             
             const { error } = await supabaseClient
@@ -3616,13 +3635,14 @@ async function likeVideo(videoId, btn) {
 
             if (error) throw error;
             
-            // Hapus jejak dari memori HP
+            // Hapus jejak dari memori HP & Turunkan angka cache seketika
             localStorage.removeItem(`liked_${videoId}`);
+            if (window.cacheVideoStats && window.cacheVideoStats[videoId] && window.cacheVideoStats[videoId].likes > 0) {
+                window.cacheVideoStats[videoId].likes--;
+            }
 
         } else {
-            // ==========================================
-            // PROSES LIKE (MENYUKAI)
-            // ==========================================
+            // === PROSES LIKE (MENYUKAI) ===
             icon.classList.replace('text-white', 'text-brand-accent'); // Ubah warna jadi pink instan
             
             const { error } = await supabaseClient
@@ -3635,11 +3655,14 @@ async function likeVideo(videoId, btn) {
             // Abaikan error dengan kode '23505' (Duplicate) jika ternyata di DB sudah ter-like sebelumnya
             if (error && error.code !== '23505') throw error;
             
-            // Simpan jejak di memori HP
+            // Simpan jejak di memori HP & Naikkan angka cache seketika
             localStorage.setItem(`liked_${videoId}`, 'true');
+            if (window.cacheVideoStats && window.cacheVideoStats[videoId] !== undefined) {
+                window.cacheVideoStats[videoId].likes++;
+            }
         }
 
-        // Perbarui angka jumlah like di layar secara real-time
+        // Perbarui angka jumlah like di layar menggunakan Cache yang baru kita buat (Bypass Database)
         updateLikeCountUI(videoId, btn.closest('.like-container') || document.getElementById('float-like-container'));
 
     } catch (e) {
@@ -3658,7 +3681,6 @@ async function likeVideo(videoId, btn) {
         btn.disabled = false;
     }
 }
-
 
 function handleVideoError(videoElement) { const container = videoElement.closest('.snap-start'); if (container) container.remove(); }
 
@@ -6438,27 +6460,29 @@ showToast("Error VN: " + err.message, "error");
 } catch (err) { showToast("Error Sistem: " + err.message, "error"); }
 }
 
-
-
-
-
-
 // ==========================================
 // FITUR TERAKHIR DILIHAT (LAST SEEN SINKRONISASI)
 // ==========================================
+let timerLastSeen = 0; // Memori penahan spam
+
 async function updateMyLastSeen() {
-if (!currentUser) return;
-try {
-await supabaseClient.from('profiles').update({ last_seen: new Date().toISOString() }).eq('id', currentUser.id);
-} catch (e) { console.log("Gagal update last seen"); }
+    if (!currentUser) return;
+    
+    // [BARU] Mencegah spam update ke database dalam waktu kurang dari 2 menit
+    const now = Date.now();
+    if (now - timerLastSeen < 120000) return; 
+    timerLastSeen = now;
+
+    try {
+        await supabaseClient.from('profiles').update({ last_seen: new Date().toISOString() }).eq('id', currentUser.id);
+    } catch (e) { console.log("Gagal update last seen"); }
 }
 
 // Jalankan update saat buka web dan tiap 1 menit sekali kalau aplikasinya sedang dibuka
 setInterval(updateMyLastSeen, 60000);
 document.addEventListener('visibilitychange', () => {
-if (document.visibilityState === 'hidden') updateMyLastSeen();
+    if (document.visibilityState === 'hidden') updateMyLastSeen();
 });
-
 
 // ==========================================
 // FITUR QUOTE REPLY (BALAS PESAN WA STYLE)
