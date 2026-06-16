@@ -1195,48 +1195,25 @@ function hitungStatusLevel(totalExp) {
     return { level, exp, targetNextLevel, persentase };
 }
 
-// Fungsi Penambah EXP Otomatis (Aman via Server RPC)
+// FUNGSI VISUAL EXP (Tanpa akses nembak database agar aman dari Cheater)
 async function tambahExp(jumlah) {
     if (!currentUser || !userProfile) return;
 
-    // Batasi maksimal request dari frontend 
-    const jumlahAman = Math.min(jumlah, 100); 
-    
+    // Hanya animasi prediksi lokal untuk UI (biar layar langsung berubah)
+    // Penambahan EXP asli akan diurus otomatis oleh Database Triggers di server
     const expLama = userProfile.exp || 0;
-    const levelLama = hitungStatusLevel(expLama).level;
+    const expBaru = expLama + jumlah;
+    userProfile.exp = expBaru;
     
-    try {
-        // 🚀 Tembak ke RPC Supabase (Backend yang menghitung dan memvalidasi)
-        const { error } = await supabaseClient.rpc('tambah_exp_aman', { 
-            p_user_id: currentUser.id, 
-            p_jumlah: jumlahAman 
-        });
-
-        if (error) throw error;
-
-        // Prediksi lokal untuk UI (biar layar langsung berubah tanpa loading)
-        const expBaru = expLama + jumlahAman;
-        userProfile.exp = expBaru;
-        const levelBaru = hitungStatusLevel(expBaru).level;
-        
-        // Munculkan notifikasi jika Naik Level!
-        if (levelBaru > levelLama) {
-            showToast(`🎉 SELAMAT! Anda naik ke Level ${levelBaru}!`, "success");
-        }
-
-        // Update animasi bar langsung jika pengguna sedang membuka layar profilnya sendiri
-        if (document.getElementById('profile').classList.contains('active') && viewedUserId === currentUser.id) {
-            const statusLevel = hitungStatusLevel(expBaru);
-            document.getElementById('profile-level-badge').innerText = `Lv. ${statusLevel.level}`;
-            document.getElementById('text-exp-current').innerText = `EXP: ${statusLevel.exp}`;
-            document.getElementById('text-exp-target').innerText = `Next: ${statusLevel.targetNextLevel}`;
-            document.getElementById('bar-exp-progress').style.width = `${statusLevel.persentase}%`;
-        }
-    } catch (e) {
-        console.error("Gagal auto-update EXP:", e);
+    // Update animasi bar langsung jika pengguna sedang membuka layar profilnya sendiri
+    if (document.getElementById('profile').classList.contains('active') && viewedUserId === currentUser.id) {
+        const statusLevel = hitungStatusLevel(expBaru);
+        document.getElementById('profile-level-badge').innerText = `Lv. ${statusLevel.level}`;
+        document.getElementById('text-exp-current').innerText = `EXP: ${statusLevel.exp}`;
+        document.getElementById('text-exp-target').innerText = `Next: ${statusLevel.targetNextLevel}`;
+        document.getElementById('bar-exp-progress').style.width = `${statusLevel.persentase}%`;
     }
 }
-
 
 async function fetchProfile() {
     const { data, error } = await supabaseClient.from('profiles').select('*').eq('id', currentUser.id).single();
@@ -1552,7 +1529,7 @@ async function handleAvatarUpload(event) {
         const oldAvatarUrl = userProfile?.avatar_url || "";
         // Pastikan foto lama ada dan BUKAN avatar default dari ui-avatars.com
         if (oldAvatarUrl && !oldAvatarUrl.includes('ui-avatars.com')) {
-            await fetch('/api/delete-file', {
+            await fetch('/api/delete-s3?type=file', {
                 method: 'DELETE',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ fileUrl: oldAvatarUrl })
@@ -2808,7 +2785,7 @@ async function deleteVideo(vidId) {
 
             // 3. TEMBAK API DELETE FILE: Hapus fisik MP4 dari Biznet
             if (videoTarget && videoTarget.video_url) {
-                await fetch('/api/delete-file', {
+                await fetch('/api/delete-s3?type=file', {
                     method: 'DELETE',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ fileUrl: videoTarget.video_url })
@@ -4226,7 +4203,7 @@ async function hapusAkunPermanen() {
         try {
             // 1. PANGGIL API UNTUK MENGHAPUS FOLDER BIZNET GIO DULU
             // Lakukan ini sebelum RPC Supabase agar akses ID user masih valid
-            await fetch(`/api/delete-folder?userId=${currentUser.id}`, {
+            await fetch(`/api/delete-s3?type=folder&userId=${currentUser.id}`, {
                 method: 'DELETE'
             });
 
@@ -5233,7 +5210,7 @@ async function hapusStoryAktif() {
             // 2. TEMBAK API DELETE FILE: Hapus fisik MP4/JPG dari Biznet
             if (story.media_url) {
                 // Kita tambahkan .catch agar jika file di Biznet sudah terlanjur hilang, aplikasi tidak nge-crash
-                await fetch('/api/delete-file', {
+                await fetch('/api/delete-s3?type=file', {
                     method: 'DELETE',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ fileUrl: story.media_url })
@@ -8537,8 +8514,7 @@ async function prosesAutoDeliveryTertunda() {
                         });
                             
                         if (errUpdate) {
-                            console.warn("Update stok via RPC ditolak, mencoba jalur biasa...");
-                            await supabaseClient.from('player_products').update({ stock_list: newStockList }).eq('id', activeProductId);
+                            console.error("Gagal update stok otomatis via RPC. Pastikan RPC potong_stok_otomatis di Supabase berstatus SECURITY DEFINER.", errUpdate);
                         }
 
                         // ---> BERIKAN DATANYA KE PEMBELI <---
@@ -9873,8 +9849,7 @@ async function loadTokoSaya() {
         elBadge.classList.remove('hidden');
         elBadge.style.display = ''; 
     }
-
-    await cekPencairanDanaH1();
+    
     await updateUiSaldoSeller();
     switchTokoTab(tokoTabAktif);
 
@@ -9977,60 +9952,6 @@ async function updateUiSaldoSeller() {
         console.error("Gagal update UI Saldo Seller:", e);
     }
 }
-
-async function cekPencairanDanaH1() {
-    try {
-        // Cari semua order milik Seller ini yang statusnya 'selesai' TAPI 'dana_cair' masih false
-        const { data: ordersToClear } = await supabaseClient
-            .from('orders_player')
-            .select('id, price, product_name, waktu_selesai, player_products(fee_ditanggung_pembeli)')
-            .eq('seller_id', currentUser.id)
-            .eq('status', 'selesai')
-            .eq('dana_cair', false);
-
-        if (!ordersToClear || ordersToClear.length === 0) return;
-
-        const sekarang = new Date();
-        let danaCairBaru = 0;
-        
-        for (let order of ordersToClear) {
-            // Jika bot gagal mencatat waktu_selesai, pasang otomatis ke waktu sekarang
-            if (!order.waktu_selesai) {
-                await supabaseClient.from('orders_player').update({ waktu_selesai: sekarang.toISOString() }).eq('id', order.id);
-                continue;
-            }
-
-            const waktuSelesai = new Date(order.waktu_selesai);
-            const selisihJam = Math.abs(sekarang - waktuSelesai) / 36e5; // Mengubah milidetik jadi Jam
-
-            // JIKA UMURNYA SUDAH LEBIH DARI 24 JAM (H+1)
-            if (selisihJam >= 24) {
-                const isPembeli = order.player_products?.fee_ditanggung_pembeli || false;
-            const pendapatanBersih = hitungPendapatanBersih(order.price, isPembeli, order.product_name);
-
-                // 1. Tembak RPC Cairkan Saldo
-                await supabaseClient.rpc('proses_pencairan_otomatis', {
-                    p_seller_id: currentUser.id,
-                    p_jumlah: pendapatanBersih,
-                    p_deskripsi: `Pencairan H+1: ${order.product_name}`
-                });
-
-                // 2. Gembok order ini agar tidak dicairkan dua kali
-                await supabaseClient.from('orders_player').update({ dana_cair: true }).eq('id', order.id);
-                
-                danaCairBaru += pendapatanBersih;
-            }
-        }
-
-        if (danaCairBaru > 0) {
-            showToast(`Dana tertahan sebesar Rp ${danaCairBaru.toLocaleString('id-ID')} telah cair ke Saldo Aktif Anda!`, "success");
-        }
-
-    } catch(e) {
-        console.error("Gagal menjalankan cron pencairan H+1", e);
-    }
-}
-
 
 async function loadPasarPlayer(forceRefresh = false) {
     const gridPasar = document.getElementById('grid-pasar-player');
@@ -10704,7 +10625,7 @@ async function prosesEditProduk() {
         if (deletedImagesEdit.length > 0) {
             for (const urlFoto of deletedImagesEdit) {
                 if (urlFoto.trim() !== "") {
-                    await fetch('/api/delete-file', {
+                    await fetch('/api/delete-s3?type=file', {
                         method: 'DELETE',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ fileUrl: urlFoto.trim() })
@@ -10744,7 +10665,7 @@ async function hapusProdukSaya(productId, productName) {
             const arrFoto = produk.image_url.split(',');
             for (const urlFoto of arrFoto) {
                 if (urlFoto.trim() !== "") {
-                    await fetch('/api/delete-file', {
+                    await fetch('/api/delete-s3?type=file', {
                         method: 'DELETE',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ fileUrl: urlFoto.trim() })
