@@ -4691,8 +4691,13 @@ function renderRow(item, isGroup) {
         if (lastMessageText.startsWith('[IMG]')) lastMessageText = "📷 Foto";
         else if (lastMessageText.startsWith('[VIDEO]')) lastMessageText = "🎥 Video";
         else if (lastMessageText.startsWith('[AUDIO]')) lastMessageText = "🎙️ Pesan Suara";
-        else if (lastMessageText.startsWith('[SISTEM]')) lastMessageText = "Pemberitahuan Sistem";
+        else if (lastMessageText.startsWith('[SISTEM]')) lastMessageText = "🔔 Pemberitahuan Sistem";
+        else if (lastMessageText.startsWith('[AUTODATA]')) {
+            let prodName = lastMessageText.replace('[AUTODATA]', '').split('|||')[0] || '';
+            lastMessageText = "📦 Data Pesanan: " + prodName;
+        }
     }
+
 
     // 2. Siapkan badge pesan belum dibaca
     let unreadBadge = item.unread > 0 
@@ -6761,9 +6766,32 @@ function appendMessageBubble(msg) {
         const url = rawMessage.replace('[AUDIO]', '');
         contentHtml = `<audio controls class="w-[200px] mt-1 h-8"><source src="${url}" type="audio/webm"></audio>`;
     } else if (rawMessage.startsWith('[SISTEM]')) {
-        contentHtml = `<div class="text-center w-full my-2"><span class="bg-brand-info/20 text-brand-info font-bold text-[10px] px-4 py-1.5 rounded-full">${rawMessage.replace('[SISTEM] ', '')}</span></div>`;
-        container.insertAdjacentHTML('beforeend', contentHtml);
-        return; // Hentikan di sini karena pesan sistem posisinya di tengah
+        
+        // Hapus kode [SISTEM] dari awal teks
+        let isiSistem = rawMessage.replace(/^\[SISTEM\]\s*/i, '');
+        
+        // Bikin teks lebih rapi (Enter jadi baris baru, tanda bintang *teks* jadi tebal/bold)
+        let teksRapi = escapeHTML(isiSistem)
+            .replace(/\n/g, '<br>')
+            .replace(/\*(.*?)\*/g, '<b class="text-white">$1</b>');
+
+        // Render HTML Kotak Sistem di dalam Chat Bubble
+        contentHtml = `
+        <div class="bg-black/40 border border-brand-info/30 rounded-xl p-3 mt-1 mb-1 min-w-[200px] max-w-[240px] text-left shadow-inner flex flex-col gap-1.5 relative cursor-default" onclick="event.stopPropagation()">
+            <div class="flex items-center gap-2 border-b border-white/10 pb-2">
+                <div class="w-6 h-6 rounded-full bg-brand-info/20 flex items-center justify-center shrink-0 border border-brand-info/30 shadow-[0_0_10px_rgba(70,179,255,0.3)]">
+                    <i class="fas fa-robot text-brand-info text-[10px]"></i>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <div class="text-[8px] text-brand-info font-bold uppercase tracking-wider">AU2HUB SYSTEM</div>
+                    <div class="text-[11px] font-bold text-white truncate w-full leading-tight">Pemberitahuan</div>
+                </div>
+            </div>
+            <div class="text-[10px] text-gray-200 leading-relaxed mt-1">
+                ${teksRapi}
+            </div>
+        </div>`;
+        
     } else {
         contentHtml = formatCaption(rawMessage);
     }
@@ -11041,8 +11069,13 @@ async function tolakPenarikan(wdId, userId, nominal) {
         await supabaseClient.from('messages').insert({
             sender_id: currentUser.id,
             receiver_id: userId,
-            message: `[SISTEM] Penarikan saldo sebesar Rp ${Number(nominal).toLocaleString('id-ID')} DITOLAK oleh Admin.\n\nAlasan: ${alasan}\n\nDana telah dikembalikan ke Saldo Aktif Anda.`
+            message: `[SISTEM] Penarikan saldo sebesar Rp ${Number(nominal).toLocaleString('id-ID')} DITOLAK oleh Admin.
+
+Alasan: ${alasan}
+
+Dana telah dikembalikan ke Saldo Aktif Anda.`
         });
+
 
         // Efek hilang
         if (card) {
