@@ -1711,6 +1711,15 @@ function switchTab(tabId, event = null, isPush = true) {
     if (tabId === 'toko') {
         if (typeof loadTokoSaya === 'function') loadTokoSaya();
     }
+
+    // 🔥 [BARU] Panggil fungsi video saat tab Sosial ditekan
+    if (tabId === 'sosial') {
+        const feedContainer = document.getElementById('feed-container');
+        // Jika layar feed masih kosong, jalankan mesin video!
+        if (feedContainer && feedContainer.children.length === 0) {
+            if (typeof loadVideos === 'function') loadVideos();
+        }
+    }
   }
 
 window.addEventListener('popstate', () => {
@@ -3721,7 +3730,8 @@ async function loadVideos() {
 
         currentVideoIndex = 0;
         container.innerHTML = '';
-        renderProfileVideos();
+        
+        // renderProfileVideos() dihapus dari sini agar Feed Sosial tidak lemot
 
         if (!allVideosData.length) { container.innerHTML = '<p class="text-center py-20 text-gray-500">Belum ada video.</p>'; return; }
 
