@@ -6770,26 +6770,39 @@ function appendMessageBubble(msg) {
         // Hapus kode [SISTEM] dari awal teks
         let isiSistem = rawMessage.replace(/^\[SISTEM\]\s*/i, '');
         
-        // Bikin teks lebih rapi (Enter jadi baris baru, tanda bintang *teks* jadi tebal/bold)
-        let teksRapi = escapeHTML(isiSistem)
-            .replace(/\n/g, '<br>')
-            .replace(/\*(.*?)\*/g, '<b class="text-white">$1</b>');
+        // Bikin tanda bintang *teks* jadi tebal/bold
+        let teksRapi = escapeHTML(isiSistem).replace(/\*(.*?)\*/g, '<b class="text-white">$1</b>');
+
+        // Sulap Link URL jadi bisa diklik
+        let htmlIsiSistem = teksRapi.replace(
+            /(https?:\/\/[^\s]+)/g,
+            '<a href="$1" target="_blank" onclick="event.stopPropagation()" class="text-brand-info underline font-bold hover:text-white transition-colors">$1</a>'
+        );
+
+        // Encode teks mentah untuk tombol Copy (Anti bug tanda kutip/enter)
+        const safeCopySysText = encodeURIComponent(isiSistem);
 
         // Render HTML Kotak Sistem di dalam Chat Bubble
         contentHtml = `
         <div class="bg-black/40 border border-brand-info/30 rounded-xl p-3 mt-1 mb-1 min-w-[200px] max-w-[240px] text-left shadow-inner flex flex-col gap-1.5 relative cursor-default" onclick="event.stopPropagation()">
             <div class="flex items-center gap-2 border-b border-white/10 pb-2">
-                <div class="w-6 h-6 rounded-full bg-brand-info/20 flex items-center justify-center shrink-0 border border-brand-info/30 shadow-[0_0_10px_rgba(70,179,255,0.3)]">
-                    <i class="fas fa-robot text-brand-info text-[10px]"></i>
-                </div>
+                
+                <!-- [BARU] LOGO AU2HUB BERDENYUT -->
+                <img src="https://nos.wjv-1.neo.id/au2hub/Picsart_26-05-30_04-29-46-305.webp" class="w-6 h-6 object-contain splash-logo-anim drop-shadow-[0_0_8px_rgba(0,240,255,0.6)] shrink-0">
+                
                 <div class="flex-1 min-w-0">
                     <div class="text-[8px] text-brand-info font-bold uppercase tracking-wider">AU2HUB SYSTEM</div>
                     <div class="text-[11px] font-bold text-white truncate w-full leading-tight">Pemberitahuan</div>
                 </div>
             </div>
-            <div class="text-[10px] text-gray-200 leading-relaxed mt-1">
-                ${teksRapi}
-            </div>
+            
+            <!-- [BARU] AREA TEKS BISA DI-SCROLL & KLIK LINK -->
+            <pre class="text-[10px] text-gray-200 font-sans whitespace-pre-wrap break-all max-h-40 overflow-y-auto hide-scroll leading-relaxed mt-1">${htmlIsiSistem}</pre>
+            
+            <!-- [BARU] TOMBOL SALIN -->
+            <button type="button" onclick="navigator.clipboard.writeText(decodeURIComponent('${safeCopySysText}')); this.innerHTML='<i class=\\'fas fa-check\\'></i> Tersalin!'; setTimeout(()=>this.innerHTML='<i class=\\'fas fa-copy mr-1\\'></i> Salin Pesan', 2000);" class="mt-1 w-full bg-brand-info/10 text-brand-info hover:bg-brand-info hover:text-brand-dark border border-brand-info/30 py-2 rounded-lg text-[10px] font-bold active:scale-95 transition-all shadow-sm">
+                <i class="fas fa-copy mr-1"></i> Salin Pesan
+            </button>
         </div>`;
         
     } else {
