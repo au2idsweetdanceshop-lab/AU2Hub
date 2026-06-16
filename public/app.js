@@ -8291,6 +8291,13 @@ async function checkoutXoftwarePay(namaProduk, harga, deskripsi, sellerId = null
                 const teksWA_Sukses = encodeURIComponent(`Halo ${sapaan}, pesanan saya sudah BERHASIL DIBAYAR via QRIS Otomatis untuk:\n\n*${namaProduk}*\nID: ADT - ${orderData.id}\n\n(Mohon segera diproses ya)`);
 
                 if (isAutoItem && autoDeliveryContent && autoDeliveryContent !== "") { 
+                    
+                    // [BARU] 1. Amankan teks dari kode berbahaya, 2. Sulap URL menjadi link hidup
+                    let htmlDataPesanan = escapeHTML(autoDeliveryContent).replace(
+                        /(https?:\/\/[^\s]+)/g,
+                        '<a href="$1" target="_blank" rel="noopener noreferrer" class="text-brand-info underline font-bold hover:text-white transition-colors">$1</a>'
+                    );
+
                     wadahPembayaran.innerHTML = `
                         <div class="flex flex-col items-center justify-center py-4 text-center modal-anim w-full relative z-10">
                             <div class="w-16 h-16 bg-brand-success/20 rounded-full flex items-center justify-center border border-brand-success/50 mb-4 shadow-[0_0_15px_rgba(37,211,102,0.5)]">
@@ -8301,7 +8308,8 @@ async function checkoutXoftwarePay(namaProduk, harga, deskripsi, sellerId = null
                             
                             <div class="w-full bg-black/50 border border-brand-info/50 rounded-xl p-4 text-left mb-6 relative">
                                 <span class="absolute -top-2.5 left-4 bg-brand-info text-brand-dark text-[9px] font-extrabold px-2 py-0.5 rounded uppercase tracking-wider">DATA PESANAN</span>
-                                <pre class="text-white text-xs whitespace-pre-wrap break-all font-mono leading-relaxed mt-2 max-h-40 overflow-y-auto hide-scroll" style="font-family: monospace;">${autoDeliveryContent}</pre>
+                                
+                                <pre class="text-white text-xs whitespace-pre-wrap break-all font-mono leading-relaxed mt-2 max-h-40 overflow-y-auto hide-scroll" style="font-family: monospace;">${htmlDataPesanan}</pre>
                                 
                                 <button type="button" onclick="navigator.clipboard.writeText(\`${autoDeliveryContent.replace(/`/g, '\\`')}\`); this.innerHTML='<i class=\\'fas fa-check\\'></i> Tersalin!'; setTimeout(()=>this.innerHTML='<i class=\\'fas fa-copy mr-1\\'></i> Salin Data', 2000);" class="mt-4 w-full bg-brand-info/10 text-brand-info border border-brand-info/30 py-2.5 rounded-lg text-[11px] font-bold active:scale-95 transition-all">
                                     <i class="fas fa-copy mr-1"></i> Salin Data
