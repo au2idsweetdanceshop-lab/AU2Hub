@@ -24,7 +24,8 @@ window.tutupLayarSuksesDanRefresh = () => {
 // ==========================================
 // TEKS GLOBAL TABEL FEE (BIAR GAK CAPEK NGETIK ULANG)
 // ==========================================
-const TEKS_TABEL_FEE = "Tabel Fee Seller AU2Hub:\n\n🔹 Harga ≤ Rp 25.000 = Potongan Rp 1.000\n🔹 Harga ≤ Rp 50.000 = Potongan Rp 2.000\n🔹 Harga ≤ Rp 99.999 = Potongan Rp 3.000\n🔹 Harga ≤ Rp 499.999 = Potongan Rp 10.000\n🔹 Harga ≤ Rp 1.499.999 = Potongan Rp 20.000\n🔹 Harga ≤ Rp 1.999.999 = Potongan Rp 25.000\n🔹 Harga ≥ Rp 2.000.000 = Potongan Rp 35.000";
+const TEKS_TABEL_FEE = "Tabel Fee Seller AU2Hub:\n\n🔹 Harga ≤ Rp 10.000 = Potongan Rp 500\n🔹 Harga ≤ Rp 25.000 = Potongan Rp 1.000\n🔹 Harga ≤ Rp 50.000 = Potongan Rp 2.000\n🔹 Harga ≤ Rp 99.999 = Potongan Rp 3.000\n🔹 Harga ≤ Rp 499.999 = Potongan Rp 10.000\n🔹 Harga ≤ Rp 1.499.999 = Potongan Rp 20.000\n🔹 Harga ≤ Rp 1.999.999 = Potongan Rp 25.000\n🔹 Harga ≥ Rp 2.000.000 = Potongan Rp 35.000";
+
 
 // ==========================================
 // FUNGSI TOGGLE PILIHAN BIAYA ADMIN (SELLER / PEMBELI)
@@ -73,6 +74,7 @@ function hitungPendapatanBersih(hargaGateway, ditanggungPembeli, namaProduk = ""
     
     // 3. Kalkulasi jatah final Seller
     if (ditanggungPembeli) {
+        if (hargaBase <= 10500) return hargaBase - 500;   // <-- PENYESUAIAN MIKRO BARU
         if (hargaBase <= 26000) return hargaBase - 1000;
         if (hargaBase <= 52000) return hargaBase - 2000;
         if (hargaBase <= 102999) return hargaBase - 3000;
@@ -85,21 +87,20 @@ function hitungPendapatanBersih(hargaGateway, ditanggungPembeli, namaProduk = ""
     }
 }
 
-
-
 // ==========================================
 // RUMUS TABEL FEE SELLER MERAKYAT (AU2HUB)
 // ==========================================
 function hitungPotonganSeller(harga) {
+    if (harga <= 10000) return 500
     if (harga <= 25000) return 1000;
     if (harga <= 50000) return 2000;
     if (harga <= 99999) return 3000;
     if (harga <= 499999) return 10000;
-    if (harga <= 1000000) return 20000;
-    if (harga <= 1499999) return 20000;
+    if (harga <= 1499999) return 20000
     if (harga <= 1999999) return 25000;
     return 35000; // Harga 2 juta ke atas
 }
+
 
 // ==========================================
 // RUMUS FEE ADMIN REKBER (KHUSUS PEMBELI)
