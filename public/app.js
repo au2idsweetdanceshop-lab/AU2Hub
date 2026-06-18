@@ -10046,18 +10046,32 @@ async function loadPasarPlayer(forceRefresh = false) {
     }
 
     try {
+        // 1. TAMBAHKAN is_seller & seller_expired_at PADA QUERY SELECT
         const { data, error } = await supabaseClient
             .from('player_products')
-            .select('*, profiles!fk_player_products_user_id(nickname, avatar_url, exp)') 
+            .select('*, profiles!fk_player_products_user_id(nickname, avatar_url, exp, is_seller, seller_expired_at)') 
             .order('created_at', { ascending: false });
 
         if (error) throw error;
 
-        globalDataPasar = data || [];
-        renderKategoriPasarTabs(globalDataPasar);
-        terapkanFilterPasar(); // Gunakan fungsi filter cerdas
+        // 2. LOGIKA FILTER: HANYA TAMPILKAN PRODUK DARI SELLER YANG VIP-NYA AKTIF
+        const waktuSekarang = new Date();
+        const produkSellerAktif = (data || []).filter(item => {
+            if (!item.profiles) return false; // Jika profil error/hilang, jangan tampilkan
+            
+            const isVip = item.profiles.is_seller === true;
+            const expiredAt = item.profiles.seller_expired_at ? new Date(item.profiles.seller_expired_at) : new Date(0);
+            
+            // Lolos filter HANYA JIKA dia VIP dan masa aktifnya lebih besar dari waktu saat ini
+            return isVip && (expiredAt > waktuSekarang);
+        });
 
-        // --- INI LOGIKA PENDETEKSI LINK ---
+        // 3. MASUKKAN DATA YANG SUDAH BERSIH KE VARIABEL GLOBAL
+        globalDataPasar = produkSellerAktif;
+        renderKategoriPasarTabs(globalDataPasar);
+        terapkanFilterPasar(); 
+
+        // --- LOGIKA PENDETEKSI LINK (Tetap Sama) ---
         const urlHash = window.location.hash.substring(1);
         
         if (urlHash.startsWith('detailpasar?id=')) {
@@ -10065,36 +10079,31 @@ async function loadPasarPlayer(forceRefresh = false) {
             if (produkId) {
                 setTimeout(() => { bukaDetailPasar(produkId); }, 800); 
             }
-            terapkanFilterPasar(); // Tetap render list
+            terapkanFilterPasar(); 
         }
-        // 🔥 2. TAMBAHAN LOGIKA BUKA TOKO SELLER 🔥
         else if (urlHash.startsWith('pasar?seller=')) {
-            // Ambil nama dari link, hilangkan %20 jadi spasi normal lagi
             const sellerName = decodeURIComponent(urlHash.split('=')[1]);
             const searchInput = document.getElementById('cari-pasar');
             
             if (searchInput) {
-                searchInput.value = sellerName; // Otomatis isi kotak pencarian pasar!
+                searchInput.value = sellerName; 
             }
             
-            terapkanFilterPasar(); // Langsung saring produknya!
-            
-            // Kasih notif ke pembeli
+            terapkanFilterPasar(); 
             setTimeout(() => showToast(`Menampilkan etalase toko @${sellerName}`, "success"), 1000);
         } 
         else {
             terapkanFilterPasar();
         }
 
-
     } catch (err) {
-        // [BARU] Tambahkan dua baris ini agar mesin mencatat errornya
         console.error("ERROR DETAIL PASAR PLAYER:", err);
         console.log("Pesan Error:", err.message);
 
         gridPasar.innerHTML = '<div class="col-span-2 text-center py-10 text-red-500 text-xs">Gagal menarik data pasar. Cek koneksi.</div>';
     }
 }
+
 
 function filterKategoriPasar(kat, btnEl) {
     kategoriPasarAktif = kat;
@@ -11529,4 +11538,95 @@ function renderGrafikSeller(labels, dataBerhasil, dataPending, dataGagal) {
             }
         }
     });
+}
+
+// ==========================================
+// ROBOT PEMBERSIH TOKO VIP KEDALUWARSA
+// ==========================================
+async function eksekusiSapuBersihTokoMati() {
+    // 1. Gembok keamanan (Hanya Super Admin yang bisa jalankan)
+    if (!userProfile || userProfile.is_super_admin !== true) return;
+
+    const konfirmasi = await customConfirm("Yakin ingin menjalankan Robot Pembersih? \n\nIni akan membasmi semua produk dari seller yang VIP-nya sudah mati beserta file fotonya di server Biznet GIO.");
+    if (!konfirmasi) return;
+
+    showToast("Robot Pembersih sedang memindai database...", "info");
+
+    try {
+        const waktuSekarang = new Date().toISOString();
+
+        // 2. Cari siapa saja Seller yang VIP-nya sudah lewat masa aktif
+        const { data: expiredSellers, error: errSeller } = await supabaseClient
+            .from('profiles')
+            .select('id, nickname')
+            .eq('is_seller', true)
+            .lt('seller_expired_at', waktuSekarang); // lt = less than (waktunya sudah di bawah waktu saat ini)
+
+        if (errSeller) throw errSeller;
+
+        if (!expiredSellers || expiredSellers.length === 0) {
+            return showToast("Aman! Tidak ada toko yang kedaluwarsa hari ini.", "success");
+        }
+
+        // Kumpulkan ID dari seller-seller yang sudah mati VIP-nya
+        const expiredIds = expiredSellers.map(s => s.id);
+        const namaSellers = expiredSellers.map(s => s.nickname).join(', ');
+        
+        console.log("Mendeteksi VIP kedaluwarsa pada seller:", namaSellers);
+
+        // 3. Tarik semua produk mereka untuk mengambil URL foto Biznet-nya
+        const { data: expiredProducts, error: errProd } = await supabaseClient
+            .from('player_products')
+            .select('id, image_url')
+            .in('user_id', expiredIds);
+
+        if (errProd) throw errProd;
+
+        let totalDihapus = 0;
+
+        if (expiredProducts && expiredProducts.length > 0) {
+            showToast(`Ditemukan ${expiredProducts.length} produk usang. Menghapus foto dari Biznet...`, "info");
+
+            // 4. EKSEKUSI PENGHAPUSAN FILE FISIK BIZNET GIO
+            for (const produk of expiredProducts) {
+                if (produk.image_url) {
+                    const arrFoto = produk.image_url.split(',');
+                    for (const urlFoto of arrFoto) {
+                        if (urlFoto.trim() !== "") {
+                            // Tembak ke API Biznet lu persis seperti sistem Delete Produk biasa
+                            await fetch('/api/delete-s3?type=file', {
+                                method: 'DELETE',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ fileUrl: urlFoto.trim() })
+                            }).catch(e => console.log("Abaikan jika file S3 sudah tidak ada:", e));
+                        }
+                    }
+                }
+            }
+
+            // 5. HAPUS DATA PRODUK DARI DATABASE SUPABASE
+            const { error: errDel } = await supabaseClient
+                .from('player_products')
+                .delete()
+                .in('user_id', expiredIds);
+                
+            if (errDel) throw errDel;
+            totalDihapus = expiredProducts.length;
+        }
+
+        // 6. Cabut status "is_seller" mereka agar laci toko mereka resmi terkunci
+        await supabaseClient
+            .from('profiles')
+            .update({ is_seller: false })
+            .in('id', expiredIds);
+
+        // 7. Refresh UI
+        showToast(`Sapu bersih sukses! ${totalDihapus} produk usang telah dimusnahkan permanen.`, "success");
+        loadAdminDashboard(true); // Refresh data di layar
+        loadPasarPlayer(true);    // Refresh data pasar di latar belakang
+
+    } catch (err) {
+        console.error("Error Sapu Bersih:", err);
+        showToast("Gagal melakukan sapu bersih. Cek koneksi.", "error");
+    }
 }
