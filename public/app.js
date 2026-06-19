@@ -11630,3 +11630,81 @@ async function eksekusiSapuBersihTokoMati() {
         showToast("Gagal melakukan sapu bersih. Cek koneksi.", "error");
     }
 }
+
+// ==========================================
+// BUKU KAS TRANSPARAN UNTUK NIKKY (SUPER ADMIN)
+// ==========================================
+async function loadRiwayatKeuanganGlobal(isRefresh = false) {
+    const listContainer = document.getElementById('admin-buku-kas-list');
+    const iconRefresh = document.getElementById('icon-refresh-kas');
+    if (!listContainer) return;
+
+    if (isRefresh && iconRefresh) iconRefresh.classList.add('fa-spin');
+    
+    if (!isRefresh) {
+        listContainer.innerHTML = '<div class="text-center py-10"><i class="fas fa-circle-notch fa-spin text-brand-info text-2xl mb-2"></i><br><span class="text-[10px] text-gray-500">Merekap Buku Kas...</span></div>';
+    }
+
+    try {
+        // Tarik 50 transaksi terakhir yang sudah SELESAI dari Pasar Player
+        const { data: orders, error } = await supabaseClient
+            .from('orders_player')
+            .select('*, profiles!orders_player_seller_id_fkey(nickname)') // Tarik nama penjualnya
+            .eq('status', 'selesai')
+            .order('waktu_selesai', { ascending: false })
+            .limit(50);
+
+        if (error) throw error;
+
+        if (orders && orders.length > 0) {
+            listContainer.innerHTML = orders.map(order => {
+                // 1. Ambil Data Dasar
+                const hargaAsli = Number(order.price);
+                const isRekber = order.product_name.includes('[+Rekber]');
+                const namaPenjual = order.profiles?.nickname || 'Anonim';
+                
+                // 2. Kalkulasi Uang Jatah Nikky menggunakan rumus bawaan Anda
+                const jatahPajakLapak = hitungPotonganSeller(hargaAsli);
+                
+                // Logika Rekber (mengikuti struktur harga checkout)
+                let subtotalUntukRekber = hargaAsli * (order.fee_ditanggung_pembeli ? 1 : 1); // Penyesuaian jika diperlukan
+                const jatahFeeRekber = isRekber ? hitungFeeRekber(subtotalUntukRekber) : 0;
+                
+                const totalJatahNikky = jatahPajakLapak + jatahFeeRekber;
+
+                // 3. Render Kartu Riwayat
+                return `
+                <div class="bg-black/30 border border-white/5 p-3.5 rounded-2xl flex flex-col gap-2 relative hover:bg-black/40 transition-colors">
+                    <div class="flex justify-between items-start border-b border-white/5 pb-2">
+                        <div class="flex-1 pr-2">
+                            <span class="text-[8px] bg-brand-info/20 text-brand-info font-bold px-2 py-0.5 rounded border border-brand-info/30 uppercase tracking-wider mb-1 inline-block">Transaksi Berhasil</span>
+                            <h4 class="text-[11px] font-bold text-white line-clamp-1">${order.product_name}</h4>
+                            <p class="text-[9px] text-gray-400 mt-0.5">Penjual: @${namaPenjual}</p>
+                        </div>
+                        <div class="text-right shrink-0">
+                            <p class="text-[9px] text-gray-500 mb-0.5">${timeAgo(order.waktu_selesai || order.created_at)}</p>
+                            <h4 class="text-xs font-black text-brand-success">+ Rp ${totalJatahNikky.toLocaleString('id-ID')}</h4>
+                        </div>
+                    </div>
+                    
+                    <div class="flex justify-between items-center bg-white/5 rounded-lg p-2 mt-1">
+                        <div class="flex flex-col">
+                            <span class="text-[8px] text-gray-400 uppercase">Pajak Lapak</span>
+                            <span class="text-[10px] font-bold text-white">Rp ${jatahPajakLapak.toLocaleString('id-ID')}</span>
+                        </div>
+                        <div class="flex flex-col text-right">
+                            <span class="text-[8px] text-gray-400 uppercase">Fee Rekber</span>
+                            <span class="text-[10px] font-bold ${isRekber ? 'text-brand-accent' : 'text-gray-600'}">Rp ${jatahFeeRekber.toLocaleString('id-ID')}</span>
+                        </div>
+                    </div>
+                </div>`;
+            }).join('');
+        } else {
+            listContainer.innerHTML = '<div class="text-center py-6 text-[10px] text-gray-500 border border-white/5 rounded-2xl bg-black/20">Belum ada transaksi selesai.</div>';
+        }
+    } catch (e) {
+        listContainer.innerHTML = '<div class="text-center py-6 text-xs text-red-500">Gagal memuat buku kas.</div>';
+    } finally {
+        if (isRefresh && iconRefresh) iconRefresh.classList.remove('fa-spin');
+    }
+}
