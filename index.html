@@ -29,7 +29,7 @@
 
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script defer src="/app.js?v=109"></script>
+<script defer src="/app.js?v=110"></script>
 <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
 <style>
 
@@ -1050,6 +1050,23 @@ Sistem Jual Beli Otomatis, Database Ripper, dan Rekber <strong>NIKKY</strong>. D
 <button onclick="eksekusiSapuBersihTokoMati()" class="w-full bg-gradient-to-r from-red-600 to-red-800 hover:from-red-500 hover:to-red-700 text-white py-3.5 rounded-2xl font-extrabold active:scale-95 transition-all uppercase tracking-wider text-xs shadow-[0_4px_15px_rgba(220,38,38,0.4)] flex justify-center items-center gap-2 mb-6 relative z-10 border border-red-500/50">
     <i class="fas fa-broom text-base"></i> Bersihkan Toko Mati & File Biznet
 </button>
+
+    <div class="flex justify-between items-center mb-4 mt-2 relative z-10">
+        <div class="flex items-center gap-2.5">
+            <div class="w-1.5 h-4 bg-brand-info rounded-full"></div>
+            <h3 class="text-xs font-extrabold text-gray-400 uppercase tracking-widest">Buku Kas Keseluruhan</h3>
+        </div>
+        <button onclick="loadRiwayatKeuanganGlobal(true)" class="text-brand-info bg-brand-info/10 px-3 py-1.5 rounded-lg text-[10px] font-bold active:scale-95 transition-all border border-brand-info/30 shadow-sm flex items-center gap-1.5">
+            <i id="icon-refresh-kas" class="fas fa-sync-alt"></i> Refresh
+        </button>
+    </div>
+
+    <div id="admin-buku-kas-list" class="flex flex-col gap-3 mb-8 relative z-10 max-h-[350px] overflow-y-auto hide-scroll pb-2">
+        <div class="text-center py-10 flex flex-col items-center justify-center bg-black/20 rounded-2xl border border-white/5">
+            <i class="fas fa-spinner fa-spin text-brand-info text-2xl mb-3"></i>
+            <span class="text-[10px] text-gray-500 font-bold tracking-widest uppercase">Merekap Buku Kas...</span>
+        </div>
+    </div>
 
     <div class="flex items-center gap-2.5 mb-4 relative z-10">
         <div class="w-1.5 h-4 bg-yellow-500 rounded-full"></div>
