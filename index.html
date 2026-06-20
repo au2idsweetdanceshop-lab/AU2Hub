@@ -29,7 +29,7 @@
 
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script defer src="/app.js?v=113"></script>
+<script defer src="/app.js?v=114"></script>
 <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
 <style>
 
@@ -856,9 +856,11 @@ Sistem Jual Beli Otomatis, Database Ripper, dan Rekber <strong>NIKKY</strong>. D
                     </div>
                 </div>
 
-                <!-- GRID STATISTIK 8 KOTAK -->
-                <div class="grid grid-cols-2 gap-3 mb-6">
-                    <div onclick="bukaModalSaldoDompet()" class="col-span-2 bg-[#1C233A] rounded-[1.2rem] p-4 sm:p-5 flex justify-between items-center border border-white/5 cursor-pointer hover:bg-[#232A45] active:scale-95 transition-all shadow-md overflow-hidden">
+                                <!-- GRID STATISTIK BERURUT KE BAWAH -->
+                <div class="flex flex-col gap-3 mb-6">
+                    
+                    <!-- 1. Saldo Tersedia (Utama) -->
+                    <div onclick="bukaModalSaldoDompet()" class="bg-[#1C233A] rounded-[1.2rem] p-4 sm:p-5 flex justify-between items-center border border-white/5 cursor-pointer hover:bg-[#232A45] active:scale-95 transition-all shadow-md overflow-hidden">
                         <div class="flex-1 min-w-0 pr-3">
                             <p class="text-[9px] text-gray-400 font-extrabold uppercase tracking-widest mb-1.5">Saldo Tersedia</p>
                             <h3 id="toko-saldo-aktif" class="text-[clamp(1.3rem,6vw,1.875rem)] font-black text-[#2BD975] leading-none whitespace-nowrap tracking-tight">Rp 0</h3>
@@ -868,37 +870,62 @@ Sistem Jual Beli Otomatis, Database Ripper, dan Rekber <strong>NIKKY</strong>. D
                         </div>
                     </div>
                     
-                    <div class="bg-[#1C233A] rounded-xl p-3 flex items-center gap-2.5 border border-white/5 shadow-sm">
-                        <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-yellow-500/10 flex items-center justify-center shrink-0"><i class="fas fa-clock text-yellow-500 text-[10px] sm:text-[11px]"></i></div>
-                        <div class="flex-1 min-w-0"><p class="text-[8px] text-gray-400 font-bold uppercase tracking-wider mb-0.5 truncate">Pending</p><h3 id="toko-saldo-tertahan" class="text-[11px] sm:text-[12px] font-extrabold text-white whitespace-nowrap tracking-tight">Rp 0</h3></div>
+                    <!-- 2. Pending -->
+                    <div class="bg-[#1C233A] rounded-[1rem] p-3.5 flex items-center justify-between border border-white/5 shadow-sm hover:bg-white/5 transition-colors">
+                        <div class="flex items-center gap-3">
+                            <div class="w-9 h-9 rounded-full bg-yellow-500/10 flex items-center justify-center shrink-0 border border-yellow-500/20"><i class="fas fa-clock text-yellow-500 text-sm"></i></div>
+                            <p class="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Pending</p>
+                        </div>
+                        <h3 id="toko-saldo-tertahan" class="text-sm font-black text-white whitespace-nowrap tracking-tight">Rp 0</h3>
                     </div>
 
-                    <div class="bg-[#1C233A] rounded-xl p-3 flex items-center gap-2.5 border border-white/5 shadow-sm">
-                        <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-gray-400/10 flex items-center justify-center shrink-0"><i class="fas fa-arrow-down text-gray-400 text-[10px] sm:text-[11px]"></i></div>
-                        <div class="flex-1 min-w-0"><p class="text-[8px] text-gray-400 font-bold uppercase tracking-wider mb-0.5 truncate">Keluar</p><h3 class="text-[11px] sm:text-[12px] font-extrabold text-white whitespace-nowrap tracking-tight">Rp 0</h3></div>
+                    <!-- 3. Keluar -->
+                    <div class="bg-[#1C233A] rounded-[1rem] p-3.5 flex items-center justify-between border border-white/5 shadow-sm hover:bg-white/5 transition-colors">
+                        <div class="flex items-center gap-3">
+                            <div class="w-9 h-9 rounded-full bg-gray-400/10 flex items-center justify-center shrink-0 border border-gray-400/20"><i class="fas fa-arrow-down text-gray-400 text-sm"></i></div>
+                            <p class="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Keluar</p>
+                        </div>
+                        <h3 class="text-sm font-black text-white whitespace-nowrap tracking-tight">Rp 0</h3>
                     </div>
 
-                    <div class="bg-[#1C233A] rounded-xl p-3 flex items-center gap-2.5 border border-white/5 shadow-sm">
-                        <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-[#EC4899]/10 flex items-center justify-center shrink-0"><i class="fas fa-chart-line text-[#EC4899] text-[10px] sm:text-[11px]"></i></div>
-                        <div class="flex-1 min-w-0"><p class="text-[8px] text-gray-400 font-bold uppercase tracking-wider mb-0.5 truncate">Omzet Total</p><h3 id="seller-stat-gmv" class="text-[11px] sm:text-[12px] font-extrabold text-white whitespace-nowrap tracking-tight">Rp 0</h3></div>
+                    <!-- 4. Omzet Total -->
+                    <div class="bg-[#1C233A] rounded-[1rem] p-3.5 flex items-center justify-between border border-white/5 shadow-sm hover:bg-white/5 transition-colors">
+                        <div class="flex items-center gap-3">
+                            <div class="w-9 h-9 rounded-full bg-[#EC4899]/10 flex items-center justify-center shrink-0 border border-[#EC4899]/20"><i class="fas fa-chart-line text-[#EC4899] text-sm"></i></div>
+                            <p class="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Omzet Total</p>
+                        </div>
+                        <h3 id="seller-stat-gmv" class="text-sm font-black text-white whitespace-nowrap tracking-tight">Rp 0</h3>
                     </div>
 
-                    <div class="bg-[#1C233A] rounded-xl p-3 flex items-center gap-2.5 border border-white/5 shadow-sm">
-                        <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-[#D946EF]/10 flex items-center justify-center shrink-0"><i class="fas fa-check-double text-[#D946EF] text-[10px] sm:text-[11px]"></i></div>
-                        <div class="flex-1 min-w-0"><p class="text-[8px] text-gray-400 font-bold uppercase tracking-wider mb-0.5 truncate">Bersih</p><h3 id="seller-stat-bersih" class="text-[11px] sm:text-[12px] font-extrabold text-white whitespace-nowrap tracking-tight">Rp 0</h3></div>
+                    <!-- 5. Bersih -->
+                    <div class="bg-[#1C233A] rounded-[1rem] p-3.5 flex items-center justify-between border border-white/5 shadow-sm hover:bg-white/5 transition-colors">
+                        <div class="flex items-center gap-3">
+                            <div class="w-9 h-9 rounded-full bg-[#D946EF]/10 flex items-center justify-center shrink-0 border border-[#D946EF]/20"><i class="fas fa-check-double text-[#D946EF] text-sm"></i></div>
+                            <p class="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Bersih</p>
+                        </div>
+                        <h3 id="seller-stat-bersih" class="text-sm font-black text-white whitespace-nowrap tracking-tight">Rp 0</h3>
                     </div>
 
-                    <div class="bg-[#1C233A] rounded-xl p-3 flex items-center gap-2.5 border border-white/5 shadow-sm">
-                        <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-[#84CC16]/10 flex items-center justify-center shrink-0"><i class="fas fa-box text-[#84CC16] text-[10px] sm:text-[11px]"></i></div>
-                        <div class="flex-1 min-w-0"><p class="text-[8px] text-gray-400 font-bold uppercase tracking-wider mb-0.5 truncate">Produk</p><h3 id="seller-stat-produk" class="text-[11px] sm:text-[12px] font-extrabold text-white whitespace-nowrap tracking-tight">0</h3></div>
+                    <!-- 6. Produk -->
+                    <div class="bg-[#1C233A] rounded-[1rem] p-3.5 flex items-center justify-between border border-white/5 shadow-sm hover:bg-white/5 transition-colors">
+                        <div class="flex items-center gap-3">
+                            <div class="w-9 h-9 rounded-full bg-[#84CC16]/10 flex items-center justify-center shrink-0 border border-[#84CC16]/20"><i class="fas fa-box text-[#84CC16] text-sm"></i></div>
+                            <p class="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Produk</p>
+                        </div>
+                        <h3 id="seller-stat-produk" class="text-sm font-black text-white whitespace-nowrap tracking-tight">0</h3>
                     </div>
 
-                    <div class="bg-[#1C233A] rounded-xl p-3 flex items-center gap-2.5 border border-white/5 shadow-sm">
-                        <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-[#06B6D4]/10 flex items-center justify-center shrink-0"><i class="fas fa-exchange-alt text-[#06B6D4] text-[10px] sm:text-[11px]"></i></div>
-                        <div class="flex-1 min-w-0"><p class="text-[8px] text-gray-400 font-bold uppercase tracking-wider mb-0.5 truncate">Pesanan</p><h3 id="seller-stat-terjual" class="text-[11px] sm:text-[12px] font-extrabold text-white whitespace-nowrap tracking-tight">0</h3></div>
+                    <!-- 7. Pesanan -->
+                    <div class="bg-[#1C233A] rounded-[1rem] p-3.5 flex items-center justify-between border border-white/5 shadow-sm hover:bg-white/5 transition-colors">
+                        <div class="flex items-center gap-3">
+                            <div class="w-9 h-9 rounded-full bg-[#06B6D4]/10 flex items-center justify-center shrink-0 border border-[#06B6D4]/20"><i class="fas fa-exchange-alt text-[#06B6D4] text-sm"></i></div>
+                            <p class="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Pesanan</p>
+                        </div>
+                        <h3 id="seller-stat-terjual" class="text-sm font-black text-white whitespace-nowrap tracking-tight">0</h3>
                     </div>
+                    
                 </div>
-
+                
                 <!-- HALAMAN PUBLIK -->
                 <div class="mb-8">
                     <h3 class="text-xs font-extrabold text-gray-400 mb-3 tracking-widest uppercase flex items-center gap-2"><i class="fas fa-link text-brand-info"></i> Link Toko Publik</h3>
@@ -1284,6 +1311,25 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
     </div>
 </section>
 
+<section id="tokopublik" class="tab-content py-2 min-h-[70vh] flex flex-col relative">
+    <!-- Header Toko -->
+    <div class="flex items-center gap-3 mb-4 mt-2 border-b border-white/5 pb-4 sticky top-[60px] bg-[#0F0920]/95 backdrop-blur-xl z-20 pt-4 -mx-5 px-5">
+        <button onclick="history.back()" class="w-9 h-9 rounded-full bg-white/5 flex items-center justify-center text-white hover:bg-white/10 active:scale-95 transition-all border border-white/10 shadow-sm shrink-0"><i class="fas fa-arrow-left"></i></button>
+        <div class="flex items-center gap-3 flex-1 min-w-0">
+            <img id="tokopublik-avatar" src="" class="w-10 h-10 rounded-full object-cover border border-white/10 shrink-0 shadow-sm">
+            <div class="truncate">
+                <h2 id="tokopublik-nama" class="text-base font-extrabold text-white truncate flex items-center gap-1 leading-tight">Mencari Toko...</h2>
+                <p class="text-[10px] text-gray-400 mt-0.5"><i class="fas fa-store text-[#EE4D2D] mr-1"></i> Etalase Resmi</p>
+            </div>
+        </div>
+        <button onclick="salinLinkTokoPublikLuar()" class="w-9 h-9 rounded-full bg-brand-info/10 text-brand-info flex items-center justify-center active:scale-95 transition-all shrink-0 border border-brand-info/20 shadow-sm"><i class="fas fa-share-alt text-xs"></i></button>
+    </div>
+
+    <!-- Grid Etalase Khusus Toko Ini -->
+    <div id="grid-tokopublik" class="grid grid-cols-2 gap-3 pb-10 relative z-10 pt-2">
+        <div class="col-span-2 text-center py-10 text-brand-info"><i class="fas fa-spinner fa-spin text-3xl mb-3"></i><br><span class="text-xs font-bold uppercase tracking-widest">Membuka Toko...</span></div>
+    </div>
+</section>
 
 </main>
 
@@ -1920,6 +1966,10 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
         </button>
     </div>
 </div>
+                    <div id="wadah-rincian-transaksi" class="bg-black/40 rounded-2xl p-4 border border-white/5 mt-4 hidden shadow-inner">
+                        <div class="flex justify-center py-2"><i class="fas fa-spinner fa-spin text-brand-info"></i></div>
+                    </div>
+
                     </div>
                 </div>
 
