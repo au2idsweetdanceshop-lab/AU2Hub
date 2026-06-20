@@ -10231,6 +10231,18 @@ async function loadPesananMasuk() {
         if (error) throw error;
 
         if (data && data.length > 0) {
+                // Notifikasi lencana merah di tab Pesanan
+        const badgePesanan = document.getElementById('badge-toko-pesanan');
+        if (badgePesanan) {
+            // Hitung pesanan yang berstatus PENDING atau DIPROSES
+            const pesananAktif = data.filter(o => o.status === 'PENDING' || o.status === 'SUCCESS' || o.status === 'proses').length;
+            if (pesananAktif > 0) {
+                badgePesanan.innerText = pesananAktif;
+                badgePesanan.classList.remove('hidden');
+            } else {
+                badgePesanan.classList.add('hidden');
+            }
+        }
             container.innerHTML = data.map(order => {
                 const isSelesai = order.status === 'selesai';
                 const isPending = order.status === 'PENDING';
@@ -10427,7 +10439,7 @@ async function prosesTarikSaldo() {
         // 3. Minta nominal yang ingin ditarik
         const nominalInput = await customPrompt(`Masukkan nominal yang ingin ditarik (Saldo: Rp ${saldoMurni.toLocaleString('id-ID')}).
 
-Catatan: Akan ada potongan biaya transfer Rp 3.500 dari nominal yang ditarik.`, "10000");
+Catatan: Akan ada potongan biaya admin Rp 500 dari nominal yang ditarik.`, "10000");
         if (!nominalInput) return; // Batal jika di-cancel / kosong
         
         // Bersihkan inputan dari huruf atau titik
@@ -10459,10 +10471,10 @@ Catatan: Akan ada potongan biaya transfer Rp 3.500 dari nominal yang ditarik.`, 
         if (rpcError) throw rpcError;
 
         // 8. Arahkan ke WhatsApp Admin (Penomoran langsung lompat ke 8 sesuai kodemu)
-        const danaBersih = nominalTarik - 3500;
+        const danaBersih = nominalTarik - 500;
 const teks = encodeURIComponent(`Halo Admin, saya ${profile.nickname} ingin tarik saldo.
 Nominal Potong Saldo: Rp ${nominalTarik.toLocaleString('id-ID')}
-*Terima Bersih (Setelah Potong 3.500): Rp ${danaBersih.toLocaleString('id-ID')}*
+*Terima Bersih (Setelah Potong 500): Rp ${danaBersih.toLocaleString('id-ID')}*
 
 Ke Rekening: ${rek}`);
         window.open(`https://wa.me/9647808097471?text=${teks}`, '_blank');
@@ -10803,6 +10815,7 @@ function bukaSuperAdmin() {
     }
     switchTab('superadmin');
     loadAdminDashboard();
+    loadRiwayatKeuanganGlobal(); // <--- TAMBAHKAN BARIS INI
 }
 
 
@@ -10846,7 +10859,15 @@ async function loadAdminDashboard(isRefresh = false) {
         
         const elCountPending = document.getElementById('admin-count-pending');
         if (elCountPending) elCountPending.innerText = data.length;
-
+        const badgeAntrean = document.getElementById('badge-admin-antrean');
+        if (badgeAntrean) {
+            if (data.length > 0) {
+                badgeAntrean.innerText = data.length;
+                badgeAntrean.classList.remove('hidden');
+            } else {
+                badgeAntrean.classList.add('hidden');
+            }
+        }
         let totalNominalTransfer = 0; 
 
         if (data.length > 0) {
@@ -10859,7 +10880,7 @@ async function loadAdminDashboard(isRefresh = false) {
                     noRek = parts[1].trim();
                 }
                 
-                let nominalBersih = Number(req.nominal) - 3500;
+                let nominalBersih = Number(req.nominal) - 500;
                 if (nominalBersih < 0) nominalBersih = 0;
                 
                 totalNominalTransfer += nominalBersih; 
@@ -11035,8 +11056,8 @@ async function setujuiPenarikan(wdId, nickname) {
             message: `[SISTEM] Penarikan saldo berhasil diproses!
 
 Potong Saldo: Rp ${Number(wdData.nominal).toLocaleString('id-ID')}
-Biaya Transfer: Rp 3.500
-*Dana Masuk ke Bank: Rp ${(Number(wdData.nominal) - 3500).toLocaleString('id-ID')}*
+Biaya Admin: Rp 500
+*Dana Masuk ke Bank: Rp ${(Number(wdData.nominal) - 500).toLocaleString('id-ID')}*
 
 Silakan cek mutasi rekening Anda.`
         });
@@ -11057,7 +11078,7 @@ Silakan cek mutasi rekening Anda.`
             const { error: updateErr } = await supabaseClient
                 .from('wallet_transactions')
                 .update({ 
-                    description: `✅ BERHASIL: Dana Cair Rp ${(Number(wdData.nominal) - 3500).toLocaleString('id-ID')} (Potong Admin 3.500)` 
+                    description: `✅ BERHASIL: Dana Cair Rp ${(Number(wdData.nominal) - 500).toLocaleString('id-ID')} (Potong Admin 500)` 
                 })
                 .eq('id', pendingTx[0].id);
                 
@@ -11415,37 +11436,50 @@ function salinLinkToko() {
 
 
 // 4. Modifikasi Switch Tab biar gaya tombolnya cocok dengan UI Baru
+let tokoTabAktif = 'dashboard'; // Default tab adalah Dashboard
+
 function switchTokoTab(tab) {
     tokoTabAktif = tab; 
 
-    const contProduk = document.getElementById('toko-produk-container');
-    const contPesanan = document.getElementById('toko-pesanan-container');
-    const menuProduk = document.getElementById('menu-toko-produk');
+    // Ambil Elemen Wadah Konten
+    const contDash = document.getElementById('toko-tab-dashboard');
+    const contPesanan = document.getElementById('toko-tab-pesanan');
+    const contProduk = document.getElementById('toko-tab-produk');
+    
+    // Ambil Elemen Tombol Navbar
+    const menuDash = document.getElementById('menu-toko-dash');
     const menuPesanan = document.getElementById('menu-toko-pesanan');
-    const title = document.getElementById('toko-section-title');
+    const menuProduk = document.getElementById('menu-toko-produk');
 
-    // Style tombol Switcher Baru
+    // Style tombol saat Aktif / Tidak Aktif
     const activeClass = 'bg-[#2A3452] text-white shadow-sm';
     const inactiveClass = 'bg-transparent text-gray-400 hover:text-white';
 
-    if (tab === 'produk') {
-        title.innerText = "Etalase Produk Saya";
-        menuProduk.className = `flex-1 py-2.5 text-xs font-bold rounded-lg transition-all ${activeClass}`;
-        menuPesanan.className = `flex-1 py-2.5 text-xs font-bold rounded-lg transition-all ${inactiveClass}`;
-        
-        contProduk.classList.replace('hidden', 'block');
-        contPesanan.classList.replace('block', 'hidden');
-        if(currentUser) loadProdukSaya();
-    } else {
-        title.innerText = "Daftar Pesanan Masuk";
-        menuPesanan.className = `flex-1 py-2.5 text-xs font-bold rounded-lg transition-all ${activeClass}`;
-        menuProduk.className = `flex-1 py-2.5 text-xs font-bold rounded-lg transition-all ${inactiveClass}`;
-        
+    // 1. Matikan Semua Tombol
+    menuDash.className = `flex-1 py-3 text-[10px] sm:text-[11px] font-bold rounded-lg transition-all ${inactiveClass}`;
+    menuPesanan.className = `flex-1 py-3 text-[10px] sm:text-[11px] font-bold rounded-lg transition-all relative ${inactiveClass}`;
+    menuProduk.className = `flex-1 py-3 text-[10px] sm:text-[11px] font-bold rounded-lg transition-all ${inactiveClass}`;
+    
+    // 2. Sembunyikan Semua Layar
+    contDash.classList.replace('block', 'hidden');
+    contPesanan.classList.replace('block', 'hidden');
+    contProduk.classList.replace('block', 'hidden');
+
+    // 3. Nyalakan Layar yang Diklik
+    if (tab === 'dashboard') {
+        menuDash.className = `flex-1 py-3 text-[10px] sm:text-[11px] font-bold rounded-lg transition-all ${activeClass}`;
+        contDash.classList.replace('hidden', 'block');
+    } else if (tab === 'pesanan') {
+        menuPesanan.className = `flex-1 py-3 text-[10px] sm:text-[11px] font-bold rounded-lg transition-all relative ${activeClass}`;
         contPesanan.classList.replace('hidden', 'block');
-        contProduk.classList.replace('block', 'hidden');
-        if(currentUser) loadPesananMasuk();
+        if (currentUser) loadPesananMasuk();
+    } else if (tab === 'produk') {
+        menuProduk.className = `flex-1 py-3 text-[10px] sm:text-[11px] font-bold rounded-lg transition-all ${activeClass}`;
+        contProduk.classList.replace('hidden', 'block');
+        if (currentUser) loadProdukSaya();
     }
 }
+
 
 // ==========================================
 // MESIN GRAFIK CHART.JS (REAL-TIME DATA)
@@ -11632,7 +11666,7 @@ async function eksekusiSapuBersihTokoMati() {
 }
 
 // ==========================================
-// BUKU KAS TRANSPARAN UNTUK NIKKY (SUPER ADMIN)
+// BUKU KAS TRANSPARAN UNTUK NIKKY (SUPER ADMIN) - DENGAN REKAP HARIAN
 // ==========================================
 async function loadRiwayatKeuanganGlobal(isRefresh = false) {
     const listContainer = document.getElementById('admin-buku-kas-list');
@@ -11646,59 +11680,113 @@ async function loadRiwayatKeuanganGlobal(isRefresh = false) {
     }
 
     try {
-        // Tarik 50 transaksi terakhir yang sudah SELESAI dari Pasar Player
+        // Tarik 100 transaksi terakhir yang sudah SELESAI dari Pasar Player
         const { data: orders, error } = await supabaseClient
             .from('orders_player')
             .select('*, profiles!orders_player_seller_id_fkey(nickname)') // Tarik nama penjualnya
             .eq('status', 'selesai')
             .order('waktu_selesai', { ascending: false })
-            .limit(50);
+            .limit(100);
 
         if (error) throw error;
 
         if (orders && orders.length > 0) {
-            listContainer.innerHTML = orders.map(order => {
-                // 1. Ambil Data Dasar
+            
+            // 1. KELOMPOKKAN DATA BERDASARKAN HARI
+            const groupedData = {};
+
+            orders.forEach(order => {
+                // Ambil tanggal murni untuk dijadikan grup (misal: "Kamis, 15 Juni 2026")
+                const dateObj = new Date(order.waktu_selesai || order.created_at);
+                const dateString = dateObj.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+
+                // Buat keranjang hari jika belum ada
+                if (!groupedData[dateString]) {
+                    groupedData[dateString] = {
+                        dateLabel: dateString,
+                        totalPendapatanHariIni: 0,
+                        transactions: []
+                    };
+                }
+
+                // Kalkulasi Pendapatan Jatah Admin (Nikky)
                 const hargaAsli = Number(order.price);
                 const isRekber = order.product_name.includes('[+Rekber]');
                 const namaPenjual = order.profiles?.nickname || 'Anonim';
                 
-                // 2. Kalkulasi Uang Jatah Nikky menggunakan rumus bawaan Anda
                 const jatahPajakLapak = hitungPotonganSeller(hargaAsli);
-                
-                // Logika Rekber (mengikuti struktur harga checkout)
-                let subtotalUntukRekber = hargaAsli * (order.fee_ditanggung_pembeli ? 1 : 1); // Penyesuaian jika diperlukan
+                let subtotalUntukRekber = hargaAsli;
                 const jatahFeeRekber = isRekber ? hitungFeeRekber(subtotalUntukRekber) : 0;
-                
                 const totalJatahNikky = jatahPajakLapak + jatahFeeRekber;
 
-                // 3. Render Kartu Riwayat
-                return `
-                <div class="bg-black/30 border border-white/5 p-3.5 rounded-2xl flex flex-col gap-2 relative hover:bg-black/40 transition-colors">
-                    <div class="flex justify-between items-start border-b border-white/5 pb-2">
-                        <div class="flex-1 pr-2">
-                            <span class="text-[8px] bg-brand-info/20 text-brand-info font-bold px-2 py-0.5 rounded border border-brand-info/30 uppercase tracking-wider mb-1 inline-block">Transaksi Berhasil</span>
-                            <h4 class="text-[11px] font-bold text-white line-clamp-1">${order.product_name}</h4>
-                            <p class="text-[9px] text-gray-400 mt-0.5">Penjual: @${namaPenjual}</p>
-                        </div>
-                        <div class="text-right shrink-0">
-                            <p class="text-[9px] text-gray-500 mb-0.5">${timeAgo(order.waktu_selesai || order.created_at)}</p>
-                            <h4 class="text-xs font-black text-brand-success">+ Rp ${totalJatahNikky.toLocaleString('id-ID')}</h4>
+                // Tambahkan pendapatan ke total hari ini
+                groupedData[dateString].totalPendapatanHariIni += totalJatahNikky;
+
+                // Masukkan detail pesanan ke dalam array harian
+                groupedData[dateString].transactions.push({
+                    id: order.id,
+                    product_name: order.product_name,
+                    namaPenjual: namaPenjual,
+                    waktuJam: dateObj.getHours().toString().padStart(2, '0') + ':' + dateObj.getMinutes().toString().padStart(2, '0') + ' WIB',
+                    totalJatahNikky,
+                    jatahPajakLapak,
+                    jatahFeeRekber,
+                    isRekber
+                });
+            });
+
+            // 2. RENDER HTML DARI DATA YANG SUDAH DIKELOMPOKKAN
+            let htmlOutput = '';
+
+            // Loop setiap grup hari
+            for (const dateKey in groupedData) {
+                const grup = groupedData[dateKey];
+
+                htmlOutput += `
+                <div class="mb-5 bg-black/20 rounded-[1.2rem] p-3 border border-white/5 shadow-md">
+                    <!-- HEADER TANGGAL & TOTAL PENDAPATAN -->
+                    <div class="flex justify-between items-center mb-3 pb-3 border-b border-white/10 px-1">
+                        <h3 class="text-[11px] font-extrabold text-white flex items-center gap-2">
+                            <i class="far fa-calendar-alt text-brand-info text-sm"></i> ${grup.dateLabel}
+                        </h3>
+                        <div class="text-right">
+                            <span class="text-[8px] text-gray-400 uppercase tracking-widest block mb-0.5">Total Hari Ini</span>
+                            <span class="text-xs font-black text-brand-success">+ Rp ${grup.totalPendapatanHariIni.toLocaleString('id-ID')}</span>
                         </div>
                     </div>
-                    
-                    <div class="flex justify-between items-center bg-white/5 rounded-lg p-2 mt-1">
-                        <div class="flex flex-col">
-                            <span class="text-[8px] text-gray-400 uppercase">Pajak Lapak</span>
-                            <span class="text-[10px] font-bold text-white">Rp ${jatahPajakLapak.toLocaleString('id-ID')}</span>
-                        </div>
-                        <div class="flex flex-col text-right">
-                            <span class="text-[8px] text-gray-400 uppercase">Fee Rekber</span>
-                            <span class="text-[10px] font-bold ${isRekber ? 'text-brand-accent' : 'text-gray-600'}">Rp ${jatahFeeRekber.toLocaleString('id-ID')}</span>
-                        </div>
+
+                    <!-- LIST TRANSAKSI DI HARI TERSEBUT -->
+                    <div class="flex flex-col gap-2.5">
+                        ${grup.transactions.map(tx => `
+                        <div class="bg-black/40 border border-white/5 p-3 rounded-xl flex flex-col gap-2 relative hover:bg-black/60 transition-colors">
+                            <div class="flex justify-between items-start border-b border-white/5 pb-2">
+                                <div class="flex-1 pr-2">
+                                    <h4 class="text-[11px] font-bold text-white line-clamp-1">${tx.product_name}</h4>
+                                    <p class="text-[9px] text-gray-400 mt-0.5">Penjual: @${tx.namaPenjual}</p>
+                                </div>
+                                <div class="text-right shrink-0">
+                                    <p class="text-[9px] text-gray-500 mb-0.5">${tx.waktuJam}</p>
+                                    <h4 class="text-[11px] font-black text-brand-success">+ Rp ${tx.totalJatahNikky.toLocaleString('id-ID')}</h4>
+                                </div>
+                            </div>
+                            
+                            <div class="flex justify-between items-center bg-white/5 rounded-lg p-2">
+                                <div class="flex flex-col">
+                                    <span class="text-[8px] text-gray-400 uppercase">Pajak Lapak</span>
+                                    <span class="text-[10px] font-bold text-white">Rp ${tx.jatahPajakLapak.toLocaleString('id-ID')}</span>
+                                </div>
+                                <div class="flex flex-col text-right">
+                                    <span class="text-[8px] text-gray-400 uppercase">Fee Rekber</span>
+                                    <span class="text-[10px] font-bold ${tx.isRekber ? 'text-brand-accent' : 'text-gray-600'}">Rp ${tx.jatahFeeRekber.toLocaleString('id-ID')}</span>
+                                </div>
+                            </div>
+                        </div>`).join('')}
                     </div>
                 </div>`;
-            }).join('');
+            }
+
+            listContainer.innerHTML = htmlOutput;
+
         } else {
             listContainer.innerHTML = '<div class="text-center py-6 text-[10px] text-gray-500 border border-white/5 rounded-2xl bg-black/20">Belum ada transaksi selesai.</div>';
         }
@@ -11706,5 +11794,49 @@ async function loadRiwayatKeuanganGlobal(isRefresh = false) {
         listContainer.innerHTML = '<div class="text-center py-6 text-xs text-red-500">Gagal memuat buku kas.</div>';
     } finally {
         if (isRefresh && iconRefresh) iconRefresh.classList.remove('fa-spin');
+    }
+}
+
+
+// ==========================================
+// FUNGSI SWITCH TAB UNTUK SUPER ADMIN
+// ==========================================
+let adminTabAktif = 'dashboard';
+
+function switchAdminTab(tab) {
+    adminTabAktif = tab;
+
+    const contDash = document.getElementById('admin-tab-dashboard');
+    const contKas = document.getElementById('admin-tab-kas');
+    const contAntrean = document.getElementById('admin-tab-antrean');
+    
+    const menuDash = document.getElementById('menu-admin-dash');
+    const menuKas = document.getElementById('menu-admin-kas');
+    const menuAntrean = document.getElementById('menu-admin-antrean');
+
+    // Styling tombol (Warna saat aktif & non-aktif)
+    const activeClass = 'bg-brand-accent text-white shadow-sm';
+    const inactiveClass = 'bg-transparent text-gray-400 hover:text-white';
+
+    // 1. Reset semua warna tombol ke Abu-abu
+    menuDash.className = `flex-1 py-3 text-[10px] sm:text-[11px] font-bold rounded-lg transition-all ${inactiveClass}`;
+    menuKas.className = `flex-1 py-3 text-[10px] sm:text-[11px] font-bold rounded-lg transition-all ${inactiveClass}`;
+    menuAntrean.className = `flex-1 py-3 text-[10px] sm:text-[11px] font-bold rounded-lg transition-all relative ${inactiveClass}`;
+    
+    // 2. Sembunyikan semua laci (wadah list)
+    contDash.classList.replace('block', 'hidden');
+    contKas.classList.replace('block', 'hidden');
+    contAntrean.classList.replace('block', 'hidden');
+
+    // 3. Nyalakan tab yang dipencet
+    if (tab === 'dashboard') {
+        menuDash.className = `flex-1 py-3 text-[10px] sm:text-[11px] font-bold rounded-lg transition-all ${activeClass}`;
+        contDash.classList.replace('hidden', 'block');
+    } else if (tab === 'kas') {
+        menuKas.className = `flex-1 py-3 text-[10px] sm:text-[11px] font-bold rounded-lg transition-all ${activeClass}`;
+        contKas.classList.replace('hidden', 'block');
+    } else if (tab === 'antrean') {
+        menuAntrean.className = `flex-1 py-3 text-[10px] sm:text-[11px] font-bold rounded-lg transition-all relative ${activeClass}`;
+        contAntrean.classList.replace('hidden', 'block');
     }
 }
