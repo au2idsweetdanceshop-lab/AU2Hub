@@ -9814,10 +9814,6 @@ function toggleStockInput(kategori, wadahId) {
     }
 }
 
-
-// Tambahkan variabel memori ini tepat di atas fungsinya
-let tokoTabAktif = 'pesanan'; // Menyimpan riwayat tab terakhir yang dibuka seller
-
 // ==========================================
 // GATEKEEPER 1: TOMBOL TAMBAH PRODUK
 // ==========================================
