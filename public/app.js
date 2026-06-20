@@ -1998,12 +1998,24 @@ window.addEventListener('popstate', () => {
         checkSession();
     }
     
-    // 🔥 PERBAIKAN: Jaring Pengaman Mutlak
-    // Jika URL yang tersisa bukan nama tab asli (misal nyangkut di hashtag aneh), 
-    // paksa kembalikan ke tab sebelumnya, JANGAN lempar ke Home!
+    // 🔥 PERBAIKAN: Jaring Pengaman Mutlak + Deteksi Link Toko Shopee
     const cleanHash = newHash.split('?')[0];
     const validTabs = ['home', 'sosial', 'pasar', 'toko', 'layanan', 'pesanan', 'profile', 'pembayaran', 'superadmin', 'tokopublik'];
     
+    // [BARU] Jika user klik link Toko Publik dari chat atau luar aplikasi
+    if (newHash.startsWith('tokopublik?seller=') || newHash.startsWith('pasar?seller=')) {
+        const sellerName = decodeURIComponent(newHash.split('=')[1]);
+        
+        // Paksa ubah URL di address bar jadi tokopublik (backwards compatibility)
+        if (newHash.startsWith('pasar?seller=')) {
+            history.replaceState(null, null, '#tokopublik?seller=' + encodeURIComponent(sellerName));
+        }
+        
+        switchTab('tokopublik', null, false);
+        loadTokoPublikLuar(sellerName); // Panggil UI Shopee-nya!
+        return; // Hentikan script di sini
+    }
+
     if (!validTabs.includes(cleanHash)) {
         history.replaceState(null, null, '#' + tabSebelumnya);
         switchTab(tabSebelumnya, null, false);
@@ -2011,7 +2023,6 @@ window.addEventListener('popstate', () => {
         switchTab(cleanHash, null, false);
     }
 });
-
 
 // FUNGSI KEMBALI DARI PROFIL YANG SUDAH DIPERBAIKI SANGAT AMAN
 function kembaliDariProfil() {
@@ -10155,7 +10166,11 @@ async function loadPasarPlayer(forceRefresh = false) {
         renderKategoriPasarTabs(globalDataPasar);
         terapkanFilterPasar(); 
 
-        // --- LOGIKA PENDETEKSI LINK (Tetap Sama) ---
+        // 3. MASUKKAN DATA YANG SUDAH BERSIH KE VARIABEL GLOBAL
+        globalDataPasar = produkSellerAktif;
+        renderKategoriPasarTabs(globalDataPasar);
+
+        // --- LOGIKA PENDETEKSI LINK (Diperbarui) ---
         const urlHash = window.location.hash.substring(1);
         
         if (urlHash.startsWith('detailpasar?id=')) {
@@ -10164,14 +10179,8 @@ async function loadPasarPlayer(forceRefresh = false) {
                 setTimeout(() => { bukaDetailPasar(produkId); }, 800); 
             }
             terapkanFilterPasar(); 
-        }
-                else if (urlHash.startsWith('tokopublik?seller=')) {
-            const sellerName = decodeURIComponent(urlHash.split('=')[1]);
-            switchTab('tokopublik', null, false);
-            loadTokoPublikLuar(sellerName);
-        }
- 
-        else {
+        } else if (!urlHash.startsWith('tokopublik?seller=') && !urlHash.startsWith('pasar?seller=')) {
+            // Hanya jalankan filter pasar player jika kita TIDAK sedang membuka Toko Publik
             terapkanFilterPasar();
         }
 
@@ -12113,11 +12122,17 @@ if (adminSection) {
 }
 
 // ==========================================
-// MESIN TOKO PUBLIK (TAB TERSEMBUNYI)
+// MESIN TOKO PUBLIK (TAB TERSEMBUNYI ALA SHOPEE)
 // ==========================================
 async function loadTokoPublikLuar(sellerName) {
-    const grid = document.getElementById('grid-tokopublik');
-    grid.innerHTML = '<div class="col-span-2 text-center py-10 text-brand-info"><i class="fas fa-spinner fa-spin text-3xl mb-3"></i><br><span class="text-xs font-bold uppercase tracking-widest">Mencari Toko...</span></div>';
+    const tabTokoPublik = document.getElementById('tokopublik');
+    
+    // Tampilan Loading Awal
+    tabTokoPublik.innerHTML = `
+        <div class="flex flex-col items-center justify-center h-[70vh]">
+            <div class="w-12 h-12 border-4 border-brand-accent border-t-transparent rounded-full animate-spin mb-4"></div>
+            <span class="text-[10px] text-gray-400 font-bold tracking-widest uppercase">Membuka Etalase @${sellerName}...</span>
+        </div>`;
 
     try {
         // 1. Cari profil penjual berdasarkan nickname (TIDAK sensitif huruf besar/kecil)
@@ -12132,47 +12147,130 @@ async function loadTokoPublikLuar(sellerName) {
         // 2. Cek apakah VIP-nya masih aktif
         const isVip = profile.is_seller === true;
         const expiredAt = profile.seller_expired_at ? new Date(profile.seller_expired_at) : new Date(0);
-        if (!isVip || expiredAt <= new Date()) throw new Error("Toko <b>@" + sellerName + "</b> sedang tidak aktif (VIP Berakhir).");
+        if (!isVip || expiredAt <= new Date()) throw new Error("Toko <b>@" + sellerName + "</b> sedang tutup / masa VIP berakhir.");
 
-        // 3. Render Header Toko
-        document.getElementById('tokopublik-avatar').src = profile.avatar_url || `https://ui-avatars.com/api/?name=${profile.nickname}&background=1A1133&color=fff`;
-        
+        const ava = profile.avatar_url || `https://ui-avatars.com/api/?name=${profile.nickname}&background=1A1133&color=fff`;
         const sellerExp = profile.exp || 0;
         const sellerLevel = hitungStatusLevel(sellerExp).level;
-        // Asumsi data allVideosData sudah me-load, kita cek videonya untuk Lencana
         const sellerVideoCount = allVideosData.filter(v => String(v.user_id) === String(profile.id)).length;
         const badgeHtml = getBadgeByLevelAndVideos(sellerLevel, sellerVideoCount);
 
-        document.getElementById('tokopublik-nama').innerHTML = `@${profile.nickname} <span class="scale-[0.8] origin-left inline-flex shrink-0 ml-1">${badgeHtml}</span>`;
-
-        // 4. Tarik data etalase produk murni milik penjual ini
-        const { data: products, error: errProd } = await supabaseClient
-            .from('player_products')
-            .select('*')
-            .eq('user_id', profile.id)
-            .order('created_at', { ascending: false });
-
+        // 3. Tarik Etalase dan Hitung Total Terjual (Sales)
+        const { data: products, error: errProd } = await supabaseClient.from('player_products').select('*').eq('user_id', profile.id).order('created_at', { ascending: false });
         if (errProd) throw errProd;
 
+        const { count: countSales } = await supabaseClient.from('orders_player').select('*', {count: 'exact', head: true}).eq('seller_id', profile.id).in('status', ['selesai']);
+
+        // 4. SUNTIKKAN UI BANNER ALA SHOPEE SELLER CENTER
+        let htmlToko = `
+            <!-- HEADER BANNER -->
+            <div class="relative w-[calc(100%+40px)] h-44 bg-gradient-to-br from-[#FF007A] via-[#8A2BE2] to-[#00F0FF] -mx-5 px-5 pt-8 shadow-xl overflow-hidden shrink-0">
+                <!-- Dekorasi Banner -->
+                <div class="absolute -right-10 -top-10 w-32 h-32 bg-white/20 rounded-full blur-xl"></div>
+                <div class="absolute -left-5 -bottom-5 w-24 h-24 bg-black/20 rounded-full blur-lg"></div>
+                <div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 mix-blend-overlay"></div>
+                
+                <div class="relative z-10 flex justify-between items-center w-full max-w-md mx-auto mt-2">
+                    <button onclick="history.back()" class="w-9 h-9 rounded-full bg-black/30 backdrop-blur-md flex items-center justify-center text-white hover:bg-black/50 active:scale-90 transition-all border border-white/20"><i class="fas fa-arrow-left"></i></button>
+                    
+                    <!-- Search Bar Palsu di Banner -->
+                    <div class="flex-1 mx-3 bg-black/30 backdrop-blur-md border border-white/20 rounded-full h-9 flex items-center px-3 cursor-text" onclick="document.getElementById('cari-toko-publik').focus()">
+                        <i class="fas fa-search text-white/80 text-[10px]"></i>
+                        <span class="text-[10px] text-white/80 ml-2 font-medium">Cari di toko ini...</span>
+                    </div>
+
+                    <button onclick="salinLinkTokoPublikLuar()" class="w-9 h-9 rounded-full bg-black/30 backdrop-blur-md flex items-center justify-center text-white active:scale-90 transition-all border border-white/20"><i class="fas fa-share-alt text-[10px]"></i></button>
+                </div>
+            </div>
+
+            <!-- PROFILE INFO BOX -->
+            <div class="relative px-5 pb-5 bg-brand-dark -mt-8 rounded-t-3xl pt-12 shadow-[0_-10px_20px_rgba(0,0,0,0.3)] z-10 mx-[-20px] w-[calc(100%+40px)] border-b border-white/5 shrink-0">
+                
+                <!-- FOTO PROFIL MELAYANG -->
+                <div class="absolute -top-10 left-5 w-20 h-20 rounded-full bg-brand-dark p-1 flex items-center justify-center z-20 shadow-lg">
+                    <img src="${ava}" class="w-full h-full rounded-full object-cover border-2 border-brand-accent">
+                    <div class="absolute bottom-1 right-1 bg-brand-success w-3.5 h-3.5 rounded-full border-2 border-brand-dark shadow-sm"></div>
+                </div>
+                
+                <div class="flex justify-between items-start">
+                    <div class="flex-1 pr-2">
+                        <h2 class="text-[17px] font-black text-white flex items-center gap-1.5 leading-tight mb-1">
+                            ${profile.nickname} <span class="scale-[0.8] origin-left">${badgeHtml}</span>
+                        </h2>
+                        <p class="text-[10px] text-brand-info font-bold tracking-wide flex items-center gap-1"><i class="fas fa-check-circle"></i> Official Seller</p>
+                    </div>
+                    <button onclick="kirimPesanPribadi('${profile.id}')" class="bg-gradient-to-r from-brand-info to-brand-accent text-white px-5 py-2 rounded-full text-[10px] font-extrabold shadow-[0_4px_10px_rgba(0,240,255,0.3)] active:scale-95 transition-transform flex items-center gap-1.5 shrink-0 mt-1">
+                        <i class="fas fa-comment-dots text-xs"></i> Chat
+                    </button>
+                </div>
+
+                <!-- STATISTIK TOKO -->
+                <div class="grid grid-cols-3 gap-3 mt-5 text-center">
+                    <div class="bg-black/30 rounded-2xl py-2.5 border border-white/5 shadow-inner">
+                        <div class="text-white font-black text-sm">${products ? products.length : 0}</div>
+                        <div class="text-[8px] text-gray-500 uppercase tracking-widest mt-0.5">Produk</div>
+                    </div>
+                    <div class="bg-black/30 rounded-2xl py-2.5 border border-white/5 shadow-inner">
+                        <div class="text-brand-success font-black text-sm">${countSales || 0}</div>
+                        <div class="text-[8px] text-gray-500 uppercase tracking-widest mt-0.5">Terjual</div>
+                    </div>
+                    <div class="bg-black/30 rounded-2xl py-2.5 border border-white/5 shadow-inner">
+                        <div class="text-yellow-400 font-black text-sm flex items-center justify-center gap-1"><i class="fas fa-star text-[10px]"></i> 5.0</div>
+                        <div class="text-[8px] text-gray-500 uppercase tracking-widest mt-0.5">Rating</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- FILTER & SEARCH BAR ASLI -->
+            <div class="pt-4 pb-2 -mx-5 px-5 sticky top-[60px] bg-brand-dark/95 backdrop-blur-xl z-20 border-b border-white/5">
+                <input type="text" id="cari-toko-publik" placeholder="Cari barang di toko ini..." class="w-full bg-black/40 border border-white/10 rounded-xl py-3 px-4 text-xs text-white outline-none focus:border-brand-info transition-all shadow-inner mb-3">
+                <div class="flex gap-2 overflow-x-auto hide-scroll pb-1">
+                    <button class="bg-brand-accent text-white px-4 py-1.5 rounded-full text-[10px] font-bold shrink-0 shadow-[0_0_10px_rgba(255,0,122,0.3)] border border-transparent">Semua Produk</button>
+                    <button class="bg-white/5 border border-white/10 text-gray-400 px-4 py-1.5 rounded-full text-[10px] font-bold shrink-0 hover:text-white transition-colors cursor-not-allowed">Terlaris</button>
+                    <button class="bg-white/5 border border-white/10 text-gray-400 px-4 py-1.5 rounded-full text-[10px] font-bold shrink-0 hover:text-white transition-colors cursor-not-allowed">Termurah</button>
+                </div>
+            </div>
+
+            <!-- GRID PRODUK DINAMIS -->
+            <div id="grid-tokopublik-dynamic" class="grid grid-cols-2 gap-3 pb-20 pt-4 flex-1 overflow-y-auto"></div>
+        `;
+
+        tabTokoPublik.innerHTML = htmlToko;
+
         if (!products || products.length === 0) {
-            grid.innerHTML = `<div class="col-span-2 text-center py-12 flex flex-col items-center text-gray-500 bg-black/20 rounded-2xl border border-white/5"><i class="fas fa-box-open text-4xl mb-3 opacity-30"></i><span class="text-xs">Etalase toko ini masih kosong.</span></div>`;
+            document.getElementById('grid-tokopublik-dynamic').innerHTML = `<div class="col-span-2 text-center py-12 flex flex-col items-center text-gray-500 bg-black/20 rounded-2xl border border-white/5"><i class="fas fa-box-open text-4xl mb-3 opacity-30"></i><span class="text-xs">Etalase toko ini masih kosong.</span></div>`;
             return;
         }
 
         // 5. Gabungkan data profile agar bisa dipakai oleh fungsi render grid
         const mappedProducts = products.map(p => {
-            // Suntikkan juga ke globalDataPasar agar tombol "Beli/Detail" tidak error saat diklik
             if (!globalDataPasar.find(x => x.id === p.id)) {
-                globalDataPasar.push({...p, profiles: profile});
+                globalDataPasar.push({...p, profiles: profile}); // Suntik memori agar detail lancar
             }
             return {...p, profiles: profile};
         });
 
-        // 6. Cetak ke layar (Mendaur ulang fungsi render bawaan agar desain seragam 100%)
-        renderGridPasar(mappedProducts, 'grid-tokopublik');
+        // 6. Cetak ke layar
+        renderGridPasar(mappedProducts, 'grid-tokopublik-dynamic');
+
+        // 7. Hidupkan fitur pencarian di dalam toko
+        const searchInput = document.getElementById('cari-toko-publik');
+        searchInput.addEventListener('input', debounce((e) => {
+            const keyword = e.target.value.toLowerCase();
+            const filteredProducts = mappedProducts.filter(p => p.title.toLowerCase().includes(keyword));
+            renderGridPasar(filteredProducts, 'grid-tokopublik-dynamic');
+        }, 300));
 
     } catch (err) {
-        grid.innerHTML = `<div class="col-span-2 text-center py-10 text-gray-400 flex flex-col items-center"><i class="fas fa-store-slash text-4xl mb-3 text-red-500/50"></i><span class="text-xs">${err.message || 'Terjadi kesalahan sistem.'}</span></div>`;
+        tabTokoPublik.innerHTML = `
+        <div class="flex flex-col items-center justify-center h-[70vh] text-center px-6">
+            <div class="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mb-4 border border-red-500/20">
+                <i class="fas fa-store-slash text-3xl text-red-500/80"></i>
+            </div>
+            <h3 class="text-white font-bold text-sm mb-2">Toko Tidak Ditemukan</h3>
+            <p class="text-xs text-gray-400 mb-6">${err.message || 'Terjadi kesalahan sistem.'}</p>
+            <button onclick="history.back()" class="bg-white/10 hover:bg-white/20 text-white px-6 py-2.5 rounded-full text-xs font-bold transition-all border border-white/10">Kembali</button>
+        </div>`;
     }
 }
 
