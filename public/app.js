@@ -5277,97 +5277,94 @@ playStory(prevIndex);
 }
 }
 
-
-
-
-
+// ==========================================
+// SULAP TIKTOK: UPLOAD VIDEO DI LATAR BELAKANG
+// ==========================================
 async function prosesUploadVideo() {
-if (!currentUser) return openAuthModal();
+    if (!currentUser) return openAuthModal();
 
-const fileInput = document.getElementById('input-video-file');
-const captionInput = document.getElementById('input-video-caption');
-const file = fileInput.files[0];
-const allowCommentsToggle = document.getElementById('upload-allow-comments');
-const allowComments = allowCommentsToggle ? allowCommentsToggle.checked : true;
-if (!file) return showToast("Pilih video dulu!", "error");
+    const fileInput = document.getElementById('input-video-file');
+    const captionInput = document.getElementById('input-video-caption');
+    const file = fileInput.files[0];
+    const allowCommentsToggle = document.getElementById('upload-allow-comments');
+    const allowComments = allowCommentsToggle ? allowCommentsToggle.checked : true;
+    
+    // AMANKAN TEKS CAPTION SEBELUM LAYAR DITUTUP
+    const teksCaption = captionInput.value || ""; 
 
-const btn = document.querySelector('button[onclick="prosesUploadVideo()"]');
-btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    if (!file) return showToast("Pilih video dulu!", "error");
 
-// Kunci window unload
-isUploading = true;
+    const btn = document.querySelector('button[onclick="prosesUploadVideo()"]');
+    btn.disabled = true; 
+    isUploading = true; // Kunci window unload agar kalau user mau close tab, ditahan
 
-try {
-const configRes = await fetch('/api/get-config');
-const config = await configRes.json();
+    // 🔥 1. TRIK SULAP: TUTUP LAYAR UPLOAD SEKARANG JUGA!
+    closeUploadModal();
+    
+    // 🔥 2. LEMPAR USER KE PROFILNYA SENDIRI & MUNCULKAN NOTIF
+    switchTab('profile');
+    viewedUserId = currentUser.id;
+    checkSession();
+    showToast("Mengunggah video di latar belakang...", "info");
 
-if (!config.gasUrl) throw new Error("Link GAS tidak ditemukan di config");
+    try {
+        const configRes = await fetch('/api/get-config');
+        const config = await configRes.json();
+        if (!config.gasUrl) throw new Error("Link GAS tidak ditemukan di config");
 
-// Memasukkan file ke dalam folder: {User ID}/feed_video/{nama_file}
-const namaFolder = `${currentUser.id}/feed_video`;
-const namaFileUnik = `${Date.now()}_${file.name.replace(/\s+/g, '_')}`; // Hindari spasi di nama file
-const pathLengkap = `${namaFolder}/${namaFileUnik}`;
+        const namaFolder = `${currentUser.id}/feed_video`;
+        const namaFileUnik = `${Date.now()}_${file.name.replace(/\s+/g, '_')}`;
+        const pathLengkap = `${namaFolder}/${namaFileUnik}`;
 
-const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent(pathLengkap)}&filetype=${encodeURIComponent(file.type)}`);
-const dataUrl = await resUrl.json();
+        const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent(pathLengkap)}&filetype=${encodeURIComponent(file.type)}`);
+        const dataUrl = await resUrl.json();
 
-// 🔥 PERBAIKAN 1: Menambahkan header x-amz-acl agar Biznet membuka izin baca publik untuk file video ini
-await fetch(dataUrl.uploadUrl, {
-method: 'PUT',
-body: file,
-headers: {
-'Content-Type': file.type,
-'x-amz-acl': 'public-read'
+        // Proses berat upload ke server Biznet GIO
+        await fetch(dataUrl.uploadUrl, {
+            method: 'PUT',
+            body: file,
+            headers: { 'Content-Type': file.type, 'x-amz-acl': 'public-read' }
+        });
+
+        const spreadsheetPayload = {
+            ID_Video: 'vid_' + Date.now(),
+            URL_Video: dataUrl.finalVideoUrl,
+            id: 'vid_' + Date.now(),
+            video_url: dataUrl.finalVideoUrl,
+            caption: teksCaption, // Pakai teks yang sudah diamankan
+            nickname: userProfile?.nickname || "Player",
+            avatar_url: userProfile?.avatar_url || "",
+            user_id: currentUser.id,
+            created_at: new Date().toISOString(),
+            allow_comments: allowComments
+        };
+
+        newUploads.push(spreadsheetPayload);
+
+        await fetch(config.gasUrl, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'text/plain' },
+            body: JSON.stringify(spreadsheetPayload)
+        });
+
+        // 🔥 3. NOTIFIKASI SUKSES & REFRESH GRID PROFIL SECARA DIAM-DIAM
+        showToast("Video berhasil diposting!", "success");
+        tambahExp(50);
+        
+        allVideosData = []; // Kosongkan cache biar memuat data baru
+        if (document.getElementById('profile').classList.contains('active')) {
+            renderProfileVideos(currentUser.id); // Refresh grid videonya
+        }
+
+    } catch (err) {
+        showToast("Upload gagal: " + err.message, "error");
+    } finally {
+        btn.disabled = false;
+        isUploading = false; // Buka kunci window unload
+    }
 }
-});
 
-const spreadsheetPayload = {
-// --- DUA BARIS INI TAMBAHAN BARU UNTUK GOOGLE SHEETS ---
-ID_Video: 'vid_' + Date.now(),
-URL_Video: dataUrl.finalVideoUrl,
-
-// --- SISANYA TETAP SAMA (JANGAN DIHAPUS UNTUK DATABASE INTERNAL) ---
-id: 'vid_' + Date.now(),
-video_url: dataUrl.finalVideoUrl,
-caption: captionInput.value || "",
-nickname: userProfile?.nickname || "Player",
-avatar_url: userProfile?.avatar_url || "",
-user_id: currentUser.id,
-created_at: new Date().toISOString(), // <--- TAMBAHKAN KOMA DI SINI
-allow_comments: allowComments
-};
-
-// 🔥 PERBAIKAN 2: Masukkan data video baru ke antrean lokal aplikasi biar langsung tayang di feed tanpa nunggu Google Sheets yang lelet
-newUploads.push(spreadsheetPayload);
-
-await fetch(config.gasUrl, {
-method: 'POST',
-mode: 'no-cors',
-headers: { 'Content-Type': 'text/plain' },
-body: JSON.stringify(spreadsheetPayload)
-});
-
-showToast("Berhasil diposting!", "success");
-tambahExp(50); // <--- SISTEM EXP
-fileInput.value = ''; captionInput.value = '';
-closeUploadModal();
-allVideosData = [];
-
-// Smart Redirect: Cek apakah halaman sblmnya valid, jika tidak lempar ke feed sosial
-if (tabSebelumnya && tabSebelumnya !== 'sosial' && tabSebelumnya !== 'upload') {
-switchTab(tabSebelumnya);
-} else {
-switchTab('sosial');
-}
-loadVideos();
-
-} catch (err) {
-showToast("Error: " + err.message, "error");
-} finally {
-btn.disabled = false; btn.innerHTML = '<i class="fas fa-paper-plane mr-2"></i> Posting Video';
-isUploading = false; // Buka kunci window unload
-}
-}
 
 // ==========================================
 // FITUR PREVIEW MEDIA WHATSAPP STYLE (CHAT & STORY)
@@ -5488,42 +5485,46 @@ function tutupPreviewMedia(dariTombolBack = false) {
     }, 300);
 }
 
-// 4. Eksekusi Pengiriman ke Server
+// ==========================================
+// SULAP WHATSAPP: KIRIM STORY & CHAT DI LATAR BELAKANG
+// ==========================================
 async function prosesKirimMedia() {
     if (!mediaPreviewFile) return;
 
+    // AMANKAN DATA SEBELUM LAYAR DITUTUP
     const file = mediaPreviewFile;
     const context = mediaPreviewContext;
     const caption = document.getElementById('preview-media-caption').value.trim();
     const btnSend = document.getElementById('btn-send-media');
     
+    // Amankan data balasan kalau ini pesan Chat (Bukan Story)
+    const isGroup = !!activeGroupId;
+    const targetId = isGroup ? activeGroupId : activeChatUserId;
+    const currentReplyId = replyingToMsgId;
+    const currentReplyName = replyingToMsgName;
+    const currentReplyText = replyingToMsgText;
+    
     btnSend.disabled = true;
-    btnSend.innerHTML = '<i class="fas fa-circle-notch fa-spin text-xl"></i>';
+
+    // 🔥 1. TRIK SULAP: TUTUP LAYAR PREVIEW SEKARANG JUGA!
+    cancelChatReply();
+    tutupPreviewMedia();
+    showToast("Mengirim media...", "info");
 
     try {
-        // Upload File ke Storage
-        // Memasukkan file ke dalam folder: {User ID}/chat_media/ ATAU {User ID}/story_media/
-const namaFolder = context === 'chat' ? `${currentUser.id}/chat_media` : `${currentUser.id}/story_media`;
-const pathLengkap = `${namaFolder}/media_${Date.now()}`;
+        const namaFolder = context === 'chat' ? `${currentUser.id}/chat_media` : `${currentUser.id}/story_media`;
+        const pathLengkap = `${namaFolder}/media_${Date.now()}`;
 
-const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent(pathLengkap)}&filetype=${encodeURIComponent(file.type)}`);
+        const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent(pathLengkap)}&filetype=${encodeURIComponent(file.type)}`);
         const dataUrl = await resUrl.json();
+        
+        // Proses berat upload S3 berjalan di background
         await fetch(dataUrl.uploadUrl, { method: 'PUT', body: file, headers: { 'Content-Type': file.type, 'x-amz-acl': 'public-read' } });
 
         const fileUrl = dataUrl.finalVideoUrl;
 
         if (context === 'chat') {
-            // ======== KIRIM CHAT ========
-            const isGroup = !!activeGroupId;
-            const targetId = isGroup ? activeGroupId : activeChatUserId;
-
-            // Handle Reply
-            const currentReplyId = replyingToMsgId;
-            const currentReplyName = replyingToMsgName;
-            const currentReplyText = replyingToMsgText;
-            cancelChatReply();
-
-            // Gabungkan Tipe, URL, dan Caption
+            // ======== EFEK KIRIM CHAT ========
             let msgText = file.type.startsWith('video/') ? `[VIDEO]${fileUrl}` : `[IMG]${fileUrl}`;
             if (caption) msgText += `||CAP||${caption}`;
 
@@ -5533,40 +5534,36 @@ const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent(pathLe
                 msgText = `[REPLY:${currentReplyId}||${safeName}||${safeText}]\n${msgText}`;
             }
 
-            // UI Instan
-            const tempId = 'temp-' + Date.now();
-            const tempMsg = { id: tempId, sender_id: currentUser.id, message: msgText, created_at: new Date().toISOString() };
-            appendMessageBubble(tempMsg); scrollToBottomChat();
-
-            // DB Insert
+            // DB Insert (Realtime Supabase akan memunculkan balon chatnya otomatis)
             const insertData = { sender_id: currentUser.id, message: msgText };
             if (isGroup) insertData.group_id = targetId; else insertData.receiver_id = targetId;
             await supabaseClient.from('messages').insert(insertData);
 
         } else if (context === 'story') {
-            // ======== KIRIM STORY ========
+            // ======== EFEK KIRIM STORY ========
             const { error } = await supabaseClient.from('stories').insert({
                 user_id: currentUser.id,
                 media_url: fileUrl,
                 media_type: file.type.startsWith('video/') ? 'video' : 'image',
                 caption: caption
             });
-if (error) throw error;
-showToast("Status berhasil diperbarui!", "success");
-tambahExp(20); // <--- SISTEM EXP
-loadStories(); 
-
+            if (error) throw error;
+            
+            showToast("Status berhasil diperbarui!", "success");
+            tambahExp(20); 
+            
+            // Perbarui cincin status warna-warni di layar chat secara diam-diam
+            if (!document.getElementById('floating-widget').classList.contains('opacity-0')) {
+                loadStories(); 
+            }
         }
 
-        tutupPreviewMedia();
     } catch (err) {
         showToast("Gagal mengirim file: " + err.message, "error");
     } finally {
         btnSend.disabled = false;
-        btnSend.innerHTML = '<i class="fas fa-paper-plane text-lg mr-0.5"></i>';
     }
 }
-
 
 // ==========================================
 // FITUR BALAS & LIKE STORY (WHATSAPP STYLE)
@@ -11662,8 +11659,12 @@ async function eksekusiSapuBersihTokoMati() {
 }
 
 // ==========================================
-// BUKU KAS TRANSPARAN UNTUK NIKKY (SUPER ADMIN) - DENGAN REKAP HARIAN
+// BUKU KAS TRANSPARAN UNTUK NIKKY (SUPER ADMIN)
+// DENGAN FITUR PENCARIAN INSTAN ALA MUTASI BANK
 // ==========================================
+
+let globalDataBukuKas = []; // Variabel untuk menampung memori kas
+
 async function loadRiwayatKeuanganGlobal(isRefresh = false) {
     const listContainer = document.getElementById('admin-buku-kas-list');
     const iconRefresh = document.getElementById('icon-refresh-kas');
@@ -11676,114 +11677,45 @@ async function loadRiwayatKeuanganGlobal(isRefresh = false) {
     }
 
     try {
-        // Tarik 100 transaksi terakhir yang sudah SELESAI dari Pasar Player
+        // Tarik 150 transaksi terakhir (Diperbanyak agar riwayat lebih panjang seperti bank)
         const { data: orders, error } = await supabaseClient
             .from('orders_player')
-            .select('*, profiles!orders_player_seller_id_fkey(nickname)') // Tarik nama penjualnya
+            .select('*, profiles!orders_player_seller_id_fkey(nickname)') 
             .eq('status', 'selesai')
             .order('waktu_selesai', { ascending: false })
-            .limit(100);
+            .limit(150); 
 
         if (error) throw error;
 
         if (orders && orders.length > 0) {
-            
-            // 1. KELOMPOKKAN DATA BERDASARKAN HARI
-            const groupedData = {};
-
-            orders.forEach(order => {
-                // Ambil tanggal murni untuk dijadikan grup (misal: "Kamis, 15 Juni 2026")
-                const dateObj = new Date(order.waktu_selesai || order.created_at);
-                const dateString = dateObj.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
-
-                // Buat keranjang hari jika belum ada
-                if (!groupedData[dateString]) {
-                    groupedData[dateString] = {
-                        dateLabel: dateString,
-                        totalPendapatanHariIni: 0,
-                        transactions: []
-                    };
-                }
-
-                // Kalkulasi Pendapatan Jatah Admin (Nikky)
+            // 1. OLAH DAN SIMPAN DATA KE MEMORI GLOBAL
+            globalDataBukuKas = orders.map(order => {
                 const hargaAsli = Number(order.price);
                 const isRekber = order.product_name.includes('[+Rekber]');
                 const namaPenjual = order.profiles?.nickname || 'Anonim';
                 
                 const jatahPajakLapak = hitungPotonganSeller(hargaAsli);
-                let subtotalUntukRekber = hargaAsli;
-                const jatahFeeRekber = isRekber ? hitungFeeRekber(subtotalUntukRekber) : 0;
+                const jatahFeeRekber = isRekber ? hitungFeeRekber(hargaAsli) : 0;
                 const totalJatahNikky = jatahPajakLapak + jatahFeeRekber;
 
-                // Tambahkan pendapatan ke total hari ini
-                groupedData[dateString].totalPendapatanHariIni += totalJatahNikky;
-
-                // Masukkan detail pesanan ke dalam array harian
-                groupedData[dateString].transactions.push({
+                return {
                     id: order.id,
                     product_name: order.product_name,
                     namaPenjual: namaPenjual,
-                    waktuJam: dateObj.getHours().toString().padStart(2, '0') + ':' + dateObj.getMinutes().toString().padStart(2, '0') + ' WIB',
-                    totalJatahNikky,
-                    jatahPajakLapak,
-                    jatahFeeRekber,
-                    isRekber
-                });
+                    waktuAkurat: new Date(order.waktu_selesai || order.created_at),
+                    hargaAsli: hargaAsli,
+                    jatahPajakLapak: jatahPajakLapak,
+                    jatahFeeRekber: jatahFeeRekber,
+                    totalJatahNikky: totalJatahNikky,
+                    isRekber: isRekber
+                };
             });
 
-            // 2. RENDER HTML DARI DATA YANG SUDAH DIKELOMPOKKAN
-            let htmlOutput = '';
-
-            // Loop setiap grup hari
-            for (const dateKey in groupedData) {
-                const grup = groupedData[dateKey];
-
-                htmlOutput += `
-                <div class="mb-5 bg-black/20 rounded-[1.2rem] p-3 border border-white/5 shadow-md">
-                    <!-- HEADER TANGGAL & TOTAL PENDAPATAN -->
-                    <div class="flex justify-between items-center mb-3 pb-3 border-b border-white/10 px-1">
-                        <h3 class="text-[11px] font-extrabold text-white flex items-center gap-2">
-                            <i class="far fa-calendar-alt text-brand-info text-sm"></i> ${grup.dateLabel}
-                        </h3>
-                        <div class="text-right">
-                            <span class="text-[8px] text-gray-400 uppercase tracking-widest block mb-0.5">Total Hari Ini</span>
-                            <span class="text-xs font-black text-brand-success">+ Rp ${grup.totalPendapatanHariIni.toLocaleString('id-ID')}</span>
-                        </div>
-                    </div>
-
-                    <!-- LIST TRANSAKSI DI HARI TERSEBUT -->
-                    <div class="flex flex-col gap-2.5">
-                        ${grup.transactions.map(tx => `
-                        <div class="bg-black/40 border border-white/5 p-3 rounded-xl flex flex-col gap-2 relative hover:bg-black/60 transition-colors">
-                            <div class="flex justify-between items-start border-b border-white/5 pb-2">
-                                <div class="flex-1 pr-2">
-                                    <h4 class="text-[11px] font-bold text-white line-clamp-1">${tx.product_name}</h4>
-                                    <p class="text-[9px] text-gray-400 mt-0.5">Penjual: @${tx.namaPenjual}</p>
-                                </div>
-                                <div class="text-right shrink-0">
-                                    <p class="text-[9px] text-gray-500 mb-0.5">${tx.waktuJam}</p>
-                                    <h4 class="text-[11px] font-black text-brand-success">+ Rp ${tx.totalJatahNikky.toLocaleString('id-ID')}</h4>
-                                </div>
-                            </div>
-                            
-                            <div class="flex justify-between items-center bg-white/5 rounded-lg p-2">
-                                <div class="flex flex-col">
-                                    <span class="text-[8px] text-gray-400 uppercase">Pajak Lapak</span>
-                                    <span class="text-[10px] font-bold text-white">Rp ${tx.jatahPajakLapak.toLocaleString('id-ID')}</span>
-                                </div>
-                                <div class="flex flex-col text-right">
-                                    <span class="text-[8px] text-gray-400 uppercase">Fee Rekber</span>
-                                    <span class="text-[10px] font-bold ${tx.isRekber ? 'text-brand-accent' : 'text-gray-600'}">Rp ${tx.jatahFeeRekber.toLocaleString('id-ID')}</span>
-                                </div>
-                            </div>
-                        </div>`).join('')}
-                    </div>
-                </div>`;
-            }
-
-            listContainer.innerHTML = htmlOutput;
+            // 2. RENDER KE HTML
+            renderBukuKasList(globalDataBukuKas);
 
         } else {
+            globalDataBukuKas = [];
             listContainer.innerHTML = '<div class="text-center py-6 text-[10px] text-gray-500 border border-white/5 rounded-2xl bg-black/20">Belum ada transaksi selesai.</div>';
         }
     } catch (e) {
@@ -11792,6 +11724,125 @@ async function loadRiwayatKeuanganGlobal(isRefresh = false) {
         if (isRefresh && iconRefresh) iconRefresh.classList.remove('fa-spin');
     }
 }
+
+
+// FUNGSI RENDER (MENCETAK ARRAY KE LAYAR)
+function renderBukuKasList(dataArray) {
+    const listContainer = document.getElementById('admin-buku-kas-list');
+    
+    if (!dataArray || dataArray.length === 0) {
+        listContainer.innerHTML = `
+            <div class="flex flex-col items-center justify-center py-12 text-center bg-black/20 rounded-2xl border border-white/5">
+                <i class="fas fa-search-minus text-4xl text-gray-600 mb-3"></i>
+                <h4 class="text-white font-bold text-xs mb-1 tracking-tight">Riwayat Tidak Ditemukan</h4>
+                <p class="text-[10px] text-gray-500">Coba gunakan kata kunci pencarian yang lain.</p>
+            </div>`;
+        return;
+    }
+
+    // 1. KELOMPOKKAN DATA BERDASARKAN HARI
+    const groupedData = {};
+
+    dataArray.forEach(tx => {
+        const dateString = tx.waktuAkurat.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+
+        if (!groupedData[dateString]) {
+            groupedData[dateString] = {
+                dateLabel: dateString,
+                totalPendapatanHariIni: 0,
+                transactions: []
+            };
+        }
+        groupedData[dateString].totalPendapatanHariIni += tx.totalJatahNikky;
+        groupedData[dateString].transactions.push(tx);
+    });
+
+    // 2. HASILKAN HTML-NYA
+    let htmlOutput = '';
+    for (const dateKey in groupedData) {
+        const grup = groupedData[dateKey];
+
+        htmlOutput += `
+        <div class="mb-5 bg-black/20 rounded-[1.2rem] p-3 border border-white/5 shadow-md">
+            <div class="flex justify-between items-center mb-3 pb-3 border-b border-white/10 px-1">
+                <h3 class="text-[11px] font-extrabold text-white flex items-center gap-2">
+                    <i class="far fa-calendar-alt text-brand-info text-sm"></i> ${grup.dateLabel}
+                </h3>
+                <div class="text-right">
+                    <span class="text-[8px] text-gray-400 uppercase tracking-widest block mb-0.5">Total Pemasukan</span>
+                    <span class="text-xs font-black text-brand-success">+ Rp ${grup.totalPendapatanHariIni.toLocaleString('id-ID')}</span>
+                </div>
+            </div>
+
+            <div class="flex flex-col gap-2.5">
+                ${grup.transactions.map(tx => {
+                    const jam = tx.waktuAkurat.getHours().toString().padStart(2, '0') + ':' + tx.waktuAkurat.getMinutes().toString().padStart(2, '0') + ' WIB';
+                    return `
+                    <div class="bg-black/40 border border-white/5 p-3 rounded-xl flex flex-col gap-2 relative hover:bg-black/60 transition-colors">
+                        <div class="flex justify-between items-start border-b border-white/5 pb-2">
+                            <div class="flex-1 pr-2">
+                                <h4 class="text-[11px] font-bold text-white line-clamp-1">${tx.product_name}</h4>
+                                <p class="text-[9px] text-gray-400 mt-0.5">@${tx.namaPenjual} &bull; <span class="font-mono text-brand-info/70">#${tx.id.substring(0,8).toUpperCase()}</span></p>
+                            </div>
+                            <div class="text-right shrink-0">
+                                <p class="text-[9px] text-gray-500 mb-0.5">${jam}</p>
+                                <h4 class="text-[11px] font-black text-brand-success">+ Rp ${tx.totalJatahNikky.toLocaleString('id-ID')}</h4>
+                            </div>
+                        </div>
+                        
+                        <div class="flex justify-between items-center bg-white/5 rounded-lg p-2">
+                            <div class="flex flex-col">
+                                <span class="text-[8px] text-gray-400 uppercase">Pajak Lapak</span>
+                                <span class="text-[10px] font-bold text-white">Rp ${tx.jatahPajakLapak.toLocaleString('id-ID')}</span>
+                            </div>
+                            <div class="flex flex-col text-right">
+                                <span class="text-[8px] text-gray-400 uppercase">Fee Rekber</span>
+                                <span class="text-[10px] font-bold ${tx.isRekber ? 'text-brand-accent' : 'text-gray-600'}">Rp ${tx.jatahFeeRekber.toLocaleString('id-ID')}</span>
+                            </div>
+                        </div>
+                    </div>`
+                }).join('')}
+            </div>
+        </div>`;
+    }
+
+    listContainer.innerHTML = htmlOutput;
+}
+
+
+// ==========================================
+// RADAR PENCARIAN BUKU KAS (AUTO RUN)
+// ==========================================
+document.addEventListener('DOMContentLoaded', () => {
+    // Taruh di dalam DOMContentLoaded agar event diletakkan saat HTML sudah dimuat
+    setTimeout(() => {
+        const searchKas = document.getElementById('cari-buku-kas');
+        if (searchKas) {
+            searchKas.addEventListener('input', debounce((e) => {
+                const keyword = e.target.value.toLowerCase();
+                
+                // Jika input kosong, tampilkan semua riwayat
+                if (!keyword.trim()) {
+                    renderBukuKasList(globalDataBukuKas);
+                    return;
+                }
+                
+                // Filter menggunakan memori lokal
+                const filteredData = globalDataBukuKas.filter(tx => {
+                    const matchNama = tx.product_name.toLowerCase().includes(keyword);
+                    const matchPenjual = tx.namaPenjual.toLowerCase().includes(keyword);
+                    const matchID = tx.id.toLowerCase().includes(keyword);
+                    const matchNominal = tx.totalJatahNikky.toString().includes(keyword);
+                    
+                    return matchNama || matchPenjual || matchID || matchNominal;
+                });
+                
+                renderBukuKasList(filteredData);
+            }, 300));
+        }
+    }, 1000);
+});
+
 
 
 // ==========================================
@@ -11835,4 +11886,76 @@ function switchAdminTab(tab) {
         menuAntrean.className = `flex-1 py-3 text-[10px] sm:text-[11px] font-bold rounded-lg transition-all relative ${activeClass}`;
         contAntrean.classList.replace('hidden', 'block');
     }
+}
+
+// ==========================================
+// JURUS SWIPE: SELLER CENTER (TOKO SAYA)
+// ==========================================
+let tokoTouchStartX = 0;
+let tokoTouchStartY = 0;
+const tokoSection = document.getElementById('toko');
+
+if (tokoSection) {
+    tokoSection.addEventListener('touchstart', e => {
+        tokoTouchStartX = e.changedTouches[0].screenX;
+        tokoTouchStartY = e.changedTouches[0].screenY;
+    }, {passive: true});
+
+    tokoSection.addEventListener('touchend', e => {
+        let touchEndX = e.changedTouches[0].screenX;
+        let touchEndY = e.changedTouches[0].screenY;
+        
+        let diffX = tokoTouchStartX - touchEndX;
+        let diffY = tokoTouchStartY - touchEndY;
+        
+        // Geser sumbu X harus > 50px DAN Geser sumbu Y harus < 50px (Biar nggak bentrok pas scroll bawah)
+        if (Math.abs(diffX) > 50 && Math.abs(diffY) < 50) { 
+            const tabs = ['dashboard', 'pesanan', 'produk'];
+            let currentIndex = tabs.indexOf(tokoTabAktif);
+            
+            if (diffX > 0) { 
+                // Swipe ke KIRI = Pindah ke Tab KANAN (Selanjutnya)
+                if (currentIndex < tabs.length - 1) switchTokoTab(tabs[currentIndex + 1]);
+            } else { 
+                // Swipe ke KANAN = Pindah ke Tab KIRI (Sebelumnya)
+                if (currentIndex > 0) switchTokoTab(tabs[currentIndex - 1]); 
+            }
+        }
+    }, {passive: true});
+}
+
+// ==========================================
+// JURUS SWIPE: PUSAT KENDALI (SUPER ADMIN)
+// ==========================================
+let adminTouchStartX = 0;
+let adminTouchStartY = 0;
+const adminSection = document.getElementById('superadmin');
+
+if (adminSection) {
+    adminSection.addEventListener('touchstart', e => {
+        adminTouchStartX = e.changedTouches[0].screenX;
+        adminTouchStartY = e.changedTouches[0].screenY;
+    }, {passive: true});
+
+    adminSection.addEventListener('touchend', e => {
+        let touchEndX = e.changedTouches[0].screenX;
+        let touchEndY = e.changedTouches[0].screenY;
+        
+        let diffX = adminTouchStartX - touchEndX;
+        let diffY = adminTouchStartY - touchEndY;
+        
+        // Geser sumbu X harus > 50px DAN Geser sumbu Y harus < 50px
+        if (Math.abs(diffX) > 50 && Math.abs(diffY) < 50) { 
+            const tabs = ['dashboard', 'kas', 'antrean'];
+            let currentIndex = tabs.indexOf(adminTabAktif);
+            
+            if (diffX > 0) { 
+                // Swipe ke KIRI = Pindah ke Tab KANAN (Selanjutnya)
+                if (currentIndex < tabs.length - 1) switchAdminTab(tabs[currentIndex + 1]);
+            } else { 
+                // Swipe ke KANAN = Pindah ke Tab KIRI (Sebelumnya)
+                if (currentIndex > 0) switchAdminTab(tabs[currentIndex - 1]); 
+            }
+        }
+    }, {passive: true});
 }
