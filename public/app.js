@@ -2002,7 +2002,7 @@ window.addEventListener('popstate', () => {
     // Jika URL yang tersisa bukan nama tab asli (misal nyangkut di hashtag aneh), 
     // paksa kembalikan ke tab sebelumnya, JANGAN lempar ke Home!
     const cleanHash = newHash.split('?')[0];
-    const validTabs = ['home', 'sosial', 'pasar', 'toko', 'layanan', 'pesanan', 'profile', 'pembayaran', 'superadmin'];
+    const validTabs = ['home', 'sosial', 'pasar', 'toko', 'layanan', 'pesanan', 'profile', 'pembayaran', 'superadmin', 'tokopublik'];
     
     if (!validTabs.includes(cleanHash)) {
         history.replaceState(null, null, '#' + tabSebelumnya);
@@ -7256,13 +7256,12 @@ document.addEventListener('DOMContentLoaded', () => {
   autoCleanLocalStorage(); // Eksekusi pembersih memori saat buka web
 
     // 🔥 1. TANGKAP LINK SHARE TOKO DARI LUAR 🔥
-    const path = window.location.pathname;
-    if (path.startsWith('/toko/')) {
-        // Ambil nama seller dari link
-        const sellerName = path.replace('/toko/', '').replace('/', '');
-        // Sulap URL-nya jadi hash agar sistem navigasi SPA kamu (switchTab) bisa ngebaca
-        window.history.replaceState(null, null, `/#pasar?seller=${sellerName}`);
-    }
+      const path = window.location.pathname;
+  if (path.startsWith('/toko/')) {
+      const sellerName = path.replace('/toko/', '').replace('/', '');
+      window.history.replaceState(null, null, `/#tokopublik?seller=${sellerName}`);
+  }
+
 
   setTimeout(() => {
         if(document.getElementById('btn-bayar-langganan')) {
@@ -8077,6 +8076,97 @@ function bukaDetailPesananDinamis(orderId, productName, price, status, tableSour
         pesanStatusLain.classList.remove('hidden'); 
         pesanStatusLain.innerText = 'Pesanan ini telah lunas dan selesai. Terima kasih!';
     }
+    
+        // ==========================================
+    // NOTA TRANSPARANSI TRANSAKSI 
+    // ==========================================
+    const wadahRincian = document.getElementById('wadah-rincian-transaksi');
+    if (wadahRincian) {
+        wadahRincian.classList.add('hidden');
+        wadahRincian.innerHTML = '<div class="flex justify-center py-2"><i class="fas fa-spinner fa-spin text-brand-info"></i></div>';
+        
+        // Nota detail hanya kita buka untuk transaksi Pasar Player
+        if (tableSource === 'orders_player') {
+            wadahRincian.classList.remove('hidden');
+            
+            // Tarik data produk untuk mengecek siapa yang nanggung Pajak Lapak
+            supabaseClient.from('player_products').select('fee_ditanggung_pembeli').eq('id', activeOrderProductId).single()
+            .then(({data}) => {
+                const feeDitanggungPembeli = data ? data.fee_ditanggung_pembeli : false;
+                
+                const isPenjual = (currentUser.id === activeOrderSellerId);
+                let isRekber = productName.includes('[+Rekber]');
+                let feeRekber = isRekber ? hitungFeeRekber(price) : 0;
+                
+                // Harga setelah dikurangi Rekber (Harga kotor produk)
+                let subtotalBarang = price - feeRekber; 
+                
+                let pajakLapak = 0;
+                let hargaDasar = subtotalBarang;
+                let totalDiterimaSeller = subtotalBarang;
+
+                // REVERSE ENGINEERING: Menghitung pajak dan pendapatan bersih secara presisi
+                if (feeDitanggungPembeli) {
+                    // Jika pembeli yang nanggung, harga dasar kita bersihkan dulu dari mark-up QRIS
+                    hargaDasar = Math.round((subtotalBarang - 500) / 1.007);
+                    totalDiterimaSeller = hargaDasar; // Seller terima bersih 100% harga dasarnya
+                    pajakLapak = hitungPotonganSeller(hargaDasar); 
+                } else {
+                    pajakLapak = hitungPotonganSeller(subtotalBarang);
+                    totalDiterimaSeller = subtotalBarang - pajakLapak; // Dipotong pajak
+                }
+
+                let htmlRincian = `<div class="text-[10px] font-extrabold text-gray-400 mb-3 uppercase tracking-widest border-b border-white/10 pb-2 flex items-center gap-1.5"><i class="fas fa-file-invoice-dollar text-brand-info text-sm"></i> Rincian Pembayaran</div>`;
+                
+                // Baris Subtotal
+                htmlRincian += `<div class="flex justify-between items-center text-[11px] text-gray-300 mb-2">
+                    <span>Subtotal Produk</span>
+                    <span class="font-mono">Rp ${subtotalBarang.toLocaleString('id-ID')}</span>
+                </div>`;
+
+                // Baris Fee Rekber
+                if (isRekber) {
+                    htmlRincian += `<div class="flex justify-between items-center text-[11px] text-gray-400 mb-2">
+                        <span>Biaya Admin Rekber</span>
+                        <span class="font-mono text-brand-info">+ Rp ${feeRekber.toLocaleString('id-ID')}</span>
+                    </div>`;
+                }
+
+                // Tampilan dinamis berdasarkan siapa yang membuka laci
+                if (isPenjual) {
+                    // MODE PENJUAL
+                    if (feeDitanggungPembeli) {
+                        htmlRincian += `<div class="flex justify-between items-center text-[11px] text-gray-400 mb-2">
+                            <span>Pajak Lapak <span class="text-[9px] text-gray-500">(Ditanggung Pembeli)</span></span>
+                            <span class="font-mono text-gray-500">Rp ${pajakLapak.toLocaleString('id-ID')}</span>
+                        </div>`;
+                    } else {
+                        htmlRincian += `<div class="flex justify-between items-center text-[11px] text-gray-400 mb-2">
+                            <span>Pajak Lapak <span class="text-[9px] text-gray-500">(Dipotong dari Anda)</span></span>
+                            <span class="font-mono text-red-400">- Rp ${pajakLapak.toLocaleString('id-ID')}</span>
+                        </div>`;
+                    }
+                    
+                    htmlRincian += `<div class="flex justify-between items-center text-[12px] text-brand-success font-black mt-3 border-t border-white/10 pt-3">
+                        <span>Estimasi Masuk ke Saldo</span>
+                        <span class="font-mono tracking-tight">Rp ${totalDiterimaSeller.toLocaleString('id-ID')}</span>
+                    </div>`;
+                } else {
+                    // MODE PEMBELI
+                    htmlRincian += `<div class="flex justify-between items-center text-[12px] text-white font-black mt-3 border-t border-white/10 pt-3">
+                        <span>Total Tagihan Dibayar</span>
+                        <span class="font-mono text-brand-accent tracking-tight">Rp ${price.toLocaleString('id-ID')}</span>
+                    </div>`;
+                }
+
+                wadahRincian.innerHTML = htmlRincian;
+            })
+            .catch(() => {
+                wadahRincian.innerHTML = `<div class="text-[10px] text-gray-500 italic text-center py-2">Rincian detail tidak tersedia untuk produk usang.</div>`;
+            });
+        }
+    }
+
 
     modal.classList.replace('hidden', 'flex');
     
@@ -9082,8 +9172,9 @@ function formatInputRupiah(e) {
 let fileJualanArray = []; 
 
 // 1. RENDER GRID (Tampilkan Foto Pertama Saja di Etalase Depan)
-function renderGridPasar(dataList) {
-    const grid = document.getElementById('grid-pasar-player');
+function renderGridPasar(dataList, targetId = 'grid-pasar-player') {
+    const grid = document.getElementById(targetId);
+    if (!grid) return;
     grid.innerHTML = '';
 
     if (dataList.length === 0) {
@@ -10074,17 +10165,12 @@ async function loadPasarPlayer(forceRefresh = false) {
             }
             terapkanFilterPasar(); 
         }
-        else if (urlHash.startsWith('pasar?seller=')) {
+                else if (urlHash.startsWith('tokopublik?seller=')) {
             const sellerName = decodeURIComponent(urlHash.split('=')[1]);
-            const searchInput = document.getElementById('cari-pasar');
-            
-            if (searchInput) {
-                searchInput.value = sellerName; 
-            }
-            
-            terapkanFilterPasar(); 
-            setTimeout(() => showToast(`Menampilkan etalase toko @${sellerName}`, "success"), 1000);
-        } 
+            switchTab('tokopublik', null, false);
+            loadTokoPublikLuar(sellerName);
+        }
+ 
         else {
             terapkanFilterPasar();
         }
@@ -10381,11 +10467,11 @@ async function fetchSaldoDanMutasi() {
 
         if (txData && txData.length > 0) {
             listContainer.innerHTML = txData.map(tx => {
-                // Amankan teks deskripsi dari tanda kutip agar tidak merusak fungsi onclick HTML
-                const safeDesc = (tx.description || '').replace(/'/g, "\\'").replace(/"/g, "&quot;").replace(/\n/g, "\\n");
+                // Amankan teks deskripsi dan hilangkan enter (\n) agar tidak merusak parameter fungsi
+                const safeDesc = (tx.description || '').replace(/'/g, "\\'").replace(/"/g, "&quot;").replace(/\n/g, " ");
                 
                 return `
-                <div onclick="customAlert('${safeDesc}')" class="bg-brand-card border border-white/5 p-3 rounded-xl flex justify-between items-center gap-3 cursor-pointer hover:bg-white/5 transition-colors active:scale-95" title="Klik untuk baca selengkapnya">
+                <div onclick="bukaNotaMutasi('${tx.id}', ${tx.amount}, '${tx.type}', '${safeDesc}', '${tx.created_at}')" class="bg-brand-card border border-white/5 p-3 rounded-xl flex justify-between items-center gap-3 cursor-pointer hover:bg-white/5 transition-colors active:scale-95" title="Klik untuk lihat rincian struk">
                     <div class="flex-1 min-w-0">
                         <h4 class="text-[11px] font-bold text-white truncate">${tx.description}</h4>
                         <p class="text-[9px] text-gray-500 mt-1">${timeAgo(tx.created_at)}</p>
@@ -10401,6 +10487,70 @@ async function fetchSaldoDanMutasi() {
     } catch (err) {
         listContainer.innerHTML = '<div class="text-center py-10 text-red-500 text-xs">Gagal memuat data.</div>';
     }
+}
+
+// ==========================================
+// NOTA TRANSPARANSI UNTUK MUTASI DOMPET
+// ==========================================
+function bukaNotaMutasi(id, amount, type, desc, dateStr) {
+    const tgl = new Date(dateStr).toLocaleString('id-ID', {day:'2-digit', month:'long', year:'numeric', hour:'2-digit', minute:'2-digit'}) + ' WIB';
+    let htmlNota = '';
+    
+    // Konversi string ke angka
+    const nominal = Number(amount);
+
+    // JIKA INI ADALAH PENARIKAN (WITHDRAWAL)
+    if (type === 'EXPENSE' && (desc.toLowerCase().includes('tarik') || desc.toLowerCase().includes('cair'))) {
+        let biayaAdmin = 500;
+        let nominalBersih = nominal - biayaAdmin;
+        if (nominalBersih < 0) nominalBersih = 0; // Jaga-jaga
+
+        // Desain HTML Nota Penarikan
+        htmlNota = `
+        <div class="text-left w-full cursor-default">
+            <div class="text-[10px] text-gray-400 font-extrabold uppercase tracking-widest mb-4 border-b border-white/10 pb-2 flex items-center gap-1.5"><i class="fas fa-university text-brand-info"></i> Struk Penarikan</div>
+            <div class="flex justify-between items-center text-xs mb-2">
+                <span class="text-gray-300">Nominal Ditarik</span>
+                <span class="font-mono text-white">Rp ${nominal.toLocaleString('id-ID')}</span>
+            </div>
+            <div class="flex justify-between items-center text-xs mb-2">
+                <span class="text-gray-300">Biaya Admin (Sistem)</span>
+                <span class="font-mono text-red-400">- Rp ${biayaAdmin.toLocaleString('id-ID')}</span>
+            </div>
+            <div class="flex justify-between items-center text-xs font-bold mt-4 pt-3 border-t border-white/10">
+                <span class="text-white">Total Diterima Bersih</span>
+                <span class="font-mono text-brand-success text-sm tracking-tight">Rp ${nominalBersih.toLocaleString('id-ID')}</span>
+            </div>
+            <div class="mt-5 p-3 bg-black/30 rounded-xl border border-white/5 text-[10px] text-gray-400 leading-relaxed font-mono">
+                <div class="mb-1"><span class="text-gray-500 font-sans">Status:</span><br><b class="text-white font-sans">${desc}</b></div>
+                <div class="mb-1"><span class="text-gray-500 font-sans">Waktu:</span> ${tgl}</div>
+                <div><span class="text-gray-500 font-sans">Ref ID:</span> TX-${id.substring(0,8).toUpperCase()}</div>
+            </div>
+        </div>`;
+    } 
+    // JIKA INI ADALAH PEMASUKAN (INCOME)
+    else if (type === 'INCOME') {
+        htmlNota = `
+        <div class="text-left w-full cursor-default">
+            <div class="text-[10px] text-gray-400 font-extrabold uppercase tracking-widest mb-4 border-b border-white/10 pb-2 flex items-center gap-1.5"><i class="fas fa-download text-brand-success"></i> Struk Pemasukan</div>
+            <div class="flex justify-between items-center text-xs font-bold mb-2">
+                <span class="text-white">Total Masuk</span>
+                <span class="font-mono text-brand-success text-sm tracking-tight">+ Rp ${nominal.toLocaleString('id-ID')}</span>
+            </div>
+            <div class="mt-4 p-3 bg-black/30 rounded-xl border border-white/5 text-[10px] text-gray-400 leading-relaxed font-mono">
+                <div class="mb-1"><span class="text-gray-500 font-sans">Keterangan:</span><br><b class="text-white font-sans leading-snug">${desc}</b></div>
+                <div class="mb-1"><span class="text-gray-500 font-sans">Waktu:</span> ${tgl}</div>
+                <div><span class="text-gray-500 font-sans">Ref ID:</span> TX-${id.substring(0,8).toUpperCase()}</div>
+            </div>
+        </div>`;
+    } 
+    // LAIN-LAIN (Misal Refund)
+    else {
+         htmlNota = `<div class="text-left text-xs text-gray-300 font-medium leading-relaxed">${desc}<br><br><span class="text-[10px] text-gray-500 font-mono tracking-widest">TX-${id.substring(0,8).toUpperCase()} &bull; ${tgl}</span></div>`;
+    }
+
+    // Tampilkan di Alert Box bawaan (Kita hapus karakter enter \n bawaan kodenya agar tidak dobel spasi di HTML alert)
+    customAlert(htmlNota.replace(/\n/g, ''));
 }
 
 
@@ -11393,14 +11543,12 @@ setInterval(() => {
 function updateLinkToko() {
     const linkEl = document.getElementById('public-shop-link');
     if (linkEl && currentUser && userProfile) {
-        // Otomatis ngambil nickname, bersihin spasi, biar linknya rapi
         let namaToko = userProfile.nickname ? encodeURIComponent(userProfile.nickname.trim()) : currentUser.id;
-        
-        // 🔥 PERBAIKAN: Gunakan origin dan pathname agar dikenali 100% oleh PWA Android
         const baseUrl = window.location.origin + window.location.pathname;
-        linkEl.textContent = `${baseUrl}#pasar?seller=${namaToko}`;
+        linkEl.textContent = `${baseUrl}#tokopublik?seller=${namaToko}`; // <--- INI YANG DIUBAH
     }
 }
+
 
 // 3. Salin Link Toko
 function salinLinkToko() {
@@ -11827,14 +11975,18 @@ document.addEventListener('DOMContentLoaded', () => {
                     return;
                 }
                 
-                // Filter menggunakan memori lokal
+                                // Filter menggunakan memori lokal
                 const filteredData = globalDataBukuKas.filter(tx => {
                     const matchNama = tx.product_name.toLowerCase().includes(keyword);
                     const matchPenjual = tx.namaPenjual.toLowerCase().includes(keyword);
                     const matchID = tx.id.toLowerCase().includes(keyword);
                     const matchNominal = tx.totalJatahNikky.toString().includes(keyword);
                     
-                    return matchNama || matchPenjual || matchID || matchNominal;
+                    // [BARU] Deteksi Tanggal (Misal: "Kamis", "15 Juni", "2026")
+                    const stringTanggal = tx.waktuAkurat.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).toLowerCase();
+                    const matchTanggal = stringTanggal.includes(keyword);
+                    
+                    return matchNama || matchPenjual || matchID || matchNominal || matchTanggal;
                 });
                 
                 renderBukuKasList(filteredData);
@@ -11958,4 +12110,84 @@ if (adminSection) {
             }
         }
     }, {passive: true});
+}
+
+// ==========================================
+// MESIN TOKO PUBLIK (TAB TERSEMBUNYI)
+// ==========================================
+async function loadTokoPublikLuar(sellerName) {
+    const grid = document.getElementById('grid-tokopublik');
+    grid.innerHTML = '<div class="col-span-2 text-center py-10 text-brand-info"><i class="fas fa-spinner fa-spin text-3xl mb-3"></i><br><span class="text-xs font-bold uppercase tracking-widest">Mencari Toko...</span></div>';
+
+    try {
+        // 1. Cari profil penjual berdasarkan nickname (TIDAK sensitif huruf besar/kecil)
+        const { data: profile, error: errProfile } = await supabaseClient
+            .from('profiles')
+            .select('id, nickname, avatar_url, exp, is_seller, seller_expired_at')
+            .ilike('nickname', sellerName)
+            .single();
+
+        if (errProfile || !profile) throw new Error("Toko <b>@" + sellerName + "</b> tidak ditemukan.");
+
+        // 2. Cek apakah VIP-nya masih aktif
+        const isVip = profile.is_seller === true;
+        const expiredAt = profile.seller_expired_at ? new Date(profile.seller_expired_at) : new Date(0);
+        if (!isVip || expiredAt <= new Date()) throw new Error("Toko <b>@" + sellerName + "</b> sedang tidak aktif (VIP Berakhir).");
+
+        // 3. Render Header Toko
+        document.getElementById('tokopublik-avatar').src = profile.avatar_url || `https://ui-avatars.com/api/?name=${profile.nickname}&background=1A1133&color=fff`;
+        
+        const sellerExp = profile.exp || 0;
+        const sellerLevel = hitungStatusLevel(sellerExp).level;
+        // Asumsi data allVideosData sudah me-load, kita cek videonya untuk Lencana
+        const sellerVideoCount = allVideosData.filter(v => String(v.user_id) === String(profile.id)).length;
+        const badgeHtml = getBadgeByLevelAndVideos(sellerLevel, sellerVideoCount);
+
+        document.getElementById('tokopublik-nama').innerHTML = `@${profile.nickname} <span class="scale-[0.8] origin-left inline-flex shrink-0 ml-1">${badgeHtml}</span>`;
+
+        // 4. Tarik data etalase produk murni milik penjual ini
+        const { data: products, error: errProd } = await supabaseClient
+            .from('player_products')
+            .select('*')
+            .eq('user_id', profile.id)
+            .order('created_at', { ascending: false });
+
+        if (errProd) throw errProd;
+
+        if (!products || products.length === 0) {
+            grid.innerHTML = `<div class="col-span-2 text-center py-12 flex flex-col items-center text-gray-500 bg-black/20 rounded-2xl border border-white/5"><i class="fas fa-box-open text-4xl mb-3 opacity-30"></i><span class="text-xs">Etalase toko ini masih kosong.</span></div>`;
+            return;
+        }
+
+        // 5. Gabungkan data profile agar bisa dipakai oleh fungsi render grid
+        const mappedProducts = products.map(p => {
+            // Suntikkan juga ke globalDataPasar agar tombol "Beli/Detail" tidak error saat diklik
+            if (!globalDataPasar.find(x => x.id === p.id)) {
+                globalDataPasar.push({...p, profiles: profile});
+            }
+            return {...p, profiles: profile};
+        });
+
+        // 6. Cetak ke layar (Mendaur ulang fungsi render bawaan agar desain seragam 100%)
+        renderGridPasar(mappedProducts, 'grid-tokopublik');
+
+    } catch (err) {
+        grid.innerHTML = `<div class="col-span-2 text-center py-10 text-gray-400 flex flex-col items-center"><i class="fas fa-store-slash text-4xl mb-3 text-red-500/50"></i><span class="text-xs">${err.message || 'Terjadi kesalahan sistem.'}</span></div>`;
+    }
+}
+
+// Fitur Salin Link Toko di Header Toko Publik
+function salinLinkTokoPublikLuar() {
+    const url = window.location.href;
+    if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(url).then(() => showToast("Link toko berhasil disalin!", "success"));
+    } else {
+        let tempInput = document.createElement("textarea");
+        tempInput.value = url;
+        document.body.appendChild(tempInput);
+        tempInput.select();
+        document.execCommand("copy");
+        document.body.removeChild(tempInput);
+        showToast("Link toko berhasil disalin!", "success");
+    }
 }
