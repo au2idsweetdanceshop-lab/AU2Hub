@@ -64,12 +64,15 @@ export default async function handler(req, res) {
         const { user_id, sku_code, customer_no } = req.body;
         const ref_id = "AU2_" + Date.now(); // ID Unik Transaksi
         
+        let hargaJual = 0; // 🔥 PERBAIKAN: Dideklarasikan di luar try agar bisa dibaca oleh catch (Refund)
+        let isSaldoDipotong = false; // 🔥 Penanda agar sistem tahu apakah saldo sudah terlanjur dipotong
+        
         try {
             // A. Ambil harga jual dari Supabase
             const { data: prod } = await supabase.from('digiflazz_products').select('seller_price').eq('sku_code', sku_code).single();
             if (!prod) return res.status(404).json({ success: false, error: "Produk tidak ditemukan." });
 
-            const hargaJual = prod.seller_price;
+            hargaJual = prod.seller_price;
 
             // B. Potong saldo pembeli (Panggil fungsi SQL Supabase agar aman dari bug bentrok data)
             const { data: isSuccess, error: deductErr } = await supabase.rpc('kurangi_saldo', {
@@ -78,6 +81,8 @@ export default async function handler(req, res) {
             });
 
             if (deductErr || !isSuccess) return res.status(400).json({ success: false, error: "Saldo tidak mencukupi." });
+            
+            isSaldoDipotong = true; // Tandai bahwa saldo berhasil dipotong
 
             // C. Tembak ke VPS -> Digiflazz
             const sign = crypto.createHash('md5').update(username + apiKey + ref_id).digest('hex');
@@ -92,13 +97,13 @@ export default async function handler(req, res) {
             });
             const digiData = await proxyRes.json();
 
-            // D. Jika Digiflazz langsung menolak (Gagal seketika)
+            // D. Jika Digiflazz langsung menolak (Gagal seketika, misal: nomor salah)
             if (digiData.data && digiData.data.status === "Gagal") {
                 await supabase.rpc('tambah_saldo', { p_user_id: user_id, p_jumlah: hargaJual }); // REFUND!
                 return res.status(400).json({ success: false, error: "Transaksi gagal dari pusat. Saldo dikembalikan.", detail: digiData.data.message });
             }
 
-            // E. Catat riwayat pesanan
+            // E. Catat riwayat pesanan (Jika statusnya Pending atau Sukses)
             await supabase.from('riwayat_ppob').insert({
                 ref_id: ref_id,
                 user_id: user_id,
@@ -111,13 +116,12 @@ export default async function handler(req, res) {
             return res.status(200).json({ success: true, data: digiData.data });
 
         } catch (err) {
-            // F. Jika VPS mati atau timeout, Refund Saldo untuk keamanan!
-            if (req.body.user_id) {
-                // Di kondisi ideal, Anda harus mengecek apakah transaksi benar-benar tidak masuk ke Digiflazz
-                // Namun untuk pengamanan awal, kita kembalikan saldonya jika server crash
-                await supabase.rpc('tambah_saldo', { p_user_id: req.body.user_id, p_jumlah: 500 /* harusnya variabel hargaJual, tapi diletakkan di dalam scope try-catch agar aman */ });
+            // F. JARING PENGAMAN: Jika VPS mati, Vercel Timeout, atau Error Sistem
+            // Hanya lakukan refund JIKA saldo sudah terlanjur dipotong
+            if (isSaldoDipotong && user_id && hargaJual > 0) {
+                await supabase.rpc('tambah_saldo', { p_user_id: user_id, p_jumlah: hargaJual });
             }
-            return res.status(500).json({ success: false, error: "Gangguan server. Transaksi dibatalkan." });
+            return res.status(500).json({ success: false, error: "Gangguan server. Transaksi dibatalkan dan saldo dikembalikan." });
         }
     }
 
@@ -136,7 +140,7 @@ export default async function handler(req, res) {
             // Update status di riwayat_ppob Supabase
             const { data: orderData } = await supabase.from('riwayat_ppob').update({ status: statusDigi }).eq('ref_id', refId).select().single();
 
-            // Jika status berubah jadi Gagal (misal pulsa gagal terkirim dari pusat)
+            // Jika status berubah jadi Gagal (misal pulsa gagal terkirim dari pusat karena gangguan)
             if (statusDigi === "Gagal" && orderData) {
                 // REFUND: Kembalikan saldo berdasarkan harga produk saat dia beli
                 await supabase.rpc('tambah_saldo', { p_user_id: orderData.user_id, p_jumlah: orderData.price });
