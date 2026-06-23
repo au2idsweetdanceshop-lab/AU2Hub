@@ -12289,3 +12289,244 @@ function salinLinkTokoPublikLuar() {
         showToast("Link toko berhasil disalin!", "success");
     }
 }
+
+// ==========================================
+// FITUR CHECKOUT PPOB DIGIFLAZZ (POTONG SALDO)
+// ==========================================
+async function prosesBeliPPOB(skuCode, targetNo, harga, namaProduk) {
+    if (!currentUser) return showToast("Silakan login dulu untuk membeli!", "error");
+
+    // 1. Cek Saldo Lokal (Agar tidak perlu loading API jika saldo jelas kurang)
+    const { data: profile } = await supabaseClient.from('profiles').select('balance').eq('id', currentUser.id).single();
+    const saldoSaatIni = profile?.balance || 0;
+
+    if (saldoSaatIni < harga) {
+        return customAlert(`Saldo Anda tidak cukup!\n\nSaldo: Rp ${saldoSaatIni.toLocaleString('id-ID')}\nHarga: Rp ${harga.toLocaleString('id-ID')}\n\nSilakan deposit/Top Up saldo Anda terlebih dahulu.`);
+    }
+
+    // 2. Konfirmasi Pembelian
+    const konfirmasi = await customConfirm(`Beli ${namaProduk} untuk nomor:\n${targetNo}\n\nTotal: Rp ${harga.toLocaleString('id-ID')} (Potong Saldo)?`);
+    if (!konfirmasi) return;
+
+    showToast("Memproses transaksi ke pusat...", "info");
+
+    try {
+        // 3. Tembak API Vercel (Jalur Digiflazz)
+        const response = await fetch('/api/digiflazz', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'buy',
+                user_id: currentUser.id,
+                sku_code: skuCode,
+                customer_no: targetNo
+            })
+        });
+
+        const result = await response.json();
+
+        if (!response.ok || !result.success) {
+            throw new Error(result.error || result.detail || "Transaksi dibatalkan sistem.");
+        }
+
+        // 4. Jika Sukses!
+        showToast("Pesanan berhasil diproses!", "success");
+        
+        // 5. Update UI Saldo di layar agar angka uangnya langsung berkurang
+        if (typeof updateUiSaldoSeller === 'function') updateUiSaldoSeller();
+        if (typeof fetchSaldoDanMutasi === 'function') fetchSaldoDanMutasi();
+        
+        // Arahkan ke tab pesanan agar buyer bisa melacak transaksinya
+        switchTab('pesanan');
+        cekStatusPesanan('proses');
+
+    } catch (err) {
+        showToast(err.message, "error");
+    }
+}
+
+// ==========================================
+// MESIN UTAMA LAYANAN PPOB (DIGIFLAZZ + SUPABASE)
+// ==========================================
+
+// Variabel Global PPOB
+let kategoriPPOBAktif = 'Pulsa'; 
+let ppobOffset = 0;
+const PPOB_LIMIT = 20; // Memuat 20 produk per ketukan untuk hemat kuota database
+let currentPpobData = [];
+
+// Daftar Kategori Umum (Bisa disesuaikan dengan isi Digiflazz Anda)
+const kategoriPPOBList = [
+    { id: 'Pulsa', icon: 'fa-signal' },
+    { id: 'Data', icon: 'fa-wifi' },
+    { id: 'E-Money', icon: 'fa-wallet' },
+    { id: 'Games', icon: 'fa-gamepad' },
+    { id: 'PLN', icon: 'fa-bolt' },
+    { id: 'Voucher', icon: 'fa-ticket-alt' }
+];
+
+// Deteksi saat pengguna membuka tab PPOB (Layanan)
+document.addEventListener('DOMContentLoaded', () => {
+    // Memancing perenderan awal agar UI terbentuk
+    renderKategoriPPOB();
+    
+    // Inject listener ke menu navigasi agar otomatis refresh jika pindah tab
+    const btnLayanan = document.querySelector('div[onclick*="executeAssistive(\\'layanan\\')"]');
+    if (btnLayanan) {
+        btnLayanan.addEventListener('click', () => {
+            if (currentPpobData.length === 0) {
+                pilihKategoriPPOB(kategoriPPOBAktif);
+            }
+        });
+    }
+});
+
+// Render Tombol Kategori Horizontal
+function renderKategoriPPOB() {
+    const container = document.getElementById('ppob-category-container');
+    if (!container) return;
+
+    container.innerHTML = kategoriPPOBList.map(kat => {
+        const isActive = kat.id === kategoriPPOBAktif;
+        const activeClass = isActive 
+            ? "bg-gradient-to-r from-yellow-400 to-yellow-600 text-brand-dark border-transparent shadow-[0_0_10px_rgba(250,204,21,0.5)]" 
+            : "bg-black/40 text-gray-400 border-white/10 hover:bg-white/10 hover:text-white";
+        
+        return `
+        <button onclick="pilihKategoriPPOB('${kat.id}')" class="flex items-center gap-1.5 px-4 py-2.5 rounded-xl border font-bold text-[11px] whitespace-nowrap transition-all active:scale-95 shrink-0 ${activeClass}">
+            <i class="fas ${kat.icon}"></i> ${kat.id}
+        </button>`;
+    }).join('');
+}
+
+// Eksekusi Saat Kategori Diklik
+function pilihKategoriPPOB(kategori) {
+    kategoriPPOBAktif = kategori;
+    renderKategoriPPOB(); // Perbarui warna tombol
+    
+    // Reset Data dan Pagination
+    ppobOffset = 0;
+    currentPpobData = [];
+    document.getElementById('ppob-load-more-container').classList.add('hidden');
+    document.getElementById('ppob-product-grid').innerHTML = `
+        <div class="text-center py-10 text-yellow-400">
+            <i class="fas fa-circle-notch fa-spin text-3xl mb-3"></i><br>
+            <span class="text-xs font-bold uppercase tracking-widest">Mencari Data...</span>
+        </div>`;
+    
+    loadProdukPPOB(false);
+}
+
+// Fungsi Tarik Data Bertahap dari Supabase
+async function loadProdukPPOB(isLoadMore = false) {
+    const grid = document.getElementById('ppob-product-grid');
+    const btnLoadMore = document.getElementById('btn-load-more-ppob');
+    
+    if (isLoadMore) {
+        btnLoadMore.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Memuat...';
+        btnLoadMore.disabled = true;
+    }
+
+    try {
+        // Tentukan batas tarik data berdasarkan offset (0-19, 20-39, dst)
+        const from = ppobOffset;
+        const to = ppobOffset + PPOB_LIMIT - 1;
+
+        // Tembak Supabase: Ambil produk aktif yang kategorinya cocok, urutkan dari termurah
+        const { data, error } = await supabaseClient
+            .from('digiflazz_products')
+            .select('*')
+            .eq('is_active', true)
+            .ilike('category', `%${kategoriPPOBAktif}%`) // ilike agar huruf besar/kecil tetap terbaca
+            .order('seller_price', { ascending: true })
+            .range(from, to);
+
+        if (error) throw error;
+
+        // Update Memori Lokal
+        if (!isLoadMore) {
+            currentPpobData = data;
+        } else {
+            currentPpobData = [...currentPpobData, ...data];
+        }
+
+        // Cek Apakah Masih Ada Data Selanjutnya
+        const wadahLoadMore = document.getElementById('ppob-load-more-container');
+        if (data.length === PPOB_LIMIT) {
+            ppobOffset += PPOB_LIMIT; // Naikkan batas untuk klik berikutnya
+            wadahLoadMore.classList.remove('hidden');
+        } else {
+            wadahLoadMore.classList.add('hidden'); // Sembunyikan tombol jika data sudah mentok habis
+        }
+
+        renderGridPPOB();
+
+    } catch (err) {
+        console.error("PPOB Fetch Error:", err);
+        if (!isLoadMore) {
+            grid.innerHTML = '<div class="text-center py-10 text-red-500 text-xs">Gagal menarik data layanan. Cek koneksi Anda.</div>';
+        } else {
+            showToast("Gagal memuat produk selanjutnya.", "error");
+        }
+    } finally {
+        if (isLoadMore) {
+            btnLoadMore.innerHTML = 'Tampilkan Lebih Banyak <i class="fas fa-chevron-down ml-1"></i>';
+            btnLoadMore.disabled = false;
+        }
+    }
+}
+
+// Fungsi Cetak Data PPOB ke Layar HTML
+function renderGridPPOB() {
+    const grid = document.getElementById('ppob-product-grid');
+
+    if (currentPpobData.length === 0) {
+        grid.innerHTML = `
+            <div class="flex flex-col items-center justify-center py-10 text-center bg-black/20 rounded-2xl border border-white/5">
+                <i class="fas fa-box-open text-4xl text-gray-600 mb-3"></i>
+                <h4 class="text-white font-bold text-xs mb-1 tracking-tight">Produk Kosong</h4>
+                <p class="text-[10px] text-gray-500">Layanan untuk kategori ini sedang tidak tersedia.</p>
+            </div>`;
+        return;
+    }
+
+    grid.innerHTML = currentPpobData.map((item, index) => {
+        // Animasi muncul berurutan (Smooth Reveal)
+        const delayAnimasi = Math.min(index * 0.03, 0.3);
+        const formatHarga = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(item.seller_price);
+        
+        // Escape karakter berbahaya pada nama produk (anti-XSS)
+        const namaAman = escapeHTML(item.product_name).replace(/'/g, "\\'");
+
+        return `
+        <div onclick="pemicuBeliPPOB('${item.sku_code}', '${namaAman}', ${item.seller_price})" style="animation-delay: ${delayAnimasi}s; opacity: 0;" class="bg-black/40 border border-white/5 p-4 rounded-[1rem] flex justify-between items-center gap-3 cursor-pointer hover:bg-white/10 hover:border-brand-info/30 transition-all active:scale-95 smooth-reveal shadow-sm group">
+            <div class="flex-1 min-w-0 pr-2 border-r border-white/5">
+                <h4 class="text-[11px] font-bold text-white line-clamp-2 leading-snug mb-1 group-hover:text-brand-info transition-colors">${item.product_name}</h4>
+                <div class="text-[9px] text-gray-500 uppercase tracking-widest font-bold">${item.brand}</div>
+            </div>
+            <div class="flex flex-col items-end shrink-0">
+                <span class="text-[10px] text-gray-400 mb-0.5">Harga</span>
+                <span class="text-[13px] font-black text-brand-success tracking-tight">${formatHarga}</span>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+// Eksekusi Saat Kartu Produk Diklik
+function pemicuBeliPPOB(skuCode, namaProduk, harga) {
+    // 1. Ambil nomor dari input box
+    const targetEl = document.getElementById('ppob-target-number');
+    const targetNo = targetEl.value.trim();
+
+    // 2. Validasi Nomor
+    if (!targetNo) {
+        targetEl.focus();
+        return showToast("Mohon isi Nomor Tujuan atau ID Game terlebih dahulu!", "error");
+    }
+
+    // Hindari karakter aneh pada nomor (hanya izinkan angka dan beberapa simbol game standar)
+    const cleanTargetNo = targetNo.replace(/[^a-zA-Z0-9-]/g, '');
+
+    // 3. Lemparkan ke Mesin Utama yang ada di instruksi sebelumnya
+    prosesBeliPPOB(skuCode, cleanTargetNo, harga, namaProduk);
+}
