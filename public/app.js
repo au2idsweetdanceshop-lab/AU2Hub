@@ -12530,3 +12530,35 @@ function pemicuBeliPPOB(skuCode, namaProduk, harga) {
     // 3. Lemparkan ke Mesin Utama yang ada di instruksi sebelumnya
     prosesBeliPPOB(skuCode, cleanTargetNo, harga, namaProduk);
 }
+
+// ==========================================
+// FITUR TOP UP SALDO OTOMATIS (QRIS)
+// ==========================================
+async function mulaiTopUpSaldo() {
+    if (!currentUser) return showToast("Silakan login terlebih dahulu!", "error");
+    
+    // 1. Minta input nominal dari buyer
+    const input = await customPrompt("Masukkan nominal Top Up (Minimal Rp 10.000):", "10000");
+    if (!input) return; // Batal jika kosong/ditutup
+    
+    // 2. Bersihkan inputan dari huruf/simbol
+    const nominal = parseInt(input.replace(/[^0-9]/g, ''));
+    
+    // 3. Validasi angka
+    if (isNaN(nominal) || nominal < 10000) {
+        return showToast("Minimal Top Up adalah Rp 10.000", "error");
+    }
+
+    // 4. Tutup laci dompet agar layar bersih
+    tutupModalSaldoDompet();
+
+    // 5. Lempar ke jalur Xoftware Pay dengan kode rahasia [DEPOSIT]
+    // Fungsi bawaan Anda: checkoutXoftwarePay(namaProduk, harga, deskripsi, sellerId, productId)
+    checkoutXoftwarePay(
+        `[DEPOSIT] Top Up Saldo Rp ${nominal.toLocaleString('id-ID')}`, 
+        nominal, 
+        "Isi saldo dompet AU2Hub", 
+        null, 
+        null
+    );
+}
