@@ -91,9 +91,39 @@ export default async function handler(req, res) {
         const userId = orderData.user_id;
 
         // ========================================================
+        // 💰 TAMBAHAN BARU: DETEKSI TOP UP SALDO OTOMATIS
+        // ========================================================
+        if (productName.startsWith('[DEPOSIT]')) {
+            console.log(`💰 Memproses Top Up Saldo untuk User: ${userId}, Nominal: ${orderData.price}`);
+            
+            // 1. Tambahkan saldo langsung ke dompet buyer
+            const { error: errSaldo } = await supabase.rpc('tambah_saldo', {
+                p_user_id: userId,
+                p_jumlah: orderData.price
+            });
+
+            if (errSaldo) {
+                console.error("❌ Gagal menambah saldo:", errSaldo);
+                return res.status(500).json({ success: false, message: 'Gagal menambah saldo. Cek RPC Supabase.' });
+            }
+
+            // 2. Catat di Riwayat Mutasi Dompet
+            await supabase.from('wallet_transactions').insert({
+                user_id: userId,
+                amount: orderData.price,
+                type: 'INCOME',
+                description: 'Top Up Saldo via QRIS Otomatis'
+            });
+
+            // 3. Ubah status pesanan menjadi selesai
+            await supabase.from(targetTable).update({ status: 'selesai' }).eq('id', orderId);
+
+            console.log(`✅ Top Up Berhasil. Saldo bertambah untuk Order ${orderId}`);
+        }
+        // ========================================================
         // 🛡️ PERBAIKAN BUG #1: MENCEGAH VIP PALSU (Cek targetTable)
         // ========================================================
-        if (productName.includes('[VIP]') && targetTable === 'orders') {
+        else if (productName.includes('[VIP]') && targetTable === 'orders') {
             const { data: profile } = await supabase.from('profiles').select('seller_expired_at').eq('id', userId).single();
             let waktuSekarang = new Date();
             let waktuExpired = profile?.seller_expired_at ? new Date(profile.seller_expired_at) : new Date();
@@ -112,12 +142,18 @@ export default async function handler(req, res) {
             if (targetTable === 'orders_player') updatePayload.waktu_selesai = new Date().toISOString();
             
             await supabase.from(targetTable).update(updatePayload).eq('id', orderId);
-        } else {
+            
+            console.log(`✅ VIP Berhasil Diperpanjang untuk Order ${orderId}`);
+        } 
+        // ========================================================
+        // ORDER BIASA & PASAR PLAYER
+        // ========================================================
+        else {
             // ORDER BIASA & AUTO-DELIVERY DIUBAH KE SUCCESS
             await supabase.from(targetTable).update({ status: 'SUCCESS' }).eq('id', orderId);
+            console.log(`✅ Status DB Order Biasa diperbarui ke SUCCESS`);
         }
         
-        console.log(`✅ BERHASIL UPDATE STATUS DB KE SUCCESS!`);
         return res.status(200).json({ success: true, message: 'Callback processed successfully' });
     }
 
