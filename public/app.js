@@ -7688,35 +7688,38 @@ async function switchLeaderboardTab(tab) {
 
 
 
-// 📦 LOGIKA TRACKER PESANAN (REAL-TIME DATABASE)
+// 📦 LOGIKA TRACKER PESANAN (REAL-TIME DATABASE) - SUPPORT PPOB
 async function loadOrderTracker(userId) {
-// Sembunyikan semua badge saat loading awal
-const bBayar = document.getElementById('badge-track-bayar'); if(bBayar) bBayar.classList.add('hidden');
-const bProses = document.getElementById('badge-track-proses'); if(bProses) bProses.classList.add('hidden');
-const bSelesai = document.getElementById('badge-track-selesai'); if(bSelesai) bSelesai.classList.add('hidden');
+    // Sembunyikan semua badge saat loading awal
+    const bBayar = document.getElementById('badge-track-bayar'); if(bBayar) bBayar.classList.add('hidden');
+    const bProses = document.getElementById('badge-track-proses'); if(bProses) bProses.classList.add('hidden');
+    const bSelesai = document.getElementById('badge-track-selesai'); if(bSelesai) bSelesai.classList.add('hidden');
 
-try {
-    // Tarik data dari DUA tabel sekaligus
-    const req1 = supabaseClient.from('orders').select('status').eq('user_id', userId);
-    const req2 = supabaseClient.from('orders_player').select('status').eq('user_id', userId);
-    
-    // Gabungkan hasilnya
-    const [res1, res2] = await Promise.all([req1, req2]);
-    const data = [...(res1.data || []), ...(res2.data || [])];
+    try {
+        // Tarik data dari TIGA tabel sekaligus
+        const req1 = supabaseClient.from('orders').select('status').eq('user_id', userId);
+        const req2 = supabaseClient.from('orders_player').select('status').eq('user_id', userId);
+        const req3 = supabaseClient.from('riwayat_ppob').select('status').eq('user_id', userId);
+        
+        // Gabungkan hasilnya
+        const [res1, res2, res3] = await Promise.all([req1, req2, req3]);
+        const data = [...(res1.data || []), ...(res2.data || []), ...(res3.data || [])];
 
-    if (data && data.length > 0) {
-        let countBayar = data.filter(o => o.status === 'PENDING').length;
-        let countProses = data.filter(o => o.status === 'proses' || o.status === 'SUCCESS').length; 
-        let countSelesai = data.filter(o => o.status === 'selesai').length;
+        if (data && data.length > 0) {
+            // PENDING di toko = Belum bayar. 
+            let countBayar = data.filter(o => o.status === 'PENDING').length;
+            // proses/SUCCESS di toko = Diproses. Pending di PPOB = Diproses.
+            let countProses = data.filter(o => o.status === 'proses' || o.status === 'SUCCESS' || o.status === 'Pending').length; 
+            // selesai di toko = Selesai. Sukses di PPOB = Selesai.
+            let countSelesai = data.filter(o => o.status === 'selesai' || o.status === 'Sukses').length;
 
-        if (countBayar > 0 && bBayar) { bBayar.innerText = countBayar; bBayar.classList.remove('hidden'); }
-        if (countProses > 0 && bProses) { bProses.innerText = countProses; bProses.classList.remove('hidden'); }
-        if (countSelesai > 0 && bSelesai) { bSelesai.innerText = countSelesai; bSelesai.classList.remove('hidden'); }
+            if (countBayar > 0 && bBayar) { bBayar.innerText = countBayar; bBayar.classList.remove('hidden'); }
+            if (countProses > 0 && bProses) { bProses.innerText = countProses; bProses.classList.remove('hidden'); }
+            if (countSelesai > 0 && bSelesai) { bSelesai.innerText = countSelesai; bSelesai.classList.remove('hidden'); }
+        }
+    } catch (err) {
+        console.log("Tabel pesanan belum siap, abaikan tracker.");
     }
-} catch (err) {
-    console.log("Tabel orders belum siap, abaikan tracker.");
-}
-
 }
 
 function closeRiwayatPesanan(dariTombolBackHP = false) {
@@ -7757,11 +7760,8 @@ async function cekStatusPesanan(kategori) {
 
     const modal = document.getElementById('modal-riwayat-pesanan');
     const container = document.getElementById('riwayat-pesanan-list');
-    
-    // Ambil judul header laci
     const headerTitle = modal.querySelector('h3'); 
     
-    // Buka Modal & Tampilkan Loading
     modal.classList.remove('hidden');
     modal.classList.add('flex');
     history.pushState({ popup: 'riwayat_pesanan' }, null, '#riwayat');
@@ -7769,85 +7769,100 @@ async function cekStatusPesanan(kategori) {
     container.innerHTML = '<div class="flex flex-col items-center justify-center mt-20"><i class="fas fa-spinner fa-spin text-brand-info text-4xl mb-3"></i><p class="text-[10px] text-gray-500 font-bold tracking-widest uppercase">Memuat Database...</p></div>';
 
     try {
-        // Query untuk DUA Tabel
+        // Query untuk TIGA Tabel
         let q1 = supabaseClient.from('orders').select('*').eq('user_id', currentUser.id);
         let q2 = supabaseClient.from('orders_player').select('*').eq('user_id', currentUser.id);
+        let q3 = supabaseClient.from('riwayat_ppob').select('*').eq('user_id', currentUser.id);
 
         if (kategori === 'bayar') {
             q1 = q1.eq('status', 'PENDING');
             q2 = q2.eq('status', 'PENDING');
+            q3 = q3.eq('status', 'DUMMY_KOSONG'); // PPOB tidak ada sistem "Belum Bayar" karena potong saldo instan
             headerTitle.innerHTML = '<i class="fas fa-wallet text-red-500"></i> TAGIHAN BELUM BAYAR';
         } else if (kategori === 'proses') {
             q1 = q1.in('status', ['proses', 'SUCCESS']);
             q2 = q2.in('status', ['proses', 'SUCCESS']);
+            q3 = q3.in('status', ['Pending']); // Digiflazz bahasa prosesnya = Pending
             headerTitle.innerHTML = '<i class="fas fa-box text-brand-info"></i> PESANAN DIPROSES';
         } else if (kategori === 'selesai') {
             q1 = q1.eq('status', 'selesai');
             q2 = q2.eq('status', 'selesai');
+            q3 = q3.eq('status', 'Sukses'); // Digiflazz bahasa selesainya = Sukses
             headerTitle.innerHTML = '<i class="fas fa-check-circle text-brand-success"></i> PESANAN SELESAI';
         } else {
             headerTitle.innerHTML = '<i class="fas fa-receipt text-brand-info"></i> SEMUA RIWAYAT';
         }
 
-        const [res1, res2] = await Promise.all([q1, q2]);
+        const [res1, res2, res3] = await Promise.all([q1, q2, q3]);
         
-        // Beri tanda ini data dari tabel mana
         let data1 = (res1.data || []).map(o => ({...o, table_source: 'orders'}));
         let data2 = (res2.data || []).map(o => ({...o, table_source: 'orders_player'}));
+        
+        // PPOB butuh sedikit sulap karena kolom namanya beda
+        let data3 = (res3.data || []).map(o => ({
+            ...o, 
+            table_source: 'riwayat_ppob',
+            product_name: `[PPOB] ${o.sku_code} (${o.customer_no})`, // Bikin nama rapi
+            id: o.ref_id // Samakan struktur ID
+        }));
 
-        // Gabungkan dan urutkan dari yang terbaru
-        let combinedData = [...data1, ...data2];
+        let combinedData = [...data1, ...data2, ...data3];
         combinedData.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
         if (combinedData.length > 0) {
             container.innerHTML = combinedData.map(order => {
                 let statusColor = ''; let icon = ''; let teksStatus = order.status.toUpperCase();
 
-                if (order.status === 'selesai') { statusColor = 'text-brand-success bg-brand-success/10 border-brand-success/30'; icon = 'fa-check-circle'; } 
-                else if (order.status === 'proses' || order.status === 'SUCCESS') { 
+                // Pemetaan Status Gabungan (Toko & PPOB)
+                if (order.status === 'selesai' || order.status === 'Sukses') { 
+                    statusColor = 'text-brand-success bg-brand-success/10 border-brand-success/30'; icon = 'fa-check-circle'; teksStatus = 'SELESAI'; 
+                } 
+                else if (order.status === 'proses' || order.status === 'SUCCESS' || order.status === 'Pending') { 
                     statusColor = 'text-brand-info bg-brand-info/10 border-brand-info/30'; icon = 'fa-box'; teksStatus = 'DIPROSES'; 
                     if (order.status === 'SUCCESS') supabaseClient.from(order.table_source).update({status: 'proses'}).eq('id', order.id).then();
                 } 
-                else if (order.status === 'PENDING') { statusColor = 'text-gray-400 bg-gray-500/10 border-gray-500/30'; icon = 'fa-wallet'; teksStatus = 'PENDING'; }
-                else if (order.status === 'DIBATALKAN') { 
-                    statusColor = 'text-gray-500 bg-gray-600/10 border-gray-600/30'; 
-                    icon = 'fa-times-circle'; 
-                    teksStatus = 'DIBATALKAN'; 
+                else if (order.status === 'PENDING') { 
+                    statusColor = 'text-gray-400 bg-gray-500/10 border-gray-500/30'; icon = 'fa-wallet'; teksStatus = 'BELUM BAYAR'; 
+                }
+                else if (order.status === 'DIBATALKAN' || order.status === 'Gagal') { 
+                    statusColor = 'text-red-400 bg-red-500/10 border-red-500/30'; icon = 'fa-times-circle'; teksStatus = order.status === 'Gagal' ? 'GAGAL (REFUND)' : 'DIBATALKAN'; 
                 }
 
-                // Gunakan escapeHTML dan escape kutip tunggal agar HTML tidak patah
                 let namaAman = escapeHTML(order.product_name).replace(/&#39;/g, "\\'");
-                let clickAction = `onclick="bukaDetailPesananDinamis('${order.id}', '${namaAman}', '${order.price}', '${order.status}', '${order.table_source}', '${order.seller_id || ''}', '${order.product_id || ''}')" class="cursor-pointer hover:border-brand-accent/50"`;
+                
+                // Jika ini PPOB, matikan klik buka struk (karena struk PPOB tidak ada halaman laci khususnya seperti barang pasar)
+                let clickAction = order.table_source === 'riwayat_ppob' 
+                    ? `class="border-white/5"` 
+                    : `onclick="bukaDetailPesananDinamis('${order.id}', '${namaAman}', '${order.price}', '${order.status}', '${order.table_source}', '${order.seller_id || ''}', '${order.product_id || ''}')" class="cursor-pointer hover:border-brand-accent/50 border-white/5"`;
 
                 return `
-                <div ${clickAction} class="bg-brand-dark/50 border border-white/5 p-4 rounded-2xl flex flex-col gap-2 relative overflow-hidden transition-all hover:border-white/10 ${order.status === 'PENDING' ? 'border-red-500/20 shadow-[0_0_10px_rgba(239,68,68,0.1)]' : ''}">
+                <div ${clickAction} class="bg-brand-dark/50 border p-4 rounded-2xl flex flex-col gap-2 relative overflow-hidden transition-all hover:border-white/10 ${order.status === 'PENDING' ? 'border-red-500/20 shadow-[0_0_10px_rgba(239,68,68,0.1)]' : ''}">
                     <div class="flex justify-between items-start z-10">
                         <h4 class="text-xs font-bold text-white line-clamp-2 pr-3">${order.product_name}</h4>
                         <span class="text-[9px] font-extrabold px-2 py-1 rounded-md border whitespace-nowrap flex items-center gap-1 ${statusColor} shrink-0 shadow-sm"><i class="fas ${icon}"></i> ${teksStatus}</span>
                     </div>
                     <div class="flex justify-between items-end mt-2 z-10 border-t border-white/5 pt-2.5">
                         <span class="text-[9px] text-gray-400"><i class="far fa-clock mr-1"></i>${timeAgo(order.created_at)}</span>
-                        <span class="text-[13px] font-extrabold text-brand-accent">Rp ${Number(order.price).toLocaleString('id-ID')}</span>
+                        <span class="text-[13px] font-extrabold ${order.status === 'Gagal' ? 'text-gray-500 line-through' : 'text-brand-accent'}">Rp ${Number(order.price).toLocaleString('id-ID')}</span>
                     </div>
                 </div>`;
             }).join('');
         } else {
             container.innerHTML = `
-<div class="flex flex-col items-center justify-center mt-24 text-center px-6">
-    <div class="relative w-24 h-24 mb-5 flex items-center justify-center">
-        <div class="absolute inset-0 bg-brand-info/10 rounded-full blur-xl"></div>
-        <div class="w-20 h-20 bg-brand-info/10 rounded-full flex items-center justify-center border border-brand-info/20 backdrop-blur-md relative z-10 shadow-lg">
-            <i class="fas fa-box-open text-4xl text-brand-info/70"></i>
-        </div>
-    </div>
-    <h4 class="text-white font-extrabold text-base mb-1 tracking-tight">Belum Ada Transaksi</h4>
-    <p class="text-xs text-gray-500 leading-relaxed">Sepertinya kamu belum memiliki data pesanan di kategori ini.</p>
-</div>`;
+            <div class="flex flex-col items-center justify-center mt-24 text-center px-6">
+                <div class="relative w-24 h-24 mb-5 flex items-center justify-center">
+                    <div class="absolute inset-0 bg-brand-info/10 rounded-full blur-xl"></div>
+                    <div class="w-20 h-20 bg-brand-info/10 rounded-full flex items-center justify-center border border-brand-info/20 backdrop-blur-md relative z-10 shadow-lg">
+                        <i class="fas fa-box-open text-4xl text-brand-info/70"></i>
+                    </div>
+                </div>
+                <h4 class="text-white font-extrabold text-base mb-1 tracking-tight">Belum Ada Transaksi</h4>
+                <p class="text-xs text-gray-500 leading-relaxed">Sepertinya kamu belum memiliki data pesanan di kategori ini.</p>
+            </div>`;
         }
     } catch (e) {
         container.innerHTML = '<div class="text-center mt-20 text-red-500 text-xs">Gagal menarik data dari server.</div>';
     }
-
 }
 
 
@@ -12329,7 +12344,19 @@ async function prosesBeliPPOB(skuCode, targetNo, harga, namaProduk) {
     const konfirmasi = await customConfirm(`Beli ${namaProduk} untuk nomor:\n${targetNo}\n\nTotal: Rp ${harga.toLocaleString('id-ID')} (Potong Saldo)?`);
     if (!konfirmasi) return;
 
-    showToast("Memproses transaksi ke pusat...", "info");
+    // 🔥 PERBAIKAN: BUKA TAB PEMBAYARAN & TAMPILKAN LOADING SAKTI
+    switchTab('pembayaran');
+    const wadahPembayaran = document.getElementById('qris-container');
+    if (wadahPembayaran) {
+        wadahPembayaran.innerHTML = `
+        <div class="text-center flex flex-col items-center w-full mt-6">
+            <div class="relative flex flex-col items-center mb-6">
+                <div class="absolute inset-0 bg-yellow-400 opacity-30 animate-pulse rounded-full" style="filter: blur(30px);"></div>
+                <img src="https://nos.wjv-1.neo.id/au2hub/Picsart_26-05-30_04-29-46-305.webp" class="w-28 h-28 relative z-10 splash-logo-anim drop-shadow-[0_0_20px_rgba(250,204,21,0.5)]" alt="Loading">
+            </div>
+            <p class="text-[10px] text-gray-400 font-extrabold tracking-widest uppercase mt-4 animate-pulse">Memproses ke Digiflazz...</p>
+        </div>`;
+    }
 
     try {
         // 3. Tembak API Vercel (Jalur Digiflazz)
@@ -12356,13 +12383,57 @@ async function prosesBeliPPOB(skuCode, targetNo, harga, namaProduk) {
         // 5. Update UI Saldo di layar agar angka uangnya langsung berkurang
         if (typeof updateUiSaldoSeller === 'function') updateUiSaldoSeller();
         if (typeof fetchSaldoDanMutasi === 'function') fetchSaldoDanMutasi();
+        if (typeof updateSaldoGlobal === 'function') updateSaldoGlobal();
         
-        // Arahkan ke tab pesanan agar buyer bisa melacak transaksinya
-        switchTab('pesanan');
-        cekStatusPesanan('proses');
+        // 🔥 PERBAIKAN: TAMPILKAN INVOICE TRANSPARAN KHUSUS PPOB DI LAYAR PEMBAYARAN
+        if (wadahPembayaran) {
+            const digiStatus = result.data ? result.data.status : 'Sukses';
+            const refId = result.data ? result.data.ref_id : 'Sistem';
+            const sn = result.data ? (result.data.sn || 'Sedang diproses') : 'Sedang diproses';
+            
+            // Logika UI: Jika pending/sukses maka warnanya sukses (hijau). Jika gagal maka merah.
+            const isSukses = (digiStatus === 'Sukses' || digiStatus === 'Pending');
+            const warnaTema = isSukses ? 'brand-success' : 'red-500';
+            const iconTema = isSukses ? 'fa-check' : 'fa-times';
+            const shadowTema = isSukses ? 'rgba(37,211,102,0.8)' : 'rgba(239,68,68,0.8)';
+
+            wadahPembayaran.innerHTML = `
+                <div class="flex flex-col items-center justify-center py-4 text-center modal-anim w-full relative z-10">
+                    <div class="relative w-28 h-28 mb-6 mt-4">
+                        <div class="absolute inset-0 bg-${warnaTema} rounded-full animate-ping opacity-20"></div>
+                        <div class="w-full h-full bg-${warnaTema}/20 rounded-full flex items-center justify-center border border-${warnaTema}/50 backdrop-blur-md">
+                            <i class="fas ${iconTema} text-5xl text-${warnaTema}" style="filter: drop-shadow(0 0 15px ${shadowTema});"></i>
+                        </div>
+                    </div>
+                    <h2 class="text-3xl font-black text-white mb-2 tracking-tight">Status: ${digiStatus}</h2>
+                    <p class="text-gray-400 text-[11px] mb-6 leading-relaxed px-4">Pembayaran <b>${namaProduk}</b> senilai <b class="text-white">Rp ${harga.toLocaleString('id-ID')}</b> telah diproses sistem.</p>
+                    
+                    <div class="w-full bg-black/50 border border-${warnaTema}/50 rounded-xl p-4 text-left mb-6 relative shadow-inner">
+                        <span class="absolute -top-2.5 left-4 bg-${warnaTema} text-${isSukses ? 'brand-dark' : 'white'} text-[9px] font-extrabold px-2 py-0.5 rounded uppercase tracking-wider">STRUK PPOB</span>
+                        
+                        <div class="flex justify-between items-center text-[10px] text-gray-400 mb-2 mt-2 border-b border-white/5 pb-2">
+                            <span>Nomor Tujuan</span>
+                            <span class="font-mono text-white font-bold">${targetNo}</span>
+                        </div>
+                        <div class="flex justify-between items-center text-[10px] text-gray-400 mb-2 border-b border-white/5 pb-2">
+                            <span>Ref ID</span>
+                            <span class="font-mono text-white font-bold">${refId}</span>
+                        </div>
+                        <div class="flex justify-between items-start text-[10px] text-gray-400 mt-2">
+                            <span>SN / Catatan</span>
+                            <span class="font-mono text-brand-info font-bold text-right ml-4 leading-relaxed">${sn}</span>
+                        </div>
+                    </div>
+
+                    <button type="button" onclick="history.back()" class="w-full bg-white/5 text-white py-3.5 rounded-xl font-bold uppercase tracking-wider text-xs border border-white/10 hover:bg-white/10 active:scale-95 transition-all">Tutup Halaman</button>
+                </div>
+            `;
+        }
 
     } catch (err) {
         showToast(err.message, "error");
+        // Jika gagal, tarik kembali ke halaman layanan (PPOB)
+        setTimeout(() => history.back(), 1500); 
     }
 }
 
