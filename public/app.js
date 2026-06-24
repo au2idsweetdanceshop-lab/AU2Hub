@@ -1397,21 +1397,26 @@ async function handleLogout() {
 
 
 function updateUIForLoggedIn() {
-const ava = (userProfile?.avatar_url && userProfile.avatar_url !== "") ? userProfile.avatar_url : `https://ui-avatars.com/api/?name=${userProfile?.nickname || 'User'}&background=1A1133&color=fff`;
-document.getElementById('header-user').innerHTML = `
-<div onclick="switchTab('profile')" class="flex items-center gap-2 cursor-pointer bg-white/5 pr-4 pl-1 py-1 rounded-full border border-white/10 active:scale-95 transition-transform">
-<img src="${ava}" class="w-7 h-7 rounded-full object-cover border border-brand-info">
-<span class="text-[10px] font-bold text-white">${userProfile?.nickname || 'User'}</span>
-</div>`;
+    const ava = (userProfile?.avatar_url && userProfile.avatar_url !== "") ? userProfile.avatar_url : `https://ui-avatars.com/api/?name=${userProfile?.nickname || 'User'}&background=1A1133&color=fff`;
+    document.getElementById('header-user').innerHTML = `
+    <div onclick="switchTab('profile')" class="flex items-center gap-2 cursor-pointer bg-white/5 pr-4 pl-1 py-1 rounded-full border border-white/10 active:scale-95 transition-transform">
+    <img src="${ava}" class="w-7 h-7 rounded-full object-cover border border-brand-info">
+    <span class="text-[10px] font-bold text-white">${userProfile?.nickname || 'User'}</span>
+    </div>`;
 
-renderProfileVideos();
+    renderProfileVideos();
 
-if(currentUser) {
-fetchFollowStats(currentUser.id);
-    if (document.getElementById('toko') && document.getElementById('toko').classList.contains('active')) {
-        loadTokoSaya();
+    // 🔥 TAMBAHAN BARU: Tarik data saldo ke layar Layanan (PPOB) begitu user login
+    if (typeof updateSaldoGlobal === 'function') {
+        updateSaldoGlobal();
     }
-}
+
+    if(currentUser) {
+        fetchFollowStats(currentUser.id);
+        if (document.getElementById('toko') && document.getElementById('toko').classList.contains('active')) {
+            loadTokoSaya();
+        }
+    }
 }
 
 async function renderProfileVideos(targetUserId = null) {
@@ -1709,7 +1714,7 @@ function switchTab(tabId, event = null, isPush = true) {
         targetNav.classList.add('active');
     }
 
-if (tabId === 'toko') {
+    if (tabId === 'toko') {
         if (typeof loadTokoSaya === 'function') loadTokoSaya();
     }
 
@@ -1722,8 +1727,11 @@ if (tabId === 'toko') {
         }
     }
 
-    // 🔥 [TAMBAHAN BARU] Panggil fungsi PPOB saat tab Layanan ditekan
+    // 🔥 [TAMBAHAN BARU] Panggil fungsi PPOB & Saldo saat tab Layanan ditekan
     if (tabId === 'layanan') {
+        // Panggil saldo terbaru dari database untuk ditampilkan di layar!
+        if (typeof updateSaldoGlobal === 'function') updateSaldoGlobal();
+        
         // Cek apakah data di layar masih kosong, jika ya, sedot datanya!
         if (typeof currentPpobData !== 'undefined' && currentPpobData.length === 0) {
             pilihKategoriPPOB(kategoriPPOBAktif);
@@ -12575,3 +12583,27 @@ async function mulaiTopUpSaldo() {
         null
     );
 }
+
+// ==========================================
+// SINKRONISASI SALDO GLOBAL PENGGUNA
+// ==========================================
+async function updateSaldoGlobal() {
+    if (!currentUser) {
+        const elLayanan = document.getElementById('layanan-saldo-user');
+        if (elLayanan) elLayanan.innerText = 'Rp 0';
+        return;
+    }
+    
+    try {
+        const { data } = await supabaseClient.from('profiles').select('balance').eq('id', currentUser.id).single();
+        const saldo = data?.balance || 0;
+        
+        // Update angka di Kartu Saldo Tab Layanan PPOB
+        const elLayanan = document.getElementById('layanan-saldo-user');
+        if (elLayanan) elLayanan.innerText = 'Rp ' + saldo.toLocaleString('id-ID');
+        
+    } catch (e) {
+        console.error("Gagal sinkronisasi saldo:", e);
+    }
+}
+
