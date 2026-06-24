@@ -12636,9 +12636,9 @@ async function loadProdukPPOB(isLoadMore = false) {
             .eq('is_active', true)
             .ilike('category', `%${kategoriPPOBAktif}%`);
 
-        // [BARU] Saring berdasarkan Provider/Brand jika bukan "Semua"
+        // 🔥 PERBAIKAN: Gunakan 'ilike' agar varian promo/transfer/gangguan ikut tertangkap!
         if (brandPPOBAktif !== 'Semua') {
-            query = query.eq('brand', brandPPOBAktif);
+            query = query.ilike('brand', `%${brandPPOBAktif}%`);
         }
 
         const { data, error } = await query.order('seller_price', { ascending: true }).range(from, to);
