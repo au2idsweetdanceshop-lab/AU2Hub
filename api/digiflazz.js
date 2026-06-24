@@ -20,7 +20,7 @@ export default async function handler(req, res) {
     const apiKey = process.env.DIGIFLAZZ_KEY;
 
     // ==========================================
-    // 1. MODE SYNC: TARIK PRODUK (TERMURAH & TERBAIK)
+    // 1. MODE SYNC: TARIK PRODUK (TERMURAH & TERBAIK) + SAPU BERSIH ZOMBIE
     // ==========================================
     if (action === 'sync') {
         const sign = crypto.createHash('md5').update(username + apiKey + "depo").digest('hex');
@@ -44,7 +44,10 @@ export default async function handler(req, res) {
                 item.seller_product_status === true
             );
 
-            // 🔥 LOGIKA KEUNTUNGAN: Atur margin hanya Rp 100 perak
+            // 🔥 1. CATAT WAKTU SYNC SAAT INI UNTUK PATOKAN SAPU BERSIH
+            const waktuSync = new Date().toISOString();
+
+            // 🔥 2. Atur margin Rp 100 perak & sematkan stempel waktu
             const products = produkTerbaik.map(item => ({
                 sku_code: item.buyer_sku_code,
                 product_name: item.product_name,
@@ -53,14 +56,27 @@ export default async function handler(req, res) {
                 price: item.price,                 // Harga modal
                 seller_price: item.price + 100,    // KEUNTUNGAN RP 100 PERAK
                 is_active: true,                   // Pasti true karena difilter di atas
-                updated_at: new Date().toISOString()
+                updated_at: waktuSync              // Stempel waktu penanda produk ini "masih hidup"
             }));
 
-            // Simpan/Timpa ke tabel 'digiflazz_products' di Supabase
-            const { error } = await supabase.from('digiflazz_products').upsert(products, { onConflict: 'sku_code' });
-            if (error) throw error;
+            // 3. Simpan/Timpa ke tabel 'digiflazz_products' di Supabase
+            const { error: upsertErr } = await supabase.from('digiflazz_products').upsert(products, { onConflict: 'sku_code' });
+            if (upsertErr) throw upsertErr;
 
-            return res.status(200).json({ success: true, message: `Berhasil sinkronisasi ${products.length} produk super cepat!` });
+            // 🔥 4. GARBAGE COLLECTOR: SAPU BERSIH PRODUK MATI (ZOMBIE)
+            // Menghapus produk yang waktu update-nya lebih lama (lt / less than) dari waktuSync.
+            // Artinya, produk tersebut sudah tidak ada lagi di katalog Digiflazz terbaru.
+            const { error: deleteErr } = await supabase
+                .from('digiflazz_products')
+                .delete()
+                .lt('updated_at', waktuSync);
+
+            if (deleteErr) console.log("Gagal menghapus produk lama:", deleteErr);
+
+            return res.status(200).json({ 
+                success: true, 
+                message: `Berhasil sinkronisasi ${products.length} produk dan membersihkan produk usang/zombie!` 
+            });
         } catch (err) {
             return res.status(500).json({ success: false, error: err.message });
         }
