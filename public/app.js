@@ -1704,7 +1704,7 @@ function switchTab(tabId, event = null, isPush = true) {
     targetSection.classList.add('active');
 
     // 4. Nyalakan icon navbar yang dituju (Cari yang onclick-nya mengandung nama tab)
-    const targetNav = document.querySelector(`.nav-item[onclick*="switchTab('${tabId}'"]`);
+    const targetNav = document.querySelector(`.nav-item[onclick*="switchTab('${tabId}')"]`);
     if (targetNav) {
         targetNav.classList.add('active');
     }
