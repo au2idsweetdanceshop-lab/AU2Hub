@@ -9,6 +9,10 @@
     {
       "path": "/api/cron-delete-stories",
       "schedule": "0 0 * * *"
+    },
+    {
+      "path": "/api/digiflazz?action=sync",
+      "schedule": "0 17 * * *"
     }
   ],
   "headers": [
