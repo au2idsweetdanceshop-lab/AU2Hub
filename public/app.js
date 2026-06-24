@@ -1709,7 +1709,7 @@ function switchTab(tabId, event = null, isPush = true) {
         targetNav.classList.add('active');
     }
 
-    if (tabId === 'toko') {
+if (tabId === 'toko') {
         if (typeof loadTokoSaya === 'function') loadTokoSaya();
     }
 
@@ -1721,7 +1721,15 @@ function switchTab(tabId, event = null, isPush = true) {
             if (typeof loadVideos === 'function') loadVideos();
         }
     }
-  }
+
+    // 🔥 [TAMBAHAN BARU] Panggil fungsi PPOB saat tab Layanan ditekan
+    if (tabId === 'layanan') {
+        // Cek apakah data di layar masih kosong, jika ya, sedot datanya!
+        if (typeof currentPpobData !== 'undefined' && currentPpobData.length === 0) {
+            pilihKategoriPPOB(kategoriPPOBAktif);
+        }
+    }
+}
 
 window.addEventListener('popstate', () => {
     let isPopupClosed = false;
