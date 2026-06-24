@@ -12615,7 +12615,7 @@ function pilihBrandPPOB(brand) {
     loadProdukPPOB(false);
 }
 
-// 4. UBAH FUNGSI INI: Tarik Data Bertahap dari Supabase
+// 4. UBAH FUNGSI INI: Tarik Data Bertahap dari Supabase (Tanpa Filter Aktif)
 async function loadProdukPPOB(isLoadMore = false) {
     const grid = document.getElementById('ppob-product-grid');
     const btnLoadMore = document.getElementById('btn-load-more-ppob');
@@ -12629,14 +12629,13 @@ async function loadProdukPPOB(isLoadMore = false) {
         const from = ppobOffset;
         const to = ppobOffset + PPOB_LIMIT - 1;
 
-        // Query Dasar (Kategori)
+        // Query Dasar (Kategori) TANPA filter is_active
         let query = supabaseClient
             .from('digiflazz_products')
             .select('*')
-            .eq('is_active', true)
             .ilike('category', `%${kategoriPPOBAktif}%`);
 
-        // 🔥 PERBAIKAN: Gunakan 'ilike' agar varian promo/transfer/gangguan ikut tertangkap!
+        // Filter Brand jika dipilih
         if (brandPPOBAktif !== 'Semua') {
             query = query.ilike('brand', `%${brandPPOBAktif}%`);
         }
@@ -12676,7 +12675,7 @@ async function loadProdukPPOB(isLoadMore = false) {
     }
 }
 
-// Fungsi Cetak Data PPOB ke Layar HTML
+// Fungsi Cetak Data PPOB ke Layar HTML (Dengan Label Gangguan)
 function renderGridPPOB() {
     const grid = document.getElementById('ppob-product-grid');
 
@@ -12691,6 +12690,9 @@ function renderGridPPOB() {
     }
 
     grid.innerHTML = currentPpobData.map((item, index) => {
+        // Cek status aktif
+        const isActive = item.is_active !== false; 
+
         // Animasi muncul berurutan (Smooth Reveal)
         const delayAnimasi = Math.min(index * 0.03, 0.3);
         const formatHarga = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(item.seller_price);
@@ -12698,20 +12700,33 @@ function renderGridPPOB() {
         // Escape karakter berbahaya pada nama produk (anti-XSS)
         const namaAman = escapeHTML(item.product_name).replace(/&#39;/g, "\\'");
 
+        // Jika gangguan: bikin kusam, disable klik beli, dan tambah badge
+        const tampilanCard = isActive 
+            ? "hover:bg-white/10 hover:border-brand-info/30 active:scale-95 cursor-pointer" 
+            : "opacity-60 grayscale cursor-not-allowed";
+            
+        const aksiKlik = isActive 
+            ? `onclick="pemicuBeliPPOB('${item.sku_code}', '${namaAman}', ${item.seller_price})"` 
+            : `onclick="showToast('Mohon maaf, produk ini sedang gangguan dari pusat.', 'error')"`;
+
+        const badgeGangguan = !isActive 
+            ? `<span class="absolute top-0 right-0 bg-red-500 text-white text-[8px] font-extrabold px-2 py-0.5 rounded-bl-xl rounded-tr-[1rem] shadow-md tracking-wider z-10">GANGGUAN</span>` 
+            : '';
+
         return `
-        <div onclick="pemicuBeliPPOB('${item.sku_code}', '${namaAman}', ${item.seller_price})" style="animation-delay: ${delayAnimasi}s; opacity: 0;" class="bg-black/40 border border-white/5 p-4 rounded-[1rem] flex justify-between items-center gap-3 cursor-pointer hover:bg-white/10 hover:border-brand-info/30 transition-all active:scale-95 smooth-reveal shadow-sm group">
-            <div class="flex-1 min-w-0 pr-2 border-r border-white/5">
-                <h4 class="text-[11px] font-bold text-white line-clamp-2 leading-snug mb-1 group-hover:text-brand-info transition-colors">${item.product_name}</h4>
+        <div ${aksiKlik} style="animation-delay: ${delayAnimasi}s; opacity: 0;" class="bg-black/40 border border-white/5 p-4 rounded-[1rem] flex justify-between items-center gap-3 transition-all smooth-reveal shadow-sm group relative overflow-hidden ${tampilanCard}">
+            ${badgeGangguan}
+            <div class="flex-1 min-w-0 pr-2 border-r border-white/5 relative z-0">
+                <h4 class="text-[11px] font-bold text-white line-clamp-2 leading-snug mb-1 ${isActive ? 'group-hover:text-brand-info transition-colors' : ''}">${item.product_name}</h4>
                 <div class="text-[9px] text-gray-500 uppercase tracking-widest font-bold">${item.brand}</div>
             </div>
-            <div class="flex flex-col items-end shrink-0">
+            <div class="flex flex-col items-end shrink-0 relative z-0">
                 <span class="text-[10px] text-gray-400 mb-0.5">Harga</span>
                 <span class="text-[13px] font-black text-brand-success tracking-tight">${formatHarga}</span>
             </div>
         </div>`;
     }).join('');
 }
-
 // Eksekusi Saat Kartu Produk Diklik
 function pemicuBeliPPOB(skuCode, namaProduk, harga) {
     // 1. Ambil nomor dari input box
