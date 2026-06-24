@@ -27,11 +27,12 @@ export default async function handler(req, res) {
 
         try {
             // BYPASS PROXY! Tarik daftar harga langsung ke API Utama Digiflazz 
-            // (Karena Price List TIDAK mewajibkan Whitelist IP)
+            // Menggunakan cache: 'no-store' agar Vercel tidak memberikan data usang
             const resPrepaid = await fetch('https://api.digiflazz.com/v1/price-list', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ cmd: "prepaid", username, sign })
+                body: JSON.stringify({ cmd: "prepaid", username, sign }),
+                cache: 'no-store'
             });
             const jsonPrepaid = await resPrepaid.json();
 
@@ -42,7 +43,8 @@ export default async function handler(req, res) {
             const resPasca = await fetch('https://api.digiflazz.com/v1/price-list', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ cmd: "pasca", username, sign })
+                body: JSON.stringify({ cmd: "pasca", username, sign }),
+                cache: 'no-store'
             });
             const jsonPasca = await resPasca.json();
 
