@@ -1,32 +1,28 @@
 import crypto from 'crypto';
 import { createClient } from '@supabase/supabase-js';
 
-// Menggunakan SERVICE_ROLE_KEY agar API punya akses admin untuk memotong saldo
 const supabase = createClient(
     process.env.SUPABASE_URL,
     process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
 export default async function handler(req, res) {
-    // 🔥 PERBAIKAN: Izinkan POST dan GET (Karena robot Vercel Cron menggunakan GET)
     if (req.method !== 'POST' && req.method !== 'GET') {
         return res.status(405).json({ error: 'Method tidak diizinkan' });
     }
 
-    // Tangkap action dengan aman baik dari body (POST) maupun URL (GET)
     const action = (req.body && req.body.action) || req.query.action;
-    
     const username = process.env.DIGIFLAZZ_USERNAME;
     const apiKey = process.env.DIGIFLAZZ_KEY;
 
     // ==========================================
-    // 1. MODE SYNC: TARIK PRODUK PREPAID & PASCA + SAPU BERSIH ZOMBIE
+    // 1. MODE SYNC: TARIK PRODUK PREPAID & PASCA
     // ==========================================
     if (action === 'sync') {
         const sign = crypto.createHash('md5').update(username + apiKey + "depo").digest('hex');
 
         try {
-            // 1A. Tarik Data PREPAID (Pulsa, Games, E-Money, Masa Aktif, Token PLN)
+            // 1A. Tarik Data PREPAID
             const resPrepaid = await fetch('http://203.194.114.209:3000/proxy-digiflazz', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -37,7 +33,12 @@ export default async function handler(req, res) {
             });
             const jsonPrepaid = await resPrepaid.json();
 
-            // 1B. Tarik Data PASCA (PDAM, BPJS, Pertagas, TV, Pascabayar)
+            // 🔥 TANGKAP ERROR ASLI DARI DIGIFLAZZ (PREPAID)
+            if (jsonPrepaid.data && !Array.isArray(jsonPrepaid.data) && jsonPrepaid.data.message) {
+                throw new Error("DIGIFLAZZ MENOLAK (Prepaid): " + jsonPrepaid.data.message);
+            }
+
+            // 1B. Tarik Data PASCA
             const resPasca = await fetch('http://203.194.114.209:3000/proxy-digiflazz', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -48,53 +49,50 @@ export default async function handler(req, res) {
             });
             const jsonPasca = await resPasca.json();
 
-            // 1C. Gabungkan kedua data tersebut
+            // 🔥 TANGKAP ERROR ASLI DARI DIGIFLAZZ (PASCA)
+            if (jsonPasca.data && !Array.isArray(jsonPasca.data) && jsonPasca.data.message) {
+                throw new Error("DIGIFLAZZ MENOLAK (Pasca): " + jsonPasca.data.message);
+            }
+
+            // 1C. Gabungkan Data (Aman dari not iterable)
             let allRawProducts = [];
-            if (jsonPrepaid.data) allRawProducts = [...allRawProducts, ...jsonPrepaid.data];
-            if (jsonPasca.data) allRawProducts = [...allRawProducts, ...jsonPasca.data];
+            if (jsonPrepaid.data && Array.isArray(jsonPrepaid.data)) {
+                allRawProducts = [...allRawProducts, ...jsonPrepaid.data];
+            }
+            if (jsonPasca.data && Array.isArray(jsonPasca.data)) {
+                allRawProducts = [...allRawProducts, ...jsonPasca.data];
+            }
 
-            if (allRawProducts.length === 0) throw new Error("Gagal mengambil data dari Digiflazz via VPS");
+            if (allRawProducts.length === 0) throw new Error("Gagal mengambil data dari Digiflazz via VPS (Data Kosong)");
 
-            // 🔥 LOGIKA TERCEPAT & TERBAIK: Saring hanya produk yang 100% Normal
             const produkTerbaik = allRawProducts.filter(item => 
                 item.buyer_product_status === true && 
                 item.seller_product_status === true
             );
 
-            // 🔥 1. CATAT WAKTU SYNC SAAT INI UNTUK PATOKAN SAPU BERSIH
             const waktuSync = new Date().toISOString();
 
-            // 🔥 2. Atur margin Rp 100 perak & sematkan stempel waktu
             const products = produkTerbaik.map(item => {
-                // Digiflazz Pasca biasanya menggunakan 'admin' sebagai ganti 'price'
-                // Kita buat logika aman: Jika price ada dan > 0, pakai price. Jika tidak, pakai admin.
                 const hargaModal = (item.price && item.price > 0) ? item.price : (item.admin || 0);
-
                 return {
                     sku_code: item.buyer_sku_code,
                     product_name: item.product_name,
                     category: item.category,
                     brand: item.brand,
-                    price: hargaModal,                 // Harga modal / admin tagihan
-                    seller_price: hargaModal + 100,    // KEUNTUNGAN RP 100 PERAK
-                    is_active: true,                   // Pasti true karena difilter di atas
-                    updated_at: waktuSync              // Stempel waktu penanda produk ini "masih hidup"
+                    price: hargaModal,                 
+                    seller_price: hargaModal + 100,    
+                    is_active: true,                   
+                    updated_at: waktuSync              
                 };
             });
 
-            // 3. Simpan/Timpa ke tabel 'digiflazz_products' di Supabase
             const { error: upsertErr } = await supabase.from('digiflazz_products').upsert(products, { onConflict: 'sku_code' });
             if (upsertErr) throw upsertErr;
 
-            // 🔥 4. GARBAGE COLLECTOR: SAPU BERSIH PRODUK MATI (ZOMBIE)
-            // Menghapus produk yang waktu update-nya lebih lama (lt / less than) dari waktuSync.
-            // Artinya, produk tersebut sudah tidak ada lagi di katalog Digiflazz terbaru.
             const { error: deleteErr } = await supabase
                 .from('digiflazz_products')
                 .delete()
                 .lt('updated_at', waktuSync);
-
-            if (deleteErr) console.log("Gagal menghapus produk lama:", deleteErr);
 
             return res.status(200).json({ 
                 success: true, 
@@ -110,19 +108,17 @@ export default async function handler(req, res) {
     // ==========================================
     if (action === 'buy') {
         const { user_id, sku_code, customer_no } = req.body;
-        const ref_id = "AU2_" + Date.now(); // ID Unik Transaksi
+        const ref_id = "AU2_" + Date.now(); 
         
         let hargaJual = 0; 
         let isSaldoDipotong = false; 
         
         try {
-            // A. Ambil harga jual dari Supabase
             const { data: prod } = await supabase.from('digiflazz_products').select('seller_price').eq('sku_code', sku_code).single();
             if (!prod) return res.status(404).json({ success: false, error: "Produk tidak ditemukan." });
 
             hargaJual = prod.seller_price;
 
-            // B. Potong saldo pembeli (Panggil fungsi SQL Supabase agar aman dari bug bentrok data)
             const { data: isSuccess, error: deductErr } = await supabase.rpc('kurangi_saldo', {
                 p_user_id: user_id,
                 p_jumlah: hargaJual
@@ -130,9 +126,8 @@ export default async function handler(req, res) {
 
             if (deductErr || !isSuccess) return res.status(400).json({ success: false, error: "Saldo tidak mencukupi." });
             
-            isSaldoDipotong = true; // Tandai bahwa saldo berhasil dipotong
+            isSaldoDipotong = true;
 
-            // C. Tembak ke VPS -> Digiflazz
             const sign = crypto.createHash('md5').update(username + apiKey + ref_id).digest('hex');
             
             const proxyRes = await fetch('http://203.194.114.209:3000/proxy-digiflazz', {
@@ -145,13 +140,11 @@ export default async function handler(req, res) {
             });
             const digiData = await proxyRes.json();
 
-            // D. Jika Digiflazz langsung menolak (Gagal seketika)
             if (digiData.data && digiData.data.status === "Gagal") {
-                await supabase.rpc('tambah_saldo', { p_user_id: user_id, p_jumlah: hargaJual }); // REFUND!
+                await supabase.rpc('tambah_saldo', { p_user_id: user_id, p_jumlah: hargaJual }); 
                 return res.status(400).json({ success: false, error: "Transaksi gagal dari pusat. Saldo dikembalikan.", detail: digiData.data.message });
             }
 
-            // E. Catat riwayat pesanan
             await supabase.from('riwayat_ppob').insert({
                 ref_id: ref_id,
                 user_id: user_id,
@@ -164,7 +157,6 @@ export default async function handler(req, res) {
             return res.status(200).json({ success: true, data: digiData.data });
 
         } catch (err) {
-            // F. Jika VPS mati atau timeout, Refund Saldo untuk keamanan!
             if (isSaldoDipotong && user_id && hargaJual > 0) {
                 await supabase.rpc('tambah_saldo', { p_user_id: user_id, p_jumlah: hargaJual });
             }
@@ -183,12 +175,9 @@ export default async function handler(req, res) {
             const refId = digiPayload.ref_id;
             const statusDigi = digiPayload.status;
 
-            // Update status di riwayat_ppob Supabase
             const { data: orderData } = await supabase.from('riwayat_ppob').update({ status: statusDigi }).eq('ref_id', refId).select().single();
 
-            // Jika status berubah jadi Gagal (misal pulsa gagal terkirim dari pusat)
             if (statusDigi === "Gagal" && orderData) {
-                // REFUND: Kembalikan saldo berdasarkan harga produk saat dia beli
                 await supabase.rpc('tambah_saldo', { p_user_id: orderData.user_id, p_jumlah: orderData.price });
             }
 
