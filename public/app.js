@@ -1005,7 +1005,7 @@ async function showUserList(type) {
             if (isOwnProfile && isFollowerList) {
                 // event.stopPropagation() ditambahkan agar saat tombol dihapus diklik, 
                 // sistem tidak malah membuka profil orang tersebut
-                let namaAman = escapeHTML(p.nickname).replace(/'/g, "\\'");
+                let namaAman = escapeHTML(p.nickname).replace(/&#39;/g, "\\'");
                 removeBtn = `
                 <button onclick="event.stopPropagation(); removeFollower('${p.id}', '${namaAman}')"
                     class="ml-auto w-8 h-8 rounded-full bg-red-500/10 text-red-500 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all active:scale-90 shrink-0"
@@ -4754,8 +4754,8 @@ function renderRow(item, isGroup) {
     let imgBorder = item.hasStory && !isGroup ? 'border-2 border-brand-card' : 'border border-white/10';
 
     // 4. Amankan nama dan pesan dari XSS & tanda kutip
-    let safeNameDisplay = escapeHTML(item.name);
-    let safeNameJS = safeNameDisplay.replace(/'/g, "\\'");
+let safeNameDisplay = escapeHTML(item.name);
+let safeNameJS = safeNameDisplay.replace(/&#39;/g, "\\'");
     let safeMessageDisplay = escapeHTML(lastMessageText);
     let timeText = item.latestMsg ? timeAgo(item.latestMsg.created_at) : '';
 
@@ -7800,7 +7800,7 @@ async function cekStatusPesanan(kategori) {
                 }
 
                 // Gunakan escapeHTML dan escape kutip tunggal agar HTML tidak patah
-                let namaAman = escapeHTML(order.product_name).replace(/'/g, "\\'");
+                let namaAman = escapeHTML(order.product_name).replace(/&#39;/g, "\\'");
                 let clickAction = `onclick="bukaDetailPesananDinamis('${order.id}', '${namaAman}', '${order.price}', '${order.status}', '${order.table_source}', '${order.seller_id || ''}', '${order.product_id || ''}')" class="cursor-pointer hover:border-brand-accent/50"`;
 
                 return `
@@ -10285,7 +10285,7 @@ async function loadProdukSaya() {
                         <button onclick="bukaModalEditProduk('${item.id}')" class="flex-1 bg-[#1A2642] border border-[#2A3C65] text-[#46B3FF] py-3 rounded-xl text-[11px] font-bold transition-all active:scale-95 flex items-center justify-center gap-2">
                             <i class="fas fa-pen"></i> Edit Detail
                         </button>
-                        <button onclick="hapusProdukSaya('${item.id}', '${escapeHTML(item.title).replace(/'/g, "\\'")}')" class="w-12 h-12 flex-shrink-0 bg-[#3A1818] border border-[#5A2020] text-red-500 rounded-xl flex items-center justify-center transition-all active:scale-95">
+                        <button onclick="hapusProdukSaya('${item.id}', '${escapeHTML(item.title).replace(/&#39;/g, "\\'")}')" class="w-12 h-12 flex-shrink-0 bg-[#3A1818] border border-[#5A2020] text-red-500 rounded-xl flex items-center justify-center transition-all active:scale-95">
                             <i class="fas fa-trash-alt text-[11px]"></i>
                         </button>
                     </div>
@@ -12501,7 +12501,7 @@ function renderGridPPOB() {
         const formatHarga = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(item.seller_price);
         
         // Escape karakter berbahaya pada nama produk (anti-XSS)
-        const namaAman = escapeHTML(item.product_name).replace(/'/g, "\\'");
+        const namaAman = escapeHTML(item.product_name).replace(/&#39;/g, "\\'");
 
         return `
         <div onclick="pemicuBeliPPOB('${item.sku_code}', '${namaAman}', ${item.seller_price})" style="animation-delay: ${delayAnimasi}s; opacity: 0;" class="bg-black/40 border border-white/5 p-4 rounded-[1rem] flex justify-between items-center gap-3 cursor-pointer hover:bg-white/10 hover:border-brand-info/30 transition-all active:scale-95 smooth-reveal shadow-sm group">
