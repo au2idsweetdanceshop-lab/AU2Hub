@@ -95,7 +95,7 @@ export default async function handler(req, res) {
             // Hapus produk lama yang tidak ada di tarikan terbaru (produk yang benar-benar dihapus Digiflazz)
             await supabase.from('digiflazz_products').delete().lt('updated_at', waktuSync);
 
-            return res.status(200).json({ success: true, message: `Berhasil sinkronisasi ${totalBerhasil} produk!` });
+            return res.status(200).json({ success: true, message: `Mantap Bosku! Berhasil narik ${totalBerhasil} produk!` });
         } catch (err) {
             return res.status(500).json({ success: false, error: err.message });
         }
