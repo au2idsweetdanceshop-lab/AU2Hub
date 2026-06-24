@@ -6823,7 +6823,7 @@ function appendMessageBubble(msg) {
         );
 
         // Encode teks mentah untuk tombol Copy (Anti bug tanda kutip/enter)
-        const safeCopySysText = encodeURIComponent(isiSistem);
+        const safeCopySysText = encodeURIComponent(isiSistem).replace(/'/g, "%27");
 
         // Render HTML Kotak Sistem di dalam Chat Bubble
         contentHtml = `
@@ -7801,7 +7801,7 @@ async function cekStatusPesanan(kategori) {
 
                 // Gunakan escapeHTML dan escape kutip tunggal agar HTML tidak patah
                 let namaAman = escapeHTML(order.product_name).replace(/'/g, "\\'");
-                let clickAction = `onclick="bukaDetailPesananDinamis('${order.id}', '${namaAman}', ${order.price}, '${order.status}', '${order.table_source}', '${order.seller_id || ''}', '${order.product_id || ''}')" class="cursor-pointer hover:border-brand-accent/50"`;
+                let clickAction = `onclick="bukaDetailPesananDinamis('${order.id}', '${namaAman}', '${order.price}', '${order.status}', '${order.table_source}', '${order.seller_id || ''}', '${order.product_id || ''}')" class="cursor-pointer hover:border-brand-accent/50"`;
 
                 return `
                 <div ${clickAction} class="bg-brand-dark/50 border border-white/5 p-4 rounded-2xl flex flex-col gap-2 relative overflow-hidden transition-all hover:border-white/10 ${order.status === 'PENDING' ? 'border-red-500/20 shadow-[0_0_10px_rgba(239,68,68,0.1)]' : ''}">
@@ -8466,14 +8466,15 @@ async function checkoutXoftwarePay(namaProduk, harga, deskripsi, sellerId = null
 
                 if (isAutoItem && autoDeliveryContent && autoDeliveryContent !== "") { 
                     
-                                // --- TAMBAHAN PENGAMAN ANTI ERROR ---
-            let dataAman = autoDeliveryContent.replace(/`/g, '\\`').replace(/"/g, '&quot;');
+// JURUS ANTI ERROR: Ubah semua enter & simbol jadi satu baris kode rahasia
+const dataAman = encodeURIComponent(autoDeliveryContent).replace(/'/g, "%27");
 
-            // [BARU] 1. Amankan teks dari kode berbahaya, 2. Sulap URL menjadi link hidup
-            let htmlDataPesanan = escapeHTML(autoDeliveryContent).replace(
-                /(https?:\/\/[^\s]+)/g,
-                '<a href="$1" target="_blank" rel="noopener noreferrer" class="text-brand-info underline font-bold hover:text-white transition-colors">$1</a>'
-            );
+// [BARU] 1. Amankan teks dari kode berbahaya, 2. Sulap URL menjadi link hidup
+let htmlDataPesanan = escapeHTML(autoDeliveryContent).replace(
+    /(https?:\/\/[^\s]+)/g,
+    '<a href="$1" target="_blank" rel="noopener noreferrer" class="text-brand-info underline font-bold hover:text-white transition-colors">$1</a>'
+);
+
 
             wadahPembayaran.innerHTML = `
                 <div class="flex flex-col items-center justify-center py-4 text-center modal-anim w-full relative z-10">
@@ -8488,7 +8489,7 @@ async function checkoutXoftwarePay(namaProduk, harga, deskripsi, sellerId = null
                         
                         <pre class="text-white text-xs whitespace-pre-wrap break-all font-mono leading-relaxed mt-2 max-h-40 overflow-y-auto hide-scroll" style="font-family: monospace;">${htmlDataPesanan}</pre>
                         
-                        <button type="button" onclick="navigator.clipboard.writeText(\`${dataAman}\`); this.innerHTML='<i class=\\'fas fa-check\\'></i> Tersalin!'; setTimeout(()=>this.innerHTML='<i class=\\'fas fa-copy mr-1\\'></i> Salin Data', 2000);" class="mt-4 w-full bg-brand-info/10 text-brand-info border border-brand-info/30 py-2.5 rounded-lg text-[11px] font-bold active:scale-95 transition-all">
+                        <button type="button" onclick="navigator.clipboard.writeText(decodeURIComponent('${dataAman}')); this.innerHTML='<i class=\\'fas fa-check\\'></i> Tersalin!'; setTimeout(()=>this.innerHTML='<i class=\\'fas fa-copy mr-1\\'></i> Salin Data', 2000);" class="mt-4 w-full bg-brand-info/10 text-brand-info border border-brand-info/30 py-2.5 rounded-lg text-[11px] font-bold active:scale-95 transition-all">
                             <i class="fas fa-copy mr-1"></i> Salin Data
                         </button>
                     </div>
