@@ -22,13 +22,12 @@ export default async function handler(req, res) {
         const sign = crypto.createHash('md5').update(username + apiKey + "depo").digest('hex');
 
         try {
-            const resPrepaid = await fetch('http://203.194.114.209:3000/proxy-digiflazz', {
+            // 🔥 PERBAIKAN: BYPASS PROXY! Tarik daftar harga langsung ke API Utama Digiflazz 
+            // (Karena Price List TIDAK mewajibkan Whitelist IP)
+            const resPrepaid = await fetch('https://api.digiflazz.com/v1/price-list', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    target_url: 'https://api.digiflazz.com/v1/price-list',
-                    payload: { cmd: "prepaid", username, sign }
-                })
+                body: JSON.stringify({ cmd: "prepaid", username, sign })
             });
             const jsonPrepaid = await resPrepaid.json();
 
@@ -36,13 +35,10 @@ export default async function handler(req, res) {
                 throw new Error("DIGIFLAZZ MENOLAK (Prepaid): " + jsonPrepaid.data.message);
             }
 
-            const resPasca = await fetch('http://203.194.114.209:3000/proxy-digiflazz', {
+            const resPasca = await fetch('https://api.digiflazz.com/v1/price-list', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    target_url: 'https://api.digiflazz.com/v1/price-list',
-                    payload: { cmd: "pasca", username, sign }
-                })
+                body: JSON.stringify({ cmd: "pasca", username, sign })
             });
             const jsonPasca = await resPasca.json();
 
@@ -54,8 +50,9 @@ export default async function handler(req, res) {
             if (jsonPrepaid.data && Array.isArray(jsonPrepaid.data)) allRawProducts = [...allRawProducts, ...jsonPrepaid.data];
             if (jsonPasca.data && Array.isArray(jsonPasca.data)) allRawProducts = [...allRawProducts, ...jsonPasca.data];
 
-            if (allRawProducts.length === 0) throw new Error("Gagal mengambil data dari Digiflazz via VPS");
+            if (allRawProducts.length === 0) throw new Error("Gagal mengambil data dari Digiflazz");
 
+            // Filter produk yang lagi aktif di seller dan digiflazz
             const produkTerbaik = allRawProducts.filter(item => item.buyer_product_status === true && item.seller_product_status === true);
             const waktuSync = new Date().toISOString();
 
@@ -73,7 +70,7 @@ export default async function handler(req, res) {
                 };
             });
 
-            // 🔥 PERBAIKAN: Potong data jadi per 500 item agar Supabase tidak tersedak (Timeout)
+            // 🔥 MASUKKAN KE DATABASE PER 500 ITEM AGAR SUPABASE TIDAK CRASH
             const chunkSize = 500;
             let totalBerhasil = 0;
 
@@ -88,7 +85,7 @@ export default async function handler(req, res) {
                 }
             }
 
-            // Bersihkan produk usang/zombie
+            // Hapus produk lama yang tidak ada di tarikan terbaru (produk mati)
             await supabase.from('digiflazz_products').delete().lt('updated_at', waktuSync);
 
             return res.status(200).json({ success: true, message: `Berhasil sinkronisasi ${totalBerhasil} produk!` });
@@ -137,7 +134,7 @@ export default async function handler(req, res) {
                 description: `Pembelian PPOB: ${sku_code} (${customer_no})`
             });
 
-            // 3. Tembak Transaksi ke Digiflazz
+            // 3. Tembak Transaksi ke Digiflazz (INI TETAP LEWAT PROXY VPS KARENA BUTUH WHITELIST)
             const sign = crypto.createHash('md5').update(username + apiKey + ref_id).digest('hex');
             
             const proxyRes = await fetch('http://203.194.114.209:3000/proxy-digiflazz', {
@@ -187,7 +184,6 @@ export default async function handler(req, res) {
             return res.status(200).json({ success: true, data: digiData.data });
 
         } catch (err) {
-            // Jaring Pengaman: Jika server Vercel error tiba-tiba
             if (isSaldoDipotong && user_id && hargaJual > 0) {
                 const { data: profSekarang } = await supabase.from('profiles').select('balance').eq('id', user_id).single();
                 if (profSekarang) await supabase.from('profiles').update({ balance: Number(profSekarang.balance) + hargaJual }).eq('id', user_id);
@@ -213,12 +209,10 @@ export default async function handler(req, res) {
                 const hargaAwal = Number(orderData.price);
 
                 if (statusDigi === "Gagal") {
-                    // 🔥 REFUND SALDO
                     const { data: profRefund } = await supabase.from('profiles').select('balance').eq('id', orderData.user_id).single();
                     if (profRefund) {
                         await supabase.from('profiles').update({ balance: Number(profRefund.balance) + hargaAwal }).eq('id', orderData.user_id);
                         
-                        // 🔥 CATAT MUTASI REFUND WEBHOOK KE DOMPET
                         await supabase.from('wallet_transactions').insert({
                             user_id: orderData.user_id,
                             amount: hargaAwal,
@@ -226,7 +220,6 @@ export default async function handler(req, res) {
                             description: `Refund PPOB Gagal: ${orderData.sku_code}`
                         });
 
-                        // 🔥 KIRIM NOTIFIKASI GAGAL KE INBOX CHAT
                         await supabase.from('messages').insert({
                             sender_id: orderData.user_id, receiver_id: orderData.user_id,
                             message: `[SISTEM] Pesanan PPOB *${orderData.sku_code}* tujuan *${orderData.customer_no}* GAGAL diproses oleh provider.\n\nDana Rp ${hargaAwal.toLocaleString('id-ID')} telah direfund ke saldo Anda.`
@@ -234,7 +227,6 @@ export default async function handler(req, res) {
                     }
                 } 
                 else if (statusDigi === "Sukses") {
-                    // 🔥 KIRIM NOTIFIKASI SUKSES KE INBOX CHAT
                     await supabase.from('messages').insert({
                         sender_id: orderData.user_id, receiver_id: orderData.user_id,
                         message: `[SISTEM] Hore! Pesanan PPOB *${orderData.sku_code}* tujuan *${orderData.customer_no}* SUKSES!\n\nSN: ${digiPayload.sn || 'Tanpa SN'}`
