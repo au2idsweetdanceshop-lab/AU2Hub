@@ -8,9 +8,13 @@ const supabase = createClient(
 );
 
 export default async function handler(req, res) {
-    if (req.method !== 'POST') return res.status(405).json({ error: 'Hanya menerima request POST' });
+    // 🔥 PERBAIKAN: Izinkan POST dan GET (Karena robot Vercel Cron menggunakan GET)
+    if (req.method !== 'POST' && req.method !== 'GET') {
+        return res.status(405).json({ error: 'Method tidak diizinkan' });
+    }
 
-    const action = req.body.action || req.query.action;
+    // Tangkap action dengan aman baik dari body (POST) maupun URL (GET)
+    const action = (req.body && req.body.action) || req.query.action;
     
     const username = process.env.DIGIFLAZZ_USERNAME;
     const apiKey = process.env.DIGIFLAZZ_KEY;
@@ -134,7 +138,7 @@ export default async function handler(req, res) {
     // ==========================================
     if (action === 'webhook') {
         try {
-            const digiPayload = req.body.data;
+            const digiPayload = req.body && req.body.data;
             if (!digiPayload) return res.status(400).json({ error: "Payload tidak valid" });
 
             const refId = digiPayload.ref_id;
