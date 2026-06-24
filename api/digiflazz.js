@@ -73,12 +73,25 @@ export default async function handler(req, res) {
                 };
             });
 
-            const { error: upsertErr } = await supabase.from('digiflazz_products').upsert(products, { onConflict: 'sku_code' });
-            if (upsertErr) throw upsertErr;
+            // 🔥 PERBAIKAN: Potong data jadi per 500 item agar Supabase tidak tersedak (Timeout)
+            const chunkSize = 500;
+            let totalBerhasil = 0;
 
+            for (let i = 0; i < products.length; i += chunkSize) {
+                const chunk = products.slice(i, i + chunkSize);
+                const { error: upsertErr } = await supabase.from('digiflazz_products').upsert(chunk, { onConflict: 'sku_code' });
+                
+                if (upsertErr) {
+                    console.error("Gagal insert batch:", upsertErr.message);
+                } else {
+                    totalBerhasil += chunk.length;
+                }
+            }
+
+            // Bersihkan produk usang/zombie
             await supabase.from('digiflazz_products').delete().lt('updated_at', waktuSync);
 
-            return res.status(200).json({ success: true, message: `Berhasil sinkronisasi ${products.length} produk!` });
+            return res.status(200).json({ success: true, message: `Berhasil sinkronisasi ${totalBerhasil} produk!` });
         } catch (err) {
             return res.status(500).json({ success: false, error: err.message });
         }
