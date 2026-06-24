@@ -12372,11 +12372,12 @@ async function prosesBeliPPOB(skuCode, targetNo, harga, namaProduk) {
 
 // Variabel Global PPOB
 let kategoriPPOBAktif = 'Pulsa'; 
+let brandPPOBAktif = 'Semua'; // [BARU] Variabel untuk melacak Provider/Brand aktif
 let ppobOffset = 0;
-const PPOB_LIMIT = 20; // Memuat 20 produk per ketukan untuk hemat kuota database
+const PPOB_LIMIT = 20;
 let currentPpobData = [];
 
-// Daftar Kategori Umum (Disesuaikan dengan standar kategori Digiflazz)
+// Daftar Kategori Umum
 const kategoriPPOBList = [
     { id: 'Pulsa', icon: 'fa-mobile-alt' },
     { id: 'Data', icon: 'fa-wifi' },
@@ -12395,12 +12396,9 @@ const kategoriPPOBList = [
     { id: 'TV', icon: 'fa-tv' }
 ];
 
-// Deteksi saat pengguna membuka tab PPOB (Layanan)
 document.addEventListener('DOMContentLoaded', () => {
-    // Memancing perenderan awal agar UI terbentuk
     renderKategoriPPOB();
     
-    // Inject listener ke menu navigasi agar otomatis refresh jika pindah tab
     const btnLayanan = document.querySelector(`div[onclick*="executeAssistive('layanan')"]`);
     if (btnLayanan) {
         btnLayanan.addEventListener('click', () => {
@@ -12411,7 +12409,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// Render Tombol Kategori Horizontal
 function renderKategoriPPOB() {
     const container = document.getElementById('ppob-category-container');
     if (!container) return;
@@ -12429,12 +12426,13 @@ function renderKategoriPPOB() {
     }).join('');
 }
 
-// Eksekusi Saat Kategori Diklik
+// 1. UBAH FUNGSI INI: Eksekusi Saat Kategori Diklik
 function pilihKategoriPPOB(kategori) {
     kategoriPPOBAktif = kategori;
-    renderKategoriPPOB(); // Perbarui warna tombol
+    brandPPOBAktif = 'Semua'; // Reset pilihan provider setiap ganti kategori
+    renderKategoriPPOB(); // Perbarui warna tombol kategori utama
     
-    // Reset Data dan Pagination
+    // Reset Data
     ppobOffset = 0;
     currentPpobData = [];
     document.getElementById('ppob-load-more-container').classList.add('hidden');
@@ -12444,10 +12442,88 @@ function pilihKategoriPPOB(kategori) {
             <span class="text-xs font-bold uppercase tracking-widest">Mencari Data...</span>
         </div>`;
     
+    // [BARU] Panggil fungsi muat provider dulu, setelah selesai baru muat produk
+    loadBrandPPOB().then(() => loadProdukPPOB(false));
+}
+
+// 2. FUNGSI BARU: Tarik dan Render Daftar Provider/Brand
+async function loadBrandPPOB() {
+    // Suntikkan wadah (container) provider secara otomatis lewat JS jika belum ada
+    let brandContainer = document.getElementById('ppob-brand-container');
+    if (!brandContainer) {
+        const grid = document.getElementById('ppob-product-grid');
+        brandContainer = document.createElement('div');
+        brandContainer.id = 'ppob-brand-container';
+        // Desainnya seperti kapsul (chips) yang bisa di-scroll ke samping
+        brandContainer.className = 'flex overflow-x-auto hide-scroll gap-2 pb-4 px-1 items-center border-b border-white/5 mb-4 mt-2';
+        grid.parentNode.insertBefore(brandContainer, grid);
+    }
+
+    brandContainer.innerHTML = '<div class="text-[10px] text-gray-500 animate-pulse">Memuat provider...</div>';
+
+    try {
+        // Minta ke Supabase: "Tolong beri tahu saya nama-nama 'brand' untuk kategori ini"
+        const { data, error } = await supabaseClient
+            .from('digiflazz_products')
+            .select('brand')
+            .eq('is_active', true)
+            .ilike('category', `%${kategoriPPOBAktif}%`);
+
+        if (error) throw error;
+
+        // Ambil nama brand yang unik, hapus duplikat, dan urutkan sesuai abjad
+        const uniqueBrands = [...new Set(data.map(item => item.brand))].sort();
+        const allBrands = ['Semua', ...uniqueBrands];
+
+        // Cetak tombolnya ke layar (Warna Biru Brand Info agar beda dari Kategori Utama)
+        brandContainer.innerHTML = allBrands.map(brand => {
+            const isActive = brand === brandPPOBAktif;
+            const activeClass = isActive 
+                ? "bg-brand-info text-brand-dark border-transparent shadow-[0_0_10px_rgba(70,179,255,0.4)]" 
+                : "bg-black/40 text-gray-400 border-white/10 hover:bg-white/10 hover:text-white";
+            
+            return `
+            <button onclick="pilihBrandPPOB('${escapeHTML(brand).replace(/&#39;/g, "\\'")}')" class="px-4 py-1.5 rounded-full border font-bold text-[10px] whitespace-nowrap transition-all active:scale-95 shrink-0 ${activeClass}">
+                ${brand}
+            </button>`;
+        }).join('');
+
+    } catch (err) {
+        brandContainer.innerHTML = '<div class="text-[10px] text-red-500">Gagal memuat provider</div>';
+    }
+}
+
+// 3. FUNGSI BARU: Saat Pengguna Memilih Salah Satu Provider (Misal: klik "OVO")
+function pilihBrandPPOB(brand) {
+    brandPPOBAktif = brand;
+    
+    // Warnai tombol provider yang diklik
+    const brandContainer = document.getElementById('ppob-brand-container');
+    if (brandContainer) {
+        const buttons = brandContainer.querySelectorAll('button');
+        buttons.forEach(btn => {
+            if (btn.innerText.trim() === brand) {
+                btn.className = "px-4 py-1.5 rounded-full border font-bold text-[10px] whitespace-nowrap transition-all active:scale-95 shrink-0 bg-brand-info text-brand-dark border-transparent shadow-[0_0_10px_rgba(70,179,255,0.4)]";
+            } else {
+                btn.className = "px-4 py-1.5 rounded-full border font-bold text-[10px] whitespace-nowrap transition-all active:scale-95 shrink-0 bg-black/40 text-gray-400 border-white/10 hover:bg-white/10 hover:text-white";
+            }
+        });
+    }
+
+    // Reset Data Produk lalu saring khusus untuk Provider tersebut
+    ppobOffset = 0;
+    currentPpobData = [];
+    document.getElementById('ppob-load-more-container').classList.add('hidden');
+    document.getElementById('ppob-product-grid').innerHTML = `
+        <div class="text-center py-10 text-brand-info">
+            <i class="fas fa-circle-notch fa-spin text-3xl mb-3"></i><br>
+            <span class="text-xs font-bold uppercase tracking-widest">Menyaring Produk...</span>
+        </div>`;
+    
     loadProdukPPOB(false);
 }
 
-// Fungsi Tarik Data Bertahap dari Supabase
+// 4. UBAH FUNGSI INI: Tarik Data Bertahap dari Supabase
 async function loadProdukPPOB(isLoadMore = false) {
     const grid = document.getElementById('ppob-product-grid');
     const btnLoadMore = document.getElementById('btn-load-more-ppob');
@@ -12458,35 +12534,37 @@ async function loadProdukPPOB(isLoadMore = false) {
     }
 
     try {
-        // Tentukan batas tarik data berdasarkan offset (0-19, 20-39, dst)
         const from = ppobOffset;
         const to = ppobOffset + PPOB_LIMIT - 1;
 
-        // Tembak Supabase: Ambil produk aktif yang kategorinya cocok, urutkan dari termurah
-        const { data, error } = await supabaseClient
+        // Query Dasar (Kategori)
+        let query = supabaseClient
             .from('digiflazz_products')
             .select('*')
             .eq('is_active', true)
-            .ilike('category', `%${kategoriPPOBAktif}%`) // ilike agar huruf besar/kecil tetap terbaca
-            .order('seller_price', { ascending: true })
-            .range(from, to);
+            .ilike('category', `%${kategoriPPOBAktif}%`);
+
+        // [BARU] Saring berdasarkan Provider/Brand jika bukan "Semua"
+        if (brandPPOBAktif !== 'Semua') {
+            query = query.eq('brand', brandPPOBAktif);
+        }
+
+        const { data, error } = await query.order('seller_price', { ascending: true }).range(from, to);
 
         if (error) throw error;
 
-        // Update Memori Lokal
         if (!isLoadMore) {
             currentPpobData = data;
         } else {
             currentPpobData = [...currentPpobData, ...data];
         }
 
-        // Cek Apakah Masih Ada Data Selanjutnya
         const wadahLoadMore = document.getElementById('ppob-load-more-container');
         if (data.length === PPOB_LIMIT) {
-            ppobOffset += PPOB_LIMIT; // Naikkan batas untuk klik berikutnya
+            ppobOffset += PPOB_LIMIT; 
             wadahLoadMore.classList.remove('hidden');
         } else {
-            wadahLoadMore.classList.add('hidden'); // Sembunyikan tombol jika data sudah mentok habis
+            wadahLoadMore.classList.add('hidden'); 
         }
 
         renderGridPPOB();
