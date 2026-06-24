@@ -7750,10 +7750,10 @@ let activeOrderIdToPay = null;
 let activeOrderPriceToPay = 0;
 let activeOrderNameToPay = "";
 let activeOrderTable = 'orders';
-let activeOrderSellerId = null; // <--- WAJIB DITAMBAHKAN
-let activeOrderProductId = null; // <--- WAJIB DITAMBAHKAN
-let intervalJemputBola = null; // <--- VAR GLOBAL UNTUK MENCEGAH KEBOCORAN MEMORI
-let activeChannelPembayaran = null; // <--- VAR GLOBAL UNTUK MENCEGAH KEBOCORAN WEBSOCKET
+let activeOrderSellerId = null; 
+let activeOrderProductId = null; 
+let intervalJemputBola = null; 
+let activeChannelPembayaran = null; 
 
 async function cekStatusPesanan(kategori) {
     if (!currentUser) return showToast("Silakan login terlebih dahulu.", "error");
@@ -7830,10 +7830,8 @@ async function cekStatusPesanan(kategori) {
 
                 let namaAman = escapeHTML(order.product_name).replace(/&#39;/g, "\\'");
                 
-                // Jika ini PPOB, matikan klik buka struk (karena struk PPOB tidak ada halaman laci khususnya seperti barang pasar)
-                let clickAction = order.table_source === 'riwayat_ppob' 
-                    ? `class="border-white/5"` 
-                    : `onclick="bukaDetailPesananDinamis('${order.id}', '${namaAman}', '${order.price}', '${order.status}', '${order.table_source}', '${order.seller_id || ''}', '${order.product_id || ''}')" class="cursor-pointer hover:border-brand-accent/50 border-white/5"`;
+                // 🔥 PERBAIKAN: Nyalakan fungsi klik laci struk untuk SEMUA jenis transaksi (termasuk PPOB)
+                let clickAction = `onclick="bukaDetailPesananDinamis('${order.id}', '${namaAman}', '${order.price}', '${order.status}', '${order.table_source}', '${order.seller_id || ''}', '${order.product_id || ''}')" class="cursor-pointer hover:border-brand-accent/50 border-white/5 transition-all"`;
 
                 return `
                 <div ${clickAction} class="bg-brand-dark/50 border p-4 rounded-2xl flex flex-col gap-2 relative overflow-hidden transition-all hover:border-white/10 ${order.status === 'PENDING' ? 'border-red-500/20 shadow-[0_0_10px_rgba(239,68,68,0.1)]' : ''}">
@@ -8058,22 +8056,32 @@ lbModal.addEventListener('touchend', e => {
 }, {passive: true});
 
 
-// 🔥 FUNGSI PEMBUKA MODAL INVOICE (DIPERBARUI KE V3 MODERN)
+// 🔥 FUNGSI PEMBUKA MODAL INVOICE (DIPERBARUI SUPPORT PPOB)
 function bukaDetailPesananDinamis(orderId, productName, price, status, tableSource, sellerId, productId) {
     activeOrderIdToPay = orderId;
     activeOrderPriceToPay = price;
     activeOrderNameToPay = productName;
     activeOrderTable = tableSource; 
     
-    // 🔥 PERBAIKAN SANGAT PENTING: Bersihkan string 'null' atau kosong yang merusak bot
     activeOrderSellerId = (sellerId && sellerId !== 'null' && sellerId !== 'undefined' && String(sellerId).trim() !== '') ? sellerId : null; 
     activeOrderProductId = (productId && productId !== 'null' && productId !== 'undefined' && String(productId).trim() !== '') ? productId : null; 
+
+    // Terjemahkan status Digiflazz ke bahasa UI Laci agar progress bar-nya ngerti
+    let visualStatus = status;
+    if (tableSource === 'riwayat_ppob') {
+        if (status === 'Sukses') visualStatus = 'selesai';
+        if (status === 'Pending') visualStatus = 'proses';
+        if (status === 'Gagal') visualStatus = 'DIBATALKAN';
+    }
 
     const modal = document.getElementById('modal-detail-pesanan');
     
     document.getElementById('detail-nama-layanan').innerText = productName;
-    document.getElementById('detail-harga-layanan').innerText = `Rp ${price.toLocaleString('id-ID')}`;
-    document.getElementById('detail-ref-id').innerText = `NIKKY - ${orderId}`;
+    document.getElementById('detail-harga-layanan').innerText = `Rp ${Number(price).toLocaleString('id-ID')}`;
+    
+    // Sesuaikan Prefix ID
+    const prefixId = tableSource === 'riwayat_ppob' ? 'PPOB' : 'NIKKY';
+    document.getElementById('detail-ref-id').innerText = `${prefixId} - ${orderId}`;
     
     const statusBadge = document.getElementById('detail-status-badge');
     const actionBelumBayar = document.getElementById('action-belum-bayar');
@@ -8097,29 +8105,41 @@ function bukaDetailPesananDinamis(orderId, productName, price, status, tableSour
     dot3.innerHTML = '3';
     text3.className = 'text-[9px] font-bold text-gray-500 tracking-widest uppercase transition-colors';
 
-    if (status === 'PENDING') {
+    if (visualStatus === 'PENDING') {
         statusBadge.innerText = 'BELUM BAYAR';
         statusBadge.className = 'bg-red-500/20 text-red-500 border-red-500/50';
         actionBelumBayar.classList.replace('hidden', 'flex'); 
         if(actionDiproses) actionDiproses.classList.replace('flex', 'hidden'); 
         pesanStatusLain.classList.add('hidden'); 
-    } else if (status === 'proses') {
+    } else if (visualStatus === 'proses') {
         statusBadge.innerText = 'DIPROSES';
         statusBadge.className = 'bg-brand-info/20 text-brand-info border-brand-info/50';
         actionBelumBayar.classList.replace('flex', 'hidden'); 
         if(actionDiproses) actionDiproses.classList.replace('hidden', 'flex'); 
         pesanStatusLain.classList.remove('hidden'); 
-        pesanStatusLain.innerText = 'Toko sedang mengerjakan pesananmu. Klik tombol di bawah jika barang sudah diterima.';
-    } else if (status === 'selesai') {
+        pesanStatusLain.innerText = tableSource === 'riwayat_ppob' ? 'Transaksi PPOB sedang dalam antrean server provider...' : 'Toko sedang mengerjakan pesananmu. Klik tombol di bawah jika barang sudah diterima.';
+    } else if (visualStatus === 'selesai') {
         statusBadge.innerText = 'SELESAI';
         statusBadge.className = 'bg-brand-success/20 text-brand-success border-brand-success/50';
         actionBelumBayar.classList.replace('flex', 'hidden'); 
         if(actionDiproses) actionDiproses.classList.replace('flex', 'hidden'); 
         pesanStatusLain.classList.remove('hidden'); 
-        pesanStatusLain.innerText = 'Pesanan ini telah lunas dan selesai. Terima kasih!';
+        pesanStatusLain.innerText = tableSource === 'riwayat_ppob' ? 'Transaksi PPOB telah sukses diproses oleh provider. Terima kasih!' : 'Pesanan ini telah lunas dan selesai. Terima kasih!';
+    } else if (visualStatus === 'DIBATALKAN') {
+        statusBadge.innerText = 'DIBATALKAN / GAGAL';
+        statusBadge.className = 'bg-gray-500/20 text-gray-400 border-gray-500/50';
+        actionBelumBayar.classList.replace('flex', 'hidden'); 
+        if(actionDiproses) actionDiproses.classList.replace('flex', 'hidden'); 
+        pesanStatusLain.classList.remove('hidden'); 
+        pesanStatusLain.innerText = 'Transaksi gagal dan dibatalkan oleh sistem.';
     }
     
-        // ==========================================
+    // Khusus PPOB: Sembunyikan tombol "Selesaikan Pesanan" karena PPOB jalan otomatis
+    if (tableSource === 'riwayat_ppob') {
+        if(actionDiproses) actionDiproses.classList.replace('flex', 'hidden');
+    }
+    
+    // ==========================================
     // NOTA TRANSPARANSI TRANSAKSI 
     // ==========================================
     const wadahRincian = document.getElementById('wadah-rincian-transaksi');
@@ -8127,46 +8147,50 @@ function bukaDetailPesananDinamis(orderId, productName, price, status, tableSour
         wadahRincian.classList.add('hidden');
         wadahRincian.innerHTML = '<div class="flex justify-center py-2"><i class="fas fa-spinner fa-spin text-brand-info"></i></div>';
         
-        // Nota detail hanya kita buka untuk transaksi Pasar Player
-        if (tableSource === 'orders_player') {
+        // JIKA PPOB, MUNCULKAN NOTA SIMPEL (Tanpa narik API Produk)
+        if (tableSource === 'riwayat_ppob') {
+            wadahRincian.classList.remove('hidden');
+            wadahRincian.innerHTML = `
+                <div class="text-[10px] font-extrabold text-gray-400 mb-3 uppercase tracking-widest border-b border-white/10 pb-2 flex items-center gap-1.5"><i class="fas fa-bolt text-yellow-400 text-sm"></i> Rincian Pembayaran PPOB</div>
+                <div class="flex justify-between items-center text-[12px] text-white font-black mt-3">
+                    <span>Total Potong Saldo</span>
+                    <span class="font-mono text-brand-accent tracking-tight">Rp ${Number(price).toLocaleString('id-ID')}</span>
+                </div>
+            `;
+        }
+        // JIKA PASAR PLAYER, MUNCULKAN NOTA KOMPLEKS SEPERTI BIASA
+        else if (tableSource === 'orders_player') {
             wadahRincian.classList.remove('hidden');
             
             // Tarik data produk untuk mengecek siapa yang nanggung Pajak Lapak
             supabaseClient.from('player_products').select('fee_ditanggung_pembeli').eq('id', activeOrderProductId).single()
             .then(({data}) => {
                 const feeDitanggungPembeli = data ? data.fee_ditanggung_pembeli : false;
-                
                 const isPenjual = (currentUser.id === activeOrderSellerId);
                 let isRekber = productName.includes('[+Rekber]');
                 let feeRekber = isRekber ? hitungFeeRekber(price) : 0;
                 
-                // Harga setelah dikurangi Rekber (Harga kotor produk)
                 let subtotalBarang = price - feeRekber; 
-                
                 let pajakLapak = 0;
                 let hargaDasar = subtotalBarang;
                 let totalDiterimaSeller = subtotalBarang;
 
-                // REVERSE ENGINEERING: Menghitung pajak dan pendapatan bersih secara presisi
                 if (feeDitanggungPembeli) {
-                    // Jika pembeli yang nanggung, harga dasar kita bersihkan dulu dari mark-up QRIS
                     hargaDasar = Math.round((subtotalBarang - 500) / 1.007);
-                    totalDiterimaSeller = hargaDasar; // Seller terima bersih 100% harga dasarnya
+                    totalDiterimaSeller = hargaDasar; 
                     pajakLapak = hitungPotonganSeller(hargaDasar); 
                 } else {
                     pajakLapak = hitungPotonganSeller(subtotalBarang);
-                    totalDiterimaSeller = subtotalBarang - pajakLapak; // Dipotong pajak
+                    totalDiterimaSeller = subtotalBarang - pajakLapak; 
                 }
 
                 let htmlRincian = `<div class="text-[10px] font-extrabold text-gray-400 mb-3 uppercase tracking-widest border-b border-white/10 pb-2 flex items-center gap-1.5"><i class="fas fa-file-invoice-dollar text-brand-info text-sm"></i> Rincian Pembayaran</div>`;
                 
-                // Baris Subtotal
                 htmlRincian += `<div class="flex justify-between items-center text-[11px] text-gray-300 mb-2">
                     <span>Subtotal Produk</span>
                     <span class="font-mono">Rp ${subtotalBarang.toLocaleString('id-ID')}</span>
                 </div>`;
 
-                // Baris Fee Rekber
                 if (isRekber) {
                     htmlRincian += `<div class="flex justify-between items-center text-[11px] text-gray-400 mb-2">
                         <span>Biaya Admin Rekber</span>
@@ -8174,9 +8198,7 @@ function bukaDetailPesananDinamis(orderId, productName, price, status, tableSour
                     </div>`;
                 }
 
-                // Tampilan dinamis berdasarkan siapa yang membuka laci
                 if (isPenjual) {
-                    // MODE PENJUAL
                     if (feeDitanggungPembeli) {
                         htmlRincian += `<div class="flex justify-between items-center text-[11px] text-gray-400 mb-2">
                             <span>Pajak Lapak <span class="text-[9px] text-gray-500">(Ditanggung Pembeli)</span></span>
@@ -8188,16 +8210,14 @@ function bukaDetailPesananDinamis(orderId, productName, price, status, tableSour
                             <span class="font-mono text-red-400">- Rp ${pajakLapak.toLocaleString('id-ID')}</span>
                         </div>`;
                     }
-                    
                     htmlRincian += `<div class="flex justify-between items-center text-[12px] text-brand-success font-black mt-3 border-t border-white/10 pt-3">
                         <span>Estimasi Masuk ke Saldo</span>
                         <span class="font-mono tracking-tight">Rp ${totalDiterimaSeller.toLocaleString('id-ID')}</span>
                     </div>`;
                 } else {
-                    // MODE PEMBELI
                     htmlRincian += `<div class="flex justify-between items-center text-[12px] text-white font-black mt-3 border-t border-white/10 pt-3">
                         <span>Total Tagihan Dibayar</span>
-                        <span class="font-mono text-brand-accent tracking-tight">Rp ${price.toLocaleString('id-ID')}</span>
+                        <span class="font-mono text-brand-accent tracking-tight">Rp ${Number(price).toLocaleString('id-ID')}</span>
                     </div>`;
                 }
 
@@ -8211,18 +8231,17 @@ function bukaDetailPesananDinamis(orderId, productName, price, status, tableSour
 
 
     modal.classList.replace('hidden', 'flex');
-    
     setTimeout(() => { modal.classList.remove('translate-y-full'); }, 10);
 
     setTimeout(() => {
         trackLine.style.transition = 'all 0.7s ease-in-out';
 
-        if (status === 'proses') {
+        if (visualStatus === 'proses') {
             trackLine.style.width = '50%'; 
             dot2.className = 'w-7 h-7 rounded-full bg-brand-info border-[3px] border-[#121319] flex items-center justify-center text-brand-dark shadow-[0_0_10px_rgba(70,179,255,0.5)]';
             dot2.innerHTML = '<i class="fas fa-check text-[10px] font-bold"></i>';
             text2.className = 'text-[9px] font-bold text-white tracking-widest uppercase transition-colors';
-        } else if (status === 'selesai') {
+        } else if (visualStatus === 'selesai') {
             trackLine.style.width = '100%'; 
             dot2.className = 'w-7 h-7 rounded-full bg-brand-info border-[3px] border-[#121319] flex items-center justify-center text-brand-dark shadow-[0_0_10px_rgba(70,179,255,0.5)]';
             dot2.innerHTML = '<i class="fas fa-check text-[10px] font-bold"></i>';
@@ -12332,7 +12351,7 @@ function salinLinkTokoPublikLuar() {
 async function prosesBeliPPOB(skuCode, targetNo, harga, namaProduk) {
     if (!currentUser) return showToast("Silakan login dulu untuk membeli!", "error");
 
-    // 1. Cek Saldo Lokal (Agar tidak perlu loading API jika saldo jelas kurang)
+    // 1. Cek Saldo Lokal
     const { data: profile } = await supabaseClient.from('profiles').select('balance').eq('id', currentUser.id).single();
     const saldoSaatIni = profile?.balance || 0;
 
@@ -12344,22 +12363,22 @@ async function prosesBeliPPOB(skuCode, targetNo, harga, namaProduk) {
     const konfirmasi = await customConfirm(`Beli ${namaProduk} untuk nomor:\n${targetNo}\n\nTotal: Rp ${harga.toLocaleString('id-ID')} (Potong Saldo)?`);
     if (!konfirmasi) return;
 
-    // 🔥 PERBAIKAN: BUKA TAB PEMBAYARAN & TAMPILKAN LOADING SAKTI
+    // 🔥 PERBAIKAN: HILANGKAN KATA "DIGIFLAZZ" DARI LOADING
     switchTab('pembayaran');
     const wadahPembayaran = document.getElementById('qris-container');
     if (wadahPembayaran) {
         wadahPembayaran.innerHTML = `
         <div class="text-center flex flex-col items-center w-full mt-6">
             <div class="relative flex flex-col items-center mb-6">
-                <div class="absolute inset-0 bg-yellow-400 opacity-30 animate-pulse rounded-full" style="filter: blur(30px);"></div>
-                <img src="https://nos.wjv-1.neo.id/au2hub/Picsart_26-05-30_04-29-46-305.webp" class="w-28 h-28 relative z-10 splash-logo-anim drop-shadow-[0_0_20px_rgba(250,204,21,0.5)]" alt="Loading">
+                <div class="absolute inset-0 bg-brand-info opacity-30 animate-pulse rounded-full" style="filter: blur(30px);"></div>
+                <img src="https://nos.wjv-1.neo.id/au2hub/Picsart_26-05-30_04-29-46-305.webp" class="w-28 h-28 relative z-10 splash-logo-anim drop-shadow-[0_0_20px_rgba(0,240,255,0.5)]" alt="Loading">
             </div>
-            <p class="text-[10px] text-gray-400 font-extrabold tracking-widest uppercase mt-4 animate-pulse">Memproses ke Digiflazz...</p>
+            <p class="text-[10px] text-gray-400 font-extrabold tracking-widest uppercase mt-4 animate-pulse">Menghubungkan ke Server...</p>
         </div>`;
     }
 
     try {
-        // 3. Tembak API Vercel (Jalur Digiflazz)
+        // 3. Tembak API Vercel
         const response = await fetch('/api/digiflazz', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -12377,21 +12396,24 @@ async function prosesBeliPPOB(skuCode, targetNo, harga, namaProduk) {
             throw new Error(result.error || result.detail || "Transaksi dibatalkan sistem.");
         }
 
-        // 4. Jika Sukses!
-        showToast("Pesanan berhasil diproses!", "success");
+        // 4. Jika Sukses / Diterima Sistem!
+        showToast("Pesanan berhasil diteruskan ke server!", "success");
         
-        // 5. Update UI Saldo di layar agar angka uangnya langsung berkurang
+        // 5. Update UI Saldo di layar
         if (typeof updateUiSaldoSeller === 'function') updateUiSaldoSeller();
         if (typeof fetchSaldoDanMutasi === 'function') fetchSaldoDanMutasi();
         if (typeof updateSaldoGlobal === 'function') updateSaldoGlobal();
         
-        // 🔥 PERBAIKAN: TAMPILKAN INVOICE TRANSPARAN KHUSUS PPOB DI LAYAR PEMBAYARAN
+        // 6. RENDER INVOICE
         if (wadahPembayaran) {
-            const digiStatus = result.data ? result.data.status : 'Sukses';
+            const digiStatus = result.data ? result.data.status : 'Diproses';
             const refId = result.data ? result.data.ref_id : 'Sistem';
-            const sn = result.data ? (result.data.sn || 'Sedang diproses') : 'Sedang diproses';
+            const sn = result.data ? (result.data.sn || 'Sedang dicek oleh server...') : 'Sedang dicek oleh server...';
             
-            // Logika UI: Jika pending/sukses maka warnanya sukses (hijau). Jika gagal maka merah.
+            // 🔥 PERBAIKAN: GANTI KATA "PENDING" JADI "DIPROSES"
+            let displayStatus = digiStatus;
+            if (digiStatus === 'Pending') displayStatus = 'Diproses';
+
             const isSukses = (digiStatus === 'Sukses' || digiStatus === 'Pending');
             const warnaTema = isSukses ? 'brand-success' : 'red-500';
             const iconTema = isSukses ? 'fa-check' : 'fa-times';
@@ -12405,7 +12427,7 @@ async function prosesBeliPPOB(skuCode, targetNo, harga, namaProduk) {
                             <i class="fas ${iconTema} text-5xl text-${warnaTema}" style="filter: drop-shadow(0 0 15px ${shadowTema});"></i>
                         </div>
                     </div>
-                    <h2 class="text-3xl font-black text-white mb-2 tracking-tight">Status: ${digiStatus}</h2>
+                    <h2 class="text-3xl font-black text-white mb-2 tracking-tight">Status: ${displayStatus}</h2>
                     <p class="text-gray-400 text-[11px] mb-6 leading-relaxed px-4">Pembayaran <b>${namaProduk}</b> senilai <b class="text-white">Rp ${harga.toLocaleString('id-ID')}</b> telah diproses sistem.</p>
                     
                     <div class="w-full bg-black/50 border border-${warnaTema}/50 rounded-xl p-4 text-left mb-6 relative shadow-inner">
@@ -12432,7 +12454,6 @@ async function prosesBeliPPOB(skuCode, targetNo, harga, namaProduk) {
 
     } catch (err) {
         showToast(err.message, "error");
-        // Jika gagal, tarik kembali ke halaman layanan (PPOB)
         setTimeout(() => history.back(), 1500); 
     }
 }
