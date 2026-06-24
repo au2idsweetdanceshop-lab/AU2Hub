@@ -1,6 +1,10 @@
 import crypto from 'crypto';
 import { createClient } from '@supabase/supabase-js';
 
+// Meminta Vercel untuk mengizinkan proses berjalan lebih lama (hingga 60 detik)
+// untuk mencegah timeout saat sinkronisasi ribuan data.
+export const maxDuration = 60; 
+
 const supabase = createClient(
     process.env.SUPABASE_URL,
     process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -22,7 +26,7 @@ export default async function handler(req, res) {
         const sign = crypto.createHash('md5').update(username + apiKey + "depo").digest('hex');
 
         try {
-            // 🔥 PERBAIKAN: BYPASS PROXY! Tarik daftar harga langsung ke API Utama Digiflazz 
+            // BYPASS PROXY! Tarik daftar harga langsung ke API Utama Digiflazz 
             // (Karena Price List TIDAK mewajibkan Whitelist IP)
             const resPrepaid = await fetch('https://api.digiflazz.com/v1/price-list', {
                 method: 'POST',
@@ -52,12 +56,15 @@ export default async function handler(req, res) {
 
             if (allRawProducts.length === 0) throw new Error("Gagal mengambil data dari Digiflazz");
 
-            // Filter produk yang lagi aktif di seller dan digiflazz
-            const produkTerbaik = allRawProducts.filter(item => item.buyer_product_status === true && item.seller_product_status === true);
             const waktuSync = new Date().toISOString();
 
-            const products = produkTerbaik.map(item => {
+            // 🔥 PERBAIKAN PENTING:
+            // Tidak lagi membuang produk yang sedang gangguan/maintenance.
+            // Tetap disimpan ke database agar kategori tidak hilang, tapi statusnya disesuaikan.
+            const products = allRawProducts.map(item => {
                 const hargaModal = (item.price && item.price > 0) ? item.price : (item.admin || 0);
+                const isActive = item.buyer_product_status === true && item.seller_product_status === true;
+                
                 return {
                     sku_code: item.buyer_sku_code,
                     product_name: item.product_name,
@@ -65,12 +72,12 @@ export default async function handler(req, res) {
                     brand: item.brand,
                     price: hargaModal,                 
                     seller_price: hargaModal + 100,    
-                    is_active: true,                    
-                    updated_at: waktuSync               
+                    is_active: isActive, // Simpan status asli dari Digiflazz                    
+                    updated_at: waktuSync                
                 };
             });
 
-            // 🔥 MASUKKAN KE DATABASE PER 500 ITEM AGAR SUPABASE TIDAK CRASH
+            // MASUKKAN KE DATABASE PER 500 ITEM AGAR SUPABASE TIDAK CRASH
             const chunkSize = 500;
             let totalBerhasil = 0;
 
@@ -85,7 +92,7 @@ export default async function handler(req, res) {
                 }
             }
 
-            // Hapus produk lama yang tidak ada di tarikan terbaru (produk mati)
+            // Hapus produk lama yang tidak ada di tarikan terbaru (produk yang benar-benar dihapus Digiflazz)
             await supabase.from('digiflazz_products').delete().lt('updated_at', waktuSync);
 
             return res.status(200).json({ success: true, message: `Berhasil sinkronisasi ${totalBerhasil} produk!` });
@@ -126,7 +133,7 @@ export default async function handler(req, res) {
             
             isSaldoDipotong = true;
 
-            // 🔥 CATAT MUTASI PENGELUARAN KE DOMPET
+            // CATAT MUTASI PENGELUARAN KE DOMPET
             await supabase.from('wallet_transactions').insert({
                 user_id: user_id,
                 amount: hargaJual,
@@ -134,7 +141,7 @@ export default async function handler(req, res) {
                 description: `Pembelian PPOB: ${sku_code} (${customer_no})`
             });
 
-            // 3. Tembak Transaksi ke Digiflazz (INI TETAP LEWAT PROXY VPS KARENA BUTUH WHITELIST)
+            // 3. Tembak Transaksi ke Digiflazz (TETAP LEWAT PROXY VPS KARENA BUTUH WHITELIST)
             const sign = crypto.createHash('md5').update(username + apiKey + ref_id).digest('hex');
             
             const proxyRes = await fetch('http://203.194.114.209:3000/proxy-digiflazz', {
@@ -153,7 +160,7 @@ export default async function handler(req, res) {
                 if (profSekarang) {
                     await supabase.from('profiles').update({ balance: Number(profSekarang.balance) + hargaJual }).eq('id', user_id);
                     
-                    // 🔥 CATAT MUTASI REFUND KE DOMPET
+                    // CATAT MUTASI REFUND KE DOMPET
                     await supabase.from('wallet_transactions').insert({
                         user_id: user_id,
                         amount: hargaJual,
@@ -161,7 +168,7 @@ export default async function handler(req, res) {
                         description: `Refund PPOB Gagal: ${sku_code}`
                     });
 
-                    // 🔥 KIRIM NOTIFIKASI GAGAL KE INBOX CHAT
+                    // KIRIM NOTIFIKASI GAGAL KE INBOX CHAT
                     await supabase.from('messages').insert({
                         sender_id: user_id, receiver_id: user_id,
                         message: `[SISTEM] Transaksi PPOB *${sku_code}* ke nomor *${customer_no}* GAGAL diproses oleh pusat.\n\nAlasan: ${digiData.data.message}\nDana Rp ${hargaJual.toLocaleString('id-ID')} telah direfund ke saldo Anda.`
@@ -175,7 +182,7 @@ export default async function handler(req, res) {
                 ref_id: ref_id, user_id: user_id, sku_code: sku_code, customer_no: customer_no, price: hargaJual, status: digiData.data ? digiData.data.status : 'Pending'
             });
 
-            // 🔥 KIRIM NOTIFIKASI PROSES KE INBOX CHAT
+            // KIRIM NOTIFIKASI PROSES KE INBOX CHAT
             await supabase.from('messages').insert({
                 sender_id: user_id, receiver_id: user_id,
                 message: `[SISTEM] Pesanan PPOB *${sku_code}* tujuan *${customer_no}* senilai Rp ${hargaJual.toLocaleString('id-ID')} telah diterima dan sedang diproses sistem.\n\nRef ID: ${ref_id}`
