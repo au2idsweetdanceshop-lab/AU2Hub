@@ -604,7 +604,7 @@ let currentRoomMembers = []; // Memori untuk nyimpen anggota grup pas ngetik @
                             let tagPembuka = 'a'; // Semua tombol dipaksa jadi tag 'a' (link) agar aman
                             
                             if (tipeAksi === 'alert' || tipeAksi === 'popup') {
-                                let safeTarget = targetAksi.replace(/'/g, "\\'").replace(/\n/g, "\\n");
+                                let safeTarget = escapeHTML(targetAksi).replace(/&#39;/g, "\\'").replace(/\n/g, "\\n");
                                 atributKlik = `href="javascript:void(0)" onclick="customAlert('${safeTarget}')"`;
                                 
                             } else if (tipeAksi === 'tab') {
@@ -3270,7 +3270,7 @@ let html = `
     ${getBadgeByLevelAndVideos(hitungStatusLevel(comment.exp || 0).level, allVideosData.filter(v => String(v.user_id) === String(comment.user_id)).length)}
 </div>
 <p class="text-gray-200 text-xs mt-0.5 leading-relaxed break-words">${formatCaption(comment.message)}</p>
-<div class="flex items-center gap-2 mt-1.5"><span class="text-[9px] text-gray-600">${timeAgo(comment.created_at)}</span><button onclick="setReply('${comment.id}', '${comment.nickname.replace(/'/g, "\\'")}')" class="text-[10px] text-gray-400 font-bold hover:text-white px-2">Balas</button> ${delBtn} </div>
+<div class="flex items-center gap-2 mt-1.5"><span class="text-[9px] text-gray-600">${timeAgo(comment.created_at)}</span><button onclick="setReply('${comment.id}', '${escapeHTML(comment.nickname).replace(/&#39;/g, "\\'")}')" class="text-[10px] text-gray-400 font-bold hover:text-white px-2">Balas</button> ${delBtn} </div>
 </div>
 <div class="flex flex-col items-center gap-1 ml-1 shrink-0">
 <button onclick="likeComment('${comment.id}', this)" class="text-gray-500 hover:text-brand-accent transition-colors active:scale-75"><i class="fas fa-heart text-sm ${localStorage.getItem('comment_liked_'+comment.id) ? 'text-brand-accent' : ''}"></i></button>
@@ -3300,7 +3300,7 @@ html += `
     ${getBadgeByLevelAndVideos(hitungStatusLevel(r.exp || 0).level, allVideosData.filter(v => String(v.user_id) === String(r.user_id)).length)}
 </div>
 <p class="text-gray-300 text-[11px] mt-0.5 leading-relaxed break-words">${formatCaption(r.message)}</p>
-<div class="flex items-center gap-2 mt-1"><button onclick="setReply('${comment.id}', '${r.nickname.replace(/'/g, "\\'")}')" class="text-[9px] text-gray-500 font-bold hover:text-white pr-2">Balas</button> ${rDelBtn}</div>
+<div class="flex items-center gap-2 mt-1"><button onclick="setReply('${comment.id}', '${escapeHTML(r.nickname).replace(/&#39;/g, "\\'")}')" class="text-[9px] text-gray-500 font-bold hover:text-white pr-2">Balas</button> ${rDelBtn}</div>
 </div>
 <div class="flex flex-col items-center gap-1 ml-1 shrink-0">
 <button onclick="likeComment('${r.id}', this)" class="text-gray-500 hover:text-brand-accent transition-colors active:scale-75"><i class="fas fa-heart text-[11px] ${localStorage.getItem('comment_liked_'+r.id) ? 'text-brand-accent' : ''}"></i></button>
@@ -4082,7 +4082,7 @@ function tampilkanMentionPopup(searchText) {
     if (filtered.length > 0) {
         list.innerHTML = filtered.map(m => {
             const ava = m.avatar_url || `https://ui-avatars.com/api/?name=${m.nickname}&background=1A1133&color=fff`;
-            const safeNick = m.nickname.replace(/'/g, "\\'");
+            const safeNick = escapeHTML(m.nickname).replace(/&#39;/g, "\\'");
             return `
             <div onclick="pilihMention('${safeNick}')" class="flex items-center gap-3 p-2.5 hover:bg-white/10 rounded-xl cursor-pointer transition-colors active:scale-95">
                 <img src="${ava}" class="w-7 h-7 rounded-full object-cover border border-white/10 shrink-0">
@@ -4421,7 +4421,7 @@ let html = '<p class="text-[10px] text-gray-500 font-bold mb-2 ml-1 uppercase">H
 data.forEach(p => {
 const ava = p.avatar_url || `https://ui-avatars.com/api/?name=${p.nickname}&background=1A1133&color=fff`;
 html += `
-<div onclick="openChatRoom('${p.id}', '${p.nickname.replace(/'/g, "\\'")}', '${ava}')" class="flex items-center p-3 hover:bg-white/5 cursor-pointer rounded-2xl transition-all">
+<div onclick="openChatRoom('${p.id}', '${escapeHTML(p.nickname).replace(/&#39;/g, "\\'")}', '${ava}')" class="flex items-center p-3 hover:bg-white/5 cursor-pointer rounded-2xl transition-all">
 <img src="${ava}" class="w-10 h-10 rounded-full object-cover border border-white/10 shrink-0">
 <div class="ml-3">
 <h4 class="font-bold text-white text-xs">${p.nickname}</h4>
@@ -4974,7 +4974,7 @@ const ava = user.avatar || `https://ui-avatars.com/api/?name=${user.nickname}`;
 const latestTime = timeAgo(user.stories[0].created_at);
 
 html += `
-<div class="flex items-center p-2 bg-brand-card/50 hover:bg-white/5 cursor-pointer rounded-2xl border border-white/5 transition-all mb-2" onclick="viewStory('${user.user_id}', '${user.nickname.replace(/'/g, "\\'")}', '${ava}')">
+<div class="flex items-center p-2 bg-brand-card/50 hover:bg-white/5 cursor-pointer rounded-2xl border border-white/5 transition-all mb-2" onclick="viewStory('${user.user_id}', '${escapeHTML(user.nickname).replace(/&#39;/g, "\\'")}', '${ava}')">
 <div class="relative shrink-0 story-ring">
 <img src="${ava}" class="w-11 h-11 rounded-full object-cover border-2 border-brand-card">
 </div>
@@ -5996,14 +5996,14 @@ if (activeGroupRole === 'admin' && p.id !== currentUser.id) {
 adminButtons = `
 <div class="flex gap-2 ml-2">
 <!-- Tombol Jadikan/Batalkan Admin -->
-<button onclick="toggleAdminStatus('${p.id}', '${m.role}', '${p.nickname.replace(/'/g, "\\'")}')"
+<button onclick="toggleAdminStatus('${p.id}', '${m.role}', '${escapeHTML(p.nickname).replace(/&#39;/g, "\\'")}')"
 class="w-8 h-8 rounded-lg flex items-center justify-center transition-all ${isAdmin ? 'bg-orange-500/20 text-orange-500' : 'bg-brand-info/20 text-brand-info'}"
 title="${isAdmin ? 'Turunkan dari Admin' : 'Jadikan Admin'}">
 <i class="fas ${isAdmin ? 'fa-user-minus' : 'fa-user-shield'} text-xs"></i>
 </button>
 
 <!-- Tombol Kick Member -->
-<button onclick="kickMember('${p.id}', '${p.nickname.replace(/'/g, "\\'")}')"
+<button onclick="kickMember('${p.id}', '${escapeHTML(p.nickname).replace(/&#39;/g, "\\'")}')"
 class="w-8 h-8 rounded-lg bg-red-500/20 text-red-500 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all"
 title="Keluarkan Anggota">
 <i class="fas fa-user-times text-xs"></i>
@@ -8869,7 +8869,7 @@ function loadForwardContacts(searchQuery = '') {
     container.innerHTML = allContacts.map(contact => {
         const isGroup = contact.type === 'group';
         return `
-        <div onclick="executeForward('${contact.id}', ${isGroup}, '${contact.name.replace(/'/g, "\\'")}')" class="flex items-center justify-between p-3 hover:bg-white/5 cursor-pointer rounded-2xl transition-all border-b border-white/5">
+        <div onclick="executeForward('${contact.id}', ${isGroup}, '${escapeHTML(contact.name).replace(/&#39;/g, "\\'")}')" class="flex items-center justify-between p-3 hover:bg-white/5 cursor-pointer rounded-2xl transition-all border-b border-white/5">
             <div class="flex items-center">
                 <img src="${contact.avatar}" class="w-10 h-10 rounded-full object-cover border border-white/10 shrink-0">
                 <div class="ml-3">
@@ -9586,7 +9586,7 @@ function bukaDetailPasar(idProduk) {
 
             window.renderVariasiPasarButtons = function(activeName) {
                 variasiList.innerHTML = arrVariasi.map(v => {
-                    let vName = v.name.replace(/'/g, "\\'");
+                    let vName = escapeHTML(v.name).replace(/&#39;/g, "\\'");
                     let isActive = (vName === activeName);
                     let baseClass = "px-4 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ";
                     let activeClass = isActive ? "bg-[#EE4D2D]/20 border-[#EE4D2D] text-[#EE4D2D] shadow-[0_0_10px_rgba(238,77,45,0.3)]" : "bg-black/30 border-white/10 text-gray-400 hover:border-brand-info/50 hover:text-white";
@@ -11082,7 +11082,7 @@ async function loadAdminDashboard(isRefresh = false) {
 
                     <div class="flex gap-2 mt-2">
                         <button onclick="tolakPenarikan('${req.id}', '${req.user_id}', ${req.nominal})" class="flex-1 bg-transparent border border-red-500/50 hover:bg-red-500/10 text-red-500 py-3 rounded-xl font-bold active:scale-95 transition-all text-xs">Tolak</button>
-                        <button onclick="setujuiPenarikan('${req.id}', '${(req.profiles?.nickname || 'Player').replace(/'/g, "\\'")}')" class="flex-1 bg-brand-success hover:bg-[#20bd5a] text-brand-dark py-3 rounded-xl font-extrabold active:scale-95 transition-all text-xs uppercase tracking-wider shadow-[0_4px_15px_rgba(37,211,102,0.3)]"><i class="fas fa-check-double mr-1"></i> Selesai Transfer</button>
+                        <button onclick="setujuiPenarikan('${req.id}', '${escapeHTML(req.profiles?.nickname || 'Player').replace(/&#39;/g, "\\'")}')" class="flex-1 bg-brand-success hover:bg-[#20bd5a] text-brand-dark py-3 rounded-xl font-extrabold active:scale-95 transition-all text-xs uppercase tracking-wider shadow-[0_4px_15px_rgba(37,211,102,0.3)]"><i class="fas fa-check-double mr-1"></i> Selesai Transfer</button>
                     </div>
                 </div>`;
             }).join('');
