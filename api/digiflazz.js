@@ -33,7 +33,6 @@ export default async function handler(req, res) {
             });
             const jsonPrepaid = await resPrepaid.json();
 
-            // 🔥 TANGKAP ERROR ASLI DARI DIGIFLAZZ (PREPAID)
             if (jsonPrepaid.data && !Array.isArray(jsonPrepaid.data) && jsonPrepaid.data.message) {
                 throw new Error("DIGIFLAZZ MENOLAK (Prepaid): " + jsonPrepaid.data.message);
             }
@@ -49,12 +48,11 @@ export default async function handler(req, res) {
             });
             const jsonPasca = await resPasca.json();
 
-            // 🔥 TANGKAP ERROR ASLI DARI DIGIFLAZZ (PASCA)
             if (jsonPasca.data && !Array.isArray(jsonPasca.data) && jsonPasca.data.message) {
                 throw new Error("DIGIFLAZZ MENOLAK (Pasca): " + jsonPasca.data.message);
             }
 
-            // 1C. Gabungkan Data (Aman dari not iterable)
+            // 1C. Gabungkan Data
             let allRawProducts = [];
             if (jsonPrepaid.data && Array.isArray(jsonPrepaid.data)) {
                 allRawProducts = [...allRawProducts, ...jsonPrepaid.data];
@@ -81,8 +79,8 @@ export default async function handler(req, res) {
                     brand: item.brand,
                     price: hargaModal,                 
                     seller_price: hargaModal + 100,    
-                    is_active: true,                   
-                    updated_at: waktuSync              
+                    is_active: true,                    
+                    updated_at: waktuSync               
                 };
             });
 
@@ -96,7 +94,7 @@ export default async function handler(req, res) {
 
             return res.status(200).json({ 
                 success: true, 
-                message: `Berhasil sinkronisasi ${products.length} produk (Prepaid & Pasca) dan membersihkan produk usang/zombie!` 
+                message: `Berhasil sinkronisasi ${products.length} produk (Prepaid & Pasca) dan membersihkan produk usang!` 
             });
         } catch (err) {
             return res.status(500).json({ success: false, error: err.message });
@@ -114,20 +112,30 @@ export default async function handler(req, res) {
         let isSaldoDipotong = false; 
         
         try {
+            // 1. Cari Produk
             const { data: prod } = await supabase.from('digiflazz_products').select('seller_price').eq('sku_code', sku_code).single();
             if (!prod) return res.status(404).json({ success: false, error: "Produk tidak ditemukan." });
 
-            hargaJual = prod.seller_price;
+            hargaJual = Number(prod.seller_price);
 
-            const { data: isSuccess, error: deductErr } = await supabase.rpc('kurangi_saldo', {
-                p_user_id: user_id,
-                p_jumlah: hargaJual
-            });
+            // 🔥 PERBAIKAN: Potong Saldo Manual Tanpa RPC (Jauh Lebih Aman & Anti-Error)
+            const { data: profile, error: profErr } = await supabase.from('profiles').select('balance').eq('id', user_id).single();
+            if (profErr || !profile) return res.status(400).json({ success: false, error: "Gagal memuat profil pengguna." });
 
-            if (deductErr || !isSuccess) return res.status(400).json({ success: false, error: "Saldo tidak mencukupi." });
+            const saldoSaatIni = Number(profile.balance) || 0;
+            
+            // Cek Saldo Real-time
+            if (saldoSaatIni < hargaJual) {
+                return res.status(400).json({ success: false, error: `Saldo tidak mencukupi. (Saldo: ${saldoSaatIni}, Harga: ${hargaJual})` });
+            }
+
+            // Eksekusi Potong Saldo
+            const { error: deductErr } = await supabase.from('profiles').update({ balance: saldoSaatIni - hargaJual }).eq('id', user_id);
+            if (deductErr) return res.status(400).json({ success: false, error: "Gagal memotong saldo sistem." });
             
             isSaldoDipotong = true;
 
+            // 2. Tembak Transaksi ke Digiflazz
             const sign = crypto.createHash('md5').update(username + apiKey + ref_id).digest('hex');
             
             const proxyRes = await fetch('http://203.194.114.209:3000/proxy-digiflazz', {
@@ -140,11 +148,16 @@ export default async function handler(req, res) {
             });
             const digiData = await proxyRes.json();
 
+            // 3. Tangani Jika Digiflazz Gagal (Refund Saldo Manual Tanpa RPC)
             if (digiData.data && digiData.data.status === "Gagal") {
-                await supabase.rpc('tambah_saldo', { p_user_id: user_id, p_jumlah: hargaJual }); 
+                const { data: profSekarang } = await supabase.from('profiles').select('balance').eq('id', user_id).single();
+                if (profSekarang) {
+                    await supabase.from('profiles').update({ balance: Number(profSekarang.balance) + hargaJual }).eq('id', user_id);
+                }
                 return res.status(400).json({ success: false, error: "Transaksi gagal dari pusat. Saldo dikembalikan.", detail: digiData.data.message });
             }
 
+            // 4. Catat Riwayat Pembelian
             await supabase.from('riwayat_ppob').insert({
                 ref_id: ref_id,
                 user_id: user_id,
@@ -157,10 +170,14 @@ export default async function handler(req, res) {
             return res.status(200).json({ success: true, data: digiData.data });
 
         } catch (err) {
+            // 🔥 PERBAIKAN: Refund Saldo Jika Server Vercel Tiba-tiba Error
             if (isSaldoDipotong && user_id && hargaJual > 0) {
-                await supabase.rpc('tambah_saldo', { p_user_id: user_id, p_jumlah: hargaJual });
+                const { data: profSekarang } = await supabase.from('profiles').select('balance').eq('id', user_id).single();
+                if (profSekarang) {
+                    await supabase.from('profiles').update({ balance: Number(profSekarang.balance) + hargaJual }).eq('id', user_id);
+                }
             }
-            return res.status(500).json({ success: false, error: "Gangguan server. Transaksi dibatalkan dan saldo dikembalikan." });
+            return res.status(500).json({ success: false, error: "Gangguan server. Transaksi dibatalkan dan saldo dikembalikan.", detail: err.message });
         }
     }
 
@@ -177,8 +194,12 @@ export default async function handler(req, res) {
 
             const { data: orderData } = await supabase.from('riwayat_ppob').update({ status: statusDigi }).eq('ref_id', refId).select().single();
 
+            // 🔥 PERBAIKAN: Refund Saldo Manual via Webhook jika Transaksi dinyatakan Gagal
             if (statusDigi === "Gagal" && orderData) {
-                await supabase.rpc('tambah_saldo', { p_user_id: orderData.user_id, p_jumlah: orderData.price });
+                const { data: profRefund } = await supabase.from('profiles').select('balance').eq('id', orderData.user_id).single();
+                if (profRefund) {
+                    await supabase.from('profiles').update({ balance: Number(profRefund.balance) + Number(orderData.price) }).eq('id', orderData.user_id);
+                }
             }
 
             return res.status(200).send("Webhook Received");
