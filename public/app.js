@@ -12376,14 +12376,21 @@ let ppobOffset = 0;
 const PPOB_LIMIT = 20; // Memuat 20 produk per ketukan untuk hemat kuota database
 let currentPpobData = [];
 
-// Daftar Kategori Umum (Bisa disesuaikan dengan isi Digiflazz Anda)
+// Daftar Kategori PPOB Digiflazz Lengkap
 const kategoriPPOBList = [
     { id: 'Pulsa', icon: 'fa-signal' },
     { id: 'Data', icon: 'fa-wifi' },
     { id: 'E-Money', icon: 'fa-wallet' },
     { id: 'Games', icon: 'fa-gamepad' },
     { id: 'PLN', icon: 'fa-bolt' },
-    { id: 'Voucher', icon: 'fa-ticket-alt' }
+    { id: 'Voucher', icon: 'fa-ticket-alt' },
+    { id: 'Masa Aktif', icon: 'fa-calendar-plus' }, // Tambahan Masa Aktif
+    { id: 'BPJS', icon: 'fa-heartbeat' },           // Tambahan BPJS
+    { id: 'PDAM', icon: 'fa-tint' },                // Tambahan Air/PDAM
+    { id: 'TV', icon: 'fa-tv' },                    // Tambahan TV Kabel
+    { id: 'Telkom', icon: 'fa-phone-alt' },         // Tambahan Tagihan Telepon
+    { id: 'Pajak', icon: 'fa-file-invoice-dollar' },// Tambahan Pajak (PBB, dll)
+    { id: 'Angsuran', icon: 'fa-money-check-alt' }  // Tambahan Multifinance/Kredit
 ];
 
 // Deteksi saat pengguna membuka tab PPOB (Layanan)
