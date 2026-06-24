@@ -3270,7 +3270,7 @@ let html = `
     ${getBadgeByLevelAndVideos(hitungStatusLevel(comment.exp || 0).level, allVideosData.filter(v => String(v.user_id) === String(comment.user_id)).length)}
 </div>
 <p class="text-gray-200 text-xs mt-0.5 leading-relaxed break-words">${formatCaption(comment.message)}</p>
-<div class="flex items-center gap-2 mt-1.5"><span class="text-[9px] text-gray-600">${timeAgo(comment.created_at)}</span><button onclick="setReply('${comment.id}', '${comment.nickname}')" class="text-[10px] text-gray-400 font-bold hover:text-white px-2">Balas</button> ${delBtn} </div>
+<div class="flex items-center gap-2 mt-1.5"><span class="text-[9px] text-gray-600">${timeAgo(comment.created_at)}</span><button onclick="setReply('${comment.id}', '${comment.nickname.replace(/'/g, "\\'")}')" class="text-[10px] text-gray-400 font-bold hover:text-white px-2">Balas</button> ${delBtn} </div>
 </div>
 <div class="flex flex-col items-center gap-1 ml-1 shrink-0">
 <button onclick="likeComment('${comment.id}', this)" class="text-gray-500 hover:text-brand-accent transition-colors active:scale-75"><i class="fas fa-heart text-sm ${localStorage.getItem('comment_liked_'+comment.id) ? 'text-brand-accent' : ''}"></i></button>
@@ -3300,7 +3300,7 @@ html += `
     ${getBadgeByLevelAndVideos(hitungStatusLevel(r.exp || 0).level, allVideosData.filter(v => String(v.user_id) === String(r.user_id)).length)}
 </div>
 <p class="text-gray-300 text-[11px] mt-0.5 leading-relaxed break-words">${formatCaption(r.message)}</p>
-<div class="flex items-center gap-2 mt-1"><button onclick="setReply('${comment.id}', '${r.nickname}')" class="text-[9px] text-gray-500 font-bold hover:text-white pr-2">Balas</button> ${rDelBtn}</div>
+<div class="flex items-center gap-2 mt-1"><button onclick="setReply('${comment.id}', '${r.nickname.replace(/'/g, "\\'")}')" class="text-[9px] text-gray-500 font-bold hover:text-white pr-2">Balas</button> ${rDelBtn}</div>
 </div>
 <div class="flex flex-col items-center gap-1 ml-1 shrink-0">
 <button onclick="likeComment('${r.id}', this)" class="text-gray-500 hover:text-brand-accent transition-colors active:scale-75"><i class="fas fa-heart text-[11px] ${localStorage.getItem('comment_liked_'+r.id) ? 'text-brand-accent' : ''}"></i></button>
@@ -4974,7 +4974,7 @@ const ava = user.avatar || `https://ui-avatars.com/api/?name=${user.nickname}`;
 const latestTime = timeAgo(user.stories[0].created_at);
 
 html += `
-<div class="flex items-center p-2 bg-brand-card/50 hover:bg-white/5 cursor-pointer rounded-2xl border border-white/5 transition-all mb-2" onclick="viewStory('${user.user_id}', '${user.nickname}', '${ava}')">
+<div class="flex items-center p-2 bg-brand-card/50 hover:bg-white/5 cursor-pointer rounded-2xl border border-white/5 transition-all mb-2" onclick="viewStory('${user.user_id}', '${user.nickname.replace(/'/g, "\\'")}', '${ava}')">
 <div class="relative shrink-0 story-ring">
 <img src="${ava}" class="w-11 h-11 rounded-full object-cover border-2 border-brand-card">
 </div>
@@ -5996,14 +5996,14 @@ if (activeGroupRole === 'admin' && p.id !== currentUser.id) {
 adminButtons = `
 <div class="flex gap-2 ml-2">
 <!-- Tombol Jadikan/Batalkan Admin -->
-<button onclick="toggleAdminStatus('${p.id}', '${m.role}', '${p.nickname}')"
+<button onclick="toggleAdminStatus('${p.id}', '${m.role}', '${p.nickname.replace(/'/g, "\\'")}')"
 class="w-8 h-8 rounded-lg flex items-center justify-center transition-all ${isAdmin ? 'bg-orange-500/20 text-orange-500' : 'bg-brand-info/20 text-brand-info'}"
 title="${isAdmin ? 'Turunkan dari Admin' : 'Jadikan Admin'}">
 <i class="fas ${isAdmin ? 'fa-user-minus' : 'fa-user-shield'} text-xs"></i>
 </button>
 
 <!-- Tombol Kick Member -->
-<button onclick="kickMember('${p.id}', '${p.nickname}')"
+<button onclick="kickMember('${p.id}', '${p.nickname.replace(/'/g, "\\'")}')"
 class="w-8 h-8 rounded-lg bg-red-500/20 text-red-500 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all"
 title="Keluarkan Anggota">
 <i class="fas fa-user-times text-xs"></i>
@@ -8466,29 +8466,32 @@ async function checkoutXoftwarePay(namaProduk, harga, deskripsi, sellerId = null
 
                 if (isAutoItem && autoDeliveryContent && autoDeliveryContent !== "") { 
                     
-                    // [BARU] 1. Amankan teks dari kode berbahaya, 2. Sulap URL menjadi link hidup
-                    let htmlDataPesanan = escapeHTML(autoDeliveryContent).replace(
-                        /(https?:\/\/[^\s]+)/g,
-                        '<a href="$1" target="_blank" rel="noopener noreferrer" class="text-brand-info underline font-bold hover:text-white transition-colors">$1</a>'
-                    );
+                                // --- TAMBAHAN PENGAMAN ANTI ERROR ---
+            let dataAman = autoDeliveryContent.replace(/`/g, '\\`').replace(/"/g, '&quot;');
 
-                    wadahPembayaran.innerHTML = `
-                        <div class="flex flex-col items-center justify-center py-4 text-center modal-anim w-full relative z-10">
-                            <div class="w-16 h-16 bg-brand-success/20 rounded-full flex items-center justify-center border border-brand-success/50 mb-4 shadow-[0_0_15px_rgba(37,211,102,0.5)]">
-                                <i class="fas fa-check text-3xl text-brand-success"></i>
-                            </div>
-                            <h2 class="text-2xl font-black text-white mb-1 tracking-tight">Pesanan Berhasil!</h2>
-                            <p class="text-gray-400 text-[11px] mb-4">Ini adalah detail data pesanan otomatis Anda:</p>
-                            
-                            <div class="w-full bg-black/50 border border-brand-info/50 rounded-xl p-4 text-left mb-6 relative">
-                                <span class="absolute -top-2.5 left-4 bg-brand-info text-brand-dark text-[9px] font-extrabold px-2 py-0.5 rounded uppercase tracking-wider">DATA PESANAN</span>
-                                
-                                <pre class="text-white text-xs whitespace-pre-wrap break-all font-mono leading-relaxed mt-2 max-h-40 overflow-y-auto hide-scroll" style="font-family: monospace;">${htmlDataPesanan}</pre>
-                                
-                                <button type="button" onclick="navigator.clipboard.writeText(\`${autoDeliveryContent.replace(/`/g, '\\`')}\`); this.innerHTML='<i class=\\'fas fa-check\\'></i> Tersalin!'; setTimeout(()=>this.innerHTML='<i class=\\'fas fa-copy mr-1\\'></i> Salin Data', 2000);" class="mt-4 w-full bg-brand-info/10 text-brand-info border border-brand-info/30 py-2.5 rounded-lg text-[11px] font-bold active:scale-95 transition-all">
-                                    <i class="fas fa-copy mr-1"></i> Salin Data
-                                </button>
-                            </div>
+            // [BARU] 1. Amankan teks dari kode berbahaya, 2. Sulap URL menjadi link hidup
+            let htmlDataPesanan = escapeHTML(autoDeliveryContent).replace(
+                /(https?:\/\/[^\s]+)/g,
+                '<a href="$1" target="_blank" rel="noopener noreferrer" class="text-brand-info underline font-bold hover:text-white transition-colors">$1</a>'
+            );
+
+            wadahPembayaran.innerHTML = `
+                <div class="flex flex-col items-center justify-center py-4 text-center modal-anim w-full relative z-10">
+                    <div class="w-16 h-16 bg-brand-success/20 rounded-full flex items-center justify-center border border-brand-success/50 mb-4 shadow-[0_0_15px_rgba(37,211,102,0.5)]">
+                        <i class="fas fa-check text-3xl text-brand-success"></i>
+                    </div>
+                    <h2 class="text-2xl font-black text-white mb-1 tracking-tight">Pesanan Berhasil!</h2>
+                    <p class="text-gray-400 text-[11px] mb-4">Ini adalah detail data pesanan otomatis Anda:</p>
+                    
+                    <div class="w-full bg-black/50 border border-brand-info/50 rounded-xl p-4 text-left mb-6 relative">
+                        <span class="absolute -top-2.5 left-4 bg-brand-info text-brand-dark text-[9px] font-extrabold px-2 py-0.5 rounded uppercase tracking-wider">DATA PESANAN</span>
+                        
+                        <pre class="text-white text-xs whitespace-pre-wrap break-all font-mono leading-relaxed mt-2 max-h-40 overflow-y-auto hide-scroll" style="font-family: monospace;">${htmlDataPesanan}</pre>
+                        
+                        <button type="button" onclick="navigator.clipboard.writeText(\`${dataAman}\`); this.innerHTML='<i class=\\'fas fa-check\\'></i> Tersalin!'; setTimeout(()=>this.innerHTML='<i class=\\'fas fa-copy mr-1\\'></i> Salin Data', 2000);" class="mt-4 w-full bg-brand-info/10 text-brand-info border border-brand-info/30 py-2.5 rounded-lg text-[11px] font-bold active:scale-95 transition-all">
+                            <i class="fas fa-copy mr-1"></i> Salin Data
+                        </button>
+                    </div>
 
                             <p class="text-[9px] text-gray-500 mb-4 italic">*Data ini juga otomatis tersimpan di fitur Chat (Inbox) Anda.</p>
                             
@@ -8496,6 +8499,7 @@ async function checkoutXoftwarePay(namaProduk, harga, deskripsi, sellerId = null
                         </div>
                     `;
                 } else {
+                
                     wadahPembayaran.innerHTML = `
                         <div class="flex flex-col items-center justify-center py-4 text-center modal-anim w-full relative z-10">
                             <div class="relative w-28 h-28 mb-6 mt-4">
@@ -11077,7 +11081,7 @@ async function loadAdminDashboard(isRefresh = false) {
 
                     <div class="flex gap-2 mt-2">
                         <button onclick="tolakPenarikan('${req.id}', '${req.user_id}', ${req.nominal})" class="flex-1 bg-transparent border border-red-500/50 hover:bg-red-500/10 text-red-500 py-3 rounded-xl font-bold active:scale-95 transition-all text-xs">Tolak</button>
-                        <button onclick="setujuiPenarikan('${req.id}', '${req.profiles?.nickname || 'Player'}')" class="flex-1 bg-brand-success hover:bg-[#20bd5a] text-brand-dark py-3 rounded-xl font-extrabold active:scale-95 transition-all text-xs uppercase tracking-wider shadow-[0_4px_15px_rgba(37,211,102,0.3)]"><i class="fas fa-check-double mr-1"></i> Selesai Transfer</button>
+                        <button onclick="setujuiPenarikan('${req.id}', '${(req.profiles?.nickname || 'Player').replace(/'/g, "\\'")}')" class="flex-1 bg-brand-success hover:bg-[#20bd5a] text-brand-dark py-3 rounded-xl font-extrabold active:scale-95 transition-all text-xs uppercase tracking-wider shadow-[0_4px_15px_rgba(37,211,102,0.3)]"><i class="fas fa-check-double mr-1"></i> Selesai Transfer</button>
                     </div>
                 </div>`;
             }).join('');
