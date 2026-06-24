@@ -12376,7 +12376,7 @@ document.addEventListener('DOMContentLoaded', () => {
     renderKategoriPPOB();
     
     // Inject listener ke menu navigasi agar otomatis refresh jika pindah tab
-    const btnLayanan = document.querySelector(div[onclick*="executeAssistive('layanan')"]);
+    const btnLayanan = document.querySelector('div[onclick*="executeAssistive('layanan')"]);
     if (btnLayanan) {
         btnLayanan.addEventListener('click', () => {
             if (currentPpobData.length === 0) {
