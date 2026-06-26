@@ -10855,15 +10855,14 @@ async function konfirmasiTarikOtomatis(skuCode, productName, basePrice) {
     
     const wadahPembayaran = document.getElementById('qris-container');
     if (wadahPembayaran) {
+        // 🔥 INI BAGIAN YANG DIUBAH: Menggunakan Logo AU2Hub berdenyut persis seperti PPOB
         wadahPembayaran.innerHTML = `
         <div class="text-center flex flex-col items-center w-full mt-6">
             <div class="relative flex flex-col items-center mb-6">
-                <div class="absolute inset-0 bg-brand-success opacity-30 animate-pulse rounded-full" style="filter: blur(30px);"></div>
-                <div class="w-24 h-24 bg-brand-success/20 rounded-full flex items-center justify-center border border-brand-success/40 backdrop-blur-md relative z-10 shadow-[0_0_20px_rgba(37,211,102,0.4)]">
-                    <i class="fas fa-paper-plane text-4xl text-brand-success relative z-10 animate-bounce"></i>
-                </div>
+                <div class="absolute inset-0 bg-brand-info opacity-30 animate-pulse rounded-full" style="filter: blur(30px);"></div>
+                <img src="https://nos.wjv-1.neo.id/au2hub/Picsart_26-05-30_04-29-46-305.webp" class="w-28 h-28 relative z-10 splash-logo-anim drop-shadow-[0_0_20px_rgba(0,240,255,0.5)]" alt="Loading">
             </div>
-            <p class="text-[10px] text-gray-400 font-extrabold tracking-widest uppercase mt-4 animate-pulse">Menyiapkan Pengiriman Dana...</p>
+            <p class="text-[10px] text-gray-400 font-extrabold tracking-widest uppercase mt-4 animate-pulse">Menghubungkan ke Server...</p>
         </div>`;
     }
 
@@ -10995,6 +10994,7 @@ async function konfirmasiTarikOtomatis(skuCode, productName, basePrice) {
         setTimeout(() => { history.back(); }, 2500); 
     }
 }
+
 // === 1. Variabel Global untuk Mode Edit ===
 let editFileArray = []; // Untuk menampung file foto baru dari HP
 let existingImagesEdit = []; // Untuk menampung URL foto lama dari database
