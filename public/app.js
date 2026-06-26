@@ -12688,12 +12688,6 @@ async function prosesBeliPPOB(skuCode, targetNo, harga, namaProduk) {
     }
 }
 
-    } catch (err) {
-        showToast(err.message, "error");
-        setTimeout(() => history.back(), 1500); 
-    }
-}
-
 // ==========================================
 // MESIN UTAMA LAYANAN PPOB (DIGIFLAZZ + SUPABASE)
 // ==========================================
