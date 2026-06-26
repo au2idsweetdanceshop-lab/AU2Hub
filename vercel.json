@@ -12,7 +12,7 @@
     },
     {
       "path": "/api/digiflazz?action=sync",
-      "schedule": "0 17 * * *"
+      "schedule": "0 18 * * *"
     }
   ],
   "headers": [
