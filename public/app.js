@@ -9784,12 +9784,14 @@ function bukaDetailPasar(idProduk) {
 
 
 function tutupDetailPasar(dariTombolBackHP = false) {
-    document.getElementById('modal-detail-pasar').classList.replace('flex', 'hidden');
+    // Pindahkan pengecekan history.back ke atas
     if (!dariTombolBackHP && window.location.hash.startsWith('#detailpasar')) {
         history.back();
+        return;
     }
+    // Baru sembunyikan UI-nya
+    document.getElementById('modal-detail-pasar').classList.replace('flex', 'hidden');
 }
-
 function lihatProfilPenjual() {
     if (idPenjualAktif) {
         tutupDetailPasar();
@@ -12632,18 +12634,20 @@ function pilihKategoriPPOB(kategori) {
 
 // FUNGSI PENUTUP LAYAR KATALOG PPOB
 function tutupKatalogPPOB(dariTombolBack = false) {
+    // PERBAIKAN: Jika diklik dari tombol UI, cukup pancing tombol back sistem (history.back)
+    // Biarkan 'popstate' yang mengurus penutupan layarnya agar sinkron 100% dan tidak ada bug lompat
+    if (!dariTombolBack && window.location.hash === '#katalogppob') {
+        history.back();
+        return; // Hentikan eksekusi di sini!
+    }
+
     const mainView = document.getElementById('ppob-main-view');
     const catalogView = document.getElementById('ppob-catalog-view');
-    
+
     if (catalogView && mainView) {
         catalogView.classList.add('hidden');
         catalogView.classList.remove('flex');
         mainView.classList.remove('hidden');
-    }
-    
-    // Sinkronisasi sistem History (Tombol Back Android/iOS)
-    if (!dariTombolBack && window.location.hash === '#katalogppob') {
-        history.back();
     }
 }
 // 2. FUNGSI BARU: Tarik dan Render Daftar Provider/Brand
