@@ -8788,12 +8788,19 @@ async function prosesAutoDeliveryTertunda() {
 
                 const finalStatus = (autoDeliveryData.length > 0) ? 'selesai' : 'proses';
                 
-                if (finalStatus === 'selesai') {
-                    const waktuSelesaiBot = new Date().toISOString();
-                    await supabaseClient.from('orders_player')
-                        .update({ status: finalStatus, waktu_selesai: waktuSelesaiBot, dana_cair: false })
-                        .eq('id', order.id);
-                } else if (order.status !== 'proses') {
+                const finalStatus = (autoDeliveryData.length > 0) ? 'selesai' : 'proses';
+
+if (finalStatus === 'selesai') {
+    const waktuSelesaiBot = new Date().toISOString();
+    await supabaseClient.from('orders_player')
+        .update({ 
+            status: finalStatus, 
+            waktu_selesai: waktuSelesaiBot, 
+            dana_cair: false,
+            sn: teksFinalData // <--- SUNTIKAN BARU: Simpan data ke kolom 'sn'
+        })
+        .eq('id', order.id);
+} else if (order.status !== 'proses') {
                     await supabaseClient.from('orders_player').update({ status: 'proses' }).eq('id', order.id);
                 }
             }
