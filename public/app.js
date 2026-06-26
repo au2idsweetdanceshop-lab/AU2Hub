@@ -1729,6 +1729,13 @@ function switchTab(tabId, event = null, isPush = true) {
 window.addEventListener('popstate', () => {
     let isPopupClosed = false;
 
+    // TANGKAP LACI TARIK OTOMATIS
+    const modalTarikOto = document.getElementById('modal-tarik-otomatis');
+    if (modalTarikOto && !modalTarikOto.classList.contains('hidden')) {
+        tutupModalTarikOtomatis(true);
+        return;
+    }
+
     // TANGKAP LAYAR KATALOG PPOB (GOPAY STYLE)
     const katalogPPOB = document.getElementById('ppob-catalog-view');
     if (katalogPPOB && !katalogPPOB.classList.contains('hidden')) {
@@ -4191,17 +4198,20 @@ lastTypingTime = now; // Update waktu terakhir mengetik
 }
 }
 
-
-
 function openEditProfileModal() {
-if(!currentUser) return;
-document.getElementById('edit-nick').value = userProfile?.nickname || '';
-document.getElementById('edit-bio').value = userProfile?.bio || '';
-document.getElementById('edit-wa').value = userProfile?.whatsapp || ''; // BARIS BARU
-document.getElementById('edit-pass').value = '';
-document.getElementById('modal-edit-profile').classList.remove('hidden');
-document.getElementById('modal-edit-profile').classList.add('flex');
-history.pushState({ popup: 'edit_profile' }, null, '#edit');
+    if(!currentUser) return;
+    document.getElementById('edit-nick').value = userProfile?.nickname || '';
+    document.getElementById('edit-bio').value = userProfile?.bio || '';
+    document.getElementById('edit-wa').value = userProfile?.whatsapp || '';
+    document.getElementById('edit-pass').value = '';
+    
+    // [BARU] Muat data E-Wallet
+    document.getElementById('edit-wallet-provider').value = userProfile?.wallet_provider || '';
+    document.getElementById('edit-wallet-number').value = userProfile?.wallet_number || '';
+
+    document.getElementById('modal-edit-profile').classList.remove('hidden');
+    document.getElementById('modal-edit-profile').classList.add('flex');
+    history.pushState({ popup: 'edit_profile' }, null, '#edit');
 }
 
 function closeEditProfileModal() {
@@ -4213,58 +4223,58 @@ m.classList.add('hidden'); m.classList.remove('flex');
 }
 
 async function saveProfileInfo() {
-const btn = document.querySelector('button[onclick="saveProfileInfo()"]');
-const originalText = btn.innerHTML;
-btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Menyimpan...';
-btn.disabled = true;
+    const btn = document.querySelector('button[onclick="saveProfileInfo()"]');
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Menyimpan...';
+    btn.disabled = true;
 
-try {
-const newNick = document.getElementById('edit-nick').value.trim();
-const newBio = document.getElementById('edit-bio').value.trim();
-const newWa = document.getElementById('edit-wa').value.replace(/[^0-9]/g, ''); // BARIS BARU: Filter hanya angka
-const newPass = document.getElementById('edit-pass').value.trim();
+    try {
+        const newNick = document.getElementById('edit-nick').value.trim();
+        const newBio = document.getElementById('edit-bio').value.trim();
+        const newWa = document.getElementById('edit-wa').value.replace(/[^0-9]/g, ''); 
+        const newPass = document.getElementById('edit-pass').value.trim();
+        
+        // [BARU] Tangkap E-Wallet
+        const newWalletProv = document.getElementById('edit-wallet-provider').value;
+        const newWalletNum = document.getElementById('edit-wallet-number').value.replace(/[^0-9]/g, '');
 
-if(!newNick) {
-showToast("Nickname tidak boleh kosong!", "error");
-return;
-}
+        if(!newNick) {
+            showToast("Nickname tidak boleh kosong!", "error");
+            return;
+        }
 
-if (newPass) {
-const { error: errPass } = await supabaseClient.auth.updateUser({ password: newPass });
-if (errPass) {
-showToast("Gagal ganti password: " + errPass.message, "error");
-return;
-}
-}
+        if (newPass) {
+            const { error: errPass } = await supabaseClient.auth.updateUser({ password: newPass });
+            if (errPass) throw new Error("Gagal ganti password: " + errPass.message);
+        }
 
-const currentAvatar = userProfile?.avatar_url || "";
-const { error } = await supabaseClient.from('profiles').upsert({
-id: currentUser.id,
-nickname: newNick,
-bio: newBio,
-whatsapp: newWa, // BARIS BARU: Simpan WA ke database
-avatar_url: currentAvatar
-});
+        const currentAvatar = userProfile?.avatar_url || "";
+        const { error } = await supabaseClient.from('profiles').upsert({
+            id: currentUser.id,
+            nickname: newNick,
+            bio: newBio,
+            whatsapp: newWa,
+            wallet_provider: newWalletProv, // Simpan ke DB
+            wallet_number: newWalletNum,    // Simpan ke DB
+            avatar_url: currentAvatar
+        });
 
-if (error) {
-// Jika error karena nickname sudah dipakai (Kode error PostgreSQL: 23505)
-if (error.code === '23505') {
-throw new Error("Nickname tersebut sudah dipakai player lain. Silakan cari yang lain!");
-}
-throw error;
-}
+        if (error) {
+            if (error.code === '23505') throw new Error("Nickname tersebut sudah dipakai player lain.");
+            throw error;
+        }
 
-await fetchProfile();
-updateUIForLoggedIn();
-closeEditProfileModal();
-showToast("Profil berhasil diperbarui!", "success");
+        await fetchProfile();
+        updateUIForLoggedIn();
+        closeEditProfileModal();
+        showToast("Profil berhasil diperbarui!", "success");
 
-} catch (err) {
-showToast("Terjadi Kesalahan: " + err.message, "error");
-} finally {
-btn.innerHTML = originalText;
-btn.disabled = false;
-}
+    } catch (err) {
+        showToast("Terjadi Kesalahan: " + err.message, "error");
+    } finally {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    }
 }
 
 // ==========================================
@@ -10672,92 +10682,200 @@ function bukaNotaMutasi(id, amount, type, desc, dateStr) {
 }
 
 
-// === 1. TAMBAHKAN VARIABEL GEMBOK DI LUAR FUNGSI ===
+// === VARIABEL GEMBOK GLOBAL (Sudah ada di kodingan Anda, ini saya pertahankan) ===
 let isWithdrawing = false;
 
-// === 2. GANTI FUNGSI LAMA DENGAN YANG BARU INI ===
 async function prosesTarikSaldo() {
-    // BLOKIR INSTAN: Jika user klik berkali-kali, hentikan eksekusi kedua dst.
+    if (!currentUser || !userProfile) return showToast("Sistem belum siap, mohon tunggu sebentar.", "error");
+
     if (isWithdrawing) {
-        showToast("Mohon tunggu, ada penarikan yang sedang diproses...", "info");
-        return;
+        return showToast("Mohon tunggu, sistem sedang memproses antrean Anda...", "info");
     }
     
-    // KUNCI PINTU SEKARANG
+    // 1. Cek Ketersediaan E-Wallet di Profil
+    const dompetProv = userProfile.wallet_provider;
+    const dompetNum = userProfile.wallet_number;
+    
+    if (!dompetProv || !dompetNum) {
+        tutupModalSaldoDompet();
+        await customAlert("Mohon lengkapi **Provider E-Wallet** dan **Nomor Tujuan** di menu Edit Profil terlebih dahulu sebelum melakukan penarikan.");
+        setTimeout(() => openEditProfileModal(), 500);
+        return;
+    }
+
+    // 2. Cek Saldo 
+    const saldoMurni = userProfile.balance || 0;
+    if (saldoMurni < 10500) {
+        return showToast("Min. saldo untuk penarikan adalah Rp 10.500", "error");
+    }
+
     isWithdrawing = true;
+    showToast("Mencari daftar nominal yang tersedia...", "info");
 
     try {
-        // 1. Ambil data saldo saat ini
-        const { data: profile } = await supabaseClient.from('profiles').select('balance, nickname').eq('id', currentUser.id).single();
-        const saldoMurni = profile.balance || 0;
-        
-        // 2. Cek apakah saldo total akun mencapai batas minimal
-        if (saldoMurni < 10000) {
-            showToast("Min. penarikan Rp 10.000", "error");
-            return;
-        }
-        
-        // 3. Minta nominal yang ingin ditarik
-        const nominalInput = await customPrompt(`Masukkan nominal yang ingin ditarik (Saldo: Rp ${saldoMurni.toLocaleString('id-ID')}).
+        // 3. Tarik produk E-Money Digiflazz berdasarkan Provider milik Seller
+        const { data: products, error } = await supabaseClient
+            .from('digiflazz_products')
+            .select('*')
+            .eq('is_active', true)
+            .ilike('category', '%E-Money%')
+            .ilike('brand', `%${dompetProv}%`)
+            .order('price', { ascending: true }); // Diurutkan berdasar harga asli Digiflazz
 
-Catatan: Akan ada potongan biaya admin Rp 500 dari nominal yang ditarik.`, "10000");
-        if (!nominalInput) return; // Batal jika di-cancel / kosong
-        
-        // Bersihkan inputan dari huruf atau titik
-        const nominalTarik = parseInt(nominalInput.replace(/[^0-9]/g, ''));
-        
-        // 4. Validate nominal inputan user
-        if (isNaN(nominalTarik) || nominalTarik < 10000) {
-            showToast("Minimal penarikan adalah Rp 10.000", "error");
-            return;
-        }
-        if (nominalTarik > saldoMurni) {
-            showToast("Saldo Anda tidak mencukupi untuk nominal tersebut!", "error");
-            return;
+        if (error) throw error;
+        if (!products || products.length === 0) {
+            throw new Error(`Mohon maaf, layanan penarikan ${dompetProv} sedang gangguan dari pusat.`);
         }
 
-        // 5. Minta rekening tujuan
-        const rek = await customPrompt("Masukkan Nama Bank & Nomor Rekening:", "DANA - 08xxxxxxxxxx");
-        if (!rek) return;
+        // 4. Buka Modal Pilihan Penarikan
+        bukaModalTarikOtomatis(saldoMurni, dompetProv, dompetNum, products);
 
-        showToast("Sedang memproses penarikan...", "info");
+    } catch (e) {
+        showToast(e.message || "Gagal memuat produk penarikan.", "error");
+    } finally {
+        isWithdrawing = false;
+    }
+}
 
-        // 6. POTONG SALDO KE DATABASE
-        const { error: rpcError } = await supabaseClient.rpc('proses_tarik_saldo', {
-            p_user_id: currentUser.id,
-            p_jumlah: nominalTarik,
-            p_rekening: rek
+// ==========================================
+// MESIN MODAL PENARIKAN OTOMATIS
+// ==========================================
+function bukaModalTarikOtomatis(saldo, provider, number, products) {
+    history.pushState({ popup: 'tarik_otomatis' }, null, '#tarikdana');
+    const modal = document.getElementById('modal-tarik-otomatis');
+    
+    document.getElementById('tarik-provider-text').innerText = provider;
+    document.getElementById('tarik-number-text').innerText = number;
+    
+    const grid = document.getElementById('tarik-grid');
+    
+    // Filter produk yang mampu dibayar oleh seller (Harga Digiflazz + Admin 500 <= Saldo Seller)
+    const validProducts = products.filter(p => (p.price + 500) <= saldo);
+    
+    if (validProducts.length === 0) {
+        grid.innerHTML = `
+        <div class="text-center bg-red-500/10 border border-red-500/30 rounded-xl p-4">
+            <i class="fas fa-exclamation-triangle text-red-500 text-2xl mb-2"></i>
+            <p class="text-[11px] text-white">Saldo Anda (Rp ${saldo.toLocaleString('id-ID')}) tidak cukup untuk menarik pecahan terendah dari ${provider}.</p>
+        </div>`;
+    } else {
+        grid.innerHTML = validProducts.map(p => {
+            const totalPotong = p.price + 500;
+            const namaAman = escapeHTML(p.product_name).replace(/&#39;/g, "\\'");
+            return `
+            <div onclick="konfirmasiTarikOtomatis('${p.sku_code}', '${namaAman}', ${p.price})" class="bg-[#1C233A] hover:bg-[#232A45] hover:border-brand-info/40 cursor-pointer active:scale-95 border border-white/5 p-4 rounded-[1.2rem] flex justify-between items-center transition-all shadow-sm group">
+                <div class="flex-1 pr-3">
+                    <h4 class="text-[12px] sm:text-[13px] font-extrabold text-white mb-1 leading-snug group-hover:text-brand-info transition-colors">${p.product_name}</h4>
+                    <p class="text-[10px] text-gray-400">Potong Saldo: <span class="text-red-400 font-bold">Rp ${totalPotong.toLocaleString('id-ID')}</span> <span class="text-[9px]">(Trmsk Admin Rp 500)</span></p>
+                </div>
+                <div class="w-8 h-8 rounded-full bg-brand-info/10 border border-brand-info/20 text-brand-info flex items-center justify-center shrink-0 shadow-sm group-hover:bg-brand-info group-hover:text-brand-dark transition-all">
+                    <i class="fas fa-chevron-right text-xs"></i>
+                </div>
+            </div>`;
+        }).join('');
+    }
+
+    tutupModalSaldoDompet(); // Tutup laci sebelumnya
+    
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    modal.style.opacity = '0';
+    setTimeout(() => modal.style.opacity = '1', 10);
+}
+
+function tutupModalTarikOtomatis(dariTombolBack = false) {
+    const modal = document.getElementById('modal-tarik-otomatis');
+    modal.style.opacity = '0';
+    if (!dariTombolBack && window.location.hash === '#tarikdana') {
+        history.back();
+    }
+    setTimeout(() => {
+        modal.classList.remove('flex');
+        modal.classList.add('hidden');
+    }, 300);
+}
+
+// 5. Eksekusi Tembakan ke Vercel
+async function konfirmasiTarikOtomatis(skuCode, productName, basePrice) {
+    const totalPotong = basePrice + 500;
+    
+    const confirm = await customConfirm(`Anda akan menarik dana ke akun:\n${userProfile.wallet_provider} (${userProfile.wallet_number})\n\nPecahan: ${productName}\nTotal Potong Saldo: Rp ${totalPotong.toLocaleString('id-ID')}\n\nDana akan masuk dalam hitungan detik. Lanjutkan?`);
+    
+    if (!confirm) return;
+
+    tutupModalTarikOtomatis();
+    
+    // Arahkan layar ke halaman animasi memutar (Xoftware Pay UI)
+    history.pushState({ popup: 'pembayaran' }, null, '#pembayaran');
+    switchTab('pembayaran');
+    
+    const wadahPembayaran = document.getElementById('qris-container');
+    if (wadahPembayaran) {
+        wadahPembayaran.innerHTML = `
+        <div class="text-center flex flex-col items-center w-full mt-6">
+            <div class="relative flex flex-col items-center mb-6">
+                <div class="absolute inset-0 bg-brand-success opacity-30 animate-pulse rounded-full" style="filter: blur(30px);"></div>
+                <div class="w-24 h-24 bg-brand-success/20 rounded-full flex items-center justify-center border border-brand-success/40 backdrop-blur-md relative z-10 shadow-[0_0_20px_rgba(37,211,102,0.4)]">
+                    <i class="fas fa-paper-plane text-4xl text-brand-success relative z-10 animate-bounce"></i>
+                </div>
+            </div>
+            <p class="text-[10px] text-gray-400 font-extrabold tracking-widest uppercase mt-4 animate-pulse">Menyiapkan Pengiriman Dana...</p>
+        </div>`;
+    }
+
+    try {
+        // Tembak API Digiflazz dengan "action: withdraw"
+        const response = await fetch('/api/digiflazz', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'withdraw', // <--- SANGAT PENTING: KODE RAHASIA UNTUK SERVER VERCEL ANDA
+                user_id: currentUser.id,
+                sku_code: skuCode,
+                customer_no: userProfile.wallet_number,
+                product_name: productName,
+                total_potong: totalPotong // Server akan memotong ini dari Database
+            })
         });
 
-        if (rpcError) throw rpcError;
+        const result = await response.json();
 
-        // 8. Arahkan ke WhatsApp Admin (Penomoran langsung lompat ke 8 sesuai kodemu)
-        const danaBersih = nominalTarik - 500;
-const teks = encodeURIComponent(`Halo Admin, saya ${profile.nickname} ingin tarik saldo.
-Nominal Potong Saldo: Rp ${nominalTarik.toLocaleString('id-ID')}
-*Terima Bersih (Setelah Potong 500): Rp ${danaBersih.toLocaleString('id-ID')}*
-
-Ke Rekening: ${rek}`);
-        window.open(`https://wa.me/9647808097471?text=${teks}`, '_blank');
-        
-        // 9. Tutup laci dan refresh UI secara instan (Optimistic UI)
-        tutupModalSaldoDompet();
-        
-        const sisaSaldoBaru = saldoMurni - nominalTarik;
-        const elSaldoAktif = document.getElementById('toko-saldo-aktif');
-        if (elSaldoAktif) {
-            elSaldoAktif.innerText = 'Rp ' + sisaSaldoBaru.toLocaleString('id-ID');
+        if (!response.ok || !result.success) {
+            throw new Error(result.error || result.detail || "Penarikan dibatalkan atau gagal dikonfirmasi server.");
         }
+
+        // Horee! Berhasil!
+        showToast("Dana berhasil diterbangkan ke rekening Anda!", "success");
         
+        // Refresh Saldo Latar Belakang
         updateUiSaldoSeller();
-        showToast(`Penarikan Rp ${nominalTarik.toLocaleString('id-ID')} berhasil diproses!`, "success");
-        
-    } catch (e) { 
-        console.error("Error Tarik Saldo:", e);
-        showToast("Gagal memproses penarikan saldo.", "error"); 
-    } finally {
-        // BUKA KUNCI KEMBALI
-        isWithdrawing = false;
+        fetchSaldoDanMutasi();
+        updateSaldoGlobal();
+        fetchProfile();
+
+        const digiStatus = result.data ? result.data.status : 'Diproses';
+        let displayStatus = digiStatus === 'Pending' ? 'Diproses' : digiStatus;
+
+        if (wadahPembayaran) {
+            wadahPembayaran.innerHTML = `
+                <div class="flex flex-col items-center justify-center py-4 text-center modal-anim w-full relative z-10">
+                    <div class="relative w-28 h-28 mb-6 mt-4">
+                        <div class="absolute inset-0 bg-brand-success rounded-full animate-ping opacity-20"></div>
+                        <div class="w-full h-full bg-brand-success/20 rounded-full flex items-center justify-center border border-brand-success/50 backdrop-blur-md">
+                            <i class="fas fa-check text-5xl text-brand-success drop-shadow-[0_0_15px_rgba(37,211,102,0.8)]"></i>
+                        </div>
+                    </div>
+                    <h2 class="text-3xl font-black text-white mb-2 tracking-tight">Status: ${displayStatus}</h2>
+                    <p class="text-gray-400 text-[11px] mb-6 leading-relaxed px-4">Penarikan Dana sebesar <b class="text-white">${productName}</b> telah sukses dikirim ke E-Wallet Anda!</p>
+                    
+                    <button type="button" onclick="history.back(); setTimeout(()=> {switchTab('toko'); loadTokoSaya();}, 300);" class="w-full bg-white/5 text-white py-3.5 rounded-xl font-bold uppercase tracking-wider text-xs border border-white/10 hover:bg-white/10 active:scale-95 transition-all">Tutup Halaman</button>
+                </div>
+            `;
+        }
+
+    } catch (err) {
+        showToast(err.message, "error");
+        setTimeout(() => { history.back(); }, 2500); 
     }
 }
 
