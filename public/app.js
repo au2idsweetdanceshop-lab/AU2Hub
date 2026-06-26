@@ -1738,7 +1738,6 @@ window.addEventListener('popstate', () => {
     const sectionPembayaran = document.getElementById('pembayaran');
     if (sectionPembayaran && sectionPembayaran.classList.contains('active')) {
         // 1. Bersihkan interval penjemputan API & websocket jika ditekan back saat loading
-        // Ini mencegah HP ngelag karena API terus berjalan di latar belakang
         if (typeof intervalJemputBola !== 'undefined' && intervalJemputBola) {
             clearInterval(intervalJemputBola);
             intervalJemputBola = null;
@@ -1764,6 +1763,298 @@ window.addEventListener('popstate', () => {
 
     // TANGKAP LACI OPSI KREATOR
     const modalKreator = document.getElementById('modal-kreator-option');
+    if (modalKreator && !modalKreator.classList.contains('hidden')) {
+        tutupMenuKreator(true);
+        return;
+    }
+
+    // TANGKAP LACI MODAL NETFLIX
+    const modalNetflix = document.getElementById('modal-netflix');
+    if (modalNetflix && !modalNetflix.classList.contains('hidden')) {
+        modalNetflix.classList.add('hidden');
+        modalNetflix.classList.remove('flex');
+        return;
+    }
+
+    // 🚀 1. TANGKAP POP-UP ALERT, PROMPT, & CONFIRM (Anti Terpental)
+    const modalAlert = document.getElementById('modal-alert');
+    if (modalAlert && !modalAlert.classList.contains('hidden')) {
+        modalAlert.classList.add('hidden');
+        modalAlert.classList.remove('flex');
+        if (typeof modalAlert.alertResolve === 'function') {
+            modalAlert.alertResolve();
+            modalAlert.alertResolve = null;
+        }
+        return;
+    }
+
+    const modalPrompt = document.getElementById('modal-prompt');
+    if (modalPrompt && !modalPrompt.classList.contains('hidden')) {
+        modalPrompt.classList.add('hidden');
+        modalPrompt.classList.remove('flex');
+        if (typeof modalPrompt.promptResolve === 'function') {
+            let result = modalPrompt.hasOwnProperty('promptResult') ? modalPrompt.promptResult : null;
+            modalPrompt.promptResolve(result);
+            modalPrompt.promptResolve = null;
+            delete modalPrompt.promptResult;
+        }
+        return;
+    }
+
+    const modalConfirm = document.getElementById('modal-confirm');
+    if (modalConfirm && !modalConfirm.classList.contains('hidden')) {
+        modalConfirm.classList.add('hidden');
+        modalConfirm.classList.remove('flex');
+        if (typeof modalConfirm.confirmResolve === 'function') {
+            let result = modalConfirm.hasOwnProperty('confirmResult') ? modalConfirm.confirmResult : false;
+            modalConfirm.confirmResolve(result);
+            modalConfirm.confirmResolve = null;
+            delete modalConfirm.confirmResult;
+        }
+        return;
+    }
+
+    // ==========================================
+    // TANGKAP SEMUA MODAL PASAR PLAYER
+    // ==========================================
+    const modalGalleryPasar = document.getElementById('modal-gallery-pasar');
+    if (modalGalleryPasar && !modalGalleryPasar.classList.contains('hidden')) {
+        tutupGalleryPasar(true);
+        return;
+    }
+
+    const modalDetailPasar = document.getElementById('modal-detail-pasar');
+    if (modalDetailPasar && !modalDetailPasar.classList.contains('hidden')) {
+        tutupDetailPasar(true);
+        return;
+    }
+
+    const modalJual = document.getElementById('modal-jual-barang');
+    if (modalJual && !modalJual.classList.contains('hidden')) {
+        tutupModalJualBarang(true);
+        return;
+    }
+
+    const modalEditProduk = document.getElementById('modal-edit-produk');
+    if (modalEditProduk && !modalEditProduk.classList.contains('hidden')) {
+        tutupModalEditProduk(true);
+        return;
+    }
+    // ==========================================
+
+    // TANGKAP LACI DOMPET
+    const modalDompet = document.getElementById('modal-saldo-dompet');
+    if (modalDompet && !modalDompet.classList.contains('hidden')) {
+        tutupModalSaldoDompet(true);
+        return;
+    }
+    
+    // TANGKAP LACI BUAT GRUP BARU
+    const modalCreateGroup = document.getElementById('modal-create-group');
+    if (modalCreateGroup && !modalCreateGroup.classList.contains('hidden')) {
+        closeCreateGroupModal(true);
+        return;
+    }
+
+    // TANGKAP LACI TERUSKAN PESAN (FORWARD)
+    const modalForward = document.getElementById('modal-forward-msg');
+    if (modalForward && !modalForward.classList.contains('hidden')) {
+        closeForwardModal(true);
+        return;
+    }
+
+    // TANGKAP LACI VIP SELLER
+    const modalLangganan = document.getElementById('modal-langganan-seller');
+    if (modalLangganan && !modalLangganan.classList.contains('hidden')) {
+        tutupModalLangganan(true);
+        return;
+    }
+
+    // 1. TANGKAP INFO GRUP
+    const modalGroupInfo = document.getElementById('modal-group-info');
+    if (modalGroupInfo && !modalGroupInfo.classList.contains('hidden')) {
+        closeGroupInfoModal(true);
+        return;
+    }
+
+    const modalPreviewMedia = document.getElementById('modal-preview-media');
+    if (modalPreviewMedia && !modalPreviewMedia.classList.contains('hidden')) {
+        tutupPreviewMedia(true);
+        return;
+    }
+
+    // 2. TANGKAP MODAL INVOICE
+    const modalInvoice = document.getElementById('modal-detail-pesanan');
+    if (modalInvoice && !modalInvoice.classList.contains('hidden')) {
+        closeDetailPesanan(true);
+        return;
+    }
+
+    // 3. BARU TANGKAP MODAL RIWAYAT PESANAN
+    const modalRiwayat = document.getElementById('modal-riwayat-pesanan');
+    if (modalRiwayat && !modalRiwayat.classList.contains('hidden')) {
+        closeRiwayatPesanan(true); 
+        return;
+    }
+
+    // 🚀 TANGKAP LAYAR PRATINJAU FULL SCREEN DULU
+    const modalPratinjau = document.getElementById('modal-pratinjau');
+    if (modalPratinjau && !modalPratinjau.classList.contains('hidden')) {
+        tutupPratinjauVideo(true);
+        return;
+    }
+
+    // 🚀 TANGKAP MODAL UPLOAD VIDEO & PRIVASI
+    const modalPrivasi = document.getElementById('modal-privasi-video');
+    if (modalPrivasi && (!modalPrivasi.classList.contains('hidden') && !modalPrivasi.classList.contains('translate-y-full'))) {
+        tutupPilihanPrivasi();
+        history.pushState({ popup: 'upload' }, null, '#upload');
+        return;
+    }
+
+    const modalUpload = document.getElementById('modal-upload');
+    if (modalUpload && !modalUpload.classList.contains('hidden')) {
+        closeUploadModal();
+        return;
+    }
+
+    const lightbox = document.getElementById('lightbox-modal');
+    if(!lightbox.classList.contains('hidden')) {
+        closeLightbox();
+        return;
+    }
+
+    // Tangkap laci Dilihat/Disukai dulu!
+    const statsModal = document.getElementById('modal-story-stats');
+    if (statsModal && !statsModal.classList.contains('translate-y-full')) {
+        closeStoryStatsModal(true);
+        return;
+    }
+
+    // Baru tangkap layar pemutar Story utamanya
+    const storyModal = document.getElementById('story-viewer-modal');
+    if (storyModal && !storyModal.classList.contains('hidden')) {
+        closeStoryViewer(true);
+        return;
+    }
+
+    const modalMsgOption = document.getElementById('modal-msg-option');
+    if (!modalMsgOption.classList.contains('hidden')) {
+        modalMsgOption.classList.add('hidden'); modalMsgOption.classList.remove('flex');
+        return;
+    }
+
+    const commentDrawer = document.getElementById('comment-drawer');
+    if (commentDrawer.classList.contains('open')) {
+        commentDrawer.classList.remove('open');
+        cancelReply();
+
+        if (commentSubscription) {
+            supabaseClient.removeChannel(commentSubscription);
+            commentSubscription = null;
+        }
+        return;
+    }
+
+    const modalEvent = document.getElementById('modal-event');
+    if (!modalEvent.classList.contains('hidden')) {
+        modalEvent.classList.add('hidden'); modalEvent.classList.remove('flex');
+        document.body.style.overflow = 'auto'; isPopupClosed = true;
+    }
+
+    const modalEditProfile = document.getElementById('modal-edit-profile');
+    if (!modalEditProfile.classList.contains('hidden')) {
+        closeEditProfileModal();
+        isPopupClosed = true;
+    }
+
+    const modalUserList = document.getElementById('modal-user-list');
+    if (!modalUserList.classList.contains('hidden')) {
+        closeUserList();
+        isPopupClosed = true;
+    }
+
+    const widget = document.getElementById('floating-widget');
+
+    if (!widget.classList.contains('opacity-0')) {
+        const roomView = document.getElementById('chat-room-view');
+        if (roomView && roomView.classList.contains('flex')) {
+            closeChatRoom(true);
+            return; 
+        } else {
+            widget.classList.add('opacity-0', 'pointer-events-none', 'translate-y-8', 'scale-95');
+            return;
+        }
+    }
+
+    const authModal = document.getElementById('modal-auth');
+    if (authModal && !authModal.classList.contains('hidden')) {
+        authModal.classList.add('hidden');
+        authModal.classList.remove('flex');
+        isPopupClosed = true;
+    }
+
+    const leaderboardModal = document.getElementById('modal-leaderboard');
+    if (leaderboardModal && !leaderboardModal.classList.contains('hidden')) {
+        leaderboardModal.classList.add('hidden');
+        leaderboardModal.classList.remove('flex');
+
+        const chatBtn = document.querySelector('button[onclick="toggleWidget()"]');
+        if (chatBtn) chatBtn.classList.remove('hidden');
+
+        isPopupClosed = true;
+    }
+
+    const hashtagGrid = document.getElementById('modal-hashtag-grid');
+    if (hashtagGrid && !hashtagGrid.classList.contains('hidden') && !hashtagGrid.classList.contains('translate-x-full')) {
+        closeHashtagGrid(true);
+        return;
+    }
+
+    if (document.body.classList.contains('video-focused')) {
+        toggleFloatingMode();
+        return;
+    }
+
+    const floatingPlayer = document.getElementById('floating-video-player');
+    if (!floatingPlayer.classList.contains('hidden')) {
+        closeFloatingVideo();
+        return;
+    }
+
+    if (isPopupClosed) return;
+
+    const newHash = window.location.hash.substring(1) || 'home';
+    if (newHash === 'profile' && viewedUserId !== currentUser?.id) {
+        viewedUserId = currentUser?.id;
+        checkSession();
+    }
+    
+    // 🔥 PERBAIKAN: Jaring Pengaman Mutlak + Deteksi Link Toko Shopee
+    const cleanHash = newHash.split('?')[0];
+    const validTabs = ['home', 'sosial', 'pasar', 'toko', 'layanan', 'pesanan', 'profile', 'pembayaran', 'superadmin', 'tokopublik'];
+    
+    // [BARU] Jika user klik link Toko Publik dari chat atau luar aplikasi
+    if (newHash.startsWith('tokopublik?seller=') || newHash.startsWith('pasar?seller=')) {
+        const sellerName = decodeURIComponent(newHash.split('=')[1]);
+        
+        // Paksa ubah URL di address bar jadi tokopublik (backwards compatibility)
+        if (newHash.startsWith('pasar?seller=')) {
+            history.replaceState(null, null, '#tokopublik?seller=' + encodeURIComponent(sellerName));
+        }
+        
+        switchTab('tokopublik', null, false);
+        loadTokoPublikLuar(sellerName); // Panggil UI Shopee-nya!
+        return; // Hentikan script di sini
+    }
+
+    if (!validTabs.includes(cleanHash)) {
+        history.replaceState(null, null, '#' + tabSebelumnya);
+        switchTab(tabSebelumnya, null, false);
+    } else {
+        switchTab(cleanHash, null, false);
+    }
+});
 
 // FUNGSI KEMBALI DARI PROFIL YANG SUDAH DIPERBAIKI SANGAT AMAN
 function kembaliDariProfil() {
