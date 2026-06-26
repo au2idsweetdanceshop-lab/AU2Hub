@@ -8175,14 +8175,32 @@ function bukaDetailPesananDinamis(orderId, productName, price, status, tableSour
         wadahRincian.classList.add('hidden');
         wadahRincian.innerHTML = '<div class="flex justify-center py-2"><i class="fas fa-spinner fa-spin text-brand-info"></i></div>';
         
-        // 1. Tarik Data SN / Keterangan dari database berdasarkan tabel yang aktif
-        supabaseClient.from(tableSource).select('sn').eq('id', orderId).single()
+        // 🔥 FIX 1: Gunakan kolom yang benar berdasarkan jenis tabel!
+        const kolomPencarian = tableSource === 'riwayat_ppob' ? 'ref_id' : 'id';
+        
+        // 🔥 FIX 2: Tarik semua data (*) untuk mengambil SN dan Tanggal
+        supabaseClient.from(tableSource).select('*').eq(kolomPencarian, orderId).single()
         .then(({data: extraData}) => {
             const snText = extraData && extraData.sn ? extraData.sn : null;
             let snHTML = '';
 
-            // Jika ada SN dan statusnya selesai/proses, buat UI kotaknya
-            if (snText && (visualStatus === 'selesai' || visualStatus === 'proses')) {
+            // 🔥 FIX 3: Tambahkan Tanggal Transaksi Otomatis
+            const waktuTransaksi = extraData?.waktu_selesai || extraData?.created_at;
+            if (waktuTransaksi) {
+                const d = new Date(waktuTransaksi);
+                const stringTanggal = d.toLocaleString('id-ID', {day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit'}) + ' WIB';
+                
+                // Buat elemen tanggal dan suntikkan di bawah harga
+                let elTgl = document.getElementById('detail-tanggal-transaksi');
+                if (!elTgl) {
+                    document.getElementById('detail-harga-layanan').insertAdjacentHTML('afterend', '<div id="detail-tanggal-transaksi" class="text-[11px] text-gray-400 mt-2 font-mono flex items-center gap-1.5"></div>');
+                    elTgl = document.getElementById('detail-tanggal-transaksi');
+                }
+                elTgl.innerHTML = `<i class="far fa-clock text-brand-info"></i> ${stringTanggal}`;
+            }
+
+            // Jika ada SN dan statusnya selesai/proses/Sukses, buat UI kotaknya
+            if (snText && (visualStatus === 'selesai' || visualStatus === 'proses' || visualStatus === 'Sukses')) {
                 const amanSnText = encodeURIComponent(snText).replace(/'/g, "%27");
                 const themeColor = tableSource === 'riwayat_ppob' ? 'brand-info' : 'brand-success';
                 const labelSn = tableSource === 'riwayat_ppob' ? 'SN / REFERENSI' : 'DATA PESANAN / KETERANGAN';
@@ -8190,14 +8208,14 @@ function bukaDetailPesananDinamis(orderId, productName, price, status, tableSour
                 snHTML = `
                 <div class="mt-4 p-3 bg-${themeColor}/10 border border-${themeColor}/30 rounded-xl relative shadow-inner">
                     <span class="absolute -top-2.5 left-3 bg-${themeColor} text-brand-dark text-[9px] font-extrabold px-2 py-0.5 rounded uppercase tracking-wider">${labelSn}</span>
-                    <pre class="text-white text-xs whitespace-pre-wrap break-all font-mono leading-relaxed mt-1 max-h-40 overflow-y-auto hide-scroll">${escapeHTML(snText)}</pre>
-                    <button type="button" onclick="navigator.clipboard.writeText(decodeURIComponent('${amanSnText}')); this.innerHTML='<i class=\\'fas fa-check\\'></i> Tersalin!'; setTimeout(()=>this.innerHTML='<i class=\\'fas fa-copy mr-1\\'></i> Salin Data', 2000);" class="mt-3 w-full bg-${themeColor}/20 text-${themeColor} border border-${themeColor}/30 py-2.5 rounded-lg text-[11px] font-bold active:scale-95 transition-all shadow-sm">
+                    <pre class="text-white text-[11px] whitespace-pre-wrap break-all font-mono leading-relaxed mt-1 max-h-40 overflow-y-auto hide-scroll">${escapeHTML(snText)}</pre>
+                    <button type="button" onclick="navigator.clipboard.writeText(decodeURIComponent('${amanSnText}')); this.innerHTML='<i class=\\'fas fa-check\\'></i> Tersalin!'; setTimeout(()=>this.innerHTML='<i class=\\'fas fa-copy mr-1\\'></i> Salin Data', 2000);" class="mt-3 w-full bg-${themeColor}/20 text-${themeColor} hover:bg-${themeColor} hover:text-brand-dark border border-${themeColor}/30 py-2.5 rounded-lg text-[11px] font-bold active:scale-95 transition-all shadow-sm">
                         <i class="fas fa-copy mr-1"></i> Salin Data
                     </button>
                 </div>`;
             }
 
-            // 2. JIKA PPOB, MUNCULKAN NOTA SIMPEL
+            // JIKA PPOB, MUNCULKAN NOTA SIMPEL (DENGAN SN)
             if (tableSource === 'riwayat_ppob') {
                 wadahRincian.classList.remove('hidden');
                 wadahRincian.innerHTML = `
@@ -8209,7 +8227,7 @@ function bukaDetailPesananDinamis(orderId, productName, price, status, tableSour
                     ${snHTML}
                 `;
             }
-            // 3. JIKA PASAR PLAYER, MUNCULKAN NOTA KOMPLEKS SEPERTI BIASA
+            // JIKA PASAR PLAYER, MUNCULKAN NOTA KOMPLEKS
             else if (tableSource === 'orders_player' || tableSource === 'orders') {
                 wadahRincian.classList.remove('hidden');
                 
@@ -8270,9 +8288,7 @@ function bukaDetailPesananDinamis(orderId, productName, price, status, tableSour
                         </div>`;
                     }
                     
-                    // SISIPKAN UI KOTAK SN / DATA PESANAN DI BAWAH RINCIAN HARGA
                     htmlRincian += snHTML;
-
                     wadahRincian.innerHTML = htmlRincian;
                 })
                 .catch(() => {
@@ -10828,7 +10844,6 @@ async function konfirmasiTarikOtomatis(skuCode, productName, basePrice) {
 
     tutupModalTarikOtomatis();
     
-    // Arahkan layar ke halaman animasi memutar (Xoftware Pay UI)
     history.pushState({ popup: 'pembayaran' }, null, '#pembayaran');
     switchTab('pembayaran');
     
@@ -10847,17 +10862,16 @@ async function konfirmasiTarikOtomatis(skuCode, productName, basePrice) {
     }
 
     try {
-        // Tembak API Digiflazz dengan "action: withdraw"
         const response = await fetch('/api/digiflazz', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                action: 'withdraw', // <--- SANGAT PENTING: KODE RAHASIA UNTUK SERVER VERCEL ANDA
+                action: 'withdraw', 
                 user_id: currentUser.id,
                 sku_code: skuCode,
                 customer_no: userProfile.wallet_number,
                 product_name: productName,
-                total_potong: totalPotong // Server akan memotong ini dari Database
+                total_potong: totalPotong 
             })
         });
 
@@ -10867,33 +10881,107 @@ async function konfirmasiTarikOtomatis(skuCode, productName, basePrice) {
             throw new Error(result.error || result.detail || "Penarikan dibatalkan atau gagal dikonfirmasi server.");
         }
 
-        // Horee! Berhasil!
         showToast("Dana berhasil diterbangkan ke rekening Anda!", "success");
         
-        // Refresh Saldo Latar Belakang
         updateUiSaldoSeller();
         fetchSaldoDanMutasi();
         updateSaldoGlobal();
         fetchProfile();
 
-        const digiStatus = result.data ? result.data.status : 'Diproses';
-        let displayStatus = digiStatus === 'Pending' ? 'Diproses' : digiStatus;
-
+        // RENDER INVOICE & REALTIME LISTENER + JEMPUT BOLA
         if (wadahPembayaran) {
+            const digiStatus = result.data ? result.data.status : 'Diproses';
+            const refId = result.data ? result.data.ref_id : 'Sistem';
+            const sn = result.data && result.data.sn ? result.data.sn : 'Sedang dicek oleh server...';
+            
+            let displayStatus = digiStatus;
+            if (digiStatus === 'Pending') displayStatus = 'Diproses';
+
+            const isSukses = (digiStatus === 'Sukses' || digiStatus === 'Pending');
+            const warnaTema = isSukses ? 'brand-success' : 'red-500';
+            const iconTema = isSukses ? 'fa-check' : 'fa-times';
+
             wadahPembayaran.innerHTML = `
                 <div class="flex flex-col items-center justify-center py-4 text-center modal-anim w-full relative z-10">
                     <div class="relative w-28 h-28 mb-6 mt-4">
-                        <div class="absolute inset-0 bg-brand-success rounded-full animate-ping opacity-20"></div>
-                        <div class="w-full h-full bg-brand-success/20 rounded-full flex items-center justify-center border border-brand-success/50 backdrop-blur-md">
-                            <i class="fas fa-check text-5xl text-brand-success drop-shadow-[0_0_15px_rgba(37,211,102,0.8)]"></i>
+                        <div id="wd-glow-icon" class="absolute inset-0 bg-${warnaTema} rounded-full animate-ping opacity-20"></div>
+                        <div id="wd-bg-icon" class="w-full h-full bg-${warnaTema}/20 rounded-full flex items-center justify-center border border-${warnaTema}/50 backdrop-blur-md">
+                            <i id="wd-ikon-tengah" class="fas ${iconTema} text-5xl text-${warnaTema}" style="filter: drop-shadow(0 0 15px rgba(37,211,102,0.8));"></i>
                         </div>
                     </div>
-                    <h2 class="text-3xl font-black text-white mb-2 tracking-tight">Status: ${displayStatus}</h2>
-                    <p class="text-gray-400 text-[11px] mb-6 leading-relaxed px-4">Penarikan Dana sebesar <b class="text-white">${productName}</b> telah sukses dikirim ke E-Wallet Anda!</p>
+                    <h2 class="text-3xl font-black text-white mb-2 tracking-tight">Status: <span id="wd-status-teks">${displayStatus}</span></h2>
+                    <p class="text-gray-400 text-[11px] mb-6 leading-relaxed px-4">Penarikan Dana sebesar <b class="text-white">${productName}</b> diproses oleh sistem.</p>
+                    
+                    <div class="w-full bg-black/50 border border-white/20 rounded-xl p-4 text-left mb-6 relative shadow-inner">
+                        <span id="wd-badge-struk" class="absolute -top-2.5 left-4 bg-${warnaTema} text-brand-dark text-[9px] font-extrabold px-2 py-0.5 rounded uppercase tracking-wider">STRUK PENARIKAN</span>
+                        
+                        <div class="flex justify-between items-center text-[10px] text-gray-400 mb-2 mt-2 border-b border-white/5 pb-2">
+                            <span>Tujuan Transer</span>
+                            <span class="font-mono text-white font-bold">${userProfile.wallet_number}</span>
+                        </div>
+                        <div class="flex justify-between items-center text-[10px] text-gray-400 mb-2 border-b border-white/5 pb-2">
+                            <span>Ref ID</span>
+                            <span class="font-mono text-white font-bold">${refId}</span>
+                        </div>
+                        <div class="flex justify-between items-start text-[10px] text-gray-400 mt-2">
+                            <span>SN / Bukti Transfer</span>
+                            <span id="wd-sn-teks" class="font-mono text-brand-info font-bold text-right ml-4 leading-relaxed">${sn}</span>
+                        </div>
+                    </div>
                     
                     <button type="button" onclick="history.back(); setTimeout(()=> {switchTab('toko'); loadTokoSaya();}, 300);" class="w-full bg-white/5 text-white py-3.5 rounded-xl font-bold uppercase tracking-wider text-xs border border-white/10 hover:bg-white/10 active:scale-95 transition-all">Tutup Halaman</button>
                 </div>
             `;
+
+            // 🔥 FUNGSI PEMBARUAN LAYAR OTOMATIS 🔥
+            if (refId !== 'Sistem') {
+                const updateUIFinalStatusWD = (newData) => {
+                    const isNowSukses = newData.status === 'Sukses';
+                    const elStatus = document.getElementById('wd-status-teks');
+                    if (elStatus) elStatus.innerText = newData.status;
+                    
+                    const elSN = document.getElementById('wd-sn-teks');
+                    if (elSN) elSN.innerText = newData.sn || 'Tanpa SN';
+
+                    if (!isNowSukses) {
+                        const glow = document.getElementById('wd-glow-icon');
+                        if (glow) glow.className = 'absolute inset-0 bg-red-500 rounded-full animate-ping opacity-20';
+                        const bg = document.getElementById('wd-bg-icon');
+                        if (bg) bg.className = 'w-full h-full bg-red-500/20 rounded-full flex items-center justify-center border border-red-500/50 backdrop-blur-md';
+                        const icon = document.getElementById('wd-ikon-tengah');
+                        if (icon) {
+                            icon.className = 'fas fa-times text-5xl text-red-500';
+                            icon.style.filter = 'drop-shadow(0 0 15px rgba(239,68,68,0.8))';
+                        }
+                        const badge = document.getElementById('wd-badge-struk');
+                        if (badge) badge.className = 'absolute -top-2.5 left-4 bg-red-500 text-white text-[9px] font-extrabold px-2 py-0.5 rounded uppercase tracking-wider';
+                    }
+                };
+
+                // A. PANTU VIA WEBSOCKET SUPABASE
+                const channelWD = supabaseClient.channel(`tunggu-wd-${refId}`)
+                    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'riwayat_ppob', filter: `ref_id=eq.${refId}` }, (payload) => {
+                        if (payload.new.status === 'Sukses' || payload.new.status === 'Gagal') {
+                            updateUIFinalStatusWD(payload.new);
+                            supabaseClient.removeChannel(channelWD);
+                            if (window.wdPolling) clearInterval(window.wdPolling);
+                        }
+                    }).subscribe();
+
+                // B. PANTU VIA INTERVAL 2 DETIK (JEMPUT BOLA ANTI-NYANGKUT)
+                window.wdPolling = setInterval(async () => {
+                    try {
+                        const { data } = await supabaseClient.from('riwayat_ppob').select('status, sn').eq('ref_id', refId).single();
+                        if (data && (data.status === 'Sukses' || data.status === 'Gagal')) {
+                            updateUIFinalStatusWD(data);
+                            clearInterval(window.wdPolling);
+                            supabaseClient.removeChannel(channelWD);
+                        }
+                    } catch (e) {}
+                }, 2000);
+
+                setTimeout(() => { if (window.wdPolling) clearInterval(window.wdPolling); }, 30000);
+            }
         }
 
     } catch (err) {
@@ -10901,7 +10989,6 @@ async function konfirmasiTarikOtomatis(skuCode, productName, basePrice) {
         setTimeout(() => { history.back(); }, 2500); 
     }
 }
-
 // === 1. Variabel Global untuk Mode Edit ===
 let editFileArray = []; // Untuk menampung file foto baru dari HP
 let existingImagesEdit = []; // Untuk menampung URL foto lama dari database
@@ -12555,14 +12642,12 @@ async function prosesBeliPPOB(skuCode, targetNo, harga, namaProduk) {
     }
 
     // 2. Konfirmasi Pembelian
-     const konfirmasi = await customConfirm(`Beli ${namaProduk} untuk nomor:\n${targetNo}\n\nTotal: Rp ${harga.toLocaleString('id-ID')} (Potong Saldo)?`);
-     if (!konfirmasi) return;
+    const konfirmasi = await customConfirm(`Beli ${namaProduk} untuk nomor:\n${targetNo}\n\nTotal: Rp ${harga.toLocaleString('id-ID')} (Potong Saldo)?`);
+    if (!konfirmasi) return;
 
-     // SUNTIKAN BARU: Daftarkan ke riwayat HP agar tombol Back terdeteksi
-     history.pushState({ popup: 'pembayaran' }, null, '#pembayaran');
-
-     // 🔥 PERBAIKAN: HILANGKAN KATA "DIGIFLAZZ" DARI LOADING
-     switchTab('pembayaran');
+    history.pushState({ popup: 'pembayaran' }, null, '#pembayaran');
+    switchTab('pembayaran');
+    
     const wadahPembayaran = document.getElementById('qris-container');
     if (wadahPembayaran) {
         wadahPembayaran.innerHTML = `
@@ -12580,12 +12665,7 @@ async function prosesBeliPPOB(skuCode, targetNo, harga, namaProduk) {
         const response = await fetch('/api/digiflazz', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                action: 'buy',
-                user_id: currentUser.id,
-                sku_code: skuCode,
-                customer_no: targetNo
-            })
+            body: JSON.stringify({ action: 'buy', user_id: currentUser.id, sku_code: skuCode, customer_no: targetNo })
         });
 
         const result = await response.json();
@@ -12602,7 +12682,7 @@ async function prosesBeliPPOB(skuCode, targetNo, harga, namaProduk) {
         if (typeof fetchSaldoDanMutasi === 'function') fetchSaldoDanMutasi();
         if (typeof updateSaldoGlobal === 'function') updateSaldoGlobal();
         
-        // 6. RENDER INVOICE & REALTIME LISTENER
+        // 6. RENDER INVOICE & REALTIME LISTENER + JEMPUT BOLA
         if (wadahPembayaran) {
             const digiStatus = result.data ? result.data.status : 'Diproses';
             const refId = result.data ? result.data.ref_id : 'Sistem';
@@ -12615,7 +12695,6 @@ async function prosesBeliPPOB(skuCode, targetNo, harga, namaProduk) {
             const warnaTema = isSukses ? 'brand-success' : 'red-500';
             const iconTema = isSukses ? 'fa-check' : 'fa-times';
 
-            // Elemen HTML dengan ID khusus agar mudah diubah secara real-time
             wadahPembayaran.innerHTML = `
                 <div class="flex flex-col items-center justify-center py-4 text-center modal-anim w-full relative z-10">
                     <div class="relative w-28 h-28 mb-6 mt-4">
@@ -12648,37 +12727,56 @@ async function prosesBeliPPOB(skuCode, targetNo, harga, namaProduk) {
                 </div>
             `;
 
-            // 🔥 NYALAKAN RADAR SUPABASE UNTUK MEMANTAU WEBHOOK SECARA REALTIME 🔥
+            // 🔥 FUNGSI PEMBARUAN LAYAR OTOMATIS 🔥
             if (refId !== 'Sistem') {
+                const updateUIFinalStatus = (newData) => {
+                    const isNowSukses = newData.status === 'Sukses';
+                    const elStatus = document.getElementById('status-teks-ppob');
+                    if (elStatus) elStatus.innerText = newData.status;
+                    
+                    const elSN = document.getElementById('sn-teks-ppob');
+                    if (elSN) elSN.innerText = newData.sn || 'Tanpa SN';
+
+                    // Ubah UI menjadi merah jika tiba-tiba Gagal
+                    if (!isNowSukses) {
+                        const glow = document.getElementById('glow-icon-ppob');
+                        if (glow) glow.className = 'absolute inset-0 bg-red-500 rounded-full animate-ping opacity-20';
+                        const bg = document.getElementById('bg-icon-ppob');
+                        if (bg) bg.className = 'w-full h-full bg-red-500/20 rounded-full flex items-center justify-center border border-red-500/50 backdrop-blur-md';
+                        const icon = document.getElementById('ikon-tengah-ppob');
+                        if (icon) {
+                            icon.className = 'fas fa-times text-5xl text-red-500';
+                            icon.style.filter = 'drop-shadow(0 0 15px rgba(239,68,68,0.8))';
+                        }
+                        const badge = document.getElementById('badge-struk-ppob');
+                        if (badge) badge.className = 'absolute -top-2.5 left-4 bg-red-500 text-white text-[9px] font-extrabold px-2 py-0.5 rounded uppercase tracking-wider';
+                    }
+                };
+
+                // A. PANTU VIA WEBSOCKET SUPABASE
                 const channelPPOB = supabaseClient.channel(`tunggu-ppob-${refId}`)
                     .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'riwayat_ppob', filter: `ref_id=eq.${refId}` }, (payload) => {
-                        const newData = payload.new;
-                        
-                        // Jika Webhook Digiflazz sudah membalas Sukses / Gagal
-                        if (newData.status === 'Sukses' || newData.status === 'Gagal') {
-                            const isNowSukses = newData.status === 'Sukses';
-                            
-                            // 1. Ganti Teks Status
-                            const elStatus = document.getElementById('status-teks-ppob');
-                            if (elStatus) elStatus.innerText = newData.status;
-                            
-                            // 2. Masukkan SN ke Layar
-                            const elSN = document.getElementById('sn-teks-ppob');
-                            if (elSN) elSN.innerText = newData.sn || 'Tanpa SN';
-
-                            // 3. Ubah Warna Tema jika tiba-tiba Gagal
-                            if (!isNowSukses) {
-                                document.getElementById('glow-icon-ppob').className = 'absolute inset-0 bg-red-500 rounded-full animate-ping opacity-20';
-                                document.getElementById('bg-icon-ppob').className = 'w-full h-full bg-red-500/20 rounded-full flex items-center justify-center border border-red-500/50 backdrop-blur-md';
-                                document.getElementById('ikon-tengah-ppob').className = 'fas fa-times text-5xl text-red-500';
-                                document.getElementById('ikon-tengah-ppob').style.filter = 'drop-shadow(0 0 15px rgba(239,68,68,0.8))';
-                                document.getElementById('badge-struk-ppob').className = 'absolute -top-2.5 left-4 bg-red-500 text-white text-[9px] font-extrabold px-2 py-0.5 rounded uppercase tracking-wider';
-                            }
-                            
-                            // Matikan radar karena transaksi sudah final
+                        if (payload.new.status === 'Sukses' || payload.new.status === 'Gagal') {
+                            updateUIFinalStatus(payload.new);
                             supabaseClient.removeChannel(channelPPOB);
+                            if (window.ppobPolling) clearInterval(window.ppobPolling);
                         }
                     }).subscribe();
+
+                // B. PANTU VIA INTERVAL 2 DETIK (JEMPUT BOLA ANTI-NYANGKUT)
+                window.ppobPolling = setInterval(async () => {
+                    try {
+                        const { data } = await supabaseClient.from('riwayat_ppob').select('status, sn').eq('ref_id', refId).single();
+                        if (data && (data.status === 'Sukses' || data.status === 'Gagal')) {
+                            updateUIFinalStatus(data);
+                            clearInterval(window.ppobPolling);
+                            supabaseClient.removeChannel(channelPPOB);
+                        }
+                    } catch (e) {}
+                }, 2000);
+
+                // Matikan paksa radar jika lebih dari 30 detik untuk menghemat memori HP
+                setTimeout(() => { if (window.ppobPolling) clearInterval(window.ppobPolling); }, 30000);
             }
         }
 
@@ -12687,7 +12785,6 @@ async function prosesBeliPPOB(skuCode, targetNo, harga, namaProduk) {
         setTimeout(() => history.back(), 1500); 
     }
 }
-
 // ==========================================
 // MESIN UTAMA LAYANAN PPOB (DIGIFLAZZ + SUPABASE)
 // ==========================================
