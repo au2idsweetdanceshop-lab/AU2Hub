@@ -1734,6 +1734,13 @@ function switchTab(tabId, event = null, isPush = true) {
 window.addEventListener('popstate', () => {
     let isPopupClosed = false;
 
+    // TANGKAP LAYAR KATALOG PPOB (GOPAY STYLE)
+    const katalogPPOB = document.getElementById('ppob-catalog-view');
+    if (katalogPPOB && !katalogPPOB.classList.contains('hidden')) {
+        tutupKatalogPPOB(true);
+        return;
+    }
+
     // 🔥 [BARU] TANGKAP LAYAR PROSES PEMBAYARAN / SUKSES
     const sectionPembayaran = document.getElementById('pembayaran');
     if (sectionPembayaran && sectionPembayaran.classList.contains('active')) {
@@ -12554,43 +12561,96 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
+// HELPER: Mengambil icon untuk header Katalog
+function getKategoriIcon(id) {
+    const kat = kategoriPPOBList.find(k => k.id === id);
+    return kat ? kat.icon : 'fa-box';
+}
+
 function renderKategoriPPOB() {
     const container = document.getElementById('ppob-category-container');
     if (!container) return;
 
+    // Desain Grid ala GoPay (4 Kolom, Icon di atas, Teks di bawah)
     container.innerHTML = kategoriPPOBList.map(kat => {
-        const isActive = kat.id === kategoriPPOBAktif;
-        const activeClass = isActive 
-            ? "bg-gradient-to-r from-yellow-400 to-yellow-600 text-brand-dark border-transparent shadow-[0_0_10px_rgba(250,204,21,0.5)]" 
-            : "bg-black/40 text-gray-400 border-white/10 hover:bg-white/10 hover:text-white";
-        
         return `
-        <button onclick="pilihKategoriPPOB('${kat.id}')" class="flex items-center gap-1.5 px-4 py-2.5 rounded-xl border font-bold text-[11px] whitespace-nowrap transition-all active:scale-95 shrink-0 ${activeClass}">
-            <i class="fas ${kat.icon}"></i> ${kat.id}
-        </button>`;
+        <div onclick="pilihKategoriPPOB('${kat.id}')" class="flex flex-col items-center gap-2 cursor-pointer text-center group active:scale-95 transition-all">
+            <div class="w-[3.25rem] h-[3.25rem] sm:w-14 sm:h-14 rounded-[1.2rem] flex items-center justify-center transition-all bg-white/5 border border-white/10 shadow-md group-hover:bg-brand-info/20 group-hover:border-brand-info/50 text-brand-info/90 group-hover:text-brand-info">
+                <i class="fas ${kat.icon} text-xl drop-shadow-sm group-hover:scale-110 transition-transform"></i>
+            </div>
+            <span class="text-[9px] sm:text-[10px] font-extrabold tracking-wide break-words w-full uppercase leading-snug px-0.5 text-gray-400 group-hover:text-white transition-colors">
+                ${kat.id}
+            </span>
+        </div>`;
     }).join('');
 }
 
-// 1. UBAH FUNGSI INI: Eksekusi Saat Kategori Diklik
 function pilihKategoriPPOB(kategori) {
     kategoriPPOBAktif = kategori;
-    brandPPOBAktif = 'Semua'; // Reset pilihan provider setiap ganti kategori
-    renderKategoriPPOB(); // Perbarui warna tombol kategori utama
+    brandPPOBAktif = 'Semua'; 
     
-    // Reset Data
+    // 1. TAMPILAN: Matikan Menu Utama, Nyalakan Layar Katalog
+    const mainView = document.getElementById('ppob-main-view');
+    const catalogView = document.getElementById('ppob-catalog-view');
+    
+    if (mainView && catalogView) {
+        mainView.classList.add('hidden');
+        catalogView.classList.remove('hidden');
+        catalogView.classList.add('flex');
+    }
+    
+    // 2. UPDATE HEADER: Ganti judul dan ikon sesuai kategori yang diklik
+    const titleEl = document.getElementById('katalog-title');
+    const iconEl = document.getElementById('katalog-icon');
+    
+    if (titleEl) titleEl.innerText = kategori;
+    if (iconEl) iconEl.className = `fas ${getKategoriIcon(kategori)} text-lg`;
+    
+    // 3. DAFTARKAN HISTORY HP (Agar tombol back HP bisa menutup katalog ini)
+    history.pushState({ popup: 'katalog_ppob' }, null, '#katalogppob');
+
+    // 4. RESET DATA: Kosongkan nomor dan memori produk
+    const inputTarget = document.getElementById('ppob-target-number');
+    if (inputTarget) inputTarget.value = '';
+    
     ppobOffset = 0;
     currentPpobData = [];
-    document.getElementById('ppob-load-more-container').classList.add('hidden');
-    document.getElementById('ppob-product-grid').innerHTML = `
-        <div class="text-center py-10 text-yellow-400">
-            <i class="fas fa-circle-notch fa-spin text-3xl mb-3"></i><br>
-            <span class="text-xs font-bold uppercase tracking-widest">Mencari Data...</span>
-        </div>`;
     
-    // [BARU] Panggil fungsi muat provider dulu, setelah selesai baru muat produk
+    const loadMoreBtn = document.getElementById('ppob-load-more-container');
+    if (loadMoreBtn) loadMoreBtn.classList.add('hidden');
+    
+    const productGrid = document.getElementById('ppob-product-grid');
+    if (productGrid) {
+        productGrid.innerHTML = `
+            <div class="text-center py-10 text-yellow-400">
+                <i class="fas fa-circle-notch fa-spin text-3xl mb-3"></i><br>
+                <span class="text-[10px] font-bold uppercase tracking-widest text-gray-400">Menyiapkan Data...</span>
+            </div>`;
+    }
+    
+    // 5. JALANKAN MESIN PENARIK DATA API SUPABASE
     loadBrandPPOB().then(() => loadProdukPPOB(false));
+    
+    // 6. Scroll layar ke paling atas
+    window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
+// FUNGSI PENUTUP LAYAR KATALOG PPOB
+function tutupKatalogPPOB(dariTombolBack = false) {
+    const mainView = document.getElementById('ppob-main-view');
+    const catalogView = document.getElementById('ppob-catalog-view');
+    
+    if (catalogView && mainView) {
+        catalogView.classList.add('hidden');
+        catalogView.classList.remove('flex');
+        mainView.classList.remove('hidden');
+    }
+    
+    // Sinkronisasi sistem History (Tombol Back Android/iOS)
+    if (!dariTombolBack && window.location.hash === '#katalogppob') {
+        history.back();
+    }
+}
 // 2. FUNGSI BARU: Tarik dan Render Daftar Provider/Brand
 async function loadBrandPPOB() {
     // Suntikkan wadah (container) provider secara otomatis lewat JS jika belum ada
