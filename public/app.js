@@ -1723,11 +1723,6 @@ function switchTab(tabId, event = null, isPush = true) {
     if (tabId === 'layanan') {
         // Panggil saldo terbaru dari database untuk ditampilkan di layar!
         if (typeof updateSaldoGlobal === 'function') updateSaldoGlobal();
-        
-        // Cek apakah data di layar masih kosong, jika ya, sedot datanya!
-        if (typeof currentPpobData !== 'undefined' && currentPpobData.length === 0) {
-            pilihKategoriPPOB(kategoriPPOBAktif);
-        }
     }
 }
 
