@@ -12586,7 +12586,6 @@ function pilihKategoriPPOB(kategori) {
     kategoriPPOBAktif = kategori;
     brandPPOBAktif = 'Semua'; 
     
-    // 1. TAMPILAN: Matikan Menu Utama, Nyalakan Layar Katalog
     const mainView = document.getElementById('ppob-main-view');
     const catalogView = document.getElementById('ppob-catalog-view');
     
@@ -12596,17 +12595,14 @@ function pilihKategoriPPOB(kategori) {
         catalogView.classList.add('flex');
     }
     
-    // 2. UPDATE HEADER: Ganti judul dan ikon sesuai kategori yang diklik
     const titleEl = document.getElementById('katalog-title');
     const iconEl = document.getElementById('katalog-icon');
     
     if (titleEl) titleEl.innerText = kategori;
     if (iconEl) iconEl.className = `fas ${getKategoriIcon(kategori)} text-lg`;
     
-    // 3. DAFTARKAN HISTORY HP (Agar tombol back HP bisa menutup katalog ini)
     history.pushState({ popup: 'katalog_ppob' }, null, '#katalogppob');
 
-    // 4. RESET DATA: Kosongkan nomor dan memori produk
     const inputTarget = document.getElementById('ppob-target-number');
     if (inputTarget) inputTarget.value = '';
     
@@ -12618,32 +12614,30 @@ function pilihKategoriPPOB(kategori) {
     
     const productGrid = document.getElementById('ppob-product-grid');
     if (productGrid) {
+        // Kembalikan ke flex column selama proses loading agar posisinya di tengah
+        productGrid.className = 'flex flex-col gap-2.5 relative z-10';
         productGrid.innerHTML = `
-            <div class="text-center py-10 text-yellow-400">
+            <div class="text-center py-12 text-yellow-400">
                 <i class="fas fa-circle-notch fa-spin text-3xl mb-3"></i><br>
                 <span class="text-[10px] font-bold uppercase tracking-widest text-gray-400">Menyiapkan Data...</span>
             </div>`;
     }
     
-    // 5. JALANKAN MESIN PENARIK DATA API SUPABASE
     loadBrandPPOB().then(() => loadProdukPPOB(false));
-    
-    // 6. Scroll layar ke paling atas
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 // FUNGSI PENUTUP LAYAR KATALOG PPOB
 function tutupKatalogPPOB(dariTombolBack = false) {
-    // PERBAIKAN: Jika diklik dari tombol UI, cukup pancing tombol back sistem (history.back)
-    // Biarkan 'popstate' yang mengurus penutupan layarnya agar sinkron 100% dan tidak ada bug lompat
+    // 🚨 FIX BUG LOMPAT: Biarkan tombol back sistem/browser yang mengambil alih penutupan layar
     if (!dariTombolBack && window.location.hash === '#katalogppob') {
         history.back();
-        return; // Hentikan eksekusi di sini!
+        return; // Hentikan script di sini agar UI tidak disembunyikan duluan!
     }
 
     const mainView = document.getElementById('ppob-main-view');
     const catalogView = document.getElementById('ppob-catalog-view');
-
+    
     if (catalogView && mainView) {
         catalogView.classList.add('hidden');
         catalogView.classList.remove('flex');
@@ -12787,11 +12781,16 @@ async function loadProdukPPOB(isLoadMore = false) {
     }
 }
 
-// Fungsi Cetak Data PPOB ke Layar HTML (Dengan Label Gangguan)
+// Fungsi Cetak Data PPOB ke Layar HTML (Desain 2 Kotak ala GoPay)
 function renderGridPPOB() {
     const grid = document.getElementById('ppob-product-grid');
 
+    // Ubah wadah menjadi Grid 2 Kolom
+    grid.className = 'grid grid-cols-2 gap-3 relative z-10';
+
     if (currentPpobData.length === 0) {
+        // Jika kosong, kembalikan ke 1 kolom agar pesan error berada di tengah
+        grid.className = 'flex flex-col gap-2.5 relative z-10';
         grid.innerHTML = `
             <div class="flex flex-col items-center justify-center py-10 text-center bg-black/20 rounded-2xl border border-white/5">
                 <i class="fas fa-box-open text-4xl text-gray-600 mb-3"></i>
@@ -12802,39 +12801,35 @@ function renderGridPPOB() {
     }
 
     grid.innerHTML = currentPpobData.map((item, index) => {
-        // Cek status aktif
         const isActive = item.is_active !== false; 
-
-        // Animasi muncul berurutan (Smooth Reveal)
-        const delayAnimasi = Math.min(index * 0.03, 0.3);
-        const formatHarga = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(item.seller_price);
-        
-        // Escape karakter berbahaya pada nama produk (anti-XSS)
+        const delayAnimasi = Math.min(index * 0.02, 0.2); // Animasi dipercepat agar grid terasa responsif
+        const formatHarga = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(item.seller_price).replace('Rp', 'Rp ');
         const namaAman = escapeHTML(item.product_name).replace(/&#39;/g, "\\'");
 
-        // Jika gangguan: bikin kusam, disable klik beli, dan tambah badge
+        // Styling Kartu ala GoPay
         const tampilanCard = isActive 
-            ? "hover:bg-white/10 hover:border-brand-info/30 active:scale-95 cursor-pointer" 
-            : "opacity-60 grayscale cursor-not-allowed";
+            ? "bg-[#1C233A] hover:bg-[#232A45] hover:border-brand-info/40 cursor-pointer active:scale-95" 
+            : "bg-black/40 opacity-60 grayscale cursor-not-allowed border-red-500/20";
             
         const aksiKlik = isActive 
             ? `onclick="pemicuBeliPPOB('${item.sku_code}', '${namaAman}', ${item.seller_price})"` 
             : `onclick="showToast('Mohon maaf, produk ini sedang gangguan dari pusat.', 'error')"`;
 
+        // Badge Gangguan diletakkan persis seperti letak tag "Muraaah" di GoPay
         const badgeGangguan = !isActive 
-            ? `<span class="absolute top-0 right-0 bg-red-500 text-white text-[8px] font-extrabold px-2 py-0.5 rounded-bl-xl rounded-tr-[1rem] shadow-md tracking-wider z-10">GANGGUAN</span>` 
+            ? `<div class="absolute -top-[1px] -left-[1px] bg-red-500 text-white text-[9px] font-black px-2.5 py-1 rounded-br-xl rounded-tl-[1rem] shadow-md z-10 tracking-wider">GANGGUAN</div>` 
             : '';
 
         return `
-        <div ${aksiKlik} style="animation-delay: ${delayAnimasi}s; opacity: 0;" class="bg-black/40 border border-white/5 p-4 rounded-[1rem] flex justify-between items-center gap-3 transition-all smooth-reveal shadow-sm group relative overflow-hidden ${tampilanCard}">
+        <div ${aksiKlik} style="animation-delay: ${delayAnimasi}s; opacity: 0;" class="border border-white/5 p-3.5 sm:p-4 rounded-[1.2rem] flex flex-col justify-between transition-all smooth-reveal shadow-sm relative h-full min-h-[95px] overflow-hidden ${tampilanCard}">
             ${badgeGangguan}
-            <div class="flex-1 min-w-0 pr-2 border-r border-white/5 relative z-0">
-                <h4 class="text-[11px] font-bold text-white line-clamp-2 leading-snug mb-1 ${isActive ? 'group-hover:text-brand-info transition-colors' : ''}">${item.product_name}</h4>
-                <div class="text-[9px] text-gray-500 uppercase tracking-widest font-bold">${item.brand}</div>
+            
+            <div class="mb-3 relative z-0 ${!isActive ? 'mt-3' : ''}">
+                <h4 class="text-[12px] sm:text-[13px] font-extrabold text-white leading-snug line-clamp-3">${namaAman}</h4>
             </div>
-            <div class="flex flex-col items-end shrink-0 relative z-0">
-                <span class="text-[10px] text-gray-400 mb-0.5">Harga</span>
-                <span class="text-[13px] font-black text-brand-success tracking-tight">${formatHarga}</span>
+            
+            <div class="mt-auto relative z-0">
+                <span class="text-[13px] sm:text-[14px] font-black ${isActive ? 'text-brand-success' : 'text-gray-400'} tracking-tight block">${formatHarga}</span>
             </div>
         </div>`;
     }).join('');
