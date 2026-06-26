@@ -8541,8 +8541,6 @@ async function prosesAutoDeliveryTertunda() {
                 } 
 
                 const finalStatus = (autoDeliveryData.length > 0) ? 'selesai' : 'proses';
-                
-                const finalStatus = (autoDeliveryData.length > 0) ? 'selesai' : 'proses';
 
 if (finalStatus === 'selesai') {
     const waktuSelesaiBot = new Date().toISOString();
