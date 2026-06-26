@@ -12602,34 +12602,33 @@ async function prosesBeliPPOB(skuCode, targetNo, harga, namaProduk) {
         if (typeof fetchSaldoDanMutasi === 'function') fetchSaldoDanMutasi();
         if (typeof updateSaldoGlobal === 'function') updateSaldoGlobal();
         
-        // 6. RENDER INVOICE
+        // 6. RENDER INVOICE & REALTIME LISTENER
         if (wadahPembayaran) {
             const digiStatus = result.data ? result.data.status : 'Diproses';
             const refId = result.data ? result.data.ref_id : 'Sistem';
-            const sn = result.data ? (result.data.sn || 'Sedang dicek oleh server...') : 'Sedang dicek oleh server...';
+            const sn = result.data && result.data.sn ? result.data.sn : 'Sedang dicek oleh server...';
             
-            // 🔥 PERBAIKAN: GANTI KATA "PENDING" JADI "DIPROSES"
             let displayStatus = digiStatus;
             if (digiStatus === 'Pending') displayStatus = 'Diproses';
 
             const isSukses = (digiStatus === 'Sukses' || digiStatus === 'Pending');
             const warnaTema = isSukses ? 'brand-success' : 'red-500';
             const iconTema = isSukses ? 'fa-check' : 'fa-times';
-            const shadowTema = isSukses ? 'rgba(37,211,102,0.8)' : 'rgba(239,68,68,0.8)';
 
+            // Elemen HTML dengan ID khusus agar mudah diubah secara real-time
             wadahPembayaran.innerHTML = `
                 <div class="flex flex-col items-center justify-center py-4 text-center modal-anim w-full relative z-10">
                     <div class="relative w-28 h-28 mb-6 mt-4">
-                        <div class="absolute inset-0 bg-${warnaTema} rounded-full animate-ping opacity-20"></div>
-                        <div class="w-full h-full bg-${warnaTema}/20 rounded-full flex items-center justify-center border border-${warnaTema}/50 backdrop-blur-md">
-                            <i class="fas ${iconTema} text-5xl text-${warnaTema}" style="filter: drop-shadow(0 0 15px ${shadowTema});"></i>
+                        <div id="glow-icon-ppob" class="absolute inset-0 bg-${warnaTema} rounded-full animate-ping opacity-20"></div>
+                        <div id="bg-icon-ppob" class="w-full h-full bg-${warnaTema}/20 rounded-full flex items-center justify-center border border-${warnaTema}/50 backdrop-blur-md">
+                            <i id="ikon-tengah-ppob" class="fas ${iconTema} text-5xl text-${warnaTema}" style="filter: drop-shadow(0 0 15px rgba(37,211,102,0.8));"></i>
                         </div>
                     </div>
-                    <h2 class="text-3xl font-black text-white mb-2 tracking-tight">Status: ${displayStatus}</h2>
+                    <h2 class="text-3xl font-black text-white mb-2 tracking-tight">Status: <span id="status-teks-ppob">${displayStatus}</span></h2>
                     <p class="text-gray-400 text-[11px] mb-6 leading-relaxed px-4">Pembayaran <b>${namaProduk}</b> senilai <b class="text-white">Rp ${harga.toLocaleString('id-ID')}</b> telah diproses sistem.</p>
                     
-                    <div class="w-full bg-black/50 border border-${warnaTema}/50 rounded-xl p-4 text-left mb-6 relative shadow-inner">
-                        <span class="absolute -top-2.5 left-4 bg-${warnaTema} text-${isSukses ? 'brand-dark' : 'white'} text-[9px] font-extrabold px-2 py-0.5 rounded uppercase tracking-wider">STRUK PPOB</span>
+                    <div class="w-full bg-black/50 border border-white/20 rounded-xl p-4 text-left mb-6 relative shadow-inner">
+                        <span id="badge-struk-ppob" class="absolute -top-2.5 left-4 bg-${warnaTema} text-brand-dark text-[9px] font-extrabold px-2 py-0.5 rounded uppercase tracking-wider">STRUK PPOB</span>
                         
                         <div class="flex justify-between items-center text-[10px] text-gray-400 mb-2 mt-2 border-b border-white/5 pb-2">
                             <span>Nomor Tujuan</span>
@@ -12641,14 +12640,53 @@ async function prosesBeliPPOB(skuCode, targetNo, harga, namaProduk) {
                         </div>
                         <div class="flex justify-between items-start text-[10px] text-gray-400 mt-2">
                             <span>SN / Catatan</span>
-                            <span class="font-mono text-brand-info font-bold text-right ml-4 leading-relaxed">${sn}</span>
+                            <span id="sn-teks-ppob" class="font-mono text-brand-info font-bold text-right ml-4 leading-relaxed">${sn}</span>
                         </div>
                     </div>
 
                     <button type="button" onclick="history.back()" class="w-full bg-white/5 text-white py-3.5 rounded-xl font-bold uppercase tracking-wider text-xs border border-white/10 hover:bg-white/10 active:scale-95 transition-all">Tutup Halaman</button>
                 </div>
             `;
+
+            // 🔥 NYALAKAN RADAR SUPABASE UNTUK MEMANTAU WEBHOOK SECARA REALTIME 🔥
+            if (refId !== 'Sistem') {
+                const channelPPOB = supabaseClient.channel(`tunggu-ppob-${refId}`)
+                    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'riwayat_ppob', filter: `ref_id=eq.${refId}` }, (payload) => {
+                        const newData = payload.new;
+                        
+                        // Jika Webhook Digiflazz sudah membalas Sukses / Gagal
+                        if (newData.status === 'Sukses' || newData.status === 'Gagal') {
+                            const isNowSukses = newData.status === 'Sukses';
+                            
+                            // 1. Ganti Teks Status
+                            const elStatus = document.getElementById('status-teks-ppob');
+                            if (elStatus) elStatus.innerText = newData.status;
+                            
+                            // 2. Masukkan SN ke Layar
+                            const elSN = document.getElementById('sn-teks-ppob');
+                            if (elSN) elSN.innerText = newData.sn || 'Tanpa SN';
+
+                            // 3. Ubah Warna Tema jika tiba-tiba Gagal
+                            if (!isNowSukses) {
+                                document.getElementById('glow-icon-ppob').className = 'absolute inset-0 bg-red-500 rounded-full animate-ping opacity-20';
+                                document.getElementById('bg-icon-ppob').className = 'w-full h-full bg-red-500/20 rounded-full flex items-center justify-center border border-red-500/50 backdrop-blur-md';
+                                document.getElementById('ikon-tengah-ppob').className = 'fas fa-times text-5xl text-red-500';
+                                document.getElementById('ikon-tengah-ppob').style.filter = 'drop-shadow(0 0 15px rgba(239,68,68,0.8))';
+                                document.getElementById('badge-struk-ppob').className = 'absolute -top-2.5 left-4 bg-red-500 text-white text-[9px] font-extrabold px-2 py-0.5 rounded uppercase tracking-wider';
+                            }
+                            
+                            // Matikan radar karena transaksi sudah final
+                            supabaseClient.removeChannel(channelPPOB);
+                        }
+                    }).subscribe();
+            }
         }
+
+    } catch (err) {
+        showToast(err.message, "error");
+        setTimeout(() => history.back(), 1500); 
+    }
+}
 
     } catch (err) {
         showToast(err.message, "error");
