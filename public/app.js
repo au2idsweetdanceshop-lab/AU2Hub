@@ -12781,7 +12781,7 @@ async function loadProdukPPOB(isLoadMore = false) {
     }
 }
 
-// Fungsi Cetak Data PPOB ke Layar HTML (Desain 2 Kotak ala GoPay)
+// Fungsi Cetak Data PPOB ke Layar HTML (Desain 2 Kotak + Trik S3 Marketing)
 function renderGridPPOB() {
     const grid = document.getElementById('ppob-product-grid');
 
@@ -12802,8 +12802,19 @@ function renderGridPPOB() {
 
     grid.innerHTML = currentPpobData.map((item, index) => {
         const isActive = item.is_active !== false; 
-        const delayAnimasi = Math.min(index * 0.02, 0.2); // Animasi dipercepat agar grid terasa responsif
-        const formatHarga = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(item.seller_price).replace('Rp', 'Rp ');
+        const delayAnimasi = Math.min(index * 0.02, 0.2); 
+        
+        // 1. Ambil Harga Asli
+        const hargaCustomer = item.seller_price;
+        const formatHarga = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(hargaCustomer).replace('Rp', 'Rp ');
+        
+        // 🔥 2. ILUSI S3 MARKETING: Bikin Harga Coret Otomatis 🔥
+        let hargaCoret = Math.ceil((hargaCustomer * 1.3) / 1000) * 1000; // Markup 30% default
+        if (hargaCustomer > 100000) hargaCoret = Math.ceil((hargaCustomer * 1.2) / 5000) * 5000; // Markup 20% kalau harganya udah mahal
+        if (hargaCustomer <= 5000) hargaCoret = hargaCustomer + 2500; // Tambah 2500 perak kalau harganya receh
+        
+        const formatHargaCoret = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(hargaCoret).replace('Rp', 'Rp ');
+
         const namaAman = escapeHTML(item.product_name).replace(/&#39;/g, "\\'");
 
         // Styling Kartu ala GoPay
@@ -12812,10 +12823,10 @@ function renderGridPPOB() {
             : "bg-black/40 opacity-60 grayscale cursor-not-allowed border-red-500/20";
             
         const aksiKlik = isActive 
-            ? `onclick="pemicuBeliPPOB('${item.sku_code}', '${namaAman}', ${item.seller_price})"` 
+            ? `onclick="pemicuBeliPPOB('${item.sku_code}', '${namaAman}', ${hargaCustomer})"` 
             : `onclick="showToast('Mohon maaf, produk ini sedang gangguan dari pusat.', 'error')"`;
 
-        // Badge Gangguan diletakkan persis seperti letak tag "Muraaah" di GoPay
+        // Badge Gangguan
         const badgeGangguan = !isActive 
             ? `<div class="absolute -top-[1px] -left-[1px] bg-red-500 text-white text-[9px] font-black px-2.5 py-1 rounded-br-xl rounded-tl-[1rem] shadow-md z-10 tracking-wider">GANGGUAN</div>` 
             : '';
@@ -12828,8 +12839,11 @@ function renderGridPPOB() {
                 <h4 class="text-[12px] sm:text-[13px] font-extrabold text-white leading-snug line-clamp-3">${namaAman}</h4>
             </div>
             
-            <div class="mt-auto relative z-0">
-                <span class="text-[13px] sm:text-[14px] font-black ${isActive ? 'text-brand-success' : 'text-gray-400'} tracking-tight block">${formatHarga}</span>
+            <div class="mt-auto relative z-0 flex flex-col">
+                <!-- Harga Coret Palsu (Abu-abu & Dicoret) -->
+                <span class="text-gray-500 line-through text-[9px] sm:text-[10px] font-medium opacity-70 mb-0.5">${formatHargaCoret}</span>
+                <!-- Harga Jual Asli -->
+                <span class="text-[13px] sm:text-[14px] font-black ${isActive ? 'text-[#EE4D2D]' : 'text-gray-400'} tracking-tight block">${formatHarga}</span>
             </div>
         </div>`;
     }).join('');
