@@ -29,7 +29,7 @@
 
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script defer src="/app.js?v=229"></script>
+<script defer src="/app.js?v=230"></script>
 <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
 <style>
 
@@ -1594,6 +1594,21 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
 <p class="text-[8px] text-gray-500 mt-1 italic">*Gunakan kode negara (62). Wajib diisi agar pembeli bisa menghubungi Anda setelah membayar.</p>
 </div>
 <div>
+    <label class="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-2 block">Provider E-Wallet (Untuk Penarikan)</label>
+    <select id="edit-wallet-provider" class="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-brand-info">
+        <option value="">-- Pilih E-Wallet --</option>
+        <option value="DANA">DANA</option>
+        <option value="GO PAY">GoPay</option>
+        <option value="OVO">OVO</option>
+        <option value="LINKAJA">LinkAja</option>
+        <option value="SHOPEE PAY">ShopeePay</option>
+    </select>
+</div>
+<div>
+    <label class="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-2 block">Nomor E-Wallet</label>
+    <input type="tel" id="edit-wallet-number" placeholder="Contoh: 08123456789" class="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-brand-info">
+</div>
+<div>
 <label class="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-2 block">Ganti Password (Opsional)</label>
 <div class="relative">
 <input type="password" id="edit-pass" placeholder="Biarkan kosong jika tidak diganti" class="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-brand-accent">
@@ -2619,8 +2634,40 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
     </div>
 </div>
 
+  <div id="modal-tarik-otomatis" class="fixed inset-0 z-[750] hidden items-end sm:items-center justify-center bg-black/90 backdrop-blur-md px-0 sm:px-6 transition-all duration-300">
+    <div class="bg-brand-card w-full max-w-md sm:rounded-[2rem] rounded-t-[2.5rem] border-t sm:border border-white/10 shadow-2xl relative modal-anim flex flex-col h-[85vh] sm:h-auto sm:max-h-[85vh] overflow-hidden">
+        <div class="flex justify-between items-center p-5 border-b border-white/5 bg-brand-dark/80 backdrop-blur-xl shrink-0 z-20">
+            <h3 class="font-black text-white text-sm flex items-center gap-2 tracking-tight">
+                <i class="fas fa-university text-brand-info"></i> Penarikan Saldo Otomatis
+            </h3>
+            <button aria-label="Tutup" onclick="tutupModalTarikOtomatis()" class="text-gray-400 hover:text-white w-8 h-8 rounded-full bg-white/5 flex items-center justify-center active:scale-95 transition-all border border-white/10 shadow-sm"><i class="fas fa-times"></i></button>
+        </div>
+        
+        <div class="flex-1 overflow-y-auto hide-scroll p-5 pt-6 bg-black/40">
+            <div class="bg-white/5 border border-white/10 rounded-2xl p-4 mb-5 flex items-center gap-4 shadow-inner">
+                <div class="w-12 h-12 rounded-full bg-brand-info/20 text-brand-info flex items-center justify-center border border-brand-info/30 shadow-[0_0_10px_rgba(70,179,255,0.3)]">
+                    <i class="fas fa-wallet text-xl"></i>
+                </div>
+                <div class="flex-1">
+                    <p class="text-[9px] text-gray-400 font-bold uppercase tracking-widest mb-1">Tujuan Penarikan</p>
+                    <h4 class="text-sm font-black text-white uppercase tracking-wide" id="tarik-provider-text">DANA</h4>
+                    <p class="text-[11px] font-mono text-brand-info font-bold mt-0.5" id="tarik-number-text">08123456789</p>
+                </div>
+                <button onclick="tutupModalTarikOtomatis(); setTimeout(() => openEditProfileModal(), 300);" class="bg-brand-accent/20 text-brand-accent px-3 py-2 rounded-lg text-[10px] font-bold border border-brand-accent/30 active:scale-95 transition-all">Ubah</button>
+            </div>
 
+            <div class="text-[10px] text-brand-info font-bold uppercase tracking-widest mb-3 flex items-center gap-1.5 border-b border-white/5 pb-2">
+                <i class="fas fa-bolt"></i> Pilih Nominal Penarikan
+            </div>
+            
+            <div id="tarik-grid" class="flex flex-col gap-2.5 pb-6">
+                </div>
+        </div>
+    </div>
+</div>
+  
 <script>eruda.init();</script>
-
+  
 </body>
 </html>
+
