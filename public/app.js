@@ -10,15 +10,8 @@ function debounce(func, wait) {
 // FUNGSI AUTO-REFRESH SETELAH BAYAR
 // ==========================================
 window.tutupLayarSuksesDanRefresh = () => {
-    history.back(); // Tutup layar hijau
-    
-    // Beri jeda sedikit sampai animasi tutup selesai, lalu refresh data
-    setTimeout(() => {
-        if (typeof loadPasarPlayer === 'function') loadPasarPlayer(true);
-        if (typeof loadProdukSaya === 'function' && document.getElementById('toko') && document.getElementById('toko').classList.contains('active')) {
-            loadProdukSaya(); // Refresh juga di dashboard seller
-        }
-    }, 400);
+    // Cukup panggil back, proses pembersihan dan refresh sudah kita pindahkan ke event 'popstate'
+    history.back(); 
 };
 
 // ==========================================
@@ -1741,303 +1734,36 @@ function switchTab(tabId, event = null, isPush = true) {
 window.addEventListener('popstate', () => {
     let isPopupClosed = false;
 
+    // 🔥 [BARU] TANGKAP LAYAR PROSES PEMBAYARAN / SUKSES
+    const sectionPembayaran = document.getElementById('pembayaran');
+    if (sectionPembayaran && sectionPembayaran.classList.contains('active')) {
+        // 1. Bersihkan interval penjemputan API & websocket jika ditekan back saat loading
+        // Ini mencegah HP ngelag karena API terus berjalan di latar belakang
+        if (typeof intervalJemputBola !== 'undefined' && intervalJemputBola) {
+            clearInterval(intervalJemputBola);
+            intervalJemputBola = null;
+        }
+        if (typeof activeChannelPembayaran !== 'undefined' && activeChannelPembayaran) {
+            supabaseClient.removeChannel(activeChannelPembayaran);
+            activeChannelPembayaran = null;
+        }
+
+        // 2. Refresh semua data terkait diam-diam di latar belakang
+        setTimeout(() => {
+            if (typeof loadPasarPlayer === 'function') loadPasarPlayer(true);
+            if (document.getElementById('toko') && document.getElementById('toko').classList.contains('active')) {
+                if (typeof loadProdukSaya === 'function') loadProdukSaya();
+            }
+            if (typeof updateUiSaldoSeller === 'function') updateUiSaldoSeller();
+            if (typeof updateSaldoGlobal === 'function') updateSaldoGlobal();
+            if (typeof currentUser !== 'undefined' && currentUser && typeof loadOrderTracker === 'function') loadOrderTracker(currentUser.id);
+        }, 400);
+        
+        // Lanjut eksekusi popstate ke bawah untuk menutup tab pembayaran...
+    }
+
     // TANGKAP LACI OPSI KREATOR
     const modalKreator = document.getElementById('modal-kreator-option');
-    if (modalKreator && !modalKreator.classList.contains('hidden')) {
-        tutupMenuKreator(true);
-        return;
-    }
-
-        // TANGKAP LACI MODAL NETFLIX
-    const modalNetflix = document.getElementById('modal-netflix');
-    if (modalNetflix && !modalNetflix.classList.contains('hidden')) {
-        modalNetflix.classList.add('hidden');
-        modalNetflix.classList.remove('flex');
-        return;
-    }
-
-    // 🚀 1. TANGKAP POP-UP ALERT, PROMPT, & CONFIRM (Anti Terpental)
-    const modalAlert = document.getElementById('modal-alert');
-    if (modalAlert && !modalAlert.classList.contains('hidden')) {
-        modalAlert.classList.add('hidden');
-        modalAlert.classList.remove('flex');
-        if (typeof modalAlert.alertResolve === 'function') {
-            modalAlert.alertResolve();
-            modalAlert.alertResolve = null;
-        }
-        return;
-    }
-
-    const modalPrompt = document.getElementById('modal-prompt');
-    if (modalPrompt && !modalPrompt.classList.contains('hidden')) {
-        modalPrompt.classList.add('hidden');
-        modalPrompt.classList.remove('flex');
-        if (typeof modalPrompt.promptResolve === 'function') {
-            // Ambil data dari tombol Simpan, jika diback pakai HP anggap batal (null)
-            let result = modalPrompt.hasOwnProperty('promptResult') ? modalPrompt.promptResult : null;
-            modalPrompt.promptResolve(result);
-            modalPrompt.promptResolve = null;
-            delete modalPrompt.promptResult;
-        }
-        return;
-    }
-
-    const modalConfirm = document.getElementById('modal-confirm');
-    if (modalConfirm && !modalConfirm.classList.contains('hidden')) {
-        modalConfirm.classList.add('hidden');
-        modalConfirm.classList.remove('flex');
-        if (typeof modalConfirm.confirmResolve === 'function') {
-            // Ambil data dari tombol OK, jika diback pakai HP anggap batal (false)
-            let result = modalConfirm.hasOwnProperty('confirmResult') ? modalConfirm.confirmResult : false;
-            modalConfirm.confirmResolve(result);
-            modalConfirm.confirmResolve = null;
-            delete modalConfirm.confirmResult;
-        }
-        return;
-    }
-
-    // ==========================================
-    // TANGKAP SEMUA MODAL PASAR PLAYER
-    // ==========================================
-    const modalGalleryPasar = document.getElementById('modal-gallery-pasar');
-    if (modalGalleryPasar && !modalGalleryPasar.classList.contains('hidden')) {
-        tutupGalleryPasar(true);
-        return;
-    }
-
-    const modalDetailPasar = document.getElementById('modal-detail-pasar');
-    if (modalDetailPasar && !modalDetailPasar.classList.contains('hidden')) {
-        tutupDetailPasar(true);
-        return;
-    }
-
-    const modalJual = document.getElementById('modal-jual-barang');
-    if (modalJual && !modalJual.classList.contains('hidden')) {
-        tutupModalJualBarang(true);
-        return;
-    }
-
-    const modalEditProduk = document.getElementById('modal-edit-produk');
-    if (modalEditProduk && !modalEditProduk.classList.contains('hidden')) {
-        tutupModalEditProduk(true);
-        return;
-    }
-    // ==========================================
-
-    // TANGKAP LACI DOMPET
-    const modalDompet = document.getElementById('modal-saldo-dompet');
-    if (modalDompet && !modalDompet.classList.contains('hidden')) {
-        tutupModalSaldoDompet(true);
-        return;
-    }
-    
-        // TANGKAP LACI BUAT GRUP BARU
-    const modalCreateGroup = document.getElementById('modal-create-group');
-    if (modalCreateGroup && !modalCreateGroup.classList.contains('hidden')) {
-        closeCreateGroupModal(true);
-        return;
-    }
-
-    // TANGKAP LACI TERUSKAN PESAN (FORWARD)
-    const modalForward = document.getElementById('modal-forward-msg');
-    if (modalForward && !modalForward.classList.contains('hidden')) {
-        closeForwardModal(true);
-        return;
-    }
-
-    
-    // TANGKAP LACI VIP SELLER
-    const modalLangganan = document.getElementById('modal-langganan-seller');
-    if (modalLangganan && !modalLangganan.classList.contains('hidden')) {
-        tutupModalLangganan(true);
-        return;
-    }
-
-    // 1. TANGKAP INFO GRUP
-    const modalGroupInfo = document.getElementById('modal-group-info');
-    if (modalGroupInfo && !modalGroupInfo.classList.contains('hidden')) {
-        closeGroupInfoModal(true);
-        return;
-    }
-
-    const modalPreviewMedia = document.getElementById('modal-preview-media');
-    if (modalPreviewMedia && !modalPreviewMedia.classList.contains('hidden')) {
-        tutupPreviewMedia(true);
-        return;
-    }
-
-    // 2. TANGKAP MODAL INVOICE
-    const modalInvoice = document.getElementById('modal-detail-pesanan');
-    if (modalInvoice && !modalInvoice.classList.contains('hidden')) {
-        closeDetailPesanan(true);
-        return;
-    }
-
-    // 3. BARU TANGKAP MODAL RIWAYAT PESANAN
-    const modalRiwayat = document.getElementById('modal-riwayat-pesanan');
-    if (modalRiwayat && !modalRiwayat.classList.contains('hidden')) {
-        closeRiwayatPesanan(true); 
-        return;
-    }
-
-    // 🚀 TANGKAP LAYAR PRATINJAU FULL SCREEN DULU
-    const modalPratinjau = document.getElementById('modal-pratinjau');
-    if (modalPratinjau && !modalPratinjau.classList.contains('hidden')) {
-        tutupPratinjauVideo(true);
-        return;
-    }
-
-    // 🚀 TANGKAP MODAL UPLOAD VIDEO & PRIVASI
-    const modalPrivasi = document.getElementById('modal-privasi-video');
-    if (modalPrivasi && (!modalPrivasi.classList.contains('hidden') && !modalPrivasi.classList.contains('translate-y-full'))) {
-        tutupPilihanPrivasi();
-        history.pushState({ popup: 'upload' }, null, '#upload');
-        return;
-    }
-
-    const modalUpload = document.getElementById('modal-upload');
-    if (modalUpload && !modalUpload.classList.contains('hidden')) {
-        closeUploadModal();
-        return;
-    }
-
-    const lightbox = document.getElementById('lightbox-modal');
-    if(!lightbox.classList.contains('hidden')) {
-        closeLightbox();
-        return;
-    }
-
-    // Tangkap laci Dilihat/Disukai dulu!
-    const statsModal = document.getElementById('modal-story-stats');
-    if (statsModal && !statsModal.classList.contains('translate-y-full')) {
-        closeStoryStatsModal(true);
-        return;
-    }
-
-    // Baru tangkap layar pemutar Story utamanya
-    const storyModal = document.getElementById('story-viewer-modal');
-    if (storyModal && !storyModal.classList.contains('hidden')) {
-        closeStoryViewer(true);
-        return;
-    }
-
-    const modalMsgOption = document.getElementById('modal-msg-option');
-    if (!modalMsgOption.classList.contains('hidden')) {
-        modalMsgOption.classList.add('hidden'); modalMsgOption.classList.remove('flex');
-        return;
-    }
-
-    const commentDrawer = document.getElementById('comment-drawer');
-    if (commentDrawer.classList.contains('open')) {
-        commentDrawer.classList.remove('open');
-        cancelReply();
-
-        if (commentSubscription) {
-            supabaseClient.removeChannel(commentSubscription);
-            commentSubscription = null;
-        }
-        return;
-    }
-
-    const modalEvent = document.getElementById('modal-event');
-    if (!modalEvent.classList.contains('hidden')) {
-        modalEvent.classList.add('hidden'); modalEvent.classList.remove('flex');
-        document.body.style.overflow = 'auto'; isPopupClosed = true;
-    }
-
-    const modalEditProfile = document.getElementById('modal-edit-profile');
-    if (!modalEditProfile.classList.contains('hidden')) {
-        closeEditProfileModal();
-        isPopupClosed = true;
-    }
-
-    const modalUserList = document.getElementById('modal-user-list');
-    if (!modalUserList.classList.contains('hidden')) {
-        closeUserList();
-        isPopupClosed = true;
-    }
-
-    const widget = document.getElementById('floating-widget');
-
-    if (!widget.classList.contains('opacity-0')) {
-        const roomView = document.getElementById('chat-room-view');
-        if (roomView && roomView.classList.contains('flex')) {
-            closeChatRoom(true);
-            return; 
-        } else {
-            widget.classList.add('opacity-0', 'pointer-events-none', 'translate-y-8', 'scale-95');
-            return;
-        }
-    }
-
-    const authModal = document.getElementById('modal-auth');
-    if (authModal && !authModal.classList.contains('hidden')) {
-        authModal.classList.add('hidden');
-        authModal.classList.remove('flex');
-        isPopupClosed = true;
-    }
-
-    const leaderboardModal = document.getElementById('modal-leaderboard');
-    if (leaderboardModal && !leaderboardModal.classList.contains('hidden')) {
-        leaderboardModal.classList.add('hidden');
-        leaderboardModal.classList.remove('flex');
-
-        const chatBtn = document.querySelector('button[onclick="toggleWidget()"]');
-        if (chatBtn) chatBtn.classList.remove('hidden');
-
-        isPopupClosed = true;
-    }
-
-    const hashtagGrid = document.getElementById('modal-hashtag-grid');
-    if (hashtagGrid && !hashtagGrid.classList.contains('hidden') && !hashtagGrid.classList.contains('translate-x-full')) {
-        closeHashtagGrid(true);
-        return;
-    }
-
-    if (document.body.classList.contains('video-focused')) {
-        toggleFloatingMode();
-        return;
-    }
-
-    const floatingPlayer = document.getElementById('floating-video-player');
-    if (!floatingPlayer.classList.contains('hidden')) {
-        closeFloatingVideo();
-        return;
-    }
-
-    if (isPopupClosed) return;
-
-    const newHash = window.location.hash.substring(1) || 'home';
-    if (newHash === 'profile' && viewedUserId !== currentUser?.id) {
-        viewedUserId = currentUser?.id;
-        checkSession();
-    }
-    
-    // 🔥 PERBAIKAN: Jaring Pengaman Mutlak + Deteksi Link Toko Shopee
-    const cleanHash = newHash.split('?')[0];
-    const validTabs = ['home', 'sosial', 'pasar', 'toko', 'layanan', 'pesanan', 'profile', 'pembayaran', 'superadmin', 'tokopublik'];
-    
-    // [BARU] Jika user klik link Toko Publik dari chat atau luar aplikasi
-    if (newHash.startsWith('tokopublik?seller=') || newHash.startsWith('pasar?seller=')) {
-        const sellerName = decodeURIComponent(newHash.split('=')[1]);
-        
-        // Paksa ubah URL di address bar jadi tokopublik (backwards compatibility)
-        if (newHash.startsWith('pasar?seller=')) {
-            history.replaceState(null, null, '#tokopublik?seller=' + encodeURIComponent(sellerName));
-        }
-        
-        switchTab('tokopublik', null, false);
-        loadTokoPublikLuar(sellerName); // Panggil UI Shopee-nya!
-        return; // Hentikan script di sini
-    }
-
-    if (!validTabs.includes(cleanHash)) {
-        history.replaceState(null, null, '#' + tabSebelumnya);
-        switchTab(tabSebelumnya, null, false);
-    } else {
-        switchTab(cleanHash, null, false);
-    }
-});
 
 // FUNGSI KEMBALI DARI PROFIL YANG SUDAH DIPERBAIKI SANGAT AMAN
 function kembaliDariProfil() {
@@ -8139,93 +7865,118 @@ function bukaDetailPesananDinamis(orderId, productName, price, status, tableSour
     }
     
     // ==========================================
-    // NOTA TRANSPARANSI TRANSAKSI 
+    // NOTA TRANSPARANSI TRANSAKSI & DATA SN
     // ==========================================
     const wadahRincian = document.getElementById('wadah-rincian-transaksi');
     if (wadahRincian) {
         wadahRincian.classList.add('hidden');
         wadahRincian.innerHTML = '<div class="flex justify-center py-2"><i class="fas fa-spinner fa-spin text-brand-info"></i></div>';
         
-        // JIKA PPOB, MUNCULKAN NOTA SIMPEL (Tanpa narik API Produk)
-        if (tableSource === 'riwayat_ppob') {
-            wadahRincian.classList.remove('hidden');
-            wadahRincian.innerHTML = `
-                <div class="text-[10px] font-extrabold text-gray-400 mb-3 uppercase tracking-widest border-b border-white/10 pb-2 flex items-center gap-1.5"><i class="fas fa-bolt text-yellow-400 text-sm"></i> Rincian Pembayaran PPOB</div>
-                <div class="flex justify-between items-center text-[12px] text-white font-black mt-3">
-                    <span>Total Potong Saldo</span>
-                    <span class="font-mono text-brand-accent tracking-tight">Rp ${Number(price).toLocaleString('id-ID')}</span>
-                </div>
-            `;
-        }
-        // JIKA PASAR PLAYER, MUNCULKAN NOTA KOMPLEKS SEPERTI BIASA
-        else if (tableSource === 'orders_player') {
-            wadahRincian.classList.remove('hidden');
-            
-            // Tarik data produk untuk mengecek siapa yang nanggung Pajak Lapak
-            supabaseClient.from('player_products').select('fee_ditanggung_pembeli').eq('id', activeOrderProductId).single()
-            .then(({data}) => {
-                const feeDitanggungPembeli = data ? data.fee_ditanggung_pembeli : false;
-                const isPenjual = (currentUser.id === activeOrderSellerId);
-                let isRekber = productName.includes('[+Rekber]');
-                let feeRekber = isRekber ? hitungFeeRekber(price) : 0;
-                
-                let subtotalBarang = price - feeRekber; 
-                let pajakLapak = 0;
-                let hargaDasar = subtotalBarang;
-                let totalDiterimaSeller = subtotalBarang;
+        // 1. Tarik Data SN / Keterangan dari database berdasarkan tabel yang aktif
+        supabaseClient.from(tableSource).select('sn').eq('id', orderId).single()
+        .then(({data: extraData}) => {
+            const snText = extraData && extraData.sn ? extraData.sn : null;
+            let snHTML = '';
 
-                if (feeDitanggungPembeli) {
-                    hargaDasar = Math.round((subtotalBarang - 500) / 1.007);
-                    totalDiterimaSeller = hargaDasar; 
-                    pajakLapak = hitungPotonganSeller(hargaDasar); 
-                } else {
-                    pajakLapak = hitungPotonganSeller(subtotalBarang);
-                    totalDiterimaSeller = subtotalBarang - pajakLapak; 
-                }
-
-                let htmlRincian = `<div class="text-[10px] font-extrabold text-gray-400 mb-3 uppercase tracking-widest border-b border-white/10 pb-2 flex items-center gap-1.5"><i class="fas fa-file-invoice-dollar text-brand-info text-sm"></i> Rincian Pembayaran</div>`;
+            // Jika ada SN dan statusnya selesai/proses, buat UI kotaknya
+            if (snText && (visualStatus === 'selesai' || visualStatus === 'proses')) {
+                const amanSnText = encodeURIComponent(snText).replace(/'/g, "%27");
+                const themeColor = tableSource === 'riwayat_ppob' ? 'brand-info' : 'brand-success';
+                const labelSn = tableSource === 'riwayat_ppob' ? 'SN / REFERENSI' : 'DATA PESANAN / KETERANGAN';
                 
-                htmlRincian += `<div class="flex justify-between items-center text-[11px] text-gray-300 mb-2">
-                    <span>Subtotal Produk</span>
-                    <span class="font-mono">Rp ${subtotalBarang.toLocaleString('id-ID')}</span>
+                snHTML = `
+                <div class="mt-4 p-3 bg-${themeColor}/10 border border-${themeColor}/30 rounded-xl relative shadow-inner">
+                    <span class="absolute -top-2.5 left-3 bg-${themeColor} text-brand-dark text-[9px] font-extrabold px-2 py-0.5 rounded uppercase tracking-wider">${labelSn}</span>
+                    <pre class="text-white text-xs whitespace-pre-wrap break-all font-mono leading-relaxed mt-1 max-h-40 overflow-y-auto hide-scroll">${escapeHTML(snText)}</pre>
+                    <button type="button" onclick="navigator.clipboard.writeText(decodeURIComponent('${amanSnText}')); this.innerHTML='<i class=\\'fas fa-check\\'></i> Tersalin!'; setTimeout(()=>this.innerHTML='<i class=\\'fas fa-copy mr-1\\'></i> Salin Data', 2000);" class="mt-3 w-full bg-${themeColor}/20 text-${themeColor} border border-${themeColor}/30 py-2.5 rounded-lg text-[11px] font-bold active:scale-95 transition-all shadow-sm">
+                        <i class="fas fa-copy mr-1"></i> Salin Data
+                    </button>
                 </div>`;
+            }
 
-                if (isRekber) {
-                    htmlRincian += `<div class="flex justify-between items-center text-[11px] text-gray-400 mb-2">
-                        <span>Biaya Admin Rekber</span>
-                        <span class="font-mono text-brand-info">+ Rp ${feeRekber.toLocaleString('id-ID')}</span>
-                    </div>`;
-                }
+            // 2. JIKA PPOB, MUNCULKAN NOTA SIMPEL
+            if (tableSource === 'riwayat_ppob') {
+                wadahRincian.classList.remove('hidden');
+                wadahRincian.innerHTML = `
+                    <div class="text-[10px] font-extrabold text-gray-400 mb-3 uppercase tracking-widest border-b border-white/10 pb-2 flex items-center gap-1.5"><i class="fas fa-bolt text-yellow-400 text-sm"></i> Rincian Pembayaran PPOB</div>
+                    <div class="flex justify-between items-center text-[12px] text-white font-black mt-3">
+                        <span>Total Potong Saldo</span>
+                        <span class="font-mono text-brand-accent tracking-tight">Rp ${Number(price).toLocaleString('id-ID')}</span>
+                    </div>
+                    ${snHTML}
+                `;
+            }
+            // 3. JIKA PASAR PLAYER, MUNCULKAN NOTA KOMPLEKS SEPERTI BIASA
+            else if (tableSource === 'orders_player' || tableSource === 'orders') {
+                wadahRincian.classList.remove('hidden');
+                
+                supabaseClient.from('player_products').select('fee_ditanggung_pembeli').eq('id', activeOrderProductId).single()
+                .then(({data}) => {
+                    const feeDitanggungPembeli = data ? data.fee_ditanggung_pembeli : false;
+                    const isPenjual = (currentUser.id === activeOrderSellerId);
+                    let isRekber = productName.includes('[+Rekber]');
+                    let feeRekber = isRekber ? hitungFeeRekber(price) : 0;
+                    
+                    let subtotalBarang = price - feeRekber; 
+                    let pajakLapak = 0;
+                    let totalDiterimaSeller = subtotalBarang;
 
-                if (isPenjual) {
                     if (feeDitanggungPembeli) {
-                        htmlRincian += `<div class="flex justify-between items-center text-[11px] text-gray-400 mb-2">
-                            <span>Pajak Lapak <span class="text-[9px] text-gray-500">(Ditanggung Pembeli)</span></span>
-                            <span class="font-mono text-gray-500">Rp ${pajakLapak.toLocaleString('id-ID')}</span>
-                        </div>`;
+                        let hargaDasar = Math.round((subtotalBarang - 500) / 1.007);
+                        totalDiterimaSeller = hargaDasar; 
+                        pajakLapak = hitungPotonganSeller(hargaDasar); 
                     } else {
+                        pajakLapak = hitungPotonganSeller(subtotalBarang);
+                        totalDiterimaSeller = subtotalBarang - pajakLapak; 
+                    }
+
+                    let htmlRincian = `<div class="text-[10px] font-extrabold text-gray-400 mb-3 uppercase tracking-widest border-b border-white/10 pb-2 flex items-center gap-1.5"><i class="fas fa-file-invoice-dollar text-brand-info text-sm"></i> Rincian Pembayaran</div>`;
+                    
+                    htmlRincian += `<div class="flex justify-between items-center text-[11px] text-gray-300 mb-2">
+                        <span>Subtotal Produk</span>
+                        <span class="font-mono">Rp ${subtotalBarang.toLocaleString('id-ID')}</span>
+                    </div>`;
+
+                    if (isRekber) {
                         htmlRincian += `<div class="flex justify-between items-center text-[11px] text-gray-400 mb-2">
-                            <span>Pajak Lapak <span class="text-[9px] text-gray-500">(Dipotong dari Anda)</span></span>
-                            <span class="font-mono text-red-400">- Rp ${pajakLapak.toLocaleString('id-ID')}</span>
+                            <span>Biaya Admin Rekber</span>
+                            <span class="font-mono text-brand-info">+ Rp ${feeRekber.toLocaleString('id-ID')}</span>
                         </div>`;
                     }
-                    htmlRincian += `<div class="flex justify-between items-center text-[12px] text-brand-success font-black mt-3 border-t border-white/10 pt-3">
-                        <span>Estimasi Masuk ke Saldo</span>
-                        <span class="font-mono tracking-tight">Rp ${totalDiterimaSeller.toLocaleString('id-ID')}</span>
-                    </div>`;
-                } else {
-                    htmlRincian += `<div class="flex justify-between items-center text-[12px] text-white font-black mt-3 border-t border-white/10 pt-3">
-                        <span>Total Tagihan Dibayar</span>
-                        <span class="font-mono text-brand-accent tracking-tight">Rp ${Number(price).toLocaleString('id-ID')}</span>
-                    </div>`;
-                }
 
-                wadahRincian.innerHTML = htmlRincian;
-            })
-            .catch(() => {
-                wadahRincian.innerHTML = `<div class="text-[10px] text-gray-500 italic text-center py-2">Rincian detail tidak tersedia untuk produk usang.</div>`;
-            });
-        }
+                    if (isPenjual) {
+                        if (feeDitanggungPembeli) {
+                            htmlRincian += `<div class="flex justify-between items-center text-[11px] text-gray-400 mb-2">
+                                <span>Pajak Lapak <span class="text-[9px] text-gray-500">(Ditanggung Pembeli)</span></span>
+                                <span class="font-mono text-gray-500">Rp ${pajakLapak.toLocaleString('id-ID')}</span>
+                            </div>`;
+                        } else {
+                            htmlRincian += `<div class="flex justify-between items-center text-[11px] text-gray-400 mb-2">
+                                <span>Pajak Lapak <span class="text-[9px] text-gray-500">(Dipotong dari Anda)</span></span>
+                                <span class="font-mono text-red-400">- Rp ${pajakLapak.toLocaleString('id-ID')}</span>
+                            </div>`;
+                        }
+                        htmlRincian += `<div class="flex justify-between items-center text-[12px] text-brand-success font-black mt-3 border-t border-white/10 pt-3">
+                            <span>Estimasi Masuk ke Saldo</span>
+                            <span class="font-mono tracking-tight">Rp ${totalDiterimaSeller.toLocaleString('id-ID')}</span>
+                        </div>`;
+                    } else {
+                        htmlRincian += `<div class="flex justify-between items-center text-[12px] text-white font-black mt-3 border-t border-white/10 pt-3">
+                            <span>Total Tagihan Dibayar</span>
+                            <span class="font-mono text-brand-accent tracking-tight">Rp ${Number(price).toLocaleString('id-ID')}</span>
+                        </div>`;
+                    }
+                    
+                    // SISIPKAN UI KOTAK SN / DATA PESANAN DI BAWAH RINCIAN HARGA
+                    htmlRincian += snHTML;
+
+                    wadahRincian.innerHTML = htmlRincian;
+                })
+                .catch(() => {
+                    wadahRincian.innerHTML = `<div class="text-[10px] text-gray-500 italic text-center py-2">Rincian detail tidak tersedia untuk produk usang.</div>${snHTML}`;
+                });
+            }
+        });
     }
 
 
@@ -8374,12 +8125,15 @@ async function checkoutXoftwarePay(namaProduk, harga, deskripsi, sellerId = null
     if (!currentUser) return showToast("Silakan login dulu untuk membeli!", "error");
 
     // 1. CEGAH POPUP DOBEL (Hanya nanya kalau ini beli langsung)
-    if (!isBayarUlang) {
-        const konfirmasi = await customConfirm(`Lanjutkan pesanan untuk:\n\n${namaProduk}\n\nTotal: Rp ${harga.toLocaleString('id-ID')} via QRIS Otomatis?`);
-        if (!konfirmasi) return;
-    }
+     if (!isBayarUlang) {
+         const konfirmasi = await customConfirm(`Lanjutkan pesanan untuk:\n\n${namaProduk}\n\nTotal: Rp ${harga.toLocaleString('id-ID')} via QRIS Otomatis?`);
+         if (!konfirmasi) return;
+     }
 
-    switchTab('pembayaran');
+     // SUNTIKAN BARU: Daftarkan ke riwayat HP agar tombol Back terdeteksi
+     history.pushState({ popup: 'pembayaran' }, null, '#pembayaran');
+     
+     switchTab('pembayaran');
     
     const wadahPembayaran = document.getElementById('qris-container');
     if (wadahPembayaran) {
@@ -12367,11 +12121,14 @@ async function prosesBeliPPOB(skuCode, targetNo, harga, namaProduk) {
     }
 
     // 2. Konfirmasi Pembelian
-    const konfirmasi = await customConfirm(`Beli ${namaProduk} untuk nomor:\n${targetNo}\n\nTotal: Rp ${harga.toLocaleString('id-ID')} (Potong Saldo)?`);
-    if (!konfirmasi) return;
+     const konfirmasi = await customConfirm(`Beli ${namaProduk} untuk nomor:\n${targetNo}\n\nTotal: Rp ${harga.toLocaleString('id-ID')} (Potong Saldo)?`);
+     if (!konfirmasi) return;
 
-    // 🔥 PERBAIKAN: HILANGKAN KATA "DIGIFLAZZ" DARI LOADING
-    switchTab('pembayaran');
+     // SUNTIKAN BARU: Daftarkan ke riwayat HP agar tombol Back terdeteksi
+     history.pushState({ popup: 'pembayaran' }, null, '#pembayaran');
+
+     // 🔥 PERBAIKAN: HILANGKAN KATA "DIGIFLAZZ" DARI LOADING
+     switchTab('pembayaran');
     const wadahPembayaran = document.getElementById('qris-container');
     if (wadahPembayaran) {
         wadahPembayaran.innerHTML = `
@@ -12808,3 +12565,58 @@ async function updateSaldoGlobal() {
     }
 }
 
+// ==========================================
+// FITUR SUPER ADMIN: SINKRONISASI PPOB DIGIFLAZZ
+// ==========================================
+async function eksekusiSinkronisasiPPOB() {
+    // 1. Gembok keamanan (Hanya Super Admin yang bisa jalankan)
+    if (!userProfile || userProfile.is_super_admin !== true) {
+        return showToast("Akses Ditolak! Hanya Super Admin yang bisa melakukan ini.", "error");
+    }
+
+    // 2. Minta konfirmasi sebelum mengeksekusi
+    const konfirmasi = await customConfirm("Yakin ingin melakukan sinkronisasi data produk Digiflazz sekarang?\n\nSistem akan menarik data terbaru dari pusat. Proses ini mungkin memakan waktu beberapa detik.");
+    if (!konfirmasi) return;
+
+    const btn = document.getElementById('btn-sync-digiflazz');
+    const originalText = btn.innerHTML;
+
+    // 3. Ubah tampilan tombol jadi loading
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin text-base"></i> Sedang Menyinkronkan...';
+    btn.disabled = true;
+    showToast("Memulai sinkronisasi data PPOB...", "info");
+
+    try {
+        // 4. Tembak API di latar belakang (tanpa buka tab baru)
+        const response = await fetch('/api/digiflazz?action=sync', {
+            method: 'GET'
+        });
+
+        // Tangkap respon dari server Vercel Anda
+        const result = await response.json();
+
+        if (response.ok) {
+            // Jika berhasil
+            showToast("Sinkronisasi PPOB berhasil diselesaikan!", "success");
+            
+            // Opsional: Refresh daftar PPOB di layar jika sedang terbuka
+            if (typeof loadProdukPPOB === 'function') {
+                // Hapus cache lokal dan muat ulang
+                ppobOffset = 0;
+                currentPpobData = [];
+                loadProdukPPOB(false);
+            }
+        } else {
+            // Jika Vercel mengembalikan error
+            throw new Error(result.error || result.message || "Gagal sinkronisasi dari server.");
+        }
+
+    } catch (error) {
+        console.error("Error Sinkronisasi:", error);
+        showToast("Terjadi kesalahan: " + error.message, "error");
+    } finally {
+        // 5. Kembalikan tombol seperti semula setelah selesai (sukses/gagal)
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    }
+}
