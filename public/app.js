@@ -1729,6 +1729,50 @@ function switchTab(tabId, event = null, isPush = true) {
 window.addEventListener('popstate', () => {
     let isPopupClosed = false;
 
+    // ==========================================
+    // 🚀 1. TANGKAP POP-UP ALERT, PROMPT, & CONFIRM DULUAN! (Wajib Paling Atas / Anti Terpental)
+    // ==========================================
+    const modalAlert = document.getElementById('modal-alert');
+    if (modalAlert && !modalAlert.classList.contains('hidden')) {
+        modalAlert.classList.add('hidden');
+        modalAlert.classList.remove('flex');
+        if (typeof modalAlert.alertResolve === 'function') {
+            modalAlert.alertResolve();
+            modalAlert.alertResolve = null;
+        }
+        return;
+    }
+
+    const modalPrompt = document.getElementById('modal-prompt');
+    if (modalPrompt && !modalPrompt.classList.contains('hidden')) {
+        modalPrompt.classList.add('hidden');
+        modalPrompt.classList.remove('flex');
+        if (typeof modalPrompt.promptResolve === 'function') {
+            let result = modalPrompt.hasOwnProperty('promptResult') ? modalPrompt.promptResult : null;
+            modalPrompt.promptResolve(result);
+            modalPrompt.promptResolve = null;
+            delete modalPrompt.promptResult;
+        }
+        return;
+    }
+
+    const modalConfirm = document.getElementById('modal-confirm');
+    if (modalConfirm && !modalConfirm.classList.contains('hidden')) {
+        modalConfirm.classList.add('hidden');
+        modalConfirm.classList.remove('flex');
+        if (typeof modalConfirm.confirmResolve === 'function') {
+            let result = modalConfirm.hasOwnProperty('confirmResult') ? modalConfirm.confirmResult : false;
+            modalConfirm.confirmResolve(result);
+            modalConfirm.confirmResolve = null;
+            delete modalConfirm.confirmResult;
+        }
+        return;
+    }
+
+    // ==========================================
+    // 2. TANGKAP LACI-LACI LAINNYA BAWAAN SISTEM
+    // ==========================================
+
     // TANGKAP LACI TARIK OTOMATIS
     const modalTarikOto = document.getElementById('modal-tarik-otomatis');
     if (modalTarikOto && !modalTarikOto.classList.contains('hidden')) {
@@ -1782,44 +1826,6 @@ window.addEventListener('popstate', () => {
     if (modalNetflix && !modalNetflix.classList.contains('hidden')) {
         modalNetflix.classList.add('hidden');
         modalNetflix.classList.remove('flex');
-        return;
-    }
-
-    // 🚀 1. TANGKAP POP-UP ALERT, PROMPT, & CONFIRM (Anti Terpental)
-    const modalAlert = document.getElementById('modal-alert');
-    if (modalAlert && !modalAlert.classList.contains('hidden')) {
-        modalAlert.classList.add('hidden');
-        modalAlert.classList.remove('flex');
-        if (typeof modalAlert.alertResolve === 'function') {
-            modalAlert.alertResolve();
-            modalAlert.alertResolve = null;
-        }
-        return;
-    }
-
-    const modalPrompt = document.getElementById('modal-prompt');
-    if (modalPrompt && !modalPrompt.classList.contains('hidden')) {
-        modalPrompt.classList.add('hidden');
-        modalPrompt.classList.remove('flex');
-        if (typeof modalPrompt.promptResolve === 'function') {
-            let result = modalPrompt.hasOwnProperty('promptResult') ? modalPrompt.promptResult : null;
-            modalPrompt.promptResolve(result);
-            modalPrompt.promptResolve = null;
-            delete modalPrompt.promptResult;
-        }
-        return;
-    }
-
-    const modalConfirm = document.getElementById('modal-confirm');
-    if (modalConfirm && !modalConfirm.classList.contains('hidden')) {
-        modalConfirm.classList.add('hidden');
-        modalConfirm.classList.remove('flex');
-        if (typeof modalConfirm.confirmResolve === 'function') {
-            let result = modalConfirm.hasOwnProperty('confirmResult') ? modalConfirm.confirmResult : false;
-            modalConfirm.confirmResolve(result);
-            modalConfirm.confirmResolve = null;
-            delete modalConfirm.confirmResult;
-        }
         return;
     }
 
