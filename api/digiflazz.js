@@ -26,7 +26,6 @@ export default async function handler(req, res) {
         const sign = crypto.createHash('md5').update(username + apiKey + "depo").digest('hex');
 
         try {
-            // BYPASS PROXY! Tarik daftar harga langsung ke API Utama Digiflazz 
             const resPrepaid = await fetch('https://api.digiflazz.com/v1/price-list', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -89,7 +88,6 @@ export default async function handler(req, res) {
                 }
             }
 
-            // Hapus produk lama yang tidak ada di tarikan terbaru
             await supabase.from('digiflazz_products').delete().lt('updated_at', waktuSync);
 
             return res.status(200).json({ success: true, message: `Berhasil narik ${totalBerhasil} produk!` });
@@ -99,7 +97,7 @@ export default async function handler(req, res) {
     }
 
     // ==========================================
-    // 2. MODE BUY: TRANSAKSI & POTONG SALDO (PPOB Biasa)
+    // 2. MODE BUY: TRANSAKSI & POTONG SALDO
     // ==========================================
     if (action === 'buy') {
         const { user_id, sku_code, customer_no } = req.body;
@@ -122,7 +120,6 @@ export default async function handler(req, res) {
                 return res.status(400).json({ success: false, error: `Saldo tidak mencukupi.` });
             }
 
-            // Eksekusi Potong Saldo
             const { error: deductErr } = await supabase.from('profiles').update({ balance: saldoSaatIni - hargaJual }).eq('id', user_id);
             if (deductErr) return res.status(400).json({ success: false, error: "Gagal memotong saldo sistem." });
             
@@ -135,7 +132,6 @@ export default async function handler(req, res) {
                 description: `Pembelian PPOB: ${sku_code} (${customer_no})`
             });
 
-            // Tembak Transaksi ke Digiflazz via Proxy VPS
             const sign = crypto.createHash('md5').update(username + apiKey + ref_id).digest('hex');
             
             const proxyRes = await fetch('http://203.194.114.209:3000/proxy-digiflazz', {
@@ -148,7 +144,6 @@ export default async function handler(req, res) {
             });
             const digiData = await proxyRes.json();
 
-            // JIKA GAGAL INSTAN DARI DIGIFLAZZ (REFUND)
             if (digiData.data && digiData.data.status === "Gagal") {
                 const { data: profSekarang } = await supabase.from('profiles').select('balance').eq('id', user_id).single();
                 if (profSekarang) {
@@ -166,9 +161,15 @@ export default async function handler(req, res) {
                 return res.status(400).json({ success: false, error: "Transaksi gagal. Saldo dikembalikan.", detail: digiData.data.message });
             }
 
-            // JIKA SUKSES / PENDING
+            // SIMPAN SN JIKA DIGIFLAZZ MERESPONS CEPAT
             await supabase.from('riwayat_ppob').insert({
-                ref_id: ref_id, user_id: user_id, sku_code: sku_code, customer_no: customer_no, price: hargaJual, status: digiData.data ? digiData.data.status : 'Pending'
+                ref_id: ref_id, 
+                user_id: user_id, 
+                sku_code: sku_code, 
+                customer_no: customer_no, 
+                price: hargaJual, 
+                status: digiData.data ? digiData.data.status : 'Pending',
+                sn: (digiData.data && digiData.data.sn) ? digiData.data.sn : null
             });
 
             await supabase.from('messages').insert({
@@ -179,7 +180,6 @@ export default async function handler(req, res) {
             return res.status(200).json({ success: true, data: digiData.data });
 
         } catch (err) {
-            // Refund Jaga-Jaga jika koneksi putus di tengah jalan
             if (isSaldoDipotong && user_id && hargaJual > 0) {
                 const { data: profSekarang } = await supabase.from('profiles').select('balance').eq('id', user_id).single();
                 if (profSekarang) await supabase.from('profiles').update({ balance: Number(profSekarang.balance) + hargaJual }).eq('id', user_id);
@@ -189,18 +189,17 @@ export default async function handler(req, res) {
     }
 
     // ==========================================
-    // 3. MODE WITHDRAW: PENARIKAN SALDO OTOMATIS (E-WALLET)
+    // 3. MODE WITHDRAW: PENARIKAN SALDO OTOMATIS
     // ==========================================
     if (action === 'withdraw') {
         const { user_id, sku_code, customer_no, product_name, total_potong } = req.body;
-        const ref_id = "WD_" + Date.now(); // Kode Ref Khusus Penarikan
+        const ref_id = "WD_" + Date.now(); 
         
         let isSaldoDipotong = false; 
 
         try {
-            const provider = product_name.split(' ')[0]; // Ambil nama depan e.g. "DANA"
+            const provider = product_name.split(' ')[0]; 
             
-            // 1. Potong Saldo via RPC secara Atomic + Catat ke Mutasi Dompet
             const { error: dbError } = await supabase.rpc('tarik_saldo_otomatis', {
                 p_user_id: user_id,
                 p_total_potong: total_potong,
@@ -213,9 +212,8 @@ export default async function handler(req, res) {
                 return res.status(400).json({ success: false, error: dbError.message || "Gagal memotong saldo akun Anda." });
             }
             
-            isSaldoDipotong = true; // Menandakan RPC berhasil
+            isSaldoDipotong = true; 
 
-            // 2. Tembak Transaksi ke Digiflazz (Via Proxy VPS)
             const sign = crypto.createHash('md5').update(username + apiKey + ref_id).digest('hex');
             
             const proxyRes = await fetch('http://203.194.114.209:3000/proxy-digiflazz', {
@@ -228,19 +226,15 @@ export default async function handler(req, res) {
             });
             const digiData = await proxyRes.json();
 
-            // 3. JIKA DIGIFLAZZ LANGSUNG MENOLAK (REFUND)
             if (digiData.data && digiData.data.status === "Gagal") {
                 const { data: profSekarang } = await supabase.from('profiles').select('balance').eq('id', user_id).single();
                 if (profSekarang) {
-                    // Kembalikan Saldo
                     await supabase.from('profiles').update({ balance: Number(profSekarang.balance) + total_potong }).eq('id', user_id);
                     
-                    // Catat Refund ke Buku Kas Dompet
                     await supabase.from('wallet_transactions').insert({
                         user_id: user_id, amount: total_potong, type: 'INCOME', description: `Refund Penarikan Gagal: ${product_name}`
                     });
 
-                    // Kirim Pesan Inbox
                     await supabase.from('messages').insert({
                         sender_id: user_id, receiver_id: user_id,
                         message: `[SISTEM] Penarikan Saldo Otomatis *${product_name}* ke nomor *${customer_no}* GAGAL diproses oleh pusat.\n\nAlasan: ${digiData.data.message}\nDana Rp ${total_potong.toLocaleString('id-ID')} telah dikembalikan utuh ke saldo Anda.`
@@ -249,9 +243,15 @@ export default async function handler(req, res) {
                 return res.status(400).json({ success: false, error: "Penarikan gagal. Saldo dikembalikan.", detail: digiData.data.message });
             }
 
-            // 4. JIKA SUKSES / PENDING
+            // SIMPAN SN UNTUK PENARIKAN JIKA DIGIFLAZZ MERESPONS CEPAT
             await supabase.from('riwayat_ppob').insert({
-                ref_id: ref_id, user_id: user_id, sku_code: sku_code, customer_no: customer_no, price: total_potong, status: digiData.data ? digiData.data.status : 'Pending'
+                ref_id: ref_id, 
+                user_id: user_id, 
+                sku_code: sku_code, 
+                customer_no: customer_no, 
+                price: total_potong, 
+                status: digiData.data ? digiData.data.status : 'Pending',
+                sn: (digiData.data && digiData.data.sn) ? digiData.data.sn : null
             });
 
             await supabase.from('messages').insert({
@@ -262,7 +262,6 @@ export default async function handler(req, res) {
             return res.status(200).json({ success: true, data: digiData.data });
 
         } catch (err) {
-            // Safety Refund (Jaring Pengaman jika Koneksi Putus)
             if (isSaldoDipotong && user_id && total_potong > 0) {
                 const { data: profSekarang } = await supabase.from('profiles').select('balance').eq('id', user_id).single();
                 if (profSekarang) {
@@ -284,12 +283,15 @@ export default async function handler(req, res) {
             const refId = digiPayload.ref_id;
             const statusDigi = digiPayload.status;
 
-            const { data: orderData } = await supabase.from('riwayat_ppob').update({ status: statusDigi }).eq('ref_id', refId).select().single();
+            // UPDATE STATUS DAN SN SEKALIGUS SAAT WEBHOOK DITERIMA
+            const updatePayload = { status: statusDigi };
+            if (digiPayload.sn) updatePayload.sn = digiPayload.sn;
+
+            const { data: orderData } = await supabase.from('riwayat_ppob').update(updatePayload).eq('ref_id', refId).select().single();
 
             if (orderData) {
                 const hargaAwal = Number(orderData.price);
                 
-                // Deteksi ini transaksi biasa atau penarikan saldo
                 const isWD = refId.startsWith('WD_');
                 const tipeTransaksi = isWD ? 'Penarikan Saldo Otomatis' : 'Pesanan PPOB';
                 const deskripsiRefund = isWD ? `Refund Penarikan Gagal: ${orderData.sku_code}` : `Refund PPOB Gagal: ${orderData.sku_code}`;
