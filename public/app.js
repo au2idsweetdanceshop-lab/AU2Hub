@@ -10066,6 +10066,7 @@ async function loadTokoSaya() {
     loggedOut.classList.add('hidden');
     loggedOut.classList.remove('flex');
     loggedIn.classList.remove('hidden');
+    loggedIn.classList.add('flex');
 
     // 🔥 TAMPILKAN INFO MASA AKTIF VIP KE LAYAR 
     if (elExpired && elBadge) {
