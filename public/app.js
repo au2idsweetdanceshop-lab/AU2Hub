@@ -10738,7 +10738,7 @@ async function prosesTarikSaldo() {
 }
 
 // ==========================================
-// MESIN MODAL PENARIKAN OTOMATIS
+// MESIN MODAL PENARIKAN OTOMATIS (DESAIN GOPAY 2 KOTAK + S3 MARKETING)
 // ==========================================
 function bukaModalTarikOtomatis(saldo, provider, number, products) {
     history.pushState({ popup: 'tarik_otomatis' }, null, '#tarikdana');
@@ -10749,33 +10749,56 @@ function bukaModalTarikOtomatis(saldo, provider, number, products) {
     
     const grid = document.getElementById('tarik-grid');
     
-    // Filter produk yang mampu dibayar oleh seller (Harga Digiflazz + Admin 500 <= Saldo Seller)
+    // Filter produk yang mampu dibayar oleh seller (Harga + 500 <= Saldo)
     const validProducts = products.filter(p => (p.price + 500) <= saldo);
     
     if (validProducts.length === 0) {
+        // Kembalikan ke 1 kolom jika error
+        grid.className = 'flex flex-col gap-2.5 pb-6 relative z-10';
         grid.innerHTML = `
         <div class="text-center bg-red-500/10 border border-red-500/30 rounded-xl p-4">
             <i class="fas fa-exclamation-triangle text-red-500 text-2xl mb-2"></i>
             <p class="text-[11px] text-white">Saldo Anda (Rp ${saldo.toLocaleString('id-ID')}) tidak cukup untuk menarik pecahan terendah dari ${provider}.</p>
         </div>`;
     } else {
-        grid.innerHTML = validProducts.map(p => {
+        // Sulap wadah menjadi Grid 2 Kolom ala GoPay
+        grid.className = 'grid grid-cols-2 gap-3 pb-6 relative z-10';
+        
+        grid.innerHTML = validProducts.map((p, index) => {
             const totalPotong = p.price + 500;
             const namaAman = escapeHTML(p.product_name).replace(/&#39;/g, "\\'");
+            const delayAnimasi = Math.min(index * 0.02, 0.2); 
+            
+            // Format Harga Asli (Sesuai saldo yang dipotong)
+            const formatHarga = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(totalPotong).replace('Rp', 'Rp ');
+            
+            // 🔥 ILUSI S3 MARKETING: Bikin Harga Coret Otomatis 🔥
+            let hargaCoret = Math.ceil((totalPotong * 1.3) / 1000) * 1000; 
+            if (totalPotong > 100000) hargaCoret = Math.ceil((totalPotong * 1.2) / 5000) * 5000; 
+            if (totalPotong <= 5000) hargaCoret = totalPotong + 2500; 
+            
+            const formatHargaCoret = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(hargaCoret).replace('Rp', 'Rp ');
+
+            // Styling Kartu ala GoPay
+            const tampilanCard = "bg-[#1C233A] hover:bg-[#232A45] hover:border-brand-info/40 cursor-pointer active:scale-95 border border-white/5";
+
             return `
-            <div onclick="konfirmasiTarikOtomatis('${p.sku_code}', '${namaAman}', ${p.price})" class="bg-[#1C233A] hover:bg-[#232A45] hover:border-brand-info/40 cursor-pointer active:scale-95 border border-white/5 p-4 rounded-[1.2rem] flex justify-between items-center transition-all shadow-sm group">
-                <div class="flex-1 pr-3">
-                    <h4 class="text-[12px] sm:text-[13px] font-extrabold text-white mb-1 leading-snug group-hover:text-brand-info transition-colors">${p.product_name}</h4>
-                    <p class="text-[10px] text-gray-400">Potong Saldo: <span class="text-red-400 font-bold">Rp ${totalPotong.toLocaleString('id-ID')}</span> <span class="text-[9px]">(Trmsk Admin Rp 500)</span></p>
+            <div onclick="konfirmasiTarikOtomatis('${p.sku_code}', '${namaAman}', ${p.price})" style="animation-delay: ${delayAnimasi}s; opacity: 0;" class="p-3.5 sm:p-4 rounded-[1.2rem] flex flex-col justify-between transition-all smooth-reveal shadow-sm relative h-full min-h-[95px] overflow-hidden ${tampilanCard}">
+                
+                <div class="mb-3 relative z-0">
+                    <h4 class="text-[12px] sm:text-[13px] font-extrabold text-white leading-snug line-clamp-3">${namaAman}</h4>
                 </div>
-                <div class="w-8 h-8 rounded-full bg-brand-info/10 border border-brand-info/20 text-brand-info flex items-center justify-center shrink-0 shadow-sm group-hover:bg-brand-info group-hover:text-brand-dark transition-all">
-                    <i class="fas fa-chevron-right text-xs"></i>
+                
+                <div class="mt-auto relative z-0 flex flex-col">
+                    <span class="text-[8px] text-gray-400 mb-0.5">Total Potong Saldo:</span>
+                    <span class="text-gray-500 line-through text-[9px] sm:text-[10px] font-medium opacity-70 mb-0.5">${formatHargaCoret}</span>
+                    <span class="text-[13px] sm:text-[14px] font-black text-[#EE4D2D] tracking-tight block">${formatHarga}</span>
                 </div>
             </div>`;
         }).join('');
     }
 
-    tutupModalSaldoDompet(); // Tutup laci sebelumnya
+    tutupModalSaldoDompet(); 
     
     modal.classList.remove('hidden');
     modal.classList.add('flex');
