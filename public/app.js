@@ -12319,7 +12319,7 @@ function renderBukuKasList(dataArray) {
 
 
 // ==========================================
-// RADAR PENCARIAN BUKU KAS & HARGA (AUTO RUN)
+// RADAR PENCARIAN BUKU KAS & PPOB (AUTO RUN)
 // ==========================================
 document.addEventListener('DOMContentLoaded', () => {
     // Taruh di dalam DOMContentLoaded agar event diletakkan saat HTML sudah dimuat
@@ -12355,19 +12355,31 @@ document.addEventListener('DOMContentLoaded', () => {
             }, 300));
         }
 
-        // 2. 🔥 [BARU] RADAR PENCARIAN HARGA PPOB (TEMBAK KE SERVER)
-        const searchHargaPPOB = document.getElementById('cari-harga-ppob');
-        if (searchHargaPPOB) {
-            searchHargaPPOB.addEventListener('input', debounce((e) => {
-                const keyword = e.target.value;
-                loadDaftarHargaPPOB(keyword); // Tembak langsung ke Supabase
-            }, 500)); // Delay 500ms agar database Supabase tidak down saat ngetik cepat
+        // 2. 🔥 RADAR PENCARIAN RIWAYAT PPOB (MEMORI LOKAL)
+        const searchLabaPPOB = document.getElementById('cari-laba-ppob');
+        if (searchLabaPPOB) {
+            searchLabaPPOB.addEventListener('input', debounce((e) => {
+                const keyword = e.target.value.toLowerCase();
+                
+                if (!keyword.trim()) {
+                    renderLabaPPOBList(globalDataLabaPPOB);
+                    return;
+                }
+                
+                const filteredData = globalDataLabaPPOB.filter(tx => {
+                    const matchSKU = (tx.sku_code || '').toLowerCase().includes(keyword);
+                    const matchNo = (tx.customer_no || '').toLowerCase().includes(keyword);
+                    const matchUser = (tx.profiles?.nickname || '').toLowerCase().includes(keyword);
+                    
+                    return matchSKU || matchNo || matchUser;
+                });
+                
+                renderLabaPPOBList(filteredData);
+            }, 300));
         }
 
     }, 1000);
 });
-
-
 
 // ==========================================
 // FUNGSI SWITCH TAB UNTUK SUPER ADMIN
@@ -12413,10 +12425,9 @@ function switchAdminTab(tab) {
         if(menuAntrean) menuAntrean.className = `flex-1 py-3 text-[10px] sm:text-[11px] font-bold rounded-lg transition-all relative ${activeClass}`;
         if(contAntrean) contAntrean.classList.replace('hidden', 'block');
     } else if (tab === 'harga') {
-        // [BARU] Jalankan fungsi tab harga
         if(menuHarga) menuHarga.className = `flex-1 py-3 text-[10px] sm:text-[11px] font-bold rounded-lg transition-all relative ${activeClass}`;
         if(contHarga) contHarga.classList.replace('hidden', 'block');
-        loadDaftarHargaPPOB(); // Tarik data harga
+        loadRiwayatLabaPPOB(); // <--- GANTI NAMA FUNGSI INI
     }
 }
 
@@ -13300,76 +13311,99 @@ async function eksekusiSinkronisasiPPOB() {
 }
 
 // ==========================================
-// PUSAT KENDALI: DAFTAR HARGA & MARGIN PPOB
+// PUSAT KENDALI: RIWAYAT TRANSAKSI & LABA PPOB
 // ==========================================
-async function loadDaftarHargaPPOB(searchQuery = '') {
-    const listContainer = document.getElementById('admin-harga-list');
+let globalDataLabaPPOB = []; // Memori kas PPOB
+
+async function loadRiwayatLabaPPOB(isRefresh = false) {
+    const listContainer = document.getElementById('admin-laba-list');
     if (!listContainer) return;
 
-    listContainer.innerHTML = '<div class="text-center py-10"><i class="fas fa-circle-notch fa-spin text-brand-info text-2xl mb-2"></i><br><span class="text-[10px] text-gray-500">Menarik data dari pusat...</span></div>';
+    if (isRefresh) showToast("Merekap riwayat PPOB...", "info");
+    
+    if (globalDataLabaPPOB.length === 0 || isRefresh) {
+        listContainer.innerHTML = '<div class="text-center py-10"><i class="fas fa-circle-notch fa-spin text-brand-info text-2xl mb-2"></i><br><span class="text-[10px] text-gray-500 font-bold tracking-widest uppercase">Merekap Transaksi PPOB...</span></div>';
+    }
 
     try {
-        let query = supabaseClient.from('digiflazz_products').select('sku_code, product_name, category, brand, price, seller_price, is_active');
-        
-        // Jika sedang mencari spesifik (karena database PPOB itu ribuan, kita harus search langsung dari server agar tidak lag)
-        if (searchQuery.trim() !== '') {
-            // Cari berdasarkan nama atau SKU
-            query = query.or(`product_name.ilike.%${searchQuery}%,sku_code.ilike.%${searchQuery}%`).limit(50);
-        } else {
-            // Default: Tampilkan 50 produk acak/teratas
-            query = query.limit(50);
-        }
+        // Tarik 100 transaksi PPOB terakhir dari riwayat_ppob
+        const { data, error } = await supabaseClient
+            .from('riwayat_ppob')
+            .select('*, profiles!riwayat_ppob_user_id_fkey(nickname)')
+            .order('created_at', { ascending: false })
+            .limit(100);
 
-        const { data, error } = await query;
         if (error) throw error;
 
         if (data && data.length > 0) {
-            listContainer.innerHTML = data.map(item => {
-                const modalDigiflazz = Number(item.price);
-                const hargaJualApp = Number(item.seller_price);
-                
-                // Laba kotor (Selisih Harga Jual dengan Modal)
-                const laba = hargaJualApp - modalDigiflazz;
-                const labaClass = laba >= 0 ? 'text-brand-success' : 'text-red-500';
-                
-                const statusBadge = item.is_active 
-                    ? `<span class="bg-brand-success/20 text-brand-success px-2 py-0.5 rounded text-[8px] font-black tracking-widest border border-brand-success/30">AKTIF</span>`
-                    : `<span class="bg-red-500/20 text-red-500 px-2 py-0.5 rounded text-[8px] font-black tracking-widest border border-red-500/30">GANGGUAN</span>`;
-
-                return `
-                <div class="bg-[#161B2E] border border-white/5 p-3 rounded-[1.2rem] flex flex-col gap-2 relative shadow-md hover:bg-[#1C233A] transition-colors">
-                    <div class="flex justify-between items-start border-b border-white/5 pb-2">
-                        <div class="flex-1 pr-2">
-                            <div class="flex items-center gap-2 mb-1">
-                                <span class="text-[9px] bg-black/40 text-brand-info px-2 py-0.5 rounded-md border border-brand-info/30 font-mono">${item.sku_code}</span>
-                                ${statusBadge}
-                            </div>
-                            <h4 class="text-[11px] font-bold text-white leading-snug">${item.product_name}</h4>
-                            <p class="text-[9px] text-gray-500 mt-0.5">${item.category} &bull; ${item.brand}</p>
-                        </div>
-                    </div>
-                    
-                    <div class="flex justify-between items-center bg-black/30 rounded-lg p-2.5 border border-white/5">
-                        <div class="flex flex-col">
-                            <span class="text-[8px] text-gray-400 uppercase tracking-wider">Harga Modal Pusat</span>
-                            <span class="text-[11px] font-mono text-gray-300">Rp ${modalDigiflazz.toLocaleString('id-ID')}</span>
-                        </div>
-                        <i class="fas fa-arrow-right text-gray-600 text-xs"></i>
-                        <div class="flex flex-col items-center">
-                            <span class="text-[8px] text-gray-400 uppercase tracking-wider">Harga Jual App</span>
-                            <span class="text-[12px] font-mono font-bold text-white">Rp ${hargaJualApp.toLocaleString('id-ID')}</span>
-                        </div>
-                        <div class="flex flex-col text-right pl-2 border-l border-white/10">
-                            <span class="text-[8px] text-gray-400 uppercase tracking-wider">Laba/Margin</span>
-                            <span class="text-[12px] font-black ${labaClass}">+Rp ${laba.toLocaleString('id-ID')}</span>
-                        </div>
-                    </div>
-                </div>`;
-            }).join('');
+            globalDataLabaPPOB = data;
+            renderLabaPPOBList(globalDataLabaPPOB);
         } else {
-            listContainer.innerHTML = '<div class="text-center py-6 text-[10px] text-gray-500 border border-white/5 rounded-2xl bg-black/20">Produk tidak ditemukan.</div>';
+            globalDataLabaPPOB = [];
+            listContainer.innerHTML = '<div class="text-center py-6 text-[10px] text-gray-500 border border-white/5 rounded-2xl bg-black/20">Belum ada transaksi PPOB.</div>';
         }
     } catch (e) {
-        listContainer.innerHTML = '<div class="text-center py-6 text-xs text-red-500">Gagal memuat harga server.</div>';
+        listContainer.innerHTML = '<div class="text-center py-6 text-xs text-red-500">Gagal memuat riwayat PPOB.</div>';
     }
+}
+
+// Fungsi Cetak ke Layar (Render)
+function renderLabaPPOBList(dataArray) {
+    const listContainer = document.getElementById('admin-laba-list');
+    
+    if (!dataArray || dataArray.length === 0) {
+        listContainer.innerHTML = `
+        <div class="flex flex-col items-center justify-center py-12 text-center bg-black/20 rounded-2xl border border-white/5">
+            <i class="fas fa-search-minus text-4xl text-gray-600 mb-3"></i>
+            <h4 class="text-white font-bold text-xs mb-1 tracking-tight">Riwayat Tidak Ditemukan</h4>
+            <p class="text-[10px] text-gray-500">Gunakan kata kunci yang lain.</p>
+        </div>`;
+        return;
+    }
+
+    listContainer.innerHTML = dataArray.map(tx => {
+        const status = String(tx.status).toUpperCase();
+        let statusBadge = '';
+        if (status === 'SUKSES') statusBadge = `<span class="bg-brand-success/20 text-brand-success px-2 py-0.5 rounded text-[8px] font-black tracking-widest border border-brand-success/30">SUKSES</span>`;
+        else if (status === 'PENDING') statusBadge = `<span class="bg-brand-info/20 text-brand-info px-2 py-0.5 rounded text-[8px] font-black tracking-widest border border-brand-info/30">PROSES</span>`;
+        else statusBadge = `<span class="bg-red-500/20 text-red-500 px-2 py-0.5 rounded text-[8px] font-black tracking-widest border border-red-500/30">GAGAL</span>`;
+
+        // 💰 RUMUS LABA: Karena sistem Anda di-set untung Rp 100/transaksi
+        const hargaJual = Number(tx.price || 0); 
+        const laba = status === 'SUKSES' ? 100 : 0; // Kalau gagal labanya 0
+        const hargaModal = hargaJual > 0 ? (hargaJual - 100) : 0; 
+        
+        const tgl = new Date(tx.created_at).toLocaleString('id-ID', {day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit'}) + ' WIB';
+        const pembeli = tx.profiles?.nickname || 'Player';
+
+        return `
+        <div class="bg-[#161B2E] border border-white/5 p-3 rounded-[1.2rem] flex flex-col gap-2 relative shadow-md hover:bg-[#1C233A] transition-colors">
+            <div class="flex justify-between items-start border-b border-white/5 pb-2">
+                <div class="flex-1 pr-2">
+                    <div class="flex items-center gap-2 mb-1">
+                        <span class="text-[9px] bg-black/40 text-brand-info px-2 py-0.5 rounded-md border border-brand-info/30 font-mono">${tx.sku_code || 'PPOB'}</span>
+                        ${statusBadge}
+                    </div>
+                    <h4 class="text-[12px] font-bold text-white leading-snug">${tx.customer_no}</h4>
+                    <p class="text-[9px] text-gray-500 mt-0.5">Pembeli: @${pembeli} &bull; ${tgl}</p>
+                </div>
+            </div>
+            
+            <div class="flex justify-between items-center bg-black/30 rounded-lg p-2.5 border border-white/5">
+                <div class="flex flex-col">
+                    <span class="text-[8px] text-gray-400 uppercase tracking-wider">Harga Modal</span>
+                    <span class="text-[11px] font-mono text-gray-400">Rp ${hargaModal.toLocaleString('id-ID')}</span>
+                </div>
+                <i class="fas fa-arrow-right text-gray-600 text-xs"></i>
+                <div class="flex flex-col items-center">
+                    <span class="text-[8px] text-gray-400 uppercase tracking-wider">Dibayar User</span>
+                    <span class="text-[11px] font-mono font-bold text-white">Rp ${hargaJual.toLocaleString('id-ID')}</span>
+                </div>
+                <div class="flex flex-col text-right pl-3 border-l border-white/10">
+                    <span class="text-[8px] text-gray-400 uppercase tracking-wider">Keuntungan</span>
+                    <span class="text-[13px] font-black ${status === 'SUKSES' ? 'text-brand-success drop-shadow-[0_0_5px_rgba(37,211,102,0.4)]' : 'text-gray-500'}">+Rp ${laba.toLocaleString('id-ID')}</span>
+                </div>
+            </div>
+        </div>`;
+    }).join('');
 }
