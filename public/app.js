@@ -1729,6 +1729,20 @@ function switchTab(tabId, event = null, isPush = true) {
 window.addEventListener('popstate', () => {
     let isPopupClosed = false;
 
+    // 🔥 SAPU BERSIH MUTLAK: Matikan semua radar API jika user memencet Back HP
+    if (typeof intervalJemputBola !== 'undefined' && intervalJemputBola) {
+        clearInterval(intervalJemputBola);
+        intervalJemputBola = null;
+    }
+    if (typeof window.wdPolling !== 'undefined' && window.wdPolling) {
+        clearInterval(window.wdPolling);
+        window.wdPolling = null;
+    }
+    if (typeof window.ppobPolling !== 'undefined' && window.ppobPolling) {
+        clearInterval(window.ppobPolling);
+        window.ppobPolling = null;
+    }
+
     // ==========================================
     // 🚀 1. TANGKAP POP-UP ALERT, PROMPT, & CONFIRM DULUAN! (Wajib Paling Atas / Anti Terpental)
     // ==========================================
@@ -8092,13 +8106,9 @@ lbModal.addEventListener('touchend', e => {
 
 // 🔥 FUNGSI PEMBUKA MODAL INVOICE (DIPERBARUI SUPPORT PPOB)
 function bukaDetailPesananDinamis(orderId, productName, price, status, tableSource, sellerId, productId) {
-    activeOrderIdToPay = orderId;
-    activeOrderPriceToPay = price;
-    activeOrderNameToPay = productName;
-    activeOrderTable = tableSource; 
-    
-    activeOrderSellerId = (sellerId && sellerId !== 'null' && sellerId !== 'undefined' && String(sellerId).trim() !== '') ? sellerId : null; 
-    activeOrderProductId = (productId && productId !== 'null' && productId !== 'undefined' && String(productId).trim() !== '') ? productId : null; 
+    // Variabel global dihapus agar data tidak bentrok antar laci
+    const cleanSellerId = (sellerId && sellerId !== 'null' && sellerId !== 'undefined' && String(sellerId).trim() !== '') ? sellerId : null; 
+    const cleanProductId = (productId && productId !== 'null' && productId !== 'undefined' && String(productId).trim() !== '') ? productId : null; 
 
     // Terjemahkan status Digiflazz ke bahasa UI Laci agar progress bar-nya ngerti
     let visualStatus = status;
@@ -8121,6 +8131,17 @@ function bukaDetailPesananDinamis(orderId, productName, price, status, tableSour
     const actionBelumBayar = document.getElementById('action-belum-bayar');
     const actionDiproses = document.getElementById('action-diproses');
     const pesanStatusLain = document.getElementById('pesan-status-lain');
+    // SUNTIKAN KODE BARU: Menyisipkan ID Pesanan langsung ke tombolnya
+    if (actionBelumBayar) {
+        const btnBayar = actionBelumBayar.querySelector('button[onclick^="prosesBayarUlang"]');
+        const btnBatal = actionBelumBayar.querySelector('button[onclick^="batalkanPesanan"]');
+        if (btnBayar) btnBayar.onclick = () => prosesBayarUlang(orderId, productName, price, tableSource, cleanSellerId, cleanProductId);
+        if (btnBatal) btnBatal.onclick = () => batalkanPesanan(orderId, tableSource);
+    }
+    if (actionDiproses) {
+        const btnSelesai = actionDiproses.querySelector('button[onclick^="selesaikanPesanan"]');
+        if (btnSelesai) btnSelesai.onclick = () => selesaikanPesanan(orderId, tableSource);
+    }
 
     const trackLine = document.getElementById('track-line');
     const dot2 = document.getElementById('step-2-dot');
@@ -8365,8 +8386,8 @@ function closeDetailPesanan(dariTombolBackHP = false) {
 }
 
 // EKSEKUSI PEMBATALAN PESANAN DARI DATABASE
-async function batalkanPesanan() {
-    if (!activeOrderIdToPay) return;
+async function batalkanPesanan(orderId, tableSource) {
+    if (!orderId) return;
     
     const konfirmasi = await customConfirm("Apakah kamu yakin ingin membatalkan pesanan ini?");
     
@@ -8375,14 +8396,10 @@ async function batalkanPesanan() {
         showToast("Membatalkan pesanan...", "info");
         
         try {
-            // PERBAIKAN: Gunakan 'activeOrderTable' bukan 'orders'
-            // Agar bisa membatalkan pesanan baik dari Toko Admin maupun Pasar Player
-            const { error } = await supabaseClient.from(activeOrderTable).delete().eq('id', activeOrderIdToPay);
+            const { error } = await supabaseClient.from(tableSource).delete().eq('id', orderId);
             if (error) throw error;
             
             showToast("Pesanan berhasil dibatalkan.", "success");
-            
-            // Refresh layar List dan Angka Badge di Profile
             cekStatusPesanan('bayar'); 
             loadOrderTracker(currentUser.id); 
             
@@ -8394,11 +8411,11 @@ async function batalkanPesanan() {
 
 
 // EKSEKUSI PENYELESAIAN PESANAN DARI PEMBELI (VERSI FINAL)
-async function selesaikanPesanan() {
-    if (!activeOrderIdToPay) return;
+async function selesaikanPesanan(orderId, tableSource) {
+    if (!orderId) return;
     
     let pesanKonfirmasi = "Pesanan sudah dikerjakan dan diterima dengan baik?";
-    if (activeOrderTable === 'orders_player') {
+    if (tableSource === 'orders_player') {
         pesanKonfirmasi += "\n\nDana akan masuk ke Saldo Tertahan Penjual dan cair dalam 24 jam.";
     }
     
@@ -8410,33 +8427,23 @@ async function selesaikanPesanan() {
     
     try {
         const waktuSekarang = new Date().toISOString();
-        
-        // Hanya update 'status' untuk order Admin
-        let dataUpdate = { 
-            status: 'selesai' 
-        };
+        let dataUpdate = { status: 'selesai' };
 
-        // HANYA masukkan 'waktu_selesai' dan 'dana_cair' jika ini transaksi di Pasar Player
-        if (activeOrderTable === 'orders_player') {
+        if (tableSource === 'orders_player') {
             dataUpdate.waktu_selesai = waktuSekarang;
             dataUpdate.dana_cair = false;
         }
         
-        const { error: orderError } = await supabaseClient
-            .from(activeOrderTable) 
-            .update(dataUpdate)
-            .eq('id', activeOrderIdToPay);
-
+        const { error: orderError } = await supabaseClient.from(tableSource).update(dataUpdate).eq('id', orderId);
         if (orderError) throw orderError;
 
-        if (activeOrderTable === 'orders_player') {
+        if (tableSource === 'orders_player') {
             showToast("Pesanan selesai! Dana masuk ke Saldo Tertahan Penjual (H+1).", "success");
         } else {
             showToast("Pesanan selesai! Terima kasih.", "success");
         }
         
         tambahExp(50);
-        // 🔥 FIX: Otomatis pindahkan layar user ke tab "SELESAI" agar tidak panik
         cekStatusPesanan('selesai'); 
         loadOrderTracker(currentUser.id); 
         
@@ -8446,7 +8453,7 @@ async function selesaikanPesanan() {
 }
 
 
-async function checkoutXoftwarePay(namaProduk, harga, deskripsi, sellerId = null, productId = null, isBayarUlang = false) {
+async function checkoutXoftwarePay(namaProduk, harga, deskripsi, sellerId = null, productId = null, isBayarUlang = false, retryOrderId = null) {
     if (!currentUser) return showToast("Silakan login dulu untuk membeli!", "error");
 
     // 1. CEGAH POPUP DOBEL (Hanya nanya kalau ini beli langsung)
@@ -8479,8 +8486,8 @@ async function checkoutXoftwarePay(namaProduk, harga, deskripsi, sellerId = null
         // 2. CEGAH ERROR 404 (Kita pakai ID yang sudah ada)
         if (isBayarUlang) {
             // Update ID produknya agar bot Auto-Delivery gak buta
-            await supabaseClient.from(targetTabel).update({ product_id: productId, status: 'PENDING' }).eq('id', activeOrderIdToPay);
-            orderData = { id: activeOrderIdToPay }; 
+            await supabaseClient.from(targetTabel).update({ product_id: productId, status: 'PENDING' }).eq('id', retryOrderId);
+            orderData = { id: retryOrderId }; 
         } else {
             const dataInsert = { user_id: currentUser.id, product_name: namaProduk, price: harga, status: 'PENDING', product_id: productId };
             if (sellerId) dataInsert.seller_id = sellerId;
@@ -8717,33 +8724,22 @@ let htmlDataPesanan = escapeHTML(autoDeliveryContent).replace(
     }
 }
 
-async function prosesBayarUlang() {
-    if (!activeOrderIdToPay) return;
+async function prosesBayarUlang(orderId, productName, price, tableSource, sellerId, productId) {
+    if (!orderId) return;
     
-    // HANYA 1 KONFIRMASI DI SINI
-    const konfirmasi = await customConfirm(`Lanjutkan pembayaran untuk:\n\n${activeOrderNameToPay}?`);
+    const konfirmasi = await customConfirm(`Lanjutkan pembayaran untuk:\n\n${productName}?`);
     if (!konfirmasi) return;
 
     showToast("Memperbarui tagihan...", "info");
 
     try {
-        // 🔥 JURUS PENYELAMAT PESANAN LAMA: Cari paksa ID barang yang hilang!
-        let safeProductId = activeOrderProductId;
+        let safeProductId = productId;
         if (!safeProductId || safeProductId === 'null' || safeProductId === 'undefined' || String(safeProductId).trim() === '') {
-            let cleanName = activeOrderNameToPay.replace('[PASAR] ', '').replace(/ \[\+Rekber\]/g, '').replace(/ \(x\d+\)$/, '').split(' - ')[0].trim();
-            
-            const { data: searchProd } = await supabaseClient.from('player_products')
-                .select('id')
-                .ilike('title', `%${cleanName}%`)
-                .limit(1);
-
-            if (searchProd && searchProd.length > 0) {
-                safeProductId = searchProd[0].id;
-                activeOrderProductId = safeProductId; // Update global
-            }
+            let cleanName = productName.replace('[PASAR] ', '').replace(/ \[\+Rekber\]/g, '').replace(/ \(x\d+\)$/, '').split(' - ')[0].trim();
+            const { data: searchProd } = await supabaseClient.from('player_products').select('id').ilike('title', `%${cleanName}%`).limit(1);
+            if (searchProd && searchProd.length > 0) safeProductId = searchProd[0].id;
         }
 
-        // TUTUP LACI INVOICE & RIWAYAT FISIK SECARA PAKSA (Anti-bug animasi history.back)
         const modalInvoice = document.getElementById('modal-detail-pesanan');
         if (modalInvoice) { modalInvoice.classList.add('hidden'); modalInvoice.classList.remove('flex'); }
         const modalRiwayat = document.getElementById('modal-riwayat-pesanan');
@@ -8752,16 +8748,8 @@ async function prosesBayarUlang() {
         if (intervalJemputBola) { clearInterval(intervalJemputBola); intervalJemputBola = null; }
         if (activeChannelPembayaran) { supabaseClient.removeChannel(activeChannelPembayaran); activeChannelPembayaran = null; }
 
-        // PANGGIL CHECKOUT DENGAN MODE BAYAR ULANG (True)
-        // Ini tidak akan menghapus ID lama, tidak membuat ID baru, dan tidak nanya 2x!
-        checkoutXoftwarePay(
-            activeOrderNameToPay, 
-            activeOrderPriceToPay, 
-            "Melanjutkan pembayaran tertunda.", 
-            activeOrderSellerId, 
-            safeProductId,
-            true // <--- KUNCI PENYELAMAT
-        );
+        // Lempar ke Xoftware dengan tambahan "orderId" di ujung
+        checkoutXoftwarePay(productName, price, "Melanjutkan pembayaran tertunda.", sellerId, safeProductId, true, orderId);
 
     } catch (error) {
         showToast("Gagal memperbarui tagihan.", "error");
