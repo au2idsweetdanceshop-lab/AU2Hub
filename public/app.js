@@ -11613,7 +11613,7 @@ Silakan cek mutasi rekening Anda.`
     }
 }
 
-// === FUNGSI TOLAK PENARIKAN (ANTI DOBEL REFUND) ===
+// === FUNGSI TOLAK PENARIKAN (ANTI DOBEL REFUND & TANPA RPC) ===
 async function tolakPenarikan(wdId, userId, nominal) {
     if (isAdminProcessing) return showToast("Sistem sedang memproses...", "info");
     isAdminProcessing = true; // KUNCI LANGSUNG DI AWAL
@@ -11627,7 +11627,7 @@ async function tolakPenarikan(wdId, userId, nominal) {
         const card = document.getElementById(`wd-${wdId}`);
         if (card) card.style.pointerEvents = 'none';
 
-        // JURUS ATOMIC UPDATE
+        // 1. JURUS ATOMIC UPDATE
         const { data, error } = await supabaseClient
             .from('withdrawals')
             .update({ status: 'DITOLAK' })
@@ -11638,26 +11638,27 @@ async function tolakPenarikan(wdId, userId, nominal) {
         if (error) throw error;
         if (!data || data.length === 0) throw new Error("Transaksi ini sudah diproses.");
 
-        // Refund saldo menggunakan RPC
-        await supabaseClient.rpc('tambah_saldo', {
-            p_user_id: userId,
-            p_jumlah: nominal,
-            p_deskripsi: `Refund Gagal Cair: ${alasan}`
+        // 2. 🔥 PERBAIKAN: Refund saldo TANPA RPC (Langsung di JS agar tidak gagal)
+        const { data: profile } = await supabaseClient.from('profiles').select('balance').eq('id', userId).single();
+        const newBalance = (Number(profile?.balance) || 0) + Number(nominal);
+        await supabaseClient.from('profiles').update({ balance: newBalance }).eq('id', userId);
+
+        // 3. Catat di Riwayat Mutasi Dompet
+        await supabaseClient.from('wallet_transactions').insert({
+            user_id: userId,
+            amount: nominal,
+            type: 'INCOME',
+            description: `Refund Gagal Cair: ${alasan}`
         });
 
-        // ---> TAMBAHAN BARU: KIRIM NOTIFIKASI KE INBOX SELLER <---
+        // 4. KIRIM NOTIFIKASI KE INBOX SELLER
         await supabaseClient.from('messages').insert({
             sender_id: currentUser.id,
             receiver_id: userId,
-            message: `[SISTEM] Penarikan saldo sebesar Rp ${Number(nominal).toLocaleString('id-ID')} DITOLAK oleh Admin.
-
-Alasan: ${alasan}
-
-Dana telah dikembalikan ke Saldo Aktif Anda.`
+            message: `[SISTEM] Penarikan saldo sebesar Rp ${Number(nominal).toLocaleString('id-ID')} DITOLAK oleh Admin.\n\nAlasan: ${alasan}\n\nDana telah dikembalikan ke Saldo Aktif Anda.`
         });
 
-
-        // Efek hilang
+        // Efek hilang dari layar antrean admin
         if (card) {
             card.style.opacity = '0';
             setTimeout(() => {
