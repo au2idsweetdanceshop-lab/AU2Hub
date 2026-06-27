@@ -51,6 +51,9 @@ export default async function handler(req, res) {
                 key = fileUrl.replace(baseUrl2, '');
             }
 
+            // 🔥 PERBAIKAN: Buang query parameter (?t=...) jika ada
+            key = key.split('?')[0]; 
+
             if (!key || key === fileUrl) {
                 return res.status(400).json({ success: false, error: "Format URL tidak valid." });
             }
