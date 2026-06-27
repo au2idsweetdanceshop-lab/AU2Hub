@@ -12275,40 +12275,50 @@ async function eksekusiSapuBersihTokoMati() {
 
 // ==========================================
 // BUKU KAS TRANSPARAN UNTUK NIKKY (SUPER ADMIN)
-// DENGAN FITUR PENCARIAN INSTAN ALA MUTASI BANK
 // ==========================================
 
-let globalDataBukuKas = []; // Variabel untuk menampung memori kas
+let globalDataBukuKas = []; 
+let offsetBukuKas = 0; // 🔥 Variabel baru untuk melacak halaman
+const LIMIT_KAS = 50;  // 🔥 Tarik 50 data per klik biar HP Nikky gak panas
 
-async function loadRiwayatKeuanganGlobal(isRefresh = false) {
+async function loadRiwayatKeuanganGlobal(isRefresh = false, isLoadMore = false) {
     const listContainer = document.getElementById('admin-buku-kas-list');
     const iconRefresh = document.getElementById('icon-refresh-kas');
     if (!listContainer) return;
 
-    if (isRefresh && iconRefresh) iconRefresh.classList.add('fa-spin');
-    
-    if (!isRefresh) {
+    if (isRefresh) {
+        if (iconRefresh) iconRefresh.classList.add('fa-spin');
+        offsetBukuKas = 0; 
+        globalDataBukuKas = [];
+    } else if (!isLoadMore) {
+        offsetBukuKas = 0;
+        globalDataBukuKas = [];
         listContainer.innerHTML = '<div class="text-center py-10"><i class="fas fa-circle-notch fa-spin text-brand-info text-2xl mb-2"></i><br><span class="text-[10px] text-gray-500">Merekap Buku Kas...</span></div>';
     }
 
+    // Ubah tombol jadi loading kalau lagi narik data tambahan
+    const btnLoadMore = document.getElementById('btn-load-more-kas');
+    if (btnLoadMore) {
+        btnLoadMore.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Memuat...';
+        btnLoadMore.disabled = true;
+    }
+
     try {
-        // Tarik 150 transaksi terakhir (Diperbanyak agar riwayat lebih panjang seperti bank)
+        // 🔥 JURUS PAGINATION: Menarik data secara mencicil
         const { data: orders, error } = await supabaseClient
             .from('orders_player')
             .select('*, profiles!orders_player_seller_id_fkey(nickname)') 
             .eq('status', 'selesai')
             .order('waktu_selesai', { ascending: false })
-            .limit(150); 
+            .range(offsetBukuKas, offsetBukuKas + LIMIT_KAS - 1); 
 
         if (error) throw error;
 
         if (orders && orders.length > 0) {
-            // 1. OLAH DAN SIMPAN DATA KE MEMORI GLOBAL
-            globalDataBukuKas = orders.map(order => {
+            const newData = orders.map(order => {
                 const hargaAsli = Number(order.price);
                 const isRekber = order.product_name.includes('[+Rekber]');
                 const namaPenjual = order.profiles?.nickname || 'Anonim';
-                
                 const jatahPajakLapak = hitungPotonganSeller(hargaAsli);
                 const jatahFeeRekber = isRekber ? hitungFeeRekber(hargaAsli) : 0;
                 const totalJatahNikky = jatahPajakLapak + jatahFeeRekber;
@@ -12326,18 +12336,167 @@ async function loadRiwayatKeuanganGlobal(isRefresh = false) {
                 };
             });
 
-            // 2. RENDER KE HTML
-            renderBukuKasList(globalDataBukuKas);
+            globalDataBukuKas = [...globalDataBukuKas, ...newData];
+            offsetBukuKas += LIMIT_KAS;
+
+            // Cek apakah data yang turun jumlahnya pas dengan limit? 
+            // Kalau pas, berarti kemungkinan masih ada sisa data di bulan sebelumnya
+            let hasMore = orders.length === LIMIT_KAS;
+            renderBukuKasList(globalDataBukuKas, hasMore);
 
         } else {
-            globalDataBukuKas = [];
-            listContainer.innerHTML = '<div class="text-center py-6 text-[10px] text-gray-500 border border-white/5 rounded-2xl bg-black/20">Belum ada transaksi selesai.</div>';
+            if (!isLoadMore) {
+                globalDataBukuKas = [];
+                listContainer.innerHTML = '<div class="text-center py-6 text-[10px] text-gray-500 border border-white/5 rounded-2xl bg-black/20">Belum ada transaksi selesai.</div>';
+            } else {
+                if (btnLoadMore) btnLoadMore.remove(); // Hilangkan tombol jika data sudah habis
+            }
         }
     } catch (e) {
-        listContainer.innerHTML = '<div class="text-center py-6 text-xs text-red-500">Gagal memuat buku kas.</div>';
+        if (!isLoadMore) {
+            listContainer.innerHTML = '<div class="text-center py-6 text-xs text-red-500">Gagal memuat buku kas.</div>';
+        } else if (btnLoadMore) {
+            btnLoadMore.innerHTML = 'Gagal, Coba Lagi';
+            btnLoadMore.disabled = false;
+        }
     } finally {
         if (isRefresh && iconRefresh) iconRefresh.classList.remove('fa-spin');
     }
+}
+
+// FUNGSI RENDER BUKU KAS (MENCETAK ARRAY KE LAYAR)
+function renderBukuKasList(dataArray, hasMore = false) {
+    const listContainer = document.getElementById('admin-buku-kas-list');
+    
+    if (!dataArray || dataArray.length === 0) {
+        listContainer.innerHTML = `
+            <div class="flex flex-col items-center justify-center py-12 text-center bg-black/20 rounded-2xl border border-white/5">
+                <i class="fas fa-search-minus text-4xl text-gray-600 mb-3"></i>
+                <h4 class="text-white font-bold text-xs mb-1 tracking-tight">Riwayat Tidak Ditemukan</h4>
+                <p class="text-[10px] text-gray-500">Coba gunakan kata kunci pencarian yang lain.</p>
+            </div>`;
+        return;
+    }
+
+    let totalHariIni = 0;
+    let totalBulanIni = 0;
+    let totalKeseluruhan = 0;
+
+    const today = new Date();
+    const todayString = today.toLocaleDateString('id-ID');
+    const currentMonth = today.getMonth();
+    const currentYear = today.getFullYear();
+
+    const groupedData = {};
+
+    dataArray.forEach(tx => {
+        const txDate = tx.waktuAkurat;
+        const dateString = txDate.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+        const simpleDateString = txDate.toLocaleDateString('id-ID');
+
+        totalKeseluruhan += tx.totalJatahNikky;
+        if (simpleDateString === todayString) {
+            totalHariIni += tx.totalJatahNikky;
+        }
+        if (txDate.getMonth() === currentMonth && txDate.getFullYear() === currentYear) {
+            totalBulanIni += tx.totalJatahNikky;
+        }
+
+        if (!groupedData[dateString]) {
+            groupedData[dateString] = {
+                dateLabel: dateString,
+                totalPendapatanHariIni: 0,
+                transactions: []
+            };
+        }
+        groupedData[dateString].totalPendapatanHariIni += tx.totalJatahNikky;
+        groupedData[dateString].transactions.push(tx);
+    });
+
+    const summaryKasHtml = `
+    <div class="bg-gradient-to-br from-[#2A0815] to-[#161B2E] rounded-2xl p-4 border border-brand-accent/30 mb-6 shadow-[0_4px_15px_rgba(255,0,122,0.15)] relative overflow-hidden">
+        <div class="absolute -right-4 -bottom-4 opacity-10"><i class="fas fa-book text-8xl text-brand-accent"></i></div>
+        <div class="flex items-center justify-between mb-3 border-b border-white/10 pb-2 relative z-10">
+            <h3 class="text-[11px] font-black text-white uppercase tracking-widest flex items-center gap-2">
+                <i class="fas fa-wallet text-brand-accent"></i> Rekap Kas Nikky (100%)
+            </h3>
+        </div>
+        <div class="grid grid-cols-2 gap-3 mb-3 relative z-10">
+            <div class="bg-black/40 p-3 rounded-xl border border-brand-accent/20 shadow-inner">
+                <p class="text-[9px] text-gray-400 uppercase tracking-widest mb-1">Hari Ini</p>
+                <h4 class="text-sm font-black text-brand-success">+ Rp ${totalHariIni.toLocaleString('id-ID')}</h4>
+            </div>
+            <div class="bg-black/40 p-3 rounded-xl border border-brand-accent/20 shadow-inner">
+                <p class="text-[9px] text-gray-400 uppercase tracking-widest mb-1">Bulan Ini</p>
+                <h4 class="text-sm font-black text-brand-success">+ Rp ${totalBulanIni.toLocaleString('id-ID')}</h4>
+            </div>
+        </div>
+        <div class="text-center text-[10px] text-gray-400 bg-white/5 py-2 rounded-lg border border-white/5 relative z-10">
+            Total Akumulasi Semua Waktu: <b class="text-white">Rp ${totalKeseluruhan.toLocaleString('id-ID')}</b>
+        </div>
+    </div>
+    `;
+
+    let htmlOutput = '';
+    for (const dateKey in groupedData) {
+        const grup = groupedData[dateKey];
+
+        htmlOutput += `
+        <div class="mb-5 bg-black/20 rounded-[1.2rem] p-3 border border-white/5 shadow-md">
+            <div class="flex justify-between items-center mb-3 pb-3 border-b border-white/10 px-1">
+                <h3 class="text-[11px] font-extrabold text-white flex items-center gap-2">
+                    <i class="far fa-calendar-alt text-brand-info text-sm"></i> ${grup.dateLabel}
+                </h3>
+                <div class="text-right">
+                    <span class="text-[8px] text-gray-400 uppercase tracking-widest block mb-0.5">Total Pemasukan</span>
+                    <span class="text-xs font-black text-brand-success">+ Rp ${grup.totalPendapatanHariIni.toLocaleString('id-ID')}</span>
+                </div>
+            </div>
+
+            <div class="flex flex-col gap-2.5">
+                ${grup.transactions.map(tx => {
+                    const jam = tx.waktuAkurat.getHours().toString().padStart(2, '0') + ':' + tx.waktuAkurat.getMinutes().toString().padStart(2, '0') + ' WIB';
+                    return `
+                    <div class="bg-black/40 border border-white/5 p-3 rounded-xl flex flex-col gap-2 relative hover:bg-black/60 transition-colors">
+                        <div class="flex justify-between items-start border-b border-white/5 pb-2">
+                            <div class="flex-1 pr-2">
+                                <h4 class="text-[11px] font-bold text-white line-clamp-1">${tx.product_name}</h4>
+                                <p class="text-[9px] text-gray-400 mt-0.5">@${tx.namaPenjual} &bull; <span class="font-mono text-brand-info/70">#${tx.id.substring(0,8).toUpperCase()}</span></p>
+                            </div>
+                            <div class="text-right shrink-0">
+                                <p class="text-[9px] text-gray-500 mb-0.5">${jam}</p>
+                                <h4 class="text-[11px] font-black text-brand-success">+ Rp ${tx.totalJatahNikky.toLocaleString('id-ID')}</h4>
+                            </div>
+                        </div>
+                        
+                        <div class="flex justify-between items-center bg-white/5 rounded-lg p-2">
+                            <div class="flex flex-col">
+                                <span class="text-[8px] text-gray-400 uppercase">Pajak Lapak</span>
+                                <span class="text-[10px] font-bold text-white">Rp ${tx.jatahPajakLapak.toLocaleString('id-ID')}</span>
+                            </div>
+                            <div class="flex flex-col text-right">
+                                <span class="text-[8px] text-gray-400 uppercase">Fee Rekber</span>
+                                <span class="text-[10px] font-bold ${tx.isRekber ? 'text-brand-accent' : 'text-gray-600'}">Rp ${tx.jatahFeeRekber.toLocaleString('id-ID')}</span>
+                            </div>
+                        </div>
+                    </div>`
+                }).join('')}
+            </div>
+        </div>`;
+    }
+
+    // 🔥 TOMBOL LOAD MORE (LIHAT BULAN SEBELUMNYA)
+    if (hasMore) {
+        htmlOutput += `
+        <div class="text-center mt-2 mb-6">
+            <button id="btn-load-more-kas" onclick="loadRiwayatKeuanganGlobal(false, true)" class="bg-brand-info/10 text-brand-info border border-brand-info/30 px-6 py-3 rounded-full text-[11px] font-bold active:scale-95 transition-all hover:bg-brand-info hover:text-brand-dark w-full shadow-sm">
+                Lihat Riwayat Sebelumnya <i class="fas fa-chevron-down ml-1"></i>
+            </button>
+        </div>
+        `;
+    }
+
+    listContainer.innerHTML = summaryKasHtml + htmlOutput;
 }
 
 
