@@ -51,10 +51,6 @@ export default async function handler(req, res) {
         });
 
         const textResponse = await response.text();
-        
-        // 🔥 INI ADALAH PENYADAP RAHASIA KITA
-        console.log(`[JAWABAN ASLI XOFTWARE] ID ${order_id}:`, textResponse);
-        
         let dataXoftware;
         try {
             dataXoftware = JSON.parse(textResponse);
@@ -62,7 +58,6 @@ export default async function handler(req, res) {
             return res.status(200).json({ success: true, status: 'PENDING', message: 'Provider Gateway error format' });
         }
 
-        // Antisipasi kalau data statusnya dibungkus berlapis-lapis
         const statusXoftware = String(dataXoftware.status || dataXoftware.data?.status || '').toUpperCase();
         const paymentStatus = String(dataXoftware.payment_status || dataXoftware.data?.payment_status || '').toUpperCase();
         const statusTrans = String(dataXoftware.transaction_status || dataXoftware.data?.transaction_status || '').toUpperCase();
@@ -72,36 +67,30 @@ export default async function handler(req, res) {
             paymentStatus === 'SUCCEEDED' || paymentStatus === 'SETTLED' || paymentStatus === 'SUCCESS' ||
             statusTrans === 'SUCCESS' || statusTrans === 'SETTLED'
         ) {
-            
             const productName = existingOrder.product_name || '';
             const userId = existingOrder.user_id;
             const pricePaid = Number(existingOrder.price);
 
             // ========================================================
-            // 💰 JALUR 1: TOP UP SALDO OTOMATIS (SINKRON DENGAN WEBHOOK)
+            // 💰 JALUR 1: TOP UP SALDO OTOMATIS (TANPA RPC SUPABASE)
             // ========================================================
             if (productName.startsWith('[DEPOSIT]')) {
-                // Ekstrak nominal bersih dari nama produk (misal: "[DEPOSIT] 10000")
                 let amountToAdd = pricePaid; 
                 const depositMatch = productName.match(/\[DEPOSIT\]\s*(\d+)/);
-                if (depositMatch) {
-                    amountToAdd = Number(depositMatch[1]);
-                }
+                if (depositMatch) amountToAdd = Number(depositMatch[1]);
 
-                // A. Pastikan riwayat tidak dobel sebelum nambah saldo
                 const { data: existingTx } = await supabase.from('wallet_transactions')
                     .select('id')
                     .eq('description', `Top Up Saldo via QRIS Otomatis (Ref: ${order_id})`)
                     .maybeSingle();
 
                 if (!existingTx) {
-                    // Tambahkan saldo
-                    await supabase.rpc('tambah_saldo', {
-                        p_user_id: userId,
-                        p_jumlah: amountToAdd
-                    });
+                    // 🔥 SULAP JS: Tarik saldo asli, jumlahkan di JS, lempar balik ke Supabase!
+                    const { data: profile } = await supabase.from('profiles').select('balance').eq('id', userId).single();
+                    const newBalance = (Number(profile?.balance) || 0) + amountToAdd;
+                    
+                    await supabase.from('profiles').update({ balance: newBalance }).eq('id', userId);
 
-                    // Catat histori mutasi dompet
                     await supabase.from('wallet_transactions').insert({
                         user_id: userId,
                         amount: amountToAdd,
@@ -135,10 +124,7 @@ export default async function handler(req, res) {
                 
                 await supabase.from(targetTable).update(updatePayload).eq('id', order_id);
             } 
-            
-            // ========================================================
             // 📦 JALUR 3: ORDER BIASA & PASAR PLAYER
-            // ========================================================
             else {
                 await supabase.from(targetTable).update({ status: 'SUCCESS' }).eq('id', order_id);
             }
@@ -151,12 +137,7 @@ export default async function handler(req, res) {
             return res.status(200).json({ success: true, status: 'FAILED', message: 'Dibatalkan' });
         }
 
-        // Lempar balasan Xoftware ke Network Tab (Frontend) agar bisa Anda lihat
-        return res.status(200).json({ 
-            success: true, 
-            status: 'PENDING', 
-            pesan_rahasia_xoftware: dataXoftware 
-        });
+        return res.status(200).json({ success: true, status: 'PENDING', pesan_rahasia_xoftware: dataXoftware });
 
     } catch (error) {
         return res.status(500).json({ success: false, status: 'ERROR', message: error.message });
