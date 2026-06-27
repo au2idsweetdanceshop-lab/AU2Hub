@@ -12278,8 +12278,8 @@ async function eksekusiSapuBersihTokoMati() {
 // ==========================================
 
 let globalDataBukuKas = []; 
-let offsetBukuKas = 0; // 🔥 Variabel baru untuk melacak halaman
-const LIMIT_KAS = 50;  // 🔥 Tarik 50 data per klik biar HP Nikky gak panas
+let offsetBukuKas = 0; 
+const LIMIT_KAS = 50;  
 
 async function loadRiwayatKeuanganGlobal(isRefresh = false, isLoadMore = false) {
     const listContainer = document.getElementById('admin-buku-kas-list');
@@ -12296,7 +12296,6 @@ async function loadRiwayatKeuanganGlobal(isRefresh = false, isLoadMore = false) 
         listContainer.innerHTML = '<div class="text-center py-10"><i class="fas fa-circle-notch fa-spin text-brand-info text-2xl mb-2"></i><br><span class="text-[10px] text-gray-500">Merekap Buku Kas...</span></div>';
     }
 
-    // Ubah tombol jadi loading kalau lagi narik data tambahan
     const btnLoadMore = document.getElementById('btn-load-more-kas');
     if (btnLoadMore) {
         btnLoadMore.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Memuat...';
@@ -12304,7 +12303,6 @@ async function loadRiwayatKeuanganGlobal(isRefresh = false, isLoadMore = false) 
     }
 
     try {
-        // 🔥 JURUS PAGINATION: Menarik data secara mencicil
         const { data: orders, error } = await supabaseClient
             .from('orders_player')
             .select('*, profiles!orders_player_seller_id_fkey(nickname)') 
@@ -12339,17 +12337,16 @@ async function loadRiwayatKeuanganGlobal(isRefresh = false, isLoadMore = false) 
             globalDataBukuKas = [...globalDataBukuKas, ...newData];
             offsetBukuKas += LIMIT_KAS;
 
-            // Cek apakah data yang turun jumlahnya pas dengan limit? 
-            // Kalau pas, berarti kemungkinan masih ada sisa data di bulan sebelumnya
             let hasMore = orders.length === LIMIT_KAS;
             renderBukuKasList(globalDataBukuKas, hasMore);
 
         } else {
             if (!isLoadMore) {
                 globalDataBukuKas = [];
-                listContainer.innerHTML = '<div class="text-center py-6 text-[10px] text-gray-500 border border-white/5 rounded-2xl bg-black/20">Belum ada transaksi selesai.</div>';
+                // 🔥 PERBAIKAN: Selalu panggil fungsi render walau array kosong agar kotak dashboard tetap digambar!
+                renderBukuKasList([]); 
             } else {
-                if (btnLoadMore) btnLoadMore.remove(); // Hilangkan tombol jika data sudah habis
+                if (btnLoadMore) btnLoadMore.remove(); 
             }
         }
     } catch (e) {
@@ -12362,6 +12359,141 @@ async function loadRiwayatKeuanganGlobal(isRefresh = false, isLoadMore = false) 
     } finally {
         if (isRefresh && iconRefresh) iconRefresh.classList.remove('fa-spin');
     }
+}
+
+// FUNGSI RENDER BUKU KAS
+function renderBukuKasList(dataArray, hasMore = false) {
+    const listContainer = document.getElementById('admin-buku-kas-list');
+
+    let totalHariIni = 0;
+    let totalBulanIni = 0;
+    let totalKeseluruhan = 0;
+
+    const today = new Date();
+    const todayString = today.toLocaleDateString('id-ID');
+    const currentMonth = today.getMonth();
+    const currentYear = today.getFullYear();
+
+    const groupedData = {};
+
+    // Hanya loop jika ada datanya
+    if (dataArray && dataArray.length > 0) {
+        dataArray.forEach(tx => {
+            const txDate = tx.waktuAkurat;
+            const dateString = txDate.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+            const simpleDateString = txDate.toLocaleDateString('id-ID');
+
+            totalKeseluruhan += tx.totalJatahNikky;
+            if (simpleDateString === todayString) {
+                totalHariIni += tx.totalJatahNikky;
+            }
+            if (txDate.getMonth() === currentMonth && txDate.getFullYear() === currentYear) {
+                totalBulanIni += tx.totalJatahNikky;
+            }
+
+            if (!groupedData[dateString]) {
+                groupedData[dateString] = { dateLabel: dateString, totalPendapatanHariIni: 0, transactions: [] };
+            }
+            groupedData[dateString].totalPendapatanHariIni += tx.totalJatahNikky;
+            groupedData[dateString].transactions.push(tx);
+        });
+    }
+
+    // Kotak Summary Selalu Digambar walau Rp 0
+    const summaryKasHtml = `
+    <div class="bg-gradient-to-br from-[#2A0815] to-[#161B2E] rounded-2xl p-4 border border-brand-accent/30 mb-6 shadow-[0_4px_15px_rgba(255,0,122,0.15)] relative overflow-hidden">
+        <div class="absolute -right-4 -bottom-4 opacity-10"><i class="fas fa-book text-8xl text-brand-accent"></i></div>
+        <div class="flex items-center justify-between mb-3 border-b border-white/10 pb-2 relative z-10">
+            <h3 class="text-[11px] font-black text-white uppercase tracking-widest flex items-center gap-2">
+                <i class="fas fa-wallet text-brand-accent"></i> Rekap Kas Nikky (100%)
+            </h3>
+        </div>
+        <div class="grid grid-cols-2 gap-3 mb-3 relative z-10">
+            <div class="bg-black/40 p-3 rounded-xl border border-brand-accent/20 shadow-inner">
+                <p class="text-[9px] text-gray-400 uppercase tracking-widest mb-1">Hari Ini</p>
+                <h4 class="text-sm font-black text-brand-success">+ Rp ${totalHariIni.toLocaleString('id-ID')}</h4>
+            </div>
+            <div class="bg-black/40 p-3 rounded-xl border border-brand-accent/20 shadow-inner">
+                <p class="text-[9px] text-gray-400 uppercase tracking-widest mb-1">Bulan Ini</p>
+                <h4 class="text-sm font-black text-brand-success">+ Rp ${totalBulanIni.toLocaleString('id-ID')}</h4>
+            </div>
+        </div>
+        <div class="text-center text-[10px] text-gray-400 bg-white/5 py-2 rounded-lg border border-white/5 relative z-10">
+            Total Akumulasi Semua Waktu: <b class="text-white">Rp ${totalKeseluruhan.toLocaleString('id-ID')}</b>
+        </div>
+    </div>
+    `;
+
+    let htmlOutput = '';
+    
+    // Jika data kosong, tampilkan pesan kosong di bawah kotak summary
+    if (!dataArray || dataArray.length === 0) {
+        htmlOutput = `
+        <div class="flex flex-col items-center justify-center py-12 mt-2 text-center bg-black/20 rounded-2xl border border-white/5">
+            <i class="fas fa-box-open text-4xl text-gray-600 mb-3"></i>
+            <h4 class="text-white font-bold text-xs mb-1 tracking-tight">Belum Ada Transaksi</h4>
+            <p class="text-[10px] text-gray-500">Gunakan kata kunci pencarian yang lain.</p>
+        </div>`;
+    } else {
+        // Jika ada data, render list transaksinya
+        for (const dateKey in groupedData) {
+            const grup = groupedData[dateKey];
+            htmlOutput += `
+            <div class="mb-5 bg-black/20 rounded-[1.2rem] p-3 border border-white/5 shadow-md">
+                <div class="flex justify-between items-center mb-3 pb-3 border-b border-white/10 px-1">
+                    <h3 class="text-[11px] font-extrabold text-white flex items-center gap-2">
+                        <i class="far fa-calendar-alt text-brand-info text-sm"></i> ${grup.dateLabel}
+                    </h3>
+                    <div class="text-right">
+                        <span class="text-[8px] text-gray-400 uppercase tracking-widest block mb-0.5">Total Pemasukan</span>
+                        <span class="text-xs font-black text-brand-success">+ Rp ${grup.totalPendapatanHariIni.toLocaleString('id-ID')}</span>
+                    </div>
+                </div>
+
+                <div class="flex flex-col gap-2.5">
+                    ${grup.transactions.map(tx => {
+                        const jam = tx.waktuAkurat.getHours().toString().padStart(2, '0') + ':' + tx.waktuAkurat.getMinutes().toString().padStart(2, '0') + ' WIB';
+                        return `
+                        <div class="bg-black/40 border border-white/5 p-3 rounded-xl flex flex-col gap-2 relative hover:bg-black/60 transition-colors">
+                            <div class="flex justify-between items-start border-b border-white/5 pb-2">
+                                <div class="flex-1 pr-2">
+                                    <h4 class="text-[11px] font-bold text-white line-clamp-1">${tx.product_name}</h4>
+                                    <p class="text-[9px] text-gray-400 mt-0.5">@${tx.namaPenjual} &bull; <span class="font-mono text-brand-info/70">#${tx.id.substring(0,8).toUpperCase()}</span></p>
+                                </div>
+                                <div class="text-right shrink-0">
+                                    <p class="text-[9px] text-gray-500 mb-0.5">${jam}</p>
+                                    <h4 class="text-[11px] font-black text-brand-success">+ Rp ${tx.totalJatahNikky.toLocaleString('id-ID')}</h4>
+                                </div>
+                            </div>
+                            
+                            <div class="flex justify-between items-center bg-white/5 rounded-lg p-2">
+                                <div class="flex flex-col">
+                                    <span class="text-[8px] text-gray-400 uppercase">Pajak Lapak</span>
+                                    <span class="text-[10px] font-bold text-white">Rp ${tx.jatahPajakLapak.toLocaleString('id-ID')}</span>
+                                </div>
+                                <div class="flex flex-col text-right">
+                                    <span class="text-[8px] text-gray-400 uppercase">Fee Rekber</span>
+                                    <span class="text-[10px] font-bold ${tx.isRekber ? 'text-brand-accent' : 'text-gray-600'}">Rp ${tx.jatahFeeRekber.toLocaleString('id-ID')}</span>
+                                </div>
+                            </div>
+                        </div>`
+                    }).join('')}
+                </div>
+            </div>`;
+        }
+
+        if (hasMore) {
+            htmlOutput += `
+            <div class="text-center mt-2 mb-6">
+                <button id="btn-load-more-kas" onclick="loadRiwayatKeuanganGlobal(false, true)" class="bg-brand-info/10 text-brand-info border border-brand-info/30 px-6 py-3 rounded-full text-[11px] font-bold active:scale-95 transition-all hover:bg-brand-info hover:text-brand-dark w-full shadow-sm">
+                    Lihat Riwayat Sebelumnya <i class="fas fa-chevron-down ml-1"></i>
+                </button>
+            </div>
+            `;
+        }
+    }
+
+    listContainer.innerHTML = summaryKasHtml + htmlOutput;
 }
 
 // FUNGSI RENDER BUKU KAS (MENCETAK ARRAY KE LAYAR)
@@ -13627,8 +13759,8 @@ async function eksekusiSinkronisasiPPOB() {
 // PUSAT KENDALI: RIWAYAT TRANSAKSI & LABA PPOB
 // ==========================================
 let globalDataLabaPPOB = []; 
-let offsetLabaPPOB = 0; // 🔥 Memori halaman
-const LIMIT_PPOB = 50;  // 🔥 Tarik 50 data per klik
+let offsetLabaPPOB = 0; 
+const LIMIT_PPOB = 50;  
 
 async function loadRiwayatLabaPPOB(isRefresh = false, isLoadMore = false) {
     const listContainer = document.getElementById('admin-laba-list');
@@ -13644,7 +13776,6 @@ async function loadRiwayatLabaPPOB(isRefresh = false, isLoadMore = false) {
         listContainer.innerHTML = '<div class="text-center py-10"><i class="fas fa-circle-notch fa-spin text-brand-info text-2xl mb-2"></i><br><span class="text-[10px] text-gray-500 font-bold tracking-widest uppercase">Merekap Transaksi PPOB...</span></div>';
     }
 
-    // Ubah tombol jadi loading kalau lagi narik data tambahan
     const btnLoadMore = document.getElementById('btn-load-more-ppob-admin');
     if (btnLoadMore) {
         btnLoadMore.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Memuat...';
@@ -13652,7 +13783,6 @@ async function loadRiwayatLabaPPOB(isRefresh = false, isLoadMore = false) {
     }
 
     try {
-        // 🔥 JURUS PAGINATION: Menarik data secara mencicil
         const { data, error } = await supabaseClient
             .from('riwayat_ppob')
             .select('*, profiles!riwayat_ppob_user_id_fkey(nickname)')
@@ -13670,9 +13800,10 @@ async function loadRiwayatLabaPPOB(isRefresh = false, isLoadMore = false) {
         } else {
             if (!isLoadMore) {
                 globalDataLabaPPOB = [];
-                listContainer.innerHTML = '<div class="text-center py-6 text-[10px] text-gray-500 border border-white/5 rounded-2xl bg-black/20">Belum ada transaksi PPOB.</div>';
+                // 🔥 PERBAIKAN: Selalu panggil fungsi render walau array kosong
+                renderLabaPPOBList([]); 
             } else {
-                if (btnLoadMore) btnLoadMore.remove(); // Hilangkan tombol jika data sudah habis
+                if (btnLoadMore) btnLoadMore.remove(); 
             }
         }
     } catch (e) {
@@ -13688,18 +13819,7 @@ async function loadRiwayatLabaPPOB(isRefresh = false, isLoadMore = false) {
 // Fungsi Cetak ke Layar (Render)
 function renderLabaPPOBList(dataArray, hasMore = false) {
     const listContainer = document.getElementById('admin-laba-list');
-    
-    if (!dataArray || dataArray.length === 0) {
-        listContainer.innerHTML = `
-        <div class="flex flex-col items-center justify-center py-12 text-center bg-black/20 rounded-2xl border border-white/5">
-            <i class="fas fa-search-minus text-4xl text-gray-600 mb-3"></i>
-            <h4 class="text-white font-bold text-xs mb-1 tracking-tight">Riwayat Tidak Ditemukan</h4>
-            <p class="text-[10px] text-gray-500">Gunakan kata kunci yang lain.</p>
-        </div>`;
-        return;
-    }
 
-    // 🔥 LOGIKA REKAP KAS PPOB
     let totalHariIni = 0;
     let totalBulanIni = 0;
     let totalKeseluruhan = 0;
@@ -13711,39 +13831,31 @@ function renderLabaPPOBList(dataArray, hasMore = false) {
 
     const groupedData = {};
 
-    dataArray.forEach(tx => {
-        const isSukses = String(tx.status).toUpperCase() === 'SUKSES';
-        const laba = isSukses ? 100 : 0; // Hanya hitung jika statusnya sukses (Rp 100 per transaksi)
-        
-        const txDate = new Date(tx.created_at);
-        const dateString = txDate.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
-        const simpleDateString = txDate.toLocaleDateString('id-ID');
+    if (dataArray && dataArray.length > 0) {
+        dataArray.forEach(tx => {
+            const isSukses = String(tx.status).toUpperCase() === 'SUKSES';
+            const laba = isSukses ? 100 : 0; 
+            
+            const txDate = new Date(tx.created_at);
+            const dateString = txDate.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+            const simpleDateString = txDate.toLocaleDateString('id-ID');
 
-        // Kalkulasi Statistik Atas
-        totalKeseluruhan += laba;
-        if (simpleDateString === todayString) {
-            totalHariIni += laba;
-        }
-        if (txDate.getMonth() === currentMonth && txDate.getFullYear() === currentYear) {
-            totalBulanIni += laba;
-        }
+            totalKeseluruhan += laba;
+            if (simpleDateString === todayString) totalHariIni += laba;
+            if (txDate.getMonth() === currentMonth && txDate.getFullYear() === currentYear) totalBulanIni += laba;
 
-        // Pengelompokan Data Untuk List HTML
-        if (!groupedData[dateString]) {
-            groupedData[dateString] = {
-                dateLabel: dateString,
-                totalLabaHariIni: 0,
-                transactions: []
-            };
-        }
-        groupedData[dateString].totalLabaHariIni += laba;
-        groupedData[dateString].transactions.push(tx);
-    });
+            if (!groupedData[dateString]) {
+                groupedData[dateString] = { dateLabel: dateString, totalLabaHariIni: 0, transactions: [] };
+            }
+            groupedData[dateString].totalLabaHariIni += laba;
+            groupedData[dateString].transactions.push(tx);
+        });
+    }
 
-    // Kalkulasi Bagi Hasil 80% / 20%
     const labaOwner = totalKeseluruhan * 0.8;
     const labaNikky = totalKeseluruhan * 0.2;
 
+    // Kotak Summary Selalu Digambar walau Rp 0
     const summaryHtml = `
     <div class="bg-gradient-to-br from-[#161B2E] to-[#0A0E17] rounded-2xl p-4 border border-brand-info/30 mb-5 shadow-lg relative overflow-hidden">
         <div class="absolute top-0 right-0 p-4 opacity-10"><i class="fas fa-chart-pie text-6xl text-brand-info"></i></div>
@@ -13751,7 +13863,6 @@ function renderLabaPPOBList(dataArray, hasMore = false) {
             <i class="fas fa-hand-holding-usd text-brand-info"></i> Pembagian Laba PPOB
         </h3>
         
-        <!-- Statistik Waktu -->
         <div class="grid grid-cols-2 gap-3 mb-3 relative z-10">
             <div class="bg-black/40 p-2.5 rounded-xl border border-brand-info/20 shadow-inner">
                 <p class="text-[8px] text-gray-400 uppercase tracking-widest mb-0.5">Laba Hari Ini</p>
@@ -13763,7 +13874,6 @@ function renderLabaPPOBList(dataArray, hasMore = false) {
             </div>
         </div>
 
-        <!-- Pembagian Laba 80/20 -->
         <div class="bg-white/5 rounded-xl p-3 border border-white/10 relative z-10 flex justify-between items-center">
             <div class="flex-1 border-r border-white/10">
                 <p class="text-[8px] text-gray-400 uppercase tracking-widest mb-0.5">Owner (80%)</p>
@@ -13782,79 +13892,89 @@ function renderLabaPPOBList(dataArray, hasMore = false) {
     `;
 
     let htmlOutput = '';
-    for (const dateKey in groupedData) {
-        const grup = groupedData[dateKey];
-
-        htmlOutput += `
-        <div class="mb-5 bg-black/20 rounded-[1.2rem] p-3 border border-white/5 shadow-md">
-            <div class="flex justify-between items-center mb-3 pb-3 border-b border-white/10 px-1">
-                <h3 class="text-[11px] font-extrabold text-white flex items-center gap-2">
-                    <i class="far fa-calendar-alt text-brand-info text-sm"></i> ${grup.dateLabel}
-                </h3>
-                <div class="text-right">
-                    <span class="text-[8px] text-gray-400 uppercase tracking-widest block mb-0.5">Laba Bersih</span>
-                    <span class="text-xs font-black text-brand-success">+ Rp ${grup.totalLabaHariIni.toLocaleString('id-ID')}</span>
-                </div>
-            </div>
-
-            <div class="flex flex-col gap-2.5">
-                ${grup.transactions.map(tx => {
-                    const status = String(tx.status).toUpperCase();
-                    let statusBadge = '';
-                    if (status === 'SUKSES') statusBadge = `<span class="bg-brand-success/20 text-brand-success px-2 py-0.5 rounded text-[8px] font-black tracking-widest border border-brand-success/30">SUKSES</span>`;
-                    else if (status === 'PENDING') statusBadge = `<span class="bg-brand-info/20 text-brand-info px-2 py-0.5 rounded text-[8px] font-black tracking-widest border border-brand-info/30">PROSES</span>`;
-                    else statusBadge = `<span class="bg-red-500/20 text-red-500 px-2 py-0.5 rounded text-[8px] font-black tracking-widest border border-red-500/30">GAGAL</span>`;
-
-                    const hargaJual = Number(tx.price || 0); 
-                    const laba = status === 'SUKSES' ? 100 : 0; 
-                    const hargaModal = hargaJual > 0 ? (hargaJual - 100) : 0; 
-                    
-                    const jam = new Date(tx.created_at).toLocaleString('id-ID', {hour:'2-digit', minute:'2-digit'}) + ' WIB';
-                    const pembeli = tx.profiles?.nickname || 'Player';
-
-                    return `
-                    <div class="bg-[#161B2E] border border-white/5 p-3 rounded-[1.2rem] flex flex-col gap-2 relative shadow-md hover:bg-[#1C233A] transition-colors">
-                        <div class="flex justify-between items-start border-b border-white/5 pb-2">
-                            <div class="flex-1 pr-2">
-                                <div class="flex items-center gap-2 mb-1">
-                                    <span class="text-[9px] bg-black/40 text-brand-info px-2 py-0.5 rounded-md border border-brand-info/30 font-mono">${tx.sku_code || 'PPOB'}</span>
-                                    ${statusBadge}
-                                </div>
-                                <h4 class="text-[11px] font-bold text-white leading-snug">${tx.customer_no}</h4>
-                                <p class="text-[9px] text-gray-500 mt-0.5">Pembeli: @${pembeli}</p>
-                            </div>
-                            <div class="text-right shrink-0">
-                                <p class="text-[9px] text-gray-500 mb-0.5">${jam}</p>
-                                <h4 class="text-[11px] font-black ${status === 'SUKSES' ? 'text-brand-success drop-shadow-[0_0_5px_rgba(37,211,102,0.4)]' : 'text-gray-500'}">+Rp ${laba.toLocaleString('id-ID')}</h4>
-                            </div>
-                        </div>
-                        
-                        <div class="flex justify-between items-center bg-white/5 rounded-lg p-2.5">
-                            <div class="flex flex-col">
-                                <span class="text-[8px] text-gray-400 uppercase tracking-wider">Modal</span>
-                                <span class="text-[10px] font-mono text-gray-400">Rp ${hargaModal.toLocaleString('id-ID')}</span>
-                            </div>
-                            <i class="fas fa-arrow-right text-gray-600 text-xs"></i>
-                            <div class="flex flex-col text-right">
-                                <span class="text-[8px] text-gray-400 uppercase tracking-wider">Dibayar User</span>
-                                <span class="text-[10px] font-mono font-bold text-white">Rp ${hargaJual.toLocaleString('id-ID')}</span>
-                            </div>
-                        </div>
-                    </div>`
-                }).join('')}
-            </div>
+    
+    // Jika data kosong, tampilkan pesan kosong di bawah kotak summary
+    if (!dataArray || dataArray.length === 0) {
+        htmlOutput = `
+        <div class="flex flex-col items-center justify-center py-12 mt-2 text-center bg-black/20 rounded-2xl border border-white/5">
+            <i class="fas fa-box-open text-4xl text-gray-600 mb-3"></i>
+            <h4 class="text-white font-bold text-xs mb-1 tracking-tight">Belum Ada Transaksi</h4>
+            <p class="text-[10px] text-gray-500">Data PPOB masih kosong atau gunakan kata kunci lain.</p>
         </div>`;
-    }
+    } else {
+        // Jika ada data, render list transaksinya
+        for (const dateKey in groupedData) {
+            const grup = groupedData[dateKey];
+            htmlOutput += `
+            <div class="mb-5 bg-black/20 rounded-[1.2rem] p-3 border border-white/5 shadow-md">
+                <div class="flex justify-between items-center mb-3 pb-3 border-b border-white/10 px-1">
+                    <h3 class="text-[11px] font-extrabold text-white flex items-center gap-2">
+                        <i class="far fa-calendar-alt text-brand-info text-sm"></i> ${grup.dateLabel}
+                    </h3>
+                    <div class="text-right">
+                        <span class="text-[8px] text-gray-400 uppercase tracking-widest block mb-0.5">Laba Bersih</span>
+                        <span class="text-xs font-black text-brand-success">+ Rp ${grup.totalLabaHariIni.toLocaleString('id-ID')}</span>
+                    </div>
+                </div>
 
-    // 🔥 TOMBOL LOAD MORE (LIHAT BULAN SEBELUMNYA)
-    if (hasMore) {
-        htmlOutput += `
-        <div class="text-center mt-2 mb-6">
-            <button id="btn-load-more-ppob-admin" onclick="loadRiwayatLabaPPOB(false, true)" class="bg-brand-info/10 text-brand-info border border-brand-info/30 px-6 py-3 rounded-full text-[11px] font-bold active:scale-95 transition-all hover:bg-brand-info hover:text-brand-dark w-full shadow-sm">
-                Lihat Riwayat Sebelumnya <i class="fas fa-chevron-down ml-1"></i>
-            </button>
-        </div>
-        `;
+                <div class="flex flex-col gap-2.5">
+                    ${grup.transactions.map(tx => {
+                        const status = String(tx.status).toUpperCase();
+                        let statusBadge = '';
+                        if (status === 'SUKSES') statusBadge = \`<span class="bg-brand-success/20 text-brand-success px-2 py-0.5 rounded text-[8px] font-black tracking-widest border border-brand-success/30">SUKSES</span>\`;
+                        else if (status === 'PENDING') statusBadge = \`<span class="bg-brand-info/20 text-brand-info px-2 py-0.5 rounded text-[8px] font-black tracking-widest border border-brand-info/30">PROSES</span>\`;
+                        else statusBadge = \`<span class="bg-red-500/20 text-red-500 px-2 py-0.5 rounded text-[8px] font-black tracking-widest border border-red-500/30">GAGAL</span>\`;
+
+                        const hargaJual = Number(tx.price || 0); 
+                        const laba = status === 'SUKSES' ? 100 : 0; 
+                        const hargaModal = hargaJual > 0 ? (hargaJual - 100) : 0; 
+                        
+                        const jam = new Date(tx.created_at).toLocaleString('id-ID', {hour:'2-digit', minute:'2-digit'}) + ' WIB';
+                        const pembeli = tx.profiles?.nickname || 'Player';
+
+                        return \`
+                        <div class="bg-[#161B2E] border border-white/5 p-3 rounded-[1.2rem] flex flex-col gap-2 relative shadow-md hover:bg-[#1C233A] transition-colors">
+                            <div class="flex justify-between items-start border-b border-white/5 pb-2">
+                                <div class="flex-1 pr-2">
+                                    <div class="flex items-center gap-2 mb-1">
+                                        <span class="text-[9px] bg-black/40 text-brand-info px-2 py-0.5 rounded-md border border-brand-info/30 font-mono">\${tx.sku_code || 'PPOB'}</span>
+                                        \${statusBadge}
+                                    </div>
+                                    <h4 class="text-[11px] font-bold text-white leading-snug">\${tx.customer_no}</h4>
+                                    <p class="text-[9px] text-gray-500 mt-0.5">Pembeli: @\${pembeli}</p>
+                                </div>
+                                <div class="text-right shrink-0">
+                                    <p class="text-[9px] text-gray-500 mb-0.5">\${jam}</p>
+                                    <h4 class="text-[11px] font-black \${status === 'SUKSES' ? 'text-brand-success drop-shadow-[0_0_5px_rgba(37,211,102,0.4)]' : 'text-gray-500'}">+Rp \${laba.toLocaleString('id-ID')}</h4>
+                                </div>
+                            </div>
+                            
+                            <div class="flex justify-between items-center bg-white/5 rounded-lg p-2.5">
+                                <div class="flex flex-col">
+                                    <span class="text-[8px] text-gray-400 uppercase tracking-wider">Modal</span>
+                                    <span class="text-[10px] font-mono text-gray-400">Rp \${hargaModal.toLocaleString('id-ID')}</span>
+                                </div>
+                                <i class="fas fa-arrow-right text-gray-600 text-xs"></i>
+                                <div class="flex flex-col text-right">
+                                    <span class="text-[8px] text-gray-400 uppercase tracking-wider">Dibayar User</span>
+                                    <span class="text-[10px] font-mono font-bold text-white">Rp \${hargaJual.toLocaleString('id-ID')}</span>
+                                </div>
+                            </div>
+                        </div>\`
+                    }).join('')}
+                </div>
+            </div>`;
+        }
+
+        if (hasMore) {
+            htmlOutput += `
+            <div class="text-center mt-2 mb-6">
+                <button id="btn-load-more-ppob-admin" onclick="loadRiwayatLabaPPOB(false, true)" class="bg-brand-info/10 text-brand-info border border-brand-info/30 px-6 py-3 rounded-full text-[11px] font-bold active:scale-95 transition-all hover:bg-brand-info hover:text-brand-dark w-full shadow-sm">
+                    Lihat Riwayat Sebelumnya <i class="fas fa-chevron-down ml-1"></i>
+                </button>
+            </div>
+            `;
+        }
     }
 
     listContainer.innerHTML = summaryHtml + htmlOutput;
