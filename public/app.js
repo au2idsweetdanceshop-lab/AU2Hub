@@ -10806,10 +10806,17 @@ function bukaModalTarikOtomatis(saldo, provider, number, products) {
             // Format Harga Asli (Sesuai saldo yang dipotong)
             const formatHarga = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(totalPotong).replace('Rp', 'Rp ');
             
-            // 🔥 ILUSI S3 MARKETING: Bikin Harga Coret Otomatis 🔥
-            let hargaCoret = Math.ceil((totalPotong * 1.3) / 1000) * 1000; 
-            if (totalPotong > 100000) hargaCoret = Math.ceil((totalPotong * 1.2) / 5000) * 5000; 
-            if (totalPotong <= 5000) hargaCoret = totalPotong + 2500; 
+            // 🔥 ILUSI S3 MARKETING: Harga Coret Realistis E-Wallet 🔥
+            let hargaCoret = totalPotong;
+            if (totalPotong <= 10000) {
+                hargaCoret = Math.ceil((totalPotong + 1500) / 500) * 500; 
+            } else if (totalPotong <= 50000) {
+                hargaCoret = Math.ceil((totalPotong + 2500) / 500) * 500;
+            } else if (totalPotong <= 100000) {
+                hargaCoret = Math.ceil((totalPotong + 3500) / 1000) * 1000;
+            } else {
+                hargaCoret = Math.ceil((totalPotong + 5000) / 1000) * 1000;
+            }
             
             const formatHargaCoret = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(hargaCoret).replace('Rp', 'Rp ');
 
@@ -13096,10 +13103,21 @@ function renderGridPPOB() {
         const hargaCustomer = item.seller_price;
         const formatHarga = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(hargaCustomer).replace('Rp', 'Rp ');
         
-        // 🔥 2. ILUSI S3 MARKETING: Bikin Harga Coret Otomatis 🔥
-        let hargaCoret = Math.ceil((hargaCustomer * 1.3) / 1000) * 1000; // Markup 30% default
-        if (hargaCustomer > 100000) hargaCoret = Math.ceil((hargaCustomer * 1.2) / 5000) * 5000; // Markup 20% kalau harganya udah mahal
-        if (hargaCustomer <= 5000) hargaCoret = hargaCustomer + 2500; // Tambah 2500 perak kalau harganya receh
+        // 🔥 2. ILUSI S3 MARKETING: Harga Coret Realistis ala Konter/E-Commerce 🔥
+        let hargaCoret = hargaCustomer;
+        if (hargaCustomer <= 10000) {
+            // Selisih ~Rp 1.500 (Misal: 5.500 jadi 7.000)
+            hargaCoret = Math.ceil((hargaCustomer + 1500) / 500) * 500; 
+        } else if (hargaCustomer <= 50000) {
+            // Selisih ~Rp 2.500
+            hargaCoret = Math.ceil((hargaCustomer + 2500) / 500) * 500;
+        } else if (hargaCustomer <= 100000) {
+            // Selisih ~Rp 3.500
+            hargaCoret = Math.ceil((hargaCustomer + 3500) / 1000) * 1000;
+        } else {
+            // Pembelian besar (>100k), selisih ~Rp 5.000 biar logis
+            hargaCoret = Math.ceil((hargaCustomer + 5000) / 1000) * 1000;
+        }
         
         const formatHargaCoret = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(hargaCoret).replace('Rp', 'Rp ');
 
