@@ -19,7 +19,7 @@ export default async function handler(req, res) {
     const targetTable = table === 'orders_player' ? 'orders_player' : 'orders';
 
     try {
-        const { data: existingOrder, error } = await supabase.from(targetTable).select('status, product_name, user_id').eq('id', order_id).single();
+        const { data: existingOrder, error } = await supabase.from(targetTable).select('*').eq('id', order_id).single();
         if (error || !existingOrder) return res.status(404).json({ success: false, status: 'ERROR', message: 'Pesanan tidak ditemukan' });
 
         const currentDbStatus = String(existingOrder.status).toUpperCase();
@@ -65,13 +65,58 @@ export default async function handler(req, res) {
         // Antisipasi kalau data statusnya dibungkus berlapis-lapis
         const statusXoftware = String(dataXoftware.status || dataXoftware.data?.status || '').toUpperCase();
         const paymentStatus = String(dataXoftware.payment_status || dataXoftware.data?.payment_status || '').toUpperCase();
+        const statusTrans = String(dataXoftware.transaction_status || dataXoftware.data?.transaction_status || '').toUpperCase();
 
-        if (statusXoftware === 'SUCCESS' || statusXoftware === 'PAID' || statusXoftware === 'SETTLED' || paymentStatus === 'SUCCEEDED' || paymentStatus === 'SUCCESS') {
+        if (
+            statusXoftware === 'SUCCESS' || statusXoftware === 'PAID' || statusXoftware === 'SETTLED' || 
+            paymentStatus === 'SUCCEEDED' || paymentStatus === 'SETTLED' || paymentStatus === 'SUCCESS' ||
+            statusTrans === 'SUCCESS' || statusTrans === 'SETTLED'
+        ) {
             
             const productName = existingOrder.product_name || '';
             const userId = existingOrder.user_id;
+            const pricePaid = Number(existingOrder.price);
 
-            if (productName.includes('[VIP]') && targetTable === 'orders') {
+            // ========================================================
+            // 💰 JALUR 1: TOP UP SALDO OTOMATIS (SINKRON DENGAN WEBHOOK)
+            // ========================================================
+            if (productName.startsWith('[DEPOSIT]')) {
+                // Ekstrak nominal bersih dari nama produk (misal: "[DEPOSIT] 10000")
+                let amountToAdd = pricePaid; 
+                const depositMatch = productName.match(/\[DEPOSIT\]\s*(\d+)/);
+                if (depositMatch) {
+                    amountToAdd = Number(depositMatch[1]);
+                }
+
+                // A. Pastikan riwayat tidak dobel sebelum nambah saldo
+                const { data: existingTx } = await supabase.from('wallet_transactions')
+                    .select('id')
+                    .eq('description', `Top Up Saldo via QRIS Otomatis (Ref: ${order_id})`)
+                    .maybeSingle();
+
+                if (!existingTx) {
+                    // Tambahkan saldo
+                    await supabase.rpc('tambah_saldo', {
+                        p_user_id: userId,
+                        p_jumlah: amountToAdd
+                    });
+
+                    // Catat histori mutasi dompet
+                    await supabase.from('wallet_transactions').insert({
+                        user_id: userId,
+                        amount: amountToAdd,
+                        type: 'INCOME',
+                        description: `Top Up Saldo via QRIS Otomatis (Ref: ${order_id})`
+                    });
+                }
+                
+                await supabase.from(targetTable).update({ status: 'selesai' }).eq('id', order_id);
+            } 
+            
+            // ========================================================
+            // 👑 JALUR 2: PEMBELIAN VIP SELLER
+            // ========================================================
+            else if (productName.includes('[VIP]') && targetTable === 'orders') {
                 const { data: profile } = await supabase.from('profiles').select('seller_expired_at').eq('id', userId).single();
                 let waktuSekarang = new Date();
                 let waktuExpired = profile?.seller_expired_at ? new Date(profile.seller_expired_at) : new Date();
@@ -87,8 +132,14 @@ export default async function handler(req, res) {
                 await supabase.from('profiles').update({ is_seller: true, seller_expired_at: waktuExpired.toISOString() }).eq('id', userId);
                 let updatePayload = { status: 'selesai' };
                 if (targetTable === 'orders_player') updatePayload.waktu_selesai = new Date().toISOString();
+                
                 await supabase.from(targetTable).update(updatePayload).eq('id', order_id);
-            } else {
+            } 
+            
+            // ========================================================
+            // 📦 JALUR 3: ORDER BIASA & PASAR PLAYER
+            // ========================================================
+            else {
                 await supabase.from(targetTable).update({ status: 'SUCCESS' }).eq('id', order_id);
             }
 
