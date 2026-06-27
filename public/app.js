@@ -12319,11 +12319,13 @@ function renderBukuKasList(dataArray) {
 
 
 // ==========================================
-// RADAR PENCARIAN BUKU KAS (AUTO RUN)
+// RADAR PENCARIAN BUKU KAS & HARGA (AUTO RUN)
 // ==========================================
 document.addEventListener('DOMContentLoaded', () => {
     // Taruh di dalam DOMContentLoaded agar event diletakkan saat HTML sudah dimuat
     setTimeout(() => {
+        
+        // 1. RADAR PENCARIAN BUKU KAS (MEMORI LOKAL)
         const searchKas = document.getElementById('cari-buku-kas');
         if (searchKas) {
             searchKas.addEventListener('input', debounce((e) => {
@@ -12335,14 +12337,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     return;
                 }
                 
-                                // Filter menggunakan memori lokal
+                // Filter menggunakan memori lokal
                 const filteredData = globalDataBukuKas.filter(tx => {
                     const matchNama = tx.product_name.toLowerCase().includes(keyword);
                     const matchPenjual = tx.namaPenjual.toLowerCase().includes(keyword);
                     const matchID = tx.id.toLowerCase().includes(keyword);
                     const matchNominal = tx.totalJatahNikky.toString().includes(keyword);
                     
-                    // [BARU] Deteksi Tanggal (Misal: "Kamis", "15 Juni", "2026")
+                    // Deteksi Tanggal (Misal: "Kamis", "15 Juni", "2026")
                     const stringTanggal = tx.waktuAkurat.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).toLowerCase();
                     const matchTanggal = stringTanggal.includes(keyword);
                     
@@ -12352,6 +12354,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 renderBukuKasList(filteredData);
             }, 300));
         }
+
+        // 2. 🔥 [BARU] RADAR PENCARIAN HARGA PPOB (TEMBAK KE SERVER)
+        const searchHargaPPOB = document.getElementById('cari-harga-ppob');
+        if (searchHargaPPOB) {
+            searchHargaPPOB.addEventListener('input', debounce((e) => {
+                const keyword = e.target.value;
+                loadDaftarHargaPPOB(keyword); // Tembak langsung ke Supabase
+            }, 500)); // Delay 500ms agar database Supabase tidak down saat ngetik cepat
+        }
+
     }, 1000);
 });
 
@@ -12368,35 +12380,43 @@ function switchAdminTab(tab) {
     const contDash = document.getElementById('admin-tab-dashboard');
     const contKas = document.getElementById('admin-tab-kas');
     const contAntrean = document.getElementById('admin-tab-antrean');
+    const contHarga = document.getElementById('admin-tab-harga'); // [BARU]
     
     const menuDash = document.getElementById('menu-admin-dash');
     const menuKas = document.getElementById('menu-admin-kas');
     const menuAntrean = document.getElementById('menu-admin-antrean');
+    const menuHarga = document.getElementById('menu-admin-harga'); // [BARU]
 
-    // Styling tombol (Warna saat aktif & non-aktif)
     const activeClass = 'bg-brand-accent text-white shadow-sm';
     const inactiveClass = 'bg-transparent text-gray-400 hover:text-white';
 
     // 1. Reset semua warna tombol ke Abu-abu
-    menuDash.className = `flex-1 py-3 text-[10px] sm:text-[11px] font-bold rounded-lg transition-all ${inactiveClass}`;
-    menuKas.className = `flex-1 py-3 text-[10px] sm:text-[11px] font-bold rounded-lg transition-all ${inactiveClass}`;
-    menuAntrean.className = `flex-1 py-3 text-[10px] sm:text-[11px] font-bold rounded-lg transition-all relative ${inactiveClass}`;
+    if(menuDash) menuDash.className = `flex-1 py-3 text-[10px] sm:text-[11px] font-bold rounded-lg transition-all ${inactiveClass}`;
+    if(menuKas) menuKas.className = `flex-1 py-3 text-[10px] sm:text-[11px] font-bold rounded-lg transition-all ${inactiveClass}`;
+    if(menuAntrean) menuAntrean.className = `flex-1 py-3 text-[10px] sm:text-[11px] font-bold rounded-lg transition-all relative ${inactiveClass}`;
+    if(menuHarga) menuHarga.className = `flex-1 py-3 text-[10px] sm:text-[11px] font-bold rounded-lg transition-all ${inactiveClass}`;
     
     // 2. Sembunyikan semua laci (wadah list)
-    contDash.classList.replace('block', 'hidden');
-    contKas.classList.replace('block', 'hidden');
-    contAntrean.classList.replace('block', 'hidden');
+    if(contDash) contDash.classList.replace('block', 'hidden');
+    if(contKas) contKas.classList.replace('block', 'hidden');
+    if(contAntrean) contAntrean.classList.replace('block', 'hidden');
+    if(contHarga) contHarga.classList.replace('block', 'hidden');
 
     // 3. Nyalakan tab yang dipencet
     if (tab === 'dashboard') {
-        menuDash.className = `flex-1 py-3 text-[10px] sm:text-[11px] font-bold rounded-lg transition-all ${activeClass}`;
-        contDash.classList.replace('hidden', 'block');
+        if(menuDash) menuDash.className = `flex-1 py-3 text-[10px] sm:text-[11px] font-bold rounded-lg transition-all ${activeClass}`;
+        if(contDash) contDash.classList.replace('hidden', 'block');
     } else if (tab === 'kas') {
-        menuKas.className = `flex-1 py-3 text-[10px] sm:text-[11px] font-bold rounded-lg transition-all ${activeClass}`;
-        contKas.classList.replace('hidden', 'block');
+        if(menuKas) menuKas.className = `flex-1 py-3 text-[10px] sm:text-[11px] font-bold rounded-lg transition-all ${activeClass}`;
+        if(contKas) contKas.classList.replace('hidden', 'block');
     } else if (tab === 'antrean') {
-        menuAntrean.className = `flex-1 py-3 text-[10px] sm:text-[11px] font-bold rounded-lg transition-all relative ${activeClass}`;
-        contAntrean.classList.replace('hidden', 'block');
+        if(menuAntrean) menuAntrean.className = `flex-1 py-3 text-[10px] sm:text-[11px] font-bold rounded-lg transition-all relative ${activeClass}`;
+        if(contAntrean) contAntrean.classList.replace('hidden', 'block');
+    } else if (tab === 'harga') {
+        // [BARU] Jalankan fungsi tab harga
+        if(menuHarga) menuHarga.className = `flex-1 py-3 text-[10px] sm:text-[11px] font-bold rounded-lg transition-all relative ${activeClass}`;
+        if(contHarga) contHarga.classList.replace('hidden', 'block');
+        loadDaftarHargaPPOB(); // Tarik data harga
     }
 }
 
@@ -13276,5 +13296,80 @@ async function eksekusiSinkronisasiPPOB() {
         // 5. Kembalikan tombol seperti semula setelah selesai (sukses/gagal)
         btn.innerHTML = originalText;
         btn.disabled = false;
+    }
+}
+
+// ==========================================
+// PUSAT KENDALI: DAFTAR HARGA & MARGIN PPOB
+// ==========================================
+async function loadDaftarHargaPPOB(searchQuery = '') {
+    const listContainer = document.getElementById('admin-harga-list');
+    if (!listContainer) return;
+
+    listContainer.innerHTML = '<div class="text-center py-10"><i class="fas fa-circle-notch fa-spin text-brand-info text-2xl mb-2"></i><br><span class="text-[10px] text-gray-500">Menarik data dari pusat...</span></div>';
+
+    try {
+        let query = supabaseClient.from('digiflazz_products').select('sku_code, product_name, category, brand, price, seller_price, is_active');
+        
+        // Jika sedang mencari spesifik (karena database PPOB itu ribuan, kita harus search langsung dari server agar tidak lag)
+        if (searchQuery.trim() !== '') {
+            // Cari berdasarkan nama atau SKU
+            query = query.or(`product_name.ilike.%${searchQuery}%,sku_code.ilike.%${searchQuery}%`).limit(50);
+        } else {
+            // Default: Tampilkan 50 produk acak/teratas
+            query = query.limit(50);
+        }
+
+        const { data, error } = await query;
+        if (error) throw error;
+
+        if (data && data.length > 0) {
+            listContainer.innerHTML = data.map(item => {
+                const modalDigiflazz = Number(item.price);
+                const hargaJualApp = Number(item.seller_price);
+                
+                // Laba kotor (Selisih Harga Jual dengan Modal)
+                const laba = hargaJualApp - modalDigiflazz;
+                const labaClass = laba >= 0 ? 'text-brand-success' : 'text-red-500';
+                
+                const statusBadge = item.is_active 
+                    ? `<span class="bg-brand-success/20 text-brand-success px-2 py-0.5 rounded text-[8px] font-black tracking-widest border border-brand-success/30">AKTIF</span>`
+                    : `<span class="bg-red-500/20 text-red-500 px-2 py-0.5 rounded text-[8px] font-black tracking-widest border border-red-500/30">GANGGUAN</span>`;
+
+                return `
+                <div class="bg-[#161B2E] border border-white/5 p-3 rounded-[1.2rem] flex flex-col gap-2 relative shadow-md hover:bg-[#1C233A] transition-colors">
+                    <div class="flex justify-between items-start border-b border-white/5 pb-2">
+                        <div class="flex-1 pr-2">
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="text-[9px] bg-black/40 text-brand-info px-2 py-0.5 rounded-md border border-brand-info/30 font-mono">${item.sku_code}</span>
+                                ${statusBadge}
+                            </div>
+                            <h4 class="text-[11px] font-bold text-white leading-snug">${item.product_name}</h4>
+                            <p class="text-[9px] text-gray-500 mt-0.5">${item.category} &bull; ${item.brand}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex justify-between items-center bg-black/30 rounded-lg p-2.5 border border-white/5">
+                        <div class="flex flex-col">
+                            <span class="text-[8px] text-gray-400 uppercase tracking-wider">Harga Modal Pusat</span>
+                            <span class="text-[11px] font-mono text-gray-300">Rp ${modalDigiflazz.toLocaleString('id-ID')}</span>
+                        </div>
+                        <i class="fas fa-arrow-right text-gray-600 text-xs"></i>
+                        <div class="flex flex-col items-center">
+                            <span class="text-[8px] text-gray-400 uppercase tracking-wider">Harga Jual App</span>
+                            <span class="text-[12px] font-mono font-bold text-white">Rp ${hargaJualApp.toLocaleString('id-ID')}</span>
+                        </div>
+                        <div class="flex flex-col text-right pl-2 border-l border-white/10">
+                            <span class="text-[8px] text-gray-400 uppercase tracking-wider">Laba/Margin</span>
+                            <span class="text-[12px] font-black ${labaClass}">+Rp ${laba.toLocaleString('id-ID')}</span>
+                        </div>
+                    </div>
+                </div>`;
+            }).join('');
+        } else {
+            listContainer.innerHTML = '<div class="text-center py-6 text-[10px] text-gray-500 border border-white/5 rounded-2xl bg-black/20">Produk tidak ditemukan.</div>';
+        }
+    } catch (e) {
+        listContainer.innerHTML = '<div class="text-center py-6 text-xs text-red-500">Gagal memuat harga server.</div>';
     }
 }
