@@ -29,7 +29,7 @@
 
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script defer src="/app.js?v=241"></script>
+<script defer src="/app.js?v=242"></script>
 <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
 <style>
 
@@ -987,7 +987,7 @@ Sistem Jual Beli Otomatis, Database Ripper, dan Rekber <strong>NIKKY</strong>. D
         <button id="menu-admin-dash" onclick="switchAdminTab('dashboard')" class="flex-1 py-3 text-[10px] sm:text-[11px] font-bold rounded-lg bg-brand-accent text-white shadow-sm transition-all">Dashboard</button>
         <button id="menu-admin-kas" onclick="switchAdminTab('kas')" class="flex-1 py-3 text-[10px] sm:text-[11px] font-bold rounded-lg text-gray-400 hover:text-white transition-all">Buku Kas</button>
       <button id="menu-admin-harga" onclick="switchAdminTab('harga')" class="flex-1 py-3 text-[10px] sm:text-[11px] font-bold rounded-lg transition-all bg-transparent text-gray-400 hover:text-white">
-    <i class="fas fa-tags mb-1 block text-lg"></i> Harga
+    <i class="fas fa-file-invoice-dollar mb-1 block text-lg"></i> Laba PPOB
 </button>
         <button id="menu-admin-antrean" onclick="switchAdminTab('antrean')" class="flex-1 py-3 text-[10px] sm:text-[11px] font-bold rounded-lg text-gray-400 hover:text-white transition-all relative">
             Antrean <span id="badge-admin-antrean" class="hidden absolute top-1 right-2 bg-red-500 text-white text-[8px] w-4 h-4 rounded-full flex items-center justify-center shadow-md font-black">0</span>
@@ -1104,22 +1104,22 @@ Sistem Jual Beli Otomatis, Database Ripper, dan Rekber <strong>NIKKY</strong>. D
   <div id="admin-tab-harga" class="flex-1 overflow-y-auto hide-scroll relative z-10 hidden pb-10 mt-4">
     <div class="flex justify-between items-end mb-4">
         <div>
-            <h2 class="text-lg font-black text-white tracking-tight">Katalog PPOB</h2>
-            <p class="text-[10px] text-gray-400">Pantau harga modal & margin (Laba).</p>
+            <h2 class="text-lg font-black text-white tracking-tight">Riwayat PPOB</h2>
+            <p class="text-[10px] text-gray-400">Pantau transaksi & laba layanan PPOB.</p>
         </div>
-        <button id="btn-sync-digiflazz-2" onclick="eksekusiSinkronisasiPPOB()" class="bg-brand-info/20 text-brand-info border border-brand-info/30 hover:bg-brand-info hover:text-brand-dark px-4 py-2 rounded-xl text-[10px] font-bold transition-all active:scale-95 shadow-sm">
-            <i class="fas fa-sync-alt mr-1"></i> Sinkron Pusat
+        <button onclick="loadRiwayatLabaPPOB(true)" class="bg-brand-info/20 text-brand-info border border-brand-info/30 hover:bg-brand-info hover:text-brand-dark px-4 py-2 rounded-xl text-[10px] font-bold transition-all active:scale-95 shadow-sm">
+            <i class="fas fa-sync-alt mr-1"></i> Segarkan
         </button>
     </div>
 
-    <div class="relative mb-4">
-        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <i class="fas fa-search text-gray-500 text-xs"></i>
+    <div class="sticky top-0 z-20 bg-[#0F0920]/90 backdrop-blur-xl pt-2 pb-3 mb-2 border-b border-white/5">
+        <div class="relative">
+            <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 text-xs"></i>
+            <input type="text" id="cari-laba-ppob" placeholder="Cari SKU, Nomor Tujuan, atau Pembeli..." class="w-full bg-black/40 border border-white/10 rounded-2xl py-3 pl-10 pr-4 text-xs text-white outline-none focus:border-brand-info focus:bg-white/5 transition-all shadow-inner">
         </div>
-        <input type="text" id="cari-harga-ppob" placeholder="Cari nama produk atau SKU..." class="w-full bg-black/40 border border-white/10 rounded-xl py-3 pl-9 pr-4 text-xs text-white outline-none focus:border-brand-info transition-all shadow-inner">
     </div>
 
-    <div id="admin-harga-list" class="flex flex-col gap-2.5 pb-24">
+    <div id="admin-laba-list" class="flex flex-col gap-2.5 pb-24">
         </div>
 </div>
 </section>
