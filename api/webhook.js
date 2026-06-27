@@ -96,12 +96,19 @@ export default async function handler(req, res) {
             // 💰 JALUR 1: TOP UP SALDO OTOMATIS
             // ========================================================
             if (productName.startsWith('[DEPOSIT]')) {
-                console.log(`💰 Memproses Top Up Saldo untuk User: ${userId}, Nominal: Rp ${pricePaid}`);
+                // 🔥 SULAP PISAHKAN HARGA: Ekstrak nominal bersih dari nama produk (misal: "[DEPOSIT] 10000")
+                let amountToAdd = pricePaid; 
+                const depositMatch = productName.match(/\[DEPOSIT\]\s*(\d+)/);
+                if (depositMatch) {
+                    amountToAdd = Number(depositMatch[1]);
+                }
+
+                console.log(`💰 Memproses Top Up Saldo untuk User: ${userId} | Saldo Masuk: Rp ${amountToAdd} | Total Dibayar: Rp ${pricePaid}`);
                 
-                // A. Tambahkan saldo menggunakan RPC Supabase
+                // A. Tambahkan saldo menggunakan RPC Supabase (HANYA nominal murni yang masuk)
                 const { error: errSaldo } = await supabase.rpc('tambah_saldo', {
                     p_user_id: userId,
-                    p_jumlah: pricePaid
+                    p_jumlah: amountToAdd
                 });
 
                 if (errSaldo) {
@@ -109,10 +116,10 @@ export default async function handler(req, res) {
                     return res.status(500).json({ success: false, message: 'Database gagal memproses saldo' });
                 }
 
-                // B. Catat histori di Riwayat Mutasi Dompet
+                // B. Catat histori di Riwayat Mutasi Dompet (Sesuai nominal murni)
                 await supabase.from('wallet_transactions').insert({
                     user_id: userId,
-                    amount: pricePaid,
+                    amount: amountToAdd,
                     type: 'INCOME',
                     description: 'Top Up Saldo via QRIS Otomatis'
                 });
