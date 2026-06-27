@@ -8518,6 +8518,21 @@ async function selesaikanPesanan(orderId, tableSource) {
         }
         
         const { error: orderError } = await supabaseClient.from(tableSource).update(dataUpdate).eq('id', orderId);
+        const { data: detailOrder } = await supabaseClient.from(tableSource).select('price, product_name, product_id').eq('id', orderId).single();
+        if (detailOrder) {
+            const hargaAsli = Number(detailOrder.price);
+            const isRekber = detailOrder.product_name.includes('[+Rekber]');
+            
+            // Hitung Pajak Lapak
+            const jatahPajakLapak = hitungPotonganSeller(hargaAsli);
+            // Hitung Fee Rekber (Jika ada)
+            const jatahFeeRekber = isRekber ? hitungFeeRekber(hargaAsli) : 0;
+            
+            const totalSetorNikky = jatahPajakLapak + jatahFeeRekber;
+            
+            // Setor langsung ke dompet Nikky!
+            autoSetorKeNikky(totalSetorNikky, `[Auto] Pajak Lapak & Rekber - Order ID: ${orderId.substring(0,8).toUpperCase()}`);
+        }
         if (orderError) throw orderError;
 
         if (tableSource === 'orders_player') {
@@ -13221,6 +13236,10 @@ async function prosesBeliPPOB(skuCode, targetNo, harga, namaProduk) {
             if (refId !== 'Sistem') {
                 const updateUIFinalStatus = (newData) => {
                     const isNowSukses = newData.status === 'Sukses';
+                    if (isNowSukses) {
+        // Laba PPOB adalah Rp 100. Jatah Nikky 20% = Rp 20.
+        autoSetorKeNikky(20, `[Auto] Laba PPOB 20% - SN: ${newData.sn || 'Tanpa SN'}`);
+    }
                     const elStatus = document.getElementById('status-teks-ppob');
                     if (elStatus) elStatus.innerText = newData.status;
                     
@@ -13994,5 +14013,31 @@ function renderLabaPPOBList(dataArray, hasMore = false) {
             </button>
         </div>
         `;
+    }
+}
+// ==========================================
+// FUNGSI AUTO-SETOR LABA KE SUPER ADMIN (DENGAN NOTIF CHAT)
+// ==========================================
+async function autoSetorKeNikky(nominal, keterangan) {
+    if (nominal <= 0) return; // Abaikan jika tidak ada laba
+    try {
+        // 1. Memanggil fungsi rahasia di Supabase untuk nambah saldo & nulis mutasi dompet
+        await supabaseClient.rpc('setor_dana_ke_nikky', {
+            p_nominal: nominal,
+            p_keterangan: keterangan
+        });
+
+        // 2. Kirim Notifikasi ke Inbox Chat Nikky
+        const SUPER_ADMIN_ID = "5e65bd71-62f8-4367-8744-95f626b73726";
+        
+        await supabaseClient.from('messages').insert({
+            sender_id: SUPER_ADMIN_ID,     // Dikirim dari Nikky
+            receiver_id: SUPER_ADMIN_ID,   // Diterima oleh Nikky (Chat ke diri sendiri sebagai log notifikasi)
+            message: `[SISTEM] 💰 *Laba Masuk!*\n\nDana sebesar *Rp ${nominal.toLocaleString('id-ID')}* telah dikreditkan ke Saldo Dompet Anda.\n\nKeterangan:\n${keterangan}`
+        });
+
+        console.log(`[Kas Nikky] Berhasil menyetor Rp ${nominal} - ${keterangan}`);
+    } catch (e) {
+        console.error("Gagal menyetor laba ke Nikky:", e);
     }
 }
