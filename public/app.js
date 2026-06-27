@@ -13801,9 +13801,9 @@ function renderLabaPPOBList(dataArray, hasMore = false) {
                 ${grup.transactions.map(tx => {
                     const status = String(tx.status).toUpperCase();
                     let statusBadge = '';
-                    if (status === 'SUKSES') statusBadge = \`<span class="bg-brand-success/20 text-brand-success px-2 py-0.5 rounded text-[8px] font-black tracking-widest border border-brand-success/30">SUKSES</span>\`;
-                    else if (status === 'PENDING') statusBadge = \`<span class="bg-brand-info/20 text-brand-info px-2 py-0.5 rounded text-[8px] font-black tracking-widest border border-brand-info/30">PROSES</span>\`;
-                    else statusBadge = \`<span class="bg-red-500/20 text-red-500 px-2 py-0.5 rounded text-[8px] font-black tracking-widest border border-red-500/30">GAGAL</span>\`;
+                    if (status === 'SUKSES') statusBadge = `<span class="bg-brand-success/20 text-brand-success px-2 py-0.5 rounded text-[8px] font-black tracking-widest border border-brand-success/30">SUKSES</span>`;
+                    else if (status === 'PENDING') statusBadge = `<span class="bg-brand-info/20 text-brand-info px-2 py-0.5 rounded text-[8px] font-black tracking-widest border border-brand-info/30">PROSES</span>`;
+                    else statusBadge = `<span class="bg-red-500/20 text-red-500 px-2 py-0.5 rounded text-[8px] font-black tracking-widest border border-red-500/30">GAGAL</span>`;
 
                     const hargaJual = Number(tx.price || 0); 
                     const laba = status === 'SUKSES' ? 100 : 0; 
