@@ -13228,7 +13228,7 @@ async function prosesBeliPPOB(skuCode, targetNo, harga, namaProduk) {
                         </div>
                     </div>
 
-                    <button type="button" onclick="history.back()" class="w-full bg-white/5 text-white py-3.5 rounded-xl font-bold uppercase tracking-wider text-xs border border-white/10 hover:bg-white/10 active:scale-95 transition-all">Tutup Halaman</button>
+                    <button type="button" onclick="tutupLayarSuksesPPOB(this)" class="w-full bg-white/5 text-white py-3.5 rounded-xl font-bold uppercase tracking-wider text-xs border border-white/10 hover:bg-white/10 active:scale-95 transition-all">Tutup Halaman</button>
                 </div>
             `;
 
