@@ -970,6 +970,16 @@ function initGlobalMessageListener() {
                 } else {
                     showToast("Ada pesan pribadi baru masuk!", "info");
                 }
+
+                // 🔥 FIX 3: Trigger Auto-Refresh Saldo Jika Ada Notif Transfer Masuk
+                if (msg.message && msg.message.includes('Transfer Saldo Berhasil!')) {
+                    setTimeout(() => {
+                        if (typeof fetchSaldoDanMutasi === 'function') fetchSaldoDanMutasi();
+                        if (typeof updateSaldoGlobal === 'function') updateSaldoGlobal();
+                        if (typeof updateUiSaldoSeller === 'function') updateUiSaldoSeller();
+                        if (typeof fetchProfile === 'function') fetchProfile();
+                    }, 1000);
+                }
                 
                 // --- MUNCULKAN NOTIFIKASI POP-UP HP (Jika web di-minimize) ---
                 if ("Notification" in window && Notification.permission === "granted" && document.hidden) {
@@ -14144,10 +14154,22 @@ async function mulaiTransferSaldo() {
 
         showToast(`Berhasil mengirim Rp ${nominal.toLocaleString('id-ID')} ke @${targetUser.nickname}!`, "success");
 
-        // Refresh Semua Layar
-        fetchSaldoDanMutasi(); 
-        updateSaldoGlobal();   
-        fetchProfile();        
+        // 🔥 FIX 1: Potong saldo di layar seketika (Optimistic UI)
+        if (userProfile && userProfile.balance !== undefined) {
+            userProfile.balance -= nominal;
+            const elSaldoDompet = document.getElementById('dompet-angka-saldo');
+            if (elSaldoDompet) {
+                elSaldoDompet.innerText = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(userProfile.balance);
+            }
+        }
+
+        // 🔥 FIX 2: Kasih jeda 1 detik agar Supabase selesai ngurus mutasi
+        setTimeout(() => {
+            fetchSaldoDanMutasi(); 
+            updateSaldoGlobal();   
+            fetchProfile();  
+            if (typeof updateUiSaldoSeller === 'function') updateUiSaldoSeller();
+        }, 1000);
 
     } catch (e) {
         showToast(e.message || "Gagal memproses transfer.", "error");
