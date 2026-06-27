@@ -12341,7 +12341,7 @@ async function loadRiwayatKeuanganGlobal(isRefresh = false) {
 }
 
 
-// FUNGSI RENDER (MENCETAK ARRAY KE LAYAR)
+// FUNGSI RENDER BUKU KAS (MENCETAK ARRAY KE LAYAR)
 function renderBukuKasList(dataArray) {
     const listContainer = document.getElementById('admin-buku-kas-list');
     
@@ -12355,12 +12355,33 @@ function renderBukuKasList(dataArray) {
         return;
     }
 
-    // 1. KELOMPOKKAN DATA BERDASARKAN HARI
+    // 🔥 LOGIKA BARU: Rekapitulasi Kas Nikky
+    let totalHariIni = 0;
+    let totalBulanIni = 0;
+    let totalKeseluruhan = 0;
+
+    const today = new Date();
+    const todayString = today.toLocaleDateString('id-ID');
+    const currentMonth = today.getMonth();
+    const currentYear = today.getFullYear();
+
     const groupedData = {};
 
     dataArray.forEach(tx => {
-        const dateString = tx.waktuAkurat.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+        const txDate = tx.waktuAkurat;
+        const dateString = txDate.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+        const simpleDateString = txDate.toLocaleDateString('id-ID');
 
+        // Hitung total untuk Dashboard Nikky
+        totalKeseluruhan += tx.totalJatahNikky;
+        if (simpleDateString === todayString) {
+            totalHariIni += tx.totalJatahNikky;
+        }
+        if (txDate.getMonth() === currentMonth && txDate.getFullYear() === currentYear) {
+            totalBulanIni += tx.totalJatahNikky;
+        }
+
+        // Kelompokkan list per hari
         if (!groupedData[dateString]) {
             groupedData[dateString] = {
                 dateLabel: dateString,
@@ -12372,7 +12393,32 @@ function renderBukuKasList(dataArray) {
         groupedData[dateString].transactions.push(tx);
     });
 
-    // 2. HASILKAN HTML-NYA
+    // UI Dashboard Rekap Kas Nikky
+    const summaryKasHtml = `
+    <div class="bg-gradient-to-br from-[#2A0815] to-[#161B2E] rounded-2xl p-4 border border-brand-accent/30 mb-6 shadow-[0_4px_15px_rgba(255,0,122,0.15)] relative overflow-hidden">
+        <div class="absolute -right-4 -bottom-4 opacity-10"><i class="fas fa-book text-8xl text-brand-accent"></i></div>
+        <div class="flex items-center justify-between mb-3 border-b border-white/10 pb-2 relative z-10">
+            <h3 class="text-[11px] font-black text-white uppercase tracking-widest flex items-center gap-2">
+                <i class="fas fa-wallet text-brand-accent"></i> Rekap Kas Nikky (100%)
+            </h3>
+        </div>
+        <div class="grid grid-cols-2 gap-3 mb-3 relative z-10">
+            <div class="bg-black/40 p-3 rounded-xl border border-brand-accent/20 shadow-inner">
+                <p class="text-[9px] text-gray-400 uppercase tracking-widest mb-1">Hari Ini</p>
+                <h4 class="text-sm font-black text-brand-success">+ Rp ${totalHariIni.toLocaleString('id-ID')}</h4>
+            </div>
+            <div class="bg-black/40 p-3 rounded-xl border border-brand-accent/20 shadow-inner">
+                <p class="text-[9px] text-gray-400 uppercase tracking-widest mb-1">Bulan Ini</p>
+                <h4 class="text-sm font-black text-brand-success">+ Rp ${totalBulanIni.toLocaleString('id-ID')}</h4>
+            </div>
+        </div>
+        <div class="text-center text-[10px] text-gray-400 bg-white/5 py-2 rounded-lg border border-white/5 relative z-10">
+            Total Akumulasi Semua Waktu: <b class="text-white">Rp ${totalKeseluruhan.toLocaleString('id-ID')}</b>
+        </div>
+    </div>
+    `;
+
+    // 2. HASILKAN HTML-NYA (Daftar List Harian)
     let htmlOutput = '';
     for (const dateKey in groupedData) {
         const grup = groupedData[dateKey];
@@ -12421,7 +12467,7 @@ function renderBukuKasList(dataArray) {
         </div>`;
     }
 
-    listContainer.innerHTML = htmlOutput;
+    listContainer.innerHTML = summaryKasHtml + htmlOutput;
 }
 
 
@@ -13455,7 +13501,7 @@ async function loadRiwayatLabaPPOB(isRefresh = false) {
     }
 }
 
-// Fungsi Cetak ke Layar (Render)
+// Fungsi Cetak ke Layar (Render PPOB)
 function renderLabaPPOBList(dataArray) {
     const listContainer = document.getElementById('admin-laba-list');
     
@@ -13469,23 +13515,56 @@ function renderLabaPPOBList(dataArray) {
         return;
     }
 
-    listContainer.innerHTML = dataArray.map(tx => {
+    // 🔥 LOGIKA BARU: Hitung Total Laba & Bagi Hasil 80/20
+    let totalLabaPPOB = 0;
+    dataArray.forEach(tx => {
+        if (String(tx.status).toUpperCase() === 'SUKSES') {
+            totalLabaPPOB += 100; // Keuntungan Rp 100 per transaksi sukses
+        }
+    });
+
+    const labaOwner = totalLabaPPOB * 0.8; // 80% buat Lu
+    const labaNikky = totalLabaPPOB * 0.2; // 20% buat Nikky
+
+    // UI Dashboard Pembagian Laba
+    const summaryHtml = `
+    <div class="bg-gradient-to-br from-[#161B2E] to-[#0A0E17] rounded-2xl p-4 border border-brand-info/30 mb-5 shadow-lg relative overflow-hidden">
+        <div class="absolute top-0 right-0 p-4 opacity-10"><i class="fas fa-chart-pie text-6xl text-brand-info"></i></div>
+        <h3 class="text-[11px] font-black text-white uppercase tracking-widest mb-3 border-b border-white/10 pb-2 relative z-10 flex items-center gap-2">
+            <i class="fas fa-hand-holding-usd text-brand-info"></i> Pembagian Laba PPOB
+        </h3>
+        <div class="grid grid-cols-2 gap-3 relative z-10">
+            <div class="bg-black/40 p-3 rounded-xl border border-brand-info/20 shadow-inner">
+                <p class="text-[9px] text-gray-400 uppercase tracking-widest mb-0.5">Owner (80%)</p>
+                <h4 class="text-sm font-black text-brand-success">+ Rp ${labaOwner.toLocaleString('id-ID')}</h4>
+            </div>
+            <div class="bg-black/40 p-3 rounded-xl border border-brand-info/20 shadow-inner">
+                <p class="text-[9px] text-gray-400 uppercase tracking-widest mb-0.5">Nikky (20%)</p>
+                <h4 class="text-sm font-black text-brand-info">+ Rp ${labaNikky.toLocaleString('id-ID')}</h4>
+            </div>
+        </div>
+        <div class="mt-3 text-center text-[10px] text-gray-400 bg-white/5 py-1.5 rounded-lg border border-white/5 relative z-10">
+            Total Laba Kotor Terkumpul: <b class="text-white">Rp ${totalLabaPPOB.toLocaleString('id-ID')}</b>
+        </div>
+    </div>
+    `;
+
+    const listHtml = dataArray.map(tx => {
         const status = String(tx.status).toUpperCase();
         let statusBadge = '';
         if (status === 'SUKSES') statusBadge = `<span class="bg-brand-success/20 text-brand-success px-2 py-0.5 rounded text-[8px] font-black tracking-widest border border-brand-success/30">SUKSES</span>`;
         else if (status === 'PENDING') statusBadge = `<span class="bg-brand-info/20 text-brand-info px-2 py-0.5 rounded text-[8px] font-black tracking-widest border border-brand-info/30">PROSES</span>`;
         else statusBadge = `<span class="bg-red-500/20 text-red-500 px-2 py-0.5 rounded text-[8px] font-black tracking-widest border border-red-500/30">GAGAL</span>`;
 
-        // 💰 RUMUS LABA: Karena sistem Anda di-set untung Rp 100/transaksi
         const hargaJual = Number(tx.price || 0); 
-        const laba = status === 'SUKSES' ? 100 : 0; // Kalau gagal labanya 0
+        const laba = status === 'SUKSES' ? 100 : 0; 
         const hargaModal = hargaJual > 0 ? (hargaJual - 100) : 0; 
         
         const tgl = new Date(tx.created_at).toLocaleString('id-ID', {day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit'}) + ' WIB';
         const pembeli = tx.profiles?.nickname || 'Player';
 
         return `
-        <div class="bg-[#161B2E] border border-white/5 p-3 rounded-[1.2rem] flex flex-col gap-2 relative shadow-md hover:bg-[#1C233A] transition-colors">
+        <div class="bg-[#161B2E] border border-white/5 p-3 rounded-[1.2rem] flex flex-col gap-2 relative shadow-md hover:bg-[#1C233A] transition-colors mb-3">
             <div class="flex justify-between items-start border-b border-white/5 pb-2">
                 <div class="flex-1 pr-2">
                     <div class="flex items-center gap-2 mb-1">
@@ -13514,4 +13593,6 @@ function renderLabaPPOBList(dataArray) {
             </div>
         </div>`;
     }).join('');
+
+    listContainer.innerHTML = summaryHtml + listHtml;
 }
