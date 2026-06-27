@@ -13812,35 +13812,35 @@ function renderLabaPPOBList(dataArray, hasMore = false) {
                     const jam = new Date(tx.created_at).toLocaleString('id-ID', {hour:'2-digit', minute:'2-digit'}) + ' WIB';
                     const pembeli = tx.profiles?.nickname || 'Player';
 
-                    return \`
+                    return `
                     <div class="bg-[#161B2E] border border-white/5 p-3 rounded-[1.2rem] flex flex-col gap-2 relative shadow-md hover:bg-[#1C233A] transition-colors">
                         <div class="flex justify-between items-start border-b border-white/5 pb-2">
                             <div class="flex-1 pr-2">
                                 <div class="flex items-center gap-2 mb-1">
-                                    <span class="text-[9px] bg-black/40 text-brand-info px-2 py-0.5 rounded-md border border-brand-info/30 font-mono">\${tx.sku_code || 'PPOB'}</span>
-                                    \${statusBadge}
+                                    <span class="text-[9px] bg-black/40 text-brand-info px-2 py-0.5 rounded-md border border-brand-info/30 font-mono">${tx.sku_code || 'PPOB'}</span>
+                                    ${statusBadge}
                                 </div>
-                                <h4 class="text-[11px] font-bold text-white leading-snug">\${tx.customer_no}</h4>
-                                <p class="text-[9px] text-gray-500 mt-0.5">Pembeli: @\${pembeli}</p>
+                                <h4 class="text-[11px] font-bold text-white leading-snug">${tx.customer_no}</h4>
+                                <p class="text-[9px] text-gray-500 mt-0.5">Pembeli: @${pembeli}</p>
                             </div>
                             <div class="text-right shrink-0">
-                                <p class="text-[9px] text-gray-500 mb-0.5">\${jam}</p>
-                                <h4 class="text-[11px] font-black \${status === 'SUKSES' ? 'text-brand-success drop-shadow-[0_0_5px_rgba(37,211,102,0.4)]' : 'text-gray-500'}">+Rp \${laba.toLocaleString('id-ID')}</h4>
+                                <p class="text-[9px] text-gray-500 mb-0.5">${jam}</p>
+                                <h4 class="text-[11px] font-black ${status === 'SUKSES' ? 'text-brand-success drop-shadow-[0_0_5px_rgba(37,211,102,0.4)]' : 'text-gray-500'}">+Rp ${laba.toLocaleString('id-ID')}</h4>
                             </div>
                         </div>
                         
                         <div class="flex justify-between items-center bg-white/5 rounded-lg p-2.5">
                             <div class="flex flex-col">
                                 <span class="text-[8px] text-gray-400 uppercase tracking-wider">Modal</span>
-                                <span class="text-[10px] font-mono text-gray-400">Rp \${hargaModal.toLocaleString('id-ID')}</span>
+                                <span class="text-[10px] font-mono text-gray-400">Rp ${hargaModal.toLocaleString('id-ID')}</span>
                             </div>
                             <i class="fas fa-arrow-right text-gray-600 text-xs"></i>
                             <div class="flex flex-col text-right">
                                 <span class="text-[8px] text-gray-400 uppercase tracking-wider">Dibayar User</span>
-                                <span class="text-[10px] font-mono font-bold text-white">Rp \${hargaJual.toLocaleString('id-ID')}</span>
+                                <span class="text-[10px] font-mono font-bold text-white">Rp ${hargaJual.toLocaleString('id-ID')}</span>
                             </div>
                         </div>
-                    </div>\`
+                    </div>`
                 }).join('')}
             </div>
         </div>`;
