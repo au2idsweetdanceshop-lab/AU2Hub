@@ -13626,42 +13626,67 @@ async function eksekusiSinkronisasiPPOB() {
 // ==========================================
 // PUSAT KENDALI: RIWAYAT TRANSAKSI & LABA PPOB
 // ==========================================
-let globalDataLabaPPOB = []; // Memori kas PPOB
+let globalDataLabaPPOB = []; 
+let offsetLabaPPOB = 0; // 🔥 Memori halaman
+const LIMIT_PPOB = 50;  // 🔥 Tarik 50 data per klik
 
-async function loadRiwayatLabaPPOB(isRefresh = false) {
+async function loadRiwayatLabaPPOB(isRefresh = false, isLoadMore = false) {
     const listContainer = document.getElementById('admin-laba-list');
     if (!listContainer) return;
 
-    if (isRefresh) showToast("Merekap riwayat PPOB...", "info");
-    
-    if (globalDataLabaPPOB.length === 0 || isRefresh) {
+    if (isRefresh) {
+        showToast("Merekap riwayat PPOB...", "info");
+        offsetLabaPPOB = 0;
+        globalDataLabaPPOB = [];
+    } else if (!isLoadMore) {
+        offsetLabaPPOB = 0;
+        globalDataLabaPPOB = [];
         listContainer.innerHTML = '<div class="text-center py-10"><i class="fas fa-circle-notch fa-spin text-brand-info text-2xl mb-2"></i><br><span class="text-[10px] text-gray-500 font-bold tracking-widest uppercase">Merekap Transaksi PPOB...</span></div>';
     }
 
+    // Ubah tombol jadi loading kalau lagi narik data tambahan
+    const btnLoadMore = document.getElementById('btn-load-more-ppob-admin');
+    if (btnLoadMore) {
+        btnLoadMore.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Memuat...';
+        btnLoadMore.disabled = true;
+    }
+
     try {
-        // Tarik 100 transaksi PPOB terakhir dari riwayat_ppob
+        // 🔥 JURUS PAGINATION: Menarik data secara mencicil
         const { data, error } = await supabaseClient
             .from('riwayat_ppob')
             .select('*, profiles!riwayat_ppob_user_id_fkey(nickname)')
             .order('created_at', { ascending: false })
-            .limit(100);
+            .range(offsetLabaPPOB, offsetLabaPPOB + LIMIT_PPOB - 1);
 
         if (error) throw error;
 
         if (data && data.length > 0) {
-            globalDataLabaPPOB = data;
-            renderLabaPPOBList(globalDataLabaPPOB);
+            globalDataLabaPPOB = [...globalDataLabaPPOB, ...data];
+            offsetLabaPPOB += LIMIT_PPOB;
+            
+            let hasMore = data.length === LIMIT_PPOB;
+            renderLabaPPOBList(globalDataLabaPPOB, hasMore);
         } else {
-            globalDataLabaPPOB = [];
-            listContainer.innerHTML = '<div class="text-center py-6 text-[10px] text-gray-500 border border-white/5 rounded-2xl bg-black/20">Belum ada transaksi PPOB.</div>';
+            if (!isLoadMore) {
+                globalDataLabaPPOB = [];
+                listContainer.innerHTML = '<div class="text-center py-6 text-[10px] text-gray-500 border border-white/5 rounded-2xl bg-black/20">Belum ada transaksi PPOB.</div>';
+            } else {
+                if (btnLoadMore) btnLoadMore.remove(); // Hilangkan tombol jika data sudah habis
+            }
         }
     } catch (e) {
-        listContainer.innerHTML = '<div class="text-center py-6 text-xs text-red-500">Gagal memuat riwayat PPOB.</div>';
+        if (!isLoadMore) {
+            listContainer.innerHTML = '<div class="text-center py-6 text-xs text-red-500">Gagal memuat riwayat PPOB.</div>';
+        } else if (btnLoadMore) {
+            btnLoadMore.innerHTML = 'Gagal, Coba Lagi';
+            btnLoadMore.disabled = false;
+        }
     }
 }
 
-// Fungsi Cetak ke Layar (Render PPOB)
-function renderLabaPPOBList(dataArray) {
+// Fungsi Cetak ke Layar (Render)
+function renderLabaPPOBList(dataArray, hasMore = false) {
     const listContainer = document.getElementById('admin-laba-list');
     
     if (!dataArray || dataArray.length === 0) {
@@ -13674,84 +13699,163 @@ function renderLabaPPOBList(dataArray) {
         return;
     }
 
-    // 🔥 LOGIKA BARU: Hitung Total Laba & Bagi Hasil 80/20
-    let totalLabaPPOB = 0;
+    // 🔥 LOGIKA REKAP KAS PPOB
+    let totalHariIni = 0;
+    let totalBulanIni = 0;
+    let totalKeseluruhan = 0;
+
+    const today = new Date();
+    const todayString = today.toLocaleDateString('id-ID');
+    const currentMonth = today.getMonth();
+    const currentYear = today.getFullYear();
+
+    const groupedData = {};
+
     dataArray.forEach(tx => {
-        if (String(tx.status).toUpperCase() === 'SUKSES') {
-            totalLabaPPOB += 100; // Keuntungan Rp 100 per transaksi sukses
+        const isSukses = String(tx.status).toUpperCase() === 'SUKSES';
+        const laba = isSukses ? 100 : 0; // Hanya hitung jika statusnya sukses (Rp 100 per transaksi)
+        
+        const txDate = new Date(tx.created_at);
+        const dateString = txDate.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+        const simpleDateString = txDate.toLocaleDateString('id-ID');
+
+        // Kalkulasi Statistik Atas
+        totalKeseluruhan += laba;
+        if (simpleDateString === todayString) {
+            totalHariIni += laba;
         }
+        if (txDate.getMonth() === currentMonth && txDate.getFullYear() === currentYear) {
+            totalBulanIni += laba;
+        }
+
+        // Pengelompokan Data Untuk List HTML
+        if (!groupedData[dateString]) {
+            groupedData[dateString] = {
+                dateLabel: dateString,
+                totalLabaHariIni: 0,
+                transactions: []
+            };
+        }
+        groupedData[dateString].totalLabaHariIni += laba;
+        groupedData[dateString].transactions.push(tx);
     });
 
-    const labaOwner = totalLabaPPOB * 0.8; // 80% buat Lu
-    const labaNikky = totalLabaPPOB * 0.2; // 20% buat Nikky
+    // Kalkulasi Bagi Hasil 80% / 20%
+    const labaOwner = totalKeseluruhan * 0.8;
+    const labaNikky = totalKeseluruhan * 0.2;
 
-    // UI Dashboard Pembagian Laba
     const summaryHtml = `
     <div class="bg-gradient-to-br from-[#161B2E] to-[#0A0E17] rounded-2xl p-4 border border-brand-info/30 mb-5 shadow-lg relative overflow-hidden">
         <div class="absolute top-0 right-0 p-4 opacity-10"><i class="fas fa-chart-pie text-6xl text-brand-info"></i></div>
         <h3 class="text-[11px] font-black text-white uppercase tracking-widest mb-3 border-b border-white/10 pb-2 relative z-10 flex items-center gap-2">
             <i class="fas fa-hand-holding-usd text-brand-info"></i> Pembagian Laba PPOB
         </h3>
-        <div class="grid grid-cols-2 gap-3 relative z-10">
-            <div class="bg-black/40 p-3 rounded-xl border border-brand-info/20 shadow-inner">
-                <p class="text-[9px] text-gray-400 uppercase tracking-widest mb-0.5">Owner (80%)</p>
-                <h4 class="text-sm font-black text-brand-success">+ Rp ${labaOwner.toLocaleString('id-ID')}</h4>
+        
+        <!-- Statistik Waktu -->
+        <div class="grid grid-cols-2 gap-3 mb-3 relative z-10">
+            <div class="bg-black/40 p-2.5 rounded-xl border border-brand-info/20 shadow-inner">
+                <p class="text-[8px] text-gray-400 uppercase tracking-widest mb-0.5">Laba Hari Ini</p>
+                <h4 class="text-xs font-black text-brand-success">+ Rp ${totalHariIni.toLocaleString('id-ID')}</h4>
             </div>
-            <div class="bg-black/40 p-3 rounded-xl border border-brand-info/20 shadow-inner">
-                <p class="text-[9px] text-gray-400 uppercase tracking-widest mb-0.5">Nikky (20%)</p>
-                <h4 class="text-sm font-black text-brand-info">+ Rp ${labaNikky.toLocaleString('id-ID')}</h4>
+            <div class="bg-black/40 p-2.5 rounded-xl border border-brand-info/20 shadow-inner">
+                <p class="text-[8px] text-gray-400 uppercase tracking-widest mb-0.5">Laba Bulan Ini</p>
+                <h4 class="text-xs font-black text-brand-success">+ Rp ${totalBulanIni.toLocaleString('id-ID')}</h4>
             </div>
         </div>
-        <div class="mt-3 text-center text-[10px] text-gray-400 bg-white/5 py-1.5 rounded-lg border border-white/5 relative z-10">
-            Total Laba Kotor Terkumpul: <b class="text-white">Rp ${totalLabaPPOB.toLocaleString('id-ID')}</b>
+
+        <!-- Pembagian Laba 80/20 -->
+        <div class="bg-white/5 rounded-xl p-3 border border-white/10 relative z-10 flex justify-between items-center">
+            <div class="flex-1 border-r border-white/10">
+                <p class="text-[8px] text-gray-400 uppercase tracking-widest mb-0.5">Owner (80%)</p>
+                <h4 class="text-xs font-black text-brand-success">Rp ${labaOwner.toLocaleString('id-ID')}</h4>
+            </div>
+            <div class="flex-1 text-right">
+                <p class="text-[8px] text-gray-400 uppercase tracking-widest mb-0.5">Nikky (20%)</p>
+                <h4 class="text-xs font-black text-brand-info">Rp ${labaNikky.toLocaleString('id-ID')}</h4>
+            </div>
+        </div>
+
+        <div class="mt-3 text-center text-[10px] text-gray-400">
+            Total Laba Semua Waktu: <b class="text-white">Rp ${totalKeseluruhan.toLocaleString('id-ID')}</b>
         </div>
     </div>
     `;
 
-    const listHtml = dataArray.map(tx => {
-        const status = String(tx.status).toUpperCase();
-        let statusBadge = '';
-        if (status === 'SUKSES') statusBadge = `<span class="bg-brand-success/20 text-brand-success px-2 py-0.5 rounded text-[8px] font-black tracking-widest border border-brand-success/30">SUKSES</span>`;
-        else if (status === 'PENDING') statusBadge = `<span class="bg-brand-info/20 text-brand-info px-2 py-0.5 rounded text-[8px] font-black tracking-widest border border-brand-info/30">PROSES</span>`;
-        else statusBadge = `<span class="bg-red-500/20 text-red-500 px-2 py-0.5 rounded text-[8px] font-black tracking-widest border border-red-500/30">GAGAL</span>`;
+    let htmlOutput = '';
+    for (const dateKey in groupedData) {
+        const grup = groupedData[dateKey];
 
-        const hargaJual = Number(tx.price || 0); 
-        const laba = status === 'SUKSES' ? 100 : 0; 
-        const hargaModal = hargaJual > 0 ? (hargaJual - 100) : 0; 
-        
-        const tgl = new Date(tx.created_at).toLocaleString('id-ID', {day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit'}) + ' WIB';
-        const pembeli = tx.profiles?.nickname || 'Player';
-
-        return `
-        <div class="bg-[#161B2E] border border-white/5 p-3 rounded-[1.2rem] flex flex-col gap-2 relative shadow-md hover:bg-[#1C233A] transition-colors mb-3">
-            <div class="flex justify-between items-start border-b border-white/5 pb-2">
-                <div class="flex-1 pr-2">
-                    <div class="flex items-center gap-2 mb-1">
-                        <span class="text-[9px] bg-black/40 text-brand-info px-2 py-0.5 rounded-md border border-brand-info/30 font-mono">${tx.sku_code || 'PPOB'}</span>
-                        ${statusBadge}
-                    </div>
-                    <h4 class="text-[12px] font-bold text-white leading-snug">${tx.customer_no}</h4>
-                    <p class="text-[9px] text-gray-500 mt-0.5">Pembeli: @${pembeli} &bull; ${tgl}</p>
+        htmlOutput += `
+        <div class="mb-5 bg-black/20 rounded-[1.2rem] p-3 border border-white/5 shadow-md">
+            <div class="flex justify-between items-center mb-3 pb-3 border-b border-white/10 px-1">
+                <h3 class="text-[11px] font-extrabold text-white flex items-center gap-2">
+                    <i class="far fa-calendar-alt text-brand-info text-sm"></i> ${grup.dateLabel}
+                </h3>
+                <div class="text-right">
+                    <span class="text-[8px] text-gray-400 uppercase tracking-widest block mb-0.5">Laba Bersih</span>
+                    <span class="text-xs font-black text-brand-success">+ Rp ${grup.totalLabaHariIni.toLocaleString('id-ID')}</span>
                 </div>
             </div>
-            
-            <div class="flex justify-between items-center bg-black/30 rounded-lg p-2.5 border border-white/5">
-                <div class="flex flex-col">
-                    <span class="text-[8px] text-gray-400 uppercase tracking-wider">Harga Modal</span>
-                    <span class="text-[11px] font-mono text-gray-400">Rp ${hargaModal.toLocaleString('id-ID')}</span>
-                </div>
-                <i class="fas fa-arrow-right text-gray-600 text-xs"></i>
-                <div class="flex flex-col items-center">
-                    <span class="text-[8px] text-gray-400 uppercase tracking-wider">Dibayar User</span>
-                    <span class="text-[11px] font-mono font-bold text-white">Rp ${hargaJual.toLocaleString('id-ID')}</span>
-                </div>
-                <div class="flex flex-col text-right pl-3 border-l border-white/10">
-                    <span class="text-[8px] text-gray-400 uppercase tracking-wider">Keuntungan</span>
-                    <span class="text-[13px] font-black ${status === 'SUKSES' ? 'text-brand-success drop-shadow-[0_0_5px_rgba(37,211,102,0.4)]' : 'text-gray-500'}">+Rp ${laba.toLocaleString('id-ID')}</span>
-                </div>
+
+            <div class="flex flex-col gap-2.5">
+                ${grup.transactions.map(tx => {
+                    const status = String(tx.status).toUpperCase();
+                    let statusBadge = '';
+                    if (status === 'SUKSES') statusBadge = \`<span class="bg-brand-success/20 text-brand-success px-2 py-0.5 rounded text-[8px] font-black tracking-widest border border-brand-success/30">SUKSES</span>\`;
+                    else if (status === 'PENDING') statusBadge = \`<span class="bg-brand-info/20 text-brand-info px-2 py-0.5 rounded text-[8px] font-black tracking-widest border border-brand-info/30">PROSES</span>\`;
+                    else statusBadge = \`<span class="bg-red-500/20 text-red-500 px-2 py-0.5 rounded text-[8px] font-black tracking-widest border border-red-500/30">GAGAL</span>\`;
+
+                    const hargaJual = Number(tx.price || 0); 
+                    const laba = status === 'SUKSES' ? 100 : 0; 
+                    const hargaModal = hargaJual > 0 ? (hargaJual - 100) : 0; 
+                    
+                    const jam = new Date(tx.created_at).toLocaleString('id-ID', {hour:'2-digit', minute:'2-digit'}) + ' WIB';
+                    const pembeli = tx.profiles?.nickname || 'Player';
+
+                    return \`
+                    <div class="bg-[#161B2E] border border-white/5 p-3 rounded-[1.2rem] flex flex-col gap-2 relative shadow-md hover:bg-[#1C233A] transition-colors">
+                        <div class="flex justify-between items-start border-b border-white/5 pb-2">
+                            <div class="flex-1 pr-2">
+                                <div class="flex items-center gap-2 mb-1">
+                                    <span class="text-[9px] bg-black/40 text-brand-info px-2 py-0.5 rounded-md border border-brand-info/30 font-mono">\${tx.sku_code || 'PPOB'}</span>
+                                    \${statusBadge}
+                                </div>
+                                <h4 class="text-[11px] font-bold text-white leading-snug">\${tx.customer_no}</h4>
+                                <p class="text-[9px] text-gray-500 mt-0.5">Pembeli: @\${pembeli}</p>
+                            </div>
+                            <div class="text-right shrink-0">
+                                <p class="text-[9px] text-gray-500 mb-0.5">\${jam}</p>
+                                <h4 class="text-[11px] font-black \${status === 'SUKSES' ? 'text-brand-success drop-shadow-[0_0_5px_rgba(37,211,102,0.4)]' : 'text-gray-500'}">+Rp \${laba.toLocaleString('id-ID')}</h4>
+                            </div>
+                        </div>
+                        
+                        <div class="flex justify-between items-center bg-white/5 rounded-lg p-2.5">
+                            <div class="flex flex-col">
+                                <span class="text-[8px] text-gray-400 uppercase tracking-wider">Modal</span>
+                                <span class="text-[10px] font-mono text-gray-400">Rp \${hargaModal.toLocaleString('id-ID')}</span>
+                            </div>
+                            <i class="fas fa-arrow-right text-gray-600 text-xs"></i>
+                            <div class="flex flex-col text-right">
+                                <span class="text-[8px] text-gray-400 uppercase tracking-wider">Dibayar User</span>
+                                <span class="text-[10px] font-mono font-bold text-white">Rp \${hargaJual.toLocaleString('id-ID')}</span>
+                            </div>
+                        </div>
+                    </div>\`
+                }).join('')}
             </div>
         </div>`;
-    }).join('');
+    }
 
-    listContainer.innerHTML = summaryHtml + listHtml;
+    // 🔥 TOMBOL LOAD MORE (LIHAT BULAN SEBELUMNYA)
+    if (hasMore) {
+        htmlOutput += `
+        <div class="text-center mt-2 mb-6">
+            <button id="btn-load-more-ppob-admin" onclick="loadRiwayatLabaPPOB(false, true)" class="bg-brand-info/10 text-brand-info border border-brand-info/30 px-6 py-3 rounded-full text-[11px] font-bold active:scale-95 transition-all hover:bg-brand-info hover:text-brand-dark w-full shadow-sm">
+                Lihat Riwayat Sebelumnya <i class="fas fa-chevron-down ml-1"></i>
+            </button>
+        </div>
+        `;
+    }
+
+    listContainer.innerHTML = summaryHtml + htmlOutput;
 }
