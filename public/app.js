@@ -8453,14 +8453,14 @@ async function selesaikanPesanan(orderId, tableSource) {
 }
 
 
-async function checkoutXoftwarePay(namaProduk, harga, deskripsi, sellerId = null, productId = null, isBayarUlang = false, retryOrderId = null) {
+async function checkoutXoftwarePay(namaProduk, harga, deskripsi, sellerId = null, productId = null, isBayarUlang = false, retryOrderId = null, skipConfirm = false) {
     if (!currentUser) return showToast("Silakan login dulu untuk membeli!", "error");
 
-    // 1. CEGAH POPUP DOBEL (Hanya nanya kalau ini beli langsung)
-     if (!isBayarUlang) {
-         const konfirmasi = await customConfirm(`Lanjutkan pesanan untuk:\n\n${namaProduk}\n\nTotal: Rp ${harga.toLocaleString('id-ID')} via QRIS Otomatis?`);
-         if (!konfirmasi) return;
-     }
+    // 1. CEGAH POPUP DOBEL (Hanya nanya kalau ini beli langsung dan tidak disuruh skip)
+    if (!isBayarUlang && !skipConfirm) {
+        const konfirmasi = await customConfirm(`Lanjutkan pesanan untuk:\n\n${namaProduk}\n\nTotal: Rp ${harga.toLocaleString('id-ID')} via QRIS Otomatis?`);
+        if (!konfirmasi) return;
+    }
 
      // SUNTIKAN BARU: Daftarkan ke riwayat HP agar tombol Back terdeteksi
      history.pushState({ popup: 'pembayaran' }, null, '#pembayaran');
@@ -13192,7 +13192,10 @@ async function mulaiTopUpSaldo() {
         totalBayar, 
         "Isi saldo dompet AU2Hub", 
         null, 
-        null
+        null,
+        false, // isBayarUlang
+        null,  // retryOrderId
+        true   // skipConfirm (INI YANG MEMATIKAN POPUP KEDUA)
     );
 }
 
