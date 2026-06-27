@@ -2007,8 +2007,6 @@ window.addEventListener('popstate', () => {
         return;
     }
 
-    let isPopupClosed = false;
-
     const modalEvent = document.getElementById('modal-event');
     if (modalEvent && !modalEvent.classList.contains('hidden')) {
         modalEvent.classList.add('hidden'); modalEvent.classList.remove('flex');
