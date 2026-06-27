@@ -908,6 +908,13 @@ console.error("Error unread messages", e);
 function initGlobalMessageListener() {
     if (!currentUser || globalMessageSubscription) return;
 
+    // 🔥 [PERBAIKAN BUG 2] Tarik daftar ID Grup di awal agar notif grup tidak bergantung pada laci inbox
+    let myGroupIds = [];
+    supabaseClient.from('group_members').select('group_id').eq('user_id', currentUser.id)
+        .then(({data}) => {
+            if (data) myGroupIds = data.map(g => g.group_id);
+        });
+
     globalMessageSubscription = supabaseClient
         .channel('global_messages')
         .on('postgres_changes', {
@@ -917,26 +924,45 @@ function initGlobalMessageListener() {
         }, payload => {
             const msg = payload.new;
             const isForMe = msg.receiver_id === currentUser.id;
-            const isForMyGroup = msg.group_id && globalGroupList.some(g => g.id === msg.group_id);
+            
+            // Gabungkan pencarian dari myGroupIds (database) dan globalGroupList (cache UI)
+            const isForMyGroup = msg.group_id && (myGroupIds.includes(msg.group_id) || globalGroupList.some(g => g.id === msg.group_id));
 
-            // [BARU] DETEKSI MENTION (CEK APAKAH NAMA KITA ADA DI DALAM PESAN)
-            let isMentioned = false;
-            const myNickname = userProfile?.nickname;
-            if (myNickname && msg.message && msg.message.includes(`@${myNickname}`)) {
-                isMentioned = true;
-            }
-
-            // Cek apakah pesan untuk saya/grup dan pengirimnya bukan saya & tidak diblokir
+            // Jika pesan untuk saya atau grup saya, dan pengirimnya bukan saya, dan pengirimnya tidak diblokir
             if ((isForMe || isForMyGroup) && msg.sender_id !== currentUser.id && !blockedUsersList.includes(msg.sender_id)) {
                 
-                // NOTIFIKASI DI DALAM APLIKASI (TOAST)
+                // 🔥 [PERBAIKAN BUG 1] Cek apakah user sedang menatap chat room yang persis sama?
+                const isRoomOpen = document.getElementById('chat-room-view').classList.contains('flex');
+                const isChattingWithSender = !msg.group_id && activeChatUserId === msg.sender_id;
+                const isChattingInGroup = msg.group_id && activeGroupId === msg.group_id;
+
+                if (isRoomOpen && (isChattingWithSender || isChattingInGroup)) {
+                    // Jika user sedang di dalam room, update unread aja secara senyap, JANGAN MUNCULKAN TOAST!
+                    checkGlobalUnreadMessages();
+                    return; 
+                }
+
+                // 🔥 [PERBAIKAN BUG 3] Deteksi Mention Super Akurat (Mencegah @Adi nyangkut di @Aditya)
+                let isMentioned = false;
+                const myNickname = userProfile?.nickname;
+                if (isForMyGroup && myNickname && msg.message) {
+                    // (?![a-zA-Z0-9_]) memastikan setelah nama tidak ada huruf/angka lagi
+                    const regexMention = new RegExp(`@${myNickname}(?![a-zA-Z0-9_])`, 'i');
+                    if (regexMention.test(msg.message)) {
+                        isMentioned = true;
+                    }
+                }
+
+                // --- MUNCULKAN NOTIFIKASI DI DALAM APLIKASI (TOAST) ---
                 if (isMentioned) {
-                    showToast("🔔 Ada yang ngetag kamu di Grup!", "success");
+                    showToast("🔔 Ada yang menyebut Anda di Grup!", "success");
+                } else if (isForMyGroup) {
+                    showToast("Ada pesan baru di Grup Anda!", "info");
                 } else {
-                    showToast("Ada pesan baru masuk!", "info");
+                    showToast("Ada pesan pribadi baru masuk!", "info");
                 }
                 
-                // NOTIFIKASI POP-UP HP (PUSH NOTIFICATION JIKA APLIKASI DI-MINIMIZE)
+                // --- MUNCULKAN NOTIFIKASI POP-UP HP (Jika web di-minimize) ---
                 if ("Notification" in window && Notification.permission === "granted" && document.hidden) {
                     new Notification("AU2Hub", {
                         body: isMentioned ? "Seseorang menyebut (tag) Anda di Grup!" : (isForMyGroup ? "Ada pesan baru di Grup!" : "Anda menerima pesan baru!"),
@@ -946,6 +972,7 @@ function initGlobalMessageListener() {
                 
                 checkGlobalUnreadMessages();
                 
+                // Update badge dan daftar pesan di laci (jika laci inbox sedang terbuka)
                 const widget = document.getElementById('floating-widget');
                 const chatList = document.getElementById('chat-list-view');
                 if (!widget.classList.contains('opacity-0') && chatList.classList.contains('flex')) {
@@ -6733,11 +6760,14 @@ function setupChatRoomListener() {
                 if (msg.sender_id !== currentUser.id) {
                     // --- JIKA PESAN DARI ORANG LAIN ---
 
-                    // [BARU] DETEKSI MENTION (Notif Toast jika di-tag)
-                    const myNickname = userProfile?.nickname;
-                    if (isGroup && myNickname && msg.message && msg.message.includes(`@${myNickname}`)) {
-                        showToast("🔔 Ada yang ngetag kamu!", "success");
-                    }
+                    // DETEKSI MENTION DI DALAM ROOM YANG AKTIF
+const myNickname = userProfile?.nickname;
+if (isGroup && myNickname && msg.message) {
+    const regexMention = new RegExp(`@${myNickname}(?![a-zA-Z0-9_])`, 'i');
+    if (regexMention.test(msg.message)) {
+        showToast("🔔 Ada yang men-tag Anda!", "success");
+    }
+}
 
                     // Ambil data nama & foto jika ini di dalam Grup
                     if (isGroup) {
