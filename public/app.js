@@ -970,6 +970,8 @@ async function showUserList(type) {
     const container = document.getElementById('user-list-container');
     const title = document.getElementById('user-list-title');
 
+    history.pushState({ popup: 'user_list' }, null, '#userlist');
+
     title.innerText = type === 'mengikuti' ? 'Mengikuti' : 'Pengikut';
     modal.classList.remove('hidden');
     modal.classList.add('flex');
@@ -1020,10 +1022,15 @@ async function showUserList(type) {
 }
 
 
-function closeUserList() {
-const modal = document.getElementById('modal-user-list');
-modal.classList.add('hidden');
-modal.classList.remove('flex');
+function closeUserList(dariTombolBack = false) {
+    const modal = document.getElementById('modal-user-list');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+
+    // Menarik kembali URL jika ditutup bukan dari tombol Back HP
+    if (!dariTombolBack && window.location.hash === '#userlist') {
+        history.back();
+    }
 }
 
 // ==========================================
@@ -1787,6 +1794,13 @@ window.addEventListener('popstate', () => {
     // 2. TANGKAP LACI-LACI LAINNYA BAWAAN SISTEM
     // ==========================================
 
+    // 🔥 [PERBAIKAN 1] TANGKAP LACI MENU MELAYANG (ASSISTIVE TOUCH)
+    const menuMelayang = document.getElementById('assistive-menu');
+    if (menuMelayang && !menuMelayang.classList.contains('hidden')) {
+        closeAssistiveMenu(true);
+        return;
+    }
+
     // TANGKAP LACI TARIK OTOMATIS
     const modalTarikOto = document.getElementById('modal-tarik-otomatis');
     if (modalTarikOto && !modalTarikOto.classList.contains('hidden')) {
@@ -1919,7 +1933,7 @@ window.addEventListener('popstate', () => {
         return;
     }
 
-    // 3. BARU TANGKAP MODAL RIWAYAT PESANAN
+    // 3. TANGKAP MODAL RIWAYAT PESANAN
     const modalRiwayat = document.getElementById('modal-riwayat-pesanan');
     if (modalRiwayat && !modalRiwayat.classList.contains('hidden')) {
         closeRiwayatPesanan(true); 
@@ -1948,8 +1962,8 @@ window.addEventListener('popstate', () => {
     }
 
     const lightbox = document.getElementById('lightbox-modal');
-    if(!lightbox.classList.contains('hidden')) {
-        closeLightbox();
+    if(lightbox && !lightbox.classList.contains('hidden')) {
+        closeLightbox(true);
         return;
     }
 
@@ -1967,14 +1981,22 @@ window.addEventListener('popstate', () => {
         return;
     }
 
+    // 🔥 [PERBAIKAN 2] TANGKAP LACI OPSI PESAN CHAT
     const modalMsgOption = document.getElementById('modal-msg-option');
-    if (!modalMsgOption.classList.contains('hidden')) {
-        modalMsgOption.classList.add('hidden'); modalMsgOption.classList.remove('flex');
+    if (modalMsgOption && !modalMsgOption.classList.contains('hidden')) {
+        closeMsgOptions(true);
+        return;
+    }
+
+    // 🔥 [PERBAIKAN 3] TANGKAP LACI DAFTAR PENGIKUT/MENGIKUTI
+    const modalUserList = document.getElementById('modal-user-list');
+    if (modalUserList && !modalUserList.classList.contains('hidden')) {
+        closeUserList(true);
         return;
     }
 
     const commentDrawer = document.getElementById('comment-drawer');
-    if (commentDrawer.classList.contains('open')) {
+    if (commentDrawer && commentDrawer.classList.contains('open')) {
         commentDrawer.classList.remove('open');
         cancelReply();
 
@@ -1985,27 +2007,22 @@ window.addEventListener('popstate', () => {
         return;
     }
 
+    let isPopupClosed = false;
+
     const modalEvent = document.getElementById('modal-event');
-    if (!modalEvent.classList.contains('hidden')) {
+    if (modalEvent && !modalEvent.classList.contains('hidden')) {
         modalEvent.classList.add('hidden'); modalEvent.classList.remove('flex');
         document.body.style.overflow = 'auto'; isPopupClosed = true;
     }
 
     const modalEditProfile = document.getElementById('modal-edit-profile');
-    if (!modalEditProfile.classList.contains('hidden')) {
+    if (modalEditProfile && !modalEditProfile.classList.contains('hidden')) {
         closeEditProfileModal();
         isPopupClosed = true;
     }
 
-    const modalUserList = document.getElementById('modal-user-list');
-    if (!modalUserList.classList.contains('hidden')) {
-        closeUserList();
-        isPopupClosed = true;
-    }
-
     const widget = document.getElementById('floating-widget');
-
-    if (!widget.classList.contains('opacity-0')) {
+    if (widget && !widget.classList.contains('opacity-0')) {
         const roomView = document.getElementById('chat-room-view');
         if (roomView && roomView.classList.contains('flex')) {
             closeChatRoom(true);
@@ -2041,13 +2058,13 @@ window.addEventListener('popstate', () => {
     }
 
     if (document.body.classList.contains('video-focused')) {
-        toggleFloatingMode();
+        toggleFloatingMode(true);
         return;
     }
 
     const floatingPlayer = document.getElementById('floating-video-player');
-    if (!floatingPlayer.classList.contains('hidden')) {
-        closeFloatingVideo();
+    if (floatingPlayer && !floatingPlayer.classList.contains('hidden')) {
+        closeFloatingVideo(true);
         return;
     }
 
@@ -2596,7 +2613,7 @@ function closeFloatingVideo(skipHistory = false) {
         if(floatObs) floatObs.disconnect(); // bersihkan observer
 
         // Eksekusi fungsi 'back' HP jika tidak di-skip
-        if (!skipHistory && window.location.hash === '#profil_video') {
+        if (!skipHistory && (window.location.hash === '#profil_video' || window.location.hash === '#play_tagar')) {
             history.back();
         }
     }, 300);
@@ -6349,25 +6366,32 @@ timeIndicator.querySelector('.time-total').innerText = formatTime(video.duration
 // FITUR HAPUS PESAN (Hapus Untukku & Semua)
 // ==========================================
 function showMsgOptions(msgId, senderId) {
-selectedMessageId = msgId;
-const modal = document.getElementById('modal-msg-option');
-const btnDelAll = document.getElementById('btn-del-msg-all');
+    selectedMessageId = msgId;
+    const modal = document.getElementById('modal-msg-option');
+    const btnDelAll = document.getElementById('btn-del-msg-all');
 
-modal.classList.remove('hidden');
-modal.classList.add('flex');
+    // Mendaftarkan URL history ke browser HP
+    history.pushState({ popup: 'msg_option' }, null, '#opsipesan');
 
-// Jika pesan ini bukan milik kita, sembunyikan tombol "Hapus untuk Semua"
-if (senderId !== currentUser.id) {
-btnDelAll.style.display = 'none';
-} else {
-btnDelAll.style.display = 'block';
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+
+    if (senderId !== currentUser.id) {
+        btnDelAll.style.display = 'none';
+    } else {
+        btnDelAll.style.display = 'block';
+    }
 }
-}
 
-function closeMsgOptions() {
-const modal = document.getElementById('modal-msg-option');
-modal.classList.add('hidden');
-modal.classList.remove('flex');
+function closeMsgOptions(dariTombolBack = false) {
+    const modal = document.getElementById('modal-msg-option');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+
+    // Menarik kembali URL jika ditutup bukan dari tombol Back HP
+    if (!dariTombolBack && window.location.hash === '#opsipesan') {
+        history.back();
+    }
 }
 
 function deleteMsgForMe() {
@@ -8889,8 +8913,10 @@ if (finalStatus === 'selesai') {
     return hasilDataAkun.trim(); 
 }
 
-// FUNCTIONS UNTUK KONTROL ANIMASI BUKA TUTUP LACI MENU
 function openAssistiveMenu() {
+    // Mendaftarkan URL history ke browser HP
+    history.pushState({ popup: 'assistive' }, null, '#menu');
+
     const menu = document.getElementById('assistive-menu');
     const box = menu.querySelector('div');
     menu.classList.remove('hidden');
@@ -8902,12 +8928,18 @@ function openAssistiveMenu() {
     }, 10);
 }
 
-function closeAssistiveMenu() {
+function closeAssistiveMenu(dariTombolBack = false) {
     const menu = document.getElementById('assistive-menu');
     const box = menu.querySelector('div');
     menu.classList.add('opacity-0');
     box.classList.remove('scale-100');
     box.classList.add('scale-90');
+    
+    // Menarik kembali URL jika ditutup bukan dari tombol Back HP
+    if (!dariTombolBack && window.location.hash === '#menu') {
+        history.back();
+    }
+
     setTimeout(() => {
         menu.classList.add('hidden');
         menu.classList.remove('flex');
@@ -11749,6 +11781,16 @@ function bukaModalNetflix() {
     document.getElementById('input-token-netflix').value = '';
     document.getElementById('hasil-kode-netflix').classList.add('hidden');
     document.getElementById('angka-kode-netflix').innerText = '----';
+}
+
+function tutupModalNetflix(dariTombolBack = false) {
+    const modal = document.getElementById('modal-netflix');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+    
+    if (!dariTombolBack && window.location.hash === '#netflix') {
+        history.back();
+    }
 }
 
 // Fungsi utama penarik data ke server Vercel
