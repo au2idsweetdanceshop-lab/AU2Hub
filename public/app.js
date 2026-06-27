@@ -109,12 +109,17 @@ function hitungFeeRekber(harga) {
 
 
     // Script mandiri agar splash screen 100% dijamin hilang walau script utama error
+    let logoInterval; // 🔥 [BARU] Siapkan wadah untuk mesin interval
+
     function removeSplashScreen() {
         const splashScreen = document.getElementById('custom-splash');
         if (splashScreen) {
             splashScreen.style.opacity = '0';
             splashScreen.style.transform = 'scale(1.1)';
-            setTimeout(() => splashScreen.remove(), 500);
+            setTimeout(() => {
+                splashScreen.remove();
+                clearInterval(logoInterval); // 🔥 [BARU] Matikan mesin interval agar HP tidak disedot kuotanya
+            }, 500);
         }
     }
     // Hilang dalam 1.5 detik saat web dibaca
@@ -131,17 +136,21 @@ function hitungFeeRekber(harga) {
 
     // Fungsi untuk mengganti gambar dengan efek pudar
     function rotateLogo() {
+        if (!logoElement) return; // 🔥 [BARU] Cegah error jika elemen sudah terhapus
+
         currentIndex = (currentIndex + 1) % promoImages.length;
         logoElement.style.opacity = '0';
         
         setTimeout(() => {
-            logoElement.src = promoImages[currentIndex];
-            logoElement.style.opacity = '1';
+            if (logoElement) {
+                logoElement.src = promoImages[currentIndex];
+                logoElement.style.opacity = '1';
+            }
         }, 500);
     }
 
     // Ganti gambar setiap 1.5 detik (sesuaikan dengan kecepatan animasi Anda)
-    setInterval(rotateLogo, 1500);
+    logoInterval = setInterval(rotateLogo, 1500); // 🔥 [BARU] Masukkan mesin interval ke dalam wadah
 // ---- FUNGSI UNTUK LIGHTBOX (GAMBAR DI CHAT & PASAR) ----
 function openLightbox(imgUrl) {
     history.pushState({ popup: 'lightbox' }, null, '#lightbox'); // Daftarkan ke history HP
