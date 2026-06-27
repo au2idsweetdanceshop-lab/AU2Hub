@@ -14041,3 +14041,33 @@ async function autoSetorKeNikky(nominal, keterangan) {
         console.error("Gagal menyetor laba ke Nikky:", e);
     }
 }
+
+// ==========================================
+// FUNGSI PENUTUP LAYAR SUKSES PPOB (ANTI NYANGKUT)
+// ==========================================
+window.tutupLayarSuksesPPOB = (btnElement) => {
+    // 1. Kunci tombol dan beri efek loading agar user tahu sudah terklik
+    btnElement.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Menutup...';
+    btnElement.disabled = true;
+
+    // 2. Sambil menutup, perbarui saldo di latar belakang
+    if (typeof updateSaldoGlobal === 'function') updateSaldoGlobal();
+    if (typeof fetchProfile === 'function') fetchProfile();
+
+    // 3. Paksa layar pembayaran menghilang seketika secara halus
+    const layarPembayaran = document.getElementById('pembayaran');
+    if (layarPembayaran) {
+        layarPembayaran.style.transition = 'opacity 0.2s ease';
+        layarPembayaran.style.opacity = '0';
+        
+        setTimeout(() => {
+            layarPembayaran.classList.remove('active');
+            layarPembayaran.style.opacity = '1'; // Reset untuk penggunaan berikutnya
+            
+            // 4. Setelah layar hilang, baru eksekusi tombol "Back" HP
+            history.back();
+        }, 200);
+    } else {
+        history.back();
+    }
+};
