@@ -24,7 +24,7 @@ export default async function handler(req, res) {
         return res.status(405).json({ success: false, message: 'Method Not Allowed' });
     }
 
-    const { order_id, product_name, customer_name } = req.body; 
+    const { order_id, product_name, customer_name, amount } = req.body; 
     const baseUrl = process.env.XOFTWARE_BASE_URL;       
     const apiKey = process.env.XOFTWARE_API_KEY;         
 
@@ -33,7 +33,7 @@ export default async function handler(req, res) {
         let isPasarPlayer = false;
 
         // 1. Cari Pesanan di Database
-        const { data: orderPlayer, error: errOrderPlayer } = await supabase.from('orders_player').select('*').eq('id', order_id).single();
+        const { data: orderPlayer } = await supabase.from('orders_player').select('*').eq('id', order_id).single();
         
         if (orderPlayer) {
             orderData = orderPlayer;
@@ -44,16 +44,16 @@ export default async function handler(req, res) {
         }
 
         if (!orderData) {
-            return res.status(404).json({ success: false, message: 'Pesanan tidak ditemukan di sistem.' });
+            return res.status(404).json({ success: false, message: 'Pesanan tidak ditemukan di sistem database.' });
         }
 
+        // Variabel untuk harga bersih yang akan dikirim ke Payment Gateway
         let finalVerifiedPrice = parseInt(orderData.price); 
 
         // =================================================================
         // 🛡️ FITUR KEAMANAN MUTLAK: VALIDASI HARGA ASLI (SOURCE OF TRUTH)
         // =================================================================
         if (isPasarPlayer && orderData.product_id) {
-            
             const { data: productMaster, error: errMaster } = await supabase
                 .from('player_products')
                 .select('*')
@@ -62,31 +62,30 @@ export default async function handler(req, res) {
 
             if (errMaster || !productMaster) {
                 console.error("DB Error (Master Product):", errMaster);
-                return res.status(400).json({ success: false, message: 'Produk asli tidak ditemukan.' });
+                return res.status(400).json({ success: false, message: 'Produk referensi asli tidak ditemukan.' });
             }
 
             let validUnitPrices = [];
             let baseHarga = parseInt(productMaster.price);
             
-            // 🔥 PERBAIKAN 1: Pengecekan dilonggarkan agar tidak tertipu string "true"
+            // Validasi Fee Ditanggung Pembeli
             if (productMaster.fee_ditanggung_pembeli === true || String(productMaster.fee_ditanggung_pembeli) === "true") {
                 baseHarga += hitungPotonganSeller(baseHarga);
             }
             
+            // Perhitungkan mark-up sistem
             let hargaCustomerUtama = Math.floor(baseHarga + (baseHarga * 0.007) + 500);
             validUnitPrices.push(hargaCustomerUtama);
 
+            // Validasi Harga Variasi
             let rawVariasi = productMaster.variations || productMaster.variasi || [];
             if (Array.isArray(rawVariasi)) {
                 rawVariasi.forEach(v => {
                     if (typeof v === 'object' && v !== null) {
                         let hargaVarAsli = parseFloat(v.harga || v.price || 0);
-                        
-                        // 🔥 PERBAIKAN 1: Pengecekan dilonggarkan
                         if (productMaster.fee_ditanggung_pembeli === true || String(productMaster.fee_ditanggung_pembeli) === "true") {
                             hargaVarAsli += hitungPotonganSeller(hargaVarAsli);
                         }
-                        
                         let hargaVarMarkup = Math.floor(hargaVarAsli + (hargaVarAsli * 0.007) + 500);
                         validUnitPrices.push(hargaVarMarkup);
                     }
@@ -96,7 +95,7 @@ export default async function handler(req, res) {
             let qty = 1;
             const namaProduk = orderData.product_name || "";
             
-            // 🔥 PERBAIKAN 2: Hapus tanda "$" di akhir agar sistem tetap bisa membaca (x2) meskipun ada tulisan [+Rekber] di depannya
+            // Ekstrak Quantity (misal: "Pedang Legendaris (x2)")
             const qtyMatch = namaProduk.match(/\(x(\d+)\)/);
             if (qtyMatch) {
                 qty = parseInt(qtyMatch[1]);
@@ -113,35 +112,79 @@ export default async function handler(req, res) {
                 else hargaTanpaRekber -= 5000;
             }
 
-            // Hitung harga satuan murni (Harga Total yang udah dipotong Rekber / Jumlah Barang)
+            // Hitung harga satuan murni
             const calculatedUnitPrice = hargaTanpaRekber / qty;
 
             if (!validUnitPrices.includes(calculatedUnitPrice)) {
-                console.error(`[HACK ATTEMPT!] Harga Tanpa Rekber: ${hargaTanpaRekber} | QTY: ${qty} | Harga Asli DB: ${validUnitPrices.join(', ')}`);
+                console.error(`[HACK ATTEMPT PASAR PLAYER!] Harga Tanpa Rekber: ${hargaTanpaRekber} | QTY: ${qty} | Harga Asli DB: ${validUnitPrices.join(', ')}`);
                 await supabase.from('orders_player').delete().eq('id', order_id);
-                return res.status(400).json({ success: false, message: 'Terdeteksi manipulasi harga! Transaksi digagalkan.' });
+                return res.status(400).json({ success: false, message: 'Terdeteksi manipulasi harga! Transaksi otomatis digagalkan demi keamanan.' });
             }
 
+        } else if (orderData.product_name && orderData.product_name.startsWith('[DEPOSIT]')) {
+            // ========================================================
+            // 🛡️ KEAMANAN BARU: VALIDASI TOP UP SALDO DOMPET SELLER
+            // ========================================================
+            const depositMatch = orderData.product_name.match(/\[DEPOSIT\]\s*(\d+)/);
+            if (!depositMatch) {
+                 return res.status(400).json({ success: false, message: 'Format top up tidak valid.' });
+            }
+
+            const nominalMurniDeposit = parseInt(depositMatch[1]);
+            const feeSistemDeposit = 500 + Math.floor(nominalMurniDeposit * 0.007);
+            const hargaYangSeharusnya = nominalMurniDeposit + feeSistemDeposit;
+
+            if (finalVerifiedPrice !== hargaYangSeharusnya) {
+                console.error(`[HACK ATTEMPT DEPOSIT!] User mencoba top up Rp ${nominalMurniDeposit} tapi mengirim harga Rp ${finalVerifiedPrice}. (Seharusnya Rp ${hargaYangSeharusnya})`);
+                await supabase.from('orders').delete().eq('id', order_id);
+                return res.status(400).json({ success: false, message: 'Terdeteksi manipulasi nominal pembayaran!' });
+            }
+
+        } else if (orderData.product_name && orderData.product_name.includes('[VIP]')) {
+             // ========================================================
+             // 🛡️ KEAMANAN BARU: VALIDASI PEMBELIAN VIP SELLER
+             // ========================================================
+             let hargaVipMurni = 0;
+             if (orderData.product_name.includes('1 Tahun')) hargaVipMurni = 333 * 365;
+             else if (orderData.product_name.match(/(\d+)\s+Bulan/i)) {
+                 hargaVipMurni = 333 * 30 * parseInt(orderData.product_name.match(/(\d+)\s+Bulan/i)[1]);
+             }
+             else if (orderData.product_name.match(/(\d+)\s+Hari/i)) {
+                 hargaVipMurni = 333 * parseInt(orderData.product_name.match(/(\d+)\s+Hari/i)[1]);
+             }
+
+             if (hargaVipMurni > 0) {
+                 const feeSistemVip = 500 + Math.floor(hargaVipMurni * 0.007);
+                 const hargaVipSeharusnya = hargaVipMurni + feeSistemVip;
+
+                 if (finalVerifiedPrice !== hargaVipSeharusnya) {
+                     console.error(`[HACK ATTEMPT VIP!] Terdeteksi manipulasi harga VIP.`);
+                     await supabase.from('orders').delete().eq('id', order_id);
+                     return res.status(400).json({ success: false, message: 'Terdeteksi manipulasi nominal langganan!' });
+                 }
+             }
         } else {
+            // Validasi Umum (Jika bukan Pasar Player, bukan VIP, bukan Deposit)
             if (finalVerifiedPrice < 1000) {
                 await supabase.from('orders').delete().eq('id', order_id);
-                return res.status(400).json({ success: false, message: 'Harga di bawah batas minimal sistem!' });
+                return res.status(400).json({ success: false, message: 'Harga di bawah batas minimal (Rp 1.000)!' });
             }
         }
         // =================================================================
 
+
+        // Persiapan Payload untuk Xoftware PG
         const safeCustomerId = orderData.user_id ? String(orderData.user_id).slice(0, 8) : "UNKNOWN";
         const safeProductId = orderData.product_id ? String(orderData.product_id).slice(0, 20) : "SKU-001";
         const finalCustomerName = (customer_name && customer_name.trim() !== "") ? customer_name : "Player AU2Hub";
 
-        // 🔥 KEMBALIKAN KE PENGATURAN ASLI ANDA AGAR WEBHOOK XOFTWARE TIDAK DITOLAK
         const payload = {
             merchant_id: 129, 
             channel_code: "QRISREALTIME", 
-            amount: finalVerifiedPrice, 
-            ref_id: orderData.id, // <--- KEMBALI MURNI TANPA TIMESTAMP
+            amount: finalVerifiedPrice, // Menggunakan harga yang SUDAH DIVALIDASI oleh Server
+            ref_id: orderData.id, 
             fee_direction: "merchant", 
-            notify_url: "https://www.au2idsweetdance.com/api/webhook", // <--- KEMBALI HARDCODE SEPERTI ASLINYA
+            notify_url: "https://www.au2idsweetdance.com/api/webhook",
             note: `Pembayaran: ${product_name || 'AU2Hub Order'}`, 
             
             metadata: {
@@ -173,7 +216,7 @@ export default async function handler(req, res) {
             .update(messageToSign, 'utf8')
             .digest('base64'); 
 
-        // TEMBAK API XOFTWARE
+        // Tembak API Xoftware
         const response = await fetch(`${baseUrl}${path}`, { 
             method: 'POST',
             headers: {
@@ -192,7 +235,7 @@ export default async function handler(req, res) {
             dataXoftware = JSON.parse(textResponse);
         } catch (e) {
             console.error("Xoftware merespons format aneh (Bukan JSON):", textResponse);
-            return res.status(400).json({ success: false, message: 'Provider Gateway sedang down atau error.' });
+            return res.status(502).json({ success: false, message: 'Gateway Xoftware sedang down atau merespons error aneh.' });
         }
 
         const qrisString = dataXoftware.qris_text || (dataXoftware.data && dataXoftware.data.qris_text);
@@ -206,12 +249,12 @@ export default async function handler(req, res) {
             console.error("Xoftware API Error Detailed:", dataXoftware);
             return res.status(400).json({ 
                 success: false, 
-                message: dataXoftware.message || dataXoftware.error || 'Provider Gateway menolak pesanan ini.' 
+                message: dataXoftware.message || dataXoftware.error || 'Provider Gateway menolak memproses pesanan ini.' 
             });
         }
 
     } catch (error) {
         console.error("QRIS Server Error:", error);
-        return res.status(500).json({ success: false, message: "Terjadi kesalahan pada server." });
+        return res.status(500).json({ success: false, message: "Terjadi kesalahan internal pada server backend." });
     }
 }
