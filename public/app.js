@@ -13170,15 +13170,20 @@ async function mulaiTopUpSaldo() {
         return showToast("Minimal Top Up adalah Rp 10.000", "error");
     }
 
-    // 🔥 PERBAIKAN 1: Tambahkan argumen 'true' di sini!
-    // Ini mengunci history.back() agar layar QRIS tidak langsung tertutup sendiri.
+    // 🔥 4. PERBAIKAN: Hitung Biaya Admin QRIS (0.7% + Rp 500)
+    const biayaGateway = 500 + Math.floor(nominal * 0.007);
+    const totalBayar = nominal + biayaGateway;
+
+    // 5. Minta Konfirmasi Pengguna agar Transparan
+    const konfirmasi = await customConfirm(`Rincian Top Up Saldo:\n\nNominal: Rp ${nominal.toLocaleString('id-ID')}\nBiaya Admin QRIS: Rp ${biayaGateway.toLocaleString('id-ID')}\n\nTotal Bayar: Rp ${totalBayar.toLocaleString('id-ID')}\n\nLanjutkan pembayaran?`);
+    if (!konfirmasi) return;
+
     tutupModalSaldoDompet(true);
 
-    // 🔥 PERBAIKAN 2: Sederhanakan nama produk.
-    // Menghilangkan format (Rp 10.000) agar Webhook Vercel di belakang layar tidak kebingungan saat parsing.
+    // 6. Sisipkan nominal bersih di NAMA PRODUK agar Webhook tahu berapa yang harus ditambahkan ke saldo
     checkoutXoftwarePay(
-        `[DEPOSIT] Top Up Saldo`, 
-        nominal, 
+        `[DEPOSIT] ${nominal}`, 
+        totalBayar, 
         "Isi saldo dompet AU2Hub", 
         null, 
         null
