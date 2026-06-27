@@ -12489,7 +12489,8 @@ if (adminSection) {
         
         // Geser sumbu X harus > 50px DAN Geser sumbu Y harus < 50px
         if (Math.abs(diffX) > 50 && Math.abs(diffY) < 50) { 
-            const tabs = ['dashboard', 'kas', 'antrean'];
+            // 🔥 PERBAIKAN: Tambahkan 'harga' agar tidak lompat!
+            const tabs = ['dashboard', 'kas', 'harga', 'antrean']; 
             let currentIndex = tabs.indexOf(adminTabAktif);
             
             if (diffX > 0) { 
