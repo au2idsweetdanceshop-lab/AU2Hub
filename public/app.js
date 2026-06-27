@@ -8601,7 +8601,7 @@ async function checkoutXoftwarePay(namaProduk, harga, deskripsi, sellerId = null
             }
         }
 
-        const teksWA = encodeURIComponent(`Halo ${sapaan}, pesanan saya sudah masuk via QRIS Otomatis untuk:\n\n*${namaProduk}*\nID: ADT - ${orderData.id}\n\n(Berikut screenshot bukti transfernya)`);
+        const teksWA = encodeURIComponent(`Halo ${sapaan}, pesanan saya sudah masuk via QRIS Otomatis untuk:\n\n*${namaProduk}*\nID: NIKKY - ${orderData.id}\n\n(Berikut screenshot bukti transfernya)`);
 
         if (wadahPembayaran) {
             wadahPembayaran.innerHTML = `
@@ -8680,7 +8680,7 @@ async function checkoutXoftwarePay(namaProduk, harga, deskripsi, sellerId = null
 
             if (wadahPembayaran) {
                 const noWA_Sukses = noWA; 
-                const teksWA_Sukses = encodeURIComponent(`Halo ${sapaan}, pesanan saya sudah BERHASIL DIBAYAR via QRIS Otomatis untuk:\n\n*${namaProduk}*\nID: ADT - ${orderData.id}\n\n(Mohon segera diproses ya)`);
+                const teksWA_Sukses = encodeURIComponent(`Halo ${sapaan}, pesanan saya sudah BERHASIL DIBAYAR via QRIS Otomatis untuk:\n\n*${namaProduk}*\nID: NIKKY - ${orderData.id}\n\n(Mohon segera diproses ya)`);
 
                 if (isAutoItem && autoDeliveryContent && autoDeliveryContent !== "") { 
                     
