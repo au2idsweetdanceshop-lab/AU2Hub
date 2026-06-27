@@ -8649,6 +8649,18 @@ let htmlDataPesanan = escapeHTML(autoDeliveryContent).replace(
                     `;
                 }
             }
+
+            if (namaProduk.includes('[DEPOSIT]')) {
+                let checkCount = 0;
+                const autoRefreshSaldo = setInterval(() => {
+                    if (typeof updateUiSaldoSeller === 'function') updateUiSaldoSeller();
+                    if (typeof updateSaldoGlobal === 'function') updateSaldoGlobal();
+                    if (typeof fetchProfile === 'function') fetchProfile();
+                    
+                    checkCount++;
+                    if (checkCount >= 5) clearInterval(autoRefreshSaldo); // Stop setelah 10 detik
+                }, 2000);
+            }
             
             if (namaProduk.includes('[VIP]')) {
                 let durasiSementara = 30;
@@ -13143,9 +13155,6 @@ function pemicuBeliPPOB(skuCode, namaProduk, harga) {
     prosesBeliPPOB(skuCode, cleanTargetNo, harga, namaProduk);
 }
 
-// ==========================================
-// FITUR TOP UP SALDO OTOMATIS (QRIS)
-// ==========================================
 async function mulaiTopUpSaldo() {
     if (!currentUser) return showToast("Silakan login terlebih dahulu!", "error");
     
@@ -13161,13 +13170,14 @@ async function mulaiTopUpSaldo() {
         return showToast("Minimal Top Up adalah Rp 10.000", "error");
     }
 
-    // 4. Tutup laci dompet agar layar bersih
-    tutupModalSaldoDompet();
+    // 🔥 PERBAIKAN 1: Tambahkan argumen 'true' di sini!
+    // Ini mengunci history.back() agar layar QRIS tidak langsung tertutup sendiri.
+    tutupModalSaldoDompet(true);
 
-    // 5. Lempar ke jalur Xoftware Pay dengan kode rahasia [DEPOSIT]
-    // Fungsi bawaan Anda: checkoutXoftwarePay(namaProduk, harga, deskripsi, sellerId, productId)
+    // 🔥 PERBAIKAN 2: Sederhanakan nama produk.
+    // Menghilangkan format (Rp 10.000) agar Webhook Vercel di belakang layar tidak kebingungan saat parsing.
     checkoutXoftwarePay(
-        `[DEPOSIT] Top Up Saldo Rp ${nominal.toLocaleString('id-ID')}`, 
+        `[DEPOSIT] Top Up Saldo`, 
         nominal, 
         "Isi saldo dompet AU2Hub", 
         null, 
