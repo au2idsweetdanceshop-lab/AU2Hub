@@ -14150,7 +14150,7 @@ async function mulaiTransferSaldo() {
         if (errTarget || !targetUser) throw new Error("Pengguna tidak ditemukan.");
 
         // Eksekusi Mesin Transfer (RPC Supabase)
-        const { data: hasil, error: errRpc } = await supabaseClient.rpc('transfer_saldo_antar_seller', {
+        const { data: hasil, error: errRpc } = await supabaseClient.rpc('proses_transfer_saldo', {
             p_sender_id: currentUser.id,
             p_receiver_id: targetUser.id,
             p_nominal: nominal,
