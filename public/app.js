@@ -14149,10 +14149,10 @@ async function mulaiTransferSaldo() {
 
         if (errTarget || !targetUser) throw new Error("Pengguna tidak ditemukan.");
 
-        // EKSEKUSI FUNGSI BARU (Kirim Data sebagai String Murni)
-        const { data: hasil, error: errRpc } = await supabaseClient.rpc('kirim_saldo_sekarang', {
-            p_sender_id: String(currentUser.id),
-            p_receiver_id: String(targetUser.id),
+        // PANGGIL NAMA FUNGSI YANG BARU (tf_p2p_final)
+        const { data: hasil, error: errRpc } = await supabaseClient.rpc('tf_p2p_final', {
+            p_sender: String(currentUser.id),
+            p_receiver: String(targetUser.id),
             p_nominal: nominal,
             p_sender_name: String(userProfile.nickname),
             p_receiver_name: String(targetUser.nickname)
