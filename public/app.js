@@ -14149,17 +14149,17 @@ async function mulaiTransferSaldo() {
 
         if (errTarget || !targetUser) throw new Error("Pengguna tidak ditemukan.");
 
-        // PASTIKAN NAMANYA eksekusi_transfer_p2p
-const { data: hasil, error: errRpc } = await supabaseClient.rpc('eksekusi_transfer_p2p', {
-    p_sender: currentUser.id,
-    p_receiver: targetUser.id,
-    p_nominal: nominal,
-    p_sender_name: userProfile.nickname,
-    p_receiver_name: targetUser.nickname
-});
-        if (errRpc) throw new Error(errRpc.message);
+        // Eksekusi Mesin Transfer (RPC Supabase - Menggunakan fungsi paling suci)
+        const { data: hasil, error: errRpc } = await supabaseClient.rpc('kirim_saldo_sekarang', {
+            p_sender_id: currentUser.id,
+            p_receiver_id: targetUser.id,
+            p_nominal: nominal,
+            p_sender_name: userProfile.nickname,
+            p_receiver_name: targetUser.nickname
+        });
 
-        if (errRpc) throw errRpc;
+        // Lempar error jika ditangkap oleh CCTV Database
+        if (errRpc) throw new Error(errRpc.message);
         if (hasil === 'SALDO_TIDAK_CUKUP') throw new Error("Transaksi ditolak: Saldo tidak cukup.");
 
         // Kirim Notifikasi Chat ke Penerima
