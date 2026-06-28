@@ -14106,41 +14106,35 @@ let isTransferProcessing = false; // GEMBOK ANTI-SPAM KLIK
 async function mulaiTransferSaldo() {
     if (!currentUser || !userProfile) return showToast("Silakan login terlebih dahulu.", "error");
 
-    // 1. CEGAH SPAM KLIK: Jika sistem masih loading, tolak klik berikutnya
     if (isTransferProcessing) return showToast("Mohon tunggu, sistem sedang memproses...", "info");
 
-    // 2. Minta Nickname Target (Aman dari bug back HP karena pakai customPrompt)
     const targetNick = await customPrompt("Masukkan Nickname penerima saldo:");
-    if (!targetNick) return; // Jika user pencet X atau Back HP, script berhenti aman.
+    if (!targetNick) return; 
 
     if (targetNick.toLowerCase() === userProfile.nickname.toLowerCase()) {
         return showToast("Tidak bisa mengirim saldo ke diri sendiri!", "error");
     }
 
-    // 3. Minta Nominal Transfer (Aman dari bug back HP)
     const inputNominal = await customPrompt(`Kirim saldo ke @${targetNick.trim()}\n\nMasukkan nominal (Minimal Rp 1.000):`, "10000");
     if (!inputNominal) return;
 
     const nominal = parseInt(inputNominal.replace(/[^0-9]/g, ''));
     if (isNaN(nominal) || nominal < 1000) return showToast("Nominal tidak valid atau kurang dari Rp 1.000", "error");
 
-    // 4. Validasi Saldo UI
     if (userProfile.balance < nominal) {
         return customAlert(`Saldo Anda tidak cukup!\n\nSaldo Aktif: Rp ${userProfile.balance.toLocaleString('id-ID')}\nNominal Kirim: Rp ${nominal.toLocaleString('id-ID')}`);
     }
 
-    // 5. Konfirmasi Akhir (Aman dari bug back HP)
     const konfirmasi = await customConfirm(`Anda akan mentransfer saldo sebesar:\n\n*Rp ${nominal.toLocaleString('id-ID')}*\n\nKepada: @${targetNick.trim()}\n\nLanjutkan transaksi?`);
     if (!konfirmasi) return;
 
     // ==========================================
-    // MULAI PROSES DATABASE YANG RAWAN
+    // MULAI PROSES DATABASE
     // ==========================================
-    isTransferProcessing = true; // KUNCI GEMBOK SEKARANG!
+    isTransferProcessing = true; 
     showToast("Memproses transfer...", "info");
 
     try {
-        // Cek apakah akun penerima itu nyata di database
         const { data: targetUser, error: errTarget } = await supabaseClient
             .from('profiles')
             .select('id, nickname')
@@ -14149,13 +14143,13 @@ async function mulaiTransferSaldo() {
 
         if (errTarget || !targetUser) throw new Error("Pengguna tidak ditemukan.");
 
-        // PANGGIL NAMA FUNGSI YANG BARU (tf_p2p_final)
-        const { data: hasil, error: errRpc } = await supabaseClient.rpc('tf_p2p_final', {
-            p_sender: String(currentUser.id),
-            p_receiver: String(targetUser.id),
-            p_nominal: nominal,
-            p_sender_name: String(userProfile.nickname),
-            p_receiver_name: String(targetUser.nickname)
+        // PANGGIL FUNGSI SQL BARU (transfer_p2p_v100)
+        const { data: hasil, error: errRpc } = await supabaseClient.rpc('transfer_p2p_v100', {
+            p_sender_uuid: currentUser.id,
+            p_receiver_uuid: targetUser.id,
+            p_amount: nominal,
+            p_sender_nick: userProfile.nickname,
+            p_receiver_nick: targetUser.nickname
         });
 
         if (errRpc) throw new Error(errRpc.message);
@@ -14170,16 +14164,15 @@ async function mulaiTransferSaldo() {
 
         showToast(`Berhasil mengirim Rp ${nominal.toLocaleString('id-ID')} ke @${targetUser.nickname}!`, "success");
 
-        // 🔥 FIX 1: Potong saldo di layar seketika (Optimistic UI)
+        // Update Saldo Optimistic di Layar
         if (userProfile && userProfile.balance !== undefined) {
             userProfile.balance -= nominal;
             const elSaldoDompet = document.getElementById('dompet-angka-saldo');
             if (elSaldoDompet) {
-                elSaldoDompet.innerText = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(userProfile.balance);
+                elSaldoDompet.innerText = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(userProfile.balance).replace('Rp', 'Rp ');
             }
         }
 
-        // 🔥 FIX 2: Kasih jeda 1 detik agar Supabase selesai ngurus mutasi
         setTimeout(() => {
             fetchSaldoDanMutasi(); 
             updateSaldoGlobal();   
@@ -14190,6 +14183,6 @@ async function mulaiTransferSaldo() {
     } catch (e) {
         showToast(e.message || "Gagal memproses transfer.", "error");
     } finally {
-        isTransferProcessing = false; // BUKA GEMBOK KEMBALI SETELAH SELESAI
+        isTransferProcessing = false; 
     }
 }
