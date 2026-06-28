@@ -14157,6 +14157,7 @@ const { data: hasil, error: errRpc } = await supabaseClient.rpc('eksekusi_transf
     p_sender_name: userProfile.nickname,
     p_receiver_name: targetUser.nickname
 });
+        if (errRpc) throw new Error(errRpc.message);
 
         if (errRpc) throw errRpc;
         if (hasil === 'SALDO_TIDAK_CUKUP') throw new Error("Transaksi ditolak: Saldo tidak cukup.");
