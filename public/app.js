@@ -1189,8 +1189,6 @@ async function checkSession() {
         checkGlobalUnreadMessages();
         document.querySelectorAll('#profile-logged-in').forEach(el => el.classList.remove('hidden'));
         document.getElementById('profile-logged-out').classList.add('hidden');
-        prosesAutoDeliveryTertunda(); // Panggil jaring pengaman setiap kali web dibuka
-
 
         // 🚀 PRO-FIX: Jalankan fetch di background tanpa 'await' agar proses Login tidak tersandera
         if (allVideosData.length === 0) {
@@ -8876,134 +8874,28 @@ async function prosesBayarUlang(orderId, productName, price, tableSource, seller
 
 async function prosesAutoDeliveryTertunda() {
     if (!currentUser) return null;
-    let hasilDataAkun = ""; 
-
     try {
-        // Cari pesanan yang sukses dibayar
-        const { data: pendingOrders } = await supabaseClient
+        // Beri waktu 1.5 detik agar Database Trigger selesai memotong stok & mengirim barang
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        
+        // Tarik SN (Resi/Data Barang) yang baru saja digenerate oleh Trigger di Database
+        const { data, error } = await supabaseClient
             .from('orders_player')
-            .select('*')
+            .select('sn')
             .eq('user_id', currentUser.id)
-            .in('status', ['SUCCESS', 'PAID', 'proses']);
+            .eq('status', 'selesai')
+            .not('sn', 'is', null)
+            .order('waktu_selesai', { ascending: false })
+            .limit(1)
+            .single();
 
-        if (pendingOrders && pendingOrders.length > 0) {
-            for (let order of pendingOrders) {
-                let activeProductId = order.product_id;
-
-                // JURUS PENYELAMAT PESANAN LAMA
-                if (!activeProductId || activeProductId === 'null' || activeProductId === 'undefined' || String(activeProductId).trim() === '') {
-                    let cleanName = order.product_name.replace('[PASAR] ', '').replace(/ \[\+Rekber\]/g, '').replace(/ \(x\d+\)$/, '').split(' - ')[0].trim();
-                    const { data: searchProd } = await supabaseClient.from('player_products').select('id').ilike('title', `%${cleanName}%`).limit(1);
-                    
-                    if (searchProd && searchProd.length > 0) {
-                        activeProductId = searchProd[0].id;
-                        await supabaseClient.from('orders_player').update({ product_id: activeProductId }).eq('id', order.id);
-                    } else {
-                        if (order.status !== 'proses') await supabaseClient.from('orders_player').update({ status: 'proses' }).eq('id', order.id);
-                        continue;
-                    }
-                }
-
-                // Tarik data stok dan S&K dari produk
-                const { data: prodData, error: prodErr } = await supabaseClient
-                    .from('player_products')
-                    .select('stock_list, category, user_id, snk')
-                    .eq('id', activeProductId)
-                    .single();
-
-                if (prodErr || !prodData) continue; // Abaikan jika produk sudah dihapus seller
-
-                const isAutoItem = prodData && (prodData.category === 'Akun' || prodData.category === 'Item' || prodData.category === 'APK Premium');
-
-                if (!isAutoItem) {
-                    if (order.status !== 'proses') {
-                        await supabaseClient.from('orders_player').update({ status: 'proses' }).eq('id', order.id);
-                    }
-                    continue;
-                }
-
-                // --- LOGIKA AUTO DELIVERY ---
-                let autoDeliveryData = [];
-                
-                if (prodData.stock_list) {
-                    let lines = prodData.stock_list.split(/\r?\n/).filter(l => l.trim() !== '');
-                    
-                    let qty = 1;
-                    const matchQty = order.product_name.match(/\(x(\d+)\)/);
-                    if (matchQty) qty = parseInt(matchQty[1]);
-
-                    if (lines.length >= qty) {
-                        for (let i = 0; i < qty; i++) {
-                            autoDeliveryData.push(lines.shift());
-                        }
-                        
-                        const newStockList = lines.join('\n');
-                        
-                        // 🔥 KUNCI PERBAIKAN: Jika update stok ditolak database, TETAP berikan datanya ke pembeli!
-                        const { error: errUpdate } = await supabaseClient.rpc('potong_stok_otomatis', {
-                            p_product_id: activeProductId,
-                            p_new_stock: newStockList
-                        });
-                            
-                        if (errUpdate) {
-                            console.error("Gagal update stok otomatis via RPC. Pastikan RPC potong_stok_otomatis di Supabase berstatus SECURITY DEFINER.", errUpdate);
-                        }
-
-                        // ---> BERIKAN DATANYA KE PEMBELI <---
-                        const detailItem = autoDeliveryData.join('\n\n');
-                        let teksFinalData = detailItem;
-                        let snkText = String(prodData.snk || ""); 
-
-                        if (snkText && snkText.trim() !== '' && snkText !== 'null' && snkText !== 'undefined') {
-                            const tambahanSnk = `\n\n━━━━━━━━━━━━━━━━━━\n📋 *Syarat & Ketentuan Penjual:*\n${snkText.trim()}`;
-                            
-                            // 1. Masukkan ke Inbox Chat
-                            teksFinalData += tambahanSnk;
-                            
-                            // 2. Masukkan ke Layar Hijau
-                            autoDeliveryData.push(tambahanSnk); 
-                        }
-
-                        // Simpan semua data yang sudah digabung ke Layar Hijau
-                        hasilDataAkun += autoDeliveryData.join('\n') + "\n\n"; 
-
-                        await supabaseClient.from('messages').insert({
-                            sender_id: currentUser.id, 
-                            receiver_id: order.seller_id,
-                            message: `[SISTEM] Transaksi Selesai! Sistem telah mengirimkan data otomatis ke pembeli untuk pesanan: *${order.product_name}*\n\n${teksFinalData}`
-                        });
-
-                    } else {
-                        await supabaseClient.from('messages').insert({
-                            sender_id: currentUser.id,
-                            receiver_id: order.seller_id,
-                            message: `[SISTEM] Pembeli telah membayar pesanan *${order.product_name}*, namun sisa stok otomatis di etalase tidak mencukupi untuk dikirim.\n\nHarap segera hubungi pembeli dan proses pengiriman barang secara MANUAL.`
-                        });
-                    }
-                } 
-
-                const finalStatus = (autoDeliveryData.length > 0) ? 'selesai' : 'proses';
-
-if (finalStatus === 'selesai') {
-    const waktuSelesaiBot = new Date().toISOString();
-    await supabaseClient.from('orders_player')
-        .update({ 
-            status: finalStatus, 
-            waktu_selesai: waktuSelesaiBot, 
-            dana_cair: false,
-            sn: teksFinalData // <--- SUNTIKAN BARU: Simpan data ke kolom 'sn'
-        })
-        .eq('id', order.id);
-} else if (order.status !== 'proses') {
-                    await supabaseClient.from('orders_player').update({ status: 'proses' }).eq('id', order.id);
-                }
-            }
-        }
+        if (error || !data) return null;
+        
+        return data.sn; 
     } catch (e) {
-        console.error("Auto delivery crash dicancel aman:", e);
+        console.log("Menunggu SN...");
+        return null;
     }
-    
-    return hasilDataAkun.trim(); 
 }
 
 function openAssistiveMenu() {
@@ -11754,7 +11646,7 @@ Silakan cek mutasi rekening Anda.`
 // === FUNGSI TOLAK PENARIKAN (ANTI DOBEL REFUND & TANPA RPC) ===
 async function tolakPenarikan(wdId, userId, nominal) {
     if (isAdminProcessing) return showToast("Sistem sedang memproses...", "info");
-    isAdminProcessing = true; // KUNCI LANGSUNG DI AWAL
+    isAdminProcessing = true; 
 
     try {
         const alasan = await customPrompt("Masukkan alasan penolakan (misal: Rekening tidak valid):", "Nomor Rekening tidak valid");
@@ -11765,31 +11657,17 @@ async function tolakPenarikan(wdId, userId, nominal) {
         const card = document.getElementById(`wd-${wdId}`);
         if (card) card.style.pointerEvents = 'none';
 
-        // 1. JURUS ATOMIC UPDATE
-        const { data, error } = await supabaseClient
-            .from('withdrawals')
-            .update({ status: 'DITOLAK' })
-            .eq('id', wdId)
-            .eq('status', 'PENDING')
-            .select();
-
-        if (error) throw error;
-        if (!data || data.length === 0) throw new Error("Transaksi ini sudah diproses.");
-
-        // 2. 🔥 PERBAIKAN: Refund saldo TANPA RPC (Langsung di JS agar tidak gagal)
-        const { data: profile } = await supabaseClient.from('profiles').select('balance').eq('id', userId).single();
-        const newBalance = (Number(profile?.balance) || 0) + Number(nominal);
-        await supabaseClient.from('profiles').update({ balance: newBalance }).eq('id', userId);
-
-        // 3. Catat di Riwayat Mutasi Dompet
-        await supabaseClient.from('wallet_transactions').insert({
-            user_id: userId,
-            amount: nominal,
-            type: 'INCOME',
-            description: `Refund Gagal Cair: ${alasan}`
+        // 🔥 KEAMANAN TINGKAT DEWA: Biarkan SQL Supabase yang mengurus Refund Uang!
+        const { error } = await supabaseClient.rpc('refund_penarikan_aman', {
+            p_wd_id: wdId,
+            p_user_id: userId,
+            p_nominal: nominal,
+            p_alasan: alasan
         });
 
-        // 4. KIRIM NOTIFIKASI KE INBOX SELLER
+        if (error) throw error;
+
+        // KIRIM NOTIFIKASI KE INBOX SELLER (Hanya ini yang dilakukan JS sekarang)
         await supabaseClient.from('messages').insert({
             sender_id: currentUser.id,
             receiver_id: userId,
@@ -11823,17 +11701,18 @@ async function toggleStatusAdmin(targetId, isCurrentlyAdmin, nickname) {
 
     try {
         showToast("Memproses...", "info");
-        const { error } = await supabaseClient
-            .from('profiles')
-            .update({ is_super_admin: !isCurrentlyAdmin })
-            .eq('id', targetId);
+        
+        // 🔥 KEAMANAN TINGKAT DEWA: Gunakan RPC yang mengecek KTP Digital Auth
+        const { error } = await supabaseClient.rpc('toggle_admin_aman', { 
+            p_target_id: targetId 
+        });
 
         if (error) throw error;
 
         showToast(`Akses Super Admin @${nickname} berhasil diubah!`, "success");
-        openUserProfile(targetId); // Refresh tampilan profilnya
+        openUserProfile(targetId); 
     } catch (err) {
-        showToast("Gagal mengubah status admin.", "error");
+        showToast(err.message || "Gagal mengubah status admin.", "error");
     }
 }
 
