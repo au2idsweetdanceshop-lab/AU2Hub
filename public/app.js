@@ -14149,14 +14149,14 @@ async function mulaiTransferSaldo() {
 
         if (errTarget || !targetUser) throw new Error("Pengguna tidak ditemukan.");
 
-        // Eksekusi Mesin Transfer (RPC Supabase)
-        const { data: hasil, error: errRpc } = await supabaseClient.rpc('proses_transfer_saldo', {
-            p_sender: currentUser.id,
-            p_receiver: targetUser.id,
-            p_nominal: nominal,
-            p_sender_name: userProfile.nickname,
-            p_receiver_name: targetUser.nickname
-        });
+        // PASTIKAN NAMANYA eksekusi_transfer_p2p
+const { data: hasil, error: errRpc } = await supabaseClient.rpc('eksekusi_transfer_p2p', {
+    p_sender: currentUser.id,      
+    p_receiver: targetUser.id,     
+    p_nominal: nominal,
+    p_sender_name: userProfile.nickname,
+    p_receiver_name: targetUser.nickname
+});
 
         if (errRpc) throw errRpc;
         if (hasil === 'SALDO_TIDAK_CUKUP') throw new Error("Transaksi ditolak: Saldo tidak cukup.");
