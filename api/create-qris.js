@@ -120,6 +120,9 @@ export default async function handler(req, res) {
                 await supabase.from('orders_player').delete().eq('id', order_id);
                 return res.status(400).json({ success: false, message: 'Terdeteksi manipulasi harga! Transaksi otomatis digagalkan demi keamanan.' });
             }
+            
+            // JIKA LOLOS, TIMPA finalVerifiedPrice DENGAN HARGA PASTI (Meskipun harganya sama, ini untuk keamanan ekstra)
+            finalVerifiedPrice = parseInt(orderData.price);
 
         } else if (orderData.product_name && orderData.product_name.startsWith('[DEPOSIT]')) {
             // ========================================================
@@ -139,6 +142,8 @@ export default async function handler(req, res) {
                 await supabase.from('orders').delete().eq('id', order_id);
                 return res.status(400).json({ success: false, message: 'Terdeteksi manipulasi nominal pembayaran!' });
             }
+            // JIKA LOLOS
+            finalVerifiedPrice = hargaYangSeharusnya;
 
         } else if (orderData.product_name && orderData.product_name.includes('[VIP]')) {
              // ========================================================
@@ -162,13 +167,15 @@ export default async function handler(req, res) {
                      await supabase.from('orders').delete().eq('id', order_id);
                      return res.status(400).json({ success: false, message: 'Terdeteksi manipulasi nominal langganan!' });
                  }
+                 // JIKA LOLOS
+                 finalVerifiedPrice = hargaVipSeharusnya;
              }
         } else {
-            // Validasi Umum (Jika bukan Pasar Player, bukan VIP, bukan Deposit)
-            if (finalVerifiedPrice < 1000) {
-                await supabase.from('orders').delete().eq('id', order_id);
-                return res.status(400).json({ success: false, message: 'Harga di bawah batas minimal (Rp 1.000)!' });
-            }
+            // Validasi Umum (HANYA BISA MASUK SINI JIKA BUKAN PASAR, BUKAN VIP, BUKAN DEPOSIT)
+            // KITA TOLAK MUTLAK JIKA ADA PRODUK LAIN SELAIN 3 DI ATAS YANG MASUK!
+            console.error(`[HACK ATTEMPT UNKNOWN!] Terdeteksi pembelian produk tidak dikenal: ${orderData.product_name}`);
+            await supabase.from('orders').delete().eq('id', order_id);
+            return res.status(400).json({ success: false, message: 'Produk tidak valid atau tidak dikenali sistem.' });
         }
         // =================================================================
 
@@ -181,7 +188,7 @@ export default async function handler(req, res) {
         const payload = {
             merchant_id: 129, 
             channel_code: "QRISREALTIME", 
-            amount: finalVerifiedPrice, // Menggunakan harga yang SUDAH DIVALIDASI oleh Server
+            amount: finalVerifiedPrice, // 🛡️ SEKARANG AMAN! Menggunakan harga yang SUDAH DIPASTIKAN VALID
             ref_id: orderData.id, 
             fee_direction: "merchant", 
             notify_url: "https://www.au2idsweetdance.com/api/webhook",
