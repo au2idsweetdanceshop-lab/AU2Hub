@@ -1777,6 +1777,12 @@ function switchTab(tabId, event = null, isPush = true) {
         // Panggil saldo terbaru dari database untuk ditampilkan di layar!
         if (typeof updateSaldoGlobal === 'function') updateSaldoGlobal();
     }
+    if (tabId === 'superadmin') {
+        // Otomatis tarik semua data dewa saat layar Super Admin terbuka!
+        if (typeof loadAdminDashboard === 'function') loadAdminDashboard();
+        if (typeof loadRiwayatKeuanganGlobal === 'function') loadRiwayatKeuanganGlobal();
+        if (typeof loadRiwayatLabaPPOB === 'function') loadRiwayatLabaPPOB();
+    }
 }
 
 window.addEventListener('popstate', () => {
@@ -10278,8 +10284,15 @@ async function loadTokoSaya() {
         const sisaHari = Math.ceil((expiredAt - now) / (1000 * 60 * 60 * 24));
         const formatTanggal = expiredAt.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
         
-        // Isi ulang teksnya untuk akun yang SAH
-        elExpired.innerHTML = `<i class="fas fa-clock text-[#FF5722] mr-1"></i> Aktif s/d: <b class="text-white">${formatTanggal}</b> (${sisaHari} Hari)`;
+        // Isi ulang teksnya untuk akun yang SAH (Ditambah tombol perpanjang)
+        elExpired.innerHTML = `
+            <span class="flex items-center gap-2 mt-0.5">
+                <span><i class="fas fa-clock text-[#FF5722] mr-1"></i> Aktif s/d: <b class="text-white">${formatTanggal}</b> (${sisaHari} Hari)</span>
+                <button onclick="bukaModalLangganan()" class="bg-brand-accent/20 text-brand-accent hover:bg-brand-accent hover:text-white px-2 py-0.5 rounded text-[8px] font-extrabold border border-brand-accent/30 active:scale-95 transition-all uppercase tracking-wider">
+                    Perpanjang
+                </button>
+            </span>
+        `;
         
         // Paksa Muncul kembali
         elExpired.classList.remove('hidden');
