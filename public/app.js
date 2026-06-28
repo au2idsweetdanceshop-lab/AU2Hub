@@ -8401,9 +8401,12 @@ function bukaDetailPesananDinamis(orderId, productName, price, status, tableSour
                             </div>`;
                         }
                         htmlRincian += `<div class="flex justify-between items-center text-[12px] text-brand-success font-black mt-3 border-t border-white/10 pt-3">
-                            <span>Estimasi Masuk ke Saldo</span>
-                            <span class="font-mono tracking-tight">Rp ${totalDiterimaSeller.toLocaleString('id-ID')}</span>
-                        </div>`;
+    <div class="flex flex-col">
+        <span>Estimasi Masuk Saldo</span>
+        <span class="text-[8px] text-gray-400 font-normal uppercase tracking-widest mt-0.5">Aman & Cair dalam 24 Jam</span>
+    </div>
+    <span class="font-mono tracking-tight">Rp ${totalDiterimaSeller.toLocaleString('id-ID')}</span>
+</div>`;
                     } else {
                         htmlRincian += `<div class="flex justify-between items-center text-[12px] text-white font-black mt-3 border-t border-white/10 pt-3">
                             <span>Total Tagihan Dibayar</span>
@@ -8508,9 +8511,9 @@ async function selesaikanPesanan(orderId, tableSource) {
     if (!orderId) return;
     
     let pesanKonfirmasi = "Pesanan sudah dikerjakan dan diterima dengan baik?";
-    if (tableSource === 'orders_player') {
-        pesanKonfirmasi += "\n\nDana akan masuk ke Saldo Tertahan Penjual dan cair dalam 24 jam.";
-    }
+if (tableSource === 'orders_player') {
+    pesanKonfirmasi += "\n\n🛡️ Dana akan diamankan sistem selama 24 Jam sebagai garansi transaksi, setelah itu Penjual dapat menariknya secara Instan.";
+}
     
     const konfirmasi = await customConfirm(pesanKonfirmasi);
     if (!konfirmasi) return;
@@ -8546,8 +8549,8 @@ async function selesaikanPesanan(orderId, tableSource) {
         if (orderError) throw orderError;
 
         if (tableSource === 'orders_player') {
-            showToast("Pesanan selesai! Dana masuk ke Saldo Tertahan Penjual (H+1).", "success");
-        } else {
+    showToast("Pesanan selesai! Dana diamankan di Saldo Tertahan (24 Jam) sebelum siap ditarik.", "success");
+} else {
             showToast("Pesanan selesai! Terima kasih.", "success");
         }
         
