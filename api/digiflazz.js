@@ -2,7 +2,6 @@ import crypto from 'crypto';
 import { createClient } from '@supabase/supabase-js';
 
 // Meminta Vercel untuk mengizinkan proses berjalan lebih lama (hingga 60 detik)
-// untuk mencegah timeout saat sinkronisasi ribuan data.
 export const maxDuration = 60; 
 
 const supabase = createClient(
@@ -97,7 +96,7 @@ export default async function handler(req, res) {
     }
 
     // ==========================================
-    // 2. MODE BUY: TRANSAKSI & POTONG SALDO
+    // 2. MODE BUY: TRANSAKSI & POTONG SALDO (PPOB UMUM)
     // ==========================================
     if (action === 'buy') {
         const { user_id, sku_code, customer_no } = req.body;
@@ -107,8 +106,14 @@ export default async function handler(req, res) {
         let isSaldoDipotong = false; 
         
         try {
-            const { data: prod } = await supabase.from('digiflazz_products').select('seller_price').eq('sku_code', sku_code).single();
-            if (!prod) return res.status(404).json({ success: false, error: "Produk tidak ditemukan." });
+            // 🛡️ KEAMANAN: Pastikan SKU aktif dan ambil harganya langsung dari DB kita
+            const { data: prod } = await supabase.from('digiflazz_products')
+                .select('seller_price, is_active')
+                .eq('sku_code', sku_code)
+                .single();
+                
+            if (!prod) return res.status(404).json({ success: false, error: "Produk tidak ditemukan di sistem." });
+            if (prod.is_active === false) return res.status(400).json({ success: false, error: "Layanan ini sedang gangguan." });
 
             hargaJual = Number(prod.seller_price);
 
@@ -120,6 +125,7 @@ export default async function handler(req, res) {
                 return res.status(400).json({ success: false, error: `Saldo tidak mencukupi.` });
             }
 
+            // Potong Saldo
             const { error: deductErr } = await supabase.from('profiles').update({ balance: saldoSaatIni - hargaJual }).eq('id', user_id);
             if (deductErr) return res.status(400).json({ success: false, error: "Gagal memotong saldo sistem." });
             
@@ -132,8 +138,8 @@ export default async function handler(req, res) {
                 description: `Pembelian PPOB: ${sku_code} (${customer_no})`
             });
 
+            // Tembak Digiflazz
             const sign = crypto.createHash('md5').update(username + apiKey + ref_id).digest('hex');
-            
             const proxyRes = await fetch('http://203.194.114.209:3000/proxy-digiflazz', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -144,6 +150,7 @@ export default async function handler(req, res) {
             });
             const digiData = await proxyRes.json();
 
+            // Jika Langsung Gagal
             if (digiData.data && digiData.data.status === "Gagal") {
                 const { data: profSekarang } = await supabase.from('profiles').select('balance').eq('id', user_id).single();
                 if (profSekarang) {
@@ -189,27 +196,42 @@ export default async function handler(req, res) {
     }
 
     // ==========================================
-    // 3. MODE WITHDRAW: PENARIKAN SALDO OTOMATIS
+    // 3. MODE WITHDRAW: PENARIKAN SALDO OTOMATIS (E-MONEY)
     // ==========================================
     if (action === 'withdraw') {
-        const { user_id, sku_code, customer_no, product_name, total_potong } = req.body;
+        // PERHATIAN: Parameter 'total_potong' dari frontend diabaikan secara paksa!
+        const { user_id, sku_code, customer_no, product_name } = req.body;
         const ref_id = "WD_" + Date.now(); 
         
+        let total_potong_asli = 0;
         let isSaldoDipotong = false; 
 
         try {
+            // 🛡️ KEAMANAN: Ambil harga potong saldo (Harga Asli DB + Rp 500 Admin WD)
+            const { data: prodWD } = await supabase.from('digiflazz_products')
+                .select('price, is_active')
+                .eq('sku_code', sku_code)
+                .single();
+                
+            if (!prodWD) return res.status(404).json({ success: false, error: "Produk WD tidak ditemukan di sistem." });
+            if (prodWD.is_active === false) return res.status(400).json({ success: false, error: "Layanan penarikan sedang gangguan." });
+
+            // Kalkulasi harga potong murni dari sisi SERVER (Harga Digiflazz + Fee Sistem 500)
+            total_potong_asli = Number(prodWD.price) + 500;
+
             const provider = product_name.split(' ')[0]; 
             
+            // Eksekusi fungsi potong saldo RPC (Sama seperti P2P Transfer, anti nembus RLS)
             const { error: dbError } = await supabase.rpc('tarik_saldo_otomatis', {
                 p_user_id: user_id,
-                p_total_potong: total_potong,
+                p_total_potong: total_potong_asli, // 🛡️ AMAN: Dikirim dari hitungan Vercel, bukan HP user!
                 p_provider: provider,
                 p_nomor: customer_no,
                 p_product_name: product_name
             });
 
             if (dbError) {
-                return res.status(400).json({ success: false, error: dbError.message || "Gagal memotong saldo akun Anda." });
+                return res.status(400).json({ success: false, error: dbError.message || "Saldo tidak cukup atau gagal dipotong." });
             }
             
             isSaldoDipotong = true; 
@@ -226,18 +248,19 @@ export default async function handler(req, res) {
             });
             const digiData = await proxyRes.json();
 
+            // Jika Gagal Langsung dari Pusat
             if (digiData.data && digiData.data.status === "Gagal") {
                 const { data: profSekarang } = await supabase.from('profiles').select('balance').eq('id', user_id).single();
                 if (profSekarang) {
-                    await supabase.from('profiles').update({ balance: Number(profSekarang.balance) + total_potong }).eq('id', user_id);
+                    await supabase.from('profiles').update({ balance: Number(profSekarang.balance) + total_potong_asli }).eq('id', user_id);
                     
                     await supabase.from('wallet_transactions').insert({
-                        user_id: user_id, amount: total_potong, type: 'INCOME', description: `Refund Penarikan Gagal: ${product_name}`
+                        user_id: user_id, amount: total_potong_asli, type: 'INCOME', description: `Refund Penarikan Gagal: ${product_name}`
                     });
 
                     await supabase.from('messages').insert({
                         sender_id: user_id, receiver_id: user_id,
-                        message: `[SISTEM] Penarikan Saldo Otomatis *${product_name}* ke nomor *${customer_no}* GAGAL diproses oleh pusat.\n\nAlasan: ${digiData.data.message}\nDana Rp ${total_potong.toLocaleString('id-ID')} telah dikembalikan utuh ke saldo Anda.`
+                        message: `[SISTEM] Penarikan Saldo Otomatis *${product_name}* ke nomor *${customer_no}* GAGAL diproses oleh pusat.\n\nAlasan: ${digiData.data.message}\nDana Rp ${total_potong_asli.toLocaleString('id-ID')} telah dikembalikan utuh ke saldo Anda.`
                     });
                 }
                 return res.status(400).json({ success: false, error: "Penarikan gagal. Saldo dikembalikan.", detail: digiData.data.message });
@@ -249,23 +272,24 @@ export default async function handler(req, res) {
                 user_id: user_id, 
                 sku_code: sku_code, 
                 customer_no: customer_no, 
-                price: total_potong, 
+                price: total_potong_asli, 
                 status: digiData.data ? digiData.data.status : 'Pending',
                 sn: (digiData.data && digiData.data.sn) ? digiData.data.sn : null
             });
 
             await supabase.from('messages').insert({
                 sender_id: user_id, receiver_id: user_id,
-                message: `[SISTEM] Penarikan Saldo Otomatis *${product_name}* tujuan *${customer_no}* senilai Rp ${total_potong.toLocaleString('id-ID')} sedang diproses sistem.\n\nRef ID: ${ref_id}`
+                message: `[SISTEM] Penarikan Saldo Otomatis *${product_name}* tujuan *${customer_no}* senilai Rp ${total_potong_asli.toLocaleString('id-ID')} sedang diproses sistem.\n\nRef ID: ${ref_id}`
             });
 
             return res.status(200).json({ success: true, data: digiData.data });
 
         } catch (err) {
-            if (isSaldoDipotong && user_id && total_potong > 0) {
+            // Jika ada error jaringan tapi uang keburu kepotong, refund!
+            if (isSaldoDipotong && user_id && total_potong_asli > 0) {
                 const { data: profSekarang } = await supabase.from('profiles').select('balance').eq('id', user_id).single();
                 if (profSekarang) {
-                    await supabase.from('profiles').update({ balance: Number(profSekarang.balance) + total_potong }).eq('id', user_id);
+                    await supabase.from('profiles').update({ balance: Number(profSekarang.balance) + total_potong_asli }).eq('id', user_id);
                 }
             }
             return res.status(500).json({ success: false, error: "Gangguan server. Penarikan dibatalkan dan saldo dikembalikan.", detail: err.message });
