@@ -14151,8 +14151,8 @@ async function mulaiTransferSaldo() {
 
         // Eksekusi Mesin Transfer (RPC Supabase)
         const { data: hasil, error: errRpc } = await supabaseClient.rpc('proses_transfer_saldo', {
-            p_sender_id: currentUser.id,
-            p_receiver_id: targetUser.id,
+            p_sender: currentUser.id,
+            p_receiver: targetUser.id,
             p_nominal: nominal,
             p_sender_name: userProfile.nickname,
             p_receiver_name: targetUser.nickname
