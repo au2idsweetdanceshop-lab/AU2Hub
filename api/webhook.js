@@ -108,13 +108,23 @@ export default async function handler(req, res) {
                 
                 let waktuSekarang = new Date();
                 let waktuExpired = profile?.seller_expired_at ? new Date(profile.seller_expired_at) : new Date();
+                
+                // Jika sudah expired (mati), mulai hitung dari hari ini
                 if (waktuExpired < waktuSekarang) waktuExpired = waktuSekarang;
 
-                if (productName.includes('1 Tahun')) waktuExpired.setDate(waktuExpired.getDate() + 365);
-                else {
-                    const match = productName.match(/(\d+)\s+Bulan/i);
-                    if (match) waktuExpired.setDate(waktuExpired.getDate() + (parseInt(match[1]) * 30));
-                    else waktuExpired.setDate(waktuExpired.getDate() + 30);
+                // 🔥 LOGIKA DETEKSI TAHUN, BULAN, DAN HARI 🔥
+                const matchBulan = productName.match(/(\d+)\s+Bulan/i);
+                const matchHari = productName.match(/(\d+)\s+Hari/i);
+
+                if (productName.includes('1 Tahun')) {
+                    waktuExpired.setDate(waktuExpired.getDate() + 365);
+                } else if (matchBulan) {
+                    waktuExpired.setDate(waktuExpired.getDate() + (parseInt(matchBulan[1]) * 30));
+                } else if (matchHari) {
+                    waktuExpired.setDate(waktuExpired.getDate() + parseInt(matchHari[1]));
+                } else {
+                    // Fallback default jika nama paket tidak standar
+                    waktuExpired.setDate(waktuExpired.getDate() + 30);
                 }
 
                 await supabase.from('profiles').update({ is_seller: true, seller_expired_at: waktuExpired.toISOString() }).eq('id', userId);
