@@ -14151,8 +14151,8 @@ async function mulaiTransferSaldo() {
 
         // PASTIKAN NAMANYA eksekusi_transfer_p2p
 const { data: hasil, error: errRpc } = await supabaseClient.rpc('eksekusi_transfer_p2p', {
-    p_sender: currentUser.id,      
-    p_receiver: targetUser.id,     
+    p_sender: currentUser.id,
+    p_receiver: targetUser.id,
     p_nominal: nominal,
     p_sender_name: userProfile.nickname,
     p_receiver_name: targetUser.nickname
