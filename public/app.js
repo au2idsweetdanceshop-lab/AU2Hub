@@ -1,3 +1,31 @@
+let currentUser = null, userProfile = null, isAuthLogin = true;
+
+let tabSebelumnya = 'home';
+let activeGroupId = null;
+let activeGroupRole = 'member';
+let globalPersonalList = [];
+let globalGroupList = [];
+let messageToForward = "";
+let dataRipperGlobal = [], isRipperExpanded = localStorage.getItem('statusLihatSemua') === 'true';
+let viewedUserId = null;
+
+let allVideosData = [];
+let newUploads = [];
+let obs = null, activeVideoId = null, lastTap = 0, isGlobalMuted = false;
+let replyingToId = null, replyingToName = null;
+let currentVideoIndex = 0;
+const BATCH_SIZE = 5;
+
+let activeChatUserId = null;
+let messageSubscription = null;
+let globalMessageSubscription = null;
+let presenceChannel = null;
+let onlineUsersMap = new Map();
+let selectedMessageId = null;
+let blockedUsersList = [];
+// Memori untuk menyimpan ID siapa saja yang sudah kita follow
+let myFollowingList = [];
+
 function debounce(func, wait) {
     let timeout;
     return function(...args) {
@@ -428,34 +456,6 @@ function escapeHTML(str) {
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&#39;");
 }
-
-let currentUser = null, userProfile = null, isAuthLogin = true;
-
-let tabSebelumnya = 'home';
-let activeGroupId = null;
-let activeGroupRole = 'member';
-let globalPersonalList = [];
-let globalGroupList = [];
-let messageToForward = "";
-let dataRipperGlobal = [], isRipperExpanded = localStorage.getItem('statusLihatSemua') === 'true';
-let viewedUserId = null;
-
-let allVideosData = [];
-let newUploads = [];
-let obs = null, activeVideoId = null, lastTap = 0, isGlobalMuted = false;
-let replyingToId = null, replyingToName = null;
-let currentVideoIndex = 0;
-const BATCH_SIZE = 5;
-
-let activeChatUserId = null;
-let messageSubscription = null;
-let globalMessageSubscription = null;
-let presenceChannel = null;
-let onlineUsersMap = new Map();
-let selectedMessageId = null;
-let blockedUsersList = [];
-// Memori untuk menyimpan ID siapa saja yang sudah kita follow
-let myFollowingList = [];
 
 // Fungsi untuk menarik data dari Supabase saat pertama kali login
 async function fetchMyFollowing() {
