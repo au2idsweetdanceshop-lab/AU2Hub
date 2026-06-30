@@ -5,13 +5,59 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY; 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
+// 🔐 SECRET KEY dari dashboard XoftwarePay Anda
+const xoftwareApiKey = process.env.XOFTWARE_API_KEY; 
+
 export default async function handler(req, res) {
     if (req.method !== 'POST') return res.status(405).send('Method Not Allowed');
 
     try {
-        const payload = req.body;
-        console.log("📥 WEBHOOK MASUK FULL PAYLOAD:", JSON.stringify(payload));
+        // ========================================================
+        // 🛡️ TAHAP 1: VALIDASI SIGNATURE & ANTI-REPLAY ATTACK
+        // ========================================================
+        const signatureHeader = req.headers['x-signature'];
+        const timestampHeader = req.headers['x-timestamp'];
 
+        if (!signatureHeader || !timestampHeader) {
+            console.error("🚨 Webhook Ditolak: Header signature/timestamp hilang.");
+            return res.status(401).json({ success: false, message: 'Unauthorized: Missing headers' });
+        }
+
+        // Cek kedaluwarsa Timestamp (Maksimal 5 menit / 300 detik)
+        const currentUnixTime = Math.floor(Date.now() / 1000);
+        const requestTime = parseInt(timestampHeader, 10);
+        if (Math.abs(currentUnixTime - requestTime) > 300) {
+            console.error("🚨 Webhook Ditolak: Timestamp kadaluarsa (Potensi Replay Attack).");
+            return res.status(401).json({ success: false, message: 'Unauthorized: Timestamp expired' });
+        }
+
+        // Susun ulang pesan sesuai rumus XoftwarePay
+        // CATATAN: Pastikan '/api/webhook' sesuai dengan URL yang Anda daftarkan di dashboard mereka
+        const requestPath = '/api/webhook'; 
+        const rawBody = req.body ? JSON.stringify(req.body) : "";
+        const message = `${timestampHeader}\n${req.method}\n${requestPath}\n${rawBody}`;
+
+        // Generate Signature tandingan
+        const expectedSignature = crypto
+            .createHmac('sha256', xoftwareApiKey)
+            .update(message, 'utf8')
+            .digest('base64');
+
+        // Bandingkan Signature (Gunakan timingSafeEqual untuk mencegah Timing Attack)
+        const sigBuffer = Buffer.from(signatureHeader);
+        const expectedBuffer = Buffer.from(expectedSignature);
+
+        if (sigBuffer.length !== expectedBuffer.length || !crypto.timingSafeEqual(sigBuffer, expectedBuffer)) {
+            console.error("🚨 Webhook Ditolak: SIGNATURE TIDAK COCOK! (Serangan Spoofing Digagalkan)");
+            return res.status(403).json({ success: false, message: 'Forbidden: Invalid signature' });
+        }
+        
+        console.log("✅ [AMAN] Validasi Signature XoftwarePay Lolos!");
+
+        // ========================================================
+        // 📦 TAHAP 2: PROSES PAYLOAD TRANSAKSI
+        // ========================================================
+        const payload = req.body;
         const dataCore = payload.data || payload;
         let rawOrderId = dataCore.provider_ref || dataCore.ref_id || dataCore.order_id || payload.ref_id || payload.order_id;
         
@@ -20,7 +66,6 @@ export default async function handler(req, res) {
         }
 
         const orderId = String(rawOrderId);
-
         const statusXoftware = dataCore.status ? String(dataCore.status).toUpperCase() : '';
         const paymentStatus = dataCore.payment_status ? String(dataCore.payment_status).toUpperCase() : '';
         const statusTrans = dataCore.transaction_status ? String(dataCore.transaction_status).toUpperCase() : '';
@@ -53,7 +98,9 @@ export default async function handler(req, res) {
             const currentDbStatus = String(orderData.status).toUpperCase();
             const productName = orderData.product_name || '';
             const userId = orderData.user_id;
-            const pricePaid = Number(orderData.price);
+            
+            // 🛡️ AMAN: Ambil harga dari Database, bukan dari manipulasi regex teks!
+            const amountToAdd = Number(orderData.price); 
 
             let isAlreadyProcessed = false;
 
@@ -74,20 +121,21 @@ export default async function handler(req, res) {
             }
 
             // ========================================================
-            // 💰 JALUR 1: TOP UP SALDO OTOMATIS (TANPA RPC SUPABASE)
+            // 💰 JALUR 1: TOP UP SALDO OTOMATIS 
             // ========================================================
             if (productName.startsWith('[DEPOSIT]')) {
-                let amountToAdd = pricePaid; 
-                const depositMatch = productName.match(/\[DEPOSIT\]\s*(\d+)/);
-                if (depositMatch) amountToAdd = Number(depositMatch[1]);
-
                 console.log(`💰 Top Up Saldo User: ${userId} | Saldo Masuk: Rp ${amountToAdd}`);
                 
-                // 🔥 SULAP JS: Tarik saldo asli, jumlahkan di JS, lempar balik ke Supabase!
-                const { data: profile } = await supabase.from('profiles').select('balance').eq('id', userId).single();
-                const newBalance = (Number(profile?.balance) || 0) + amountToAdd;
-                
-                await supabase.from('profiles').update({ balance: newBalance }).eq('id', userId);
+                // 🔥 PERBAIKAN RACE CONDITION: Panggil RPC, biarkan Database yang menghitung!
+                const { error: rpcError } = await supabase.rpc('tambah_saldo', {
+                    p_user_id: userId,
+                    p_jumlah: amountToAdd
+                });
+
+                if (rpcError) {
+                    console.error("🚨 Gagal memanggil RPC tambah_saldo:", rpcError);
+                    return res.status(500).json({ success: false, message: 'Gagal menambah saldo' });
+                }
 
                 await supabase.from('wallet_transactions').insert({
                     user_id: userId,
@@ -109,10 +157,8 @@ export default async function handler(req, res) {
                 let waktuSekarang = new Date();
                 let waktuExpired = profile?.seller_expired_at ? new Date(profile.seller_expired_at) : new Date();
                 
-                // Jika sudah expired (mati), mulai hitung dari hari ini
                 if (waktuExpired < waktuSekarang) waktuExpired = waktuSekarang;
 
-                // 🔥 LOGIKA DETEKSI TAHUN, BULAN, DAN HARI 🔥
                 const matchBulan = productName.match(/(\d+)\s+Bulan/i);
                 const matchHari = productName.match(/(\d+)\s+Hari/i);
 
@@ -123,7 +169,6 @@ export default async function handler(req, res) {
                 } else if (matchHari) {
                     waktuExpired.setDate(waktuExpired.getDate() + parseInt(matchHari[1]));
                 } else {
-                    // Fallback default jika nama paket tidak standar
                     waktuExpired.setDate(waktuExpired.getDate() + 30);
                 }
 
