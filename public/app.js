@@ -374,8 +374,13 @@ function customAlert(title) {
         const titleEl = document.getElementById('alert-title');
         const btnOk = document.getElementById('alert-ok');
 
+        // 1. CUCI BERSIH TEKS DARI SCRIPT JAHAT DULU!
+        let safeTitle = escapeHTML(title);
+
+        // 2. BARU UBAH LINK MENJADI BISA DIKLIK
         const urlRegex = /(https?:\/\/[^\s]+)/g;
-        let formattedText = title.replace(urlRegex, (url) => `<a href="${url}" target="_blank" class="text-brand-info underline font-bold">${url}</a>`);
+        let formattedText = safeTitle.replace(urlRegex, (url) => `<a href="${url}" target="_blank" class="text-brand-info underline font-bold">${url}</a>`);
+        
         titleEl.innerHTML = formattedText.replace(/\n/g, "<br>");
 
         history.pushState({ popup: 'alert' }, null, '#alert');
@@ -10140,13 +10145,8 @@ function bukaModalJualBarang() {
     let expiredAt = userProfile?.seller_expired_at ? new Date(userProfile.seller_expired_at) : new Date(0);
     const now = new Date();
 
-    // 🔥 KUNCI ANTI-GAGAL: Paksa akses terbuka sesuai durasi yang dibeli!
-    const optVipData = localStorage.getItem('optimistic_vip');
-    if (optVipData && optVipData.startsWith(currentUser.id)) {
-        isVip = true;
-        const durasiHari = parseInt(optVipData.split('_')[1]) || 30; // Ambil durasi asli, default 30
-        expiredAt = new Date(Date.now() + (durasiHari * 24 * 60 * 60 * 1000)); 
-    }
+    // HAPUS PEMBACAAN LOCAL STORAGE. 
+    // Kita HANYA percaya pada data 'is_seller' asli dari Supabase.
 
     // Jika bukan VIP atau masa aktif habis
     if (!isVip || expiredAt < now) {
@@ -10198,17 +10198,15 @@ async function loadTokoSaya() {
     }
 
     // CEK VIP SELLER DARI DATABASE LOKAL
+    // ✅ KODE BARU
     let isVip = userProfile?.is_seller === true;
     let expiredAt = userProfile?.seller_expired_at ? new Date(userProfile.seller_expired_at) : new Date(0);
     const now = new Date();
 
-    // 🔥 KUNCI ANTI-GAGAL: Paksa akses terbuka sesuai durasi yang dibeli!
-    const optVipData = localStorage.getItem('optimistic_vip');
-    if (optVipData && optVipData.startsWith(currentUser.id)) {
-        isVip = true;
-        const durasiHari = parseInt(optVipData.split('_')[1]) || 30; // Ambil durasi asli, default 30
-        expiredAt = new Date(Date.now() + (durasiHari * 24 * 60 * 60 * 1000)); 
-    }
+    // HAPUS PEMBACAAN LOCAL STORAGE.
+
+    // Jika bukan VIP atau masa aktif habis
+// ...
 
     // Jika bukan VIP atau masa aktif habis
     if (!isVip || expiredAt < now) {
