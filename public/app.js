@@ -1594,7 +1594,13 @@ async function handleAvatarUpload(event) {
         const pathLengkap = `${currentUser.id}/avatar/ava_${Date.now()}`;
 
         // 4. Minta URL Upload dari satelit/Biznet
-        const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent(pathLengkap)}&filetype=${encodeURIComponent(finalFile.type)}`);
+        // 🔥 SUNTIKAN KEAMANAN: Ambil Token JWT Supabase
+const { data: { session } } = await supabaseClient.auth.getSession();
+const token = session?.access_token;
+
+const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent(pathLengkap)}&filetype=${encodeURIComponent(finalFile.type)}`, {
+    headers: { 'Authorization': `Bearer ${token}` }
+});
         const dataUrl = await resUrl.json();
 
         // 5. Upload file fisik langsung ke Storage (Lebih ringan dari Base64)
@@ -5539,7 +5545,10 @@ async function prosesUploadVideo() {
         const namaFileUnik = `${Date.now()}_${file.name.replace(/\s+/g, '_')}`;
         const pathLengkap = `${namaFolder}/${namaFileUnik}`;
 
-        const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent(pathLengkap)}&filetype=${encodeURIComponent(file.type)}`);
+        const { data: { session } } = await supabaseClient.auth.getSession();
+const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent(pathLengkap)}&filetype=${encodeURIComponent(file.type)}`, {
+    headers: { 'Authorization': `Bearer ${session?.access_token}` }
+});
         const dataUrl = await resUrl.json();
 
         // Proses berat upload ke server Biznet GIO
@@ -5738,7 +5747,10 @@ async function prosesKirimMedia() {
         const namaFolder = context === 'chat' ? `${currentUser.id}/chat_media` : `${currentUser.id}/story_media`;
         const pathLengkap = `${namaFolder}/media_${Date.now()}`;
 
-        const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent(pathLengkap)}&filetype=${encodeURIComponent(file.type)}`);
+        const { data: { session } } = await supabaseClient.auth.getSession();
+const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent(pathLengkap)}&filetype=${encodeURIComponent(file.type)}`, {
+    headers: { 'Authorization': `Bearer ${session?.access_token}` }
+});
         const dataUrl = await resUrl.json();
         
         // Proses berat upload S3 berjalan di background
@@ -6092,7 +6104,10 @@ const file = fileInput.files[0];
 showToast("Mengunggah foto grup...", "info");
 
 // Proses upload ke storage menggunakan API-mu
-const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent('group_'+Date.now())}&filetype=${encodeURIComponent(file.type)}`);
+const { data: { session } } = await supabaseClient.auth.getSession();
+const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent('group_'+Date.now())}&filetype=${encodeURIComponent(file.type)}`, {
+    headers: { 'Authorization': `Bearer ${session?.access_token}` }
+});
 const dataUrl = await resUrl.json();
 
 await fetch(dataUrl.uploadUrl, {
@@ -8086,7 +8101,10 @@ showToast("Mengupdate foto profil grup...", "info");
 try {
 // 1. Ambil URL unggahan dari API URL lu
 const pathLengkap = `groups/${activeGroupId}/avatar_${Date.now()}`;
-const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent(pathLengkap)}&filetype=${encodeURIComponent(file.type)}`);
+const { data: { session } } = await supabaseClient.auth.getSession();
+const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent(pathLengkap)}&filetype=${encodeURIComponent(file.type)}`, {
+    headers: { 'Authorization': `Bearer ${session?.access_token}` }
+});
 const dataUrl = await resUrl.json();
 
 // 2. Upload file fisik ke storage Biznet GIO
@@ -9569,7 +9587,10 @@ async function prosesPostingJualan() {
         const uploadPromises = fileJualanArray.map(async (file, index) => {
             // Memasukkan file ke dalam folder: {User ID}/pasar/{nama_file}
 const pathLengkap = `${currentUser.id}/pasar/foto_${index}_${Date.now()}`;
-const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent(pathLengkap)}&filetype=${encodeURIComponent(file.type)}`);
+const { data: { session } } = await supabaseClient.auth.getSession();
+const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent(pathLengkap)}&filetype=${encodeURIComponent(file.type)}`, {
+    headers: { 'Authorization': `Bearer ${session?.access_token}` }
+});
             const dataUrl = await resUrl.json();
             await fetch(dataUrl.uploadUrl, { method: 'PUT', body: file, headers: { 'Content-Type': file.type, 'x-amz-acl': 'public-read' } });
             return dataUrl.finalVideoUrl;
@@ -11279,7 +11300,10 @@ async function prosesEditProduk() {
         if (editFileArray.length > 0) {
             showToast(`Mengunggah ${editFileArray.length} foto baru...`, "info");
             const uploadPromises = editFileArray.map(async (file, index) => {
-                const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent('pasar_edit_'+index+'_'+Date.now())}&filetype=${encodeURIComponent(file.type)}`);
+                const { data: { session } } = await supabaseClient.auth.getSession();
+const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent('pasar_edit_'+index+'_'+Date.now())}&filetype=${encodeURIComponent(file.type)}`, {
+    headers: { 'Authorization': `Bearer ${session?.access_token}` }
+});
                 const dataUrl = await resUrl.json();
                 await fetch(dataUrl.uploadUrl, { method: 'PUT', body: file, headers: { 'Content-Type': file.type, 'x-amz-acl': 'public-read' } });
                 return dataUrl.finalVideoUrl;
