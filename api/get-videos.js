@@ -24,14 +24,18 @@ module.exports = async function handler(req, res) {
         
         const csvText = await response.text();
 
+        // 🔥 JARING PENGAMAN ANTI-CRASH (Mencegah Error <!DOCTYPE html>)
+        // Jika link Sheets salah dan malah mengembalikan halaman web biasa, hentikan proses!
+        if (csvText.trim().toLowerCase().startsWith('<!doctype') || csvText.trim().toLowerCase().startsWith('<html')) {
+            throw new Error('Link CSV salah atau Google Sheet belum di-Publish ke Web (Format CSV).');
+        }
+
         const parsedData = Papa.parse(csvText, {
             header: true, 
             skipEmptyLines: true,
         });
 
-        // 3. TRANSFORMASI DATA (SANGAT PENTING)
-        // Mengubah nama kolom berhuruf besar dari Google Sheet menjadi huruf kecil
-        // sesuai dengan yang dibutuhkan oleh kode Javascript di Frontend (HTML)
+        // 3. TRANSFORMASI DATA
         const formattedData = parsedData.data.map(row => {
             return {
                 id: row.ID_Video || row.id || '',
@@ -43,11 +47,22 @@ module.exports = async function handler(req, res) {
             };
         });
 
-        // 4. Mengirimkan hasil JSON yang sudah disinkronkan
-        res.status(200).json(formattedData);
+        // 🔥 4. LOGIKA PAGINATION (SINKRON DENGAN APP.JS BARU) 🔥
+        // Menangkap perintah ?limit=20&offset=0 dari Frontend
+        const limit = parseInt(req.query.limit) || formattedData.length;
+        const offset = parseInt(req.query.offset) || 0;
+
+        // Balikkan urutan agar video terbaru (paling bawah di Spreadsheet) muncul duluan
+        const reversedData = formattedData.reverse();
+
+        // Potong array sesuai dengan antrean yang diminta aplikasi
+        const paginatedData = reversedData.slice(offset, offset + limit);
+
+        // 5. Mengirimkan hasil JSON yang sudah dipotong
+        res.status(200).json(paginatedData);
         
     } catch (error) {
-        console.error("Error API:", error);
-        res.status(500).json({ error: 'Gagal memuat daftar video' });
+        console.error("Error API Get Videos:", error);
+        res.status(500).json({ error: error.message || 'Gagal memuat daftar video' });
     }
 }
