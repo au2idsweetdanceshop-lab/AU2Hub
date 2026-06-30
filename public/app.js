@@ -1260,7 +1260,7 @@ async function tambahExp(jumlah) {
 }
 
 async function fetchProfile() {
-    const { data, error } = await supabaseClient.from('profiles').select('*').eq('id', currentUser.id).single();
+    const { data, error } = await supabaseClient.rpc('get_my_profile_v1');
     if (data) {
         userProfile = data;
     } else {
@@ -2366,7 +2366,14 @@ async function openUserProfile(userId) {
         const targetId = String(userId);
         const isOwn = (targetId === currentUserId);
 
-        const { data, error } = await supabaseClient.from('profiles').select('*').eq('id', userId).single();
+        let data, error;
+if (isOwn) {
+    const res = await supabaseClient.rpc('get_my_profile_v1');
+    data = res.data; error = res.error;
+} else {
+    const res = await supabaseClient.from('profiles').select('id, nickname, avatar_url, bio, exp, is_seller, seller_expired_at, last_seen, is_super_admin').eq('id', userId).single();
+    data = res.data; error = res.error;
+}
         if (error && error.code !== 'PGRST116') {
             console.error("Error database:", error);
         }
@@ -4556,31 +4563,32 @@ onlineUsersMap.has(uid) ? el.classList.remove('hidden') : el.classList.add('hidd
 }
 
 async function searchUsersForChat(query) {
-if (!query.trim()) return loadChatList();
+    if (!query.trim()) return loadChatList();
 
-// 🚨 KUNCI FIX: Arahkan langsung ke container personal chat biar gak eror crash!
-const container = document.getElementById('chat-personal-container');
-container.innerHTML = '<div class="flex justify-center mt-6"><i class="fas fa-spinner fa-spin text-brand-accent text-xl"></i></div>';
+    // 🚨 KUNCI FIX: Arahkan langsung ke container personal chat biar gak eror crash!
+    const container = document.getElementById('chat-personal-container');
+    container.innerHTML = '<div class="flex justify-center mt-6"><i class="fas fa-spinner fa-spin text-brand-accent text-xl"></i></div>';
 
-const { data } = await supabaseClient.from('profiles').select('*').ilike('nickname', `%${query}%`).limit(15);
+    // 🔥 FIX TYPO BACKTICK TANDA KUTIP MIRING (`) AGAR JAVASCRIPT TIDAK CRASH
+    const { data } = await supabaseClient.from('profiles').select('id, nickname, avatar_url, bio, exp, is_seller, seller_expired_at, last_seen').ilike('nickname', `%${query}%`).limit(15);
 
-if (data && data.length > 0) {
-let html = '<p class="text-[10px] text-gray-500 font-bold mb-2 ml-1 uppercase">Hasil Pencarian</p>';
-data.forEach(p => {
-const ava = p.avatar_url || `https://ui-avatars.com/api/?name=${p.nickname}&background=1A1133&color=fff`;
-html += `
-<div onclick="openChatRoom('${p.id}', '${escapeHTML(p.nickname).replace(/&#39;/g, "\\'")}', '${ava}')" class="flex items-center p-3 hover:bg-white/5 cursor-pointer rounded-2xl transition-all">
-<img src="${ava}" class="w-10 h-10 rounded-full object-cover border border-white/10 shrink-0">
-<div class="ml-3">
-<h4 class="font-bold text-white text-xs">${p.nickname}</h4>
-<p class="text-[10px] text-gray-400 truncate w-48">${p.bio || 'Pemain AU2'}</p>
-</div>
-</div>`;
-});
-container.innerHTML = html;
-} else {
-container.innerHTML = '<p class="text-center text-xs text-gray-500 mt-6">User tidak ditemukan.</p>';
-}
+    if (data && data.length > 0) {
+        let html = '<p class="text-[10px] text-gray-500 font-bold mb-2 ml-1 uppercase">Hasil Pencarian</p>';
+        data.forEach(p => {
+            const ava = p.avatar_url || `https://ui-avatars.com/api/?name=${p.nickname}&background=1A1133&color=fff`;
+            html += `
+            <div onclick="openChatRoom('${p.id}', '${escapeHTML(p.nickname).replace(/&#39;/g, "\\'")}', '${ava}')" class="flex items-center p-3 hover:bg-white/5 cursor-pointer rounded-2xl transition-all">
+                <img src="${ava}" class="w-10 h-10 rounded-full object-cover border border-white/10 shrink-0">
+                <div class="ml-3">
+                    <h4 class="font-bold text-white text-xs">${p.nickname}</h4>
+                    <p class="text-[10px] text-gray-400 truncate w-48">${p.bio || 'Pemain AU2'}</p>
+                </div>
+            </div>`;
+        });
+        container.innerHTML = html;
+    } else {
+        container.innerHTML = '<p class="text-center text-xs text-gray-500 mt-6">User tidak ditemukan.</p>';
+    }
 }
 
 function toggleWidget() {
@@ -7719,7 +7727,7 @@ async function switchLeaderboardTab(tab) {
             // Tarik 50 Player dengan EXP Tertinggi dari database Supabase
             const { data: topPlayers, error } = await supabaseClient
                 .from('profiles')
-                .select('*')
+                .select('id, nickname, avatar_url, bio, exp, is_seller, seller_expired_at, last_seen') // <--- 🔥 SENSOR PRIVASI (JURUS 8)
                 .order('exp', { ascending: false })
                 .limit(50);
 
@@ -10205,7 +10213,7 @@ async function loadTokoSaya() {
 async function updateUiSaldoSeller() {
     try {
         // 1. Tarik Saldo Aktif dari tabel profiles
-        const { data: profile } = await supabaseClient.from('profiles').select('balance').eq('id', currentUser.id).single();
+        const { data: profile } = await supabaseClient.rpc('get_my_profile_v1');
         
         const elSaldoAktif = document.getElementById('toko-saldo-aktif');
         if (elSaldoAktif) elSaldoAktif.innerText = 'Rp ' + (profile?.balance || 0).toLocaleString('id-ID');
@@ -10639,7 +10647,7 @@ async function fetchSaldoDanMutasi() {
     listContainer.innerHTML = '<div class="text-center py-10 text-gray-500 text-xs"><i class="fas fa-spinner fa-spin text-2xl mb-2"></i></div>';
 
     try {
-        const { data: profile } = await supabaseClient.from('profiles').select('balance').eq('id', currentUser.id).single();
+        const { data: profile } = await supabaseClient.rpc('get_my_profile_v1');
         const saldoSekarang = profile?.balance || 0;
         document.getElementById('dompet-angka-saldo').innerText = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(saldoSekarang);
 
@@ -13044,7 +13052,7 @@ async function prosesBeliPPOB(skuCode, targetNo, harga, namaProduk) {
     if (!currentUser) return showToast("Silakan login dulu untuk membeli!", "error");
 
     // 1. Cek Saldo Lokal
-    const { data: profile } = await supabaseClient.from('profiles').select('balance').eq('id', currentUser.id).single();
+    const { data: profile } = await supabaseClient.rpc('get_my_profile_v1');
     const saldoSaatIni = profile?.balance || 0;
 
     if (saldoSaatIni < harga) {
@@ -13611,7 +13619,8 @@ async function updateSaldoGlobal() {
     }
     
     try {
-        const { data } = await supabaseClient.from('profiles').select('balance').eq('id', currentUser.id).single();
+        // 🔥 FIX SENSOR PRIVASI: Menggunakan RPC
+        const { data } = await supabaseClient.rpc('get_my_profile_v1');
         const saldo = data?.balance || 0;
         
         // Update angka di Kartu Saldo Tab Layanan PPOB
