@@ -3852,71 +3852,85 @@ async function loadVideos(isLoadMore = false) {
     const fakeProgress = document.getElementById('fake-progress');
     const isFirstTime = !localStorage.getItem('hasVisitedSosial');
     
-    // Jika memuat dari awal (bukan hasil scroll mentok bawah)
     if (!isLoadMore) {
         if (obs) obs.disconnect();
         feedOffset = 0;
         isFeedEndReached = false;
         allVideosData = [];
         currentVideoIndex = 0;
-        container.innerHTML = '';
-        if (allVideosData.length === 0) container.innerHTML = `<div class="w-full h-full relative bg-[#1A1133] animate-pulse flex flex-col justify-end p-6 flex-shrink-0 snap-start"><div class="absolute inset-0 flex items-center justify-center"><i class="fas fa-circle-notch fa-spin text-brand-accent text-4xl opacity-40"></i></div></div>`;
+        if(container) container.innerHTML = '';
+        if (allVideosData.length === 0 && container) container.innerHTML = `<div class="w-full h-full relative bg-[#1A1133] animate-pulse flex flex-col justify-end p-6 flex-shrink-0 snap-start"><div class="absolute inset-0 flex items-center justify-center"><i class="fas fa-circle-notch fa-spin text-brand-accent text-4xl opacity-40"></i></div></div>`;
     }
 
     if (isFeedEndReached || isFetchingFeed) return;
     isFetchingFeed = true;
     
     try {
-        // 🔥 JURUS PAGINATION: Kita lempar parameter limit & offset ke API Vercel/Sheets
-        // Pastikan API backend-mu nanti menerima query ?limit=X&offset=Y
         const res = await fetch(`/api/get-videos?limit=${FEED_LIMIT}&offset=${feedOffset}`);
+        
+        // 🛡️ JARING PENGAMAN 1: Cek apakah Vercel ngasih error HTML (bukan JSON)
+        const contentType = res.headers.get("content-type");
+        if (!contentType || !contentType.includes("application/json")) {
+            throw new Error("Format data Vercel tidak valid. Cek link Google Sheets.");
+        }
+
         let dataDariSheet = await res.json();
 
-        // Jika data yang turun kurang dari limit, artinya kita sudah mencapai ujung database
+        if (dataDariSheet.error) {
+            throw new Error(dataDariSheet.error);
+        }
+
+        if (!Array.isArray(dataDariSheet)) dataDariSheet = [];
+
         if (dataDariSheet.length < FEED_LIMIT) {
             isFeedEndReached = true; 
         }
 
-        // --- PENYERAGAMAN ID & INDEX PINTAR ---
         dataDariSheet = dataDariSheet.map((v, index) => {
-            v.original_index = feedOffset + index; // Sesuaikan urutan antrean global
+            v.original_index = feedOffset + index; 
             v.id = v.id || v.video_id || v.ID || 'vid_' + Math.random().toString(36).substr(2, 9);
             v.user_id = v.user_id || v.User_ID || v.userId || v.userid;
             return v;
         });
 
-        // Masukkan video baru yang di-upload dari lokal (Jika baru buka pertama kali)
         if (!isLoadMore) {
             let nextIdx = dataDariSheet.length;
             newUploads.forEach(newVid => {
                 newVid.id = newVid.id || newVid.video_id; 
                 if (!dataDariSheet.find(v => v.id === newVid.id)) {
                     newVid.original_index = nextIdx++; 
-                    dataDariSheet.unshift(newVid); // Taruh di paling atas
+                    dataDariSheet.unshift(newVid); 
                 }
             });
         }
 
         dataDariSheet = dataDariSheet.filter(v => !blockedUsersList.includes(v.user_id));
 
-        // Pengacakan (Shuffle) HANYA pada batch yang baru ditarik agar feed tidak membosankan
         for (let i = dataDariSheet.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
             [dataDariSheet[i], dataDariSheet[j]] = [dataDariSheet[j], dataDariSheet[i]];
         }
 
-        // Tambahkan ke memori utama
         allVideosData = [...allVideosData, ...dataDariSheet];
-        feedOffset += FEED_LIMIT; // Naikkan offset untuk tarikan selanjutnya
+        feedOffset += FEED_LIMIT; 
 
+        // 🛡️ JARING PENGAMAN 2: Jika data kosong, matikan loader paksa!
         if (!allVideosData.length) { 
-            container.innerHTML = '<p class="text-center py-20 text-gray-500">Belum ada video.</p>'; 
+            if(container) container.innerHTML = '<p class="text-center py-20 text-gray-500">Belum ada video.</p>'; 
+            if (fakeLoader) {
+                fakeLoader.classList.add('opacity-0');
+                setTimeout(() => { fakeLoader.classList.add('hidden'); fakeLoader.classList.remove('flex'); }, 500);
+            }
             return; 
         }
 
         if (isFirstTime && !isLoadMore) {
-            fakeLoader.classList.remove('hidden'); fakeLoader.classList.add('flex'); fakeProgress.style.transition = 'width 15s cubic-bezier(0.1, 0.7, 1.0, 0.1)';
-            setTimeout(() => { fakeProgress.style.width = '80%'; }, 100);
+            if(fakeLoader) {
+                fakeLoader.classList.remove('hidden'); fakeLoader.classList.add('flex'); 
+                if(fakeProgress) fakeProgress.style.transition = 'width 15s cubic-bezier(0.1, 0.7, 1.0, 0.1)';
+                setTimeout(() => { if(fakeProgress) fakeProgress.style.width = '80%'; }, 100);
+            }
+            
             setupVideoObserver(); renderVideoBatch();
             
             const videosInDOM = document.querySelectorAll('.video-player'); 
@@ -3924,8 +3938,18 @@ async function loadVideos(isLoadMore = false) {
             let readyCount = 0; let isResolved = false;
             
             const finishLoading = () => {
-                if (isResolved) return; isResolved = true; fakeProgress.style.transition = 'width 0.4s ease-out'; fakeProgress.style.width = '100%';
-                setTimeout(() => { fakeLoader.classList.add('opacity-0'); setTimeout(() => { fakeLoader.classList.add('hidden'); fakeLoader.classList.remove('flex'); }, 1000); localStorage.setItem('hasVisitedSosial', 'true'); }, 500);
+                if (isResolved) return; isResolved = true; 
+                if(fakeProgress) {
+                    fakeProgress.style.transition = 'width 0.4s ease-out'; 
+                    fakeProgress.style.width = '100%';
+                }
+                setTimeout(() => { 
+                    if(fakeLoader) fakeLoader.classList.add('opacity-0'); 
+                    setTimeout(() => { 
+                        if(fakeLoader) { fakeLoader.classList.add('hidden'); fakeLoader.classList.remove('flex'); }
+                    }, 1000); 
+                    localStorage.setItem('hasVisitedSosial', 'true'); 
+                }, 500);
             };
             
             const safetyTimeout = setTimeout(() => { finishLoading(); }, 15000);
@@ -3936,20 +3960,40 @@ async function loadVideos(isLoadMore = false) {
                     if (index < targetCount) {
                         vid.setAttribute('preload', 'auto'); vid.load();
                         const onVideoReady = () => {
-                            if (isResolved) return; readyCount++; const progressPercent = 80 + ((readyCount / targetCount) * 20); fakeProgress.style.width = `${progressPercent}%`;
+                            if (isResolved) return; readyCount++; 
+                            const progressPercent = 80 + ((readyCount / targetCount) * 20); 
+                            if(fakeProgress) fakeProgress.style.width = `${progressPercent}%`;
                             if (readyCount >= targetCount) { clearTimeout(safetyTimeout); finishLoading(); }
                         };
-                        if (vid.readyState >= 3) onVideoReady(); else { vid.addEventListener('canplay', onVideoReady, { once: true }); vid.addEventListener('loadeddata', onVideoReady, { once: true }); }
+                        
+                        // 🛡️ JARING PENGAMAN 3: Kalau link video rusak/error, paksa lanjut, jangan dibiarin stuck!
+                        if (vid.readyState >= 3) onVideoReady(); else { 
+                            vid.addEventListener('canplay', onVideoReady, { once: true }); 
+                            vid.addEventListener('loadeddata', onVideoReady, { once: true }); 
+                            vid.addEventListener('error', onVideoReady, { once: true }); // <--- INI SANGAT PENTING
+                        }
                     }
                 });
             }
         } else { 
-            if (!isLoadMore) container.innerHTML = '';
+            if (!isLoadMore && container) container.innerHTML = '';
             setupVideoObserver(); 
             renderVideoBatch(); 
         }
     } catch (e) { 
-        if (!isLoadMore) container.innerHTML = '<p class="text-center py-20 text-gray-500">Gagal memuat video.</p>'; 
+        console.error("Error Load Video:", e);
+        if (!isLoadMore && container) {
+            container.innerHTML = `<p class="text-center py-20 text-red-500 font-bold"><i class="fas fa-exclamation-triangle text-3xl mb-3"></i><br>Gagal memuat video.<br><span class="text-xs text-gray-500 font-normal">${e.message}</span></p>`; 
+        }
+        
+        // 🛡️ JARING PENGAMAN 4: Kalau kena error di tengah jalan, hancurkan layarnya!
+        if (fakeLoader) {
+            fakeLoader.style.opacity = '0';
+            setTimeout(() => {
+                fakeLoader.classList.add('hidden');
+                fakeLoader.classList.remove('flex');
+            }, 300);
+        }
     } finally {
         isFetchingFeed = false;
     }
