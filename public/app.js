@@ -3859,7 +3859,8 @@ async function loadVideos(isLoadMore = false) {
         allVideosData = [];
         currentVideoIndex = 0;
         if(container) container.innerHTML = '';
-        if (allVideosData.length === 0 && container) container.innerHTML = `<div class="w-full h-full relative bg-[#1A1133] animate-pulse flex flex-col justify-end p-6 flex-shrink-0 snap-start"><div class="absolute inset-0 flex items-center justify-center"><i class="fas fa-circle-notch fa-spin text-brand-accent text-4xl opacity-40"></i></div></div>`;
+        // Menampilkan skeleton kotak hitam
+        if (allVideosData.length === 0 && container) container.innerHTML = `<div class="w-full h-full relative bg-[#1A1133] animate-pulse flex flex-col justify-end p-6 flex-shrink-0 snap-start skeleton-loader"><div class="absolute inset-0 flex items-center justify-center"><i class="fas fa-circle-notch fa-spin text-brand-accent text-4xl opacity-40"></i></div></div>`;
     }
 
     if (isFeedEndReached || isFetchingFeed) return;
@@ -3868,7 +3869,6 @@ async function loadVideos(isLoadMore = false) {
     try {
         const res = await fetch(`/api/get-videos?limit=${FEED_LIMIT}&offset=${feedOffset}`);
         
-        // 🛡️ JARING PENGAMAN 1: Cek apakah Vercel ngasih error HTML (bukan JSON)
         const contentType = res.headers.get("content-type");
         if (!contentType || !contentType.includes("application/json")) {
             throw new Error("Format data Vercel tidak valid. Cek link Google Sheets.");
@@ -3876,15 +3876,9 @@ async function loadVideos(isLoadMore = false) {
 
         let dataDariSheet = await res.json();
 
-        if (dataDariSheet.error) {
-            throw new Error(dataDariSheet.error);
-        }
-
+        if (dataDariSheet.error) throw new Error(dataDariSheet.error);
         if (!Array.isArray(dataDariSheet)) dataDariSheet = [];
-
-        if (dataDariSheet.length < FEED_LIMIT) {
-            isFeedEndReached = true; 
-        }
+        if (dataDariSheet.length < FEED_LIMIT) isFeedEndReached = true; 
 
         dataDariSheet = dataDariSheet.map((v, index) => {
             v.original_index = feedOffset + index; 
@@ -3914,7 +3908,6 @@ async function loadVideos(isLoadMore = false) {
         allVideosData = [...allVideosData, ...dataDariSheet];
         feedOffset += FEED_LIMIT; 
 
-        // 🛡️ JARING PENGAMAN 2: Jika data kosong, matikan loader paksa!
         if (!allVideosData.length) { 
             if(container) container.innerHTML = '<p class="text-center py-20 text-gray-500">Belum ada video.</p>'; 
             if (fakeLoader) {
@@ -3922,6 +3915,11 @@ async function loadVideos(isLoadMore = false) {
                 setTimeout(() => { fakeLoader.classList.add('hidden'); fakeLoader.classList.remove('flex'); }, 500);
             }
             return; 
+        }
+
+        // 🔥 INI DIA OBAT FINALNYA: Hapus skeleton sebelum video masuk! 🔥
+        if (!isLoadMore && container) {
+            container.innerHTML = ''; 
         }
 
         if (isFirstTime && !isLoadMore) {
@@ -3966,17 +3964,15 @@ async function loadVideos(isLoadMore = false) {
                             if (readyCount >= targetCount) { clearTimeout(safetyTimeout); finishLoading(); }
                         };
                         
-                        // 🛡️ JARING PENGAMAN 3: Kalau link video rusak/error, paksa lanjut, jangan dibiarin stuck!
                         if (vid.readyState >= 3) onVideoReady(); else { 
                             vid.addEventListener('canplay', onVideoReady, { once: true }); 
                             vid.addEventListener('loadeddata', onVideoReady, { once: true }); 
-                            vid.addEventListener('error', onVideoReady, { once: true }); // <--- INI SANGAT PENTING
+                            vid.addEventListener('error', onVideoReady, { once: true });
                         }
                     }
                 });
             }
         } else { 
-            if (!isLoadMore && container) container.innerHTML = '';
             setupVideoObserver(); 
             renderVideoBatch(); 
         }
@@ -3986,7 +3982,6 @@ async function loadVideos(isLoadMore = false) {
             container.innerHTML = `<p class="text-center py-20 text-red-500 font-bold"><i class="fas fa-exclamation-triangle text-3xl mb-3"></i><br>Gagal memuat video.<br><span class="text-xs text-gray-500 font-normal">${e.message}</span></p>`; 
         }
         
-        // 🛡️ JARING PENGAMAN 4: Kalau kena error di tengah jalan, hancurkan layarnya!
         if (fakeLoader) {
             fakeLoader.style.opacity = '0';
             setTimeout(() => {
@@ -4146,12 +4141,24 @@ function renderVideoBatch() {
     currentVideoIndex += nextBatch.length; // PERBAIKAN: Gunakan panjang batch aktual
 
     const videoActions = container.querySelectorAll('.snap-start:not(.data-loaded)');
-    videoActions.forEach((card) => {
-        card.classList.add('data-loaded');
-        const vidId = card.querySelector('.like-container').dataset.vid;
-        updateLikeCountUI(vidId, card.querySelector('.like-container'));
-        updateCommentCountUI(vidId, card.querySelector('.comment-count-container'));
-    });
+videoActions.forEach((card) => {
+    // 🛡️ JARING PENGAMAN: Abaikan kalau ini adalah Skeleton Loader
+    if (card.classList.contains('skeleton-loader')) return;
+
+    card.classList.add('data-loaded');
+    const likeContainer = card.querySelector('.like-container');
+    
+    // 🛡️ JARING PENGAMAN EKSTRA: Pastikan tombol like benar-benar ada
+    if (likeContainer) {
+        const vidId = likeContainer.dataset.vid;
+        updateLikeCountUI(vidId, likeContainer);
+        
+        const commentContainer = card.querySelector('.comment-count-container');
+        if (commentContainer) {
+            updateCommentCountUI(vidId, commentContainer);
+        }
+    }
+});
 
     const unobservedVideos = container.querySelectorAll('.video-player:not(.observed)');
     unobservedVideos.forEach((v, i) => {
