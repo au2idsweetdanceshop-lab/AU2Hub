@@ -268,21 +268,17 @@ const apiKey = process.env.DIGIFLAZZ_KEY;
 
 
             // 🛡️ PERBAIKAN KEAMANAN: Eksekusi fungsi kurangi_saldo via RPC (Kebal Spam Klik)
-
             const { data: isSuccess, error: rpcError } = await supabase.rpc('kurangi_saldo', {
-
                 p_user_id: user_id,
-
                 p_jumlah: hargaJual
-
             });
 
-
-
-            if (rpcError || !isSuccess) {
-
-                return res.status(400).json({ success: false, error: `Saldo tidak mencukupi atau transaksi ditolak.` });
-
+            // 👇 BONGKAR PESAN ERROR ASLINYA 👇
+            if (rpcError) {
+                return res.status(400).json({ success: false, error: `DB Error: ${rpcError.message}` });
+            }
+            if (!isSuccess) {
+                return res.status(400).json({ success: false, error: `Saldo DB tidak cukup! Sistem menagih: Rp ${hargaJual}` });
             }
 
             
