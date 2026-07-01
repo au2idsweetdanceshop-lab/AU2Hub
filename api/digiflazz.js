@@ -11,17 +11,18 @@ const supabase = createClient(
 
 export default async function handler(req, res) {
     // ==========================================
-// 🛡️ PROTEKSI CORS: HANYA IZINKAN DOMAIN SENDIRI
-// ==========================================
-const origin = req.headers.origin || req.headers.referer;
-// Kecualikan webhook dari pengecekan origin karena webhook dikirim oleh server Xoftware/Digiflazz, bukan dari browser
-const isWebhook = (req.body && req.body.action === 'webhook') || req.url.includes('webhook');
+    // 🛡️ PROTEKSI CORS: HANYA IZINKAN DOMAIN SENDIRI
+    // ==========================================
+    const origin = req.headers.origin || req.headers.referer;
+    // Kecualikan webhook dari pengecekan origin karena webhook dikirim oleh server Xoftware/Digiflazz, bukan dari browser
+    const isWebhook = (req.body && req.body.action === 'webhook') || req.url.includes('webhook');
 
-if (!isWebhook && origin) {
-    if (!origin.includes('au2idsweetdance.com') && !origin.includes('localhost')) {
-        return res.status(403).json({ success: false, message: 'Akses Ditolak: Domain Tidak Sah!' });
+    if (!isWebhook && origin) {
+        if (!origin.includes('au2idsweetdance.com') && !origin.includes('localhost')) {
+            return res.status(403).json({ success: false, message: 'Akses Ditolak: Domain Tidak Sah!' });
+        }
     }
-}
+    
     if (req.method !== 'POST' && req.method !== 'GET') {
         return res.status(405).json({ error: 'Method tidak diizinkan' });
     }
@@ -34,7 +35,6 @@ if (!isWebhook && origin) {
     // 1. MODE SYNC: TARIK PRODUK PREPAID & PASCA
     // ==========================================
     if (action === 'sync') {
-        // [Kode sync Anda sudah bagus, saya biarkan sama seperti aslinya]
         const sign = crypto.createHash('md5').update(username + apiKey + "depo").digest('hex');
 
         try {
@@ -119,7 +119,6 @@ if (!isWebhook && origin) {
         let isSaldoDipotong = false; 
         
         try {
-            // Pastikan SKU aktif
             const { data: prod } = await supabase.from('digiflazz_products')
                 .select('seller_price, is_active')
                 .eq('sku_code', sku_code)
@@ -130,7 +129,6 @@ if (!isWebhook && origin) {
 
             hargaJual = Number(prod.seller_price);
 
-            // 🛡️ PERBAIKAN KEAMANAN: Eksekusi fungsi kurangi_saldo via RPC (Kebal Spam Klik)
             const { data: isSuccess, error: rpcError } = await supabase.rpc('kurangi_saldo', {
                 p_user_id: user_id,
                 p_jumlah: hargaJual
@@ -149,7 +147,6 @@ if (!isWebhook && origin) {
                 description: `Pembelian PPOB: ${sku_code} (${customer_no})`
             });
 
-            // Tembak Digiflazz
             const sign = crypto.createHash('md5').update(username + apiKey + ref_id).digest('hex');
             const proxyRes = await fetch('http://203.194.114.209:3000/proxy-digiflazz', {
                 method: 'POST',
@@ -161,10 +158,7 @@ if (!isWebhook && origin) {
             });
             const digiData = await proxyRes.json();
 
-            // Jika Langsung Gagal dari Digiflazz
             if (digiData.data && digiData.data.status === "Gagal") {
-                // 🛡️ KEAMANAN: Kembalikan saldo dengan RPC yang aman (tambah_saldo) jika Anda memilikinya,
-                // Jika tidak, RLS Anda (service_role) cukup aman melakukan update ini.
                 await supabase.rpc('tambah_saldo', { p_user_id: user_id, p_jumlah: hargaJual });
                 
                 await supabase.from('wallet_transactions').insert({
@@ -179,7 +173,6 @@ if (!isWebhook && origin) {
                 return res.status(400).json({ success: false, error: "Transaksi gagal. Saldo dikembalikan.", detail: digiData.data.message });
             }
 
-            // SIMPAN SN JIKA DIGIFLAZZ MERESPONS CEPAT
             await supabase.from('riwayat_ppob').insert({
                 ref_id: ref_id, 
                 user_id: user_id, 
@@ -198,7 +191,6 @@ if (!isWebhook && origin) {
             return res.status(200).json({ success: true, data: digiData.data });
 
         } catch (err) {
-            // Jika API error tapi saldo telanjur dipotong, kembalikan uang user
             if (isSaldoDipotong && user_id && hargaJual > 0) {
                 await supabase.rpc('tambah_saldo', { p_user_id: user_id, p_jumlah: hargaJual });
             }
@@ -210,8 +202,6 @@ if (!isWebhook && origin) {
     // 3. MODE WITHDRAW: PENARIKAN SALDO OTOMATIS (E-MONEY)
     // ==========================================
     if (action === 'withdraw') {
-        // [Kode withdraw Anda sudah sangat aman karena memanggil RPC 'tarik_saldo_otomatis']
-        // Saya biarkan persis seperti aslinya karena sudah menggunakan standar tinggi.
         const { user_id, sku_code, customer_no, product_name } = req.body;
         const ref_id = "WD_" + Date.now(); 
         
@@ -230,7 +220,6 @@ if (!isWebhook && origin) {
             total_potong_asli = Number(prodWD.price) + 500;
             const provider = product_name.split(' ')[0]; 
             
-            // Eksekusi fungsi potong saldo RPC (Sama seperti P2P Transfer, anti nembus RLS)
             const { error: dbError } = await supabase.rpc('tarik_saldo_otomatis', {
                 p_user_id: user_id,
                 p_total_potong: total_potong_asli, 
@@ -257,7 +246,6 @@ if (!isWebhook && origin) {
             });
             const digiData = await proxyRes.json();
 
-            // Jika Gagal Langsung dari Pusat
             if (digiData.data && digiData.data.status === "Gagal") {
                 await supabase.rpc('tambah_saldo', { p_user_id: user_id, p_jumlah: total_potong_asli });
                     
@@ -303,7 +291,6 @@ if (!isWebhook && origin) {
     // ==========================================
     if (action === 'webhook') {
         try {
-            // 🛡️ PERBAIKAN KEAMANAN: VALIDASI SIGNATURE DIGIFLAZZ (ANTI SPOOFING)
             const digiflazzSecret = process.env.DIGIFLAZZ_WEBHOOK_SECRET; 
             const signatureHeader = req.headers['x-hub-signature'];
 
@@ -312,11 +299,9 @@ if (!isWebhook && origin) {
                 return res.status(401).send("Unauthorized: Missing signature");
             }
 
-            // Rumus Digiflazz: HMAC SHA1
             const payloadString = JSON.stringify(req.body);
             const expectedSignature = 'sha1=' + crypto.createHmac('sha1', digiflazzSecret).update(payloadString).digest('hex');
 
-            // Gunakan timingSafeEqual untuk menghindari Timing Attack
             const sigBuffer = Buffer.from(signatureHeader);
             const expectedBuffer = Buffer.from(expectedSignature);
 
@@ -325,7 +310,6 @@ if (!isWebhook && origin) {
                 return res.status(403).send("Forbidden: Invalid signature");
             }
 
-            // --- JIKA LOLOS VALIDASI, BARU PROSES DATANYA ---
             const digiPayload = req.body && req.body.data;
             if (!digiPayload) return res.status(400).json({ error: "Payload tidak valid" });
 
@@ -344,7 +328,6 @@ if (!isWebhook && origin) {
                 const deskripsiRefund = isWD ? `Refund Penarikan Gagal: ${orderData.sku_code}` : `Refund PPOB Gagal: ${orderData.sku_code}`;
 
                 if (statusDigi === "Gagal") {
-                    // Gunakan RPC tambah_saldo untuk mengembalikan uang secara presisi
                     await supabase.rpc('tambah_saldo', { p_user_id: orderData.user_id, p_jumlah: hargaAwal });
                         
                     await supabase.from('wallet_transactions').insert({
