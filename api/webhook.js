@@ -32,7 +32,6 @@ export default async function handler(req, res) {
         }
 
         // Susun ulang pesan sesuai rumus XoftwarePay
-        // CATATAN: Pastikan '/api/webhook' sesuai dengan URL yang Anda daftarkan di dashboard mereka
         const requestPath = '/api/webhook'; 
         const rawBody = req.body ? JSON.stringify(req.body) : "";
         const message = `${timestampHeader}\n${req.method}\n${requestPath}\n${rawBody}`;
@@ -99,12 +98,12 @@ export default async function handler(req, res) {
             const productName = orderData.product_name || '';
             const userId = orderData.user_id;
             
-            // 🛡️ AMAN: Ambil harga dari Database, bukan dari manipulasi regex teks!
             const amountToAdd = Number(orderData.price); 
 
             let isAlreadyProcessed = false;
 
-            if (['SUCCESS', 'SELESAI', 'PROSES', 'PAID'].includes(currentDbStatus)) {
+            // 🔥 PERBAIKAN: Hapus 'PROSES' agar pesanan baru yang sedang diproses tidak terjebak di sini
+            if (['SUCCESS', 'SELESAI', 'PAID'].includes(currentDbStatus)) {
                 if (productName.startsWith('[DEPOSIT]')) {
                     const { data: existingTx } = await supabase.from('wallet_transactions')
                         .select('id')
@@ -126,7 +125,6 @@ export default async function handler(req, res) {
             if (productName.startsWith('[DEPOSIT]')) {
                 console.log(`💰 Top Up Saldo User: ${userId} | Saldo Masuk: Rp ${amountToAdd}`);
                 
-                // 🔥 PERBAIKAN RACE CONDITION: Panggil RPC, biarkan Database yang menghitung!
                 const { error: rpcError } = await supabase.rpc('tambah_saldo', {
                     p_user_id: userId,
                     p_jumlah: amountToAdd
