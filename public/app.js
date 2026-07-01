@@ -976,15 +976,22 @@ function initGlobalMessageListener() {
                     showToast("Ada pesan pribadi baru masuk!", "info");
                 }
 
-                // 🔥 FIX 3: Trigger Auto-Refresh Saldo Jika Ada Notif Transfer Masuk
-                if (msg.message && msg.message.includes('Transfer Saldo Berhasil!')) {
-                    setTimeout(() => {
-                        if (typeof fetchSaldoDanMutasi === 'function') fetchSaldoDanMutasi();
-                        if (typeof updateSaldoGlobal === 'function') updateSaldoGlobal();
-                        if (typeof updateUiSaldoSeller === 'function') updateUiSaldoSeller();
-                        if (typeof fetchProfile === 'function') fetchProfile();
-                    }, 1000);
-                }
+                // 🔥 FIX: Trigger Auto-Refresh UI Jika Ada Notif Saldo ATAU Notif PPOB Sukses/Gagal
+if (msg.message && (msg.message.includes('Transfer Saldo Berhasil!') || msg.message.includes('SUKSES!') || msg.message.includes('GAGAL diproses'))) {
+    setTimeout(() => {
+        if (typeof fetchSaldoDanMutasi === 'function') fetchSaldoDanMutasi();
+        if (typeof updateSaldoGlobal === 'function') updateSaldoGlobal();
+        if (typeof updateUiSaldoSeller === 'function') updateUiSaldoSeller();
+        if (typeof fetchProfile === 'function') fetchProfile();
+        if (typeof loadOrderTracker === 'function') loadOrderTracker(currentUser.id);
+        
+        // Auto-refresh layar daftar pesanan jika sedang dibuka oleh user
+        const riwayatModal = document.getElementById('modal-riwayat-pesanan');
+        if (riwayatModal && !riwayatModal.classList.contains('hidden') && typeof cekStatusPesanan === 'function') {
+            cekStatusPesanan('proses'); // Refresh diam-diam di latar belakang
+        }
+    }, 1000);
+}
                 
                 // --- MUNCULKAN NOTIFIKASI POP-UP HP (Jika web di-minimize) ---
                 if ("Notification" in window && Notification.permission === "granted" && document.hidden) {
