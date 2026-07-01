@@ -32,7 +32,7 @@ const origin = req.headers.origin || req.headers.referer;
 
 // Kecualikan webhook dari pengecekan origin karena webhook dikirim oleh server Xoftware/Digiflazz, bukan dari browser
 
-const isWebhook = (req.body && req.body.action === 'webhook') || req.url.includes('webhook');
+const isWebhook = (req.body && req.body.action === 'webhook') || req.url.includes('webhook') || !!req.headers['x-hub-signature'];
 
 
 
