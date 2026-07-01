@@ -13291,7 +13291,7 @@ async function prosesBeliPPOB(skuCode, targetNo, harga, namaProduk) {
                 }, 2000);
 
                 // Matikan paksa radar jika lebih dari 30 detik untuk menghemat memori HP
-                setTimeout(() => { if (window.ppobPolling) clearInterval(window.ppobPolling); }, 30000);
+                setTimeout(() => { if (window.ppobPolling) clearInterval(window.ppobPolling); }, 120000);
             }
         }
 
