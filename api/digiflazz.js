@@ -10,6 +10,18 @@ const supabase = createClient(
 );
 
 export default async function handler(req, res) {
+    // ==========================================
+// 🛡️ PROTEKSI CORS: HANYA IZINKAN DOMAIN SENDIRI
+// ==========================================
+const origin = req.headers.origin || req.headers.referer;
+// Kecualikan webhook dari pengecekan origin karena webhook dikirim oleh server Xoftware/Digiflazz, bukan dari browser
+const isWebhook = (req.body && req.body.action === 'webhook') || req.url.includes('webhook');
+
+if (!isWebhook && origin) {
+    if (!origin.includes('au2idsweetdance.com') && !origin.includes('localhost')) {
+        return res.status(403).json({ success: false, message: 'Akses Ditolak: Domain Tidak Sah!' });
+    }
+}
     if (req.method !== 'POST' && req.method !== 'GET') {
         return res.status(405).json({ error: 'Method tidak diizinkan' });
     }
