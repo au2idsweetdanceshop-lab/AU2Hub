@@ -26,7 +26,7 @@ export default async function handler(req, res) {
 
     const { order_id, product_name, customer_name, amount } = req.body; 
     const baseUrl = process.env.XOFTWARE_BASE_URL;       
-    const apiKey = process.env.XOFTWARE_API_KEY;         
+    const apiKey = process.env.XOFTWARE_API_KEY;          
 
     try {
         let orderData = null;
@@ -112,16 +112,16 @@ export default async function handler(req, res) {
                 else hargaTanpaRekber -= 5000;
             }
 
-            // Hitung harga satuan murni
-            const calculatedUnitPrice = hargaTanpaRekber / qty;
+            // Hitung harga satuan murni (Gunakan Math.round agar aman dari desimal JS)
+            const calculatedUnitPrice = Math.round(hargaTanpaRekber / qty);
 
             if (!validUnitPrices.includes(calculatedUnitPrice)) {
                 console.error(`[HACK ATTEMPT PASAR PLAYER!] Harga Tanpa Rekber: ${hargaTanpaRekber} | QTY: ${qty} | Harga Asli DB: ${validUnitPrices.join(', ')}`);
-                await supabase.from('orders_player').delete().eq('id', order_id);
-                return res.status(400).json({ success: false, message: 'Terdeteksi manipulasi harga! Transaksi otomatis digagalkan demi keamanan.' });
+                // 🛡️ PERBAIKAN: JANGAN HAPUS DATABASE! Cukup tolak permintaannya agar pesanan asli tidak tersabotase.
+                return res.status(400).json({ success: false, message: 'Terdeteksi manipulasi harga! Permintaan QRIS ditolak demi keamanan.' });
             }
             
-            // JIKA LOLOS, TIMPA finalVerifiedPrice DENGAN HARGA PASTI (Meskipun harganya sama, ini untuk keamanan ekstra)
+            // JIKA LOLOS, TIMPA finalVerifiedPrice DENGAN HARGA PASTI
             finalVerifiedPrice = parseInt(orderData.price);
 
         } else if (orderData.product_name && orderData.product_name.startsWith('[DEPOSIT]')) {
@@ -139,7 +139,7 @@ export default async function handler(req, res) {
 
             if (finalVerifiedPrice !== hargaYangSeharusnya) {
                 console.error(`[HACK ATTEMPT DEPOSIT!] User mencoba top up Rp ${nominalMurniDeposit} tapi mengirim harga Rp ${finalVerifiedPrice}. (Seharusnya Rp ${hargaYangSeharusnya})`);
-                await supabase.from('orders').delete().eq('id', order_id);
+                // 🛡️ PERBAIKAN: JANGAN HAPUS DATABASE!
                 return res.status(400).json({ success: false, message: 'Terdeteksi manipulasi nominal pembayaran!' });
             }
             // JIKA LOLOS
@@ -164,7 +164,7 @@ export default async function handler(req, res) {
 
                  if (finalVerifiedPrice !== hargaVipSeharusnya) {
                      console.error(`[HACK ATTEMPT VIP!] Terdeteksi manipulasi harga VIP.`);
-                     await supabase.from('orders').delete().eq('id', order_id);
+                     // 🛡️ PERBAIKAN: JANGAN HAPUS DATABASE!
                      return res.status(400).json({ success: false, message: 'Terdeteksi manipulasi nominal langganan!' });
                  }
                  // JIKA LOLOS
@@ -172,13 +172,11 @@ export default async function handler(req, res) {
              }
         } else {
             // Validasi Umum (HANYA BISA MASUK SINI JIKA BUKAN PASAR, BUKAN VIP, BUKAN DEPOSIT)
-            // KITA TOLAK MUTLAK JIKA ADA PRODUK LAIN SELAIN 3 DI ATAS YANG MASUK!
             console.error(`[HACK ATTEMPT UNKNOWN!] Terdeteksi pembelian produk tidak dikenal: ${orderData.product_name}`);
-            await supabase.from('orders').delete().eq('id', order_id);
+            // 🛡️ PERBAIKAN: JANGAN HAPUS DATABASE!
             return res.status(400).json({ success: false, message: 'Produk tidak valid atau tidak dikenali sistem.' });
         }
         // =================================================================
-
 
         // Persiapan Payload untuk Xoftware PG
         const safeCustomerId = orderData.user_id ? String(orderData.user_id).slice(0, 8) : "UNKNOWN";
@@ -188,7 +186,7 @@ export default async function handler(req, res) {
         const payload = {
             merchant_id: 129, 
             channel_code: "QRISREALTIME", 
-            amount: finalVerifiedPrice, // 🛡️ SEKARANG AMAN! Menggunakan harga yang SUDAH DIPASTIKAN VALID
+            amount: finalVerifiedPrice, 
             ref_id: orderData.id, 
             fee_direction: "merchant", 
             notify_url: "https://www.au2idsweetdance.com/api/webhook",
