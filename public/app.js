@@ -2113,18 +2113,15 @@ window.addEventListener('popstate', () => {
     const hashtagGrid = document.getElementById('modal-hashtag-grid');
     if (hashtagGrid && !hashtagGrid.classList.contains('hidden') && !hashtagGrid.classList.contains('translate-x-full')) {
         closeHashtagGrid(true);
-        return;
     }
 
     if (document.body.classList.contains('video-focused')) {
         toggleFloatingMode(true);
-        return;
     }
 
     const floatingPlayer = document.getElementById('floating-video-player');
     if (floatingPlayer && !floatingPlayer.classList.contains('hidden')) {
         closeFloatingVideo(true);
-        return;
     }
 
     if (isPopupClosed) return;
@@ -2255,6 +2252,13 @@ function openUploadModal() {
         toggleFloatingMode(true);
         history.replaceState(null, null, '#' + tabSebelumnya);
     }
+    
+    // 🔥 PERBAIKAN: Matikan (Pause) semua video feed di latar belakang
+    // agar suaranya tidak mengganggu saat user sedang fokus upload
+    document.querySelectorAll('.video-player, .float-video-player').forEach(v => {
+        v.pause();
+    });
+
     history.pushState({ popup: 'upload' }, null, '#upload');
     const m = document.getElementById('modal-upload');
     
@@ -8872,10 +8876,26 @@ let htmlDataPesanan = escapeHTML(autoDeliveryContent).replace(
                 else if (namaProduk.match(/(\d+)\s+Bulan/i)) durasiSementara = parseInt(namaProduk.match(/(\d+)\s+Bulan/i)[1]) * 30;
                 else if (namaProduk.match(/(\d+)\s+Hari/i)) durasiSementara = parseInt(namaProduk.match(/(\d+)\s+Hari/i)[1]);
                 
+                // 🔥 PERBAIKAN: Update data lokal secara Real-Time agar langsung aktif!
+                if (userProfile) {
+                    userProfile.is_seller = true;
+                    let newExp = new Date();
+                    // Jika sebelumnya sudah VIP dan masih hidup, tambahkan durasinya
+                    if (userProfile.seller_expired_at && new Date(userProfile.seller_expired_at) > new Date()) {
+                        newExp = new Date(userProfile.seller_expired_at);
+                    }
+                    newExp.setDate(newExp.getDate() + durasiSementara);
+                    userProfile.seller_expired_at = newExp.toISOString();
+                }
+
                 localStorage.setItem('optimistic_vip', `${currentUser.id}_${durasiSementara}`);
                 const btnTutup = wadahPembayaran.querySelector('button[onclick="tutupLayarSuksesDanRefresh()"]');
                 if (btnTutup) {
                     btnTutup.onclick = () => {
+                        // Tutup layar pembayaran
+                        const layarPembayaran = document.getElementById('pembayaran');
+                        if (layarPembayaran) layarPembayaran.classList.remove('active');
+                        
                         history.back(); 
                         setTimeout(() => { switchTab('toko'); loadTokoSaya(); }, 300);
                     };
@@ -14033,11 +14053,11 @@ async function autoSetorKeNikky(nominal, keterangan) {
 // FUNGSI PENUTUP LAYAR SUKSES PPOB (ANTI NYANGKUT)
 // ==========================================
 window.tutupLayarSuksesPPOB = (btnElement) => {
-    // 1. Kunci tombol dan beri efek loading agar user tahu sudah terklik
+    // 1. Kunci tombol dan beri efek loading
     btnElement.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Menutup...';
     btnElement.disabled = true;
 
-    // 2. Sambil menutup, perbarui saldo di latar belakang
+    // 2. Perbarui saldo di latar belakang
     if (typeof updateSaldoGlobal === 'function') updateSaldoGlobal();
     if (typeof fetchProfile === 'function') fetchProfile();
 
@@ -14051,11 +14071,14 @@ window.tutupLayarSuksesPPOB = (btnElement) => {
             layarPembayaran.classList.remove('active');
             layarPembayaran.style.opacity = '1'; // Reset untuk penggunaan berikutnya
             
-            // 4. Setelah layar hilang, baru eksekusi tombol "Back" HP
-            history.back();
+            // 🔥 PERBAIKAN: Jangan bergantung pada history.back() yang rawan blank
+            // Paksa sistem untuk mengaktifkan tab layanan
+            switchTab('layanan');
+            history.replaceState(null, null, '#layanan');
         }, 200);
     } else {
-        history.back();
+        switchTab('layanan');
+        history.replaceState(null, null, '#layanan');
     }
 };
 
