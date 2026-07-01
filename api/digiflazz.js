@@ -174,8 +174,7 @@ export default async function handler(req, res) {
 
             // Jika Langsung Gagal dari Digiflazz
             if (digiData.data && digiData.data.status === "Gagal") {
-                // 🛡️ KEAMANAN: Kembalikan saldo dengan RPC yang aman (tambah_saldo) jika Anda memilikinya,
-                // Jika tidak, RLS Anda (service_role) cukup aman melakukan update ini.
+                // 🛡️ KEAMANAN: Kembalikan saldo dengan RPC yang aman (tambah_saldo)
                 await supabase.rpc('tambah_saldo', { p_user_id: user_id, p_jumlah: hargaJual });
                 
                 await supabase.from('wallet_transactions').insert({
@@ -314,9 +313,10 @@ export default async function handler(req, res) {
         try {
             const digiflazzSecret = process.env.DIGIFLAZZ_WEBHOOK_SECRET; 
 
-            // 🛡️ PERBAIKAN VERCEL: Validasi menggunakan Secret Key di URL
-            // (Menggantikan HMAC SHA1 karena Vercel otomatis merusak format raw body)
-            const urlSecret = req.query.secret;
+            // 🔥 JURUS ANTI-VERCEL BUG: Ekstrak parameter 'secret' secara manual dari URL mentah
+            const urlMentah = req.url || '';
+            const ekstrakQuery = new URLSearchParams(urlMentah.split('?')[1] || '');
+            const urlSecret = req.query.secret || ekstrakQuery.get('secret');
 
             if (!urlSecret || urlSecret !== digiflazzSecret) {
                 console.error("🚨 Webhook PPOB Ditolak: Secret pada URL tidak valid/kosong!");
