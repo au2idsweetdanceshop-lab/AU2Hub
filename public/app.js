@@ -1,5 +1,4 @@
 let currentUser = null, userProfile = null, isAuthLogin = true;
-
 let tabSebelumnya = 'home';
 let activeGroupId = null;
 let activeGroupRole = 'member';
@@ -8,14 +7,12 @@ let globalGroupList = [];
 let messageToForward = "";
 let dataRipperGlobal = [], isRipperExpanded = localStorage.getItem('statusLihatSemua') === 'true';
 let viewedUserId = null;
-
 let allVideosData = [];
 let newUploads = [];
 let obs = null, activeVideoId = null, lastTap = 0, isGlobalMuted = false;
 let replyingToId = null, replyingToName = null;
 let currentVideoIndex = 0;
 const BATCH_SIZE = 5;
-
 let activeChatUserId = null;
 let messageSubscription = null;
 let globalMessageSubscription = null;
@@ -23,7 +20,6 @@ let presenceChannel = null;
 let onlineUsersMap = new Map();
 let selectedMessageId = null;
 let blockedUsersList = [];
-// Memori untuk menyimpan ID siapa saja yang sudah kita follow
 let myFollowingList = [];
 
 function debounce(func, wait) {
@@ -34,22 +30,12 @@ function debounce(func, wait) {
     };
 }
 
-// ==========================================
-// FUNGSI AUTO-REFRESH SETELAH BAYAR
-// ==========================================
 window.tutupLayarSuksesDanRefresh = () => {
-    // Cukup panggil back, proses pembersihan dan refresh sudah kita pindahkan ke event 'popstate'
     history.back(); 
 };
 
-// ==========================================
-// TEKS GLOBAL TABEL FEE (BIAR GAK CAPEK NGETIK ULANG)
-// ==========================================
 const TEKS_TABEL_FEE = "Tabel Fee Seller AU2Hub:\n\n🔹 Harga ≤ Rp 10.000 = Potongan Rp 500\n🔹 Harga ≤ Rp 25.000 = Potongan Rp 1.000\n🔹 Harga ≤ Rp 50.000 = Potongan Rp 2.000\n🔹 Harga ≤ Rp 99.999 = Potongan Rp 3.000\n🔹 Harga ≤ Rp 499.999 = Potongan Rp 10.000\n🔹 Harga ≤ Rp 1.499.999 = Potongan Rp 20.000\n🔹 Harga ≤ Rp 1.999.999 = Potongan Rp 25.000\n🔹 Harga ≥ Rp 2.000.000 = Potongan Rp 35.000";
 
-// ==========================================
-// FUNGSI TOGGLE PILIHAN BIAYA ADMIN (SELLER / PEMBELI)
-// ==========================================
 function setFeeBearer(bearer, mode) {
     const inputId = mode === 'jualan' ? 'jualan-fee-bearer' : 'edit-fee-bearer';
     const btnSeller = mode === 'jualan' ? document.getElementById('btn-fee-seller') : document.getElementById('btn-edit-fee-seller');
@@ -64,24 +50,18 @@ function setFeeBearer(bearer, mode) {
     if (bearer === 'seller') {
         btnSeller.className = activeClass;
         btnPembeli.className = inactiveClass;
-        // Panggil variabel TEKS_TABEL_FEE langsung tanpa tanda kutip
         infoText.innerHTML = `*Pendapatan Anda akan dipotong sesuai <span onclick="customAlert(TEKS_TABEL_FEE)" class="underline cursor-pointer font-bold hover:text-brand-info text-white">Tabel Fee</span>. Pembeli melihat harga normal.`;
     } else {
         btnPembeli.className = activeClass;
         btnSeller.className = inactiveClass;
-        // Panggil variabel TEKS_TABEL_FEE langsung tanpa tanda kutip
         infoText.innerHTML = `*Anda menerima pendapatan UTUH. Harga ke pembeli otomatis dinaikkan menyesuaikan <span onclick="customAlert(TEKS_TABEL_FEE)" class="underline cursor-pointer font-bold hover:text-brand-info text-white">Tabel Fee</span>.`;
     }
 }
 
-
-// Helper: Menghitung bersih pencairan jika buyer yang nanggung biaya
 function hitungPendapatanBersih(hargaGateway, ditanggungPembeli, namaProduk = "") {
     let hargaAktual = hargaGateway;
 
-    // 1. Saring Jatah Admin Rekber: Jika pembeli pakai voucher rekber
     if (namaProduk.includes('[+Rekber]')) {
-        // Amankan jatah admin berdasarkan rentang harga tagihan (Reverse Logic)
         if (hargaAktual >= 2035000) hargaAktual -= 35000;
         else if (hargaAktual >= 1525000) hargaAktual -= 25000;
         else if (hargaAktual >= 520000) hargaAktual -= 20000;
@@ -89,10 +69,8 @@ function hitungPendapatanBersih(hargaGateway, ditanggungPembeli, namaProduk = ""
         else hargaAktual -= 5000;
     }
 
-    // 2. Hapus markup QRIS Xoftware
     const hargaBase = Math.round((hargaAktual - 500) / 1.007); 
     
-    // 3. Kalkulasi jatah final Seller
     if (ditanggungPembeli) {
         if (hargaBase <= 10500) return hargaBase - 500;   // <-- PENYESUAIAN MIKRO BARU
         if (hargaBase <= 26000) return hargaBase - 1000;
@@ -107,9 +85,6 @@ function hitungPendapatanBersih(hargaGateway, ditanggungPembeli, namaProduk = ""
     }
 }
 
-// ==========================================
-// RUMUS TABEL FEE SELLER MERAKYAT (AU2HUB)
-// ==========================================
 function hitungPotonganSeller(harga) {
     if (harga <= 10000) return 500
     if (harga <= 25000) return 1000;
@@ -118,26 +93,18 @@ function hitungPotonganSeller(harga) {
     if (harga <= 499999) return 10000;
     if (harga <= 1499999) return 20000
     if (harga <= 1999999) return 25000;
-    return 35000; // Harga 2 juta ke atas
+    return 35000;
 }
 
-
-// ==========================================
-// RUMUS FEE ADMIN REKBER (KHUSUS PEMBELI)
-// Berdasarkan tabel 69156.jpg
-// ==========================================
 function hitungFeeRekber(harga) {
     if (harga <= 99999) return 5000;
     if (harga <= 499999) return 10000;
-    if (harga <= 1499999) return 20000; // Range 500k sampai di bawah 1.5jt
-    if (harga <= 1999999) return 25000; // Range 1.5jt sampai di bawah 2jt
-    return 35000;                       // Range 2jt ke atas
+    if (harga <= 1499999) return 20000;
+    if (harga <= 1999999) return 25000;
+    return 35000;
 }
 
-
-
-    // Script mandiri agar splash screen 100% dijamin hilang walau script utama error
-    let logoInterval; // 🔥 [BARU] Siapkan wadah untuk mesin interval
+    let logoInterval;
 
     function removeSplashScreen() {
         const splashScreen = document.getElementById('custom-splash');
@@ -146,25 +113,22 @@ function hitungFeeRekber(harga) {
             splashScreen.style.transform = 'scale(1.1)';
             setTimeout(() => {
                 splashScreen.remove();
-                clearInterval(logoInterval); // 🔥 [BARU] Matikan mesin interval agar HP tidak disedot kuotanya
+                clearInterval(logoInterval);
             }, 500);
         }
     }
-    // Hilang dalam 1.5 detik saat web dibaca
+
     document.addEventListener('DOMContentLoaded', () => { setTimeout(removeSplashScreen, 1500); });
-    // Jaring pengaman mutlak
     setTimeout(removeSplashScreen, 3500);
     const logoElement = document.getElementById('splash-logo');
-    // Daftar link gambar promosi Anda
     const promoImages = [
         "https://nos.wjv-1.neo.id/au2hub/Picsart_26-05-22_23-46-22-498.png",
     ];
     
     let currentIndex = 0;
 
-    // Fungsi untuk mengganti gambar dengan efek pudar
     function rotateLogo() {
-        if (!logoElement) return; // 🔥 [BARU] Cegah error jika elemen sudah terhapus
+        if (!logoElement) return;
 
         currentIndex = (currentIndex + 1) % promoImages.length;
         logoElement.style.opacity = '0';
@@ -177,11 +141,10 @@ function hitungFeeRekber(harga) {
         }, 500);
     }
 
-    // Ganti gambar setiap 1.5 detik (sesuaikan dengan kecepatan animasi Anda)
-    logoInterval = setInterval(rotateLogo, 1500); // 🔥 [BARU] Masukkan mesin interval ke dalam wadah
-// ---- FUNGSI UNTUK LIGHTBOX (GAMBAR DI CHAT & PASAR) ----
+    logoInterval = setInterval(rotateLogo, 1500);
+
 function openLightbox(imgUrl) {
-    history.pushState({ popup: 'lightbox' }, null, '#lightbox'); // Daftarkan ke history HP
+    history.pushState({ popup: 'lightbox' }, null, '#lightbox');
     const modal = document.getElementById('lightbox-modal');
     const img = document.getElementById('lightbox-img');
     img.src = imgUrl;
@@ -200,7 +163,6 @@ function closeLightbox(dariTombolBack = false) {
     img.classList.remove('scale-100');
     img.classList.add('scale-95');
     
-    // Sinkronisasi tombol Back HP
     if (!dariTombolBack && window.location.hash === '#lightbox') {
         history.back();
     }
@@ -212,8 +174,6 @@ function closeLightbox(dariTombolBack = false) {
     }, 300);
 }
 
-
-// ---- DETEKSI KEMBALI SAAT UPLOAD (BEFOREUNLOAD) ----
 let isUploading = false;
 window.addEventListener('beforeunload', function (e) {
 if (isUploading) {
@@ -227,20 +187,18 @@ let privasiVideoAktif = 'Publik';
 function bukaPilihanPrivasi() {
     const modal = document.getElementById('modal-privasi-video');
     modal.classList.remove('hidden');
-    // Beri jeda sangat sedikit agar efek geser (slide-up) terlihat mulus
     setTimeout(() => modal.classList.remove('translate-y-full'), 10);
 }
 
 function tutupPilihanPrivasi() {
     const modal = document.getElementById('modal-privasi-video');
     modal.classList.add('translate-y-full');
-    // Beri waktu laci turun dulu sebelum benar-benar dihilangkan (hidden)
     setTimeout(() => modal.classList.add('hidden'), 300);
 }
 
 function bukaPratinjauVideo(e) {
-    e.preventDefault();   // Mencegah file manager/galeri terbuka lagi
-    e.stopPropagation();  // Mencegah klik tembus ke kotak label
+    e.preventDefault();
+    e.stopPropagation();
 
     const videoKecil = document.getElementById('video-preview-element');
     const videoFull = document.getElementById('video-pratinjau-full');
@@ -248,15 +206,12 @@ function bukaPratinjauVideo(e) {
 
     if (!videoKecil.src) return;
 
-    // 🔥 SUNTIKAN RADAR: Agar tombol back HP aktif
     history.pushState({ popup: 'pratinjau' }, null, '#pratinjau');
 
-    // Salin video dan buka mode full screen
     videoFull.src = videoKecil.src;
     modalPratinjau.classList.remove('hidden');
     modalPratinjau.classList.add('flex');
     
-    // Mainkan video dengan fitur kontrol & bersuara
     videoFull.muted = false;
     videoFull.play();
 }
@@ -265,22 +220,18 @@ function tutupPratinjauVideo(dariTombolBack = false) {
     const videoFull = document.getElementById('video-pratinjau-full');
     const modalPratinjau = document.getElementById('modal-pratinjau');
     
-    // SINKRONISASI TOMBOL BACK HP
     if (!dariTombolBack && window.location.hash === '#pratinjau') {
         history.back();
     }
 
-    // Matikan pemutar dan tutup layar
     videoFull.pause();
     videoFull.src = '';
     modalPratinjau.classList.add('hidden');
     modalPratinjau.classList.remove('flex');
 }
 
-
 function setPrivasiVideo(jenis, ikon) {
     privasiVideoAktif = jenis;
-    // Ubah teks dan ikon di menu upload sesuai pilihan user
     document.getElementById('label-privasi-teks').innerHTML = `${jenis} <i class="fas fa-chevron-right text-[10px]"></i>`;
     document.getElementById('ikon-privasi-utama').className = `fas ${ikon} text-xs`;
     tutupPilihanPrivasi();
@@ -340,11 +291,10 @@ function customPrompt(title, defaultValue = '') {
         inputEl.focus();
 
         modal.promptResolve = resolve;
-        delete modal.promptResult; // Bersihkan memori klik sebelumnya
-
+        delete modal.promptResult;
         btnOk.onclick = () => {
-            modal.promptResult = inputEl.value; // Simpan nilainya di memori
-            if (window.location.hash === '#prompt') history.back(); // Biarkan sistem HP yang menutupnya
+            modal.promptResult = inputEl.value;
+            if (window.location.hash === '#prompt') history.back();
             else {
                 modal.classList.add('hidden'); modal.classList.remove('flex');
                 if (modal.promptResolve) { modal.promptResolve(modal.promptResult); modal.promptResolve = null; }
@@ -401,18 +351,11 @@ function customAlert(title) {
         const modal = document.getElementById('modal-alert');
         const titleEl = document.getElementById('alert-title');
         const btnOk = document.getElementById('alert-ok');
-
-        // 1. CUCI BERSIH TEKS DARI SCRIPT JAHAT DULU!
         let safeTitle = escapeHTML(title);
-
-        // 2. BARU UBAH LINK MENJADI BISA DIKLIK
         const urlRegex = /(https?:\/\/[^\s]+)/g;
         let formattedText = safeTitle.replace(urlRegex, (url) => `<a href="${url}" target="_blank" class="text-brand-info underline font-bold">${url}</a>`);
-        
         titleEl.innerHTML = formattedText.replace(/\n/g, "<br>");
-
         history.pushState({ popup: 'alert' }, null, '#alert');
-
         modal.classList.remove('hidden');
         modal.classList.add('flex');
         modal.alertResolve = resolve;
@@ -426,7 +369,6 @@ function customAlert(title) {
         };
     });
 }
-
 
 function togglePassword(inputId, iconId) {
 const input = document.getElementById(inputId);
@@ -446,7 +388,6 @@ const SUPABASE_URL = "https://divckiqkodtqudcoxkjz.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRpdmNraXFrb2R0cXVkY294a2p6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgzNDY0MzIsImV4cCI6MjA5MzkyMjQzMn0.z_FIS_rpDQPQ7nNWpuvabH7qDYgu7uq6TlYj9LSOcJQ";
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// FUNGSI PEMBERSIH XSS GLOBAL
 function escapeHTML(str) {
     if (!str) return '';
     return String(str)
@@ -457,7 +398,6 @@ function escapeHTML(str) {
         .replace(/'/g, "&#39;");
 }
 
-// Fungsi untuk menarik data dari Supabase saat pertama kali login
 async function fetchMyFollowing() {
     if (!currentUser) return;
     try {
@@ -474,52 +414,40 @@ async function fetchMyFollowing() {
     }
 }
 
-let typingTimer; // VARIABEL TYPING INDICATOR
-
-let currentRoomMembers = []; // Memori untuk nyimpen anggota grup pas ngetik @
-
-        let globalFaqData = [];
-        let isInfoLoaded = false;
+let typingTimer;
+let currentRoomMembers = [];
+let globalFaqData = [];
+let isInfoLoaded = false;
 
         async function loadInfoLayanan(forceRefresh = false) {
             if (isInfoLoaded && !forceRefresh) return;
-            
             const eventContainer = document.getElementById('dynamic-event-container');
             const faqContainer = document.getElementById('faq-container');
-            
             if (forceRefresh) {
                 eventContainer.innerHTML = '<div class="animate-pulse bg-brand-card h-40 rounded-3xl border border-white/5 flex items-center justify-center"><i class="fas fa-spinner fa-spin text-brand-accent text-3xl"></i></div>';
                 faqContainer.innerHTML = '<div class="text-center py-6"><i class="fas fa-spinner fa-spin text-brand-info text-2xl"></i></div>';
             }
-
             try {
                 const configRes = await fetch('/api/get-config');
                 const config = await configRes.json();
                 if (!config.gasUrl) throw new Error("Link GAS tidak ditemukan");
-
                 const res = await fetch(`${config.gasUrl}?action=get_info`);
                 const data = await res.json();
-
                 if (data.status === 'success') {
-                    // 1. RENDER MULTIPLE BANNER EVENT (SLIDER LUAR AUTOMATIC)
                     if (data.info && data.info.length > 0) {
                         let carouselHTML = `
                         <div class="relative w-full overflow-hidden rounded-[2rem] pb-8 pt-1">
                             <div id="info-image-carousel" onscroll="updateInfoCarouselDots()" class="flex overflow-x-auto hide-scroll snap-x snap-mandatory gap-4 relative px-1 items-stretch">
                         `;
-
                         carouselHTML += data.info.map((evt, idx) => {
-                            // AMAN KAN DATA GAMBAR MULTIPLE DARI GOOGLE SHEETS
                             let rawGambar = evt.link_gambar || evt.gambar || "";
                             let arrGambar = [];
-                            
                             if (typeof rawGambar === 'string' && rawGambar.trim() !== "") {
                                 arrGambar = rawGambar.split(/[\n,]+/).map(url => url.trim()).filter(url => url !== "");
                             } else if (Array.isArray(rawGambar)) {
                                 arrGambar = rawGambar.filter(url => url && url.trim() !== "");
                             }
 
-                            // GENERATE SLIDER DALAM (SLIDER GAMBAR) JIKA ADA > 0 GAMBAR
                             let gambarSliderHTML = '';
                             if (arrGambar.length > 0) {
                                 gambarSliderHTML = `
@@ -544,7 +472,6 @@ let currentRoomMembers = []; // Memori untuk nyimpen anggota grup pas ngetik @
                                 `;
                             }
 
-                            // --- LOGIKA POTONG TEKS DESKRIPSI (BISA KLIK BUKA/TUTUP) ---
                             let deskripsiTeks = evt.deskripsi || "";
                             let isPanjang = deskripsiTeks.length > 120;
                             let deskripsiHTML = isPanjang
@@ -586,7 +513,6 @@ let currentRoomMembers = []; // Memori untuk nyimpen anggota grup pas ngetik @
                         eventContainer.innerHTML = '<div class="text-center py-8 text-xs text-gray-500 bg-brand-card rounded-3xl border border-white/5"><i class="fas fa-box-open text-3xl mb-2 opacity-50"></i><br>Belum ada pengumuman terbaru.</div>';
                     }
 
-                    // 2. RENDER FAQ
                     if (data.faq && data.faq.length > 0) {
                         globalFaqData = data.faq.map(f => ({ t: f.pertanyaan, j: f.jawaban }));
                         renderFaqs(globalFaqData);
@@ -594,7 +520,6 @@ let currentRoomMembers = []; // Memori untuk nyimpen anggota grup pas ngetik @
                         faqContainer.innerHTML = '<div class="text-center py-6 text-xs text-gray-500 bg-brand-card rounded-2xl border border-white/5">FAQ kosong.</div>';
                     }
 
-                    // 3. RENDER BANTUAN CEPAT (DINAMIS DARI SPREADSHEET)
                     if (data.bantuan && data.bantuan.length > 0) {
                         const bantuanContainer = document.getElementById('bantuan-cepat-container');
                         let htmlBantuan = '';
@@ -605,20 +530,15 @@ let currentRoomMembers = []; // Memori untuk nyimpen anggota grup pas ngetik @
                             let warna = item.Warna || item.warna || 'brand-info'; 
                             let tipeAksi = (item.TipeAksi || item.tipe_aksi || '').toLowerCase();
                             let targetAksi = item.TargetAksi || item.target_aksi || '';
-                            
                             let atributKlik = '';
-                            let tagPembuka = 'a'; // Semua tombol dipaksa jadi tag 'a' (link) agar aman
-                            
+                            let tagPembuka = 'a';
                             if (tipeAksi === 'alert' || tipeAksi === 'popup') {
                                 let safeTarget = escapeHTML(targetAksi).replace(/&#39;/g, "\\'").replace(/\n/g, "\\n");
                                 atributKlik = `href="javascript:void(0)" onclick="customAlert('${safeTarget}')"`;
-                                
                             } else if (tipeAksi === 'tab') {
                                 atributKlik = `href="javascript:void(0)" onclick="switchTab('${targetAksi}')"`;
-                                
                             } else if (tipeAksi === 'link') {
                                 let amanUrl = targetAksi;
-                                // Otomatis tambah https:// kalau di spreadsheet lupa ditulis
                                 if (!amanUrl.startsWith('http')) {
                                     amanUrl = 'https://' + amanUrl;
                                 }
@@ -635,9 +555,7 @@ let currentRoomMembers = []; // Memori untuk nyimpen anggota grup pas ngetik @
                         });
 
                         if (bantuanContainer) bantuanContainer.innerHTML = htmlBantuan;
-
                     }
-
                     isInfoLoaded = true;
                     if(forceRefresh) showToast("Info berhasil diperbarui!", "success");
                 } else {
@@ -650,18 +568,13 @@ let currentRoomMembers = []; // Memori untuk nyimpen anggota grup pas ngetik @
             }
         }
 
-
-
         function updateInfoCarouselDots() {
             const carousel = document.getElementById('info-image-carousel'); 
             const dots = document.querySelectorAll('.info-dot-indicator');
             if (!carousel || dots.length === 0) return; 
-            
-            // Dapatkan index aktif berdasarkan jarak scroll dibagi lebar 1 kartu info
             const scrollLeft = carousel.scrollLeft;
             const cardWidth = carousel.firstElementChild ? carousel.firstElementChild.clientWidth : carousel.clientWidth;
-            let activeIndex = Math.round(scrollLeft / (cardWidth + 16)); // 16 adalah ukuran gap CSS
-            
+            let activeIndex = Math.round(scrollLeft / (cardWidth + 16));
             activeIndex = Math.max(0, Math.min(activeIndex, dots.length - 1));
             dots.forEach((dot, index) => { 
                 if (index === activeIndex) { dot.className = "info-dot-indicator h-1.5 rounded-full transition-all duration-300 w-4 bg-brand-accent"; } 
@@ -670,21 +583,16 @@ let currentRoomMembers = []; // Memori untuk nyimpen anggota grup pas ngetik @
         }
         
         function updateInnerDots(container) {
-            // Amankan pencarian elemen container dots internal
             const parentCard = container.closest('.relative.w-full.h-44');
             if (!parentCard) return;
             const dotsWrapper = parentCard.querySelector('.inner-dots-container');
             if (!dotsWrapper) return;
-            
             const dots = dotsWrapper.querySelectorAll('.inner-dot');
             if (dots.length === 0) return;
-            
             const scrollLeft = container.scrollLeft;
             const imgWidth = container.clientWidth;
             let activeIndex = Math.round(scrollLeft / imgWidth); 
-            
             activeIndex = Math.max(0, Math.min(activeIndex, dots.length - 1));
-            
             dots.forEach((dot, index) => { 
                 if (index === activeIndex) { 
                     dot.className = "inner-dot h-1.5 rounded-full transition-all duration-300 w-4 bg-brand-accent"; 
@@ -694,10 +602,6 @@ let currentRoomMembers = []; // Memori untuk nyimpen anggota grup pas ngetik @
             });
         }
 
-        
-
-
-// FORMAT TEKS (Otomatis deteksi Link, @Mention dan #Hashtag)
 function formatCaption(text) {
     if(!text) return '';
     let formatted = text
@@ -707,41 +611,26 @@ function formatCaption(text) {
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&#39;");
 
-    // 1. [BARU] Deteksi Link URL (http:// atau https://)
     const urlRegex = /(https?:\/\/[^\s]+)/g;
     formatted = formatted.replace(urlRegex, (url) => {
-        // event.stopPropagation() sangat penting agar saat link diklik, 
-        // teks caption tidak malah memanjang/memendek (expand)
         return `<a href="${url}" target="_blank" onclick="event.stopPropagation()" class="text-brand-info underline hover:text-white transition-colors font-bold">${url}</a>`;
     });
 
-    // 2. Deteksi Hashtag (#tagar) - Warna Biru
     formatted = formatted.replace(/#(\w+)/g, '<span onclick="event.stopPropagation(); cariBerdasarkanTagar(\'$1\')" class="font-bold text-brand-info hover:underline cursor-pointer">#$1</span>');
-
-    // 3. Deteksi Mention (@username) - Warna Pink/Accent
     formatted = formatted.replace(/@(\w+)/g, '<span onclick="event.stopPropagation(); viewUserProfileByNickname(\'$1\')" class="font-bold text-brand-accent hover:underline cursor-pointer">@$1</span>');
-
-    // 4. Deteksi Enter (Baris baru)
     formatted = formatted.replace(/\n/g, "<br>");
-    
     return formatted;
 }
 
-
-// FUNGSI KLIK MENTION: Mencari User ID berdasarkan Nickname
 async function viewUserProfileByNickname(nickname) {
     showToast("Mencari pengguna...", "info");
-    
     try {
-        // Cari di database Supabase yang nicknamenya mirip (ilike = tidak peduli huruf besar/kecil)
         const { data, error } = await supabaseClient
             .from('profiles')
             .select('id')
             .ilike('nickname', nickname)
             .single();
-            
         if (data && data.id) {
-            // Jika ketemu, buka profilnya
             viewUserProfile(data.id);
         } else {
             showToast(`Pengguna @${nickname} tidak ditemukan.`, "error");
@@ -752,44 +641,31 @@ async function viewUserProfileByNickname(nickname) {
 }
 
 function cariBerdasarkanTagar(tagar) {
-    // 1. Tutup layar story yang sedang aktif jika ada
     const storyModal = document.getElementById('story-viewer-modal');
     if (storyModal && !storyModal.classList.contains('hidden')) {
         closeStoryViewer();
     }
-
-    // [BARU] 2. Tutup mode fokus Feed Utama secara halus jika aktif
     if (document.body.classList.contains('video-focused')) {
-        toggleFloatingMode(true); // true = abaikan history agar URL tidak bentrok
+        toggleFloatingMode(true);
     }
-
-    // [BARU] 3. Tutup Floating Player (Misal jika diklik dari video profil)
     const floatingPlayer = document.getElementById('floating-video-player');
     if (floatingPlayer && !floatingPlayer.classList.contains('hidden')) {
         closeFloatingVideo(true); 
     }
-
-    // 4. Filter data video yang caption-nya mengandung hashtag tersebut
     const videoDitemukan = allVideosData.filter(v => 
         v.caption && v.caption.toLowerCase().includes('#' + tagar.toLowerCase())
     );
-
     if (videoDitemukan.length === 0) {
         showToast(`Belum ada video dengan tagar #${tagar}`, "error");
         return;
     }
 
-    // 5. TAMPILKAN GRID MODAL HASHTAG
     const modal = document.getElementById('modal-hashtag-grid');
     const grid = document.getElementById('hashtag-video-grid');
     const title = document.getElementById('hashtag-grid-title');
     const count = document.getElementById('hashtag-grid-count');
-
-    // Set Teks Header
     title.innerText = '#' + tagar;
     count.innerText = videoDitemukan.length + ' Video Terkait';
-    
-    // Render Grid (dibalik agar yang terbaru di atas)
     const reversedVideos = [...videoDitemukan].reverse();
     grid.innerHTML = reversedVideos.map((vid, index) => {
         return `
@@ -804,73 +680,48 @@ function cariBerdasarkanTagar(tagar) {
         `;
     }).join('');
 
-    // Hentikan video latar belakang di feed utama agar tidak bocor suaranya
     document.querySelectorAll('.video-player, .float-video-player').forEach(v => v.pause());
-
-    // Buka Modal
     modal.classList.remove('hidden');
     modal.classList.add('flex');
-    
-    // [PENTING] Beri delay agar animasi CSS geser laci dapat tereksekusi dengan mulus
+ 
     setTimeout(() => {
         modal.classList.remove('translate-x-full');
     }, 50);
-
-    // Beri jejak sejarah URL (untuk tombol Back HP)
     history.pushState({ popup: 'hashtag_grid' }, null, '#tagar');
 }
 
-
-// FUNGSI PENUTUP LAYAR GRID
 function closeHashtagGrid(dariTombolBack = false) {
     const modal = document.getElementById('modal-hashtag-grid');
     modal.classList.add('translate-x-full');
-    
     setTimeout(() => {
         modal.classList.add('hidden');
         modal.classList.remove('flex');
     }, 300);
-
     if (!dariTombolBack && window.location.hash === '#tagar') {
         history.back();
     }
 }
 
 function playHashtagVideo(tagar, startIndex) {
-    // 1. Ambil video dengan hashtag yang sama
     const videoDitemukan = allVideosData.filter(v => 
         v.caption && v.caption.toLowerCase().includes('#' + tagar.toLowerCase())
     );
     if(videoDitemukan.length === 0) return;
-
-    // 2. Balikkan urutan agar sinkron dengan grid
     currentProfileVideos = [...videoDitemukan].reverse();
-
-    // 3. Tentukan index target klik
     let targetIndex = parseInt(startIndex) || 0;
-
-    // Bersihkan layar floating player
     const container = document.getElementById('floating-feed-container');
     container.innerHTML = '';
     container.scrollTop = 0;
-
-    // [BARU] Paksa suara menyala (unmute) otomatis saat video hashtag diklik
     isGlobalMuted = false;
-
-    // Tampilkan floating player
     document.getElementById('floating-video-player').classList.remove('hidden');
     document.getElementById('floating-video-player').classList.add('flex');
-    document.getElementById('floating-video-player').style.opacity = '1'; // <--- TAMBAHKAN BARIS INI
-
+    document.getElementById('floating-video-player').style.opacity = '1';
     if(floatObs) floatObs.disconnect();
     setupFloatVideoObserver();
-
-    // 4. Render batch video agar mulus (target yang diklik + 2 di bawahnya)
     profileFeedIndex = 0;
     let amountToLoad = targetIndex + 3;
     renderProfileVideoBatch(amountToLoad);
 
-    // 5. Scroll otomatis tepat ke video yang baru diklik
     setTimeout(() => {
         const targetCard = container.children[targetIndex];
         if (targetCard) {
@@ -878,11 +729,8 @@ function playHashtagVideo(tagar, startIndex) {
         }
     }, 10);
 
-    // Tambahkan jejak URL agar tombol back HP tahu kalau sedang nonton video hashtag
     history.pushState({ popup: 'floating_video_hashtag' }, null, '#play_tagar');
 }
-
-
 
 async function fetchBlockedUsers() {
 if(!currentUser) return;
@@ -921,8 +769,6 @@ console.error("Error unread messages", e);
 
 function initGlobalMessageListener() {
     if (!currentUser || globalMessageSubscription) return;
-
-    // 🔥 [PERBAIKAN BUG 2] Tarik daftar ID Grup di awal agar notif grup tidak bergantung pada laci inbox
     let myGroupIds = [];
     supabaseClient.from('group_members').select('group_id').eq('user_id', currentUser.id)
         .then(({data}) => {
@@ -938,25 +784,16 @@ function initGlobalMessageListener() {
         }, payload => {
             const msg = payload.new;
             const isForMe = msg.receiver_id === currentUser.id;
-            
-            // Gabungkan pencarian dari myGroupIds (database) dan globalGroupList (cache UI)
             const isForMyGroup = msg.group_id && (myGroupIds.includes(msg.group_id) || globalGroupList.some(g => g.id === msg.group_id));
-
-            // Jika pesan untuk saya atau grup saya, dan pengirimnya bukan saya, dan pengirimnya tidak diblokir
             if ((isForMe || isForMyGroup) && msg.sender_id !== currentUser.id && !blockedUsersList.includes(msg.sender_id)) {
-                
-                // 🔥 [PERBAIKAN BUG 1] Cek apakah user sedang menatap chat room yang persis sama?
                 const isRoomOpen = document.getElementById('chat-room-view').classList.contains('flex');
                 const isChattingWithSender = !msg.group_id && activeChatUserId === msg.sender_id;
                 const isChattingInGroup = msg.group_id && activeGroupId === msg.group_id;
-
                 if (isRoomOpen && (isChattingWithSender || isChattingInGroup)) {
-                    // Jika user sedang di dalam room, update unread aja secara senyap, JANGAN MUNCULKAN TOAST!
                     checkGlobalUnreadMessages();
                     return; 
                 }
 
-                // 🔥 [PERBAIKAN BUG 3] Deteksi Mention Super Akurat (Mencegah @Adi nyangkut di @Aditya)
                 let isMentioned = false;
                 const myNickname = userProfile?.nickname;
                 if (isForMyGroup && myNickname && msg.message) {
@@ -966,8 +803,6 @@ function initGlobalMessageListener() {
                         isMentioned = true;
                     }
                 }
-
-                // --- MUNCULKAN NOTIFIKASI DI DALAM APLIKASI (TOAST) ---
                 if (isMentioned) {
                     showToast("🔔 Ada yang menyebut Anda di Grup!", "success");
                 } else if (isForMyGroup) {
@@ -976,7 +811,6 @@ function initGlobalMessageListener() {
                     showToast("Ada pesan pribadi baru masuk!", "info");
                 }
 
-                // 🔥 FIX: Trigger Auto-Refresh UI Jika Ada Notif Saldo ATAU Notif PPOB Sukses/Gagal
 if (msg.message && (msg.message.includes('Transfer Saldo Berhasil!') || msg.message.includes('SUKSES!') || msg.message.includes('GAGAL diproses'))) {
     setTimeout(() => {
         if (typeof fetchSaldoDanMutasi === 'function') fetchSaldoDanMutasi();
@@ -984,26 +818,20 @@ if (msg.message && (msg.message.includes('Transfer Saldo Berhasil!') || msg.mess
         if (typeof updateUiSaldoSeller === 'function') updateUiSaldoSeller();
         if (typeof fetchProfile === 'function') fetchProfile();
         if (typeof loadOrderTracker === 'function') loadOrderTracker(currentUser.id);
-        
-        // Auto-refresh layar daftar pesanan jika sedang dibuka oleh user
         const riwayatModal = document.getElementById('modal-riwayat-pesanan');
         if (riwayatModal && !riwayatModal.classList.contains('hidden') && typeof cekStatusPesanan === 'function') {
-            cekStatusPesanan('proses'); // Refresh diam-diam di latar belakang
+            cekStatusPesanan('proses');
         }
     }, 1000);
 }
-                
-                // --- MUNCULKAN NOTIFIKASI POP-UP HP (Jika web di-minimize) ---
+
                 if ("Notification" in window && Notification.permission === "granted" && document.hidden) {
                     new Notification("AU2Hub", {
                         body: isMentioned ? "Seseorang menyebut (tag) Anda di Grup!" : (isForMyGroup ? "Ada pesan baru di Grup!" : "Anda menerima pesan baru!"),
                         icon: "/app-icon-192.png"
                     });
                 }
-                
                 checkGlobalUnreadMessages();
-                
-                // Update badge dan daftar pesan di laci (jika laci inbox sedang terbuka)
                 const widget = document.getElementById('floating-widget');
                 const chatList = document.getElementById('chat-list-view');
                 if (!widget.classList.contains('opacity-0') && chatList.classList.contains('flex')) {
@@ -1012,51 +840,36 @@ if (msg.message && (msg.message.includes('Transfer Saldo Berhasil!') || msg.mess
             }
         })
         .subscribe();
-        
     checkGlobalUnreadMessages();
 }
 
 async function showUserList(type) {
     if (!currentUser && viewedUserId === null) return;
     const targetId = viewedUserId || currentUser.id;
-
-    // [BARU] Cek apakah ini profil sendiri dan sedang membuka tab "pengikut"
     const isOwnProfile = currentUser && targetId === currentUser.id;
     const isFollowerList = type === 'pengikut';
-
     const modal = document.getElementById('modal-user-list');
     const container = document.getElementById('user-list-container');
     const title = document.getElementById('user-list-title');
-
     history.pushState({ popup: 'user_list' }, null, '#userlist');
-
     title.innerText = type === 'mengikuti' ? 'Mengikuti' : 'Pengikut';
     modal.classList.remove('hidden');
     modal.classList.add('flex');
     document.getElementById('userListSearch').value = '';
     container.innerHTML = '<div class="flex justify-center mt-10"><i class="fas fa-spinner fa-spin text-brand-accent text-xl"></i></div>';
-
     let query = supabaseClient.from('follows').select(type === 'mengikuti' ? 'following_id' : 'follower_id').eq(type === 'mengikuti' ? 'follower_id' : 'following_id', targetId);
     const { data: follows } = await query;
-
     if (!follows || follows.length === 0) {
         container.innerHTML = `<p class="text-center text-xs text-gray-500 mt-10">Belum ada ${type}.</p>`;
         return;
     }
-
     const ids = follows.map(f => type === 'mengikuti' ? f.following_id : f.follower_id);
     const { data: profiles } = await supabaseClient.from('profiles').select('id, nickname, avatar_url, bio').in('id', ids);
-
     if (profiles && profiles.length > 0) {
         container.innerHTML = profiles.map(p => {
             const ava = p.avatar_url || `https://ui-avatars.com/api/?name=${p.nickname}&background=1A1133&color=fff`;
-            
-            // [BARU] TOMBOL HAPUS PENGIKUT
-            // Tombol hanya digambar jika isOwnProfile (profil sendiri) & isFollowerList (tab pengikut)
             let removeBtn = '';
             if (isOwnProfile && isFollowerList) {
-                // event.stopPropagation() ditambahkan agar saat tombol dihapus diklik, 
-                // sistem tidak malah membuka profil orang tersebut
                 let namaAman = escapeHTML(p.nickname).replace(/&#39;/g, "\\'");
                 removeBtn = `
                 <button onclick="event.stopPropagation(); removeFollower('${p.id}', '${namaAman}')"
@@ -1079,61 +892,42 @@ async function showUserList(type) {
     }
 }
 
-
 function closeUserList(dariTombolBack = false) {
     const modal = document.getElementById('modal-user-list');
     modal.classList.add('hidden');
     modal.classList.remove('flex');
 
-    // Menarik kembali URL jika ditutup bukan dari tombol Back HP
     if (!dariTombolBack && window.location.hash === '#userlist') {
         history.back();
     }
 }
 
-// ==========================================
-// FUNGSI BARU: HAPUS PENGIKUT
-// ==========================================
 async function removeFollower(followerId, nickname) {
     if (!currentUser) return;
-    
-    // Konfirmasi sebelum menghapus
     const konfirmasi = await customConfirm(`Yakin ingin menghapus ${nickname} dari daftar pengikut Anda?`);
     if (!konfirmasi) return;
-
     try {
         showToast(`Menghapus ${nickname}...`, "info");
-
-        // Proses hapus dari Supabase: 
-        // follower_id adalah ID orang yang mengikuti, following_id adalah ID kita
         const { error } = await supabaseClient
             .from('follows')
             .delete()
             .eq('follower_id', followerId)
             .eq('following_id', currentUser.id);
-
         if (error) throw error;
-
         showToast(`${nickname} berhasil dihapus dari pengikut.`, "success");
-        
-        // Refresh statistik angka di profil dan muat ulang daftar modal
         fetchFollowStats(currentUser.id);
         showUserList('pengikut'); 
-        
     } catch (err) {
         console.error(err);
         showToast("Gagal menghapus pengikut: " + err.message, "error");
     }
 }
 
-
 async function toggleBlockUser(userId) {
 if(!currentUser) return openAuthModal();
 const btn = document.getElementById('btn-block-user');
-
 try {
 if(blockedUsersList.includes(userId)) {
-// 🔥 PERBAIKAN: Menggunakan modal kustom
 const hapus = await customConfirm("Buka blokir pengguna ini?");
 if(hapus) {
 btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memproses...';
@@ -1143,7 +937,6 @@ showToast("Blokir dibuka", "success");
 checkBlockStatusUI();
 }
 } else {
-// 🔥 PERBAIKAN: Menggunakan modal kustom
 const blokir = await customConfirm("Blokir pengguna ini? Anda tidak akan melihat video dan pesannya.");
 if(blokir) {
 btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memproses...';
@@ -1161,11 +954,9 @@ checkBlockStatusUI();
 }
 }
 
-
 function checkBlockStatusUI() {
 const btn = document.getElementById('btn-block-user');
 if(!btn || !viewedUserId) return;
-
 if(blockedUsersList.includes(viewedUserId)) {
 btn.innerHTML = '<i class="fas fa-unlock mr-1"></i> Buka Blokir';
 btn.className = 'w-full bg-gray-500/10 border border-gray-500/20 py-2 rounded-xl text-[10px] font-bold text-gray-400 hover:bg-gray-500/20 transition-colors mt-1';
@@ -1178,15 +969,11 @@ btn.className = 'w-full bg-red-500/10 border border-red-500/20 py-2 rounded-xl t
 async function checkSession() {
     document.getElementById('profile-loading').classList.remove('hidden');
     document.getElementById('profile-loading').classList.add('flex');
-
     document.querySelectorAll('#profile-logged-in').forEach(el => el.classList.add('hidden'));
     document.getElementById('profile-logged-out').classList.add('hidden');
-
     const { data: { user } } = await supabaseClient.auth.getUser();
-
     document.getElementById('profile-loading').classList.add('hidden');
     document.getElementById('profile-loading').classList.remove('flex');
-
     if (user) {
         currentUser = user;
         await fetchProfile();
@@ -1195,20 +982,18 @@ async function checkSession() {
         const pesananOut = document.getElementById('pesanan-logged-out');
         if (pesananOut) pesananOut.classList.add('hidden');
         loadOrderTracker(user.id);
-
         await fetchBlockedUsers();
         await fetchMyFollowing();
         checkGlobalUnreadMessages();
         document.querySelectorAll('#profile-logged-in').forEach(el => el.classList.remove('hidden'));
         document.getElementById('profile-logged-out').classList.add('hidden');
 
-        // 🚀 PRO-FIX: Jalankan fetch di background tanpa 'await' agar proses Login tidak tersandera
         if (allVideosData.length === 0) {
             fetch('/api/get-videos')
                 .then(res => res.json())
                 .then(dataDariSheet => {
                     allVideosData = dataDariSheet.map((v, index) => {
-                        v.original_index = index; // <--- SUNTIKAN TIKET ANTREAN
+                        v.original_index = index;
                         v.id = v.id || v.video_id || v.ID || 'vid_' + Math.random().toString(36).substr(2, 9);
                         return v;
                     }).filter(v => !blockedUsersList.includes(v.user_id));
@@ -1226,7 +1011,6 @@ async function checkSession() {
         if (tracker) { tracker.classList.add('hidden'); tracker.style.display = 'none'; }
         const pesananOut = document.getElementById('pesanan-logged-out');
         if (pesananOut) pesananOut.classList.remove('hidden');
-
         if (globalMessageSubscription) { supabaseClient.removeChannel(globalMessageSubscription); globalMessageSubscription = null; }
         document.querySelectorAll('#profile-logged-in').forEach(el => el.classList.add('hidden'));
         document.getElementById('profile-logged-out').classList.remove('hidden');
@@ -1234,10 +1018,6 @@ async function checkSession() {
     }
 }
 
-
-// ==========================================
-// FITUR LEVEL & EXP SYSTEM
-// ==========================================
 function hitungStatusLevel(totalExp) {
     let exp = totalExp || 0; 
     const level = Math.floor(Math.sqrt(exp / 100)) + 1;
@@ -1251,17 +1031,11 @@ function hitungStatusLevel(totalExp) {
     return { level, exp, targetNextLevel, persentase };
 }
 
-// FUNGSI VISUAL EXP (Tanpa akses nembak database agar aman dari Cheater)
 async function tambahExp(jumlah) {
     if (!currentUser || !userProfile) return;
-
-    // Hanya animasi prediksi lokal untuk UI (biar layar langsung berubah)
-    // Penambahan EXP asli akan diurus otomatis oleh Database Triggers di server
     const expLama = userProfile.exp || 0;
     const expBaru = expLama + jumlah;
     userProfile.exp = expBaru;
-    
-    // Update animasi bar langsung jika pengguna sedang membuka layar profilnya sendiri
     if (document.getElementById('profile').classList.contains('active') && viewedUserId === currentUser.id) {
         const statusLevel = hitungStatusLevel(expBaru);
         document.getElementById('profile-level-badge').innerText = `Lv. ${statusLevel.level}`;
@@ -1279,41 +1053,30 @@ async function fetchProfile() {
         userProfile = { nickname: 'Player', avatar_url: '', bio: 'Halo! Salam kenal.', exp: 0 };
         await supabaseClient.from('profiles').upsert({ id: currentUser.id, nickname: 'Player', avatar_url: '', bio: 'Halo! Salam kenal.', exp: 0 });
     }
-
     if(!viewedUserId || viewedUserId === currentUser.id) {
         const pNick = document.getElementById('profile-nickname'); if(pNick) pNick.innerText = "@" + (userProfile.nickname || "Player");
         const pBio = document.getElementById('profile-bio'); if(pBio) pBio.innerText = userProfile.bio || "Belum ada deskripsi.";
         if (userProfile.avatar_url && userProfile.avatar_url !== "") {
             const pImg = document.getElementById('profile-img'); if(pImg) pImg.src = userProfile.avatar_url;
         }
-
-        // --- TAMBAHAN BARU: EKSEKUSI LEVEL ---
-        // Catatan: Pastikan di database Supabase Anda, tabel 'profiles' sudah ada kolom 'exp' bertipe int4/numeric.
+        
         const expData = userProfile.exp || 0; 
         const statusLevel = hitungStatusLevel(expData);
-
         const elLevelBadge = document.getElementById('profile-level-badge');
         const elExpContainer = document.getElementById('profile-exp-container');
         
         if (elLevelBadge && elExpContainer) {
-            // Tampilkan tulisan Level
             elLevelBadge.innerText = `Lv. ${statusLevel.level}`;
             elLevelBadge.classList.remove('hidden');
-            
-            // Animasikan bar dan teks
             document.getElementById('text-exp-current').innerText = `EXP: ${statusLevel.exp}`;
             document.getElementById('text-exp-target').innerText = `Next: ${statusLevel.targetNextLevel}`;
-            
-            // Gunakan timeout kecil agar efek animasi transisi CSS terlihat saat dimuat
             setTimeout(() => {
                 document.getElementById('bar-exp-progress').style.width = `${statusLevel.persentase}%`;
             }, 100);
-            
             elExpContainer.classList.remove('hidden');
         }
 const btnSuperAdmin = document.getElementById('btn-super-admin');
         if (btnSuperAdmin) {
-            // Membaca status admin langsung dari Supabase
             if (userProfile && userProfile.is_super_admin === true) {
                 btnSuperAdmin.classList.remove('hidden');
             } else {
@@ -1322,7 +1085,6 @@ const btnSuperAdmin = document.getElementById('btn-super-admin');
         }
     }
 }
-
 
 function openAuthModal() {
 history.pushState({ popup: 'auth' }, null, '#auth');
@@ -1336,18 +1098,14 @@ function closeAuthModal() {
     modal.style.opacity = '0';
 
     setTimeout(() => {
-        // PAKSA modal tertutup secara fisik terlebih dahulu
         modal.classList.add('hidden');
         modal.classList.remove('flex');
         modal.style.opacity = '1';
-
-        // Ganti history.back() dengan replaceState untuk menghindari PWA terjebak di loop hash
         if (window.location.hash === '#auth') {
-            history.replaceState(null, null, '#' + tabSebelumnya); // <--- Kembalikan ke tempat asalnya
+            history.replaceState(null, null, '#' + tabSebelumnya);
         }
     }, 300);
 }
-
 
 function toggleAuthMode() {
 isAuthLogin = !isAuthLogin;
@@ -1377,9 +1135,6 @@ showToast("Akun berhasil dibuat!", "success");
 document.getElementById('auth-email').value = '';
 document.getElementById('auth-pass').value = '';
 document.getElementById('auth-nick').value = '';
-
-// FITUR IZIN NOTIFIKASI
-// Bungkus notifikasi dengan try-catch agar jika PWA menolak, login tetap sukses
 try {
     if ("Notification" in window && Notification.permission !== "granted") {
         Notification.requestPermission().catch(() => {});
@@ -1391,7 +1146,6 @@ try {
 await checkSession();
 closeAuthModal();
 
-
 } catch (e) {
 showToast(e.message, "error");
 } finally {
@@ -1401,10 +1155,7 @@ btn.innerText = isAuthLogin ? "Login" : "Daftar";
 }
 
 async function handleLogout() {
-    // 1. Panggil logout Supabase
     await supabaseClient.auth.signOut();
-
-    // 2. BERSIHKAN VARIABEL GLOBAL (Wajib!)
     currentUser = null;
     userProfile = null;
     viewedUserId = null; 
@@ -1412,12 +1163,8 @@ async function handleLogout() {
     allVideosData = []; 
     globalPersonalList = [];
     globalGroupList = [];
-
-    // 3. BERSIHKAN LOCAL STORAGE (PENTING)
     localStorage.removeItem('optimistic_vip');
     localStorage.clear(); 
-
-    // 4. BERSIHKAN REALTIME SUBSCRIPTION
     if (messageSubscription) {
         supabaseClient.removeChannel(messageSubscription);
         messageSubscription = null;
@@ -1426,8 +1173,6 @@ async function handleLogout() {
         supabaseClient.removeChannel(presenceChannel);
         presenceChannel = null;
     }
-
-    // 🔥 [TAMBAHAN BARU] Bantai UI VIP saat tombol Logout dipencet
     const elExpired = document.getElementById('toko-vip-expired');
     const elBadge = document.getElementById('badge-toko-vip');
     if (elExpired) {
@@ -1439,17 +1184,10 @@ async function handleLogout() {
         elBadge.classList.add('hidden');
         elBadge.style.display = 'none';
     }
-
-    // 5. Reset UI ke tampilan "Logged Out"
     updateUIForLoggedOut();
-    
-    // 6. Refresh sesi untuk memastikan tampilan benar-benar berubah
-    checkSession();
-    
+    checkSession();    
     showToast("Anda telah keluar.", "info");
 }
-
-
 
 function updateUIForLoggedIn() {
     const ava = (userProfile?.avatar_url && userProfile.avatar_url !== "") ? userProfile.avatar_url : `https://ui-avatars.com/api/?name=${userProfile?.nickname || 'User'}&background=1A1133&color=fff`;
@@ -1461,11 +1199,9 @@ function updateUIForLoggedIn() {
 
     renderProfileVideos();
 
-    // 🔥 TAMBAHAN BARU: Tarik data saldo ke layar Layanan (PPOB) begitu user login
     if (typeof updateSaldoGlobal === 'function') {
         updateSaldoGlobal();
     }
-
     if(currentUser) {
         fetchFollowStats(currentUser.id);
         if (document.getElementById('toko') && document.getElementById('toko').classList.contains('active')) {
@@ -1477,27 +1213,22 @@ function updateUIForLoggedIn() {
 async function renderProfileVideos(targetUserId = null) {
     const grid = document.getElementById('profile-video-grid');
     if (!grid) return;
-
     const uidToRender = String(targetUserId || (currentUser ? currentUser.id : viewedUserId));
-
     if (!uidToRender || uidToRender === 'null' || uidToRender === 'undefined') {
         grid.innerHTML = '';
         return;
     }
-
     if (allVideosData.length === 0) {
         try {
             grid.innerHTML = '<div class="col-span-3 text-center text-xs text-brand-info py-4"><i class="fas fa-spinner fa-spin text-xl mb-2"></i><br>Memuat...</div>';
             const res = await fetch('/api/get-videos');
             let dataDariSheet = await res.json();
-
             dataDariSheet = dataDariSheet.map((v, index) => {
                 v.original_index = index; // <--- SUNTIKAN TIKET ANTREAN
                 v.id = v.id || v.video_id || v.ID || 'vid_' + Math.random().toString(36).substr(2, 9);
                 v.user_id = v.user_id || v.User_ID || v.userId || v.userid; 
                 return v;
             });
-
             let nextIdx = dataDariSheet.length;
             newUploads.forEach(newVid => {
                 newVid.id = newVid.id || newVid.video_id;
@@ -1506,7 +1237,6 @@ async function renderProfileVideos(targetUserId = null) {
                     dataDariSheet.push(newVid);
                 }
             });
-
             dataDariSheet = dataDariSheet.filter(v => !blockedUsersList.includes(v.user_id));
             allVideosData = dataDariSheet;
         } catch(e) {
@@ -1516,20 +1246,14 @@ async function renderProfileVideos(targetUserId = null) {
     }
 
     const userVideos = allVideosData.filter(v => String(v.user_id) === uidToRender);
-
     const elLikes = document.getElementById('profile-total-likes');
     if (elLikes) elLikes.innerText = (userVideos.length * 3);
-
-    // KUNCI PENGURUTAN: Acuhkan tanggal yang eror, langsung susun berdasarkan tiket antrean asli!
-    const reversedVideos = [...userVideos].sort((a, b) => {
         return (b.original_index || 0) - (a.original_index || 0);
     });
-
     if (reversedVideos.length === 0) {
         grid.innerHTML = '<div class="col-span-3 text-center text-xs text-gray-500 py-8 bg-black/20 rounded-xl border border-white/5"><i class="fas fa-film text-2xl mb-2 opacity-50"></i><br>Belum ada video yang diupload.</div>';
         return;
     }
-
     grid.innerHTML = reversedVideos.map((vid, index) => {
         return `
         <div class="aspect-[9/16] bg-black relative rounded-md overflow-hidden border border-white/10 group cursor-pointer" onclick="openProfileFeed('${vid.user_id}', ${index})">
@@ -1544,14 +1268,12 @@ async function renderProfileVideos(targetUserId = null) {
     }).join('');
 }
 
-
 function timeAgo(dateString) {
 if (!dateString) return "Baru saja";
 const past = new Date(dateString);
 if (isNaN(past.getTime())) return "Beberapa saat lalu";
 const now = new Date();
 const seconds = Math.floor((now - past) / 1000);
-
 let interval = Math.floor(seconds / 31536000);
 if (interval >= 1) return interval + " tahun lalu";
 interval = Math.floor(seconds / 2592000);
@@ -1562,7 +1284,6 @@ interval = Math.floor(seconds / 3600);
 if (interval >= 1) return interval + " jam lalu";
 interval = Math.floor(seconds / 60);
 if (interval >= 1) return interval + " menit lalu";
-
 return "Baru saja";
 }
 
@@ -1573,22 +1294,13 @@ document.getElementById('header-user').innerHTML = `<button onclick="openAuthMod
 async function handleAvatarUpload(event) {
     const file = event.target.files[0]; 
     if (!file) return;
-    
     const icon = document.querySelector('label[for="avatar-input"] i'); 
     icon.className = 'fas fa-spinner fa-spin';
-    
     try {
         showToast("Memproses foto profil...", "info");
-
-        // 1. Kompresi gambar menggunakan fungsi bawaan Anda
         const compressedBlob = await compressImage(file);
-        
-        // Ubah blob hasil kompresi menjadi objek File utuh (format JPEG)
         const finalFile = new File([compressedBlob], "avatar.jpg", { type: "image/jpeg" });
-
-        // 2. LOGIKA PENGHAPUSAN FOTO LAMA (ANTI NUMPUK)
         const oldAvatarUrl = userProfile?.avatar_url || "";
-        // Pastikan foto lama ada dan BUKAN avatar default dari ui-avatars.com
         if (oldAvatarUrl && !oldAvatarUrl.includes('ui-avatars.com')) {
             await fetch('/api/delete-s3?type=file', {
                 method: 'DELETE',
@@ -1597,52 +1309,35 @@ async function handleAvatarUpload(event) {
             }).catch(e => console.log("Abaikan jika file lama sudah tidak ada:", e));
         }
 
-        // 3. Tentukan Folder Baru: {User ID}/avatar/
-        const pathLengkap = `${currentUser.id}/avatar/ava_${Date.now()}`;
-
-        // 4. Minta URL Upload dari satelit/Biznet
-        // 🔥 SUNTIKAN KEAMANAN: Ambil Token JWT Supabase
+const pathLengkap = `${currentUser.id}/avatar/ava_${Date.now()}`;
 const { data: { session } } = await supabaseClient.auth.getSession();
 const token = session?.access_token;
-
 const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent(pathLengkap)}&filetype=${encodeURIComponent(finalFile.type)}`, {
     headers: { 'Authorization': `Bearer ${token}` }
 });
-        const dataUrl = await resUrl.json();
-
-        // 5. Upload file fisik langsung ke Storage (Lebih ringan dari Base64)
+const dataUrl = await resUrl.json();
         await fetch(dataUrl.uploadUrl, {
             method: 'PUT',
             body: finalFile,
             headers: { 'Content-Type': finalFile.type, 'x-amz-acl': 'public-read' }
         });
-
-        // 6. Update URL foto di Supabase Database
         const currentNick = userProfile?.nickname || "Player";
-        // Walau variabelnya finalVideoUrl, ini adalah link universal dari API Anda
         const newAvatarUrl = dataUrl.finalVideoUrl; 
-
         const { error: dbErr } = await supabaseClient
             .from('profiles')
             .upsert({ id: currentUser.id, nickname: currentNick, avatar_url: newAvatarUrl });
-
         if (dbErr) throw new Error(dbErr.message);
-
-        // 7. Update tampilan layar tanpa perlu reload
         const elImg = document.getElementById('profile-img'); 
         if (elImg) elImg.src = newAvatarUrl;
-
         await fetchProfile();
         updateUIForLoggedIn();
         showToast("Foto profil berhasil diperbarui!", "success");
-
     } catch (e) {
         showToast("Gagal upload: " + e.message, "error");
     } finally {
         icon.className = 'fas fa-camera text-xs';
     }
 }
-
 
 function compressImage(file) {
 return new Promise((resolve) => {
@@ -1659,14 +1354,12 @@ canvas.toBlob((blob) => resolve(blob), 'image/jpeg', 0.7);
 });
 }
 
-// --- FUNGSI 1: KHUSUS UNTUK MATIKAN/NYALAKAN SUARA GLOBAL ---
 function toggleGlobalAudio() {
     isGlobalMuted = !isGlobalMuted;
     document.querySelectorAll('.video-player, .float-video-player').forEach(v => v.muted = isGlobalMuted);
     showToast(isGlobalMuted ? "Suara Dimatikan" : "Suara Dinyalakan", isGlobalMuted ? "info" : "success");
 }
 
-// --- FUNGSI 2: KHUSUS UNTUK MODE FLOATING (LAYAR REDUP) ---
 function toggleFloatingMode(skipHistory = false) {
     const isCurrentlyFocused = document.body.classList.contains('video-focused');
     const allWraps = document.querySelectorAll('.video-inner-wrap');
@@ -1674,40 +1367,27 @@ function toggleFloatingMode(skipHistory = false) {
     const headerTop = document.querySelector('header');
 
     if(isCurrentlyFocused) {
-        // MATIKAN EFEK FLOATING
         allWraps.forEach(wrap => wrap.classList.remove('floating-focus'));
         document.body.classList.remove('video-focused');
-
-        // Hapus efek blur pada UI
         if(navBottom) navBottom.style.filter = 'none';
         if(headerTop) headerTop.style.filter = 'none';
-
-        // Tutup paksa layar popup jika terbuka
         const floatingPlayer = document.getElementById('floating-video-player');
         if (floatingPlayer && !floatingPlayer.classList.contains('hidden')) {
             closeFloatingVideo(true); 
         }
-
-        // Hapus jejak URL HANYA jika tidak ada instruksi skipHistory
         if (!skipHistory && window.location.hash === '#focused') {
             history.back();
         }
     } else {
-        // NYALAKAN EFEK FLOATING
+
         document.body.classList.add('video-focused');
-
-        // Tambahkan history agar tombol kembali HP terdeteksi
         history.pushState({ popup: 'focused' }, null, '#focused');
-
-        // Terbangkan HANYA video yang sedang aktif
         document.querySelectorAll('.video-player').forEach(v => {
             if (!v.paused) {
                 const wrap = v.closest('.video-inner-wrap');
                 if (wrap) wrap.classList.add('floating-focus');
             }
         });
-
-        // Redupkan sisa antarmuka
         if(navBottom) navBottom.style.filter = 'blur(8px) opacity(0.5)';
         if(headerTop) headerTop.style.filter = 'blur(8px) opacity(0.5)';
     }
@@ -1715,86 +1395,56 @@ function toggleFloatingMode(skipHistory = false) {
 
 function switchTab(tabId, event = null, isPush = true) {
     if (event) event.preventDefault();
-
-    // 🔥 FIX: Mencegah tabrakan layar freeze saat klik AU2Hub dari dalam mode Nonton Video
     if (document.body.classList.contains('video-focused')) {
         toggleFloatingMode(true);
     }
-
-    // Matikan pemutar video secara paksa jika user meninggalkan tab Sosial
     if (tabId !== 'sosial') {
         document.querySelectorAll('.video-player, .float-video-player').forEach(v => {
             v.pause();
         });
     }
-
-    // 🚀 PRO-FIX 5 TAHUN: PAKSA BALIK PROFIL SENDIRI TANPA SYARAT + CLEAR PARAMS URL
     if (tabId === 'profile' && event !== null && currentUser) {
         viewedUserId = currentUser.id;
-
-        // Bersihkan sisa query string (?id=...) dari URL biar balik murni mentereng ke #profile
         history.replaceState({ popup: 'my_profile' }, null, '#profile');
-
         openUserProfile(currentUser.id);
-        return; // hentikan karena openUserProfile akan mengeksekusi switchTab secara mandiri
+        return;
     }
-
     if (tabId !== 'profile' && tabId !== 'pembayaran' && tabId !== 'upload') {
         tabSebelumnya = tabId;
     }
-    
     if (tabId === 'layanan' && isPush && document.getElementById('pembayaran').classList.contains('active')) {
         window.scrollTo({ top: 0, behavior: 'smooth' }); 
         return;
     }
-
     const targetSection = document.getElementById(tabId) || document.getElementById('home');
     if (!targetSection) return;
-
-    // 🚨 PERBAIKAN: Jangan pernah simpan layar pembayaran/upload sebagai layar terakhir
     if (tabId !== 'pembayaran' && tabId !== 'upload') {
         localStorage.setItem('lastTab', tabId);
     }
-
-    // 1. Matikan semua tab
     document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-    
-    // 2. Matikan semua icon navbar
     document.querySelectorAll('.nav-item').forEach(n => {
         n.classList.remove('active');
         const icon = n.querySelector('i');
         if (icon) icon.style.animation = 'none';
     });
-
-    // 3. Nyalakan tab yang dituju
     targetSection.classList.add('active');
-
-    // 4. Nyalakan icon navbar yang dituju (Cari yang onclick-nya mengandung nama tab)
     const targetNav = document.querySelector(`.nav-item[onclick*="switchTab('${tabId}')"]`);
     if (targetNav) {
         targetNav.classList.add('active');
     }
-
     if (tabId === 'toko') {
         if (typeof loadTokoSaya === 'function') loadTokoSaya();
     }
-
-    // 🔥 [BARU] Panggil fungsi video saat tab Sosial ditekan
     if (tabId === 'sosial') {
         const feedContainer = document.getElementById('feed-container');
-        // Jika layar feed masih kosong, jalankan mesin video!
         if (feedContainer && feedContainer.children.length === 0) {
             if (typeof loadVideos === 'function') loadVideos();
         }
     }
-
-    // 🔥 [TAMBAHAN BARU] Panggil fungsi PPOB & Saldo saat tab Layanan ditekan
     if (tabId === 'layanan') {
-        // Panggil saldo terbaru dari database untuk ditampilkan di layar!
         if (typeof updateSaldoGlobal === 'function') updateSaldoGlobal();
     }
     if (tabId === 'superadmin') {
-        // Otomatis tarik semua data dewa saat layar Super Admin terbuka!
         if (typeof loadAdminDashboard === 'function') loadAdminDashboard();
         if (typeof loadRiwayatKeuanganGlobal === 'function') loadRiwayatKeuanganGlobal();
         if (typeof loadRiwayatLabaPPOB === 'function') loadRiwayatLabaPPOB();
@@ -1803,8 +1453,6 @@ function switchTab(tabId, event = null, isPush = true) {
 
 window.addEventListener('popstate', () => {
     let isPopupClosed = false;
-
-    // 🔥 SAPU BERSIH MUTLAK: Matikan semua radar API jika user memencet Back HP
     if (typeof intervalJemputBola !== 'undefined' && intervalJemputBola) {
         clearInterval(intervalJemputBola);
         intervalJemputBola = null;
@@ -1818,9 +1466,6 @@ window.addEventListener('popstate', () => {
         window.ppobPolling = null;
     }
 
-    // ==========================================
-    // 🚀 1. TANGKAP POP-UP ALERT, PROMPT, & CONFIRM DULUAN! (Wajib Paling Atas / Anti Terpental)
-    // ==========================================
     const modalAlert = document.getElementById('modal-alert');
     if (modalAlert && !modalAlert.classList.contains('hidden')) {
         modalAlert.classList.add('hidden');
@@ -1831,7 +1476,6 @@ window.addEventListener('popstate', () => {
         }
         return;
     }
-
     const modalPrompt = document.getElementById('modal-prompt');
     if (modalPrompt && !modalPrompt.classList.contains('hidden')) {
         modalPrompt.classList.add('hidden');
@@ -1844,7 +1488,6 @@ window.addEventListener('popstate', () => {
         }
         return;
     }
-
     const modalConfirm = document.getElementById('modal-confirm');
     if (modalConfirm && !modalConfirm.classList.contains('hidden')) {
         modalConfirm.classList.add('hidden');
@@ -1857,36 +1500,23 @@ window.addEventListener('popstate', () => {
         }
         return;
     }
-
-    // ==========================================
-    // 2. TANGKAP LACI-LACI LAINNYA BAWAAN SISTEM
-    // ==========================================
-
-    // 🔥 [PERBAIKAN 1] TANGKAP LACI MENU MELAYANG (ASSISTIVE TOUCH)
     const menuMelayang = document.getElementById('assistive-menu');
     if (menuMelayang && !menuMelayang.classList.contains('hidden')) {
         closeAssistiveMenu(true);
         return;
     }
-
-    // TANGKAP LACI TARIK OTOMATIS
     const modalTarikOto = document.getElementById('modal-tarik-otomatis');
     if (modalTarikOto && !modalTarikOto.classList.contains('hidden')) {
         tutupModalTarikOtomatis(true);
         return;
     }
-
-    // TANGKAP LAYAR KATALOG PPOB (GOPAY STYLE)
     const katalogPPOB = document.getElementById('ppob-catalog-view');
     if (katalogPPOB && !katalogPPOB.classList.contains('hidden')) {
         tutupKatalogPPOB(true);
         return;
     }
-
-    // 🔥 [BARU] TANGKAP LAYAR PROSES PEMBAYARAN / SUKSES
     const sectionPembayaran = document.getElementById('pembayaran');
     if (sectionPembayaran && sectionPembayaran.classList.contains('active')) {
-        // 1. Bersihkan interval penjemputan API & websocket jika ditekan back saat loading
         if (typeof intervalJemputBola !== 'undefined' && intervalJemputBola) {
             clearInterval(intervalJemputBola);
             intervalJemputBola = null;
@@ -1895,8 +1525,6 @@ window.addEventListener('popstate', () => {
             supabaseClient.removeChannel(activeChannelPembayaran);
             activeChannelPembayaran = null;
         }
-
-        // 2. Refresh semua data terkait diam-diam di latar belakang
         setTimeout(() => {
             if (typeof loadPasarPlayer === 'function') loadPasarPlayer(true);
             if (document.getElementById('toko') && document.getElementById('toko').classList.contains('active')) {
@@ -1906,187 +1534,139 @@ window.addEventListener('popstate', () => {
             if (typeof updateSaldoGlobal === 'function') updateSaldoGlobal();
             if (typeof currentUser !== 'undefined' && currentUser && typeof loadOrderTracker === 'function') loadOrderTracker(currentUser.id);
         }, 400);
-        
-        // Lanjut eksekusi popstate ke bawah untuk menutup tab pembayaran...
     }
-
-    // TANGKAP LACI OPSI KREATOR
     const modalKreator = document.getElementById('modal-kreator-option');
     if (modalKreator && !modalKreator.classList.contains('hidden')) {
         tutupMenuKreator(true);
         return;
     }
-
-    // TANGKAP LACI MODAL NETFLIX
     const modalNetflix = document.getElementById('modal-netflix');
     if (modalNetflix && !modalNetflix.classList.contains('hidden')) {
         modalNetflix.classList.add('hidden');
         modalNetflix.classList.remove('flex');
         return;
     }
-
-    // ==========================================
-    // TANGKAP SEMUA MODAL PASAR PLAYER
-    // ==========================================
     const modalGalleryPasar = document.getElementById('modal-gallery-pasar');
     if (modalGalleryPasar && !modalGalleryPasar.classList.contains('hidden')) {
         tutupGalleryPasar(true);
         return;
     }
-
     const modalDetailPasar = document.getElementById('modal-detail-pasar');
     if (modalDetailPasar && !modalDetailPasar.classList.contains('hidden')) {
         tutupDetailPasar(true);
         return;
     }
-
     const modalJual = document.getElementById('modal-jual-barang');
     if (modalJual && !modalJual.classList.contains('hidden')) {
         tutupModalJualBarang(true);
         return;
     }
-
     const modalEditProduk = document.getElementById('modal-edit-produk');
     if (modalEditProduk && !modalEditProduk.classList.contains('hidden')) {
         tutupModalEditProduk(true);
         return;
     }
-    // ==========================================
-
-    // TANGKAP LACI DOMPET
     const modalDompet = document.getElementById('modal-saldo-dompet');
     if (modalDompet && !modalDompet.classList.contains('hidden')) {
         tutupModalSaldoDompet(true);
         return;
     }
-    
-    // TANGKAP LACI BUAT GRUP BARU
     const modalCreateGroup = document.getElementById('modal-create-group');
     if (modalCreateGroup && !modalCreateGroup.classList.contains('hidden')) {
         closeCreateGroupModal(true);
         return;
     }
-
-    // TANGKAP LACI TERUSKAN PESAN (FORWARD)
     const modalForward = document.getElementById('modal-forward-msg');
     if (modalForward && !modalForward.classList.contains('hidden')) {
         closeForwardModal(true);
         return;
     }
-
-    // TANGKAP LACI VIP SELLER
     const modalLangganan = document.getElementById('modal-langganan-seller');
     if (modalLangganan && !modalLangganan.classList.contains('hidden')) {
         tutupModalLangganan(true);
         return;
     }
-
-    // 1. TANGKAP INFO GRUP
     const modalGroupInfo = document.getElementById('modal-group-info');
     if (modalGroupInfo && !modalGroupInfo.classList.contains('hidden')) {
         closeGroupInfoModal(true);
         return;
     }
-
     const modalPreviewMedia = document.getElementById('modal-preview-media');
     if (modalPreviewMedia && !modalPreviewMedia.classList.contains('hidden')) {
         tutupPreviewMedia(true);
         return;
     }
-
-    // 2. TANGKAP MODAL INVOICE
     const modalInvoice = document.getElementById('modal-detail-pesanan');
     if (modalInvoice && !modalInvoice.classList.contains('hidden')) {
         closeDetailPesanan(true);
         return;
     }
-
-    // 3. TANGKAP MODAL RIWAYAT PESANAN
     const modalRiwayat = document.getElementById('modal-riwayat-pesanan');
     if (modalRiwayat && !modalRiwayat.classList.contains('hidden')) {
         closeRiwayatPesanan(true); 
         return;
     }
-
-    // 🚀 TANGKAP LAYAR PRATINJAU FULL SCREEN DULU
     const modalPratinjau = document.getElementById('modal-pratinjau');
     if (modalPratinjau && !modalPratinjau.classList.contains('hidden')) {
         tutupPratinjauVideo(true);
         return;
     }
-
-    // 🚀 TANGKAP MODAL UPLOAD VIDEO & PRIVASI
     const modalPrivasi = document.getElementById('modal-privasi-video');
     if (modalPrivasi && (!modalPrivasi.classList.contains('hidden') && !modalPrivasi.classList.contains('translate-y-full'))) {
         tutupPilihanPrivasi();
         history.pushState({ popup: 'upload' }, null, '#upload');
         return;
     }
-
     const modalUpload = document.getElementById('modal-upload');
     if (modalUpload && !modalUpload.classList.contains('hidden')) {
         closeUploadModal();
         return;
     }
-
     const lightbox = document.getElementById('lightbox-modal');
     if(lightbox && !lightbox.classList.contains('hidden')) {
         closeLightbox(true);
         return;
     }
-
-    // Tangkap laci Dilihat/Disukai dulu!
     const statsModal = document.getElementById('modal-story-stats');
     if (statsModal && !statsModal.classList.contains('translate-y-full')) {
         closeStoryStatsModal(true);
         return;
     }
-
-    // Baru tangkap layar pemutar Story utamanya
     const storyModal = document.getElementById('story-viewer-modal');
     if (storyModal && !storyModal.classList.contains('hidden')) {
         closeStoryViewer(true);
         return;
     }
-
-    // 🔥 [PERBAIKAN 2] TANGKAP LACI OPSI PESAN CHAT
     const modalMsgOption = document.getElementById('modal-msg-option');
     if (modalMsgOption && !modalMsgOption.classList.contains('hidden')) {
         closeMsgOptions(true);
         return;
     }
-
-    // 🔥 [PERBAIKAN 3] TANGKAP LACI DAFTAR PENGIKUT/MENGIKUTI
     const modalUserList = document.getElementById('modal-user-list');
     if (modalUserList && !modalUserList.classList.contains('hidden')) {
         closeUserList(true);
         return;
     }
-
     const commentDrawer = document.getElementById('comment-drawer');
     if (commentDrawer && commentDrawer.classList.contains('open')) {
         commentDrawer.classList.remove('open');
         cancelReply();
-
         if (commentSubscription) {
             supabaseClient.removeChannel(commentSubscription);
             commentSubscription = null;
         }
         return;
     }
-
     const modalEvent = document.getElementById('modal-event');
     if (modalEvent && !modalEvent.classList.contains('hidden')) {
         modalEvent.classList.add('hidden'); modalEvent.classList.remove('flex');
         document.body.style.overflow = 'auto'; isPopupClosed = true;
     }
-
     const modalEditProfile = document.getElementById('modal-edit-profile');
     if (modalEditProfile && !modalEditProfile.classList.contains('hidden')) {
         closeEditProfileModal();
         isPopupClosed = true;
     }
-
     const widget = document.getElementById('floating-widget');
     if (widget && !widget.classList.contains('opacity-0')) {
         const roomView = document.getElementById('chat-room-view');
@@ -2098,65 +1678,48 @@ window.addEventListener('popstate', () => {
             return;
         }
     }
-
     const authModal = document.getElementById('modal-auth');
     if (authModal && !authModal.classList.contains('hidden')) {
         authModal.classList.add('hidden');
         authModal.classList.remove('flex');
         isPopupClosed = true;
     }
-
     const leaderboardModal = document.getElementById('modal-leaderboard');
     if (leaderboardModal && !leaderboardModal.classList.contains('hidden')) {
         leaderboardModal.classList.add('hidden');
         leaderboardModal.classList.remove('flex');
-
         const chatBtn = document.querySelector('button[onclick="toggleWidget()"]');
         if (chatBtn) chatBtn.classList.remove('hidden');
-
         isPopupClosed = true;
     }
-
     const hashtagGrid = document.getElementById('modal-hashtag-grid');
     if (hashtagGrid && !hashtagGrid.classList.contains('hidden') && !hashtagGrid.classList.contains('translate-x-full')) {
         closeHashtagGrid(true);
     }
-
     if (document.body.classList.contains('video-focused')) {
         toggleFloatingMode(true);
     }
-
     const floatingPlayer = document.getElementById('floating-video-player');
     if (floatingPlayer && !floatingPlayer.classList.contains('hidden')) {
         closeFloatingVideo(true);
     }
-
     if (isPopupClosed) return;
-
     const newHash = window.location.hash.substring(1) || 'home';
     if (newHash === 'profile' && viewedUserId !== currentUser?.id) {
         viewedUserId = currentUser?.id;
         checkSession();
     }
-    
-    // 🔥 PERBAIKAN: Jaring Pengaman Mutlak + Deteksi Link Toko Shopee
     const cleanHash = newHash.split('?')[0];
     const validTabs = ['home', 'sosial', 'pasar', 'toko', 'layanan', 'pesanan', 'profile', 'pembayaran', 'superadmin', 'tokopublik'];
-    
-    // [BARU] Jika user klik link Toko Publik dari chat atau luar aplikasi
     if (newHash.startsWith('tokopublik?seller=') || newHash.startsWith('pasar?seller=')) {
         const sellerName = decodeURIComponent(newHash.split('=')[1]);
-        
-        // Paksa ubah URL di address bar jadi tokopublik (backwards compatibility)
         if (newHash.startsWith('pasar?seller=')) {
             history.replaceState(null, null, '#tokopublik?seller=' + encodeURIComponent(sellerName));
         }
-        
         switchTab('tokopublik', null, false);
-        loadTokoPublikLuar(sellerName); // Panggil UI Shopee-nya!
-        return; // Hentikan script di sini
+        loadTokoPublikLuar(sellerName);
+        return;
     }
-
     if (!validTabs.includes(cleanHash)) {
         history.replaceState(null, null, '#' + tabSebelumnya);
         switchTab(tabSebelumnya, null, false);
@@ -2165,68 +1728,45 @@ window.addEventListener('popstate', () => {
     }
 });
 
-// FUNGSI KEMBALI DARI PROFIL YANG SUDAH DIPERBAIKI SANGAT AMAN
 function kembaliDariProfil() {
-    // Pindah tab secara visual
     switchTab(tabSebelumnya, null, false);
-
-    // Mengganti URL tanpa memicu popstate yang berisiko bentrok dengan chat widget
     history.replaceState(null, null, '#' + tabSebelumnya);
-
-    // Reset profil yang tertinggal di background (agar siap pas di-klik dari bawah)
     if (currentUser) {
         viewedUserId = currentUser.id;
-
-        // 1. Ambil data current user
         const userVideos = allVideosData.filter(v => v.user_id === currentUser.id);
         const myExp = userProfile?.exp || 0;
         const myStatusLevel = hitungStatusLevel(myExp);
         const myBadgeHTML = getBadgeByLevelAndVideos(myStatusLevel.level, userVideos.length);
-
-        // 2. Kembalikan Nickname & Badge
         const pNick = document.getElementById('profile-nickname'); 
         if(pNick) pNick.innerHTML = "@" + (userProfile?.nickname || "Player") + myBadgeHTML;
-
-        // 3. Kembalikan Bio & Foto
         const pBio = document.getElementById('profile-bio'); if(pBio) pBio.innerText = userProfile?.bio || "Belum ada deskripsi.";
         const pImg = document.getElementById('profile-img'); if(pImg) pImg.src = userProfile?.avatar_url || `https://ui-avatars.com/api/?name=${userProfile?.nickname || 'Player'}&background=1A1133&color=fff`;
-
-        // 4. Kembalikan Level & Bar EXP
         const elLevelBadge = document.getElementById('profile-level-badge');
         const elExpContainer = document.getElementById('profile-exp-container');
-
         if (elLevelBadge && elExpContainer) {
             elLevelBadge.innerText = `Lv. ${myStatusLevel.level}`;
             elLevelBadge.classList.remove('hidden');
-            
             document.getElementById('text-exp-current').innerText = `EXP: ${myStatusLevel.exp}`;
             document.getElementById('text-exp-target').innerText = `Next: ${myStatusLevel.targetNextLevel}`;
-            
             setTimeout(() => {
                 document.getElementById('bar-exp-progress').style.width = `${myStatusLevel.persentase}%`;
             }, 100);
-            
             elExpContainer.classList.remove('hidden');
         }
-
 const actionOwn = document.getElementById('profile-actions-own'); 
 if(actionOwn) { 
     actionOwn.classList.remove('hidden'); 
     actionOwn.style.display = 'flex'; 
 }
-
 const actionOther = document.getElementById('profile-actions-other'); 
 if(actionOther) { 
     actionOther.classList.add('hidden'); 
     actionOther.style.display = 'none'; 
 }
-
         const btnBack = document.getElementById('btn-back-profile'); if(btnBack) btnBack.classList.add('hidden');
         const btnEditAva = document.getElementById('btn-edit-avatar'); if(btnEditAva) btnEditAva.classList.remove('hidden');
-
         const elVidTitle = document.getElementById('profile-video-title');
         if(elVidTitle) elVidTitle.innerHTML = `<i class="fas fa-grip-vertical mr-2 text-brand-info"></i> Video Saya`;
-
         renderProfileVideos(currentUser.id);
         fetchFollowStats(currentUser.id);
     } else {
@@ -2236,7 +1776,6 @@ if(actionOther) {
         const btnBack = document.getElementById('btn-back-profile'); if(btnBack) btnBack.classList.add('hidden');
     }
 }
-
 
 function openModalEvent() {
 history.pushState({ popup: 'modal' }, null, '#event');
@@ -2259,93 +1798,62 @@ function openUploadModal() {
         toggleFloatingMode(true);
         history.replaceState(null, null, '#' + tabSebelumnya);
     }
-    
-    // 🔥 PERBAIKAN: Matikan (Pause) semua video feed di latar belakang
-    // agar suaranya tidak mengganggu saat user sedang fokus upload
     document.querySelectorAll('.video-player, .float-video-player').forEach(v => {
         v.pause();
     });
-
     history.pushState({ popup: 'upload' }, null, '#upload');
     const m = document.getElementById('modal-upload');
-    
-    // 👻 OBAT ANTI HANTU: Batalkan timer tutup jika masih jalan
     if (m.closeTimer) clearTimeout(m.closeTimer);
-    
     m.classList.remove('hidden');
     m.classList.add('flex');
 }
 
-// Tombol Pintasan # dan @ ala TikTok
 function insertUploadShortcut(char) {
     const textarea = document.getElementById('input-video-caption');
     if (!textarea) return;
-    
     const pos = textarea.selectionStart;
     const text = textarea.value;
-    
-    // Sisipkan karakter di posisi kursor aktif
     textarea.value = text.substring(0, pos) + char + text.substring(pos);
     textarea.focus();
-    
-    // Pindahkan kursor tepat setelah karakter yang dimasukkan
     textarea.setSelectionRange(pos + 1, pos + 1);
 }
 
-// Override Fungsi handleVideoSelect Bawaan Anda agar Pas di Mini Cover
 function handleVideoSelect(input) {
     const file = input.files[0];
     const placeholder = document.getElementById('upload-placeholder');
     const previewContainer = document.getElementById('video-preview-container');
     const previewVideo = document.getElementById('video-preview-element');
     const spinner = document.getElementById('mini-upload-spinner');
-
     if (file) {
-        // Validasi ukuran maksimal 50MB biar memori HP pembeli gak jebol
         if (file.size > 50 * 1024 * 1024) {
             showToast("Ukuran video terlalu besar! Maksimal 50MB.", "error");
             input.value = '';
             return;
         }
-
         const url = URL.createObjectURL(file);
         previewVideo.src = url;
-        
-        // Sembunyikan instruksi teks, nyalakan layar preview video mini
         if (placeholder) placeholder.classList.add('hidden');
         if (previewContainer) previewContainer.classList.remove('hidden');
-        
-        // Nyalakan spinner loading
         if (spinner) spinner.classList.remove('hidden');
-
-        // Tunggu video siap diputar, lalu matikan spinner
         previewVideo.oncanplay = () => {
             if (spinner) spinner.classList.add('hidden');
         };
-        
-        // Putar video otomatis tanpa suara di pojok kanan laci
         previewVideo.muted = true;
         previewVideo.play().catch(() => {});
         showToast("Video berhasil dimuat!", "success");
     }
 }
 
-// Override Fungsi closeUploadModal Agar Mereset Seluruh Tampilan Mini Cover
 function closeUploadModal() {
     if (window.location.hash === '#upload') history.back();
     const m = document.getElementById('modal-upload');
-    
-    // 👻 OBAT ANTI HANTU: Jangan pakai setTimeout untuk menutup modal ini
-    // karena ini form panjang, kita tutup instan saja agar lebih aman di RAM
     m.classList.add('hidden'); 
     m.classList.remove('flex');
-
     const placeholder = document.getElementById('upload-placeholder');
     const previewContainer = document.getElementById('video-preview-container');
     const previewVideo = document.getElementById('video-preview-element');
     const fileInput = document.getElementById('input-video-file');
     const captionInput = document.getElementById('input-video-caption');
-    
     if (placeholder) placeholder.classList.remove('hidden');
     if (previewContainer) previewContainer.classList.add('hidden');
     if (previewVideo) { 
@@ -2359,35 +1867,27 @@ function closeUploadModal() {
     if (captionInput) captionInput.value = '';
 }
 
-
 async function openUserProfile(userId) {
     try {
         let wasPopupOpen = false;
-
         if (document.body.classList.contains('video-focused')) {
             toggleFloatingMode(true);
             wasPopupOpen = true;
         }
-
         const floatingPlayer = document.getElementById('floating-video-player');
         if (floatingPlayer && !floatingPlayer.classList.contains('hidden')) {
             closeFloatingVideo(true);
             wasPopupOpen = true;
         }
-
         viewedUserId = userId;
-
         setTimeout(() => {
             switchTab('profile', null, false);
         }, 10);
-
         document.getElementById('profile-loading').classList.remove('hidden');
         document.querySelectorAll('#profile-logged-in').forEach(el => el.classList.add('hidden'));
-
         const currentUserId = currentUser ? String(currentUser.id) : null;
         const targetId = String(userId);
         const isOwn = (targetId === currentUserId);
-
         let data, error;
 if (isOwn) {
     const res = await supabaseClient.rpc('get_my_profile_v1');
@@ -2399,13 +1899,10 @@ if (isOwn) {
         if (error && error.code !== 'PGRST116') {
             console.error("Error database:", error);
         }
-
         const elBio2 = document.getElementById('profile-bio'); if(elBio2) elBio2.innerText = data?.bio || "Belum ada deskripsi.";
         const elImg2 = document.getElementById('profile-img'); if(elImg2) elImg2.src = data?.avatar_url || `https://ui-avatars.com/api/?name=${data?.nickname || 'Player'}&background=1A1133&color=fff`;
-
         const actionOwn = document.getElementById('profile-actions-own');
         const actionOther = document.getElementById('profile-actions-other');
-
         if (isOwn) {
             if(actionOwn) { actionOwn.classList.remove('hidden'); actionOwn.style.display = 'flex'; }
             if(actionOther) { actionOther.classList.add('hidden'); actionOther.style.display = 'none'; }
@@ -2413,69 +1910,52 @@ if (isOwn) {
             if(actionOwn) { actionOwn.classList.add('hidden'); actionOwn.style.display = 'none'; }
             if(actionOther) { actionOther.classList.remove('hidden'); actionOther.style.display = 'flex'; }
         }
-
         const btnBack = document.getElementById('btn-back-profile');
         if (btnBack) {
             if (isOwn) { btnBack.classList.add('hidden'); btnBack.style.display = 'none'; }
             else { btnBack.classList.remove('hidden'); btnBack.style.display = 'flex'; }
         }
-
         const inputAva = document.getElementById('btn-edit-avatar');
         if(inputAva) {
             if(isOwn) { inputAva.classList.remove('hidden'); inputAva.style.display = 'flex'; }
             else { inputAva.classList.add('hidden'); inputAva.style.display = 'none'; }
         }
-
         const elVidTitle = document.getElementById('profile-video-title');
         if(elVidTitle) {
             if(isOwn) { elVidTitle.innerHTML = `<i class="fas fa-grip-vertical mr-2 text-brand-info"></i> Video Saya`; }
             else { elVidTitle.innerHTML = `<i class="fas fa-grip-vertical mr-2 text-brand-info"></i> Video ${data?.nickname || ''}`; }
         }
-
         await renderProfileVideos(userId);
-
         const userVideos = allVideosData.filter(v => String(v.user_id) === targetId);
         const expDataLain = data?.exp || 0;
         const statusLevelObj = hitungStatusLevel(expDataLain);
         const badgeHTML = getBadgeByLevelAndVideos(statusLevelObj.level, userVideos.length);
-        
         const elNick2 = document.getElementById('profile-nickname');
         if(elNick2) elNick2.innerHTML = "@" + (data?.nickname || "Player") + badgeHTML;
-
         const elLevelBadge = document.getElementById('profile-level-badge');
         const elExpContainer = document.getElementById('profile-exp-container');
-
         if (elLevelBadge && elExpContainer) {
             elLevelBadge.innerText = `Lv. ${statusLevelObj.level}`;
             elLevelBadge.classList.remove('hidden');
-            
             document.getElementById('text-exp-current').innerText = `EXP: ${statusLevelObj.exp}`;
             document.getElementById('text-exp-target').innerText = `Next: ${statusLevelObj.targetNextLevel}`;
-            
             setTimeout(() => {
                 document.getElementById('bar-exp-progress').style.width = `${statusLevelObj.persentase}%`;
             }, 100);
-            
             elExpContainer.classList.remove('hidden');
         }
-
         const elLikes = document.getElementById('profile-total-likes');
         if (elLikes) elLikes.innerText = (userVideos.length * 3);
-
         try { await fetchFollowStats(userId); } catch (e) { console.warn(e); }
-        
-        // 🛠️ PERBAIKAN: Cek apakah tombol Follow harus berstatus "Mengikuti"
         if (!isOwn && currentUser) {
             const btnFollow = document.getElementById('btn-follow');
             if (btnFollow) {
-                // Cek ke database apakah user saat ini sudah follow target
                 const { data: isFollowing } = await supabaseClient
                     .from('follows')
                     .select('follower_id')
                     .eq('follower_id', currentUser.id)
                     .eq('following_id', userId)
                     .single();
-
                 if (isFollowing) {
                     btnFollow.innerText = 'MENGIKUTI';
                     btnFollow.className = 'flex-1 bg-white/10 py-2.5 rounded-xl text-[11px] font-extrabold text-white uppercase tracking-wide transition-transform';
@@ -2486,7 +1966,6 @@ if (isOwn) {
             }
         }
 
-        // 🛠️ PERBAIKAN PEMBOROSAN JARINGAN (Lihat poin 2 di bawah)
         if (isOwn) {
             try { await loadOrderTracker(userId); } catch (e) { console.warn(e); }
         }
@@ -2503,17 +1982,14 @@ if (isOwn) {
         }
 
         document.getElementById('profile-loading').classList.add('hidden');
-// Cukup hapus class hidden, biarkan Tailwind yang mengatur layoutnya
 const profileContainer = document.getElementById('profile-logged-in');
 if (profileContainer) {
     profileContainer.classList.remove('hidden');
-    // Hapus inline style jika ada yang nyangkut
     profileContainer.style.display = ''; 
 }
 
-
         checkBlockStatusUI();
-
+        
         if(!isOwn) {
             if (wasPopupOpen) {
                 history.replaceState({ popup: 'user_profile' }, null, `#profile?id=${userId}`);
@@ -2527,11 +2003,6 @@ if (profileContainer) {
     }
 }
 
-
-
-
-
-// FUNGSI MELIHAT PROFIL USER LAIN DARI MANA SAJA
 function viewUserProfile(userId) {
 if (!userId || userId === 'undefined') {
 showToast("Profil tidak dapat dibuka karena ID tidak ditemukan.", "error");
