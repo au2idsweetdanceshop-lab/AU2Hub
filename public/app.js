@@ -5474,7 +5474,7 @@ function appendMessageBubble(msg) {
         let urlPart = rawMessage.replace('[AUDIO]', '');
         let amanUrl = escapeHTML(urlPart.trim());
         contentHtml = `<audio controls class="w-[200px] mt-1 h-8"><source src="${amanUrl}" type="audio/webm"></audio>`;
-    } else if (rawMessage.startsWith('[SISTEM]')) { else if (rawMessage.startsWith('[SISTEM]')) {
+    } else if (rawMessage.startsWith('[SISTEM]')) {
         let isiSistem = rawMessage.replace(/^\[SISTEM\]\s*/i, '');
         let teksRapi = escapeHTML(isiSistem).replace(/\*(.*?)\*/g, '<b class="text-white">$1</b>');
         let htmlIsiSistem = teksRapi.replace(
