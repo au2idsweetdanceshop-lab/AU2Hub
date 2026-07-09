@@ -21,6 +21,8 @@ let onlineUsersMap = new Map();
 let selectedMessageId = null;
 let blockedUsersList = [];
 let myFollowingList = [];
+let lastVidObserverGlobal = null;
+let lastProfileVidObserverGlobal = null;
 
 function debounce(func, wait) {
     let timeout;
@@ -1164,7 +1166,12 @@ async function handleLogout() {
     globalPersonalList = [];
     globalGroupList = [];
     localStorage.removeItem('optimistic_vip');
-    localStorage.clear(); 
+    Object.keys(localStorage).forEach(key => {
+    // Hanya hapus cache like/comment session lama
+    if (key.startsWith('liked_') || key.startsWith('comment_') || key.startsWith('story_') || key === 'optimistic_vip') {
+        localStorage.removeItem(key);
+    }
+}); 
     if (messageSubscription) {
         supabaseClient.removeChannel(messageSubscription);
         messageSubscription = null;
@@ -1695,13 +1702,16 @@ window.addEventListener('popstate', () => {
     const hashtagGrid = document.getElementById('modal-hashtag-grid');
     if (hashtagGrid && !hashtagGrid.classList.contains('hidden') && !hashtagGrid.classList.contains('translate-x-full')) {
         closeHashtagGrid(true);
+        isPopupClosed = true;
     }
     if (document.body.classList.contains('video-focused')) {
         toggleFloatingMode(true);
+        isPopupClosed = true;
     }
     const floatingPlayer = document.getElementById('floating-video-player');
     if (floatingPlayer && !floatingPlayer.classList.contains('hidden')) {
         closeFloatingVideo(true);
+        isPopupClosed = true;
     }
     if (isPopupClosed) return;
     const newHash = window.location.hash.substring(1) || 'home';
@@ -1931,7 +1941,8 @@ if (isOwn) {
         const statusLevelObj = hitungStatusLevel(expDataLain);
         const badgeHTML = getBadgeByLevelAndVideos(statusLevelObj.level, userVideos.length);
         const elNick2 = document.getElementById('profile-nickname');
-        if(elNick2) elNick2.innerHTML = "@" + (data?.nickname || "Player") + badgeHTML;
+const amanNickname = escapeHTML(data?.nickname || "Player"); 
+if(elNick2) elNick2.innerHTML = "@" + amanNickname + badgeHTML;
         const elLevelBadge = document.getElementById('profile-level-badge');
         const elExpContainer = document.getElementById('profile-exp-container');
         if (elLevelBadge && elExpContainer) {
@@ -2115,15 +2126,15 @@ function closeFloatingVideo(skipHistory = false) {
         if (v.querySelector('source')) v.querySelector('source').removeAttribute('src');
         v.load();
     });
+    if (!skipHistory && (window.location.hash === '#profil_video' || window.location.hash === '#play_tagar')) {
+        history.back();
+    }
     setTimeout(() => {
         p.classList.add('hidden'); 
         p.classList.remove('flex');
         p.style.opacity = '1'; 
         document.getElementById('floating-feed-container').innerHTML = '';
         if(floatObs) floatObs.disconnect();
-        if (!skipHistory && (window.location.hash === '#profil_video' || window.location.hash === '#play_tagar')) {
-            history.back();
-        }
     }, 300);
 }
 
@@ -2233,14 +2244,15 @@ function renderProfileVideoBatch(customAmount = 3) {
     unobservedVideos.forEach((v, i) => {
         v.classList.add('observed'); if (floatObs) floatObs.observe(v);
         if (i === unobservedVideos.length - 1) {
-            const lastVideoObserver = new IntersectionObserver(entries => {
-                if(entries[0].isIntersecting) { 
-                    lastVideoObserver.disconnect(); 
-                    renderProfileVideoBatch(3); 
-                }
-            }, { threshold: 0.1 });
-            lastVideoObserver.observe(v.closest('.snap-start'));
-        }
+        if (lastProfileVidObserverGlobal) lastProfileVidObserverGlobal.disconnect();
+        lastProfileVidObserverGlobal = new IntersectionObserver(entries => {
+            if(entries[0].isIntersecting) {
+                lastProfileVidObserverGlobal.disconnect();
+                renderProfileVideoBatch(3);
+            }
+        }, { threshold: 0.1 });
+        lastProfileVidObserverGlobal.observe(v.closest('.snap-start'));
+    }
     });
 }
 
@@ -2285,7 +2297,10 @@ function handleVideoClick(event, videoElement, vidId) {
         videoClickTimer = null;
         const card = videoElement.closest('.snap-start');
         const likeBtn = card.querySelector('.like-container button');
-        likeVideo(vidId, likeBtn);
+        const isLiked = likeBtn.querySelector('i').classList.contains('text-brand-accent');
+        if (!isLiked) {
+            likeVideo(vidId, likeBtn);
+        }
         createHeartAt(event);
     } else {
         videoClickTimer = setTimeout(() => {
@@ -2754,6 +2769,11 @@ async function deleteComment(cid) {
                 commentBox.remove();
                 const countEl = document.getElementById('drawer-comment-count');
                 if(countEl) countEl.innerText = Math.max(0, parseInt(countEl.innerText) - 1);
+                if (window.cacheVideoStats && window.cacheVideoStats[activeVideoId]) {
+                    window.cacheVideoStats[activeVideoId].comments = Math.max(0, window.cacheVideoStats[activeVideoId].comments - 1);
+                }
+                const containerCount = document.querySelector(`.comment-count-container[data-vid="${activeVideoId}"]`);
+                if(containerCount) updateCommentCountUI(activeVideoId, containerCount);
             }, 300);
         }
         showToast("Komentar berhasil dihapus", "success");
@@ -3284,6 +3304,23 @@ function renderVideoBatch() {
         }
         container.scrollBy({ top: -(tinggiVideo * 5), behavior: 'instant' });
     }
+    if (container.children.length > 15) { 
+        const tinggiVideo = container.firstElementChild.clientHeight;
+        for (let i = 0; i < 5; i++) {
+            const elToRemove = container.firstElementChild;
+            if (elToRemove) {
+                const vidToKill = elToRemove.querySelector('video');
+                if (vidToKill) {
+                    if (lastVidObserverGlobal) lastVidObserverGlobal.unobserve(vidToKill);
+                    vidToKill.pause();
+                    vidToKill.removeAttribute('src');
+                    vidToKill.load(); 
+                }
+                elToRemove.remove();
+            }
+        }
+        container.scrollBy({ top: -(tinggiVideo * 5), behavior: 'instant' });
+    }
     container.insertAdjacentHTML('beforeend', htmlString);
     currentVideoIndex += nextBatch.length;
     const videoActions = container.querySelectorAll('.snap-start:not(.data-loaded)');
@@ -3304,14 +3341,15 @@ videoActions.forEach((card) => {
     unobservedVideos.forEach((v, i) => {
         v.classList.add('observed'); if (obs) obs.observe(v);
         if (i === unobservedVideos.length - 1) {
-            const lastVideoObserver = new IntersectionObserver(entries => {
-                if(entries[0].isIntersecting) { 
-                    lastVideoObserver.disconnect(); 
-                    renderVideoBatch(); 
-                }
-            }, { threshold: 0.1 });
-            lastVideoObserver.observe(v.closest('.snap-start'));
-        }
+        if (lastVidObserverGlobal) lastVidObserverGlobal.disconnect();
+        lastVidObserverGlobal = new IntersectionObserver(entries => {
+            if(entries[0].isIntersecting) {
+                lastVidObserverGlobal.disconnect();
+                renderVideoBatch();
+            }
+        }, { threshold: 0.1 });
+        lastVidObserverGlobal.observe(v.closest('.snap-start'));
+    }
     });
 }
 
@@ -3649,7 +3687,7 @@ onlineUsersMap.has(uid) ? el.classList.remove('hidden') : el.classList.add('hidd
 });
 }
 
-async function searchUsersForChat(query) {
+const searchUsersForChat = debounce(async (query) => {
     if (!query.trim()) return loadChatList();
     const container = document.getElementById('chat-personal-container');
     container.innerHTML = '<div class="flex justify-center mt-6"><i class="fas fa-spinner fa-spin text-brand-accent text-xl"></i></div>';
@@ -3671,7 +3709,7 @@ async function searchUsersForChat(query) {
     } else {
         container.innerHTML = '<p class="text-center text-xs text-gray-500 mt-6">User tidak ditemukan.</p>';
     }
-}
+}, 500);
 
 function toggleWidget() {
 const widget = document.getElementById('floating-widget');
@@ -5419,7 +5457,8 @@ function appendMessageBubble(msg) {
             const parts = urlPart.split('||CAP||');
             urlPart = parts[0]; cap = parts[1];
         }
-        contentHtml = `<img src="${urlPart}" class="max-w-[200px] rounded-lg cursor-pointer mt-1 shadow-sm" onclick="openLightbox('${urlPart}')">`;
+        let amanUrl = escapeHTML(urlPart.trim());
+        contentHtml = `<img src="${amanUrl}" class="max-w-[200px] rounded-lg cursor-pointer mt-1 shadow-sm" onclick="openLightbox('${amanUrl}')">`;
         if (cap) contentHtml += `<div class="mt-1.5 text-white/95 text-[11.5px]">${formatCaption(cap)}</div>`;
     } else if (rawMessage.startsWith('[VIDEO]')) {
         let urlPart = rawMessage.replace('[VIDEO]', '');
@@ -5428,12 +5467,14 @@ function appendMessageBubble(msg) {
             const parts = urlPart.split('||CAP||');
             urlPart = parts[0]; cap = parts[1];
         }
-        contentHtml = `<video src="${urlPart}" class="max-w-[200px] rounded-lg mt-1 shadow-sm" controls playsinline></video>`;
+        let amanUrl = escapeHTML(urlPart.trim());
+        contentHtml = `<video src="${amanUrl}" class="max-w-[200px] rounded-lg mt-1 shadow-sm" controls playsinline></video>`;
         if (cap) contentHtml += `<div class="mt-1.5 text-white/95 text-[11.5px]">${formatCaption(cap)}</div>`;
     } else if (rawMessage.startsWith('[AUDIO]')) {
-        const url = rawMessage.replace('[AUDIO]', '');
-        contentHtml = `<audio controls class="w-[200px] mt-1 h-8"><source src="${url}" type="audio/webm"></audio>`;
-    } else if (rawMessage.startsWith('[SISTEM]')) {
+        let urlPart = rawMessage.replace('[AUDIO]', '');
+        let amanUrl = escapeHTML(urlPart.trim());
+        contentHtml = `<audio controls class="w-[200px] mt-1 h-8"><source src="${amanUrl}" type="audio/webm"></audio>`;
+    } else if (rawMessage.startsWith('[SISTEM]')) { else if (rawMessage.startsWith('[SISTEM]')) {
         let isiSistem = rawMessage.replace(/^\[SISTEM\]\s*/i, '');
         let teksRapi = escapeHTML(isiSistem).replace(/\*(.*?)\*/g, '<b class="text-white">$1</b>');
         let htmlIsiSistem = teksRapi.replace(
@@ -5712,10 +5753,11 @@ function inputJumlahPesan(val) {
 
 function inputJumlahPasar(val) {
     let parsed = parseInt(val);
+    const inputEl = document.getElementById('pasar-detail-qty');
     if (isNaN(parsed) || parsed < 1) {
-        currentPasarQty = 1; 
+        currentPasarQty = 1;
     } else {
-        currentPasarQty = parsed; 
+        currentPasarQty = parsed;
     }
     updateHargaPasarLayar();
 }
@@ -8423,8 +8465,8 @@ function tutupModalTarikOtomatis(dariTombolBack = false) {
 async function konfirmasiTarikOtomatis(skuCode, productName, basePrice) {
     const totalPotong = basePrice + 500;
     const confirm = await customConfirm(`Anda akan menarik dana ke akun:\n${userProfile.wallet_provider} (${userProfile.wallet_number})\n\nPecahan: ${productName}\nTotal Potong Saldo: Rp ${totalPotong.toLocaleString('id-ID')}\n\nDana akan masuk dalam hitungan detik. Lanjutkan?`);
-   if (!confirm) return;
-   tutupModalTarikOtomatis();
+    if (!confirm) return;
+    tutupModalTarikOtomatis();
     history.pushState({ popup: 'pembayaran' }, null, '#pembayaran');
     switchTab('pembayaran');
     const wadahPembayaran = document.getElementById('qris-container');
@@ -8494,7 +8536,7 @@ async function konfirmasiTarikOtomatis(skuCode, productName, basePrice) {
                             <span id="wd-sn-teks" class="font-mono text-brand-info font-bold text-right ml-4 leading-relaxed">${sn}</span>
                         </div>
                     </div>
-                   <button type="button" onclick="history.back(); setTimeout(()=> {switchTab('toko'); loadTokoSaya();}, 300);" class="w-full bg-white/5 text-white py-3.5 rounded-xl font-bold uppercase tracking-wider text-xs border border-white/10 hover:bg-white/10 active:scale-95 transition-all">Tutup Halaman</button>
+                   <button type="button" onclick="tutupLayarSuksesWD(this)" class="w-full bg-white/5 text-white py-3.5 rounded-xl font-bold uppercase tracking-wider text-xs border border-white/10 hover:bg-white/10 active:scale-95 transition-all">Tutup Halaman</button>
                 </div>
             `;
             if (refId !== 'Sistem') {
@@ -8518,21 +8560,26 @@ async function konfirmasiTarikOtomatis(skuCode, productName, basePrice) {
                         if (badge) badge.className = 'absolute -top-2.5 left-4 bg-red-500 text-white text-[9px] font-extrabold px-2 py-0.5 rounded uppercase tracking-wider';
                     }
                 };
-                const channelWD = supabaseClient.channel(`tunggu-wd-${refId}`)
+
+                if (window.wdPolling) { clearInterval(window.wdPolling); window.wdPolling = null; }
+                if (window.channelWDGlobal) { supabaseClient.removeChannel(window.channelWDGlobal); window.channelWDGlobal = null; }
+
+                window.channelWDGlobal = supabaseClient.channel(`tunggu-wd-${refId}`)
                     .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'riwayat_ppob', filter: `ref_id=eq.${refId}` }, (payload) => {
                         if (payload.new.status === 'Sukses' || payload.new.status === 'Gagal') {
                             updateUIFinalStatusWD(payload.new);
-                            supabaseClient.removeChannel(channelWD);
+                            supabaseClient.removeChannel(window.channelWDGlobal);
                             if (window.wdPolling) clearInterval(window.wdPolling);
                         }
                     }).subscribe();
+
                 window.wdPolling = setInterval(async () => {
                     try {
                         const { data } = await supabaseClient.from('riwayat_ppob').select('status, sn').eq('ref_id', refId).single();
                         if (data && (data.status === 'Sukses' || data.status === 'Gagal')) {
                             updateUIFinalStatusWD(data);
                             clearInterval(window.wdPolling);
-                            supabaseClient.removeChannel(channelWD);
+                            supabaseClient.removeChannel(window.channelWDGlobal);
                         }
                     } catch (e) {}
                 }, 2000);
@@ -8544,6 +8591,17 @@ async function konfirmasiTarikOtomatis(skuCode, productName, basePrice) {
         setTimeout(() => { history.back(); }, 2500); 
     }
 }
+
+window.tutupLayarSuksesWD = (btnElement) => {
+    btnElement.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Menutup...';
+    btnElement.disabled = true;
+
+    if (window.wdPolling) { clearInterval(window.wdPolling); window.wdPolling = null; }
+    if (window.channelWDGlobal) { supabaseClient.removeChannel(window.channelWDGlobal); window.channelWDGlobal = null; }
+
+    history.back(); 
+    setTimeout(() => { switchTab('toko'); loadTokoSaya(); }, 300);
+};
 
 let editFileArray = [];
 let existingImagesEdit = [];
@@ -10164,8 +10222,8 @@ async function prosesBeliPPOB(skuCode, targetNo, harga, namaProduk) {
                 const updateUIFinalStatus = (newData) => {
                     const isNowSukses = newData.status === 'Sukses';
                     if (isNowSukses) {
-        autoSetorKeNikky(20, `[Auto] Laba PPOB 20% - SN: ${newData.sn || 'Tanpa SN'}`);
-    }
+                        autoSetorKeNikky(20, `[Auto] Laba PPOB 20% - SN: ${newData.sn || 'Tanpa SN'}`);
+                    }
                     const elStatus = document.getElementById('status-teks-ppob');
                     if (elStatus) elStatus.innerText = newData.status;
                     const elSN = document.getElementById('sn-teks-ppob');
@@ -10184,11 +10242,13 @@ async function prosesBeliPPOB(skuCode, targetNo, harga, namaProduk) {
                         if (badge) badge.className = 'absolute -top-2.5 left-4 bg-red-500 text-white text-[9px] font-extrabold px-2 py-0.5 rounded uppercase tracking-wider';
                     }
                 };
-                const channelPPOB = supabaseClient.channel(`tunggu-ppob-${refId}`)
+                if (window.ppobPolling) clearInterval(window.ppobPolling);
+                if (window.channelPPOBGlobal) supabaseClient.removeChannel(window.channelPPOBGlobal);
+                window.channelPPOBGlobal = supabaseClient.channel(`tunggu-ppob-${refId}`)
                     .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'riwayat_ppob', filter: `ref_id=eq.${refId}` }, (payload) => {
                         if (payload.new.status === 'Sukses' || payload.new.status === 'Gagal') {
                             updateUIFinalStatus(payload.new);
-                            supabaseClient.removeChannel(channelPPOB);
+                            supabaseClient.removeChannel(window.channelPPOBGlobal);
                             if (window.ppobPolling) clearInterval(window.ppobPolling);
                         }
                     }).subscribe();
@@ -10198,7 +10258,7 @@ async function prosesBeliPPOB(skuCode, targetNo, harga, namaProduk) {
                         if (data && (data.status === 'Sukses' || data.status === 'Gagal')) {
                             updateUIFinalStatus(data);
                             clearInterval(window.ppobPolling);
-                            supabaseClient.removeChannel(channelPPOB);
+                            supabaseClient.removeChannel(window.channelPPOBGlobal);
                         }
                     } catch (e) {}
                 }, 2000);
@@ -10210,6 +10270,36 @@ async function prosesBeliPPOB(skuCode, targetNo, harga, namaProduk) {
         setTimeout(() => history.back(), 1500); 
     }
 }
+window.tutupLayarSuksesPPOB = (btnElement) => {
+    btnElement.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Menutup...';
+    btnElement.disabled = true;
+    if (window.ppobPolling) { clearInterval(window.ppobPolling); window.ppobPolling = null; }
+    if (window.channelPPOBGlobal) { supabaseClient.removeChannel(window.channelPPOBGlobal); window.channelPPOBGlobal = null; }
+    if (typeof updateSaldoGlobal === 'function') updateSaldoGlobal();
+    if (typeof fetchProfile === 'function') fetchProfile();
+    const layarPembayaran = document.getElementById('pembayaran');
+    if (layarPembayaran) {
+        layarPembayaran.style.transition = 'opacity 0.2s ease';
+        layarPembayaran.style.opacity = '0';
+        setTimeout(() => {
+            layarPembayaran.classList.remove('active');
+            layarPembayaran.style.opacity = '1';
+            switchTab('layanan');
+            history.replaceState(null, null, '#layanan');
+        }, 200);
+    } else {
+        switchTab('layanan');
+        history.replaceState(null, null, '#layanan');
+    }
+};
+window.tutupLayarSuksesWD = (btnElement) => {
+    btnElement.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Menutup...';
+    btnElement.disabled = true;
+    if (window.wdPolling) { clearInterval(window.wdPolling); window.wdPolling = null; }
+    if (window.channelWDGlobal) { supabaseClient.removeChannel(window.channelWDGlobal); window.channelWDGlobal = null; }
+    history.back(); 
+    setTimeout(() => { switchTab('toko'); loadTokoSaya(); }, 300);
+};
 
 let kategoriPPOBAktif = 'Pulsa'; 
 let brandPPOBAktif = 'Semua';
