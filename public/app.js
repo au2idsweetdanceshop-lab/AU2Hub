@@ -72,7 +72,7 @@ function hitungPendapatanBersih(hargaGateway, ditanggungPembeli, namaProduk = ""
     const hargaBase = Math.round((hargaAktual - 500) / 1.007); 
     
     if (ditanggungPembeli) {
-        if (hargaBase <= 10500) return hargaBase - 500;   // <-- PENYESUAIAN MIKRO BARU
+        if (hargaBase <= 10500) return hargaBase - 500;
         if (hargaBase <= 26000) return hargaBase - 1000;
         if (hargaBase <= 52000) return hargaBase - 2000;
         if (hargaBase <= 102999) return hargaBase - 3000;
@@ -1224,7 +1224,7 @@ async function renderProfileVideos(targetUserId = null) {
             const res = await fetch('/api/get-videos');
             let dataDariSheet = await res.json();
             dataDariSheet = dataDariSheet.map((v, index) => {
-                v.original_index = index; // <--- SUNTIKAN TIKET ANTREAN
+                v.original_index = index;
                 v.id = v.id || v.video_id || v.ID || 'vid_' + Math.random().toString(36).substr(2, 9);
                 v.user_id = v.user_id || v.User_ID || v.userId || v.userid; 
                 return v;
@@ -2113,15 +2113,14 @@ function closeFloatingVideo(skipHistory = false) {
         v.pause();
         v.removeAttribute('src');
         if (v.querySelector('source')) v.querySelector('source').removeAttribute('src');
-        v.load(); // Buang dari RAM HP
+        v.load();
     });
     setTimeout(() => {
-        // Sembunyikan dan reset elemen setelah efek fade selesai
         p.classList.add('hidden'); 
         p.classList.remove('flex');
         p.style.opacity = '1'; 
         document.getElementById('floating-feed-container').innerHTML = '';
-        if(floatObs) floatObs.disconnect(); // bersihkan observer
+        if(floatObs) floatObs.disconnect();
         if (!skipHistory && (window.location.hash === '#profil_video' || window.location.hash === '#play_tagar')) {
             history.back();
         }
@@ -2336,7 +2335,7 @@ async function deleteVideo(vidId) {
                 }).catch(e => console.log("Ignore S3 error:", e));
             }
             allVideosData = allVideosData.filter(v => v.id !== vidId);
-            newUploads = newUploads.filter(v => v.id !== vidId); // Bersihkan juga dari antrean lokal
+            newUploads = newUploads.filter(v => v.id !== vidId);
             closeFloatingVideo();
             renderProfileVideos();
             showToast("Video berhasil dihapus permanen!", "success");
@@ -2400,7 +2399,6 @@ async function shareVideo(vidId, btn) {
     if (videoData) {
         namaKreator = videoData.nickname || "Player";
         if (videoData.caption) {
-            // PERBAIKAN DI SINI: Gunakan regex satu baris yang aman
             let cap = videoData.caption.replace(/[\n\r]+/g, ' ').trim();
             teksCaption = `"${cap.substring(0, 30)}${cap.length > 30 ? '...' : ''}"`;
         }
@@ -2641,7 +2639,7 @@ async function loadComments(videoId, silent = false) {
             data.forEach(c => {
                 if (currentUser && (c.user_id === String(currentUser.id).trim() || c.nickname === userProfile?.nickname)) {
                     c.exp = (typeof userProfile !== 'undefined' && userProfile.exp) ? userProfile.exp : 0;
-                    c.user_id = currentUser.id; // PERBAIKI ID SECARA PAKSA agar hitungan video jalan!
+                    c.user_id = currentUser.id;
                 } 
                 else {
                     const p = profilesData.find(x => String(x.id).trim() === c.user_id || x.nickname === c.nickname);
@@ -2868,7 +2866,6 @@ async function likeComment(cid, btn) {
     btn.animTimer = setTimeout(() => icon.classList.remove('animate-ping'), 500);
     try {
         if (isLiked) {
-            // === PROSES UNLIKE (BATAL SUKA) ===
             icon.classList.replace('text-brand-accent', 'text-gray-500');
             
             const { error } = await supabaseClient
@@ -2919,7 +2916,7 @@ async function updateLikeCountUI(videoId, containerDiv) {
                 .eq('video_id', videoId);
             if (!error) {
                 countLike = count || 0;
-                window.cacheVideoStats[videoId].likes = countLike; // Simpan ke otak HP
+                window.cacheVideoStats[videoId].likes = countLike;
             }
         }
         const countSpan = containerDiv.querySelector('.like-count-display');
@@ -2967,7 +2964,7 @@ async function updateCommentCountUI(videoId, containerDiv) {
                 .eq('video_id', videoId);
             if (!error) {
                 countComment = count || 0;
-                window.cacheVideoStats[videoId].comments = countComment; // Simpan ke otak HP
+                window.cacheVideoStats[videoId].comments = countComment;
             }
         }
         const countSpan = containerDiv.querySelector('.comment-count-display');
@@ -2992,7 +2989,7 @@ async function likeVideo(videoId, btn) {
     setTimeout(() => icon.classList.remove('animate-ping'), 500);
     try {
         if (isLiked) {
-            icon.classList.replace('text-brand-accent', 'text-white'); // Ubah warna jadi putih instan
+            icon.classList.replace('text-brand-accent', 'text-white');
             const { error } = await supabaseClient
                 .from('video_likes')
                 .delete()
@@ -3004,7 +3001,7 @@ async function likeVideo(videoId, btn) {
                 window.cacheVideoStats[videoId].likes--;
             }
         } else {
-            icon.classList.replace('text-white', 'text-brand-accent'); // Ubah warna jadi pink instan
+            icon.classList.replace('text-white', 'text-brand-accent');
             const { error } = await supabaseClient
                 .from('video_likes')
                 .insert({
@@ -3027,7 +3024,6 @@ async function likeVideo(videoId, btn) {
         }
         showToast(isLiked ? "Gagal membatalkan like." : "Gagal menyukai video.", "error");
     } finally {
-        // Buka kembali kunci tombol setelah proses selesai
         btn.disabled = false;
     }
 }
@@ -3427,7 +3423,7 @@ function pilihMention(nickname) {
         el.setSelectionRange(newCursorPos, newCursorPos);
     }
     tutupMentionPopup();
-    handleTyping(el); // Trigger resize & ganti tombol mic -> send
+    handleTyping(el);
 }
 
 let lastTypingTime = 0;
@@ -3462,11 +3458,8 @@ function openEditProfileModal() {
     document.getElementById('edit-bio').value = userProfile?.bio || '';
     document.getElementById('edit-wa').value = userProfile?.whatsapp || '';
     document.getElementById('edit-pass').value = '';
-    
-    // [BARU] Muat data E-Wallet
     document.getElementById('edit-wallet-provider').value = userProfile?.wallet_provider || '';
     document.getElementById('edit-wallet-number').value = userProfile?.wallet_number || '';
-
     document.getElementById('modal-edit-profile').classList.remove('hidden');
     document.getElementById('modal-edit-profile').classList.add('flex');
     history.pushState({ popup: 'edit_profile' }, null, '#edit');
@@ -3506,8 +3499,8 @@ async function saveProfileInfo() {
             nickname: newNick,
             bio: newBio,
             whatsapp: newWa,
-            wallet_provider: newWalletProv, // Simpan ke DB
-            wallet_number: newWalletNum,    // Simpan ke DB
+            wallet_provider: newWalletProv,
+            wallet_number: newWalletNum,
             avatar_url: currentAvatar
         });
         if (error) {
@@ -3587,7 +3580,7 @@ async function toggleFollow(targetUserId) {
         }
         document.querySelectorAll(`#feed-follow-btn-${targetUserId}`).forEach(btn => {
             btn.classList.add('scale-0', 'opacity-0');
-            setTimeout(() => btn.style.display = 'none', 300); // Tunggu animasi mengecil selesai
+            setTimeout(() => btn.style.display = 'none', 300);
         });
     }
     fetchFollowStats(targetUserId);
@@ -3726,7 +3719,7 @@ if (isGroup) {
 } else {
     activeChatUserId = id;
     activeGroupId = null;
-    currentRoomMembers = []; // Kosongkan kalau personal chat
+    currentRoomMembers = [];
 }
 document.getElementById('chat-messages-container').innerHTML = '<div class="flex justify-center mt-10"><i class="fas fa-spinner fa-spin text-brand-accent text-2xl"></i></div>';
 loadRoomMessages();
@@ -3891,7 +3884,7 @@ function renderRow(item, isGroup) {
         const replyRegex = /^\[REPLY:(.*?)\|\|(.*?)\|\|(.*?)\]\n([\s\S]*)$/;
         const matchReply = lastMessageText.match(replyRegex);
         if (matchReply) {
-            lastMessageText = matchReply[4]; // Langsung ambil isi pesan aslinya aja
+            lastMessageText = matchReply[4];
         }
         const storyReplyRegex = /^\[STORY_REPLY:(.*?)\|\|(.*?)\]\n([\s\S]*)$/;
         const matchStory = lastMessageText.match(storyReplyRegex);
@@ -4118,7 +4111,7 @@ progressContainer.innerHTML = stories.map((_, i) => `
 <div id="story-progress-${i}" class="h-full bg-white w-0"></div>
 </div>
 `).join('');
-history.pushState({ popup: 'story' }, null, '#story'); // <-- SUNTIKAN HISTORY BARU
+history.pushState({ popup: 'story' }, null, '#story');
 const modal = document.getElementById('story-viewer-modal');
 modal.classList.remove('hidden');
 modal.classList.add('flex');
@@ -4151,7 +4144,7 @@ vidEl.muted = false;
 vidEl.play().catch(() => {});
 if (volBtn) {
 volBtn.classList.remove('hidden');
-volBtn.innerHTML = '<i class="fas fa-volume-up"></i>'; // Set default ikon ke speaker menyala
+volBtn.innerHTML = '<i class="fas fa-volume-up"></i>';
 }
 } else {
 imgEl.src = story.media_url;
@@ -4256,7 +4249,7 @@ const vidEl = document.getElementById('viewer-story-vid');
 const volBtn = document.getElementById('btn-story-volume');
 if (vidEl && volBtn) {
 vidEl.muted = !vidEl.muted;
-isGlobalMuted = vidEl.muted; // Sinkronkan ke audio global aplikasi
+isGlobalMuted = vidEl.muted;
 volBtn.innerHTML = vidEl.muted ? '<i class="fas fa-volume-mute"></i>' : '<i class="fas fa-volume-up"></i>';
 showToast(vidEl.muted ? "Suara Status Dimatikan" : "Suara Status Dinyalakan", vidEl.muted ? "info" : "success");
 }
@@ -4283,7 +4276,7 @@ function closeStoryViewer(dariTombolBack = false) {
     setTimeout(() => {
         modal.classList.remove('flex');
         modal.classList.add('hidden');
-        modal.style.transform = 'translateY(0)'; // Reset posisi
+        modal.style.transform = 'translateY(0)';
     }, 300);
 }
 
@@ -4313,7 +4306,7 @@ async function hapusStoryAktif() {
             }
             showToast("Status berhasil dihapus sepenuhnya", "success");
             closeStoryViewer();
-            loadStories(); // Refresh daftar status di latar belakang
+            loadStories();
         } catch (err) {
             showToast("Gagal menghapus status", "error");
         }
@@ -4393,7 +4386,7 @@ const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent(pathLe
         showToast("Upload gagal: " + err.message, "error");
     } finally {
         btn.disabled = false;
-        isUploading = false; // Buka kunci window unload
+        isUploading = false;
     }
 }
 
@@ -4545,8 +4538,8 @@ function pauseStoryForReply() {
     const activeBar = document.getElementById(`story-progress-${currentActiveStories.currentIndex}`);
     if (activeBar) {
         const computedWidth = window.getComputedStyle(activeBar).width;
-        activeBar.style.transition = 'none'; // Matikan mesin animasinya
-        activeBar.style.width = computedWidth; // Kunci garisnya di posisi tersebut
+        activeBar.style.transition = 'none';
+        activeBar.style.width = computedWidth;
     }
     const vidEl = document.getElementById('viewer-story-vid');
     if (vidEl && !vidEl.classList.contains('hidden')) {
@@ -4606,7 +4599,7 @@ message: finalMessage
 });
 if (error) throw error;
 showToast("Balasan terkirim!", "success");
-input.blur(); // Tutup keyboard hp
+input.blur();
 resumeStoryAfterReply();
 } catch (e) {
 showToast("Gagal mengirim balasan.", "error");
@@ -4654,7 +4647,6 @@ icon.classList.replace('far', 'fas');
 icon.classList.add('text-brand-accent');
 }
 } finally {
-// Nyalakan kembali tombol
 btn.style.pointerEvents = 'auto';
 }
 }
@@ -4710,7 +4702,7 @@ function setupVideoObserver() {
 }
 
 function openCreateGroupModal() {
-    history.pushState({ popup: 'create_group' }, null, '#creategroup'); // <-- JEJAK URL BARU
+    history.pushState({ popup: 'create_group' }, null, '#creategroup');
     document.getElementById('modal-create-group').classList.remove('hidden');
     document.getElementById('modal-create-group').classList.add('flex');
 }
@@ -4771,7 +4763,7 @@ showToast("Grup berhasil dibuat!", "success");
 closeCreateGroupModal();
 document.getElementById('create-group-name').value = '';
 document.getElementById('create-group-desc').value = '';
-fileInput.value = ''; // Reset input file foto
+fileInput.value = '';
 document.getElementById('create-group-preview').src = 'https://ui-avatars.com/api/?name=Grup&background=1A1133&color=fff';
 loadChatList();
 } catch (err) {
@@ -4832,7 +4824,6 @@ let adminButtons = '';
 if (activeGroupRole === 'admin' && p.id !== currentUser.id) {
 adminButtons = `
 <div class="flex gap-2 ml-2">
-<!-- Tombol Jadikan/Batalkan Admin -->
 <button onclick="toggleAdminStatus('${p.id}', '${m.role}', '${escapeHTML(p.nickname).replace(/&#39;/g, "\\'")}')"
 class="w-8 h-8 rounded-lg flex items-center justify-center transition-all ${isAdmin ? 'bg-orange-500/20 text-orange-500' : 'bg-brand-info/20 text-brand-info'}"
 title="${isAdmin ? 'Turunkan dari Admin' : 'Jadikan Admin'}">
@@ -4890,7 +4881,7 @@ async function saveGroupInfo() {
         showToast("Gagal update: " + err.message, "error");
     } finally {
         btn.innerHTML = 'Simpan Perubahan';
-        btn.disabled = false; // Buka kunci tombol lagi
+        btn.disabled = false;
     }
 }
 
@@ -5083,7 +5074,7 @@ deletedForMe.push(selectedMessageId);
 localStorage.setItem('deleted_msgs', JSON.stringify(deletedForMe));
 }
 closeMsgOptions();
-loadRoomMessages(); // Muat ulang layar chat
+loadRoomMessages();
 showToast("Pesan dihapus untuk Anda", "success");
 }
 
@@ -5234,7 +5225,6 @@ text = "🎙️ Pesan Suara";
 } else if (textDiv.innerHTML.includes('<img')) {
 text = "📷 Foto/Gambar";
 } else {
-// Jika pesan teks biasa, hilangkan kode [REPLY:...] yang ada di dalamnya agar rapi
 let cleanText = textDiv.innerText;
 const innerReplyBox = textDiv.querySelector('div[onclick^="jumpToMessage"]');
 if (innerReplyBox) {
@@ -5392,7 +5382,7 @@ function appendMessageBubble(msg) {
     let replyHtml = '';
     let forwardedHtml = '';
     if (rawMessage.startsWith('[FORWARDED]')) {
-        rawMessage = rawMessage.replace(/^\[FORWARDED\]\n?/, ''); // Hapus kode rahasia dari teks
+        rawMessage = rawMessage.replace(/^\[FORWARDED\]\n?/, '');
         forwardedHtml = `<div class="text-[9px] text-white/70 italic mb-1 font-medium flex items-center gap-1.5"><i class="fas fa-share text-[8px]"></i> Diteruskan</div>`;
     }
     const replyRegex = /^\[REPLY:(.*?)\|\|(.*?)\|\|(.*?)\]\n([\s\S]*)$/;
@@ -5401,7 +5391,7 @@ function appendMessageBubble(msg) {
         const replyId = escapeHTML(match[1]);
         const replyName = escapeHTML(match[2]);
         const replyText = escapeHTML(match[3]);
-        rawMessage = match[4]; // Sisa pesan setelah dipotong format reply
+        rawMessage = match[4];
         replyHtml = `
         <div onclick="jumpToMessage('${replyId}')" class="bg-black/30 border-l-[3px] border-brand-info p-2 mb-1.5 rounded-md cursor-pointer hover:bg-black/50 transition-colors active:scale-95">
         <div class="text-[10px] font-bold text-brand-info mb-0.5">${replyName}</div>
@@ -5413,7 +5403,7 @@ function appendMessageBubble(msg) {
     if (matchStory) {
         const mediaType = escapeHTML(matchStory[1]);
         const storyText = escapeHTML(matchStory[2]);
-        rawMessage = matchStory[3]; // Sisa pesan yang diketik pembeli
+        rawMessage = matchStory[3];
         replyHtml = `
         <div class="bg-black/30 border-l-[3px] border-brand-accent p-2 mb-1.5 rounded-md cursor-default">
             <div class="text-[10px] font-bold text-brand-accent mb-0.5"><i class="fas fa-history mr-1"></i> Membalas Status ${mediaType}</div>
@@ -5536,7 +5526,6 @@ if (error) throw error;
 tambahExp(2);
 } catch (err) {
 showToast("Gagal mengirim pesan", "error");
-// Hapus gelembung sementara jika gagal
 const bubble = document.getElementById(`msg-chat-${tempId}`);
 if(bubble) bubble.remove();
 }
@@ -5790,7 +5779,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   setTimeout(() => {
         if(document.getElementById('btn-bayar-langganan')) {
-            pilihPaketSeller('tahunan'); // Set default awal beserta biaya gateway-nya
+            pilihPaketSeller('tahunan');
         }
     }, 1000);
   let tabAwal = window.location.hash.substring(1);
@@ -5870,7 +5859,6 @@ if ('serviceWorker' in navigator) {
   if (btnInstallManual) {
     btnInstallManual.addEventListener('click', async () => {
       if (deferredPrompt) {
-        // Munculkan dialog bawaan Android
         deferredPrompt.prompt();
         const { outcome } = await deferredPrompt.userChoice;
         console.log('Hasil install:', outcome);
@@ -5998,7 +5986,7 @@ async function switchLeaderboardTab(tab) {
         try {
             const { data: topPlayers, error } = await supabaseClient
                 .from('profiles')
-                .select('id, nickname, avatar_url, bio, exp, is_seller, seller_expired_at, last_seen') // <--- 🔥 SENSOR PRIVASI (JURUS 8)
+                .select('id, nickname, avatar_url, bio, exp, is_seller, seller_expired_at, last_seen')
                 .order('exp', { ascending: false })
                 .limit(50);
             if (error || !topPlayers || topPlayers.length === 0) {
@@ -6124,7 +6112,7 @@ function closeRiwayatPesanan(dariTombolBackHP = false) {
             setTimeout(() => {
                 modal.classList.add('hidden');
                 modal.classList.remove('flex');
-                modal.style.opacity = '1'; // Reset
+                modal.style.opacity = '1';
             }, 300);
         }
     }
@@ -6341,11 +6329,9 @@ function toggleInfoDesc(idx) {
     const btn = document.getElementById(`info-btn-${idx}`);
     if (desc) {
         if (desc.classList.contains('line-clamp-3')) {
-            // Jika sedang tertutup -> Buka
             desc.classList.remove('line-clamp-3');
             if (btn) btn.innerHTML = 'Tutup Selengkapnya ▲';
         } else {
-            // Jika sedang terbuka -> Tutup
             desc.classList.add('line-clamp-3');
             if (btn) btn.innerHTML = 'Lihat Selengkapnya ▼';
         }
@@ -7294,7 +7280,6 @@ function renderGridPasar(dataList, targetId = 'grid-pasar-player') {
         <div onclick="bukaDetailPasar('${item.id}')" style="animation-delay: ${delayAnimasi}s; opacity: 0;" class="bg-brand-card rounded-2xl border border-white/5 overflow-hidden flex flex-col hover:border-brand-success/30 transition-all smooth-reveal shadow-lg cursor-pointer group">
             <div class="relative w-full aspect-square bg-black/40 overflow-hidden">
                 <img src="${fotoPertama}" alt="${item.title}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 relative z-0" onerror="this.src='https://placehold.co/400x400/1a1133/2BD975?text=PASAR'">
-                <!-- Watermark AU2Hub Thumbnail -->
                 <img src="https://nos.wjv-1.neo.id/au2hub/Picsart_26-05-30_04-29-46-305.webp" class="absolute inset-0 m-auto w-20 h-20 object-contain opacity-[0.25] pointer-events-none z-10 drop-shadow-lg group-hover:scale-105 transition-transform duration-300" onerror="this.style.display='none'">
                 ${badgeStok}
             </div>
@@ -7576,7 +7561,6 @@ function bukaDetailPasar(idProduk) {
     carousel.innerHTML = arrFoto.map((imgUrl, index) => `
         <div class="w-full h-full flex-shrink-0 snap-center relative cursor-pointer flex items-center justify-center" onclick="bukaGalleryPasar('${produk.id}', ${index})">
             <img src="${imgUrl}" draggable="false" class="w-full h-full object-cover pointer-events-none relative z-0" onerror="this.src='https://placehold.co/400x400/1a1133/2BD975?text=PASAR'">
-            <!-- Watermark AU2Hub -->
             <img src="https://nos.wjv-1.neo.id/au2hub/Picsart_26-05-30_04-29-46-305.webp" class="absolute inset-0 m-auto w-36 h-36 object-contain opacity-[0.25] pointer-events-none z-10 drop-shadow-lg" onerror="this.style.display='none'">
 
         </div>
@@ -7615,8 +7599,8 @@ function bukaDetailPasar(idProduk) {
         const toggleRekber = document.getElementById('toggle-rekber');
         if (toggleRekber && toggleRekber.checked) {
             const feeRekber = hitungFeeRekber(totalHargaCheckout);
-            totalHargaCheckout += feeRekber; // Tambahkan fee ke tagihan akhir!
-            namaProdukFinal += ` [+Rekber]`; // Beri tanda rekber di struk pesanan
+            totalHargaCheckout += feeRekber;
+            namaProdukFinal += ` [+Rekber]`;
         }
         checkoutPasar(namaProdukFinal, totalHargaCheckout, produk.id);
     };
@@ -7753,7 +7737,7 @@ function pilihPaketSeller(tipe) {
     } else if (tipe === 'bulanan') {
         hargaAwal = HARGA_PER_HARI * 30 * qtyVipBulan;
     } else {
-        hargaAwal = HARGA_PER_HARI * 365; // Rp 121.545
+        hargaAwal = HARGA_PER_HARI * 365;
     }
     const biayaGateway = 500 + Math.floor(hargaAwal * 0.007);
     const hargaFinal = hargaAwal + biayaGateway;
@@ -8285,7 +8269,7 @@ function bukaNotaMutasi(id, amount, type, desc, dateStr) {
     if (type === 'EXPENSE' && (desc.toLowerCase().includes('tarik') || desc.toLowerCase().includes('cair'))) {
         let biayaAdmin = 500;
         let nominalBersih = nominal - biayaAdmin;
-        if (nominalBersih < 0) nominalBersih = 0; // Jaga-jaga
+        if (nominalBersih < 0) nominalBersih = 0;
         htmlNota = `
         <div class="text-left w-full cursor-default">
             <div class="text-[10px] text-gray-400 font-extrabold uppercase tracking-widest mb-4 border-b border-white/10 pb-2 flex items-center gap-1.5"><i class="fas fa-university text-brand-info"></i> Struk Penarikan</div>
@@ -8471,7 +8455,7 @@ async function konfirmasiTarikOtomatis(skuCode, productName, basePrice) {
         if (!response.ok || !result.success) {
             throw new Error(result.error || result.detail || "Penarikan dibatalkan atau gagal dikonfirmasi server.");
         }
-        showToast("Dana berhasil diterbangkan ke rekening Anda!", "success");
+        showToast("Penarikan dana berhasil diproses!", "success");
         updateUiSaldoSeller();
         fetchSaldoDanMutasi();
         updateSaldoGlobal();
@@ -8750,7 +8734,7 @@ const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent('pasar
                     }).catch(e => console.log("Abaikan jika file S3 sudah tidak ada:", e));
                 }
             }
-            deletedImagesEdit = []; // Kosongkan antrean setelah dibasmi tuntas
+            deletedImagesEdit = [];
         }
         tutupModalEditProduk();
         await loadProdukSaya();
@@ -8812,7 +8796,7 @@ async function loadAdminDashboard(isRefresh = false) {
     const iconRefresh = document.getElementById('icon-refresh-admin');
     if (isRefresh) {
         if (iconRefresh) iconRefresh.classList.add('fa-spin');
-        showToast("Menyinkronkan data Wall Street...", "info");
+        showToast("Menyinkronkan data keuangan...", "info");
         const ids = ['dash-omzet', 'dash-vip', 'dash-fee-seller', 'dash-fee-rekber', 'dash-qris', 'dash-hak-seller', 'admin-nominal-pending'];
         ids.forEach(id => {
             const el = document.getElementById(id);
@@ -9369,9 +9353,9 @@ function renderGrafikSeller(labels, dataBerhasil, dataPending, dataGagal) {
 
 async function eksekusiSapuBersihTokoMati() {
     if (!userProfile || userProfile.is_super_admin !== true) return;
-    const konfirmasi = await customConfirm("Yakin ingin menjalankan Robot Pembersih? \n\nIni akan membasmi semua produk dari seller yang VIP-nya sudah mati beserta file fotonya di server Biznet GIO.");
+    const konfirmasi = await customConfirm("Yakin ingin menghapus produk dari seller kedaluwarsa beserta fotonya?");
     if (!konfirmasi) return;
-    showToast("Robot Pembersih sedang memindai database...", "info");
+    showToast("Menghapus data usang...", "info");
     try {
         const waktuSekarang = new Date().toISOString();
         const { data: expiredSellers, error: errSeller } = await supabaseClient
@@ -9419,7 +9403,7 @@ async function eksekusiSapuBersihTokoMati() {
             .from('profiles')
             .update({ is_seller: false })
             .in('id', expiredIds);
-        showToast(`Sapu bersih sukses! ${totalDihapus} produk usang telah dimusnahkan permanen.`, "success");
+        showToast(`Sapu bersih sukses! ${totalDihapus} Data produk kedaluwarsa berhasil dihapus.`, "success");
         loadAdminDashboard(true);
         loadPasarPlayer(true);
     } catch (err) {
@@ -9485,7 +9469,6 @@ async function loadRiwayatKeuanganGlobal(isRefresh = false, isLoadMore = false) 
         } else {
             if (!isLoadMore) {
                 globalDataBukuKas = [];
-                // 🔥 PERBAIKAN: Selalu panggil fungsi render walau array kosong agar kotak dashboard tetap digambar!
                 renderBukuKasList([]); 
             } else {
                 if (btnLoadMore) btnLoadMore.remove(); 
@@ -9925,7 +9908,7 @@ function switchAdminTab(tab) {
     } else if (tab === 'harga') {
         if(menuHarga) menuHarga.className = `flex-1 py-3 text-[10px] sm:text-[11px] font-bold rounded-lg transition-all relative ${activeClass}`;
         if(contHarga) contHarga.classList.replace('hidden', 'block');
-        loadRiwayatLabaPPOB(); // <--- GANTI NAMA FUNGSI INI
+        loadRiwayatLabaPPOB();
     }
 }
 let tokoTouchStartX = 0;
@@ -10482,9 +10465,7 @@ function renderGridPPOB() {
                 <h4 class="text-[12px] sm:text-[13px] font-extrabold text-white leading-snug line-clamp-3">${namaAman}</h4>
             </div>
             <div class="mt-auto relative z-0 flex flex-col">
-                <!-- Harga Coret Palsu (Abu-abu & Dicoret) -->
                 <span class="text-gray-500 line-through text-[9px] sm:text-[10px] font-medium opacity-70 mb-0.5">${formatHargaCoret}</span>
-                <!-- Harga Jual Asli -->
                 <span class="text-[13px] sm:text-[14px] font-black ${isActive ? 'text-[#EE4D2D]' : 'text-gray-400'} tracking-tight block">${formatHarga}</span>
             </div>
         </div>`;
