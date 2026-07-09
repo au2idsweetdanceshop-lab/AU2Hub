@@ -31,7 +31,7 @@
 
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script defer src="/app.js?v=301"></script>
+<script defer src="/app.js?v=302"></script>
 <style>
 
 @font-face {
@@ -511,7 +511,7 @@ Sistem Jual Beli Otomatis, Database Ripper, dan Rekber <strong>NIKKY</strong>. D
             <div id="dynamic-event-container" class="mb-8">
                 <div class="animate-pulse bg-brand-card h-40 rounded-3xl border border-white/5 flex items-center justify-center">
                     <div class="flex flex-col items-center">
-                        <i class="fas fa-circle-notch fa-spin text-brand-accent text-3xl mb-2"></i>
+                        <img src="https://nos.wjv-1.neo.id/au2hub/Picsart_26-05-30_04-29-46-305.webp" class="w-10 h-10 mb-2 relative z-10 splash-logo-anim drop-shadow-[0_0_15px_rgba(255,0,122,0.5)]" alt="Loading">
                         <span class="text-xs text-gray-500 font-bold tracking-widest">MENARIK DATA SERVER...</span>
                     </div>
                 </div>
@@ -544,7 +544,7 @@ Sistem Jual Beli Otomatis, Database Ripper, dan Rekber <strong>NIKKY</strong>. D
                 <input type="text" id="faqSearch" placeholder="Cari pertanyaan..." class="w-full bg-black/40 border border-white/10 rounded-2xl py-3 pl-10 pr-4 text-xs text-white focus:outline-none focus:border-brand-info transition-all shadow-inner">
             </div>
             <div id="faq-container" class="space-y-3 pb-4">
-                <div class="text-center py-6"><i class="fas fa-spinner fa-spin text-brand-info text-2xl"></i></div>
+                <div class="text-center py-6"><img src="https://nos.wjv-1.neo.id/au2hub/Picsart_26-05-30_04-29-46-305.webp" class="w-10 h-10 splash-logo-anim drop-shadow-[0_0_15px_rgba(0,240,255,0.5)]"></div>
             </div>
         </section>
 
@@ -566,10 +566,9 @@ Sistem Jual Beli Otomatis, Database Ripper, dan Rekber <strong>NIKKY</strong>. D
 
 <div id="sosial-wrapper" class="relative w-full h-[calc(100dvh-240px)] min-h-[400px] rounded-3xl overflow-hidden border border-white/10 shadow-lg bg-brand-dark flex flex-col transition-all duration-300">
 <div id="fake-loader" class="absolute inset-0 z-50 bg-brand-dark flex flex-col items-center justify-center hidden transition-opacity duration-1000">
-<div class="relative w-20 h-20 mb-6">
-<div class="absolute inset-0 border-4 border-brand-card rounded-full"></div>
-<div class="absolute inset-0 border-4 border-brand-accent rounded-full border-t-transparent animate-spin"></div>
-<div class="absolute inset-0 flex items-center justify-center text-brand-info"><i class="fas fa-bolt animate-pulse text-2xl"></i></div>
+<div class="relative flex flex-col items-center justify-center mb-6">
+    <div class="absolute inset-0 bg-brand-accent opacity-30 animate-pulse rounded-full" style="filter: blur(25px);"></div>
+    <img src="https://nos.wjv-1.neo.id/au2hub/Picsart_26-05-30_04-29-46-305.webp" class="w-20 h-20 relative z-10 splash-logo-anim drop-shadow-[0_0_20px_rgba(255,0,122,0.6)]">
 </div>
 <h3 class="text-white font-extrabold tracking-widest text-sm mb-1 animate-pulse">MENYIAPKAN FEED</h3>
 <p class="text-[10px] text-gray-500 text-center px-8">Sedang mengoptimalkan kualitas video untuk perangkat Anda. Mohon tunggu sebentar...</p>
@@ -592,7 +591,7 @@ Sistem Jual Beli Otomatis, Database Ripper, dan Rekber <strong>NIKKY</strong>. D
     <!-- Tempat Data Akan Dirender oleh Javascript -->
     <div id="rekber-dynamic-container">
         <div class="flex flex-col items-center justify-center py-10 mt-10">
-            <i class="fas fa-spinner fa-spin text-brand-purple text-3xl mb-3"></i>
+            <img src="https://nos.wjv-1.neo.id/au2hub/Picsart_26-05-30_04-29-46-305.webp" class="w-10 h-10 splash-logo-anim drop-shadow-[0_0_15px_rgba(0,240,255,0.5)]"></i>
             <span class="text-xs text-gray-500 font-bold tracking-widest">MEMUAT DATABASE...</span>
         </div>
     </div>
@@ -1348,7 +1347,7 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
     </div>
     
     <div id="grid-pasar-player" class="grid grid-cols-2 gap-3 pb-10">
-        <div class="col-span-2 text-center py-10 text-brand-success"><i class="fas fa-spinner fa-spin text-3xl mb-3"></i><br><span class="text-xs font-bold tracking-widest uppercase">Memuat Etalase...</span></div>
+        <div class="col-span-2 text-center py-10 text-brand-success"><img src="https://nos.wjv-1.neo.id/au2hub/Picsart_26-05-30_04-29-46-305.webp" class="w-10 h-10 splash-logo-anim drop-shadow-[0_0_15px_rgba(0,240,255,0.5)]"><br><span class="text-xs font-bold tracking-widest uppercase">Memuat Etalase...</span></div>
     </div>
 </section>
 
@@ -1368,7 +1367,7 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
 
     <!-- Grid Etalase Khusus Toko Ini -->
     <div id="grid-tokopublik" class="grid grid-cols-2 gap-3 pb-10 relative z-10 pt-2">
-        <div class="col-span-2 text-center py-10 text-brand-info"><i class="fas fa-spinner fa-spin text-3xl mb-3"></i><br><span class="text-xs font-bold uppercase tracking-widest">Membuka Toko...</span></div>
+        <div class="col-span-2 text-center py-10 text-brand-info"><img src="https://nos.wjv-1.neo.id/au2hub/Picsart_26-05-30_04-29-46-305.webp" class="w-10 h-10 splash-logo-anim drop-shadow-[0_0_15px_rgba(0,240,255,0.5)]"><br><span class="text-xs font-bold uppercase tracking-widest">Membuka Toko...</span></div>
     </div>
 </section>
 
