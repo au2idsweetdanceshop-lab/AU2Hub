@@ -1245,15 +1245,19 @@ async function renderProfileVideos(targetUserId = null) {
         }
     }
 
-    const userVideos = allVideosData.filter(v => String(v.user_id) === uidToRender);
+const userVideos = allVideosData.filter(v => String(v.user_id) === uidToRender);
+
     const elLikes = document.getElementById('profile-total-likes');
     if (elLikes) elLikes.innerText = (userVideos.length * 3);
+    const reversedVideos = [...userVideos].sort((a, b) => {
         return (b.original_index || 0) - (a.original_index || 0);
     });
+
     if (reversedVideos.length === 0) {
         grid.innerHTML = '<div class="col-span-3 text-center text-xs text-gray-500 py-8 bg-black/20 rounded-xl border border-white/5"><i class="fas fa-film text-2xl mb-2 opacity-50"></i><br>Belum ada video yang diupload.</div>';
         return;
     }
+
     grid.innerHTML = reversedVideos.map((vid, index) => {
         return `
         <div class="aspect-[9/16] bg-black relative rounded-md overflow-hidden border border-white/10 group cursor-pointer" onclick="openProfileFeed('${vid.user_id}', ${index})">
