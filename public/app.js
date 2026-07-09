@@ -426,7 +426,7 @@ let isInfoLoaded = false;
             const eventContainer = document.getElementById('dynamic-event-container');
             const faqContainer = document.getElementById('faq-container');
             if (forceRefresh) {
-                eventContainer.innerHTML = '<div class="animate-pulse bg-brand-card h-40 rounded-3xl border border-white/5 flex items-center justify-center"><i class="fas fa-spinner fa-spin text-brand-accent text-3xl"></i></div>';
+                eventContainer.innerHTML = '<div class="animate-pulse bg-brand-card h-40 rounded-3xl border border-white/5 flex items-center justify-center"><img src="https://nos.wjv-1.neo.id/au2hub/Picsart_26-05-30_04-29-46-305.webp" class="w-10 h-10 mx-auto splash-logo-anim drop-shadow-[0_0_15px_rgba(255,0,122,0.5)]"></div>';
                 faqContainer.innerHTML = '<div class="text-center py-6"><i class="fas fa-spinner fa-spin text-brand-info text-2xl"></i></div>';
             }
             try {
@@ -2148,7 +2148,7 @@ function renderProfileVideoBatch(customAmount = 3) {
     const htmlString = nextBatch.map((vid) => `
     <div class="snap-start w-full h-full flex-shrink-0 relative flex items-center justify-center bg-black/95 px-0 sm:px-4 py-0 sm:py-6">
     <div class="w-full max-w-sm aspect-[9/16] relative bg-brand-dark mx-auto h-full sm:h-auto sm:rounded-3xl overflow-hidden shadow-2xl">
-    <div class="absolute inset-0 flex items-center justify-center z-0"><div class="w-12 h-12 border-4 border-brand-accent/20 border-t-brand-accent rounded-full animate-spin"></div></div>
+    <div class="absolute inset-0 flex items-center justify-center z-0"><img src="https://nos.wjv-1.neo.id/au2hub/Picsart_26-05-30_04-29-46-305.webp" class="w-10 h-10 opacity-40 splash-logo-anim drop-shadow-[0_0_15px_rgba(255,0,122,0.3)]"></div>
     <video class="absolute inset-0 m-auto w-full h-full object-cover float-video-player transition-opacity duration-500 opacity-0 z-10"
     onloadeddata="this.classList.remove('opacity-0')" loop ${isGlobalMuted ? 'muted' : ''} playsinline preload="metadata"
     ontimeupdate="updateVideoProgress(this)"
@@ -2547,7 +2547,7 @@ document.getElementById('userListSearch').addEventListener('input', debounce(fun
 
 function tampilkanSemuaRipper(tombol) {
 isRipperExpanded = true; localStorage.setItem('statusLihatSemua', 'true');
-tombol.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Membuka Data...'; tombol.classList.add('opacity-70', 'scale-95');
+tombol.innerHTML = '<img src="https://nos.wjv-1.neo.id/au2hub/Picsart_26-05-30_04-29-46-305.webp" class="w-4 h-4 inline-block splash-logo-anim mr-2"> Membuka Data...'; tombol.classList.add('opacity-70', 'scale-95');
 setTimeout(() => {
 const wadahTombol = document.getElementById('wadah-tombol-semua'); if (wadahTombol) wadahTombol.remove();
 const sisaData = dataRipperGlobal.slice(5);
@@ -2625,7 +2625,7 @@ function closeComments() {
 async function loadComments(videoId, silent = false) {
     const list = document.getElementById('comment-list');
     if (!silent) {
-        list.innerHTML = '<div class="flex justify-center mt-10"><i class="fas fa-spinner fa-spin text-brand-accent text-3xl"></i></div>';
+        list.innerHTML = '<div class="flex justify-center mt-10"><img src="https://nos.wjv-1.neo.id/au2hub/Picsart_26-05-30_04-29-46-305.webp" class="w-10 h-10 mx-auto splash-logo-anim drop-shadow-[0_0_15px_rgba(255,0,122,0.5)]"></div>';
     }
     cancelReply();
     try {
@@ -3218,7 +3218,7 @@ function renderVideoBatch() {
         <div class="snap-start w-full h-full flex-shrink-0 relative flex items-center justify-center bg-black">
         <div class="video-inner-wrap w-full h-full relative bg-brand-dark ${!isGlobalMuted ? 'floating-focus' : ''}">
         ${tutorialHtml}
-        <div class="absolute inset-0 flex items-center justify-center z-0"><div class="w-12 h-12 border-4 border-brand-accent/20 border-t-brand-accent rounded-full animate-spin"></div></div>
+        <div class="absolute inset-0 flex items-center justify-center z-0"><img src="https://nos.wjv-1.neo.id/au2hub/Picsart_26-05-30_04-29-46-305.webp" class="w-10 h-10 opacity-40 splash-logo-anim drop-shadow-[0_0_15px_rgba(255,0,122,0.3)]"></div>
         <video class="absolute inset-0 m-auto w-full h-full object-cover video-player transition-opacity duration-500 opacity-0 z-10"
         onloadeddata="this.classList.remove('opacity-0')" loop ${isGlobalMuted ? 'muted' : ''} playsinline preload="metadata"
         ontimeupdate="updateVideoProgress(this)"
@@ -3514,7 +3514,7 @@ m.classList.add('hidden'); m.classList.remove('flex');
 async function saveProfileInfo() {
     const btn = document.querySelector('button[onclick="saveProfileInfo()"]');
     const originalText = btn.innerHTML;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Menyimpan...';
+    btn.innerHTML = '<img src="https://nos.wjv-1.neo.id/au2hub/Picsart_26-05-30_04-29-46-305.webp" class="w-4 h-4 inline-block splash-logo-anim mr-2"> Menyimpan...';
     btn.disabled = true;
     try {
         const newNick = document.getElementById('edit-nick').value.trim();
@@ -4770,7 +4770,7 @@ const btn = document.getElementById('btn-submit-group');
 if (!nameInput) return showToast("Nama grup wajib diisi!", "error");
 btn.disabled = true;
 const originalText = btn.innerHTML;
-btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Membuat...';
+btn.innerHTML = '<img src="https://nos.wjv-1.neo.id/au2hub/Picsart_26-05-30_04-29-46-305.webp" class="w-4 h-4 inline-block splash-logo-anim mr-2"> Membuat...';
 try {
 let finalAvatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(nameInput)}&background=1A1133&color=fff`;
 if (fileInput.files && fileInput.files[0]) {
@@ -8593,7 +8593,7 @@ async function konfirmasiTarikOtomatis(skuCode, productName, basePrice) {
 }
 
 window.tutupLayarSuksesWD = (btnElement) => {
-    btnElement.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Menutup...';
+    btnElement.innerHTML = '<img src="https://nos.wjv-1.neo.id/au2hub/Picsart_26-05-30_04-29-46-305.webp" class="w-4 h-4 inline-block splash-logo-anim mr-2"> Menutup...';
     btnElement.disabled = true;
 
     if (window.wdPolling) { clearInterval(window.wdPolling); window.wdPolling = null; }
@@ -9231,7 +9231,7 @@ function eksekusiHapusKreator() {
 
 async function cekStatusManualXoftware(orderId, tableName, btnElement) {
     const originalText = btnElement.innerHTML;
-    btnElement.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Mengecek...';
+    btnElement.innerHTML = '<img src="https://nos.wjv-1.neo.id/au2hub/Picsart_26-05-30_04-29-46-305.webp" class="w-4 h-4 inline-block splash-logo-anim mr-2"> Mengecek...';
     btnElement.disabled = true;
     try {
         const res = await fetch(`/api/check-status?order_id=${orderId}&table=${tableName}&_t=${Date.now()}`);
@@ -10271,7 +10271,7 @@ async function prosesBeliPPOB(skuCode, targetNo, harga, namaProduk) {
     }
 }
 window.tutupLayarSuksesPPOB = (btnElement) => {
-    btnElement.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Menutup...';
+    btnElement.innerHTML = '<img src="https://nos.wjv-1.neo.id/au2hub/Picsart_26-05-30_04-29-46-305.webp" class="w-4 h-4 inline-block splash-logo-anim mr-2"> Menutup...';
     btnElement.disabled = true;
     if (window.ppobPolling) { clearInterval(window.ppobPolling); window.ppobPolling = null; }
     if (window.channelPPOBGlobal) { supabaseClient.removeChannel(window.channelPPOBGlobal); window.channelPPOBGlobal = null; }
@@ -10293,7 +10293,7 @@ window.tutupLayarSuksesPPOB = (btnElement) => {
     }
 };
 window.tutupLayarSuksesWD = (btnElement) => {
-    btnElement.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Menutup...';
+    btnElement.innerHTML = '<img src="https://nos.wjv-1.neo.id/au2hub/Picsart_26-05-30_04-29-46-305.webp" class="w-4 h-4 inline-block splash-logo-anim mr-2"> Menutup...';
     btnElement.disabled = true;
     if (window.wdPolling) { clearInterval(window.wdPolling); window.wdPolling = null; }
     if (window.channelWDGlobal) { supabaseClient.removeChannel(window.channelWDGlobal); window.channelWDGlobal = null; }
@@ -10867,7 +10867,7 @@ async function autoSetorKeNikky(nominal, keterangan) {
 }
 
 window.tutupLayarSuksesPPOB = (btnElement) => {
-    btnElement.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Menutup...';
+    btnElement.innerHTML = '<img src="https://nos.wjv-1.neo.id/au2hub/Picsart_26-05-30_04-29-46-305.webp" class="w-4 h-4 inline-block splash-logo-anim mr-2"> Menutup...';
     btnElement.disabled = true;
     if (typeof updateSaldoGlobal === 'function') updateSaldoGlobal();
     if (typeof fetchProfile === 'function') fetchProfile();
