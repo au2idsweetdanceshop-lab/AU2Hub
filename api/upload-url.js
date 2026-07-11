@@ -2,48 +2,33 @@ import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { createClient } from '@supabase/supabase-js';
 import crypto from 'crypto';
-
-// Supabase Client untuk verifikasi Token User
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL; 
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY; 
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
-
 export const config = {
-  api: { bodyParser: { sizeLimit: '10mb' } } // ⚠️ Catatan: Vercel membatasi Payload Serverless maksimal 4.5MB
+  api: { bodyParser: { sizeLimit: '10mb' } }
 };
-
-// 🛡️ KEAMANAN 1: Whitelist MIME Types (Hanya izinkan Gambar & Video)
 const ALLOWED_MIME_TYPES = [
     'image/jpeg', 'image/png', 'image/webp', 'image/gif',
     'video/mp4', 'video/webm', 'video/quicktime'
 ];
-
 export default async function handler(req, res) {
-  // ==========================================
-// 🛡️ PROTEKSI CORS: HANYA IZINKAN DOMAIN SENDIRI
-// ==========================================
 const origin = req.headers.origin || req.headers.referer;
-// Kecualikan webhook dari pengecekan origin karena webhook dikirim oleh server Xoftware/Digiflazz, bukan dari browser
 const isWebhook = (req.body && req.body.action === 'webhook') || req.url.includes('webhook');
-
 if (!isWebhook && origin) {
     if (!origin.includes('au2idsweetdance.com') && !origin.includes('localhost')) {
         return res.status(403).json({ success: false, message: 'Akses Ditolak: Domain Tidak Sah!' });
     }
 }
-    // 🛡️ KEAMANAN 2: Wajib Login! (Ambil token dari header Authorization)
     const authHeader = req.headers.authorization;
     if (!authHeader) {
         return res.status(401).json({ success: false, error: 'Unauthorized: Akses ditolak!' });
     }
-
     const token = authHeader.replace('Bearer ', '');
     const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-
     if (authError || !user) {
         return res.status(401).json({ success: false, error: 'Unauthorized: Token tidak valid atau kadaluarsa.' });
     }
-
     const bucketName = process.env.BIZNET_BUCKET_NAME;
     const client = new S3Client({
         region: "idn", 
@@ -54,30 +39,20 @@ if (!isWebhook && origin) {
         },
         forcePathStyle: true,
     });
-
-    // =======================================================================
-    // JALUR 1: POST (Direct Upload untuk Base64) - Cocok untuk Foto Profil Kecil
-    // =======================================================================
     if (req.method === 'POST') {
         try {
             const { fileBase64, filetype } = req.body;
-            
             if (!fileBase64 || !filetype) {
                 return res.status(400).json({ success: false, error: 'Data file tidak lengkap' });
             }
-
             if (!ALLOWED_MIME_TYPES.includes(filetype)) {
                 return res.status(400).json({ success: false, error: 'Format file berbahaya/tidak diizinkan!' });
             }
-
             const base64Data = fileBase64.replace(/^data:\w+\/\w+;base64,/, "");
             const buffer = Buffer.from(base64Data, 'base64');
             const ext = filetype.split('/')[1];
-            
-            // 🛡️ KEAMANAN 3: Paksa folder menggunakan User ID & Enkripsi Nama File
             const safeFilename = crypto.randomUUID();
             const uniqueFileName = `media/${user.id}/${Date.now()}_${safeFilename}.${ext}`;
-
             const command = new PutObjectCommand({
                 Bucket: bucketName,
                 Key: uniqueFileName,
@@ -85,9 +60,7 @@ if (!isWebhook && origin) {
                 ContentType: filetype,
                 ACL: 'public-read'
             });
-
             await client.send(command);
-            
             return res.status(200).json({
                 success: true,
                 url: `https://${bucketName}.nos.wjv-1.neo.id/${uniqueFileName}`
@@ -97,38 +70,25 @@ if (!isWebhook && origin) {
             return res.status(500).json({ success: false, error: 'Gagal mengunggah file' });
         }
     }
-
-    // =======================================================================
-    // JALUR 2: GET (Pre-signed URL untuk Upload Skala Besar, misal Video)
-    // =======================================================================
     if (req.method === 'GET') {
         const { filetype } = req.query;
-
         if (!filetype) {
             return res.status(400).json({ success: false, error: 'Parameter filetype wajib disertakan' });
         }
-
         if (!ALLOWED_MIME_TYPES.includes(filetype)) {
             return res.status(400).json({ success: false, error: 'Format file tidak diizinkan!' });
         }
-
         try {
             const ext = filetype.split('/')[1];
             const safeFilename = crypto.randomUUID();
-            
-            // 🛡️ KEAMANAN 4: Hacker tidak bisa menimpa file orang lain
             const serverGeneratedPath = `uploads/${user.id}/${Date.now()}_${safeFilename}.${ext}`;
-
             const command = new PutObjectCommand({
                 Bucket: bucketName,
                 Key: serverGeneratedPath,
                 ContentType: filetype,
                 ACL: 'public-read' 
             });
-
-            // Token URL berlaku selama 15 Menit saja (3600 kelamaan, bahaya jika bocor)
             const uploadUrl = await getSignedUrl(client, command, { expiresIn: 900 });
-            
             return res.status(200).json({
                 success: true,
                 uploadUrl: uploadUrl,
@@ -139,7 +99,6 @@ if (!isWebhook && origin) {
             return res.status(500).json({ success: false, error: 'Gagal membuat URL aman' });
         }
     }
-
     res.setHeader('Allow', ['GET', 'POST']);
     return res.status(405).json({ success: false, error: `Method ${req.method} tidak diizinkan` });
 }
