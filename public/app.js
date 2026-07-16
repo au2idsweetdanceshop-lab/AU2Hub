@@ -433,7 +433,7 @@ let isInfoLoaded = false;
                 faqContainer.innerHTML = '<div class="text-center py-6"><i class="fas fa-spinner fa-spin text-brand-info text-2xl"></i></div>';
             }
             try {
-                const configRes = await fetch('/api/content?action=config');
+                const configRes = await fetch('/api/get-config');
                 const config = await configRes.json();
                 if (!config.gasUrl) throw new Error("Link GAS tidak ditemukan");
                 const res = await fetch(`${config.gasUrl}?action=get_info`);
@@ -993,7 +993,7 @@ async function checkSession() {
         document.getElementById('profile-logged-out').classList.add('hidden');
 
         if (allVideosData.length === 0) {
-            fetch('/api/content?action=videos')
+            fetch('/api/get-videos')
                 .then(res => res.json())
                 .then(dataDariSheet => {
                     allVideosData = dataDariSheet.map((v, index) => {
@@ -1229,7 +1229,7 @@ async function renderProfileVideos(targetUserId = null) {
     if (allVideosData.length === 0) {
         try {
             grid.innerHTML = '<div class="col-span-3 text-center text-xs text-brand-info py-4"><i class="fas fa-spinner fa-spin text-xl mb-2"></i><br>Memuat...</div>';
-            const res = await fetch('/api/content?action=videos');
+            const res = await fetch('/api/get-videos');
             let dataDariSheet = await res.json();
             dataDariSheet = dataDariSheet.map((v, index) => {
                 v.original_index = index;
@@ -1310,7 +1310,7 @@ async function handleAvatarUpload(event) {
         const finalFile = new File([compressedBlob], "avatar.jpg", { type: "image/jpeg" });
         const oldAvatarUrl = userProfile?.avatar_url || "";
         if (oldAvatarUrl && !oldAvatarUrl.includes('ui-avatars.com')) {
-            await fetch('/api/storage?action=delete&type=file', {
+            await fetch('/api/delete-s3?type=file', {
                 method: 'DELETE',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ fileUrl: oldAvatarUrl })
@@ -1320,7 +1320,7 @@ async function handleAvatarUpload(event) {
 const pathLengkap = `${currentUser.id}/avatar/ava_${Date.now()}`;
 const { data: { session } } = await supabaseClient.auth.getSession();
 const token = session?.access_token;
-const resUrl = await fetch(`/api/storage?action=upload&filename=${encodeURIComponent(pathLengkap)}&filetype=${encodeURIComponent(finalFile.type)}`, {
+const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent(pathLengkap)}&filetype=${encodeURIComponent(finalFile.type)}`, {
     headers: { 'Authorization': `Bearer ${token}` }
 });
 const dataUrl = await resUrl.json();
@@ -2344,7 +2344,7 @@ async function deleteVideo(vidId) {
     if(hapus === 'HAPUS') {
         try {
             const videoTarget = allVideosData.find(v => v.id === vidId);
-            const configRes = await fetch('/api/content?action=config');
+            const configRes = await fetch('/api/get-config');
             const config = await configRes.json();
             if (config.gasUrl) {
                 await fetch(config.gasUrl, {
@@ -2355,7 +2355,7 @@ async function deleteVideo(vidId) {
                 });
             }
             if (videoTarget && videoTarget.video_url) {
-                await fetch('/api/storage?action=delete&type=file', {
+                await fetch('/api/delete-s3?type=file', {
                     method: 'DELETE',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ fileUrl: videoTarget.video_url })
@@ -3094,7 +3094,7 @@ async function loadVideos(isLoadMore = false) {
     if (isFeedEndReached || isFetchingFeed) return;
     isFetchingFeed = true;
     try {
-        const res = await fetch(`/api/content?action=videos&limit=${FEED_LIMIT}&offset=${feedOffset}`);
+        const res = await fetch(`/api/get-videos?limit=${FEED_LIMIT}&offset=${feedOffset}`);
         const contentType = res.headers.get("content-type");
         if (!contentType || !contentType.includes("application/json")) {
             throw new Error("Format data Vercel tidak valid. Cek link Google Sheets.");
@@ -3576,7 +3576,7 @@ async function hapusAkunPermanen() {
     if (konfirmasi === 'HAPUS AKUN') {
         showToast("Sedang menghancurkan akun dan membersihkan media...", "info");
         try {
-            await fetch(`/api/storage?action=delete&type=folder&userId=${currentUser.id}`, {
+            await fetch(`/api/delete-s3?type=folder&userId=${currentUser.id}`, {
                 method: 'DELETE'
             });
             const { error } = await supabaseClient.rpc('hapus_akun_saya');
@@ -4348,7 +4348,7 @@ async function hapusStoryAktif() {
             const { error } = await supabaseClient.from('stories').delete().eq('id', story.id);
             if (error) throw error;
             if (story.media_url) {
-                await fetch('/api/storage?action=delete&type=file', {
+                await fetch('/api/delete-s3?type=file', {
                     method: 'DELETE',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ fileUrl: story.media_url })
@@ -4391,14 +4391,14 @@ async function prosesUploadVideo() {
     checkSession();
     showToast("Mengunggah video di latar belakang...", "info");
     try {
-        const configRes = await fetch('/api/content?action=config');
+        const configRes = await fetch('/api/get-config');
         const config = await configRes.json();
         if (!config.gasUrl) throw new Error("Link GAS tidak ditemukan di config");
         const namaFolder = `${currentUser.id}/feed_video`;
         const namaFileUnik = `${Date.now()}_${file.name.replace(/\s+/g, '_')}`;
         const pathLengkap = `${namaFolder}/${namaFileUnik}`;
         const { data: { session } } = await supabaseClient.auth.getSession();
-const resUrl = await fetch(`/api/storage?action=upload&filename=${encodeURIComponent(pathLengkap)}&filetype=${encodeURIComponent(file.type)}`, {
+const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent(pathLengkap)}&filetype=${encodeURIComponent(file.type)}`, {
     headers: { 'Authorization': `Bearer ${session?.access_token}` }
 });
         const dataUrl = await resUrl.json();
@@ -4544,7 +4544,7 @@ async function prosesKirimMedia() {
         const namaFolder = context === 'chat' ? `${currentUser.id}/chat_media` : `${currentUser.id}/story_media`;
         const pathLengkap = `${namaFolder}/media_${Date.now()}`;
         const { data: { session } } = await supabaseClient.auth.getSession();
-const resUrl = await fetch(`/api/storage?action=upload&filename=${encodeURIComponent(pathLengkap)}&filetype=${encodeURIComponent(file.type)}`, {
+const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent(pathLengkap)}&filetype=${encodeURIComponent(file.type)}`, {
     headers: { 'Authorization': `Bearer ${session?.access_token}` }
 });
         const dataUrl = await resUrl.json();
@@ -4796,7 +4796,7 @@ if (fileInput.files && fileInput.files[0]) {
 const file = fileInput.files[0];
 showToast("Mengunggah foto grup...", "info");
 const { data: { session } } = await supabaseClient.auth.getSession();
-const resUrl = await fetch(`/api/storage?action=upload&filename=${encodeURIComponent('group_'+Date.now())}&filetype=${encodeURIComponent(file.type)}`, {
+const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent('group_'+Date.now())}&filetype=${encodeURIComponent(file.type)}`, {
     headers: { 'Authorization': `Bearer ${session?.access_token}` }
 });
 const dataUrl = await resUrl.json();
@@ -5217,7 +5217,7 @@ const reader = new FileReader();
 reader.readAsDataURL(blob);
 reader.onloadend = async () => {
 try {
-const resUrl = await fetch(`/api/storage?action=upload&filename=${encodeURIComponent('voice_'+Date.now()+'.webm')}&filetype=${encodeURIComponent('audio/webm')}`);
+const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent('voice_'+Date.now()+'.webm')}&filetype=${encodeURIComponent('audio/webm')}`);
 const dataUrl = await resUrl.json();
 await fetch(dataUrl.uploadUrl, {
 method: 'PUT',
@@ -5697,7 +5697,7 @@ container.innerHTML = html;
 }
 
 async function muatDataRipper() {
-const linkAPI = "/api/content?action=ripper";
+const linkAPI = "/api/ripper";
 const container = document.getElementById('ripper-container');
 const dataTersimpan = localStorage.getItem('ripperCache');
 if (dataTersimpan) { dataRipperGlobal = JSON.parse(dataTersimpan); renderRippers(dataRipperGlobal, false); }
@@ -5997,7 +5997,7 @@ async function switchLeaderboardTab(tab) {
         containerCreator.innerHTML = '<div class="text-center py-10"><i class="fas fa-spinner fa-spin text-brand-accent text-2xl"></i></div>';
         if (allVideosData.length === 0) {
             try {
-                const res = await fetch('/api/content?action=videos');
+                const res = await fetch('/api/get-videos');
                 let dataDariSheet = await res.json();
                 dataDariSheet = dataDariSheet.map(v => { v.id = v.id || v.video_id || v.ID || 'vid_' + Math.random().toString(36).substr(2, 9); return v; });
                 allVideosData = dataDariSheet.filter(v => !blockedUsersList.includes(v.user_id));
@@ -6287,7 +6287,7 @@ showToast("Mengupdate foto profil grup...", "info");
 try {
 const pathLengkap = `groups/${activeGroupId}/avatar_${Date.now()}`;
 const { data: { session } } = await supabaseClient.auth.getSession();
-const resUrl = await fetch(`/api/storage?action=upload&filename=${encodeURIComponent(pathLengkap)}&filetype=${encodeURIComponent(file.type)}`, {
+const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent(pathLengkap)}&filetype=${encodeURIComponent(file.type)}`, {
     headers: { 'Authorization': `Bearer ${session?.access_token}` }
 });
 const dataUrl = await resUrl.json();
@@ -6322,7 +6322,7 @@ async function loadDataRekber(forceRefresh = false) {
         container.innerHTML = '<div class="flex flex-col items-center justify-center py-10 mt-10"><i class="fas fa-spinner fa-spin text-brand-purple text-3xl mb-3"></i><span class="text-xs text-gray-500 font-bold tracking-widest">MEMUAT ULANG...</span></div>';
     }
     try {
-        const configRes = await fetch('/api/content?action=config');
+        const configRes = await fetch('/api/get-config');
         const config = await configRes.json();
         if (!config.gasUrl) throw new Error("Link GAS tidak ditemukan");
         const res = await fetch(`${config.gasUrl}?action=get_rekber`);
@@ -6747,7 +6747,7 @@ async function checkoutXoftwarePay(namaProduk, harga, deskripsi, sellerId = null
             if (orderError) throw orderError;
             orderData = newOrder;
         }
-        const responsePG = await fetch('/api/payment?action=create_qris', { 
+        const responsePG = await fetch('/api/create-qris', { 
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ order_id: orderData.id, amount: harga, product_name: namaProduk, customer_name: userProfile?.nickname || 'Player' })
@@ -6922,7 +6922,7 @@ let htmlDataPesanan = escapeHTML(autoDeliveryContent).replace(
 
         intervalJemputBola = setInterval(async () => {
             try {
-                const res = await fetch(`/api/payment?action=check_status&order_id=${orderData.id}&table=${targetTabel}&_t=${Date.now()}`);
+                const res = await fetch(`/api/check-status?order_id=${orderData.id}&table=${targetTabel}&_t=${Date.now()}`);
                 const responseData = await res.json();
                 const apiStatus = String(responseData.status || responseData.data?.status || responseData.payment_status || '').toUpperCase();
                 if (apiStatus === 'SUCCESS' || apiStatus === 'SUCCEEDED' || apiStatus === 'PAID' || apiStatus === 'SELESAI' || apiStatus === 'PROSES') {
@@ -7434,7 +7434,7 @@ async function prosesPostingJualan() {
         const uploadPromises = fileJualanArray.map(async (file, index) => {
 const pathLengkap = `${currentUser.id}/pasar/foto_${index}_${Date.now()}`;
 const { data: { session } } = await supabaseClient.auth.getSession();
-const resUrl = await fetch(`/api/storage?action=upload&filename=${encodeURIComponent(pathLengkap)}&filetype=${encodeURIComponent(file.type)}`, {
+const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent(pathLengkap)}&filetype=${encodeURIComponent(file.type)}`, {
     headers: { 'Authorization': `Bearer ${session?.access_token}` }
 });
             const dataUrl = await resUrl.json();
@@ -8770,7 +8770,7 @@ async function prosesEditProduk() {
             showToast(`Mengunggah ${editFileArray.length} foto baru...`, "info");
             const uploadPromises = editFileArray.map(async (file, index) => {
                 const { data: { session } } = await supabaseClient.auth.getSession();
-const resUrl = await fetch(`/api/storage?action=upload&filename=${encodeURIComponent('pasar_edit_'+index+'_'+Date.now())}&filetype=${encodeURIComponent(file.type)}`, {
+const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent('pasar_edit_'+index+'_'+Date.now())}&filetype=${encodeURIComponent(file.type)}`, {
     headers: { 'Authorization': `Bearer ${session?.access_token}` }
 });
                 const dataUrl = await resUrl.json();
@@ -8804,7 +8804,7 @@ const resUrl = await fetch(`/api/storage?action=upload&filename=${encodeURICompo
         if (deletedImagesEdit.length > 0) {
             for (const urlFoto of deletedImagesEdit) {
                 if (urlFoto.trim() !== "") {
-                    await fetch('/api/storage?action=delete&type=file', {
+                    await fetch('/api/delete-s3?type=file', {
                         method: 'DELETE',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ fileUrl: urlFoto.trim() })
@@ -8835,7 +8835,7 @@ async function hapusProdukSaya(productId, productName) {
             const arrFoto = produk.image_url.split(',');
             for (const urlFoto of arrFoto) {
                 if (urlFoto.trim() !== "") {
-                    await fetch('/api/storage?action=delete&type=file', {
+                    await fetch('/api/delete-s3?type=file', {
                         method: 'DELETE',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ fileUrl: urlFoto.trim() })
@@ -9187,7 +9187,7 @@ async function klaimKodeNetflix() {
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sedang Mengambil...';
     btn.disabled = true;
     try {
-        const response = await fetch('/api/content?action=netflix', {
+        const response = await fetch('/api/get-netflix', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -9253,7 +9253,7 @@ async function cekStatusManualXoftware(orderId, tableName, btnElement) {
     btnElement.innerHTML = '<img src="https://nos.wjv-1.neo.id/au2hub/Picsart_26-05-30_04-29-46-305.webp" class="w-4 h-4 inline-block splash-logo-anim mr-2"> Mengecek...';
     btnElement.disabled = true;
     try {
-        const res = await fetch(`/api/payment?action=check_status&order_id=${orderId}&table=${tableName}&_t=${Date.now()}`);
+        const res = await fetch(`/api/check-status?order_id=${orderId}&table=${tableName}&_t=${Date.now()}`);
         const data = await res.json();
         const apiStatus = String(data.status || data.data?.status || data.payment_status || '').toUpperCase();
         if (apiStatus === 'SUCCESS' || apiStatus === 'SUCCEEDED' || apiStatus === 'PAID' || apiStatus === 'SELESAI' || apiStatus === 'PROSES') {
@@ -9460,7 +9460,7 @@ async function eksekusiSapuBersihTokoMati() {
                     const arrFoto = produk.image_url.split(',');
                     for (const urlFoto of arrFoto) {
                         if (urlFoto.trim() !== "") {
-                            await fetch('/api/storage?action=delete&type=file', {
+                            await fetch('/api/delete-s3?type=file', {
                                 method: 'DELETE',
                                 headers: { 'Content-Type': 'application/json' },
                                 body: JSON.stringify({ fileUrl: urlFoto.trim() })
