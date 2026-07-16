@@ -1,36 +1,4 @@
-let currentUser = null, userProfile = null;
-let tabSebelumnya = 'home';
-let activeGroupId = null;
-let activeGroupRole = 'member';
-let globalPersonalList = [];
-let globalGroupList = [];
-let messageToForward = "";
-let dataRipperGlobal = [], isRipperExpanded = localStorage.getItem('statusLihatSemua') === 'true';
-let viewedUserId = null;
-let allVideosData = [];
-let newUploads = [];
-let activeChatUserId = null;
-let messageSubscription = null;
-let globalMessageSubscription = null;
-let presenceChannel = null;
-let onlineUsersMap = new Map();
-let selectedMessageId = null;
-let blockedUsersList = [];
-let myFollowingList = [];
 
-function debounce(func, wait) {
-    let timeout;
-    return function(...args) {
-        clearTimeout(timeout);
-        timeout = setTimeout(() => func.apply(this, args), wait);
-    };
-}
-
-window.tutupLayarSuksesDanRefresh = () => {
-    history.back(); 
-};
-
-const TEKS_TABEL_FEE = "Tabel Fee Seller AU2Hub:\n\n🔹 Harga ≤ Rp 10.000 = Potongan Rp 500\n🔹 Harga ≤ Rp 25.000 = Potongan Rp 1.000\n🔹 Harga ≤ Rp 50.000 = Potongan Rp 2.000\n🔹 Harga ≤ Rp 99.999 = Potongan Rp 3.000\n🔹 Harga ≤ Rp 499.999 = Potongan Rp 10.000\n🔹 Harga ≤ Rp 1.499.999 = Potongan Rp 20.000\n🔹 Harga ≤ Rp 1.999.999 = Potongan Rp 25.000\n🔹 Harga ≥ Rp 2.000.000 = Potongan Rp 35.000";
 
 function setFeeBearer(bearer, mode) {
     const inputId = mode === 'jualan' ? 'jualan-fee-bearer' : 'edit-fee-bearer';
@@ -100,264 +68,12 @@ function hitungFeeRekber(harga) {
     return 35000;
 }
 
-    let logoInterval;
-
-    function removeSplashScreen() {
-        const splashScreen = document.getElementById('custom-splash');
-        if (splashScreen) {
-            splashScreen.style.opacity = '0';
-            splashScreen.style.transform = 'scale(1.1)';
-            setTimeout(() => {
-                splashScreen.remove();
-                clearInterval(logoInterval);
-            }, 500);
-        }
-    }
-
-    document.addEventListener('DOMContentLoaded', () => { setTimeout(removeSplashScreen, 1500); });
-    setTimeout(removeSplashScreen, 3500);
-    const logoElement = document.getElementById('splash-logo');
-    const promoImages = [
-        "https://nos.wjv-1.neo.id/au2hub/Picsart_26-05-22_23-46-22-498.png",
-    ];
-    
-    let currentIndex = 0;
-
-    function rotateLogo() {
-        if (!logoElement) return;
-
-        currentIndex = (currentIndex + 1) % promoImages.length;
-        logoElement.style.opacity = '0';
-        
-        setTimeout(() => {
-            if (logoElement) {
-                logoElement.src = promoImages[currentIndex];
-                logoElement.style.opacity = '1';
-            }
-        }, 500);
-    }
-
-    logoInterval = setInterval(rotateLogo, 1500);
-
-function openLightbox(imgUrl) {
-    history.pushState({ popup: 'lightbox' }, null, '#lightbox');
-    const modal = document.getElementById('lightbox-modal');
-    const img = document.getElementById('lightbox-img');
-    img.src = imgUrl;
-    modal.classList.remove('hidden');
-    modal.classList.add('flex');
-    void modal.offsetWidth;
-    modal.classList.remove('opacity-0');
-    img.classList.remove('scale-95');
-    img.classList.add('scale-100');
-}
-
-function closeLightbox(dariTombolBack = false) {
-    const modal = document.getElementById('lightbox-modal');
-    const img = document.getElementById('lightbox-img');
-    modal.classList.add('opacity-0');
-    img.classList.remove('scale-100');
-    img.classList.add('scale-95');
-    
-    if (!dariTombolBack && window.location.hash === '#lightbox') {
-        history.back();
-    }
-    
-    setTimeout(() => {
-        modal.classList.add('hidden');
-        modal.classList.remove('flex');
-        img.src = '';
-    }, 300);
-}
-
-let isUploading = false;
 window.addEventListener('beforeunload', function (e) {
 if (isUploading) {
 e.preventDefault();
 e.returnValue = 'Upload sedang berlangsung. Yakin ingin meninggalkan halaman?';
 }
 });
-
-let privasiVideoAktif = 'Publik';
-
-function bukaPilihanPrivasi() {
-    const modal = document.getElementById('modal-privasi-video');
-    modal.classList.remove('hidden');
-    setTimeout(() => modal.classList.remove('translate-y-full'), 10);
-}
-
-function tutupPilihanPrivasi() {
-    const modal = document.getElementById('modal-privasi-video');
-    modal.classList.add('translate-y-full');
-    setTimeout(() => modal.classList.add('hidden'), 300);
-}
-
-function setPrivasiVideo(jenis, ikon) {
-    privasiVideoAktif = jenis;
-    document.getElementById('label-privasi-teks').innerHTML = `${jenis} <i class="fas fa-chevron-right text-[10px]"></i>`;
-    document.getElementById('ikon-privasi-utama').className = `fas ${ikon} text-xs`;
-    tutupPilihanPrivasi();
-}
-
-function showToast(message, type = 'info') {
-const container = document.getElementById('toast-container');
-const toast = document.createElement('div');
-
-let bgColor = 'bg-[#1A1133] border-brand-info/50';
-let icon = '<i class="fas fa-info-circle text-brand-info mr-3 text-lg"></i>';
-if(type === 'error') { bgColor = 'bg-[#2A0815] border-red-500/50'; icon = '<i class="fas fa-exclamation-circle text-red-500 mr-3 text-lg"></i>'; }
-if(type === 'success') { bgColor = 'bg-[#0A2010] border-[#25D366]/50'; icon = '<i class="fas fa-check-circle text-[#25D366] mr-3 text-lg"></i>'; }
-
-toast.className = `flex items-center px-5 py-3.5 rounded-2xl border shadow-2xl text-xs font-bold text-white toast-anim w-[90%] max-w-sm glass ${bgColor} cursor-pointer touch-none`;
-toast.innerHTML = `${icon} <span class="leading-snug">${message}</span>`;
-
-let startY = 0;
-toast.addEventListener('touchstart', e => { startY = e.touches[0].clientY; });
-toast.addEventListener('touchmove', e => {
-let moveY = e.touches[0].clientY;
-if (startY - moveY > 20) {
-toast.style.opacity = '0';
-toast.style.transform = 'translateY(-20px) scale(0.9)';
-toast.style.transition = 'all 0.3s ease';
-setTimeout(() => toast.remove(), 300);
-}
-});
-toast.onclick = () => { toast.remove(); };
-
-container.appendChild(toast);
-
-setTimeout(() => {
-if(document.body.contains(toast)){
-toast.style.opacity = '0';
-toast.style.transform = 'translateY(-20px) scale(0.9)';
-toast.style.transition = 'all 0.3s ease';
-setTimeout(() => toast.remove(), 300);
-}
-}, 3000);
-}
-
-function customPrompt(title, defaultValue = '') {
-    return new Promise((resolve) => {
-        const modal = document.getElementById('modal-prompt');
-        const titleEl = document.getElementById('prompt-title');
-        const inputEl = document.getElementById('prompt-input');
-        const btnOk = document.getElementById('prompt-ok');
-        const btnCancel = document.getElementById('prompt-cancel');
-
-        titleEl.innerText = title;
-        inputEl.value = defaultValue;
-        history.pushState({ popup: 'prompt' }, null, '#prompt');
-
-        modal.classList.remove('hidden');
-        modal.classList.add('flex');
-        inputEl.focus();
-
-        modal.promptResolve = resolve;
-        delete modal.promptResult;
-        btnOk.onclick = () => {
-            modal.promptResult = inputEl.value;
-            if (window.location.hash === '#prompt') history.back();
-            else {
-                modal.classList.add('hidden'); modal.classList.remove('flex');
-                if (modal.promptResolve) { modal.promptResolve(modal.promptResult); modal.promptResolve = null; }
-            }
-        };
-        btnCancel.onclick = () => {
-            modal.promptResult = null;
-            if (window.location.hash === '#prompt') history.back();
-            else {
-                modal.classList.add('hidden'); modal.classList.remove('flex');
-                if (modal.promptResolve) { modal.promptResolve(null); modal.promptResolve = null; }
-            }
-        };
-    });
-}
-
-function customConfirm(title) {
-    return new Promise((resolve) => {
-        const modal = document.getElementById('modal-confirm');
-        const titleEl = document.getElementById('confirm-title');
-        const btnOk = document.getElementById('confirm-ok');
-        const btnCancel = document.getElementById('confirm-cancel');
-
-        titleEl.innerText = title;
-        history.pushState({ popup: 'confirm' }, null, '#confirm');
-
-        modal.classList.remove('hidden');
-        modal.classList.add('flex');
-
-        modal.confirmResolve = resolve;
-        delete modal.confirmResult;
-
-        btnOk.onclick = () => {
-            modal.confirmResult = true;
-            if (window.location.hash === '#confirm') history.back();
-            else {
-                modal.classList.add('hidden'); modal.classList.remove('flex');
-                if (modal.confirmResolve) { modal.confirmResolve(true); modal.confirmResolve = null; }
-            }
-        };
-        btnCancel.onclick = () => {
-            modal.confirmResult = false;
-            if (window.location.hash === '#confirm') history.back();
-            else {
-                modal.classList.add('hidden'); modal.classList.remove('flex');
-                if (modal.confirmResolve) { modal.confirmResolve(false); modal.confirmResolve = null; }
-            }
-        };
-    });
-}
-
-function customAlert(title, isHTML = false) {
-    return new Promise((resolve) => {
-        const modal = document.getElementById('modal-alert');
-        const titleEl = document.getElementById('alert-title');
-        const btnOk = document.getElementById('alert-ok');
-        if (isHTML) {
-            titleEl.innerHTML = title;
-        } else {
-            let safeTitle = escapeHTML(title);
-            const urlRegex = /(https?:\/\/[^\s]+)/g;
-            let formattedText = safeTitle.replace(urlRegex, (url) => `<a href="${url}" target="_blank" class="text-brand-info underline font-bold">${url}</a>`);
-            titleEl.innerHTML = formattedText.replace(/\n/g, "<br>");
-        }
-        history.pushState({ popup: 'alert' }, null, '#alert');
-        modal.classList.remove('hidden');
-        modal.classList.add('flex');
-        modal.alertResolve = resolve;
-        btnOk.onclick = () => {
-            if (window.location.hash === '#alert') history.back();
-            else {
-                modal.classList.add('hidden'); modal.classList.remove('flex');
-                if (modal.alertResolve) { modal.alertResolve(); modal.alertResolve = null; }
-            }
-        };
-    });
-}
-
-function togglePassword(inputId, iconId) {
-const input = document.getElementById(inputId);
-const icon = document.getElementById(iconId);
-if (input.type === "password") {
-input.type = "text";
-icon.classList.remove('fa-eye');
-icon.classList.add('fa-eye-slash');
-} else {
-input.type = "password";
-icon.classList.remove('fa-eye-slash');
-icon.classList.add('fa-eye');
-}
-}
-
-function escapeHTML(str) {
-    if (!str) return '';
-    return String(str)
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#39;");
-}
 
 async function fetchMyFollowing() {
     if (!currentUser) return;
@@ -1033,25 +749,6 @@ const userVideos = allVideosData.filter(v => String(v.user_id) === uidToRender);
     }).join('');
 }
 
-function timeAgo(dateString) {
-if (!dateString) return "Baru saja";
-const past = new Date(dateString);
-if (isNaN(past.getTime())) return "Beberapa saat lalu";
-const now = new Date();
-const seconds = Math.floor((now - past) / 1000);
-let interval = Math.floor(seconds / 31536000);
-if (interval >= 1) return interval + " tahun lalu";
-interval = Math.floor(seconds / 2592000);
-if (interval >= 1) return interval + " bulan lalu";
-interval = Math.floor(seconds / 86400);
-if (interval >= 1) return interval + " hari lalu";
-interval = Math.floor(seconds / 3600);
-if (interval >= 1) return interval + " jam lalu";
-interval = Math.floor(seconds / 60);
-if (interval >= 1) return interval + " menit lalu";
-return "Baru saja";
-}
-
 function updateUIForLoggedOut() {
 document.getElementById('header-user').innerHTML = `<button onclick="openAuthModal()" class="text-[10px] font-bold bg-white/10 px-4 py-2 rounded-full border border-white/10 uppercase active:scale-95 transition-transform">Login / Daftar</button>`;
 }
@@ -1101,112 +798,6 @@ const dataUrl = await resUrl.json();
         showToast("Gagal upload: " + e.message, "error");
     } finally {
         icon.className = 'fas fa-camera text-xs';
-    }
-}
-
-function compressImage(file) {
-return new Promise((resolve) => {
-const reader = new FileReader(); reader.readAsDataURL(file);
-reader.onload = (e) => {
-const img = new Image(); img.src = e.target.result;
-img.onload = () => {
-const canvas = document.createElement('canvas'); const scale = 400 / img.width;
-canvas.width = 400; canvas.height = img.height * scale;
-const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-canvas.toBlob((blob) => resolve(blob), 'image/jpeg', 0.7);
-};
-};
-});
-}
-
-function toggleFloatingMode(skipHistory = false) {
-    const isCurrentlyFocused = document.body.classList.contains('video-focused');
-    const allWraps = document.querySelectorAll('.video-inner-wrap');
-    const navBottom = document.querySelector('nav');
-    const headerTop = document.querySelector('header');
-
-    if(isCurrentlyFocused) {
-        allWraps.forEach(wrap => wrap.classList.remove('floating-focus'));
-        document.body.classList.remove('video-focused');
-        if(navBottom) navBottom.style.filter = 'none';
-        if(headerTop) headerTop.style.filter = 'none';
-        const floatingPlayer = document.getElementById('floating-video-player');
-        if (floatingPlayer && !floatingPlayer.classList.contains('hidden')) {
-            closeFloatingVideo(true); 
-        }
-        if (!skipHistory && window.location.hash === '#focused') {
-            history.back();
-        }
-    } else {
-
-        document.body.classList.add('video-focused');
-        history.pushState({ popup: 'focused' }, null, '#focused');
-        document.querySelectorAll('.video-player').forEach(v => {
-            if (!v.paused) {
-                const wrap = v.closest('.video-inner-wrap');
-                if (wrap) wrap.classList.add('floating-focus');
-            }
-        });
-        if(navBottom) navBottom.style.filter = 'blur(8px) opacity(0.5)';
-        if(headerTop) headerTop.style.filter = 'blur(8px) opacity(0.5)';
-    }
-}
-
-function switchTab(tabId, event = null, isPush = true) {
-    if (event) event.preventDefault();
-    if (document.body.classList.contains('video-focused')) {
-        toggleFloatingMode(true);
-    }
-    if (tabId !== 'sosial') {
-        document.querySelectorAll('.video-player, .float-video-player').forEach(v => {
-            v.pause();
-        });
-    }
-    if (tabId === 'profile' && event !== null && currentUser) {
-        viewedUserId = currentUser.id;
-        history.replaceState({ popup: 'my_profile' }, null, '#profile');
-        openUserProfile(currentUser.id);
-        return;
-    }
-    if (tabId !== 'profile' && tabId !== 'pembayaran' && tabId !== 'upload') {
-        tabSebelumnya = tabId;
-    }
-    if (tabId === 'layanan' && isPush && document.getElementById('pembayaran').classList.contains('active')) {
-        window.scrollTo({ top: 0, behavior: 'smooth' }); 
-        return;
-    }
-    const targetSection = document.getElementById(tabId) || document.getElementById('home');
-    if (!targetSection) return;
-    if (tabId !== 'pembayaran' && tabId !== 'upload') {
-        localStorage.setItem('lastTab', tabId);
-    }
-    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-    document.querySelectorAll('.nav-item').forEach(n => {
-        n.classList.remove('active');
-        const icon = n.querySelector('i');
-        if (icon) icon.style.animation = 'none';
-    });
-    targetSection.classList.add('active');
-    const targetNav = document.querySelector(`.nav-item[onclick*="switchTab('${tabId}')"]`);
-    if (targetNav) {
-        targetNav.classList.add('active');
-    }
-    if (tabId === 'toko') {
-        if (typeof loadTokoSaya === 'function') loadTokoSaya();
-    }
-    if (tabId === 'sosial') {
-        const feedContainer = document.getElementById('feed-container');
-        if (feedContainer && feedContainer.children.length === 0) {
-            if (typeof loadVideos === 'function') loadVideos();
-        }
-    }
-    if (tabId === 'layanan') {
-        if (typeof updateSaldoGlobal === 'function') updateSaldoGlobal();
-    }
-    if (tabId === 'superadmin') {
-        if (typeof loadAdminDashboard === 'function') loadAdminDashboard();
-        if (typeof loadRiwayatKeuanganGlobal === 'function') loadRiwayatKeuanganGlobal();
-        if (typeof loadRiwayatLabaPPOB === 'function') loadRiwayatLabaPPOB();
     }
 }
 
@@ -3486,13 +3077,6 @@ closeGroupInfoModal();
 closeChatRoom();
 }
 
-function formatTime(seconds) {
-if (isNaN(seconds)) return "00:00";
-const m = Math.floor(seconds / 60).toString().padStart(2, '0');
-const s = Math.floor(seconds % 60).toString().padStart(2, '0');
-return `${m}:${s}`;
-}
-
 async function toggleAdminStatus(userId, currentRole, nickname) {
 if (activeGroupRole !== 'admin') return showToast("Hanya admin yang diizinkan melakukan ini!", "error");
 const nextRole = (currentRole === 'admin') ? 'member' : 'admin';
@@ -4903,8 +4487,6 @@ document.addEventListener('contextmenu', function(e) {
     }
 });
 
-const SUPER_ADMIN_ID = "5e65bd71-62f8-4367-8744-95f626b73726";
-
 function bukaModalNetflix() {
     if (!currentUser) return showToast("Silakan login dulu untuk klaim Netflix!", "error");
     history.pushState({ popup: 'netflix' }, null, '#netflix');
@@ -5018,5 +4600,3 @@ document.addEventListener('DOMContentLoaded', () => {
         const searchLabaPPOB = document.getElementById('cari-laba-ppob');
     }, 1000);
 });
-
-let isTransferProcessing = false;
