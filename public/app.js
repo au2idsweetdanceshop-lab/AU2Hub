@@ -433,7 +433,7 @@ let isInfoLoaded = false;
                 faqContainer.innerHTML = '<div class="text-center py-6"><i class="fas fa-spinner fa-spin text-brand-info text-2xl"></i></div>';
             }
             try {
-                const configRes = await fetch('/api/get-config');
+                const configRes = await fetch('/api/content?action=config');
                 const config = await configRes.json();
                 if (!config.gasUrl) throw new Error("Link GAS tidak ditemukan");
                 const res = await fetch(`${config.gasUrl}?action=get_info`);
@@ -1310,7 +1310,7 @@ async function handleAvatarUpload(event) {
         const finalFile = new File([compressedBlob], "avatar.jpg", { type: "image/jpeg" });
         const oldAvatarUrl = userProfile?.avatar_url || "";
         if (oldAvatarUrl && !oldAvatarUrl.includes('ui-avatars.com')) {
-            await fetch('/api/storage?action=delete&type=file'', {
+            await fetch('/api/storage?action=delete&type=file', {
                 method: 'DELETE',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ fileUrl: oldAvatarUrl })
@@ -2344,7 +2344,7 @@ async function deleteVideo(vidId) {
     if(hapus === 'HAPUS') {
         try {
             const videoTarget = allVideosData.find(v => v.id === vidId);
-            const configRes = await fetch('/api/get-config');
+            const configRes = await fetch('/api/content?action=config');
             const config = await configRes.json();
             if (config.gasUrl) {
                 await fetch(config.gasUrl, {
@@ -2355,7 +2355,7 @@ async function deleteVideo(vidId) {
                 });
             }
             if (videoTarget && videoTarget.video_url) {
-                await fetch('/api/storage?action=delete&type=file'', {
+                await fetch('/api/storage?action=delete&type=file', {
                     method: 'DELETE',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ fileUrl: videoTarget.video_url })
@@ -4348,7 +4348,7 @@ async function hapusStoryAktif() {
             const { error } = await supabaseClient.from('stories').delete().eq('id', story.id);
             if (error) throw error;
             if (story.media_url) {
-                await fetch('/api/storage?action=delete&type=file'', {
+                await fetch('/api/storage?action=delete&type=file', {
                     method: 'DELETE',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ fileUrl: story.media_url })
@@ -4391,7 +4391,7 @@ async function prosesUploadVideo() {
     checkSession();
     showToast("Mengunggah video di latar belakang...", "info");
     try {
-        const configRes = await fetch('/api/get-config');
+        const configRes = await fetch('/api/content?action=config');
         const config = await configRes.json();
         if (!config.gasUrl) throw new Error("Link GAS tidak ditemukan di config");
         const namaFolder = `${currentUser.id}/feed_video`;
@@ -5697,7 +5697,7 @@ container.innerHTML = html;
 }
 
 async function muatDataRipper() {
-const linkAPI = "/api/ripper";
+const linkAPI = "/api/content?action=ripper";
 const container = document.getElementById('ripper-container');
 const dataTersimpan = localStorage.getItem('ripperCache');
 if (dataTersimpan) { dataRipperGlobal = JSON.parse(dataTersimpan); renderRippers(dataRipperGlobal, false); }
@@ -6322,7 +6322,7 @@ async function loadDataRekber(forceRefresh = false) {
         container.innerHTML = '<div class="flex flex-col items-center justify-center py-10 mt-10"><i class="fas fa-spinner fa-spin text-brand-purple text-3xl mb-3"></i><span class="text-xs text-gray-500 font-bold tracking-widest">MEMUAT ULANG...</span></div>';
     }
     try {
-        const configRes = await fetch('/api/get-config');
+        const configRes = await fetch('/api/content?action=config');
         const config = await configRes.json();
         if (!config.gasUrl) throw new Error("Link GAS tidak ditemukan");
         const res = await fetch(`${config.gasUrl}?action=get_rekber`);
@@ -8804,7 +8804,7 @@ const resUrl = await fetch(`/api/storage?action=upload&filename=${encodeURICompo
         if (deletedImagesEdit.length > 0) {
             for (const urlFoto of deletedImagesEdit) {
                 if (urlFoto.trim() !== "") {
-                    await fetch('/api/storage?action=delete&type=file'', {
+                    await fetch('/api/storage?action=delete&type=file', {
                         method: 'DELETE',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ fileUrl: urlFoto.trim() })
@@ -8835,7 +8835,7 @@ async function hapusProdukSaya(productId, productName) {
             const arrFoto = produk.image_url.split(',');
             for (const urlFoto of arrFoto) {
                 if (urlFoto.trim() !== "") {
-                    await fetch('/api/storage?action=delete&type=file'', {
+                    await fetch('/api/storage?action=delete&type=file', {
                         method: 'DELETE',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ fileUrl: urlFoto.trim() })
@@ -9187,7 +9187,7 @@ async function klaimKodeNetflix() {
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sedang Mengambil...';
     btn.disabled = true;
     try {
-        const response = await fetch('/api/get-netflix', {
+        const response = await fetch('/api/content?action=netflix', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -9460,7 +9460,7 @@ async function eksekusiSapuBersihTokoMati() {
                     const arrFoto = produk.image_url.split(',');
                     for (const urlFoto of arrFoto) {
                         if (urlFoto.trim() !== "") {
-                            await fetch('/api/storage?action=delete&type=file'', {
+                            await fetch('/api/storage?action=delete&type=file', {
                                 method: 'DELETE',
                                 headers: { 'Content-Type': 'application/json' },
                                 body: JSON.stringify({ fileUrl: urlFoto.trim() })
