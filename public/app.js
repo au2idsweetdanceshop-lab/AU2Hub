@@ -6747,7 +6747,7 @@ async function checkoutXoftwarePay(namaProduk, harga, deskripsi, sellerId = null
             if (orderError) throw orderError;
             orderData = newOrder;
         }
-        const responsePG = await fetch('/api/create-qris', { 
+        const responsePG = await fetch('/api/payment?action=create_qris', { 
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ order_id: orderData.id, amount: harga, product_name: namaProduk, customer_name: userProfile?.nickname || 'Player' })
@@ -6922,7 +6922,7 @@ let htmlDataPesanan = escapeHTML(autoDeliveryContent).replace(
 
         intervalJemputBola = setInterval(async () => {
             try {
-                const res = await fetch(`/api/check-status?order_id=${orderData.id}&table=${targetTabel}&_t=${Date.now()}`);
+                const res = await fetch(`/api/payment?action=check_status&order_id=${orderData.id}&table=${targetTabel}&_t=${Date.now()}`);
                 const responseData = await res.json();
                 const apiStatus = String(responseData.status || responseData.data?.status || responseData.payment_status || '').toUpperCase();
                 if (apiStatus === 'SUCCESS' || apiStatus === 'SUCCEEDED' || apiStatus === 'PAID' || apiStatus === 'SELESAI' || apiStatus === 'PROSES') {
@@ -9253,7 +9253,7 @@ async function cekStatusManualXoftware(orderId, tableName, btnElement) {
     btnElement.innerHTML = '<img src="https://nos.wjv-1.neo.id/au2hub/Picsart_26-05-30_04-29-46-305.webp" class="w-4 h-4 inline-block splash-logo-anim mr-2"> Mengecek...';
     btnElement.disabled = true;
     try {
-        const res = await fetch(`/api/check-status?order_id=${orderId}&table=${tableName}&_t=${Date.now()}`);
+        const res = await fetch(`/api/payment?action=check_status&order_id=${orderId}&table=${tableName}&_t=${Date.now()}`);
         const data = await res.json();
         const apiStatus = String(data.status || data.data?.status || data.payment_status || '').toUpperCase();
         if (apiStatus === 'SUCCESS' || apiStatus === 'SUCCEEDED' || apiStatus === 'PAID' || apiStatus === 'SELESAI' || apiStatus === 'PROSES') {
