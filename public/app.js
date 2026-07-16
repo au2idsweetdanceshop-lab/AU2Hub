@@ -1310,7 +1310,7 @@ async function handleAvatarUpload(event) {
         const finalFile = new File([compressedBlob], "avatar.jpg", { type: "image/jpeg" });
         const oldAvatarUrl = userProfile?.avatar_url || "";
         if (oldAvatarUrl && !oldAvatarUrl.includes('ui-avatars.com')) {
-            await fetch('/api/delete-s3?type=file', {
+            await fetch('/api/storage?action=delete&type=file'', {
                 method: 'DELETE',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ fileUrl: oldAvatarUrl })
@@ -1320,7 +1320,7 @@ async function handleAvatarUpload(event) {
 const pathLengkap = `${currentUser.id}/avatar/ava_${Date.now()}`;
 const { data: { session } } = await supabaseClient.auth.getSession();
 const token = session?.access_token;
-const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent(pathLengkap)}&filetype=${encodeURIComponent(finalFile.type)}`, {
+const resUrl = await fetch(`/api/storage?action=upload&filename=${encodeURIComponent(pathLengkap)}&filetype=${encodeURIComponent(finalFile.type)}`, {
     headers: { 'Authorization': `Bearer ${token}` }
 });
 const dataUrl = await resUrl.json();
@@ -2355,7 +2355,7 @@ async function deleteVideo(vidId) {
                 });
             }
             if (videoTarget && videoTarget.video_url) {
-                await fetch('/api/delete-s3?type=file', {
+                await fetch('/api/storage?action=delete&type=file'', {
                     method: 'DELETE',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ fileUrl: videoTarget.video_url })
@@ -3576,7 +3576,7 @@ async function hapusAkunPermanen() {
     if (konfirmasi === 'HAPUS AKUN') {
         showToast("Sedang menghancurkan akun dan membersihkan media...", "info");
         try {
-            await fetch(`/api/delete-s3?type=folder&userId=${currentUser.id}`, {
+            await fetch(`/api/storage?action=delete&type=folder&userId=${currentUser.id}`, {
                 method: 'DELETE'
             });
             const { error } = await supabaseClient.rpc('hapus_akun_saya');
@@ -4348,7 +4348,7 @@ async function hapusStoryAktif() {
             const { error } = await supabaseClient.from('stories').delete().eq('id', story.id);
             if (error) throw error;
             if (story.media_url) {
-                await fetch('/api/delete-s3?type=file', {
+                await fetch('/api/storage?action=delete&type=file'', {
                     method: 'DELETE',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ fileUrl: story.media_url })
@@ -4398,7 +4398,7 @@ async function prosesUploadVideo() {
         const namaFileUnik = `${Date.now()}_${file.name.replace(/\s+/g, '_')}`;
         const pathLengkap = `${namaFolder}/${namaFileUnik}`;
         const { data: { session } } = await supabaseClient.auth.getSession();
-const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent(pathLengkap)}&filetype=${encodeURIComponent(file.type)}`, {
+const resUrl = await fetch(`/api/storage?action=upload&filename=${encodeURIComponent(pathLengkap)}&filetype=${encodeURIComponent(file.type)}`, {
     headers: { 'Authorization': `Bearer ${session?.access_token}` }
 });
         const dataUrl = await resUrl.json();
@@ -4544,7 +4544,7 @@ async function prosesKirimMedia() {
         const namaFolder = context === 'chat' ? `${currentUser.id}/chat_media` : `${currentUser.id}/story_media`;
         const pathLengkap = `${namaFolder}/media_${Date.now()}`;
         const { data: { session } } = await supabaseClient.auth.getSession();
-const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent(pathLengkap)}&filetype=${encodeURIComponent(file.type)}`, {
+const resUrl = await fetch(`/api/storage?action=upload&filename=${encodeURIComponent(pathLengkap)}&filetype=${encodeURIComponent(file.type)}`, {
     headers: { 'Authorization': `Bearer ${session?.access_token}` }
 });
         const dataUrl = await resUrl.json();
@@ -4796,7 +4796,7 @@ if (fileInput.files && fileInput.files[0]) {
 const file = fileInput.files[0];
 showToast("Mengunggah foto grup...", "info");
 const { data: { session } } = await supabaseClient.auth.getSession();
-const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent('group_'+Date.now())}&filetype=${encodeURIComponent(file.type)}`, {
+const resUrl = await fetch(`/api/storage?action=upload&filename=${encodeURIComponent('group_'+Date.now())}&filetype=${encodeURIComponent(file.type)}`, {
     headers: { 'Authorization': `Bearer ${session?.access_token}` }
 });
 const dataUrl = await resUrl.json();
@@ -5217,7 +5217,7 @@ const reader = new FileReader();
 reader.readAsDataURL(blob);
 reader.onloadend = async () => {
 try {
-const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent('voice_'+Date.now()+'.webm')}&filetype=${encodeURIComponent('audio/webm')}`);
+const resUrl = await fetch(`/api/storage?action=upload&filename=${encodeURIComponent('voice_'+Date.now()+'.webm')}&filetype=${encodeURIComponent('audio/webm')}`);
 const dataUrl = await resUrl.json();
 await fetch(dataUrl.uploadUrl, {
 method: 'PUT',
@@ -6287,7 +6287,7 @@ showToast("Mengupdate foto profil grup...", "info");
 try {
 const pathLengkap = `groups/${activeGroupId}/avatar_${Date.now()}`;
 const { data: { session } } = await supabaseClient.auth.getSession();
-const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent(pathLengkap)}&filetype=${encodeURIComponent(file.type)}`, {
+const resUrl = await fetch(`/api/storage?action=upload&filename=${encodeURIComponent(pathLengkap)}&filetype=${encodeURIComponent(file.type)}`, {
     headers: { 'Authorization': `Bearer ${session?.access_token}` }
 });
 const dataUrl = await resUrl.json();
@@ -7434,7 +7434,7 @@ async function prosesPostingJualan() {
         const uploadPromises = fileJualanArray.map(async (file, index) => {
 const pathLengkap = `${currentUser.id}/pasar/foto_${index}_${Date.now()}`;
 const { data: { session } } = await supabaseClient.auth.getSession();
-const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent(pathLengkap)}&filetype=${encodeURIComponent(file.type)}`, {
+const resUrl = await fetch(`/api/storage?action=upload&filename=${encodeURIComponent(pathLengkap)}&filetype=${encodeURIComponent(file.type)}`, {
     headers: { 'Authorization': `Bearer ${session?.access_token}` }
 });
             const dataUrl = await resUrl.json();
@@ -8770,7 +8770,7 @@ async function prosesEditProduk() {
             showToast(`Mengunggah ${editFileArray.length} foto baru...`, "info");
             const uploadPromises = editFileArray.map(async (file, index) => {
                 const { data: { session } } = await supabaseClient.auth.getSession();
-const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent('pasar_edit_'+index+'_'+Date.now())}&filetype=${encodeURIComponent(file.type)}`, {
+const resUrl = await fetch(`/api/storage?action=upload&filename=${encodeURIComponent('pasar_edit_'+index+'_'+Date.now())}&filetype=${encodeURIComponent(file.type)}`, {
     headers: { 'Authorization': `Bearer ${session?.access_token}` }
 });
                 const dataUrl = await resUrl.json();
@@ -8804,7 +8804,7 @@ const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent('pasar
         if (deletedImagesEdit.length > 0) {
             for (const urlFoto of deletedImagesEdit) {
                 if (urlFoto.trim() !== "") {
-                    await fetch('/api/delete-s3?type=file', {
+                    await fetch('/api/storage?action=delete&type=file'', {
                         method: 'DELETE',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ fileUrl: urlFoto.trim() })
@@ -8835,7 +8835,7 @@ async function hapusProdukSaya(productId, productName) {
             const arrFoto = produk.image_url.split(',');
             for (const urlFoto of arrFoto) {
                 if (urlFoto.trim() !== "") {
-                    await fetch('/api/delete-s3?type=file', {
+                    await fetch('/api/storage?action=delete&type=file'', {
                         method: 'DELETE',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ fileUrl: urlFoto.trim() })
@@ -9460,7 +9460,7 @@ async function eksekusiSapuBersihTokoMati() {
                     const arrFoto = produk.image_url.split(',');
                     for (const urlFoto of arrFoto) {
                         if (urlFoto.trim() !== "") {
-                            await fetch('/api/delete-s3?type=file', {
+                            await fetch('/api/storage?action=delete&type=file'', {
                                 method: 'DELETE',
                                 headers: { 'Content-Type': 'application/json' },
                                 body: JSON.stringify({ fileUrl: urlFoto.trim() })
