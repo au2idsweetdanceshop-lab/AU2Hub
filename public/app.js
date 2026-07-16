@@ -348,20 +348,23 @@ function customConfirm(title) {
     });
 }
 
-function customAlert(title) {
+function customAlert(title, isHTML = false) {
     return new Promise((resolve) => {
         const modal = document.getElementById('modal-alert');
         const titleEl = document.getElementById('alert-title');
         const btnOk = document.getElementById('alert-ok');
-        let safeTitle = escapeHTML(title);
-        const urlRegex = /(https?:\/\/[^\s]+)/g;
-        let formattedText = safeTitle.replace(urlRegex, (url) => `<a href="${url}" target="_blank" class="text-brand-info underline font-bold">${url}</a>`);
-        titleEl.innerHTML = formattedText.replace(/\n/g, "<br>");
+        if (isHTML) {
+            titleEl.innerHTML = title;
+        } else {
+            let safeTitle = escapeHTML(title);
+            const urlRegex = /(https?:\/\/[^\s]+)/g;
+            let formattedText = safeTitle.replace(urlRegex, (url) => `<a href="${url}" target="_blank" class="text-brand-info underline font-bold">${url}</a>`);
+            titleEl.innerHTML = formattedText.replace(/\n/g, "<br>");
+        }
         history.pushState({ popup: 'alert' }, null, '#alert');
         modal.classList.remove('hidden');
         modal.classList.add('flex');
         modal.alertResolve = resolve;
-
         btnOk.onclick = () => {
             if (window.location.hash === '#alert') history.back();
             else {
@@ -799,7 +802,6 @@ function initGlobalMessageListener() {
                 let isMentioned = false;
                 const myNickname = userProfile?.nickname;
                 if (isForMyGroup && myNickname && msg.message) {
-                    // (?![a-zA-Z0-9_]) memastikan setelah nama tidak ada huruf/angka lagi
                     const regexMention = new RegExp(`@${myNickname}(?![a-zA-Z0-9_])`, 'i');
                     if (regexMention.test(msg.message)) {
                         isMentioned = true;
@@ -1167,7 +1169,6 @@ async function handleLogout() {
     globalGroupList = [];
     localStorage.removeItem('optimistic_vip');
     Object.keys(localStorage).forEach(key => {
-    // Hanya hapus cache like/comment session lama
     if (key.startsWith('liked_') || key.startsWith('comment_') || key.startsWith('story_') || key === 'optimistic_vip') {
         localStorage.removeItem(key);
     }
@@ -1835,11 +1836,11 @@ function handleVideoSelect(input) {
     const previewVideo = document.getElementById('video-preview-element');
     const spinner = document.getElementById('mini-upload-spinner');
     if (file) {
-        if (file.size > 50 * 1024 * 1024) {
-            showToast("Ukuran video terlalu besar! Maksimal 50MB.", "error");
-            input.value = '';
-            return;
-        }
+    if (file.size > 15 * 1024 * 1024) {
+        showToast("Ukuran video terlalu besar! Maksimal 15MB.", "error");
+        input.value = '';
+        return;
+    }
         const url = URL.createObjectURL(file);
         previewVideo.src = url;
         if (placeholder) placeholder.classList.add('hidden');
@@ -2053,32 +2054,43 @@ let profileFeedIndex = 0;
 let floatObs = null;
 
 function setupFloatVideoObserver() {
-floatObs = new IntersectionObserver(es => {
-es.forEach(e => {
-if (e.isIntersecting) {
-e.target.muted = isGlobalMuted;
-const playP = e.target.play();
-if (playP !== undefined) {
-    playP.catch(err => {
-        if (err.name === 'NotAllowedError') {
-            e.target.muted = true;
-            isGlobalMuted = true;
-            e.target.play().catch(e => {});
-        }
-    });
-}
-
-let currentContainer = e.target.closest('.snap-start');
-for(let j = 0; j < 2; j++) {
-currentContainer = currentContainer?.nextElementSibling;
-if(currentContainer) {
-const nextVid = currentContainer.querySelector('video');
-if(nextVid && nextVid.getAttribute('preload') !== 'auto') nextVid.setAttribute('preload', 'auto');
-}
-}
-} else { e.target.pause(); }
-});
-}, { threshold: 0.6 });
+    floatObs = new IntersectionObserver(es => {
+        es.forEach(e => {
+            const video = e.target;
+            if (e.isIntersecting) {
+                if (!video.src && video.dataset.src) {
+                    video.src = video.dataset.src;
+                    video.load();
+                }
+                video.muted = isGlobalMuted;
+                const playP = video.play();
+                if (playP !== undefined) {
+                    playP.catch(err => {
+                        if (err.name === 'NotAllowedError') {
+                            video.muted = true;
+                            isGlobalMuted = true;
+                            video.play().catch(e => {});
+                        }
+                    });
+                }
+                let currentContainer = video.closest('.snap-start');
+                for(let j = 0; j < 2; j++) {
+                    currentContainer = currentContainer?.nextElementSibling;
+                    if(currentContainer) {
+                        const nextVid = currentContainer.querySelector('video');
+                        if(nextVid && nextVid.getAttribute('preload') !== 'metadata') nextVid.setAttribute('preload', 'metadata');
+                    }
+                }
+            } else {
+                video.pause(); 
+                if (video.src) {
+                    video.dataset.src = video.src;
+                    video.removeAttribute('src');
+                    video.load();
+                }
+            }
+        });
+    }, { threshold: 0.6 });
 }
 
 function openProfileFeed(userId, startIndex) {
@@ -4705,6 +4717,10 @@ function setupVideoObserver() {
         es.forEach(e => {
             const video = e.target;
             if (e.isIntersecting && !isFloatingOpen) {
+                if (!video.src && video.dataset.src) {
+                    video.src = video.dataset.src;
+                    video.load();
+                }
                 video.muted = (typeof isGlobalMuted !== 'undefined') ? isGlobalMuted : true;
                 const wrap = video.closest('.video-inner-wrap');
                 if (wrap) {
@@ -4714,9 +4730,7 @@ function setupVideoObserver() {
                 const playPromise = video.play();
                 if (playPromise !== undefined) {
                     playPromise.then(() => {
-                        if (!e.isIntersecting) {
-                            video.pause();
-                        }
+                        if (!e.isIntersecting) video.pause();
                     }).catch(err => {
                         if (err.name === 'NotAllowedError') {
                             video.muted = true;
@@ -4729,6 +4743,11 @@ function setupVideoObserver() {
             } else {
                 video.pause();
                 video.currentTime = 0;
+                if (video.src) {
+                    video.dataset.src = video.src; // Simpan URL
+                    video.removeAttribute('src');  // Cabut dari memori browser
+                    video.load();
+                }
             }
         });
     }, { 
@@ -8352,7 +8371,7 @@ function bukaNotaMutasi(id, amount, type, desc, dateStr) {
     else {
          htmlNota = `<div class="text-left text-xs text-gray-300 font-medium leading-relaxed">${desc}<br><br><span class="text-[10px] text-gray-500 font-mono tracking-widest">TX-${id.substring(0,8).toUpperCase()} &bull; ${tgl}</span></div>`;
     }
-    customAlert(htmlNota.replace(/\n/g, ''));
+    customAlert(htmlNota.replace(/\n/g, ''), true);
 }
 
 let isWithdrawing = false;
