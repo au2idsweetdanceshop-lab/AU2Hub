@@ -993,7 +993,7 @@ async function checkSession() {
         document.getElementById('profile-logged-out').classList.add('hidden');
 
         if (allVideosData.length === 0) {
-            fetch('/api/get-videos')
+            fetch('/api/content?action=videos')
                 .then(res => res.json())
                 .then(dataDariSheet => {
                     allVideosData = dataDariSheet.map((v, index) => {
@@ -1229,7 +1229,7 @@ async function renderProfileVideos(targetUserId = null) {
     if (allVideosData.length === 0) {
         try {
             grid.innerHTML = '<div class="col-span-3 text-center text-xs text-brand-info py-4"><i class="fas fa-spinner fa-spin text-xl mb-2"></i><br>Memuat...</div>';
-            const res = await fetch('/api/get-videos');
+            const res = await fetch('/api/content?action=videos');
             let dataDariSheet = await res.json();
             dataDariSheet = dataDariSheet.map((v, index) => {
                 v.original_index = index;
@@ -3094,7 +3094,7 @@ async function loadVideos(isLoadMore = false) {
     if (isFeedEndReached || isFetchingFeed) return;
     isFetchingFeed = true;
     try {
-        const res = await fetch(`/api/get-videos?limit=${FEED_LIMIT}&offset=${feedOffset}`);
+        const res = await fetch(`/api/content?action=videos&limit=${FEED_LIMIT}&offset=${feedOffset}`);
         const contentType = res.headers.get("content-type");
         if (!contentType || !contentType.includes("application/json")) {
             throw new Error("Format data Vercel tidak valid. Cek link Google Sheets.");
@@ -5997,7 +5997,7 @@ async function switchLeaderboardTab(tab) {
         containerCreator.innerHTML = '<div class="text-center py-10"><i class="fas fa-spinner fa-spin text-brand-accent text-2xl"></i></div>';
         if (allVideosData.length === 0) {
             try {
-                const res = await fetch('/api/get-videos');
+                const res = await fetch('/api/content?action=videos');
                 let dataDariSheet = await res.json();
                 dataDariSheet = dataDariSheet.map(v => { v.id = v.id || v.video_id || v.ID || 'vid_' + Math.random().toString(36).substr(2, 9); return v; });
                 allVideosData = dataDariSheet.filter(v => !blockedUsersList.includes(v.user_id));
