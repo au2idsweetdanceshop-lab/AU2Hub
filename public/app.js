@@ -7329,7 +7329,12 @@ function renderGridPasar(dataList, targetId = 'grid-pasar-player') {
         if (item.fee_ditanggung_pembeli) {
             baseHarga += hitungPotonganSeller(item.price);
         }
-        const hargaCustomer = Math.floor(baseHarga + (baseHarga * 0.007) + 500);
+        let hargaCustomer;
+        if (baseHarga < 250000) {
+            hargaCustomer = Math.floor(baseHarga + (baseHarga * 0.008) + 500);
+        } else {
+            hargaCustomer = Math.floor(baseHarga + (baseHarga * 0.01));
+        }
         const formatHarga = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(hargaCustomer);
         let hargaCoret = Math.ceil((hargaCustomer * 1.3) / 1000) * 1000; 
         if (hargaCustomer > 100000) hargaCoret = Math.ceil((hargaCustomer * 1.2) / 5000) * 5000;
