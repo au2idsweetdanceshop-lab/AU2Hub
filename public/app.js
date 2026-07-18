@@ -6201,7 +6201,7 @@ async function switchLeaderboardTab(tab) {
 async function loadOrderTracker(userId) {
     const bBayar = document.getElementById('badge-track-bayar'); if(bBayar) bBayar.classList.add('hidden');
     const bProses = document.getElementById('badge-track-proses'); if(bProses) bProses.classList.add('hidden');
-    const bSelesai = document.getElementById('badge-track-selesai'); if(bSelesai) bSelesai.classList.add('hidden');
+    const bSelesai = document.getElementById('badge-track-selesai'); if(bSelesai) bSelesai.classList.add('hidden'); 
     try {
         const req1 = supabaseClient.from('orders').select('status').eq('user_id', userId);
         const req2 = supabaseClient.from('orders_player').select('status').eq('user_id', userId);
@@ -6210,11 +6210,9 @@ async function loadOrderTracker(userId) {
         const data = [...(res1.data || []), ...(res2.data || []), ...(res3.data || [])];
         if (data && data.length > 0) {
             let countBayar = data.filter(o => o.status === 'PENDING').length;
-            let countProses = data.filter(o => o.status === 'proses' || o.status === 'SUCCESS' || o.status === 'Pending').length; 
-            let countSelesai = data.filter(o => o.status === 'selesai' || o.status === 'Sukses').length;
+            let countProses = data.filter(o => o.status === 'proses' || o.status === 'SUCCESS' || o.status === 'Pending').length;
             if (countBayar > 0 && bBayar) { bBayar.innerText = countBayar; bBayar.classList.remove('hidden'); }
             if (countProses > 0 && bProses) { bProses.innerText = countProses; bProses.classList.remove('hidden'); }
-            if (countSelesai > 0 && bSelesai) { bSelesai.innerText = countSelesai; bSelesai.classList.remove('hidden'); }
         }
     } catch (err) {
         console.log("Tabel pesanan belum siap, abaikan tracker.");
@@ -6740,10 +6738,20 @@ async function batalkanPesanan(orderId, tableSource) {
 
 async function selesaikanPesanan(orderId, tableSource) {
     if (!orderId) return;
+    const { data: cekOrder, error: errCek } = await supabaseClient
+        .from(tableSource)
+        .select('status, price, product_name, product_id')
+        .eq('id', orderId)
+        .single();
+    if (errCek || !cekOrder) return showToast("Pesanan tidak ditemukan.", "error");
+    if (cekOrder.status === 'selesai' || cekOrder.status === 'Sukses') {
+        closeDetailPesanan();
+        return showToast("Pesanan ini sudah diselesaikan sebelumnya!", "info");
+    }
     let pesanKonfirmasi = "Pesanan sudah dikerjakan dan diterima dengan baik?";
-if (tableSource === 'orders_player') {
-    pesanKonfirmasi += "\n\n🛡️ Dana akan diamankan sistem selama 24 Jam sebagai garansi transaksi, setelah itu Penjual dapat menariknya secara Instan.";
-}
+    if (tableSource === 'orders_player') {
+        pesanKonfirmasi += "\n\n🛡️ Dana akan diamankan sistem selama 24 Jam sebagai garansi transaksi, setelah itu Penjual dapat menariknya secara Instan.";
+    }
     const konfirmasi = await customConfirm(pesanKonfirmasi);
     if (!konfirmasi) return;
     closeDetailPesanan(); 
@@ -6755,20 +6763,21 @@ if (tableSource === 'orders_player') {
             dataUpdate.waktu_selesai = waktuSekarang;
             dataUpdate.dana_cair = false;
         }
-        const { error: orderError } = await supabaseClient.from(tableSource).update(dataUpdate).eq('id', orderId);
-        const { data: detailOrder } = await supabaseClient.from(tableSource).select('price, product_name, product_id').eq('id', orderId).single();
-        if (detailOrder) {
-            const hargaAsli = Number(detailOrder.price);
-            const isRekber = detailOrder.product_name.includes('[+Rekber]');
-            const jatahPajakLapak = hitungPotonganSeller(hargaAsli);
-            const jatahFeeRekber = isRekber ? hitungFeeRekber(hargaAsli) : 0;
-            const totalSetorNikky = jatahPajakLapak + jatahFeeRekber;
-            autoSetorKeNikky(totalSetorNikky, `[Auto] Pajak Lapak & Rekber - Order ID: ${orderId.substring(0,8).toUpperCase()}`);
-        }
+        const { error: orderError } = await supabaseClient
+            .from(tableSource)
+            .update(dataUpdate)
+            .eq('id', orderId)
+            .neq('status', 'selesai');
         if (orderError) throw orderError;
+        const hargaAsli = Number(cekOrder.price);
+        const isRekber = cekOrder.product_name.includes('[+Rekber]');
+        const jatahPajakLapak = hitungPotonganSeller(hargaAsli);
+        const jatahFeeRekber = isRekber ? hitungFeeRekber(hargaAsli) : 0;
+        const totalSetorNikky = jatahPajakLapak + jatahFeeRekber;
+        autoSetorKeNikky(totalSetorNikky, `[Auto] Pajak Lapak & Rekber - Order ID: ${orderId.substring(0,8).toUpperCase()}`);
         if (tableSource === 'orders_player') {
-    showToast("Pesanan selesai! Dana diamankan di Saldo Tertahan (24 Jam) sebelum siap ditarik.", "success");
-} else {
+            showToast("Pesanan selesai! Dana diamankan di Saldo Tertahan (24 Jam).", "success");
+        } else {
             showToast("Pesanan selesai! Terima kasih.", "success");
         }
         tambahExp(50);
