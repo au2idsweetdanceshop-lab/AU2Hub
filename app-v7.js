@@ -71,7 +71,12 @@ function hitungPendapatanBersih(hargaGateway, ditanggungPembeli, namaProduk = ""
         else hargaAktual -= 5000;
     }
 
-    const hargaBase = Math.round((hargaAktual - 500) / 1.007); 
+    let hargaBase;
+    if (hargaAktual < 252500) {
+        hargaBase = Math.round((hargaAktual - 500) / 1.008);
+    } else {
+        hargaBase = Math.round(hargaAktual / 1.01);
+    } 
     
     if (ditanggungPembeli) {
         if (hargaBase <= 10500) return hargaBase - 500;
@@ -353,6 +358,7 @@ function customAlert(title, isHTML = false) {
         const modal = document.getElementById('modal-alert');
         const titleEl = document.getElementById('alert-title');
         const btnOk = document.getElementById('alert-ok');
+        btnOk.classList.remove('hover:bg-[#32a2f2]');
         if (isHTML) {
             titleEl.innerHTML = title;
         } else {
@@ -366,10 +372,15 @@ function customAlert(title, isHTML = false) {
         modal.classList.add('flex');
         modal.alertResolve = resolve;
         btnOk.onclick = () => {
-            if (window.location.hash === '#alert') history.back();
-            else {
-                modal.classList.add('hidden'); modal.classList.remove('flex');
-                if (modal.alertResolve) { modal.alertResolve(); modal.alertResolve = null; }
+            if (window.location.hash.includes('#alert')) {
+                history.back();
+            } else {
+                modal.classList.add('hidden'); 
+                modal.classList.remove('flex');
+                if (modal.alertResolve) { 
+                    modal.alertResolve(); 
+                    modal.alertResolve = null; 
+                }
             }
         };
     });
@@ -1461,6 +1472,7 @@ function switchTab(tabId, event = null, isPush = true) {
 
 window.addEventListener('popstate', () => {
     let isPopupClosed = false;
+    
     if (typeof intervalJemputBola !== 'undefined' && intervalJemputBola) {
         clearInterval(intervalJemputBola);
         intervalJemputBola = null;
@@ -1484,6 +1496,7 @@ window.addEventListener('popstate', () => {
         }
         return;
     }
+
     const modalPrompt = document.getElementById('modal-prompt');
     if (modalPrompt && !modalPrompt.classList.contains('hidden')) {
         modalPrompt.classList.add('hidden');
@@ -1496,6 +1509,7 @@ window.addEventListener('popstate', () => {
         }
         return;
     }
+
     const modalConfirm = document.getElementById('modal-confirm');
     if (modalConfirm && !modalConfirm.classList.contains('hidden')) {
         modalConfirm.classList.add('hidden');
@@ -1508,6 +1522,13 @@ window.addEventListener('popstate', () => {
         }
         return;
     }
+
+    const modalLegalitas = document.getElementById('modal-legalitas');
+    if (modalLegalitas && !modalLegalitas.classList.contains('hidden')) {
+        tutupModalLegalitas(true);
+        return;
+    }
+
     const menuMelayang = document.getElementById('assistive-menu');
     if (menuMelayang && !menuMelayang.classList.contains('hidden')) {
         closeAssistiveMenu(true);
@@ -1714,14 +1735,18 @@ window.addEventListener('popstate', () => {
         closeFloatingVideo(true);
         isPopupClosed = true;
     }
+    
     if (isPopupClosed) return;
+    
     const newHash = window.location.hash.substring(1) || 'home';
     if (newHash === 'profile' && viewedUserId !== currentUser?.id) {
         viewedUserId = currentUser?.id;
         checkSession();
     }
+    
     const cleanHash = newHash.split('?')[0];
     const validTabs = ['home', 'sosial', 'pasar', 'toko', 'layanan', 'pesanan', 'profile', 'pembayaran', 'superadmin', 'tokopublik'];
+    
     if (newHash.startsWith('tokopublik?seller=') || newHash.startsWith('pasar?seller=')) {
         const sellerName = decodeURIComponent(newHash.split('=')[1]);
         if (newHash.startsWith('pasar?seller=')) {
@@ -1731,6 +1756,7 @@ window.addEventListener('popstate', () => {
         loadTokoPublikLuar(sellerName);
         return;
     }
+    
     if (!validTabs.includes(cleanHash)) {
         history.replaceState(null, null, '#' + tabSebelumnya);
         switchTab(tabSebelumnya, null, false);
@@ -2372,43 +2398,77 @@ async function deleteVideo(vidId) {
     }
 }
 
-async function downloadVideoSaya(urlVideo, vidId) {
-    showToast("Memproses unduhan...", "info");
-    try {
-        const response = await fetch(urlVideo + "?t=" + new Date().getTime(), {
-            method: 'GET',
-            mode: 'cors'
-        });
-        if (!response.ok) throw new Error("Diblokir oleh keamanan browser HP");
-        const blob = await response.blob();
-        const blobUrl = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.style.display = 'none';
-        a.href = blobUrl;
-        a.download = `AU2Hub_Video_${vidId}.mp4`; 
-        document.body.appendChild(a);
-        a.click();
-        setTimeout(() => {
-            document.body.removeChild(a);
-            window.URL.revokeObjectURL(blobUrl);
-        }, 1000);
-        showToast("Video sedang diunduh ke Galeri!", "success");
-
-    } catch (error) {
-        console.log("Download background gagal, pindah ke mode tab baru:", error);
-        showToast("Membuka pemutar video...", "info");
-        setTimeout(() => {
-            showToast("💡 Tips: Klik titik tiga (⋮) di pojok kanan bawah lalu pilih 'Download'", "success");
-        }, 1500);
-        setTimeout(() => {
+function downloadVideoSaya(urlVideo, vidId) {
+    const finalUrl = urlVideo; 
+    const toastId = 'toast-dl-' + vidId;
+    const container = document.getElementById('toast-container');
+    const toast = document.createElement('div');
+    toast.id = toastId;
+    toast.className = `flex flex-col px-5 py-3.5 rounded-2xl border shadow-2xl text-xs font-bold text-white toast-anim w-[90%] max-w-sm glass bg-[#1A1133] border-brand-info/50`;
+    toast.innerHTML = `
+        <div class="flex justify-between mb-2.5 items-center">
+            <span class="flex items-center gap-2"><i class="fas fa-download text-brand-info animate-bounce"></i> Mengunduh Video...</span>
+            <span id="progress-text-${vidId}" class="font-mono text-brand-info text-[10px] bg-brand-info/20 px-2 py-0.5 rounded-md">0%</span>
+        </div>
+        <div class="w-full h-2 bg-black/50 rounded-full overflow-hidden shadow-inner border border-white/5">
+            <div id="progress-bar-${vidId}" class="h-full bg-gradient-to-r from-brand-info to-[#00F0FF] w-0 transition-all duration-200"></div>
+        </div>
+    `;
+    container.appendChild(toast);
+    const xhr = new XMLHttpRequest();
+    xhr.open('GET', finalUrl, true);
+    xhr.responseType = 'blob';
+    xhr.onprogress = function(event) {
+        if (event.lengthComputable) {
+            const percentComplete = Math.floor((event.loaded / event.total) * 100);
+            document.getElementById(`progress-bar-${vidId}`).style.width = percentComplete + '%';
+            document.getElementById(`progress-text-${vidId}`).innerText = percentComplete + '%';
+        }
+    };
+    xhr.onload = function() {
+        if (this.status === 200) {
+            const blob = this.response;
+            const blobUrl = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
-            a.href = urlVideo;
-            a.target = '_blank';
+            a.style.display = 'none';
+            a.href = blobUrl;
+            a.download = `AU2Hub_Video_${vidId}.mp4`;
             document.body.appendChild(a);
             a.click();
-            document.body.removeChild(a);
-        }, 3000);
-    }
+            setTimeout(() => {
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(blobUrl);
+            }, 1000);
+            document.getElementById(`progress-text-${vidId}`).innerText = "Selesai!";
+            document.getElementById(`progress-text-${vidId}`).classList.replace('text-brand-info', 'text-brand-success');
+            document.getElementById(`progress-text-${vidId}`).classList.replace('bg-brand-info/20', 'bg-brand-success/20');
+            document.getElementById(`progress-bar-${vidId}`).classList.replace('from-brand-info', 'from-brand-success');
+            document.getElementById(`progress-bar-${vidId}`).classList.replace('to-[#00F0FF]', 'to-[#20bd5a]');
+            setTimeout(() => toast.remove(), 2500);
+            showToast("Video berhasil disimpan ke Galeri!", "success");
+        } else {
+            toast.remove();
+            fallbackDownloadVideo(finalUrl);
+        }
+    };
+    xhr.onerror = function() {
+        toast.remove();
+        fallbackDownloadVideo(finalUrl);
+    };
+
+    xhr.send();
+}
+function fallbackDownloadVideo(urlVideo) {
+    showToast("Membuka tab baru untuk download...", "info");
+    setTimeout(() => {
+        showToast("💡 Tips: Klik titik tiga (⋮) lalu pilih 'Download'", "success");
+        const a = document.createElement('a');
+        a.href = urlVideo;
+        a.target = '_blank';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    }, 1500);
 }
 
 async function shareVideo(vidId, btn) {
@@ -4744,8 +4804,8 @@ function setupVideoObserver() {
                 video.pause();
                 video.currentTime = 0;
                 if (video.src) {
-                    video.dataset.src = video.src; // Simpan URL
-                    video.removeAttribute('src');  // Cabut dari memori browser
+                    video.dataset.src = video.src;
+                    video.removeAttribute('src');
                     video.load();
                 }
             }
@@ -6142,7 +6202,7 @@ async function switchLeaderboardTab(tab) {
 async function loadOrderTracker(userId) {
     const bBayar = document.getElementById('badge-track-bayar'); if(bBayar) bBayar.classList.add('hidden');
     const bProses = document.getElementById('badge-track-proses'); if(bProses) bProses.classList.add('hidden');
-    const bSelesai = document.getElementById('badge-track-selesai'); if(bSelesai) bSelesai.classList.add('hidden');
+    const bSelesai = document.getElementById('badge-track-selesai'); if(bSelesai) bSelesai.classList.add('hidden'); 
     try {
         const req1 = supabaseClient.from('orders').select('status').eq('user_id', userId);
         const req2 = supabaseClient.from('orders_player').select('status').eq('user_id', userId);
@@ -6151,11 +6211,9 @@ async function loadOrderTracker(userId) {
         const data = [...(res1.data || []), ...(res2.data || []), ...(res3.data || [])];
         if (data && data.length > 0) {
             let countBayar = data.filter(o => o.status === 'PENDING').length;
-            let countProses = data.filter(o => o.status === 'proses' || o.status === 'SUCCESS' || o.status === 'Pending').length; 
-            let countSelesai = data.filter(o => o.status === 'selesai' || o.status === 'Sukses').length;
+            let countProses = data.filter(o => o.status === 'proses' || o.status === 'SUCCESS' || o.status === 'Pending').length;
             if (countBayar > 0 && bBayar) { bBayar.innerText = countBayar; bBayar.classList.remove('hidden'); }
             if (countProses > 0 && bProses) { bProses.innerText = countProses; bProses.classList.remove('hidden'); }
-            if (countSelesai > 0 && bSelesai) { bSelesai.innerText = countSelesai; bSelesai.classList.remove('hidden'); }
         }
     } catch (err) {
         console.log("Tabel pesanan belum siap, abaikan tracker.");
@@ -6555,7 +6613,12 @@ function bukaDetailPesananDinamis(orderId, productName, price, status, tableSour
                     let pajakLapak = 0;
                     let totalDiterimaSeller = subtotalBarang;
                     if (feeDitanggungPembeli) {
-                        let hargaDasar = Math.round((subtotalBarang - 500) / 1.007);
+                        let hargaDasar;
+                        if (subtotalBarang < 252500) {
+                            hargaDasar = Math.round((subtotalBarang - 500) / 1.008);
+                        } else {
+                            hargaDasar = Math.round(subtotalBarang / 1.01);
+                        }
                         totalDiterimaSeller = hargaDasar; 
                         pajakLapak = hitungPotonganSeller(hargaDasar); 
                     } else {
@@ -6676,10 +6739,20 @@ async function batalkanPesanan(orderId, tableSource) {
 
 async function selesaikanPesanan(orderId, tableSource) {
     if (!orderId) return;
+    const { data: cekOrder, error: errCek } = await supabaseClient
+        .from(tableSource)
+        .select('status, price, product_name, product_id')
+        .eq('id', orderId)
+        .single();
+    if (errCek || !cekOrder) return showToast("Pesanan tidak ditemukan.", "error");
+    if (cekOrder.status === 'selesai' || cekOrder.status === 'Sukses') {
+        closeDetailPesanan();
+        return showToast("Pesanan ini sudah diselesaikan sebelumnya!", "info");
+    }
     let pesanKonfirmasi = "Pesanan sudah dikerjakan dan diterima dengan baik?";
-if (tableSource === 'orders_player') {
-    pesanKonfirmasi += "\n\n🛡️ Dana akan diamankan sistem selama 24 Jam sebagai garansi transaksi, setelah itu Penjual dapat menariknya secara Instan.";
-}
+    if (tableSource === 'orders_player') {
+        pesanKonfirmasi += "\n\n🛡️ Dana akan diamankan sistem selama 24 Jam sebagai garansi transaksi, setelah itu Penjual dapat menariknya secara Instan.";
+    }
     const konfirmasi = await customConfirm(pesanKonfirmasi);
     if (!konfirmasi) return;
     closeDetailPesanan(); 
@@ -6691,20 +6764,21 @@ if (tableSource === 'orders_player') {
             dataUpdate.waktu_selesai = waktuSekarang;
             dataUpdate.dana_cair = false;
         }
-        const { error: orderError } = await supabaseClient.from(tableSource).update(dataUpdate).eq('id', orderId);
-        const { data: detailOrder } = await supabaseClient.from(tableSource).select('price, product_name, product_id').eq('id', orderId).single();
-        if (detailOrder) {
-            const hargaAsli = Number(detailOrder.price);
-            const isRekber = detailOrder.product_name.includes('[+Rekber]');
-            const jatahPajakLapak = hitungPotonganSeller(hargaAsli);
-            const jatahFeeRekber = isRekber ? hitungFeeRekber(hargaAsli) : 0;
-            const totalSetorNikky = jatahPajakLapak + jatahFeeRekber;
-            autoSetorKeNikky(totalSetorNikky, `[Auto] Pajak Lapak & Rekber - Order ID: ${orderId.substring(0,8).toUpperCase()}`);
-        }
+        const { error: orderError } = await supabaseClient
+            .from(tableSource)
+            .update(dataUpdate)
+            .eq('id', orderId)
+            .neq('status', 'selesai');
         if (orderError) throw orderError;
+        const hargaAsli = Number(cekOrder.price);
+        const isRekber = cekOrder.product_name.includes('[+Rekber]');
+        const jatahPajakLapak = hitungPotonganSeller(hargaAsli);
+        const jatahFeeRekber = isRekber ? hitungFeeRekber(hargaAsli) : 0;
+        const totalSetorNikky = jatahPajakLapak + jatahFeeRekber;
+        autoSetorKeNikky(totalSetorNikky, `[Auto] Pajak Lapak & Rekber - Order ID: ${orderId.substring(0,8).toUpperCase()}`);
         if (tableSource === 'orders_player') {
-    showToast("Pesanan selesai! Dana diamankan di Saldo Tertahan (24 Jam) sebelum siap ditarik.", "success");
-} else {
+            showToast("Pesanan selesai! Dana diamankan di Saldo Tertahan (24 Jam).", "success");
+        } else {
             showToast("Pesanan selesai! Terima kasih.", "success");
         }
         tambahExp(50);
@@ -7319,7 +7393,12 @@ function renderGridPasar(dataList, targetId = 'grid-pasar-player') {
         if (item.fee_ditanggung_pembeli) {
             baseHarga += hitungPotonganSeller(item.price);
         }
-        const hargaCustomer = Math.floor(baseHarga + (baseHarga * 0.007) + 500);
+        let hargaCustomer;
+        if (baseHarga < 250000) {
+            hargaCustomer = Math.floor(baseHarga + (baseHarga * 0.008) + 500);
+        } else {
+            hargaCustomer = Math.floor(baseHarga + (baseHarga * 0.01));
+        }
         const formatHarga = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(hargaCustomer);
         let hargaCoret = Math.ceil((hargaCustomer * 1.3) / 1000) * 1000; 
         if (hargaCustomer > 100000) hargaCoret = Math.ceil((hargaCustomer * 1.2) / 5000) * 5000;
@@ -7332,7 +7411,7 @@ function renderGridPasar(dataList, targetId = 'grid-pasar-player') {
         let fotoPertama = rawThumb.split(',')[0].trim();
         if (!fotoPertama) fotoPertama = 'https://placehold.co/400x400/1a1133/2BD975?text=PASAR';
         const isAutoItem = item.category === 'Akun' || item.category === 'Item' || item.category === 'APK Premium';
-        const sisaStok = isAutoItem && item.stock_list ? item.stock_list.split(/\r?\n/).filter(s=>s.trim() !== '').length : 0;
+        const sisaStok = isAutoItem ? (item.stock_count || 0) : 0;
         const badgeStok = isAutoItem 
             ? `<span class="absolute top-2 left-2 bg-black/80 text-[8px] font-extrabold ${sisaStok > 0 ? 'text-brand-info border-brand-info/30' : 'text-red-500 border-red-500/50'} px-2 py-0.5 rounded-md backdrop-blur-sm border shadow-md tracking-wider">STOK: ${sisaStok}</span>` 
             : `<span class="absolute top-2 left-2 bg-brand-success/90 text-white text-[8px] font-extrabold px-2 py-0.5 rounded-md backdrop-blur-sm border border-white/10 shadow-md uppercase tracking-wider">${item.category}</span>`;
@@ -7580,7 +7659,12 @@ function bukaDetailPasar(idProduk) {
     if (produk.fee_ditanggung_pembeli) {
         baseHarga += hitungPotonganSeller(baseHarga);
     }
-    const hargaCustomer = Math.floor(baseHarga + (baseHarga * 0.007) + 500);
+    let hargaCustomer;
+    if (baseHarga < 250000) {
+        hargaCustomer = Math.floor(baseHarga + (baseHarga * 0.008) + 500);
+    } else {
+        hargaCustomer = Math.floor(baseHarga + (baseHarga * 0.01));
+    }
     currentPasarPrice = hargaCustomer;
     let rawVariasi = produk.variations || produk.variasi || [];
     let arrVariasi = [];
@@ -7591,7 +7675,12 @@ function bukaDetailPasar(idProduk) {
                 if (produk.fee_ditanggung_pembeli) {
                     hargaVarAsli += hitungPotonganSeller(hargaVarAsli);
                 }
-                let hargaVarMarkup = Math.floor(hargaVarAsli + (hargaVarAsli * 0.007) + 500);
+                let hargaVarMarkup;
+                if (hargaVarAsli < 250000) {
+                    hargaVarMarkup = Math.floor(hargaVarAsli + (hargaVarAsli * 0.008) + 500);
+                } else {
+                    hargaVarMarkup = Math.floor(hargaVarAsli + (hargaVarAsli * 0.01));
+                }
                 arrVariasi.push({ name: v.nama_variasi || v.name, price: hargaVarMarkup });
             }
         });
@@ -7800,7 +7889,12 @@ function pilihPaketSeller(tipe) {
     } else {
         hargaAwal = HARGA_PER_HARI * 365;
     }
-    const biayaGateway = 500 + Math.floor(hargaAwal * 0.007);
+    let biayaGateway;
+    if (hargaAwal < 250000) {
+        biayaGateway = Math.floor(hargaAwal * 0.008) + 500;
+    } else {
+        biayaGateway = Math.floor(hargaAwal * 0.01);
+    }
     const hargaFinal = hargaAwal + biayaGateway;
     document.getElementById('btn-bayar-langganan').innerHTML = `
         <span>Berlangganan Rp ${hargaFinal.toLocaleString('id-ID')}</span>
@@ -7841,7 +7935,12 @@ async function lanjutkanBayarLangganan() {
         namaPaket = '[VIP] Langganan Seller 1 Tahun';
         hargaAwal = HARGA_PER_HARI * 365;
     }
-    const biayaGateway = 500 + Math.floor(hargaAwal * 0.007);
+    let biayaGateway;
+    if (hargaAwal < 250000) {
+        biayaGateway = Math.floor(hargaAwal * 0.008) + 500;
+    } else {
+        biayaGateway = Math.floor(hargaAwal * 0.01);
+    }
     const hargaFinal = hargaAwal + biayaGateway;
     checkoutXoftwarePay(namaPaket, hargaFinal, "Aktivasi VIP Seller AU2Hub", null, null);
 }
@@ -8114,7 +8213,7 @@ async function loadProdukSaya() {
                 }
                 const foto = (item.image_url || '').split(',')[0];
                 const isAutoItem = item.category === 'Akun' || item.category === 'Item' || item.category === 'APK Premium';
-                const sisaStok = isAutoItem && item.stock_list ? item.stock_list.split(/\r?\n/).filter(s=>s.trim() !== '').length : 0;
+                const sisaStok = isAutoItem ? (item.stock_count || 0) : 0;
                 const stokBadge = isAutoItem ? `<span class="text-[8px] font-bold bg-black/80 text-white px-2 py-0.5 rounded backdrop-blur-sm border border-white/20 absolute top-1.5 right-1.5 shadow-md">Sisa: ${sisaStok}</span>` : '';
                return `
                 <div class="bg-[#161B2E] border border-transparent rounded-[1.2rem] p-4 shadow-lg mb-3 transition-all hover:border-white/5">
@@ -10322,13 +10421,13 @@ window.tutupLayarSuksesWD = (btnElement) => {
 
 let kategoriPPOBAktif = 'Pulsa'; 
 let brandPPOBAktif = 'Semua';
+let typePPOBAktif = 'Semua';
 let ppobOffset = 0;
 const PPOB_LIMIT = 20;
 let currentPpobData = [];
 const kategoriPPOBList = [
     { id: 'Pulsa', icon: 'fa-mobile-alt' },
     { id: 'Data', icon: 'fa-wifi' },
-    { id: 'E-Money', icon: 'fa-wallet' },
     { id: 'Games', icon: 'fa-gamepad' },
     { id: 'PLN', icon: 'fa-bolt' },
     { id: 'Voucher', icon: 'fa-ticket-alt' },
@@ -10358,6 +10457,11 @@ function getKategoriIcon(id) {
     const kat = kategoriPPOBList.find(k => k.id === id);
     return kat ? kat.icon : 'fa-box';
 }
+function getBrandLogoURL(brandName) {
+    if (!brandName || brandName === 'Semua') return 'https://img.icons8.com/color/96/categorize.png';
+    let formattedName = brandName.toLowerCase().replace(/[^a-z0-9]/g, '');
+    return `https://nos.wjv-1.neo.id/au2hub/icons/${formattedName}.png`;
+}
 function renderKategoriPPOB() {
     const container = document.getElementById('ppob-category-container');
     if (!container) return;
@@ -10377,6 +10481,7 @@ function renderKategoriPPOB() {
 function pilihKategoriPPOB(kategori) {
     kategoriPPOBAktif = kategori;
     brandPPOBAktif = 'Semua'; 
+    typePPOBAktif = 'Semua';
     const mainView = document.getElementById('ppob-main-view');
     const catalogView = document.getElementById('ppob-catalog-view');
     if (mainView && catalogView) {
@@ -10404,7 +10509,9 @@ function pilihKategoriPPOB(kategori) {
                 <span class="text-[10px] font-bold uppercase tracking-widest text-gray-400">Menyiapkan Data...</span>
             </div>`;
     }
-    loadBrandPPOB().then(() => loadProdukPPOB(false));
+    loadBrandPPOB().then(() => {
+        loadTypePPOB().then(() => loadProdukPPOB(false));
+    });
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -10426,12 +10533,13 @@ async function loadBrandPPOB() {
     let brandContainer = document.getElementById('ppob-brand-container');
     if (!brandContainer) {
         const grid = document.getElementById('ppob-product-grid');
+        const typeContainer = document.getElementById('ppob-type-container'); 
         brandContainer = document.createElement('div');
         brandContainer.id = 'ppob-brand-container';
-        brandContainer.className = 'flex overflow-x-auto hide-scroll gap-2 pb-4 px-1 items-center border-b border-white/5 mb-4 mt-2';
-        grid.parentNode.insertBefore(brandContainer, grid);
+        brandContainer.className = 'flex overflow-x-auto hide-scroll gap-4 pb-5 px-2 items-start border-b border-white/5 mb-4 mt-4';
+        grid.parentNode.insertBefore(brandContainer, typeContainer || grid);
     }
-    brandContainer.innerHTML = '<div class="text-[10px] text-gray-500 animate-pulse">Memuat provider...</div>';
+    brandContainer.innerHTML = '<div class="text-[10px] text-gray-500 animate-pulse w-full text-center">Memuat logo provider...</div>';
     try {
         const { data, error } = await supabaseClient
             .from('digiflazz_products')
@@ -10439,37 +10547,123 @@ async function loadBrandPPOB() {
             .eq('is_active', true)
             .ilike('category', `%${kategoriPPOBAktif}%`);
         if (error) throw error;
-        const uniqueBrands = [...new Set(data.map(item => item.brand))].sort();
+        const uniqueBrands = [...new Set(data.map(item => item.brand).filter(b => b && b.trim() !== ''))].sort();
         const allBrands = ['Semua', ...uniqueBrands];
         brandContainer.innerHTML = allBrands.map(brand => {
             const isActive = brand === brandPPOBAktif;
-            const activeClass = isActive 
-                ? "bg-brand-info text-brand-dark border-transparent shadow-[0_0_10px_rgba(70,179,255,0.4)]" 
-                : "bg-black/40 text-gray-400 border-white/10 hover:bg-white/10 hover:text-white";
+            const logoUrl = getBrandLogoURL(brand);
+            const amanBrand = escapeHTML(brand).replace(/&#39;/g, "\\'");
+            const activeBoxClass = isActive 
+                ? "bg-brand-info/20 border-brand-info shadow-[0_0_15px_rgba(70,179,255,0.4)]" 
+                : "bg-white/5 border-white/10 hover:border-white/30";
+            const activeTextClass = isActive ? "text-brand-info" : "text-gray-400";
             return `
-            <button onclick="pilihBrandPPOB('${escapeHTML(brand).replace(/&#39;/g, "\\'")}')" class="px-4 py-1.5 rounded-full border font-bold text-[10px] whitespace-nowrap transition-all active:scale-95 shrink-0 ${activeClass}">
-                ${brand}
+            <div onclick="pilihBrandPPOB('${amanBrand}')" class="flex flex-col items-center gap-2 cursor-pointer group active:scale-95 shrink-0 w-[4.5rem]">
+                <div class="w-14 h-14 rounded-[1.2rem] flex items-center justify-center transition-all border ${activeBoxClass} p-2.5 overflow-hidden relative">
+                    <img src="${logoUrl}" alt="${brand}" 
+                         class="w-full h-full object-contain drop-shadow-md ${isActive ? 'scale-110' : 'group-hover:scale-110'} transition-transform" 
+                         onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(brand)}&background=1A1133&color=00F0FF&bold=true'">
+                </div>
+                <span class="text-[8px] font-extrabold tracking-wide uppercase text-center w-full truncate px-0.5 ${activeTextClass} transition-colors">
+                    ${brand}
+                </span>
+            </div>`;
+        }).join('');
+    } catch (err) {
+        brandContainer.innerHTML = '<div class="text-[10px] text-red-500 w-full text-center">Gagal memuat provider</div>';
+    }
+}
+
+async function loadTypePPOB() {
+    let typeContainer = document.getElementById('ppob-type-container');
+    if (!typeContainer) {
+        const grid = document.getElementById('ppob-product-grid');
+        typeContainer = document.createElement('div');
+        typeContainer.id = 'ppob-type-container';
+        typeContainer.className = 'flex overflow-x-auto hide-scroll gap-2 pb-4 px-1 items-center border-b border-white/5 mb-4 -mt-2';
+        grid.parentNode.insertBefore(typeContainer, grid);
+    }
+    typeContainer.innerHTML = '<div class="text-[10px] text-gray-500 animate-pulse">Memuat tipe...</div>';
+    try {
+        let query = supabaseClient
+            .from('digiflazz_products')
+            .select('type')
+            .eq('is_active', true)
+            .ilike('category', `%${kategoriPPOBAktif}%`);
+        if (brandPPOBAktif !== 'Semua') {
+            query = query.ilike('brand', `%${brandPPOBAktif}%`);
+        }
+        const { data, error } = await query;
+        if (error) throw error;
+        const uniqueTypes = [...new Set(data.map(item => item.type).filter(t => t && t.trim() !== ''))].sort();
+        if (uniqueTypes.length === 0) {
+            typeContainer.classList.add('hidden');
+            return;
+        }
+        typeContainer.classList.remove('hidden');
+        const allTypes = ['Semua', ...uniqueTypes];
+        typeContainer.innerHTML = allTypes.map(type => {
+            const isActive = type === typePPOBAktif;
+            const activeClass = isActive 
+                ? "bg-brand-accent text-white border-transparent shadow-[0_0_10px_rgba(255,0,122,0.4)]" 
+                : "bg-black/30 text-gray-400 border-white/10 hover:bg-white/10 hover:text-white";
+            return `
+            <button onclick="pilihTypePPOB('${escapeHTML(type).replace(/&#39;/g, "\\'")}')" class="px-3 py-1.5 rounded-lg border font-bold text-[9px] whitespace-nowrap transition-all active:scale-95 shrink-0 ${activeClass}">
+                ${type}
             </button>`;
         }).join('');
     } catch (err) {
-        brandContainer.innerHTML = '<div class="text-[10px] text-red-500">Gagal memuat provider</div>';
+        typeContainer.innerHTML = '<div class="text-[10px] text-red-500">Gagal memuat tipe produk</div>';
     }
+}
+
+function pilihTypePPOB(type) {
+    typePPOBAktif = type;
+    const typeContainer = document.getElementById('ppob-type-container');
+    if (typeContainer) {
+        const buttons = typeContainer.querySelectorAll('button');
+        buttons.forEach(btn => {
+            if (btn.innerText.trim() === type) {
+                btn.className = "px-3 py-1.5 rounded-lg border font-bold text-[9px] whitespace-nowrap transition-all active:scale-95 shrink-0 bg-brand-accent text-white border-transparent shadow-[0_0_10px_rgba(255,0,122,0.4)]";
+            } else {
+                btn.className = "px-3 py-1.5 rounded-lg border font-bold text-[9px] whitespace-nowrap transition-all active:scale-95 shrink-0 bg-black/30 text-gray-400 border-white/10 hover:bg-white/10 hover:text-white";
+            }
+        });
+    }
+    ppobOffset = 0;
+    currentPpobData = [];
+    document.getElementById('ppob-load-more-container').classList.add('hidden');
+    document.getElementById('ppob-product-grid').innerHTML = `
+        <div class="text-center py-10 text-brand-accent">
+            <i class="fas fa-circle-notch fa-spin text-3xl mb-3"></i><br>
+            <span class="text-xs font-bold uppercase tracking-widest">Menyaring Sub Produk...</span>
+        </div>`;
+    loadProdukPPOB(false);
 }
 
 function pilihBrandPPOB(brand) {
     brandPPOBAktif = brand;
+    typePPOBAktif = 'Semua';
     const brandContainer = document.getElementById('ppob-brand-container');
     if (brandContainer) {
-        const buttons = brandContainer.querySelectorAll('button');
-        buttons.forEach(btn => {
-            if (btn.innerText.trim() === brand) {
-                btn.className = "px-4 py-1.5 rounded-full border font-bold text-[10px] whitespace-nowrap transition-all active:scale-95 shrink-0 bg-brand-info text-brand-dark border-transparent shadow-[0_0_10px_rgba(70,179,255,0.4)]";
+        const brandCards = brandContainer.querySelectorAll('div[onclick^="pilihBrandPPOB"]');
+        brandCards.forEach(card => {
+            const brandNameSpan = card.querySelector('span');
+            const iconBox = card.querySelector('div.rounded-\\[1\\.2rem\\]');
+            const imgEl = iconBox.querySelector('img');
+            if (brandNameSpan.innerText.trim().toUpperCase() === brand.toUpperCase()) {
+                iconBox.className = "w-14 h-14 rounded-[1.2rem] flex items-center justify-center transition-all border bg-brand-info/20 border-brand-info shadow-[0_0_15px_rgba(70,179,255,0.4)] p-2.5 overflow-hidden relative";
+                brandNameSpan.className = "text-[8px] font-extrabold tracking-wide uppercase text-center w-full truncate px-0.5 text-brand-info transition-colors";
+                imgEl.classList.add('scale-110');
+                imgEl.classList.remove('group-hover:scale-110');
             } else {
-                btn.className = "px-4 py-1.5 rounded-full border font-bold text-[10px] whitespace-nowrap transition-all active:scale-95 shrink-0 bg-black/40 text-gray-400 border-white/10 hover:bg-white/10 hover:text-white";
+                iconBox.className = "w-14 h-14 rounded-[1.2rem] flex items-center justify-center transition-all border bg-white/5 border-white/10 hover:border-white/30 p-2.5 overflow-hidden relative";
+                brandNameSpan.className = "text-[8px] font-extrabold tracking-wide uppercase text-center w-full truncate px-0.5 text-gray-400 transition-colors";
+                imgEl.classList.remove('scale-110');
+                imgEl.classList.add('group-hover:scale-110');
             }
         });
     }
-
     ppobOffset = 0;
     currentPpobData = [];
     document.getElementById('ppob-load-more-container').classList.add('hidden');
@@ -10478,7 +10672,7 @@ function pilihBrandPPOB(brand) {
             <i class="fas fa-circle-notch fa-spin text-3xl mb-3"></i><br>
             <span class="text-xs font-bold uppercase tracking-widest">Menyaring Produk...</span>
         </div>`;
-    loadProdukPPOB(false);
+    loadTypePPOB().then(() => loadProdukPPOB(false));
 }
 
 async function loadProdukPPOB(isLoadMore = false) {
@@ -10497,6 +10691,9 @@ async function loadProdukPPOB(isLoadMore = false) {
             .ilike('category', `%${kategoriPPOBAktif}%`);
         if (brandPPOBAktif !== 'Semua') {
             query = query.ilike('brand', `%${brandPPOBAktif}%`);
+        }
+        if (typePPOBAktif !== 'Semua') {
+            query = query.ilike('type', `%${typePPOBAktif}%`);
         }
         const { data, error } = await query.order('seller_price', { ascending: true }).range(from, to);
         if (error) throw error;
@@ -10600,7 +10797,12 @@ async function mulaiTopUpSaldo() {
     if (isNaN(nominal) || nominal < 10000) {
         return showToast("Minimal Top Up adalah Rp 10.000", "error");
     }
-    const biayaGateway = 500 + Math.floor(nominal * 0.007);
+    let biayaGateway;
+    if (nominal < 250000) {
+        biayaGateway = Math.floor(nominal * 0.008) + 500;
+    } else {
+        biayaGateway = Math.floor(nominal * 0.01);
+    }
     const totalBayar = nominal + biayaGateway;
     const konfirmasi = await customConfirm(`Rincian Top Up Saldo:\n\nNominal: Rp ${nominal.toLocaleString('id-ID')}\nBiaya Admin QRIS: Rp ${biayaGateway.toLocaleString('id-ID')}\n\nTotal Bayar: Rp ${totalBayar.toLocaleString('id-ID')}\n\nLanjutkan pembayaran?`);
     if (!konfirmasi) return;
@@ -10968,4 +11170,48 @@ async function mulaiTransferSaldo() {
     } finally {
         isTransferProcessing = false; 
     }
+}
+function bukaModalLegalitas() {
+    history.pushState({ popup: 'legalitas' }, null, '#legalitas');
+    const modal = document.getElementById('modal-legalitas');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+}
+
+function tutupModalLegalitas(dariTombolBack = false) {
+    const modal = document.getElementById('modal-legalitas');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+    if (!dariTombolBack && window.location.hash === '#legalitas') {
+        history.back();
+    }
+}
+
+function panduanCekLegalitas(tipe) {
+    let judul = '';
+    let isi = '';
+    let actionHtml = '';
+    if (tipe === 'NIB') {
+        judul = 'Verifikasi NIB (OSS)';
+        isi = `Data NIB <b>1807260008101</b> terdaftar resmi di sistem OSS.<br><br>Sistem pemerintah membatasi akses, silakan tekan tombol di bawah untuk verifikasi ke web resmi.`;
+        actionHtml = `<a href="https://ui-login.oss.go.id/verify/UBsCIAZhWmRfagRiAmBSNgJmCTcDMAtoAmFRYABjBGFTZlZtBWleYVZlBWVVMg==" target="_blank" rel="noopener noreferrer" onclick="document.getElementById('alert-ok').click()" class="w-full bg-brand-info text-brand-dark py-3.5 rounded-xl font-extrabold active:scale-95 transition-all text-xs uppercase tracking-wider shadow-[0_4px_15px_rgba(70,179,255,0.4)] flex justify-center items-center gap-2 mb-2">Lihat Sertifikat OSS <i class="fas fa-external-link-alt"></i></a>`;
+    } else if (tipe === 'AHU') {
+        judul = 'Sertifikat Kemenkumham';
+        isi = `Data <b>PT ADT PASTI CAIR</b> tercatat resmi di Ditjen AHU.<br><br>Klik tombol di bawah untuk mengakses e-Sertifikat asli Anda melalui portal Kemenkumham.`;
+        actionHtml = `<a href="https://elayanan.ahu.go.id/perseroan-perseorangan/sertifikat/Pendirian/ADT%20PASTI%20CAIR" target="_blank" rel="noopener noreferrer" onclick="document.getElementById('alert-ok').click()" class="w-full bg-brand-info text-brand-dark py-3.5 rounded-xl font-extrabold active:scale-95 transition-all text-xs uppercase tracking-wider shadow-[0_4px_15px_rgba(70,179,255,0.4)] flex justify-center items-center gap-2 mb-2">Lihat Sertifikat AHU <i class="fas fa-external-link-alt"></i></a>`;
+    } else if (tipe === 'NPWP') {
+        judul = 'SKT NPWP Perusahaan';
+        isi = `NPWP Badan <b>1000 0000 1036 5864</b> berstatus valid dan tercatat di DJP.<br><br>Dokumen ini telah kami simpan di server aman kami agar mudah diakses tanpa kendala.`;
+        actionHtml = `<button onclick="openLightbox('https://nos.wjv-1.neo.id/au2hub/SKT%20Pajak%20-%20PT%20ADT%20PASTI%20CAIR_page-0001.jpg'); document.getElementById('alert-ok').click()" class="w-full bg-brand-success text-white py-3.5 rounded-xl font-extrabold active:scale-95 transition-all text-xs uppercase tracking-wider shadow-[0_4px_15px_rgba(37,211,102,0.4)] flex justify-center items-center gap-2 mb-2">Lihat Dokumen NPWP <i class="fas fa-search-plus"></i></button>`;
+    }
+    customAlert(`
+    <div class="text-left cursor-default flex flex-col">
+        <div class="text-xs font-black text-brand-info mb-3 uppercase tracking-widest border-b border-white/10 pb-2 flex items-center gap-2">
+            <i class="fas fa-shield-check text-sm"></i> ${judul}
+        </div>
+        <div class="text-[11px] text-gray-300 leading-relaxed font-sans mb-5">
+            ${isi}
+        </div>
+        ${actionHtml}
+    </div>`, true);
 }
