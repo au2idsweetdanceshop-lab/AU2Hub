@@ -1466,6 +1466,7 @@ function switchTab(tabId, event = null, isPush = true) {
 
 window.addEventListener('popstate', () => {
     let isPopupClosed = false;
+    
     if (typeof intervalJemputBola !== 'undefined' && intervalJemputBola) {
         clearInterval(intervalJemputBola);
         intervalJemputBola = null;
@@ -1478,6 +1479,14 @@ window.addEventListener('popstate', () => {
         clearInterval(window.ppobPolling);
         window.ppobPolling = null;
     }
+
+    // --- PENAMBAHAN MODAL LEGALITAS ---
+    const modalLegalitas = document.getElementById('modal-legalitas');
+    if (modalLegalitas && !modalLegalitas.classList.contains('hidden')) {
+        tutupModalLegalitas(true);
+        return;
+    }
+    // ----------------------------------
 
     const modalAlert = document.getElementById('modal-alert');
     if (modalAlert && !modalAlert.classList.contains('hidden')) {
@@ -1719,14 +1728,18 @@ window.addEventListener('popstate', () => {
         closeFloatingVideo(true);
         isPopupClosed = true;
     }
+    
     if (isPopupClosed) return;
+    
     const newHash = window.location.hash.substring(1) || 'home';
     if (newHash === 'profile' && viewedUserId !== currentUser?.id) {
         viewedUserId = currentUser?.id;
         checkSession();
     }
+    
     const cleanHash = newHash.split('?')[0];
     const validTabs = ['home', 'sosial', 'pasar', 'toko', 'layanan', 'pesanan', 'profile', 'pembayaran', 'superadmin', 'tokopublik'];
+    
     if (newHash.startsWith('tokopublik?seller=') || newHash.startsWith('pasar?seller=')) {
         const sellerName = decodeURIComponent(newHash.split('=')[1]);
         if (newHash.startsWith('pasar?seller=')) {
@@ -1736,6 +1749,7 @@ window.addEventListener('popstate', () => {
         loadTokoPublikLuar(sellerName);
         return;
     }
+    
     if (!validTabs.includes(cleanHash)) {
         history.replaceState(null, null, '#' + tabSebelumnya);
         switchTab(tabSebelumnya, null, false);
@@ -11007,5 +11021,20 @@ async function mulaiTransferSaldo() {
         showToast(e.message || "Gagal memproses transfer.", "error");
     } finally {
         isTransferProcessing = false; 
+    }
+}
+function bukaModalLegalitas() {
+    history.pushState({ popup: 'legalitas' }, null, '#legalitas');
+    const modal = document.getElementById('modal-legalitas');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+}
+
+function tutupModalLegalitas(dariTombolBack = false) {
+    const modal = document.getElementById('modal-legalitas');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+    if (!dariTombolBack && window.location.hash === '#legalitas') {
+        history.back();
     }
 }
