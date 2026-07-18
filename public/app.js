@@ -11040,32 +11040,35 @@ function tutupModalLegalitas(dariTombolBack = false) {
 }
 
 function panduanCekLegalitas(tipe) {
-    let judul = '';
-    let isi = '';
-    if (tipe === 'NIB') {
-        judul = 'Verifikasi NIB (OSS)';
-        isi = `Data NIB <b>1807260008101</b> kami terdaftar di sistem OSS Kementerian Investasi/BKPM.<br><br>
-        1. Download aplikasi <b>OSS Indonesia</b> di PlayStore/AppStore.<br>
-        2. Pilih menu <b>Pelacakan (Tracking)</b>.<br>
-        3. Masukkan nomor NIB kami untuk melihat status perusahaan yang aktif.`;
-    } else if (tipe === 'AHU') {
-        judul = 'Verifikasi SK Kemenkumham';
-        isi = `Status Badan Hukum PT Perorangan kami tercatat di Ditjen AHU.<br><br>
-        1. Buka situs resmi pemerintah:<br> <a href="https://ahu.go.id/pencarian/profil-pt-perorangan" target="_blank" class="text-brand-info underline font-bold">ahu.go.id/pencarian/profil-pt-perorangan</a><br>
-        2. Ketik nama perusahaan: <b>ADT PASTI CAIR</b><br>
-        3. Klik Cari. Nama PT kami akan muncul berstatus Aktif.`;
-    } else if (tipe === 'NPWP') {
-        judul = 'Verifikasi NPWP Perusahaan';
-        isi = `NPWP <b>1000 0000 1036 5864</b> adalah NPWP Badan berstatus valid dan terdaftar di DJP Pratama Kediri.<br><br>
-        Anda dapat memverifikasinya melalui portal resmi DJP Online atau langsung di KPP terdekat jika diperlukan.`;
-    }
-    customAlert(`
-    <div class="text-left cursor-default">
-        <div class="text-xs font-black text-brand-info mb-3 uppercase tracking-widest border-b border-white/10 pb-2 flex items-center gap-2">
-            <i class="fas fa-shield-check text-sm"></i> ${judul}
-        </div>
-        <div class="text-[11px] text-gray-300 leading-relaxed font-sans">
-            ${isi}
-        </div>
-    </div>`, true);
+    tutupModalLegalitas();
+    setTimeout(() => {
+        let judul = '';
+        let isi = '';
+        if (tipe === 'NIB') {
+            judul = 'Verifikasi NIB (OSS)';
+            isi = `Data NIB <b>1807260008101</b> kami terdaftar di sistem OSS Kementerian Investasi/BKPM.<br><br>
+            1. Download aplikasi <b>OSS Indonesia</b> di PlayStore/AppStore.<br>
+            2. Pilih menu <b>Pelacakan (Tracking)</b>.<br>
+            3. Masukkan nomor NIB kami untuk melihat status perusahaan yang aktif.`;
+        } else if (tipe === 'AHU') {
+            judul = 'Verifikasi SK Kemenkumham';
+            isi = `Status Badan Hukum PT Perorangan kami tercatat di Ditjen AHU.<br><br>
+            1. Buka situs resmi pemerintah:<br> <a href="https://ahu.go.id/pencarian/profil-pt-perorangan" target="_blank" class="text-brand-info underline font-bold">ahu.go.id/pencarian/profil-pt-perorangan</a><br>
+            2. Ketik nama perusahaan: <b>ADT PASTI CAIR</b><br>
+            3. Klik Cari. Nama PT kami akan muncul berstatus Aktif.`;
+        } else if (tipe === 'NPWP') {
+            judul = 'Verifikasi NPWP Perusahaan';
+            isi = `NPWP <b>1000 0000 1036 5864</b> adalah NPWP Badan berstatus valid dan terdaftar di DJP Pratama Kediri.<br><br>
+            Anda dapat memverifikasinya melalui portal resmi DJP Online atau langsung di KPP terdekat jika diperlukan.`;
+        }
+        customAlert(`
+        <div class="text-left cursor-default">
+            <div class="text-xs font-black text-brand-info mb-3 uppercase tracking-widest border-b border-white/10 pb-2 flex items-center gap-2">
+                <i class="fas fa-shield-check text-sm"></i> ${judul}
+            </div>
+            <div class="text-[11px] text-gray-300 leading-relaxed font-sans">
+                ${isi}
+            </div>
+        </div>`, true);
+    }, 250);
 }
