@@ -67,7 +67,19 @@ export default async function handler(req, res) {
             const currentDbStatus = String(orderData.status).toUpperCase();
             const productName = orderData.product_name || '';
             const userId = orderData.user_id;
-            const amountToAdd = Number(orderData.price);
+            let amountToAdd = Number(orderData.price);
+            if (productName.startsWith('[DEPOSIT]')) {
+                const depositMatch = productName.match(/\[DEPOSIT\]\s*(\d+)/);
+                if (depositMatch) {
+                    amountToAdd = parseInt(depositMatch[1], 10);
+                } else {
+                    if (amountToAdd < 252500) {
+                        amountToAdd = Math.round((amountToAdd - 500) / 1.008);
+                    } else {
+                        amountToAdd = Math.round(amountToAdd / 1.01);
+                    }
+                }
+            }
             let isAlreadyProcessed = false;
             if (['SUCCESS', 'SELESAI', 'PROSES', 'PAID'].includes(currentDbStatus)) {
                 if (productName.startsWith('[DEPOSIT]')) {
