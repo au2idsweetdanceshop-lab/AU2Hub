@@ -10408,6 +10408,11 @@ function getKategoriIcon(id) {
     const kat = kategoriPPOBList.find(k => k.id === id);
     return kat ? kat.icon : 'fa-box';
 }
+function getBrandLogoURL(brandName) {
+    if (!brandName || brandName === 'Semua') return 'https://img.icons8.com/color/96/categorize.png';
+    let formattedName = brandName.toLowerCase().replace(/[^a-z0-9]/g, '');
+    return `https://nos.wjv-1.neo.id/au2hub/icons/${formattedName}.png`;
+}
 function renderKategoriPPOB() {
     const container = document.getElementById('ppob-category-container');
     if (!container) return;
@@ -10479,12 +10484,13 @@ async function loadBrandPPOB() {
     let brandContainer = document.getElementById('ppob-brand-container');
     if (!brandContainer) {
         const grid = document.getElementById('ppob-product-grid');
+        const typeContainer = document.getElementById('ppob-type-container'); 
         brandContainer = document.createElement('div');
         brandContainer.id = 'ppob-brand-container';
-        brandContainer.className = 'flex overflow-x-auto hide-scroll gap-2 pb-4 px-1 items-center border-b border-white/5 mb-4 mt-2';
-        grid.parentNode.insertBefore(brandContainer, grid);
+        brandContainer.className = 'flex overflow-x-auto hide-scroll gap-4 pb-5 px-2 items-start border-b border-white/5 mb-4 mt-4';
+        grid.parentNode.insertBefore(brandContainer, typeContainer || grid);
     }
-    brandContainer.innerHTML = '<div class="text-[10px] text-gray-500 animate-pulse">Memuat provider...</div>';
+    brandContainer.innerHTML = '<div class="text-[10px] text-gray-500 animate-pulse w-full text-center">Memuat logo provider...</div>';
     try {
         const { data, error } = await supabaseClient
             .from('digiflazz_products')
@@ -10492,20 +10498,30 @@ async function loadBrandPPOB() {
             .eq('is_active', true)
             .ilike('category', `%${kategoriPPOBAktif}%`);
         if (error) throw error;
-        const uniqueBrands = [...new Set(data.map(item => item.brand))].sort();
+        const uniqueBrands = [...new Set(data.map(item => item.brand).filter(b => b && b.trim() !== ''))].sort();
         const allBrands = ['Semua', ...uniqueBrands];
         brandContainer.innerHTML = allBrands.map(brand => {
             const isActive = brand === brandPPOBAktif;
-            const activeClass = isActive 
-                ? "bg-brand-info text-brand-dark border-transparent shadow-[0_0_10px_rgba(70,179,255,0.4)]" 
-                : "bg-black/40 text-gray-400 border-white/10 hover:bg-white/10 hover:text-white";
+            const logoUrl = getBrandLogoURL(brand);
+            const amanBrand = escapeHTML(brand).replace(/&#39;/g, "\\'");
+            const activeBoxClass = isActive 
+                ? "bg-brand-info/20 border-brand-info shadow-[0_0_15px_rgba(70,179,255,0.4)]" 
+                : "bg-white/5 border-white/10 hover:border-white/30";
+            const activeTextClass = isActive ? "text-brand-info" : "text-gray-400";
             return `
-            <button onclick="pilihBrandPPOB('${escapeHTML(brand).replace(/&#39;/g, "\\'")}')" class="px-4 py-1.5 rounded-full border font-bold text-[10px] whitespace-nowrap transition-all active:scale-95 shrink-0 ${activeClass}">
-                ${brand}
-            </button>`;
+            <div onclick="pilihBrandPPOB('${amanBrand}')" class="flex flex-col items-center gap-2 cursor-pointer group active:scale-95 shrink-0 w-[4.5rem]">
+                <div class="w-14 h-14 rounded-[1.2rem] flex items-center justify-center transition-all border ${activeBoxClass} p-2.5 overflow-hidden relative">
+                    <img src="${logoUrl}" alt="${brand}" 
+                         class="w-full h-full object-contain drop-shadow-md ${isActive ? 'scale-110' : 'group-hover:scale-110'} transition-transform" 
+                         onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(brand)}&background=1A1133&color=00F0FF&bold=true'">
+                </div>
+                <span class="text-[8px] font-extrabold tracking-wide uppercase text-center w-full truncate px-0.5 ${activeTextClass} transition-colors">
+                    ${brand}
+                </span>
+            </div>`;
         }).join('');
     } catch (err) {
-        brandContainer.innerHTML = '<div class="text-[10px] text-red-500">Gagal memuat provider</div>';
+        brandContainer.innerHTML = '<div class="text-[10px] text-red-500 w-full text-center">Gagal memuat provider</div>';
     }
 }
 
@@ -10581,12 +10597,21 @@ function pilihBrandPPOB(brand) {
     typePPOBAktif = 'Semua';
     const brandContainer = document.getElementById('ppob-brand-container');
     if (brandContainer) {
-        const buttons = brandContainer.querySelectorAll('button');
-        buttons.forEach(btn => {
-            if (btn.innerText.trim() === brand) {
-                btn.className = "px-4 py-1.5 rounded-full border font-bold text-[10px] whitespace-nowrap transition-all active:scale-95 shrink-0 bg-brand-info text-brand-dark border-transparent shadow-[0_0_10px_rgba(70,179,255,0.4)]";
+        const brandCards = brandContainer.querySelectorAll('div[onclick^="pilihBrandPPOB"]');
+        brandCards.forEach(card => {
+            const brandNameSpan = card.querySelector('span');
+            const iconBox = card.querySelector('div.rounded-\\[1\\.2rem\\]');
+            const imgEl = iconBox.querySelector('img');
+            if (brandNameSpan.innerText.trim().toUpperCase() === brand.toUpperCase()) {
+                iconBox.className = "w-14 h-14 rounded-[1.2rem] flex items-center justify-center transition-all border bg-brand-info/20 border-brand-info shadow-[0_0_15px_rgba(70,179,255,0.4)] p-2.5 overflow-hidden relative";
+                brandNameSpan.className = "text-[8px] font-extrabold tracking-wide uppercase text-center w-full truncate px-0.5 text-brand-info transition-colors";
+                imgEl.classList.add('scale-110');
+                imgEl.classList.remove('group-hover:scale-110');
             } else {
-                btn.className = "px-4 py-1.5 rounded-full border font-bold text-[10px] whitespace-nowrap transition-all active:scale-95 shrink-0 bg-black/40 text-gray-400 border-white/10 hover:bg-white/10 hover:text-white";
+                iconBox.className = "w-14 h-14 rounded-[1.2rem] flex items-center justify-center transition-all border bg-white/5 border-white/10 hover:border-white/30 p-2.5 overflow-hidden relative";
+                brandNameSpan.className = "text-[8px] font-extrabold tracking-wide uppercase text-center w-full truncate px-0.5 text-gray-400 transition-colors";
+                imgEl.classList.remove('scale-110');
+                imgEl.classList.add('group-hover:scale-110');
             }
         });
     }
@@ -11114,33 +11139,30 @@ function tutupModalLegalitas(dariTombolBack = false) {
 }
 
 function panduanCekLegalitas(tipe) {
-    tutupModalLegalitas();
-    setTimeout(() => {
-        let judul = '';
-        let isi = '';
-        let actionHtml = '';
-        if (tipe === 'NIB') {
-            judul = 'Verifikasi NIB (OSS)';
-            isi = `Data NIB <b>1807260008101</b> terdaftar resmi di sistem OSS.<br><br>Sistem pemerintah membatasi akses, silakan tekan tombol di bawah untuk verifikasi ke web resmi.`;
-            actionHtml = `<a href="https://ui-login.oss.go.id/verify/UBsCIAZhWmRfagRiAmBSNgJmCTcDMAtoAmFRYABjBGFTZlZtBWleYVZlBWVVMg==" target="_blank" rel="noopener noreferrer" onclick="document.getElementById('alert-ok').click()" class="w-full bg-brand-info text-brand-dark py-3.5 rounded-xl font-extrabold active:scale-95 transition-all text-xs uppercase tracking-wider shadow-[0_4px_15px_rgba(70,179,255,0.4)] flex justify-center items-center gap-2 mb-2">Lihat Sertifikat OSS <i class="fas fa-external-link-alt"></i></a>`;
-        } else if (tipe === 'AHU') {
-            judul = 'Sertifikat Kemenkumham';
-            isi = `Data <b>PT ADT PASTI CAIR</b> tercatat resmi di Ditjen AHU.<br><br>Klik tombol di bawah untuk mengakses e-Sertifikat asli Anda melalui portal Kemenkumham.`;
-            actionHtml = `<a href="https://elayanan.ahu.go.id/perseroan-perseorangan/sertifikat/Pendirian/ADT%20PASTI%20CAIR" target="_blank" rel="noopener noreferrer" onclick="document.getElementById('alert-ok').click()" class="w-full bg-brand-info text-brand-dark py-3.5 rounded-xl font-extrabold active:scale-95 transition-all text-xs uppercase tracking-wider shadow-[0_4px_15px_rgba(70,179,255,0.4)] flex justify-center items-center gap-2 mb-2">Lihat Sertifikat AHU <i class="fas fa-external-link-alt"></i></a>`;
-        } else if (tipe === 'NPWP') {
-            judul = 'SKT NPWP Perusahaan';
-            isi = `NPWP Badan <b>1000 0000 1036 5864</b> berstatus valid dan tercatat di DJP.<br><br>Dokumen ini telah kami simpan di server aman kami agar mudah diakses tanpa kendala.`;
-            actionHtml = `<button onclick="openLightbox('https://nos.wjv-1.neo.id/au2hub/SKT%20Pajak%20-%20PT%20ADT%20PASTI%20CAIR_page-0001.jpg'); document.getElementById('alert-ok').click()" class="w-full bg-brand-success text-white py-3.5 rounded-xl font-extrabold active:scale-95 transition-all text-xs uppercase tracking-wider shadow-[0_4px_15px_rgba(37,211,102,0.4)] flex justify-center items-center gap-2 mb-2">Lihat Dokumen NPWP <i class="fas fa-search-plus"></i></button>`;
-        }
-        customAlert(`
-        <div class="text-left cursor-default flex flex-col">
-            <div class="text-xs font-black text-brand-info mb-3 uppercase tracking-widest border-b border-white/10 pb-2 flex items-center gap-2">
-                <i class="fas fa-shield-check text-sm"></i> ${judul}
-            </div>
-            <div class="text-[11px] text-gray-300 leading-relaxed font-sans mb-5">
-                ${isi}
-            </div>
-            ${actionHtml}
-        </div>`, true);
-    }, 250);
+    let judul = '';
+    let isi = '';
+    let actionHtml = '';
+    if (tipe === 'NIB') {
+        judul = 'Verifikasi NIB (OSS)';
+        isi = `Data NIB <b>1807260008101</b> terdaftar resmi di sistem OSS.<br><br>Sistem pemerintah membatasi akses, silakan tekan tombol di bawah untuk verifikasi ke web resmi.`;
+        actionHtml = `<a href="https://ui-login.oss.go.id/verify/UBsCIAZhWmRfagRiAmBSNgJmCTcDMAtoAmFRYABjBGFTZlZtBWleYVZlBWVVMg==" target="_blank" rel="noopener noreferrer" onclick="document.getElementById('alert-ok').click()" class="w-full bg-brand-info text-brand-dark py-3.5 rounded-xl font-extrabold active:scale-95 transition-all text-xs uppercase tracking-wider shadow-[0_4px_15px_rgba(70,179,255,0.4)] flex justify-center items-center gap-2 mb-2">Lihat Sertifikat OSS <i class="fas fa-external-link-alt"></i></a>`;
+    } else if (tipe === 'AHU') {
+        judul = 'Sertifikat Kemenkumham';
+        isi = `Data <b>PT ADT PASTI CAIR</b> tercatat resmi di Ditjen AHU.<br><br>Klik tombol di bawah untuk mengakses e-Sertifikat asli Anda melalui portal Kemenkumham.`;
+        actionHtml = `<a href="https://elayanan.ahu.go.id/perseroan-perseorangan/sertifikat/Pendirian/ADT%20PASTI%20CAIR" target="_blank" rel="noopener noreferrer" onclick="document.getElementById('alert-ok').click()" class="w-full bg-brand-info text-brand-dark py-3.5 rounded-xl font-extrabold active:scale-95 transition-all text-xs uppercase tracking-wider shadow-[0_4px_15px_rgba(70,179,255,0.4)] flex justify-center items-center gap-2 mb-2">Lihat Sertifikat AHU <i class="fas fa-external-link-alt"></i></a>`;
+    } else if (tipe === 'NPWP') {
+        judul = 'SKT NPWP Perusahaan';
+        isi = `NPWP Badan <b>1000 0000 1036 5864</b> berstatus valid dan tercatat di DJP.<br><br>Dokumen ini telah kami simpan di server aman kami agar mudah diakses tanpa kendala.`;
+        actionHtml = `<button onclick="openLightbox('https://nos.wjv-1.neo.id/au2hub/SKT%20Pajak%20-%20PT%20ADT%20PASTI%20CAIR_page-0001.jpg'); document.getElementById('alert-ok').click()" class="w-full bg-brand-success text-white py-3.5 rounded-xl font-extrabold active:scale-95 transition-all text-xs uppercase tracking-wider shadow-[0_4px_15px_rgba(37,211,102,0.4)] flex justify-center items-center gap-2 mb-2">Lihat Dokumen NPWP <i class="fas fa-search-plus"></i></button>`;
+    }
+    customAlert(`
+    <div class="text-left cursor-default flex flex-col">
+        <div class="text-xs font-black text-brand-info mb-3 uppercase tracking-widest border-b border-white/10 pb-2 flex items-center gap-2">
+            <i class="fas fa-shield-check text-sm"></i> ${judul}
+        </div>
+        <div class="text-[11px] text-gray-300 leading-relaxed font-sans mb-5">
+            ${isi}
+        </div>
+        ${actionHtml}
+    </div>`, true);
 }
