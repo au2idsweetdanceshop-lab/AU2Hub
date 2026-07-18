@@ -11047,22 +11047,20 @@ function panduanCekLegalitas(tipe) {
         let linkUrl = '';
         let teksTombol = '';
         if (tipe === 'NIB') {
-            judul = 'Verifikasi NIB (OSS)';
-            isi = `Data NIB <b>1807260008101</b> terdaftar resmi di sistem OSS Kementerian Investasi / BKPM.<br><br>Gunakan fitur <b>Pelacakan</b> di situs web resmi OSS untuk melihat status aktif perusahaan kami.`;
-            linkUrl = 'https://oss.go.id/';
-            teksTombol = 'Buka Web OSS';
+            judul = 'Sertifikat NIB (OSS)';
+            isi = `Data NIB <b>1807260008101</b> terdaftar resmi di sistem OSS Kementerian Investasi / BKPM.<br><br>Klik tombol di bawah untuk melihat e-Sertifikat asli secara langsung melalui portal verifikasi resmi OSS.`;
+            linkUrl = 'https://ui-login.oss.go.id/verify/UBsCIAZhWmRfagRiAmBSNgJmCTcDMAtoAmFRYABjBGFTZlZtBWleYVZlBWVVMg==';
+            teksTombol = 'Lihat Sertifikat OSS';
         } else if (tipe === 'AHU') {
-            judul = 'Verifikasi SK Kemenkumham';
-            isi = `Badan Hukum kami tercatat resmi di Ditjen AHU.<br><br>Ketik nama perusahaan: <b>ADT PASTI CAIR</b> pada direktori pencarian profil perusahaan di situs resmi Kemenkumham.`;
-            // Menggunakan link direktori pencarian PT yang paling umum dan stabil
-            linkUrl = 'https://ahu.go.id/pencarian/profil-pt'; 
-            teksTombol = 'Buka Web Kemenkumham';
+            judul = 'Sertifikat Kemenkumham';
+            isi = `Badan Hukum <b>PT ADT PASTI CAIR</b> tercatat resmi di Ditjen AHU.<br><br>Klik tombol di bawah untuk mengunduh/melihat e-Sertifikat Pendirian resmi langsung dari server Kemenkumham.`;
+            linkUrl = 'https://elayanan.ahu.go.id/perseroan-perseorangan/sertifikat/Pendirian/ADT%20PASTI%20CAIR';
+            teksTombol = 'Lihat Sertifikat AHU';
         } else if (tipe === 'NPWP') {
-            judul = 'Verifikasi NPWP Perusahaan';
-            isi = `NPWP Badan <b>1000000010365864</b> berstatus valid.<br><br>Anda dapat memverifikasinya secara langsung melalui portal E-Reg DJP.<br><br><i class="text-brand-info">*Catatan: Server web pajak terkadang lambat/down dari pusat.</i>`;
-            // Link valid resmi DJP untuk cek NPWP
-            linkUrl = 'https://ereg.pajak.go.id/ceknpwp';
-            teksTombol = 'Buka Web Dirjen Pajak';
+            judul = 'SKT NPWP Perusahaan';
+            isi = `NPWP Badan <b>1000 0000 1036 5864</b> berstatus valid dan tercatat di DJP.<br><br>Klik tombol di bawah untuk melihat Surat Keterangan Terdaftar (SKT) resmi dari sistem Core Tax DJP.`;
+            linkUrl = 'https://coretaxdjp.pajak.go.id/documentmanagementportal/api/DocumentExternalLink/732d4b3b-772b-4089-bd22-0e95a8ce9b5c';
+            teksTombol = 'Lihat Dokumen DJP';
         }
         customAlert(`
         <div class="text-left cursor-default flex flex-col">
