@@ -10417,7 +10417,6 @@ let currentPpobData = [];
 const kategoriPPOBList = [
     { id: 'Pulsa', icon: 'fa-mobile-alt' },
     { id: 'Data', icon: 'fa-wifi' },
-    { id: 'E-Money', icon: 'fa-wallet' },
     { id: 'Games', icon: 'fa-gamepad' },
     { id: 'PLN', icon: 'fa-bolt' },
     { id: 'Voucher', icon: 'fa-ticket-alt' },
