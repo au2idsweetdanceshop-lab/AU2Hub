@@ -1,13 +1,13 @@
 import { createClient } from '@supabase/supabase-js';
 import { google } from 'googleapis';
 export default async function handler(req, res) {
-const origin = req.headers.origin || req.headers.referer;
-const isWebhook = (req.body && req.body.action === 'webhook') || req.url.includes('webhook');
-if (!isWebhook && origin) {
-    if (!origin.includes('au2idsweetdance.com') && !origin.includes('localhost')) {
-        return res.status(403).json({ success: false, message: 'Akses Ditolak: Domain Tidak Sah!' });
+    const origin = req.headers.origin || req.headers.referer;
+    const isWebhook = (req.body && req.body.action === 'webhook') || req.url.includes('webhook');
+    if (!isWebhook && origin) {
+        if (!origin.includes('au2idsweetdance.com') && !origin.includes('localhost')) {
+            return res.status(403).json({ success: false, message: 'Akses Ditolak: Domain Tidak Sah!' });
+        }
     }
-}
     if (req.method !== 'POST') {
         return res.status(405).json({ message: 'Method Not Allowed' });
     }
@@ -50,13 +50,20 @@ if (!isWebhook && origin) {
             return res.status(500).json({ success: false, message: 'Gagal menemukan angka kode dalam email.' });
         }
         const netflixCode = codeMatch[0];
+        await gmail.users.messages.modify({
+            userId: 'me',
+            id: messages[0].id,
+            requestBody: {
+                removeLabelIds: ['UNREAD']
+            }
+        });
         await supabase
             .from('netflix_tokens')
             .update({ status: 'hangus' })
             .eq('token', token);
         return res.status(200).json({ success: true, code: netflixCode });
     } catch (err) {
-        console.error(err);
+        console.error("Netflix API Error:", err);
         return res.status(500).json({ success: false, message: 'Terjadi kesalahan sistem internal.' });
     }
 }
