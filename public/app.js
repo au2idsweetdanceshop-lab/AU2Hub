@@ -71,7 +71,12 @@ function hitungPendapatanBersih(hargaGateway, ditanggungPembeli, namaProduk = ""
         else hargaAktual -= 5000;
     }
 
-    const hargaBase = Math.round((hargaAktual - 500) / 1.007); 
+    let hargaBase;
+    if (hargaAktual < 252500) {
+        hargaBase = Math.round((hargaAktual - 500) / 1.008);
+    } else {
+        hargaBase = Math.round(hargaAktual / 1.01);
+    } 
     
     if (ditanggungPembeli) {
         if (hargaBase <= 10500) return hargaBase - 500;
@@ -6555,7 +6560,12 @@ function bukaDetailPesananDinamis(orderId, productName, price, status, tableSour
                     let pajakLapak = 0;
                     let totalDiterimaSeller = subtotalBarang;
                     if (feeDitanggungPembeli) {
-                        let hargaDasar = Math.round((subtotalBarang - 500) / 1.007);
+                        let hargaDasar;
+                        if (subtotalBarang < 252500) {
+                            hargaDasar = Math.round((subtotalBarang - 500) / 1.008);
+                        } else {
+                            hargaDasar = Math.round(subtotalBarang / 1.01);
+                        }
                         totalDiterimaSeller = hargaDasar; 
                         pajakLapak = hitungPotonganSeller(hargaDasar); 
                     } else {
@@ -7580,7 +7590,12 @@ function bukaDetailPasar(idProduk) {
     if (produk.fee_ditanggung_pembeli) {
         baseHarga += hitungPotonganSeller(baseHarga);
     }
-    const hargaCustomer = Math.floor(baseHarga + (baseHarga * 0.007) + 500);
+    let hargaCustomer;
+    if (baseHarga < 250000) {
+        hargaCustomer = Math.floor(baseHarga + (baseHarga * 0.008) + 500);
+    } else {
+        hargaCustomer = Math.floor(baseHarga + (baseHarga * 0.01));
+    }
     currentPasarPrice = hargaCustomer;
     let rawVariasi = produk.variations || produk.variasi || [];
     let arrVariasi = [];
@@ -7591,7 +7606,12 @@ function bukaDetailPasar(idProduk) {
                 if (produk.fee_ditanggung_pembeli) {
                     hargaVarAsli += hitungPotonganSeller(hargaVarAsli);
                 }
-                let hargaVarMarkup = Math.floor(hargaVarAsli + (hargaVarAsli * 0.007) + 500);
+                let hargaVarMarkup;
+                if (hargaVarAsli < 250000) {
+                    hargaVarMarkup = Math.floor(hargaVarAsli + (hargaVarAsli * 0.008) + 500);
+                } else {
+                    hargaVarMarkup = Math.floor(hargaVarAsli + (hargaVarAsli * 0.01));
+                }
                 arrVariasi.push({ name: v.nama_variasi || v.name, price: hargaVarMarkup });
             }
         });
@@ -7800,7 +7820,12 @@ function pilihPaketSeller(tipe) {
     } else {
         hargaAwal = HARGA_PER_HARI * 365;
     }
-    const biayaGateway = 500 + Math.floor(hargaAwal * 0.007);
+    let biayaGateway;
+    if (hargaAwal < 250000) {
+        biayaGateway = Math.floor(hargaAwal * 0.008) + 500;
+    } else {
+        biayaGateway = Math.floor(hargaAwal * 0.01);
+    }
     const hargaFinal = hargaAwal + biayaGateway;
     document.getElementById('btn-bayar-langganan').innerHTML = `
         <span>Berlangganan Rp ${hargaFinal.toLocaleString('id-ID')}</span>
@@ -7841,7 +7866,12 @@ async function lanjutkanBayarLangganan() {
         namaPaket = '[VIP] Langganan Seller 1 Tahun';
         hargaAwal = HARGA_PER_HARI * 365;
     }
-    const biayaGateway = 500 + Math.floor(hargaAwal * 0.007);
+    let biayaGateway;
+    if (hargaAwal < 250000) {
+        biayaGateway = Math.floor(hargaAwal * 0.008) + 500;
+    } else {
+        biayaGateway = Math.floor(hargaAwal * 0.01);
+    }
     const hargaFinal = hargaAwal + biayaGateway;
     checkoutXoftwarePay(namaPaket, hargaFinal, "Aktivasi VIP Seller AU2Hub", null, null);
 }
@@ -10600,7 +10630,12 @@ async function mulaiTopUpSaldo() {
     if (isNaN(nominal) || nominal < 10000) {
         return showToast("Minimal Top Up adalah Rp 10.000", "error");
     }
-    const biayaGateway = 500 + Math.floor(nominal * 0.007);
+    let biayaGateway;
+    if (nominal < 250000) {
+        biayaGateway = Math.floor(nominal * 0.008) + 500;
+    } else {
+        biayaGateway = Math.floor(nominal * 0.01);
+    }
     const totalBayar = nominal + biayaGateway;
     const konfirmasi = await customConfirm(`Rincian Top Up Saldo:\n\nNominal: Rp ${nominal.toLocaleString('id-ID')}\nBiaya Admin QRIS: Rp ${biayaGateway.toLocaleString('id-ID')}\n\nTotal Bayar: Rp ${totalBayar.toLocaleString('id-ID')}\n\nLanjutkan pembayaran?`);
     if (!konfirmasi) return;
