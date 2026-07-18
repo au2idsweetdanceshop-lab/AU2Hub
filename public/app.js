@@ -372,14 +372,15 @@ function customAlert(title, isHTML = false) {
         modal.classList.add('flex');
         modal.alertResolve = resolve;
         btnOk.onclick = () => {
-            modal.classList.add('hidden'); 
-            modal.classList.remove('flex');
             if (window.location.hash.includes('#alert')) {
                 history.back();
-            }
-            if (modal.alertResolve) { 
-                modal.alertResolve(); 
-                modal.alertResolve = null; 
+            } else {
+                modal.classList.add('hidden'); 
+                modal.classList.remove('flex');
+                if (modal.alertResolve) { 
+                    modal.alertResolve(); 
+                    modal.alertResolve = null; 
+                }
             }
         };
     });
