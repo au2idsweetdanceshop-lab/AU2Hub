@@ -58,7 +58,12 @@ if (!isWebhook && origin) {
             if (productMaster.fee_ditanggung_pembeli === true || String(productMaster.fee_ditanggung_pembeli) === "true") {
                 baseHarga += hitungPotonganSeller(baseHarga);
             }
-            let hargaCustomerUtama = Math.floor(baseHarga + (baseHarga * 0.007) + 500);
+            let hargaCustomerUtama;
+            if (baseHarga < 250000) {
+                hargaCustomerUtama = Math.floor(baseHarga + (baseHarga * 0.008) + 500);
+            } else {
+                hargaCustomerUtama = Math.floor(baseHarga + (baseHarga * 0.01));
+            }
             validUnitPrices.push(hargaCustomerUtama);
             let rawVariasi = productMaster.variations || productMaster.variasi || [];
             if (Array.isArray(rawVariasi)) {
@@ -68,7 +73,12 @@ if (!isWebhook && origin) {
                         if (productMaster.fee_ditanggung_pembeli === true || String(productMaster.fee_ditanggung_pembeli) === "true") {
                             hargaVarAsli += hitungPotonganSeller(hargaVarAsli);
                         }
-                        let hargaVarMarkup = Math.floor(hargaVarAsli + (hargaVarAsli * 0.007) + 500);
+                        let hargaVarMarkup;
+                        if (hargaVarAsli < 250000) {
+                            hargaVarMarkup = Math.floor(hargaVarAsli + (hargaVarAsli * 0.008) + 500);
+                        } else {
+                            hargaVarMarkup = Math.floor(hargaVarAsli + (hargaVarAsli * 0.01));
+                        }
                         validUnitPrices.push(hargaVarMarkup);
                     }
                 });
@@ -99,7 +109,12 @@ if (!isWebhook && origin) {
                  return res.status(400).json({ success: false, message: 'Format top up tidak valid.' });
             }
             const nominalMurniDeposit = parseInt(depositMatch[1]);
-            const feeSistemDeposit = 500 + Math.floor(nominalMurniDeposit * 0.007);
+            let feeSistemDeposit;
+            if (nominalMurniDeposit < 250000) {
+                feeSistemDeposit = Math.floor(nominalMurniDeposit * 0.008) + 500;
+            } else {
+                feeSistemDeposit = Math.floor(nominalMurniDeposit * 0.01);
+            }
             const hargaYangSeharusnya = nominalMurniDeposit + feeSistemDeposit;
             if (finalVerifiedPrice !== hargaYangSeharusnya) {
                 console.error(`[HACK ATTEMPT DEPOSIT!] User mencoba top up Rp ${nominalMurniDeposit} tapi mengirim harga Rp ${finalVerifiedPrice}. (Seharusnya Rp ${hargaYangSeharusnya})`);
@@ -116,7 +131,12 @@ if (!isWebhook && origin) {
                  hargaVipMurni = 333 * parseInt(orderData.product_name.match(/(\d+)\s+Hari/i)[1]);
              }
              if (hargaVipMurni > 0) {
-                 const feeSistemVip = 500 + Math.floor(hargaVipMurni * 0.007);
+                 let feeSistemVip;
+                 if (hargaVipMurni < 250000) {
+                     feeSistemVip = Math.floor(hargaVipMurni * 0.008) + 500;
+                 } else {
+                     feeSistemVip = Math.floor(hargaVipMurni * 0.01);
+                 }
                  const hargaVipSeharusnya = hargaVipMurni + feeSistemVip;
                  if (finalVerifiedPrice !== hargaVipSeharusnya) {
                      console.error(`[HACK ATTEMPT VIP!] Terdeteksi manipulasi harga VIP.`);
