@@ -11202,7 +11202,7 @@ function panduanCekLegalitas(tipe) {
     } else if (tipe === 'NPWP') {
         judul = 'SKT NPWP Perusahaan';
         isi = `NPWP Badan <b>1000 0000 1036 5864</b> berstatus valid dan tercatat di DJP.<br><br>Dokumen ini telah kami simpan di server aman kami agar mudah diakses tanpa kendala.`;
-        actionHtml = `<button onclick="openLightbox('https://nos.wjv-1.neo.id/au2hub/SKT%20Pajak%20-%20PT%20ADT%20PASTI%20CAIR_page-0001.jpg'); document.getElementById('alert-ok').click()" class="w-full bg-brand-success text-white py-3.5 rounded-xl font-extrabold active:scale-95 transition-all text-xs uppercase tracking-wider shadow-[0_4px_15px_rgba(37,211,102,0.4)] flex justify-center items-center gap-2 mb-2">Lihat Dokumen NPWP <i class="fas fa-search-plus"></i></button>`;
+        actionHtml = `<button onclick="document.getElementById('alert-ok').click(); setTimeout(() => openLightbox('https://nos.wjv-1.neo.id/au2hub/SKT%20Pajak%20-%20PT%20ADT%20PASTI%20CAIR_page-0001.jpg'), 150);" class="w-full bg-brand-success text-white py-3.5 rounded-xl font-extrabold active:scale-95 transition-all text-xs uppercase tracking-wider shadow-[0_4px_15px_rgba(37,211,102,0.4)] flex justify-center items-center gap-2 mb-2">Lihat Dokumen NPWP <i class="fas fa-search-plus"></i></button>`;
     }
     customAlert(`
     <div class="text-left cursor-default flex flex-col">
