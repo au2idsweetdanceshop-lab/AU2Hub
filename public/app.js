@@ -8488,9 +8488,6 @@ async function prosesTarikSaldo() {
         return;
     }
     const saldoMurni = userProfile.balance || 0;
-    if (saldoMurni < 10500) {
-        return showToast("Min. saldo untuk penarikan adalah Rp 10.500", "error");
-    }
     isWithdrawing = true;
     showToast("Mencari daftar nominal yang tersedia...", "info");
     try {
@@ -10790,11 +10787,11 @@ function pemicuBeliPPOB(skuCode, namaProduk, harga) {
 
 async function mulaiTopUpSaldo() {
     if (!currentUser) return showToast("Silakan login terlebih dahulu!", "error");
-    const input = await customPrompt("Masukkan nominal Top Up (Minimal Rp 10.000):", "10000");
+    const input = await customPrompt("Masukkan nominal Top Up (Minimal Rp 200.000):", "200000");
     if (!input) return;
     const nominal = parseInt(input.replace(/[^0-9]/g, ''));
-    if (isNaN(nominal) || nominal < 10000) {
-        return showToast("Minimal Top Up adalah Rp 10.000", "error");
+    if (isNaN(nominal) || nominal < 200000) {
+        return showToast("Minimal Top Up adalah Rp 200.000", "error");
     }
     let biayaGateway;
     if (nominal < 250000) {
