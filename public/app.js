@@ -1485,14 +1485,6 @@ window.addEventListener('popstate', () => {
         window.ppobPolling = null;
     }
 
-
-    const modalLegalitas = document.getElementById('modal-legalitas');
-    if (modalLegalitas && !modalLegalitas.classList.contains('hidden')) {
-        tutupModalLegalitas(true);
-        return;
-    }
-
-
     const modalAlert = document.getElementById('modal-alert');
     if (modalAlert && !modalAlert.classList.contains('hidden')) {
         modalAlert.classList.add('hidden');
@@ -1503,6 +1495,7 @@ window.addEventListener('popstate', () => {
         }
         return;
     }
+
     const modalPrompt = document.getElementById('modal-prompt');
     if (modalPrompt && !modalPrompt.classList.contains('hidden')) {
         modalPrompt.classList.add('hidden');
@@ -1515,6 +1508,7 @@ window.addEventListener('popstate', () => {
         }
         return;
     }
+
     const modalConfirm = document.getElementById('modal-confirm');
     if (modalConfirm && !modalConfirm.classList.contains('hidden')) {
         modalConfirm.classList.add('hidden');
@@ -1527,6 +1521,13 @@ window.addEventListener('popstate', () => {
         }
         return;
     }
+
+    const modalLegalitas = document.getElementById('modal-legalitas');
+    if (modalLegalitas && !modalLegalitas.classList.contains('hidden')) {
+        tutupModalLegalitas(true);
+        return;
+    }
+
     const menuMelayang = document.getElementById('assistive-menu');
     if (menuMelayang && !menuMelayang.classList.contains('hidden')) {
         closeAssistiveMenu(true);
