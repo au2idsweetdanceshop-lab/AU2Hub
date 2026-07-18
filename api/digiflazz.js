@@ -1,6 +1,6 @@
 import crypto from 'crypto';
 import { createClient } from '@supabase/supabase-js';
-export const maxDuration = 60; 
+export const maxDuration = 60;
 const supabase = createClient(
     process.env.SUPABASE_URL,
     process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -8,6 +8,7 @@ const supabase = createClient(
 export default async function handler(req, res) {
     const origin = req.headers.origin || req.headers.referer;
     const isWebhook = (req.body && req.body.action === 'webhook') || req.url.includes('webhook') || !!req.headers['x-hub-signature'];
+    
     if (!isWebhook && origin) {
         if (!origin.includes('au2idsweetdance.com') && !origin.includes('localhost')) {
             return res.status(403).json({ success: false, message: 'Akses Ditolak: Domain Tidak Sah!' });
@@ -32,7 +33,6 @@ export default async function handler(req, res) {
                 cache: 'no-store'
             });
             const jsonPrepaid = await resPrepaid.json();
-
             if (jsonPrepaid.data && !Array.isArray(jsonPrepaid.data) && jsonPrepaid.data.message) {
                 throw new Error("DIGIFLAZZ MENOLAK (Prepaid): " + jsonPrepaid.data.message);
             }
@@ -59,6 +59,7 @@ export default async function handler(req, res) {
                     product_name: item.product_name,
                     category: item.category,
                     brand: item.brand,
+                    type: item.type,
                     price: hargaModal,                 
                     seller_price: hargaModal + 100,    
                     is_active: isActive,                 
