@@ -50,52 +50,49 @@ export default async function handler(req, res) {
         ) {
             let targetTable = 'orders';
             let orderData = null;
-            const { data: orderAdmin } = await supabase.from('orders').select('*').eq('id', orderId).single();
+            const { data: orderAdmin } = await supabase.from('orders').select('*').eq('id', orderId).maybeSingle();
             if (orderAdmin) {
                 orderData = orderAdmin;
-                targetTable = 'orders';
             } else {
-                const { data: orderPlayer } = await supabase.from('orders_player').select('*').eq('id', orderId).single();
+                const { data: orderPlayer } = await supabase.from('orders_player').select('*').eq('id', orderId).maybeSingle();
                 if (orderPlayer) {
                     orderData = orderPlayer;
                     targetTable = 'orders_player';
                 }
             }
-            if (!orderData) {
-                return res.status(404).json({ success: false, message: 'Order tidak ditemukan di DB' });
-            }
+            if (!orderData) return res.status(404).json({ success: false, message: 'Order tidak ditemukan di DB' });
             const currentDbStatus = String(orderData.status).toUpperCase();
+            if (['SUCCESS', 'SELESAI', 'PROSES', 'PAID'].includes(currentDbStatus)) {
+                return res.status(200).json({ success: true, message: 'Order sudah diproses sebelumnya' });
+            }
             const productName = orderData.product_name || '';
             const userId = orderData.user_id;
-            let amountToAdd = Number(orderData.price);
+            let nextStatus = 'SUCCESS';
+            if (productName.startsWith('[DEPOSIT]') || productName.includes('[VIP]')) {
+                nextStatus = 'selesai';
+            }
+            const { data: lockedOrder, error: lockError } = await supabase
+                .from(targetTable)
+                .update({ 
+                    status: nextStatus,
+                    waktu_selesai: nextStatus === 'selesai' ? new Date().toISOString() : null
+                })
+                .eq('id', orderId)
+                .eq('status', orderData.status)
+                .select()
+                .maybeSingle();
+            if (lockError || !lockedOrder) {
+                console.log(`⚠️ Race Condition dicegah! Webhook ganda untuk Order ID: ${orderId} diabaikan.`);
+                return res.status(200).json({ success: true, message: 'Sudah diproses oleh request lain secara bersamaan' });
+            }
             if (productName.startsWith('[DEPOSIT]')) {
                 const depositMatch = productName.match(/\[DEPOSIT\]\s*(\d+)/);
-                if (depositMatch) {
-                    amountToAdd = parseInt(depositMatch[1], 10);
-                } else {
-                    if (amountToAdd < 252500) {
-                        amountToAdd = Math.round((amountToAdd - 500) / 1.008);
-                    } else {
-                        amountToAdd = Math.round(amountToAdd / 1.01);
-                    }
+                if (!depositMatch) {
+                    // Jika format rusak, kembalikan status ke PENDING untuk review manual
+                    await supabase.from(targetTable).update({ status: 'PENDING' }).eq('id', orderId);
+                    return res.status(400).json({ success: false, message: 'Format nama deposit tidak valid' });
                 }
-            }
-            let isAlreadyProcessed = false;
-            if (['SUCCESS', 'SELESAI', 'PROSES', 'PAID'].includes(currentDbStatus)) {
-                if (productName.startsWith('[DEPOSIT]')) {
-                    const { data: existingTx } = await supabase.from('wallet_transactions')
-                        .select('id')
-                        .eq('description', `Top Up Saldo via QRIS Otomatis (Ref: ${orderId})`)
-                        .maybeSingle();
-                    if (existingTx) isAlreadyProcessed = true;
-                } else if (productName.includes('[VIP]')) {
-                    if (orderData.waktu_selesai) isAlreadyProcessed = true;
-                } else {
-                    isAlreadyProcessed = true;
-                }
-                if (isAlreadyProcessed) return res.status(200).json({ success: true, message: 'Sudah diproses' });
-            }
-            if (productName.startsWith('[DEPOSIT]')) {
+                const amountToAdd = parseInt(depositMatch[1], 10);
                 console.log(`💰 Top Up Saldo User: ${userId} | Saldo Masuk: Rp ${amountToAdd}`);
                 const { error: rpcError } = await supabase.rpc('tambah_saldo', {
                     p_user_id: userId,
@@ -103,15 +100,16 @@ export default async function handler(req, res) {
                 });
                 if (rpcError) {
                     console.error("🚨 Gagal memanggil RPC tambah_saldo:", rpcError);
-                    return res.status(500).json({ success: false, message: 'Gagal menambah saldo' });
+                    // Rollback status karena gagal top up
+                    await supabase.from(targetTable).update({ status: 'PENDING' }).eq('id', orderId);
+                    return res.status(500).json({ success: false, message: 'Gagal menambah saldo di DB' });
                 }
                 await supabase.from('wallet_transactions').insert({
                     user_id: userId,
                     amount: amountToAdd,
                     type: 'INCOME',
-                    description: `Top Up Saldo via QRIS Otomatis (Ref: ${orderId})`
+                    description: `Top Up Saldo via QRIS Otomatis (Ref: ${orderId.substring(0,8).toUpperCase()})`
                 });
-                await supabase.from(targetTable).update({ status: 'selesai' }).eq('id', orderId);
                 console.log(`✅ Top Up Berhasil untuk Order ${orderId}`);
             }
             else if (productName.includes('[VIP]') && targetTable === 'orders') {
@@ -130,12 +128,11 @@ export default async function handler(req, res) {
                 } else {
                     waktuExpired.setDate(waktuExpired.getDate() + 30);
                 }
-                await supabase.from('profiles').update({ is_seller: true, seller_expired_at: waktuExpired.toISOString() }).eq('id', userId);
-                let updatePayload = { status: 'selesai', waktu_selesai: new Date().toISOString() };
-                await supabase.from(targetTable).update(updatePayload).eq('id', orderId);
-            }
-            else {
-                await supabase.from(targetTable).update({ status: 'SUCCESS' }).eq('id', orderId);
+                await supabase.from('profiles').update({ 
+                    is_seller: true, 
+                    seller_expired_at: waktuExpired.toISOString() 
+                }).eq('id', userId);
+                console.log(`👑 Perpanjangan VIP Berhasil untuk User ${userId}`);
             }
             return res.status(200).json({ success: true, message: 'Callback processed successfully' });
         }
