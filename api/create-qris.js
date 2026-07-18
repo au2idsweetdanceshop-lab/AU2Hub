@@ -80,7 +80,7 @@ export default async function handler(req, res) {
             const qtyMatch = namaProduk.match(/\(x(\d+)\)/);
             if (qtyMatch) {
                 qty = parseInt(qtyMatch[1]);
-                if (qty <= 0) qty = 1; // FIX: Mencegah error Division by Zero jika qty 0
+                if (qty <= 0) qty = 1; 
             }
             let hargaTanpaRekber = finalVerifiedPrice;
             if (namaProduk && namaProduk.includes('[+Rekber]')) {
@@ -100,8 +100,8 @@ export default async function handler(req, res) {
             const depositMatch = orderData.product_name.match(/\[DEPOSIT\]\s*(\d+)/);
             if (!depositMatch) return res.status(400).json({ success: false, message: 'Format top up tidak valid.' });
             const nominalMurniDeposit = parseInt(depositMatch[1]);
-            if (nominalMurniDeposit < 10000) {
-                return res.status(400).json({ success: false, message: 'Minimal Deposit adalah Rp 10.000!' });
+            if (nominalMurniDeposit < 200000) {
+                return res.status(400).json({ success: false, message: 'Akses Ditolak: Minimal Top Up Saldo adalah Rp 200.000!' });
             }
             let feeSistemDeposit;
             if (nominalMurniDeposit < 250000) feeSistemDeposit = Math.floor(nominalMurniDeposit * 0.008) + 500;
