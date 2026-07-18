@@ -11044,24 +11044,19 @@ function panduanCekLegalitas(tipe) {
     setTimeout(() => {
         let judul = '';
         let isi = '';
-        let linkUrl = '';
-        let teksTombol = '';
+        let actionHtml = '';
         if (tipe === 'NIB') {
-            judul = 'Sertifikat NIB (OSS)';
-            isi = `Data NIB <b>1807260008101</b> terdaftar resmi di sistem OSS Kementerian Investasi / BKPM.<br><br>Klik tombol di bawah untuk melihat e-Sertifikat asli secara langsung melalui portal verifikasi resmi OSS.`;
-            linkUrl = 'https://ui-login.oss.go.id/verify/UBsCIAZhWmRfagRiAmBSNgJmCTcDMAtoAmFRYABjBGFTZlZtBWleYVZlBWVVMg==';
-            teksTombol = 'Lihat Sertifikat OSS';
+            judul = 'Verifikasi NIB (OSS)';
+            isi = `Data NIB <b>1807260008101</b> terdaftar resmi di sistem OSS.<br><br>Sistem pemerintah membatasi akses, silakan tekan tombol di bawah untuk verifikasi ke web resmi.`;
+            actionHtml = `<a href="https://ui-login.oss.go.id/verify/UBsCIAZhWmRfagRiAmBSNgJmCTcDMAtoAmFRYABjBGFTZlZtBWleYVZlBWVVMg==" target="_blank" rel="noopener noreferrer" onclick="document.getElementById('alert-ok').click()" class="w-full bg-brand-info text-brand-dark py-3.5 rounded-xl font-extrabold active:scale-95 transition-all text-xs uppercase tracking-wider shadow-[0_4px_15px_rgba(70,179,255,0.4)] flex justify-center items-center gap-2 mb-2">Lihat Sertifikat OSS <i class="fas fa-external-link-alt"></i></a>`;
         } else if (tipe === 'AHU') {
             judul = 'Sertifikat Kemenkumham';
-            isi = `Badan Hukum <b>PT ADT PASTI CAIR</b> tercatat resmi di Ditjen AHU.<br><br>Klik tombol di bawah untuk mengunduh/melihat e-Sertifikat Pendirian resmi langsung dari server Kemenkumham.`;
-            linkUrl = 'https://elayanan.ahu.go.id/perseroan-perseorangan/sertifikat/Pendirian/ADT%20PASTI%20CAIR';
-            teksTombol = 'Lihat Sertifikat AHU';
+            isi = `Data <b>PT ADT PASTI CAIR</b> tercatat resmi di Ditjen AHU.<br><br>Klik tombol di bawah untuk mengakses e-Sertifikat asli Anda melalui portal Kemenkumham.`;
+            actionHtml = `<a href="https://elayanan.ahu.go.id/perseroan-perseorangan/sertifikat/Pendirian/ADT%20PASTI%20CAIR" target="_blank" rel="noopener noreferrer" onclick="document.getElementById('alert-ok').click()" class="w-full bg-brand-info text-brand-dark py-3.5 rounded-xl font-extrabold active:scale-95 transition-all text-xs uppercase tracking-wider shadow-[0_4px_15px_rgba(70,179,255,0.4)] flex justify-center items-center gap-2 mb-2">Lihat Sertifikat AHU <i class="fas fa-external-link-alt"></i></a>`;
         } else if (tipe === 'NPWP') {
             judul = 'SKT NPWP Perusahaan';
-            isi = `NPWP Badan <b>1000 0000 1036 5864</b> berstatus valid dan tercatat di DJP.<br><br>Klik tombol di bawah untuk melihat salinan Surat Keterangan Terdaftar (SKT) resmi perusahaan kami.`;
-            // Menggunakan link hosted file JPG Anda
-            linkUrl = 'https://nos.wjv-1.neo.id/au2hub/SKT%20Pajak%20-%20PT%20ADT%20PASTI%20CAIR_page-0001.jpg';
-            teksTombol = 'Lihat Dokumen NPWP';
+            isi = `NPWP Badan <b>1000 0000 1036 5864</b> berstatus valid dan tercatat di DJP.<br><br>Dokumen ini telah kami simpan di server aman kami agar mudah diakses tanpa kendala.`;
+            actionHtml = `<button onclick="openLightbox('https://nos.wjv-1.neo.id/au2hub/SKT%20Pajak%20-%20PT%20ADT%20PASTI%20CAIR_page-0001.jpg'); document.getElementById('alert-ok').click()" class="w-full bg-brand-success text-white py-3.5 rounded-xl font-extrabold active:scale-95 transition-all text-xs uppercase tracking-wider shadow-[0_4px_15px_rgba(37,211,102,0.4)] flex justify-center items-center gap-2 mb-2">Lihat Dokumen NPWP <i class="fas fa-search-plus"></i></button>`;
         }
         customAlert(`
         <div class="text-left cursor-default flex flex-col">
@@ -11071,9 +11066,7 @@ function panduanCekLegalitas(tipe) {
             <div class="text-[11px] text-gray-300 leading-relaxed font-sans mb-5">
                 ${isi}
             </div>
-            <a href="${linkUrl}" target="_blank" rel="noopener noreferrer" onclick="document.getElementById('alert-ok').click()" class="w-full bg-brand-info text-brand-dark py-3.5 rounded-xl font-extrabold active:scale-95 transition-all text-xs uppercase tracking-wider shadow-[0_4px_15px_rgba(70,179,255,0.4)] hover:bg-[#32a2f2] flex justify-center items-center gap-2 mb-2">
-                ${teksTombol} <i class="fas fa-external-link-alt"></i>
-            </a>
+            ${actionHtml}
         </div>`, true);
     }, 250);
 }
