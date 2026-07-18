@@ -2425,7 +2425,7 @@ function downloadVideoSaya(urlVideo, vidId) {
             const a = document.createElement('a');
             a.style.display = 'none';
             a.href = blobUrl;
-            a.download = \`AU2Hub_Video_\${vidId}.mp4\`;
+            a.download = `AU2Hub_Video_${vidId}.mp4`;
             document.body.appendChild(a);
             a.click();
             setTimeout(() => {
