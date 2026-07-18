@@ -7411,7 +7411,7 @@ function renderGridPasar(dataList, targetId = 'grid-pasar-player') {
         let fotoPertama = rawThumb.split(',')[0].trim();
         if (!fotoPertama) fotoPertama = 'https://placehold.co/400x400/1a1133/2BD975?text=PASAR';
         const isAutoItem = item.category === 'Akun' || item.category === 'Item' || item.category === 'APK Premium';
-        const sisaStok = isAutoItem && item.stock_list ? item.stock_list.split(/\r?\n/).filter(s=>s.trim() !== '').length : 0;
+        const sisaStok = isAutoItem ? (item.stock_count || 0) : 0;
         const badgeStok = isAutoItem 
             ? `<span class="absolute top-2 left-2 bg-black/80 text-[8px] font-extrabold ${sisaStok > 0 ? 'text-brand-info border-brand-info/30' : 'text-red-500 border-red-500/50'} px-2 py-0.5 rounded-md backdrop-blur-sm border shadow-md tracking-wider">STOK: ${sisaStok}</span>` 
             : `<span class="absolute top-2 left-2 bg-brand-success/90 text-white text-[8px] font-extrabold px-2 py-0.5 rounded-md backdrop-blur-sm border border-white/10 shadow-md uppercase tracking-wider">${item.category}</span>`;
@@ -8213,7 +8213,7 @@ async function loadProdukSaya() {
                 }
                 const foto = (item.image_url || '').split(',')[0];
                 const isAutoItem = item.category === 'Akun' || item.category === 'Item' || item.category === 'APK Premium';
-                const sisaStok = isAutoItem && item.stock_list ? item.stock_list.split(/\r?\n/).filter(s=>s.trim() !== '').length : 0;
+                const sisaStok = isAutoItem ? (item.stock_count || 0) : 0;
                 const stokBadge = isAutoItem ? `<span class="text-[8px] font-bold bg-black/80 text-white px-2 py-0.5 rounded backdrop-blur-sm border border-white/20 absolute top-1.5 right-1.5 shadow-md">Sisa: ${sisaStok}</span>` : '';
                return `
                 <div class="bg-[#161B2E] border border-transparent rounded-[1.2rem] p-4 shadow-lg mb-3 transition-all hover:border-white/5">
