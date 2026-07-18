@@ -2391,43 +2391,77 @@ async function deleteVideo(vidId) {
     }
 }
 
-async function downloadVideoSaya(urlVideo, vidId) {
-    showToast("Memproses unduhan...", "info");
-    try {
-        const response = await fetch(urlVideo + "?t=" + new Date().getTime(), {
-            method: 'GET',
-            mode: 'cors'
-        });
-        if (!response.ok) throw new Error("Diblokir oleh keamanan browser HP");
-        const blob = await response.blob();
-        const blobUrl = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.style.display = 'none';
-        a.href = blobUrl;
-        a.download = `AU2Hub_Video_${vidId}.mp4`; 
-        document.body.appendChild(a);
-        a.click();
-        setTimeout(() => {
-            document.body.removeChild(a);
-            window.URL.revokeObjectURL(blobUrl);
-        }, 1000);
-        showToast("Video sedang diunduh ke Galeri!", "success");
-
-    } catch (error) {
-        console.log("Download background gagal, pindah ke mode tab baru:", error);
-        showToast("Membuka pemutar video...", "info");
-        setTimeout(() => {
-            showToast("💡 Tips: Klik titik tiga (⋮) di pojok kanan bawah lalu pilih 'Download'", "success");
-        }, 1500);
-        setTimeout(() => {
+function downloadVideoSaya(urlVideo, vidId) {
+    const finalUrl = urlVideo; 
+    const toastId = 'toast-dl-' + vidId;
+    const container = document.getElementById('toast-container');
+    const toast = document.createElement('div');
+    toast.id = toastId;
+    toast.className = `flex flex-col px-5 py-3.5 rounded-2xl border shadow-2xl text-xs font-bold text-white toast-anim w-[90%] max-w-sm glass bg-[#1A1133] border-brand-info/50`;
+    toast.innerHTML = `
+        <div class="flex justify-between mb-2.5 items-center">
+            <span class="flex items-center gap-2"><i class="fas fa-download text-brand-info animate-bounce"></i> Mengunduh Video...</span>
+            <span id="progress-text-${vidId}" class="font-mono text-brand-info text-[10px] bg-brand-info/20 px-2 py-0.5 rounded-md">0%</span>
+        </div>
+        <div class="w-full h-2 bg-black/50 rounded-full overflow-hidden shadow-inner border border-white/5">
+            <div id="progress-bar-${vidId}" class="h-full bg-gradient-to-r from-brand-info to-[#00F0FF] w-0 transition-all duration-200"></div>
+        </div>
+    `;
+    container.appendChild(toast);
+    const xhr = new XMLHttpRequest();
+    xhr.open('GET', finalUrl, true);
+    xhr.responseType = 'blob';
+    xhr.onprogress = function(event) {
+        if (event.lengthComputable) {
+            const percentComplete = Math.floor((event.loaded / event.total) * 100);
+            document.getElementById(`progress-bar-${vidId}`).style.width = percentComplete + '%';
+            document.getElementById(`progress-text-${vidId}`).innerText = percentComplete + '%';
+        }
+    };
+    xhr.onload = function() {
+        if (this.status === 200) {
+            const blob = this.response;
+            const blobUrl = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
-            a.href = urlVideo;
-            a.target = '_blank';
+            a.style.display = 'none';
+            a.href = blobUrl;
+            a.download = \`AU2Hub_Video_\${vidId}.mp4\`;
             document.body.appendChild(a);
             a.click();
-            document.body.removeChild(a);
-        }, 3000);
-    }
+            setTimeout(() => {
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(blobUrl);
+            }, 1000);
+            document.getElementById(`progress-text-${vidId}`).innerText = "Selesai!";
+            document.getElementById(`progress-text-${vidId}`).classList.replace('text-brand-info', 'text-brand-success');
+            document.getElementById(`progress-text-${vidId}`).classList.replace('bg-brand-info/20', 'bg-brand-success/20');
+            document.getElementById(`progress-bar-${vidId}`).classList.replace('from-brand-info', 'from-brand-success');
+            document.getElementById(`progress-bar-${vidId}`).classList.replace('to-[#00F0FF]', 'to-[#20bd5a]');
+            setTimeout(() => toast.remove(), 2500);
+            showToast("Video berhasil disimpan ke Galeri!", "success");
+        } else {
+            toast.remove();
+            fallbackDownloadVideo(finalUrl);
+        }
+    };
+    xhr.onerror = function() {
+        toast.remove();
+        fallbackDownloadVideo(finalUrl);
+    };
+
+    xhr.send();
+}
+function fallbackDownloadVideo(urlVideo) {
+    showToast("Membuka tab baru untuk download...", "info");
+    setTimeout(() => {
+        showToast("💡 Tips: Klik titik tiga (⋮) lalu pilih 'Download'", "success");
+        const a = document.createElement('a');
+        a.href = urlVideo;
+        a.target = '_blank';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    }, 1500);
 }
 
 async function shareVideo(vidId, btn) {
