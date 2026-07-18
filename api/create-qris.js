@@ -3,7 +3,6 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL; 
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY; 
 const supabase = createClient(supabaseUrl, supabaseKey);
-
 function hitungPotonganSeller(harga) {
     if (harga <= 25000) return 1000;
     if (harga <= 50000) return 2000;
@@ -15,13 +14,13 @@ function hitungPotonganSeller(harga) {
     return 35000;
 }
 export default async function handler(req, res) {
-const origin = req.headers.origin || req.headers.referer;
-const isWebhook = (req.body && req.body.action === 'webhook') || req.url.includes('webhook');
-if (!isWebhook && origin) {
-    if (!origin.includes('au2idsweetdance.com') && !origin.includes('localhost')) {
-        return res.status(403).json({ success: false, message: 'Akses Ditolak: Domain Tidak Sah!' });
+    const origin = req.headers.origin || req.headers.referer;
+    const isWebhook = (req.body && req.body.action === 'webhook') || req.url.includes('webhook');
+    if (!isWebhook && origin) {
+        if (!origin.includes('au2idsweetdance.com') && !origin.includes('localhost')) {
+            return res.status(403).json({ success: false, message: 'Akses Ditolak: Domain Tidak Sah!' });
+        }
     }
-}
     if (req.method !== 'POST') {
         return res.status(405).json({ success: false, message: 'Method Not Allowed' });
     }
@@ -50,7 +49,6 @@ if (!isWebhook && origin) {
                 .eq('id', orderData.product_id)
                 .single();
             if (errMaster || !productMaster) {
-                console.error("DB Error (Master Product):", errMaster);
                 return res.status(400).json({ success: false, message: 'Produk referensi asli tidak ditemukan.' });
             }
             let validUnitPrices = [];
@@ -59,11 +57,8 @@ if (!isWebhook && origin) {
                 baseHarga += hitungPotonganSeller(baseHarga);
             }
             let hargaCustomerUtama;
-            if (baseHarga < 250000) {
-                hargaCustomerUtama = Math.floor(baseHarga + (baseHarga * 0.008) + 500);
-            } else {
-                hargaCustomerUtama = Math.floor(baseHarga + (baseHarga * 0.01));
-            }
+            if (baseHarga < 250000) hargaCustomerUtama = Math.floor(baseHarga + (baseHarga * 0.008) + 500);
+            else hargaCustomerUtama = Math.floor(baseHarga + (baseHarga * 0.01));
             validUnitPrices.push(hargaCustomerUtama);
             let rawVariasi = productMaster.variations || productMaster.variasi || [];
             if (Array.isArray(rawVariasi)) {
@@ -74,11 +69,8 @@ if (!isWebhook && origin) {
                             hargaVarAsli += hitungPotonganSeller(hargaVarAsli);
                         }
                         let hargaVarMarkup;
-                        if (hargaVarAsli < 250000) {
-                            hargaVarMarkup = Math.floor(hargaVarAsli + (hargaVarAsli * 0.008) + 500);
-                        } else {
-                            hargaVarMarkup = Math.floor(hargaVarAsli + (hargaVarAsli * 0.01));
-                        }
+                        if (hargaVarAsli < 250000) hargaVarMarkup = Math.floor(hargaVarAsli + (hargaVarAsli * 0.008) + 500);
+                        else hargaVarMarkup = Math.floor(hargaVarAsli + (hargaVarAsli * 0.01));
                         validUnitPrices.push(hargaVarMarkup);
                     }
                 });
@@ -88,6 +80,7 @@ if (!isWebhook && origin) {
             const qtyMatch = namaProduk.match(/\(x(\d+)\)/);
             if (qtyMatch) {
                 qty = parseInt(qtyMatch[1]);
+                if (qty <= 0) qty = 1; // FIX: Mencegah error Division by Zero jika qty 0
             }
             let hargaTanpaRekber = finalVerifiedPrice;
             if (namaProduk && namaProduk.includes('[+Rekber]')) {
@@ -105,38 +98,29 @@ if (!isWebhook && origin) {
             finalVerifiedPrice = parseInt(orderData.price);
         } else if (orderData.product_name && orderData.product_name.startsWith('[DEPOSIT]')) {
             const depositMatch = orderData.product_name.match(/\[DEPOSIT\]\s*(\d+)/);
-            if (!depositMatch) {
-                 return res.status(400).json({ success: false, message: 'Format top up tidak valid.' });
-            }
+            if (!depositMatch) return res.status(400).json({ success: false, message: 'Format top up tidak valid.' });
             const nominalMurniDeposit = parseInt(depositMatch[1]);
-            let feeSistemDeposit;
-            if (nominalMurniDeposit < 250000) {
-                feeSistemDeposit = Math.floor(nominalMurniDeposit * 0.008) + 500;
-            } else {
-                feeSistemDeposit = Math.floor(nominalMurniDeposit * 0.01);
+            if (nominalMurniDeposit < 10000) {
+                return res.status(400).json({ success: false, message: 'Minimal Deposit adalah Rp 10.000!' });
             }
+            let feeSistemDeposit;
+            if (nominalMurniDeposit < 250000) feeSistemDeposit = Math.floor(nominalMurniDeposit * 0.008) + 500;
+            else feeSistemDeposit = Math.floor(nominalMurniDeposit * 0.01);
             const hargaYangSeharusnya = nominalMurniDeposit + feeSistemDeposit;
             if (finalVerifiedPrice !== hargaYangSeharusnya) {
-                console.error(`[HACK ATTEMPT DEPOSIT!] User mencoba top up Rp ${nominalMurniDeposit} tapi mengirim harga Rp ${finalVerifiedPrice}. (Seharusnya Rp ${hargaYangSeharusnya})`);
+                console.error(`[HACK ATTEMPT DEPOSIT!] User mencoba top up Rp ${nominalMurniDeposit} tapi mengirim harga Rp ${finalVerifiedPrice}.`);
                 return res.status(400).json({ success: false, message: 'Terdeteksi manipulasi nominal pembayaran!' });
             }
             finalVerifiedPrice = hargaYangSeharusnya;
         } else if (orderData.product_name && orderData.product_name.includes('[VIP]')) {
              let hargaVipMurni = 0;
              if (orderData.product_name.includes('1 Tahun')) hargaVipMurni = 333 * 365;
-             else if (orderData.product_name.match(/(\d+)\s+Bulan/i)) {
-                 hargaVipMurni = 333 * 30 * parseInt(orderData.product_name.match(/(\d+)\s+Bulan/i)[1]);
-             }
-             else if (orderData.product_name.match(/(\d+)\s+Hari/i)) {
-                 hargaVipMurni = 333 * parseInt(orderData.product_name.match(/(\d+)\s+Hari/i)[1]);
-             }
+             else if (orderData.product_name.match(/(\d+)\s+Bulan/i)) hargaVipMurni = 333 * 30 * parseInt(orderData.product_name.match(/(\d+)\s+Bulan/i)[1]);
+             else if (orderData.product_name.match(/(\d+)\s+Hari/i)) hargaVipMurni = 333 * parseInt(orderData.product_name.match(/(\d+)\s+Hari/i)[1]);
              if (hargaVipMurni > 0) {
                  let feeSistemVip;
-                 if (hargaVipMurni < 250000) {
-                     feeSistemVip = Math.floor(hargaVipMurni * 0.008) + 500;
-                 } else {
-                     feeSistemVip = Math.floor(hargaVipMurni * 0.01);
-                 }
+                 if (hargaVipMurni < 250000) feeSistemVip = Math.floor(hargaVipMurni * 0.008) + 500;
+                 else feeSistemVip = Math.floor(hargaVipMurni * 0.01);
                  const hargaVipSeharusnya = hargaVipMurni + feeSistemVip;
                  if (finalVerifiedPrice !== hargaVipSeharusnya) {
                      console.error(`[HACK ATTEMPT VIP!] Terdeteksi manipulasi harga VIP.`);
@@ -145,7 +129,7 @@ if (!isWebhook && origin) {
                  finalVerifiedPrice = hargaVipSeharusnya;
              }
         } else {
-            console.error(`[HACK ATTEMPT UNKNOWN!] Terdeteksi pembelian produk tidak dikenal: ${orderData.product_name}`);
+            console.error(`[HACK ATTEMPT UNKNOWN!] Pembelian produk tidak dikenal: ${orderData.product_name}`);
             return res.status(400).json({ success: false, message: 'Produk tidak valid atau tidak dikenali sistem.' });
         }
         const safeCustomerId = orderData.user_id ? String(orderData.user_id).slice(0, 8) : "UNKNOWN";
