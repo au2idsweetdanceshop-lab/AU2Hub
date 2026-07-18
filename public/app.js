@@ -11046,7 +11046,6 @@ function panduanCekLegalitas(tipe) {
         let isi = '';
         let linkUrl = '';
         let teksTombol = '';
-        
         if (tipe === 'NIB') {
             judul = 'Verifikasi NIB (OSS)';
             isi = `Data NIB <b>1807260008101</b> terdaftar resmi di sistem OSS Kementerian Investasi / BKPM.<br><br>Gunakan fitur <b>Pelacakan</b> di situs web resmi OSS untuk melihat status aktif perusahaan kami.`;
@@ -11054,12 +11053,14 @@ function panduanCekLegalitas(tipe) {
             teksTombol = 'Buka Web OSS';
         } else if (tipe === 'AHU') {
             judul = 'Verifikasi SK Kemenkumham';
-            isi = `Badan Hukum kami tercatat resmi di Ditjen AHU.<br><br>Ketik nama perusahaan: <b>ADT PASTI CAIR</b> pada kolom pencarian di situs resmi AHU Kemenkumham untuk memverifikasi.`;
-            linkUrl = 'https://ahu.go.id/pencarian/profil-pt-perorangan';
+            isi = `Badan Hukum kami tercatat resmi di Ditjen AHU.<br><br>Ketik nama perusahaan: <b>ADT PASTI CAIR</b> pada direktori pencarian profil perusahaan di situs resmi Kemenkumham.`;
+            // Menggunakan link direktori pencarian PT yang paling umum dan stabil
+            linkUrl = 'https://ahu.go.id/pencarian/profil-pt'; 
             teksTombol = 'Buka Web Kemenkumham';
         } else if (tipe === 'NPWP') {
             judul = 'Verifikasi NPWP Perusahaan';
-            isi = `NPWP Badan <b>1000000010365864</b> berstatus valid.<br><br>Anda dapat memverifikasinya secara langsung melalui portal resmi Cek NPWP dari Direktorat Jenderal Pajak (DJP).`;
+            isi = `NPWP Badan <b>1000000010365864</b> berstatus valid.<br><br>Anda dapat memverifikasinya secara langsung melalui portal E-Reg DJP.<br><br><i class="text-brand-info">*Catatan: Server web pajak terkadang lambat/down dari pusat.</i>`;
+            // Link valid resmi DJP untuk cek NPWP
             linkUrl = 'https://ereg.pajak.go.id/ceknpwp';
             teksTombol = 'Buka Web Dirjen Pajak';
         }
@@ -11071,9 +11072,7 @@ function panduanCekLegalitas(tipe) {
             <div class="text-[11px] text-gray-300 leading-relaxed font-sans mb-5">
                 ${isi}
             </div>
-            
-            <!-- Tombol Direct Link -->
-            <a href="${linkUrl}" target="_blank" onclick="document.getElementById('alert-ok').click()" class="w-full bg-brand-info text-brand-dark py-3.5 rounded-xl font-extrabold active:scale-95 transition-all text-xs uppercase tracking-wider shadow-[0_4px_15px_rgba(70,179,255,0.4)] hover:bg-[#32a2f2] flex justify-center items-center gap-2 mb-2">
+            <a href="${linkUrl}" target="_blank" rel="noopener noreferrer" onclick="document.getElementById('alert-ok').click()" class="w-full bg-brand-info text-brand-dark py-3.5 rounded-xl font-extrabold active:scale-95 transition-all text-xs uppercase tracking-wider shadow-[0_4px_15px_rgba(70,179,255,0.4)] hover:bg-[#32a2f2] flex justify-center items-center gap-2 mb-2">
                 ${teksTombol} <i class="fas fa-external-link-alt"></i>
             </a>
         </div>`, true);
