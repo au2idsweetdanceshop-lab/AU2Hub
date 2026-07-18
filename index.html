@@ -31,7 +31,7 @@
 
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script defer src="/app.js?v=314"></script>
+<script defer src="/app.js?v=315"></script>
 <style>
 
 @font-face {
@@ -2726,33 +2726,41 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
                 <p class="text-[10px] text-gray-400 mt-1.5 leading-relaxed">Perusahaan Pengelola Resmi AU2Hub.<br>Layanan Top Up, Marketplace & Rekber Aman terdaftar secara hukum di Indonesia.</p>
             </div>
             <div class="space-y-2.5 text-left pt-2">
-                <div class="bg-white/5 p-3.5 rounded-xl border border-white/5 flex flex-col gap-1">
-                    <p class="text-[9px] text-gray-400 font-bold uppercase tracking-widest">Nomor Induk Berusaha (NIB)</p>
-                    <div class="flex justify-between items-center">
-                        <p class="text-xs font-mono text-white font-bold">1807260008101</p>
-                        <i class="fas fa-check-circle text-brand-success text-xs"></i>
-                    </div>
-                </div>
-                <div class="bg-white/5 p-3.5 rounded-xl border border-white/5 flex flex-col gap-1">
-                    <p class="text-[9px] text-gray-400 font-bold uppercase tracking-widest">SK Kemenkumham (AHU)</p>
-                    <div class="flex justify-between items-center">
-                        <p class="text-[10px] font-mono text-white font-bold">AHU-A104822.AH.01.30. Tahun 2026</p>
-                        <i class="fas fa-check-circle text-brand-success text-xs"></i>
-                    </div>
-                </div>
-                <div class="bg-white/5 p-3.5 rounded-xl border border-white/5 flex flex-col gap-1">
-                    <p class="text-[9px] text-gray-400 font-bold uppercase tracking-widest">NPWP Perusahaan</p>
-                    <div class="flex justify-between items-center">
-                        <p class="text-xs font-mono text-white font-bold">1000 0000 1036 5864</p>
-                        <i class="fas fa-check-circle text-brand-success text-xs"></i>
-                    </div>
-                </div>
-                <div class="bg-brand-success/10 p-3.5 rounded-xl border border-brand-success/30 flex items-center gap-3">
-                    <i class="fas fa-laptop-house text-brand-success text-3xl drop-shadow-md"></i>
+                <div class="bg-white/5 p-3 rounded-xl border border-white/5 flex flex-col gap-2">
                     <div>
-                        <p class="text-[10px] text-brand-success font-black uppercase tracking-wider mb-0.5">KBLI 47901 Terverifikasi</p>
-                        <p class="text-[9px] text-gray-300 leading-tight">Izin sah sebagai Platform Digital Intermediasi Perdagangan Elektronik.</p>
+                        <p class="text-[9px] text-gray-400 font-bold uppercase tracking-widest">Nomor Induk Berusaha (NIB)</p>
+                        <div class="flex justify-between items-center mt-0.5">
+                            <p class="text-xs font-mono text-white font-bold">1807260008101</p>
+                            <i class="fas fa-check-circle text-brand-success text-xs"></i>
+                        </div>
                     </div>
+                    <button onclick="panduanCekLegalitas('NIB')" class="w-full bg-brand-info/10 text-brand-info hover:bg-brand-info hover:text-brand-dark border border-brand-info/30 py-2 rounded-lg text-[10px] font-bold active:scale-95 transition-all">
+                        <i class="fas fa-search mr-1"></i> Cara Cek Keaslian NIB
+                    </button>
+                </div>
+                <div class="bg-white/5 p-3 rounded-xl border border-white/5 flex flex-col gap-2">
+                    <div>
+                        <p class="text-[9px] text-gray-400 font-bold uppercase tracking-widest">SK Kemenkumham (AHU)</p>
+                        <div class="flex justify-between items-center mt-0.5">
+                            <p class="text-[10px] font-mono text-white font-bold">AHU-A104822.AH.01.30. Tahun 2026</p>
+                            <i class="fas fa-check-circle text-brand-success text-xs"></i>
+                        </div>
+                    </div>
+                    <button onclick="panduanCekLegalitas('AHU')" class="w-full bg-brand-info/10 text-brand-info hover:bg-brand-info hover:text-brand-dark border border-brand-info/30 py-2 rounded-lg text-[10px] font-bold active:scale-95 transition-all">
+                        <i class="fas fa-search mr-1"></i> Cara Cek SK Menteri
+                    </button>
+                </div>
+                <div class="bg-white/5 p-3 rounded-xl border border-white/5 flex flex-col gap-2">
+                    <div>
+                        <p class="text-[9px] text-gray-400 font-bold uppercase tracking-widest">NPWP Perusahaan</p>
+                        <div class="flex justify-between items-center mt-0.5">
+                            <p class="text-xs font-mono text-white font-bold">1000 0000 1036 5864</p>
+                            <i class="fas fa-check-circle text-brand-success text-xs"></i>
+                        </div>
+                    </div>
+                    <button onclick="panduanCekLegalitas('NPWP')" class="w-full bg-brand-info/10 text-brand-info hover:bg-brand-info hover:text-brand-dark border border-brand-info/30 py-2 rounded-lg text-[10px] font-bold active:scale-95 transition-all">
+                        <i class="fas fa-search mr-1"></i> Verifikasi NPWP Badan
+                    </button>
                 </div>
             </div>
         </div>
@@ -2764,4 +2772,3 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
 
 </body>
 </html>
-
