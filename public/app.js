@@ -1485,7 +1485,11 @@ window.addEventListener('popstate', () => {
         clearInterval(window.ppobPolling);
         window.ppobPolling = null;
     }
-
+    const lightbox = document.getElementById('lightbox-modal');
+    if(lightbox && !lightbox.classList.contains('hidden')) {
+        closeLightbox(true);
+        return;
+    }
     const modalAlert = document.getElementById('modal-alert');
     if (modalAlert && !modalAlert.classList.contains('hidden')) {
         modalAlert.classList.add('hidden');
@@ -1649,11 +1653,6 @@ window.addEventListener('popstate', () => {
     const modalUpload = document.getElementById('modal-upload');
     if (modalUpload && !modalUpload.classList.contains('hidden')) {
         closeUploadModal();
-        return;
-    }
-    const lightbox = document.getElementById('lightbox-modal');
-    if(lightbox && !lightbox.classList.contains('hidden')) {
-        closeLightbox(true);
         return;
     }
     const statsModal = document.getElementById('modal-story-stats');
