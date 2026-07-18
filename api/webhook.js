@@ -88,7 +88,6 @@ export default async function handler(req, res) {
             if (productName.startsWith('[DEPOSIT]')) {
                 const depositMatch = productName.match(/\[DEPOSIT\]\s*(\d+)/);
                 if (!depositMatch) {
-                    // Jika format rusak, kembalikan status ke PENDING untuk review manual
                     await supabase.from(targetTable).update({ status: 'PENDING' }).eq('id', orderId);
                     return res.status(400).json({ success: false, message: 'Format nama deposit tidak valid' });
                 }
@@ -100,7 +99,6 @@ export default async function handler(req, res) {
                 });
                 if (rpcError) {
                     console.error("🚨 Gagal memanggil RPC tambah_saldo:", rpcError);
-                    // Rollback status karena gagal top up
                     await supabase.from(targetTable).update({ status: 'PENDING' }).eq('id', orderId);
                     return res.status(500).json({ success: false, message: 'Gagal menambah saldo di DB' });
                 }
