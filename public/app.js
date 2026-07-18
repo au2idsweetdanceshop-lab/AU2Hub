@@ -358,6 +358,7 @@ function customAlert(title, isHTML = false) {
         const modal = document.getElementById('modal-alert');
         const titleEl = document.getElementById('alert-title');
         const btnOk = document.getElementById('alert-ok');
+        btnOk.classList.remove('hover:bg-[#32a2f2]');
         if (isHTML) {
             titleEl.innerHTML = title;
         } else {
@@ -371,10 +372,14 @@ function customAlert(title, isHTML = false) {
         modal.classList.add('flex');
         modal.alertResolve = resolve;
         btnOk.onclick = () => {
-            if (window.location.hash === '#alert') history.back();
-            else {
-                modal.classList.add('hidden'); modal.classList.remove('flex');
-                if (modal.alertResolve) { modal.alertResolve(); modal.alertResolve = null; }
+            modal.classList.add('hidden'); 
+            modal.classList.remove('flex');
+            if (window.location.hash.includes('#alert')) {
+                history.back();
+            }
+            if (modal.alertResolve) { 
+                modal.alertResolve(); 
+                modal.alertResolve = null; 
             }
         };
     });
