@@ -1480,13 +1480,13 @@ window.addEventListener('popstate', () => {
         window.ppobPolling = null;
     }
 
-    // --- PENAMBAHAN MODAL LEGALITAS ---
+
     const modalLegalitas = document.getElementById('modal-legalitas');
     if (modalLegalitas && !modalLegalitas.classList.contains('hidden')) {
         tutupModalLegalitas(true);
         return;
     }
-    // ----------------------------------
+
 
     const modalAlert = document.getElementById('modal-alert');
     if (modalAlert && !modalAlert.classList.contains('hidden')) {
@@ -4763,8 +4763,8 @@ function setupVideoObserver() {
                 video.pause();
                 video.currentTime = 0;
                 if (video.src) {
-                    video.dataset.src = video.src; // Simpan URL
-                    video.removeAttribute('src');  // Cabut dari memori browser
+                    video.dataset.src = video.src;
+                    video.removeAttribute('src');
                     video.load();
                 }
             }
