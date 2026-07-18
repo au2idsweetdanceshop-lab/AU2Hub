@@ -11058,9 +11058,10 @@ function panduanCekLegalitas(tipe) {
             teksTombol = 'Lihat Sertifikat AHU';
         } else if (tipe === 'NPWP') {
             judul = 'SKT NPWP Perusahaan';
-            isi = `NPWP Badan <b>1000 0000 1036 5864</b> berstatus valid dan tercatat di DJP.<br><br>Klik tombol di bawah untuk melihat Surat Keterangan Terdaftar (SKT) resmi dari sistem Core Tax DJP.`;
-            linkUrl = 'https://coretaxdjp.pajak.go.id/documentmanagementportal/api/DocumentExternalLink/732d4b3b-772b-4089-bd22-0e95a8ce9b5c';
-            teksTombol = 'Lihat Dokumen DJP';
+            isi = `NPWP Badan <b>1000 0000 1036 5864</b> berstatus valid dan tercatat di DJP.<br><br>Klik tombol di bawah untuk melihat salinan Surat Keterangan Terdaftar (SKT) resmi perusahaan kami.`;
+            // Menggunakan link hosted file JPG Anda
+            linkUrl = 'https://nos.wjv-1.neo.id/au2hub/SKT%20Pajak%20-%20PT%20ADT%20PASTI%20CAIR_page-0001.jpg';
+            teksTombol = 'Lihat Dokumen NPWP';
         }
         customAlert(`
         <div class="text-left cursor-default flex flex-col">
