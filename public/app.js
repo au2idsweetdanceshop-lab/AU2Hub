@@ -10371,6 +10371,7 @@ window.tutupLayarSuksesWD = (btnElement) => {
 
 let kategoriPPOBAktif = 'Pulsa'; 
 let brandPPOBAktif = 'Semua';
+let typePPOBAktif = 'Semua';
 let ppobOffset = 0;
 const PPOB_LIMIT = 20;
 let currentPpobData = [];
@@ -10426,6 +10427,7 @@ function renderKategoriPPOB() {
 function pilihKategoriPPOB(kategori) {
     kategoriPPOBAktif = kategori;
     brandPPOBAktif = 'Semua'; 
+    typePPOBAktif = 'Semua';
     const mainView = document.getElementById('ppob-main-view');
     const catalogView = document.getElementById('ppob-catalog-view');
     if (mainView && catalogView) {
@@ -10453,7 +10455,9 @@ function pilihKategoriPPOB(kategori) {
                 <span class="text-[10px] font-bold uppercase tracking-widest text-gray-400">Menyiapkan Data...</span>
             </div>`;
     }
-    loadBrandPPOB().then(() => loadProdukPPOB(false));
+    loadBrandPPOB().then(() => {
+        loadTypePPOB().then(() => loadProdukPPOB(false));
+    });
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -10505,8 +10509,76 @@ async function loadBrandPPOB() {
     }
 }
 
+async function loadTypePPOB() {
+    let typeContainer = document.getElementById('ppob-type-container');
+    if (!typeContainer) {
+        const grid = document.getElementById('ppob-product-grid');
+        typeContainer = document.createElement('div');
+        typeContainer.id = 'ppob-type-container';
+        typeContainer.className = 'flex overflow-x-auto hide-scroll gap-2 pb-4 px-1 items-center border-b border-white/5 mb-4 -mt-2';
+        grid.parentNode.insertBefore(typeContainer, grid);
+    }
+    typeContainer.innerHTML = '<div class="text-[10px] text-gray-500 animate-pulse">Memuat tipe...</div>';
+    try {
+        let query = supabaseClient
+            .from('digiflazz_products')
+            .select('type')
+            .eq('is_active', true)
+            .ilike('category', `%${kategoriPPOBAktif}%`);
+        if (brandPPOBAktif !== 'Semua') {
+            query = query.ilike('brand', `%${brandPPOBAktif}%`);
+        }
+        const { data, error } = await query;
+        if (error) throw error;
+        const uniqueTypes = [...new Set(data.map(item => item.type).filter(t => t && t.trim() !== ''))].sort();
+        if (uniqueTypes.length === 0) {
+            typeContainer.classList.add('hidden');
+            return;
+        }
+        typeContainer.classList.remove('hidden');
+        const allTypes = ['Semua', ...uniqueTypes];
+        typeContainer.innerHTML = allTypes.map(type => {
+            const isActive = type === typePPOBAktif;
+            const activeClass = isActive 
+                ? "bg-brand-accent text-white border-transparent shadow-[0_0_10px_rgba(255,0,122,0.4)]" 
+                : "bg-black/30 text-gray-400 border-white/10 hover:bg-white/10 hover:text-white";
+            return `
+            <button onclick="pilihTypePPOB('${escapeHTML(type).replace(/&#39;/g, "\\'")}')" class="px-3 py-1.5 rounded-lg border font-bold text-[9px] whitespace-nowrap transition-all active:scale-95 shrink-0 ${activeClass}">
+                ${type}
+            </button>`;
+        }).join('');
+    } catch (err) {
+        typeContainer.innerHTML = '<div class="text-[10px] text-red-500">Gagal memuat tipe produk</div>';
+    }
+}
+
+function pilihTypePPOB(type) {
+    typePPOBAktif = type;
+    const typeContainer = document.getElementById('ppob-type-container');
+    if (typeContainer) {
+        const buttons = typeContainer.querySelectorAll('button');
+        buttons.forEach(btn => {
+            if (btn.innerText.trim() === type) {
+                btn.className = "px-3 py-1.5 rounded-lg border font-bold text-[9px] whitespace-nowrap transition-all active:scale-95 shrink-0 bg-brand-accent text-white border-transparent shadow-[0_0_10px_rgba(255,0,122,0.4)]";
+            } else {
+                btn.className = "px-3 py-1.5 rounded-lg border font-bold text-[9px] whitespace-nowrap transition-all active:scale-95 shrink-0 bg-black/30 text-gray-400 border-white/10 hover:bg-white/10 hover:text-white";
+            }
+        });
+    }
+    ppobOffset = 0;
+    currentPpobData = [];
+    document.getElementById('ppob-load-more-container').classList.add('hidden');
+    document.getElementById('ppob-product-grid').innerHTML = `
+        <div class="text-center py-10 text-brand-accent">
+            <i class="fas fa-circle-notch fa-spin text-3xl mb-3"></i><br>
+            <span class="text-xs font-bold uppercase tracking-widest">Menyaring Sub Produk...</span>
+        </div>`;
+    loadProdukPPOB(false);
+}
+
 function pilihBrandPPOB(brand) {
     brandPPOBAktif = brand;
+    typePPOBAktif = 'Semua';
     const brandContainer = document.getElementById('ppob-brand-container');
     if (brandContainer) {
         const buttons = brandContainer.querySelectorAll('button');
@@ -10518,7 +10590,6 @@ function pilihBrandPPOB(brand) {
             }
         });
     }
-
     ppobOffset = 0;
     currentPpobData = [];
     document.getElementById('ppob-load-more-container').classList.add('hidden');
@@ -10527,7 +10598,7 @@ function pilihBrandPPOB(brand) {
             <i class="fas fa-circle-notch fa-spin text-3xl mb-3"></i><br>
             <span class="text-xs font-bold uppercase tracking-widest">Menyaring Produk...</span>
         </div>`;
-    loadProdukPPOB(false);
+    loadTypePPOB().then(() => loadProdukPPOB(false));
 }
 
 async function loadProdukPPOB(isLoadMore = false) {
@@ -10546,6 +10617,9 @@ async function loadProdukPPOB(isLoadMore = false) {
             .ilike('category', `%${kategoriPPOBAktif}%`);
         if (brandPPOBAktif !== 'Semua') {
             query = query.ilike('brand', `%${brandPPOBAktif}%`);
+        }
+        if (typePPOBAktif !== 'Semua') {
+            query = query.ilike('type', `%${typePPOBAktif}%`);
         }
         const { data, error } = await query.order('seller_price', { ascending: true }).range(from, to);
         if (error) throw error;
