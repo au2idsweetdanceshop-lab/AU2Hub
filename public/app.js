@@ -6486,36 +6486,51 @@ lbModal.addEventListener('touchend', e => {
 function bukaDetailPesananDinamis(orderId, productName, price, status, tableSource, sellerId, productId) {
     const cleanSellerId = (sellerId && sellerId !== 'null' && sellerId !== 'undefined' && String(sellerId).trim() !== '') ? sellerId : null;
     const cleanProductId = (productId && productId !== 'null' && productId !== 'undefined' && String(productId).trim() !== '') ? productId : null;
+    
     let visualStatus = status;
     if (tableSource === 'riwayat_ppob') {
         if (status === 'Sukses') visualStatus = 'selesai';
         if (status === 'Pending') visualStatus = 'proses';
         if (status === 'Gagal') visualStatus = 'DIBATALKAN';
     }
+
     const modal = document.getElementById('modal-detail-pesanan');
     document.getElementById('detail-nama-layanan').innerText = productName;
     document.getElementById('detail-harga-layanan').innerText = `Rp ${Number(price).toLocaleString('id-ID')}`;
+    
     const prefixId = tableSource === 'riwayat_ppob' ? 'PPOB' : 'NIKKY';
     document.getElementById('detail-ref-id').innerText = `${prefixId} - ${orderId}`;
+    
     const statusBadge = document.getElementById('detail-status-badge');
     const actionBelumBayar = document.getElementById('action-belum-bayar');
     const actionDiproses = document.getElementById('action-diproses');
     const pesanStatusLain = document.getElementById('pesan-status-lain');
+
     if (actionBelumBayar) {
         const btnBayar = actionBelumBayar.querySelector('button[onclick^="prosesBayarUlang"]');
         const btnBatal = actionBelumBayar.querySelector('button[onclick^="batalkanPesanan"]');
-        if (btnBayar) btnBayar.onclick = () => prosesBayarUlang(orderId, productName, price, tableSource, cleanSellerId, cleanProductId);
-        if (btnBatal) btnBatal.onclick = () => batalkanPesanan(orderId, tableSource);
+        
+        if (btnBayar) {
+            btnBayar.style.display = 'flex';
+            btnBayar.onclick = () => prosesBayarUlang(orderId, productName, price, tableSource, cleanSellerId, cleanProductId);
+        }
+        if (btnBatal) {
+            btnBatal.style.display = 'flex';
+            btnBatal.innerHTML = 'Batalkan Pesanan';
+            btnBatal.onclick = () => batalkanPesanan(orderId, tableSource);
+        }
     }
     if (actionDiproses) {
         const btnSelesai = actionDiproses.querySelector('button[onclick^="selesaikanPesanan"]');
         if (btnSelesai) btnSelesai.onclick = () => selesaikanPesanan(orderId, tableSource);
     }
+
     const trackLine = document.getElementById('track-line');
     const dot2 = document.getElementById('step-2-dot');
     const text2 = document.getElementById('step-2-text');
     const dot3 = document.getElementById('step-3-dot');
     const text3 = document.getElementById('step-3-text');
+    
     trackLine.style.transition = 'none';
     trackLine.style.width = '0%';
     dot2.className = 'w-7 h-7 rounded-full bg-white/20 border-[3px] border-[#121319] flex items-center justify-center text-gray-400 font-bold text-[10px] transition-colors duration-500';
@@ -6524,45 +6539,50 @@ function bukaDetailPesananDinamis(orderId, productName, price, status, tableSour
     dot3.className = 'w-7 h-7 rounded-full bg-white/20 border-[3px] border-[#121319] flex items-center justify-center text-gray-400 font-bold text-[10px] transition-colors duration-500';
     dot3.innerHTML = '3';
     text3.className = 'text-[9px] font-bold text-gray-500 tracking-widest uppercase transition-colors';
+
     if (visualStatus === 'PENDING') {
         statusBadge.innerText = 'BELUM BAYAR';
         statusBadge.className = 'bg-red-500/20 text-red-500 border-red-500/50';
-        actionBelumBayar.classList.replace('hidden', 'flex'); 
-        if(actionDiproses) actionDiproses.classList.replace('flex', 'hidden'); 
+        actionBelumBayar.classList.remove('hidden'); actionBelumBayar.classList.add('flex');
+        if(actionDiproses) { actionDiproses.classList.remove('flex'); actionDiproses.classList.add('hidden'); }
         pesanStatusLain.classList.add('hidden'); 
     } else if (visualStatus === 'proses') {
         statusBadge.innerText = 'DIPROSES';
         statusBadge.className = 'bg-brand-info/20 text-brand-info border-brand-info/50';
-        actionBelumBayar.classList.replace('flex', 'hidden'); 
-        if(actionDiproses) actionDiproses.classList.replace('hidden', 'flex'); 
+        actionBelumBayar.classList.remove('flex'); actionBelumBayar.classList.add('hidden');
+        if(actionDiproses) { actionDiproses.classList.remove('hidden'); actionDiproses.classList.add('flex'); }
         pesanStatusLain.classList.remove('hidden'); 
         pesanStatusLain.innerText = tableSource === 'riwayat_ppob' ? 'Transaksi PPOB sedang dalam antrean server provider...' : 'Toko sedang mengerjakan pesananmu. Klik tombol di bawah jika barang sudah diterima.';
     } else if (visualStatus === 'selesai') {
         statusBadge.innerText = 'SELESAI';
         statusBadge.className = 'bg-brand-success/20 text-brand-success border-brand-success/50';
-        actionBelumBayar.classList.replace('flex', 'hidden'); 
-        if(actionDiproses) actionDiproses.classList.replace('flex', 'hidden'); 
+        actionBelumBayar.classList.remove('flex'); actionBelumBayar.classList.add('hidden');
+        if(actionDiproses) { actionDiproses.classList.remove('flex'); actionDiproses.classList.add('hidden'); }
         pesanStatusLain.classList.remove('hidden'); 
         pesanStatusLain.innerText = tableSource === 'riwayat_ppob' ? 'Transaksi PPOB telah sukses diproses oleh provider. Terima kasih!' : 'Pesanan ini telah lunas dan selesai. Terima kasih!';
     } else if (visualStatus === 'DIBATALKAN') {
         statusBadge.innerText = 'DIBATALKAN / GAGAL';
         statusBadge.className = 'bg-gray-500/20 text-gray-400 border-gray-500/50';
-        actionBelumBayar.classList.replace('flex', 'hidden'); 
-        if(actionDiproses) actionDiproses.classList.replace('flex', 'hidden'); 
+        actionBelumBayar.classList.remove('flex'); actionBelumBayar.classList.add('hidden');
+        if(actionDiproses) { actionDiproses.classList.remove('flex'); actionDiproses.classList.add('hidden'); }
         pesanStatusLain.classList.remove('hidden'); 
         pesanStatusLain.innerText = 'Transaksi gagal dan dibatalkan oleh sistem.';
     }
+
     if (tableSource === 'riwayat_ppob') {
-        if(actionDiproses) actionDiproses.classList.replace('flex', 'hidden');
+        if(actionDiproses) { actionDiproses.classList.add('hidden'); actionDiproses.classList.remove('flex'); }
         
         if (visualStatus === 'proses' && userProfile?.is_super_admin) {
-            actionBelumBayar.classList.replace('hidden', 'flex');
+            
+            actionBelumBayar.classList.remove('hidden');
+            actionBelumBayar.classList.add('flex');
             
             const btnBayar = actionBelumBayar.querySelector('button[onclick^="prosesBayarUlang"]');
-            if (btnBayar) btnBayar.classList.add('hidden');
+            if (btnBayar) btnBayar.style.display = 'none';
             
             const btnBatal = actionBelumBayar.querySelector('button[onclick^="batalkanPesanan"]');
             if (btnBatal) {
+                btnBatal.style.display = 'flex';
                 btnBatal.innerHTML = '<i class="fas fa-times-circle mr-1"></i> Batalkan & Refund (Admin)';
                 btnBatal.onclick = async () => {
                     const confirm = await customConfirm("Batalkan PPOB ini dan kembalikan saldo ke user?");
@@ -6574,6 +6594,7 @@ function bukaDetailPesananDinamis(orderId, productName, price, status, tableSour
                         cekStatusPesanan('proses');
                         fetchSaldoDanMutasi();
                         updateUiSaldoSeller();
+                        updateSaldoGlobal();
                     }
                 };
             }
@@ -6584,12 +6605,14 @@ function bukaDetailPesananDinamis(orderId, productName, price, status, tableSour
     if (wadahRincian) {
         wadahRincian.classList.add('hidden');
         wadahRincian.innerHTML = '<div class="flex justify-center py-2"><i class="fas fa-spinner fa-spin text-brand-info"></i></div>';
+        
         const kolomPencarian = tableSource === 'riwayat_ppob' ? 'ref_id' : 'id';
         supabaseClient.from(tableSource).select('*').eq(kolomPencarian, orderId).single()
         .then(({data: extraData}) => {
             const snText = extraData && extraData.sn ? extraData.sn : null;
             let snHTML = '';
             const waktuTransaksi = extraData?.waktu_selesai || extraData?.created_at;
+            
             if (waktuTransaksi) {
                 const d = new Date(waktuTransaksi);
                 const stringTanggal = d.toLocaleString('id-ID', {day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit'}) + ' WIB';
@@ -6600,6 +6623,7 @@ function bukaDetailPesananDinamis(orderId, productName, price, status, tableSour
                 }
                 elTgl.innerHTML = `<i class="far fa-clock text-brand-info"></i> ${stringTanggal}`;
             }
+            
             if (snText && (visualStatus === 'selesai' || visualStatus === 'proses' || visualStatus === 'Sukses')) {
                 const amanSnText = encodeURIComponent(snText).replace(/'/g, "%27");
                 const themeColor = tableSource === 'riwayat_ppob' ? 'brand-info' : 'brand-success';
@@ -6613,6 +6637,7 @@ function bukaDetailPesananDinamis(orderId, productName, price, status, tableSour
                     </button>
                 </div>`;
             }
+            
             if (tableSource === 'riwayat_ppob') {
                 wadahRincian.classList.remove('hidden');
                 wadahRincian.innerHTML = `
@@ -6714,7 +6739,8 @@ function bukaDetailPesananDinamis(orderId, productName, price, status, tableSour
         });
     }
 
-    modal.classList.replace('hidden', 'flex');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
     setTimeout(() => { modal.classList.remove('translate-y-full'); }, 10);
     setTimeout(() => {
         trackLine.style.transition = 'all 0.7s ease-in-out';
