@@ -11189,8 +11189,9 @@ function panduanCekLegalitas(tipe) {
     let actionHtml = '';
     if (tipe === 'NIB') {
         judul = 'Verifikasi NIB (OSS)';
-        isi = `Data NIB <b>1807260008101</b> terdaftar resmi di sistem OSS.<br><br>Sistem pemerintah membatasi akses, silakan tekan tombol di bawah untuk verifikasi ke web resmi.`;
+        isi = `Data NIB <b>1807260008101 / 2107260060789</b> terdaftar resmi di sistem OSS.<br><br>Sistem pemerintah membatasi akses, silakan tekan tombol di bawah untuk verifikasi ke web resmi.`;
         actionHtml = `<a href="https://ui-login.oss.go.id/verify/UBsCIAZhWmRfagRiAmBSNgJmCTcDMAtoAmFRYABjBGFTZlZtBWleYVZlBWVVMg==" target="_blank" rel="noopener noreferrer" onclick="document.getElementById('alert-ok').click()" class="w-full bg-brand-info text-brand-dark py-3.5 rounded-xl font-extrabold active:scale-95 transition-all text-xs uppercase tracking-wider shadow-[0_4px_15px_rgba(70,179,255,0.4)] flex justify-center items-center gap-2 mb-2">Lihat Sertifikat OSS <i class="fas fa-external-link-alt"></i></a>`;
+        actionHtml = `<a href="https://ui-login.oss.go.id/verify/XhUBIwFmW2VVYFYwUzFUMANkCD8GN1E0UDRWZlMyDmVQZlVrA2QNOwA1AWcFbg==" target="_blank" rel="noopener noreferrer" onclick="document.getElementById('alert-ok').click()" class="w-full bg-brand-info text-brand-dark py-3.5 rounded-xl font-extrabold active:scale-95 transition-all text-xs uppercase tracking-wider shadow-[0_4px_15px_rgba(70,179,255,0.4)] flex justify-center items-center gap-2 mb-2">Lihat Sertifikat OSS <i class="fas fa-external-link-alt"></i></a>`;
     } else if (tipe === 'AHU') {
         judul = 'Sertifikat Kemenkumham';
         isi = `Data <b>PT ADT PASTI CAIR</b> tercatat resmi di Ditjen AHU.<br><br>Klik tombol di bawah untuk mengakses e-Sertifikat asli Anda melalui portal Kemenkumham.`;
