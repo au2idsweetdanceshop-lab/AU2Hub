@@ -6081,7 +6081,7 @@ async function switchLeaderboardTab(tab) {
             const rank = index + 1;
             const ava = user.avatar_url || `https://ui-avatars.com/api/?name=${user.nickname}&background=1A1133&color=fff`;
             let rankBadge = `<span class="text-xs font-bold text-gray-500 w-6 text-center">#${rank}</span>`;
-            if (rank === 1) rankBadge = '<div class="w-6 flex justify-center text-xl text-yellow-400"><i class="fas fa-medal"></i></div>';
+            if (rank === 1) rankBadge = '<div class="w-6 flex justify-center text-xl text-yellow-400 animate-premium-gold"><i class="fas fa-medal"></i></div>';
             if (rank === 2) rankBadge = '<div class="w-6 flex justify-center text-xl text-gray-300"><i class="fas fa-medal"></i></div>';
             if (rank === 3) rankBadge = '<div class="w-6 flex justify-center text-xl text-amber-600"><i class="fas fa-medal"></i></div>';
             return `
@@ -6120,7 +6120,7 @@ async function switchLeaderboardTab(tab) {
                 const videoCount = allVideosData.filter(v => v.user_id === player.id).length;
                 const statusBadge = getBadgeByLevelAndVideos(statusLevel.level, videoCount);
                 let rankBadge = `<span class="text-xs font-bold text-gray-500 w-6 text-center">#${rank}</span>`;
-                if (rank === 1) rankBadge = '<div class="w-6 flex justify-center text-xl text-yellow-400 drop-shadow-[0_0_6px_rgba(250,204,21,0.5)]"><i class="fas fa-trophy"></i></div>';
+                if (rank === 1) rankBadge = '<div class="w-6 flex justify-center text-xl text-yellow-400 drop-shadow-[0_0_6px_rgba(250,204,21,0.5)] animate-premium-gold"><i class="fas fa-trophy"></i></div>';
                 if (rank === 2) rankBadge = '<div class="w-6 flex justify-center text-xl text-gray-300"><i class="fas fa-award"></i></div>';
                 if (rank === 3) rankBadge = '<div class="w-6 flex justify-center text-xl text-amber-600"><i class="fas fa-award"></i></div>';
                 return `
@@ -6168,7 +6168,7 @@ async function switchLeaderboardTab(tab) {
                 const nickname = p?.nickname || "Player";
                 const ava = p?.avatar_url || `https://ui-avatars.com/api/?name=${nickname}&background=1A1133&color=fff`;
                 let rankBadge = `<span class="text-xs font-bold text-gray-500 w-6 text-center">#${rank}</span>`;
-                if (rank === 1) rankBadge = '<div class="w-6 flex justify-center text-xl text-yellow-400"><i class="fas fa-crown"></i></div>';
+                if (rank === 1) rankBadge = '<div class="w-6 flex justify-center text-xl text-yellow-400 animate-premium-gold"><i class="fas fa-crown"></i></div>';
                 if (rank === 2) rankBadge = '<div class="w-6 flex justify-center text-xl text-gray-300"><i class="fas fa-medal"></i></div>';
                 if (rank === 3) rankBadge = '<div class="w-6 flex justify-center text-xl text-amber-600"><i class="fas fa-medal"></i></div>';
                 return `
@@ -10256,7 +10256,7 @@ async function loadTokoPublikLuar(sellerName) {
                         <h2 class="text-[17px] font-black text-white flex items-center gap-1.5 leading-tight mb-1">
                             ${profile.nickname} <span class="scale-[0.8] origin-left">${badgeHtml}</span>
                         </h2>
-                        <p class="text-[10px] text-brand-info font-bold tracking-wide flex items-center gap-1"><i class="fas fa-check-circle"></i> Official Seller</p>
+                        <p class="text-[10px] text-brand-info font-bold tracking-wide flex items-center gap-1"><i class="fas fa-check-circle animate-premium-blue"></i> Official Seller</p>
                     </div>
                     <button onclick="kirimPesanPribadi('${profile.id}')" class="bg-gradient-to-r from-brand-info to-brand-accent text-white px-5 py-2 rounded-full text-[10px] font-extrabold shadow-[0_4px_10px_rgba(0,240,255,0.3)] active:scale-95 transition-transform flex items-center gap-1.5 shrink-0 mt-1">
                         <i class="fas fa-comment-dots text-xs"></i> Chat
