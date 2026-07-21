@@ -6554,6 +6554,30 @@ function bukaDetailPesananDinamis(orderId, productName, price, status, tableSour
     }
     if (tableSource === 'riwayat_ppob') {
         if(actionDiproses) actionDiproses.classList.replace('flex', 'hidden');
+        
+        if (visualStatus === 'proses' && userProfile?.is_super_admin) {
+            actionBelumBayar.classList.replace('hidden', 'flex');
+            
+            const btnBayar = actionBelumBayar.querySelector('button[onclick^="prosesBayarUlang"]');
+            if (btnBayar) btnBayar.classList.add('hidden');
+            
+            const btnBatal = actionBelumBayar.querySelector('button[onclick^="batalkanPesanan"]');
+            if (btnBatal) {
+                btnBatal.innerHTML = '<i class="fas fa-times-circle mr-1"></i> Batalkan & Refund (Admin)';
+                btnBatal.onclick = async () => {
+                    const confirm = await customConfirm("Batalkan PPOB ini dan kembalikan saldo ke user?");
+                    if (confirm) {
+                        closeDetailPesanan();
+                        showToast("Memproses refund...", "info");
+                        await supabaseClient.from('riwayat_ppob').update({ status: 'Gagal' }).eq('ref_id', orderId);
+                        showToast("PPOB dibatalkan, saldo telah direfund otomatis!", "success");
+                        cekStatusPesanan('proses');
+                        fetchSaldoDanMutasi();
+                        updateUiSaldoSeller();
+                    }
+                };
+            }
+        }
     }
 
     const wadahRincian = document.getElementById('wadah-rincian-transaksi');
