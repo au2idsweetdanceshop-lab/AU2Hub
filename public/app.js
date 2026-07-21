@@ -11183,29 +11183,39 @@ let isTransferProcessing = false;
 async function mulaiTransferSaldo() {
     if (!currentUser || !userProfile) return showToast("Silakan login terlebih dahulu.", "error");
     if (isTransferProcessing) return showToast("Mohon tunggu, sistem sedang memproses...", "info");
+    
     const targetNick = await customPrompt("Masukkan Nickname penerima saldo:");
     if (!targetNick) return;
+    
     if (targetNick.toLowerCase() === userProfile.nickname.toLowerCase()) {
         return showToast("Tidak bisa mengirim saldo ke diri sendiri!", "error");
     }
+    
     const inputNominal = await customPrompt(`Kirim saldo ke @${targetNick.trim()}\n\nMasukkan nominal (Minimal Rp 1.000):`, "10000");
     if (!inputNominal) return;
+    
     const nominal = parseInt(inputNominal.replace(/[^0-9]/g, ''));
     if (isNaN(nominal) || nominal < 1000) return showToast("Nominal tidak valid atau kurang dari Rp 1.000", "error");
+    
     if (userProfile.balance < nominal) {
         return customAlert(`Saldo Anda tidak cukup!\n\nSaldo Aktif: Rp ${userProfile.balance.toLocaleString('id-ID')}\nNominal Kirim: Rp ${nominal.toLocaleString('id-ID')}`);
     }
+    
     const konfirmasi = await customConfirm(`Anda akan mentransfer saldo sebesar:\n\n*Rp ${nominal.toLocaleString('id-ID')}*\n\nKepada: @${targetNick.trim()}\n\nLanjutkan transaksi?`);
     if (!konfirmasi) return;
+    
     isTransferProcessing = true; 
     showToast("Memproses transfer...", "info");
+    
     try {
         const { data: targetUser, error: errTarget } = await supabaseClient
             .from('profiles')
             .select('id, nickname')
             .ilike('nickname', targetNick.trim())
             .single();
+            
         if (errTarget || !targetUser) throw new Error("Pengguna tidak ditemukan.");
+        
         const { data: hasil, error: errRpc } = await supabaseClient.rpc('transfer_p2p_v100', {
             p_sender_uuid: currentUser.id,
             p_receiver_uuid: targetUser.id,
@@ -11213,14 +11223,13 @@ async function mulaiTransferSaldo() {
             p_sender_nick: userProfile.nickname,
             p_receiver_nick: targetUser.nickname
         });
+        
         if (errRpc) throw new Error(errRpc.message);
         if (hasil === 'SALDO_TIDAK_CUKUP') throw new Error("Transaksi ditolak: Saldo tidak cukup.");
-        await supabaseClient.from('messages').insert({
-            sender_id: currentUser.id,
-            receiver_id: targetUser.id,
-            message: `[SISTEM] 💸 *Transfer Saldo Berhasil!*\n\nAnda menerima saldo sebesar *Rp ${nominal.toLocaleString('id-ID')}* dari @${userProfile.nickname}. Cek mutasi dompet Anda.`
-        });
+        if (hasil && hasil.startsWith('FAILED')) throw new Error("Gagal server: " + hasil);
+
         showToast(`Berhasil mengirim Rp ${nominal.toLocaleString('id-ID')} ke @${targetUser.nickname}!`, "success");
+        
         if (userProfile && userProfile.balance !== undefined) {
             userProfile.balance -= nominal;
             const elSaldoDompet = document.getElementById('dompet-angka-saldo');
@@ -11228,6 +11237,7 @@ async function mulaiTransferSaldo() {
                 elSaldoDompet.innerText = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(userProfile.balance).replace('Rp', 'Rp ');
             }
         }
+        
         setTimeout(() => {
             fetchSaldoDanMutasi(); 
             updateSaldoGlobal();   
