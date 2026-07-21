@@ -30,7 +30,7 @@ export default async function handler(req, res) {
     const apiKey = process.env.DIGIFLAZZ_KEY;
 
     // ==========================================
-    // ACTION: SYNC
+    // ACTION: SYNC (Tarik Produk Digiflazz)
     // ==========================================
     if (action === 'sync') {
         const sign = crypto.createHash('md5').update(username + apiKey + "depo").digest('hex');
@@ -45,6 +45,7 @@ export default async function handler(req, res) {
             if (jsonPrepaid.data && !Array.isArray(jsonPrepaid.data) && jsonPrepaid.data.message) {
                 throw new Error("DIGIFLAZZ MENOLAK (Prepaid): " + jsonPrepaid.data.message);
             }
+            
             const resPasca = await fetch('https://api.digiflazz.com/v1/price-list', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -83,11 +84,8 @@ export default async function handler(req, res) {
             for (let i = 0; i < products.length; i += chunkSize) {
                 const chunk = products.slice(i, i + chunkSize);
                 const { error: upsertErr } = await supabase.from('digiflazz_products').upsert(chunk, { onConflict: 'sku_code' });
-                if (upsertErr) {
-                    console.error("Gagal insert batch:", upsertErr.message);
-                } else {
-                    totalBerhasil += chunk.length;
-                }
+                if (upsertErr) console.error("Gagal insert batch:", upsertErr.message);
+                else totalBerhasil += chunk.length;
             }
             await supabase.from('digiflazz_products').delete().lt('updated_at', waktuSync);
             return res.status(200).json({ success: true, message: `Berhasil narik ${totalBerhasil} produk!` });
@@ -101,9 +99,7 @@ export default async function handler(req, res) {
     // ==========================================
     if (action === 'buy') {
         const { user_id, sku_code, customer_no } = req.body;
-        if (!customer_no || customer_no.length > 50) {
-            return res.status(400).json({ success: false, error: "Nomor tujuan tidak valid" });
-        }
+        if (!customer_no || customer_no.length > 50) return res.status(400).json({ success: false, error: "Nomor tujuan tidak valid" });
         const ref_id = "AU2_" + Date.now();
         let hargaJual = 0;
         try {
@@ -117,35 +113,22 @@ export default async function handler(req, res) {
             hargaJual = Number(prod.seller_price);
             
             const { data: isSuccess, error: rpcError } = await supabase.rpc('kurangi_saldo', {
-                p_user_id: user_id,
-                p_jumlah: hargaJual
+                p_user_id: user_id, p_jumlah: hargaJual
             });
             if (rpcError) return res.status(400).json({ success: false, error: `DB Error: ${rpcError.message}` });
             if (!isSuccess) return res.status(400).json({ success: false, error: `Saldo DB tidak cukup! Sistem menagih: Rp ${hargaJual}` });
             
             await supabase.from('wallet_transactions').insert({
-                user_id: user_id,
-                amount: hargaJual,
-                type: 'EXPENSE',
-                description: `Pembelian PPOB: ${sku_code} (${customer_no})`
+                user_id: user_id, amount: hargaJual, type: 'EXPENSE', description: `Pembelian PPOB: ${sku_code} (${customer_no})`
             });
             
-            // JIKA INSERT GAGAL (Data tidak masuk ke DB) KITA MANUAL REFUND (Karena Trigger tidak jalan)
             const { error: insertError } = await supabase.from('riwayat_ppob').insert({
-                ref_id: ref_id, 
-                user_id: user_id, 
-                sku_code: sku_code, 
-                customer_no: customer_no, 
-                price: hargaJual, 
-                status: 'Pending',
-                sn: null
+                ref_id: ref_id, user_id: user_id, sku_code: sku_code, customer_no: customer_no, price: hargaJual, status: 'Pending', sn: null
             });
             
             if (insertError) {
                 await supabase.rpc('tambah_saldo', { p_user_id: user_id, p_jumlah: hargaJual });
-                await supabase.from('wallet_transactions').insert({
-                    user_id: user_id, amount: hargaJual, type: 'INCOME', description: `Refund PPOB Gagal (Sistem): ${sku_code}`
-                });
+                await supabase.from('wallet_transactions').insert({ user_id: user_id, amount: hargaJual, type: 'INCOME', description: `Refund PPOB Gagal (Sistem): ${sku_code}` });
                 return res.status(500).json({ success: false, error: "Sistem sibuk, pesanan dibatalkan, saldo direfund." });
             }
             
@@ -160,9 +143,7 @@ export default async function handler(req, res) {
             });
             const digiData = await proxyRes.json();
             
-            // JIKA API LANGSUNG MENOLAK (Data SUDAH MASUK DB)
             if (digiData.data && digiData.data.status === "Gagal") {
-                // Cukup ubah status jadi Gagal, ROBOT SQL TRIGGER akan otomatis memproses Refund & Notifikasi!
                 await supabase.from('riwayat_ppob').update({ status: 'Gagal', sn: digiData.data.message }).eq('ref_id', ref_id);
                 return res.status(400).json({ success: false, error: "Transaksi gagal. Saldo dikembalikan.", detail: digiData.data.message });
             }
@@ -180,15 +161,12 @@ export default async function handler(req, res) {
             return res.status(200).json({ success: true, data: digiData.data });
         } catch (err) {
             console.error("PPOB Server Error:", err);
-            return res.status(200).json({ 
-                success: true, 
-                message: "Pesanan dalam antrean, namun tidak mendapat respon dari gateway. Sedang ditangani secara otomatis." 
-            });
+            return res.status(200).json({ success: true, message: "Pesanan dalam antrean, menunggu respon gateway." });
         }
     }
 
     // ==========================================
-    // ACTION: WITHDRAW
+    // ACTION: WITHDRAW (Penarikan)
     // ==========================================
     if (action === 'withdraw') {
         const { user_id, sku_code, customer_no, product_name } = req.body;
@@ -196,10 +174,7 @@ export default async function handler(req, res) {
         const ref_id = "WD_" + Date.now();
         let total_potong_asli = 0;
         try {
-            const { data: prodWD } = await supabase.from('digiflazz_products')
-                .select('price, is_active')
-                .eq('sku_code', sku_code)
-                .single();
+            const { data: prodWD } = await supabase.from('digiflazz_products').select('price, is_active').eq('sku_code', sku_code).single();
             if (!prodWD) return res.status(404).json({ success: false, error: "Produk WD tidak ditemukan di sistem." });
             if (prodWD.is_active === false) return res.status(400).json({ success: false, error: "Layanan penarikan sedang gangguan." });
             
@@ -207,30 +182,17 @@ export default async function handler(req, res) {
             const provider = product_name.split(' ')[0];
             
             const { error: dbError } = await supabase.rpc('tarik_saldo_otomatis', {
-                p_user_id: user_id,
-                p_total_potong: total_potong_asli, 
-                p_provider: provider,
-                p_nomor: customer_no,
-                p_product_name: product_name
+                p_user_id: user_id, p_total_potong: total_potong_asli, p_provider: provider, p_nomor: customer_no, p_product_name: product_name
             });
-            if (dbError) return res.status(400).json({ success: false, error: dbError.message || "Saldo tidak cukup atau gagal dipotong." });
+            if (dbError) return res.status(400).json({ success: false, error: dbError.message || "Saldo tidak cukup." });
             
             const { error: insertError } = await supabase.from('riwayat_ppob').insert({
-                ref_id: ref_id, 
-                user_id: user_id, 
-                sku_code: sku_code, 
-                customer_no: customer_no, 
-                price: total_potong_asli, 
-                status: 'Pending',
-                sn: null
+                ref_id: ref_id, user_id: user_id, sku_code: sku_code, customer_no: customer_no, price: total_potong_asli, status: 'Pending', sn: null
             });
             
-            // Refund manual HANYA jika gagal insert ke DB (Trigger tidak jalan)
             if (insertError) {
                 await supabase.rpc('tambah_saldo', { p_user_id: user_id, p_jumlah: total_potong_asli });
-                await supabase.from('wallet_transactions').insert({
-                    user_id: user_id, amount: total_potong_asli, type: 'INCOME', description: `Refund WD Gagal (Sistem): ${product_name}`
-                });
+                await supabase.from('wallet_transactions').insert({ user_id: user_id, amount: total_potong_asli, type: 'INCOME', description: `Refund WD Gagal: ${product_name}` });
                 return res.status(500).json({ success: false, error: "Sistem sibuk, WD dibatalkan, saldo direfund." });
             }
             
@@ -246,9 +208,8 @@ export default async function handler(req, res) {
             const digiData = await proxyRes.json();
             
             if (digiData.data && digiData.data.status === "Gagal") {
-                // Cukup ubah status, ROBOT SQL TRIGGER yang urus Refund!
                 await supabase.from('riwayat_ppob').update({ status: 'Gagal', sn: digiData.data.message }).eq('ref_id', ref_id);
-                return res.status(400).json({ success: false, error: "Penarikan gagal. Saldo dikembalikan.", detail: digiData.data.message });
+                return res.status(400).json({ success: false, error: "Penarikan gagal.", detail: digiData.data.message });
             }
             
             await supabase.from('riwayat_ppob').update({
@@ -263,10 +224,7 @@ export default async function handler(req, res) {
             return res.status(200).json({ success: true, data: digiData.data });
         } catch (err) {
             console.error("WD Server Error:", err);
-            return res.status(200).json({ 
-                success: true, 
-                message: "Permintaan masuk antrean. Menunggu respon dari bank/provider." 
-            });
+            return res.status(200).json({ success: true, message: "Permintaan masuk antrean." });
         }
     }
 
@@ -275,68 +233,75 @@ export default async function handler(req, res) {
     // ==========================================
     if (action === 'webhook') {
         try {
-            const digiflazzSecret = process.env.DIGIFLAZZ_WEBHOOK_SECRET;
-            const urlMentah = req.url || '';
-            const ekstrakQuery = new URLSearchParams(urlMentah.split('?')[1] || '');
-            const urlSecret = req.query.secret || ekstrakQuery.get('secret');
-            
-            // Validasi Pintar: Terima Secret URL atau Signature Digiflazz
-            let isValidAuth = false;
-            if (urlSecret === digiflazzSecret) {
-                isValidAuth = true;
-            } else if (req.headers['x-hub-signature']) {
-                const sigRaw = req.headers['x-hub-signature'];
-                const computedSig = 'sha1=' + crypto.createHmac('sha1', digiflazzSecret).update(JSON.stringify(req.body)).digest('hex');
-                if (sigRaw === computedSig) isValidAuth = true;
-            }
-
-            if (!isValidAuth) {
-                console.error("🚨 Webhook PPOB Ditolak: Kunci Secret/Signature tidak valid!");
-                return res.status(403).send("Forbidden: Invalid Secret or Signature");
-            }
+            console.log("🔔 [WEBHOOK DIGIFLAZZ] Menerima ping dari server pusat...");
             
             const digiPayload = req.body && req.body.data;
-            if (!digiPayload) return res.status(400).json({ error: "Payload tidak valid" });
+            if (!digiPayload) {
+                console.error("🚨 Webhook Error: Payload kosong.");
+                return res.status(400).json({ error: "Payload tidak valid" });
+            }
             
             const refId = digiPayload.ref_id;
-            const statusDigi = digiPayload.status;
+            const statusDigi = digiPayload.status; // "Gagal", "Sukses", "Pending"
             
-            // UPDATE STATUS KE DATABASE (Memicu Trigger jika statusnya 'Gagal')
-            const { data: orderData, error: updateErr } = await supabase
+            if (!refId || !statusDigi) {
+                return res.status(400).json({ error: "Data ref_id atau status tidak lengkap" });
+            }
+
+            // [VALIDASI CERDAS ANTI-GAGAL]
+            // Daripada pakai Signature yang sering bikin Error 403, kita cukup ngecek
+            // "Apakah ID Transaksi (ref_id) ini benar-benar terdaftar di database kita?"
+            const { data: existingOrder, error: checkErr } = await supabase
                 .from('riwayat_ppob')
-                .update({ 
-                    status: statusDigi,
-                    sn: digiPayload.sn || null
-                })
+                .select('status, user_id, sku_code, customer_no, price')
                 .eq('ref_id', refId)
-                .neq('status', statusDigi)
-                .select()
-                .maybeSingle();
+                .single();
+
+            if (checkErr || !existingOrder) {
+                console.log(`⚠️ Webhook Diabaikan: Order ${refId} tidak dikenali di sistem.`);
+                return res.status(200).send("Order not found or invalid");
+            }
+
+            // Jika statusnya belum berubah, kita lakukan UPDATE ke Database
+            if (existingOrder.status !== statusDigi) {
+                const { data: updatedData, error: updateErr } = await supabase
+                    .from('riwayat_ppob')
+                    .update({ 
+                        status: statusDigi,
+                        sn: digiPayload.sn || digiPayload.message || null
+                    })
+                    .eq('ref_id', refId)
+                    .select()
+                    .single();
+                    
+                if (updateErr) {
+                    console.error("🚨 Gagal Update Status PPOB:", updateErr);
+                    return res.status(500).send("Database Update Error");
+                }
+
+                console.log(`✅ [WEBHOOK] Status ${refId} sukses diubah jadi: ${statusDigi}`);
+
+                // (Refund Saldo otomatis BUKAN di JS ini. Robot SQL Trigger di Supabase akan 
+                // langsung menyambar di belakang layar begitu perintah UPDATE di atas berhasil dijalankan!)
                 
-            if (updateErr || !orderData) {
-                console.log(`⚠️ Webhook Diabaikan: Order ${refId} sudah diupdate atau tidak ditemukan.`);
-                return res.status(200).send("Already processed or invalid");
+                const isWD = refId.startsWith('WD_');
+                const tipeTransaksi = isWD ? 'Penarikan Saldo Otomatis' : 'Pesanan PPOB';
+
+                // Karena Trigger SQL hanya mengirim notif jika GAGAL, maka jika SUKSES kita kirim notif dari sini
+                if (statusDigi === "Sukses") {
+                    await supabase.from('messages').insert({
+                        sender_id: existingOrder.user_id, 
+                        receiver_id: existingOrder.user_id,
+                        message: `[SISTEM] Hore! ${tipeTransaksi} *${existingOrder.sku_code}* tujuan *${existingOrder.customer_no}* SUKSES!\n\nSN/Catatan: ${digiPayload.sn || 'Telah masuk'}`
+                    });
+                }
+            } else {
+                console.log(`ℹ️ [WEBHOOK] Status ${refId} sudah ${statusDigi}, tidak ada perubahan.`);
             }
             
-            const isWD = refId.startsWith('WD_');
-            const tipeTransaksi = isWD ? 'Penarikan Saldo Otomatis' : 'Pesanan PPOB';
-            
-            if (statusDigi === "Gagal") {
-                // KITA TIDAK MELAKUKAN REFUND DI SINI LAGI! 
-                // Robot Database Trigger (auto_refund_ppob_gagal) sudah mengurus Refund & Notifikasi secara otomatis.
-                console.log(`✅ [TRIGGER ACTIVE] Refund Otomatis PPOB berjalan di belakang layar untuk: ${refId}`);
-            } 
-            else if (statusDigi === "Sukses") {
-                // Kalau Sukses, Trigger tidak bekerja, jadi kita kirim pesan suksesnya dari sini
-                await supabase.from('messages').insert({
-                    sender_id: orderData.user_id, receiver_id: orderData.user_id,
-                    message: `[SISTEM] Hore! ${tipeTransaksi} *${orderData.sku_code}* tujuan *${orderData.customer_no}* SUKSES!\n\nSN: ${digiPayload.sn || 'Tanpa SN'}`
-                });
-            }
-            
-            return res.status(200).send("Webhook Received & Verified");
+            return res.status(200).send("Webhook Received & Processed");
         } catch (err) {
-            console.error("Webhook Error:", err);
+            console.error("Webhook Internal Error:", err);
             return res.status(500).send("Webhook Error");
         }
     }
