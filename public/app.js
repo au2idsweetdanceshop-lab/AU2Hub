@@ -6606,24 +6606,44 @@ function bukaDetailPesananDinamis(orderId, productName, price, status, tableSour
                 .then(({data}) => {
                     const feeDitanggungPembeli = data ? data.fee_ditanggung_pembeli : false;
                     const isPenjual = (currentUser.id === activeOrderSellerId);
+                    
                     let isRekber = productName.includes('[+Rekber]');
-                    let feeRekber = isRekber ? hitungFeeRekber(price) : 0;
-                    let subtotalBarang = price - feeRekber; 
-                    let pajakLapak = 0;
-                    let totalDiterimaSeller = subtotalBarang;
-                    if (feeDitanggungPembeli) {
-                        let hargaDasar;
-                        if (subtotalBarang < 252500) {
-                            hargaDasar = Math.round((subtotalBarang - 500) / 1.008);
-                        } else {
-                            hargaDasar = Math.round(subtotalBarang / 1.01);
-                        }
-                        totalDiterimaSeller = hargaDasar; 
-                        pajakLapak = hitungPotonganSeller(hargaDasar); 
-                    } else {
-                        pajakLapak = hitungPotonganSeller(subtotalBarang);
-                        totalDiterimaSeller = subtotalBarang - pajakLapak; 
+                    let hargaAktual = Number(price);
+                    let feeRekber = 0;
+                    
+                    if (isRekber) {
+                        if (hargaAktual >= 2035000) feeRekber = 35000;
+                        else if (hargaAktual >= 1525000) feeRekber = 25000;
+                        else if (hargaAktual >= 520000) feeRekber = 20000;
+                        else if (hargaAktual >= 110000) feeRekber = 10000;
+                        else feeRekber = 5000;
+                        hargaAktual -= feeRekber;
                     }
+
+                    let hargaBase;
+                    if (hargaAktual < 252500) {
+                        hargaBase = Math.round((hargaAktual - 500) / 1.008);
+                    } else {
+                        hargaBase = Math.round(hargaAktual / 1.01);
+                    }
+
+                    let pajakLapak = 0;
+                    if (feeDitanggungPembeli) {
+                        if (hargaBase <= 10500) pajakLapak = 500;
+                        else if (hargaBase <= 26000) pajakLapak = 1000;
+                        else if (hargaBase <= 52000) pajakLapak = 2000;
+                        else if (hargaBase <= 102999) pajakLapak = 3000;
+                        else if (hargaBase <= 509999) pajakLapak = 10000;
+                        else if (hargaBase <= 1519999) pajakLapak = 20000;
+                        else if (hargaBase <= 2024999) pajakLapak = 25000;
+                        else pajakLapak = 35000;
+                    } else {
+                        pajakLapak = hitungPotonganSeller(hargaBase);
+                    }
+
+                    let subtotalBarang = isPenjual ? hargaBase : (Number(price) - feeRekber);
+                    let totalDiterimaSeller = feeDitanggungPembeli ? hargaBase : (hargaBase - pajakLapak);
+                    
                     let htmlRincian = `<div class="text-[10px] font-extrabold text-gray-400 mb-3 uppercase tracking-widest border-b border-white/10 pb-2 flex items-center gap-1.5"><i class="fas fa-file-invoice-dollar text-brand-info text-sm"></i> Rincian Pembayaran</div>`;
                    htmlRincian += `<div class="flex justify-between items-center text-[11px] text-gray-300 mb-2">
                         <span>Subtotal Produk</span>
@@ -6743,43 +6763,97 @@ async function selesaikanPesanan(orderId, tableSource) {
         .select('status, price, product_name, product_id')
         .eq('id', orderId)
         .single();
+        
     if (errCek || !cekOrder) return showToast("Pesanan tidak ditemukan.", "error");
     if (cekOrder.status === 'selesai' || cekOrder.status === 'Sukses') {
         closeDetailPesanan();
         return showToast("Pesanan ini sudah diselesaikan sebelumnya!", "info");
     }
+    
     let pesanKonfirmasi = "Pesanan sudah dikerjakan dan diterima dengan baik?";
     if (tableSource === 'orders_player') {
         pesanKonfirmasi += "\n\n🛡️ Dana akan diamankan sistem selama 24 Jam sebagai garansi transaksi, setelah itu Penjual dapat menariknya secara Instan.";
     }
+    
     const konfirmasi = await customConfirm(pesanKonfirmasi);
     if (!konfirmasi) return;
+    
     closeDetailPesanan(); 
     showToast("Menyelesaikan pesanan...", "info");
+    
     try {
+
+        let feeDitanggungPembeli = false;
+        if (cekOrder.product_id) {
+            const { data: prodInfo } = await supabaseClient
+                .from('player_products')
+                .select('fee_ditanggung_pembeli')
+                .eq('id', cekOrder.product_id)
+                .single();
+            if (prodInfo) feeDitanggungPembeli = prodInfo.fee_ditanggung_pembeli;
+        }
+
         const waktuSekarang = new Date().toISOString();
         let dataUpdate = { status: 'selesai' };
         if (tableSource === 'orders_player') {
             dataUpdate.waktu_selesai = waktuSekarang;
             dataUpdate.dana_cair = false;
         }
+        
         const { error: orderError } = await supabaseClient
             .from(tableSource)
             .update(dataUpdate)
             .eq('id', orderId)
             .neq('status', 'selesai');
         if (orderError) throw orderError;
-        const hargaAsli = Number(cekOrder.price);
+        
+        const hargaTotalCheckout = Number(cekOrder.price);
         const isRekber = cekOrder.product_name.includes('[+Rekber]');
-        const jatahPajakLapak = hitungPotonganSeller(hargaAsli);
-        const jatahFeeRekber = isRekber ? hitungFeeRekber(hargaAsli) : 0;
+        
+        let jatahFeeRekber = 0;
+        let hargaAktual = hargaTotalCheckout;
+        
+        if (isRekber) {
+            if (hargaAktual >= 2035000) jatahFeeRekber = 35000;
+            else if (hargaAktual >= 1525000) jatahFeeRekber = 25000;
+            else if (hargaAktual >= 520000) jatahFeeRekber = 20000;
+            else if (hargaAktual >= 110000) jatahFeeRekber = 10000;
+            else jatahFeeRekber = 5000;
+            hargaAktual -= jatahFeeRekber;
+        }
+
+        let hargaBase;
+        if (hargaAktual < 252500) {
+            hargaBase = Math.round((hargaAktual - 500) / 1.008);
+        } else {
+            hargaBase = Math.round(hargaAktual / 1.01);
+        }
+
+        let jatahPajakLapak = 0;
+        if (feeDitanggungPembeli) {
+            if (hargaBase <= 10500) jatahPajakLapak = 500;
+            else if (hargaBase <= 26000) jatahPajakLapak = 1000;
+            else if (hargaBase <= 52000) jatahPajakLapak = 2000;
+            else if (hargaBase <= 102999) jatahPajakLapak = 3000;
+            else if (hargaBase <= 509999) jatahPajakLapak = 10000;
+            else if (hargaBase <= 1519999) jatahPajakLapak = 20000;
+            else if (hargaBase <= 2024999) jatahPajakLapak = 25000;
+            else jatahPajakLapak = 35000;
+        } else {
+            jatahPajakLapak = hitungPotonganSeller(hargaBase);
+        }
+
         const totalSetorNikky = jatahPajakLapak + jatahFeeRekber;
-        autoSetorKeNikky(totalSetorNikky, `[Auto] Pajak Lapak & Rekber - Order ID: ${orderId.substring(0,8).toUpperCase()}`);
+        if (totalSetorNikky > 0) {
+            autoSetorKeNikky(totalSetorNikky, `[Auto] Laba Lapak & Rekber - Order ID: ${orderId.substring(0,8).toUpperCase()}`);
+        }
+
         if (tableSource === 'orders_player') {
             showToast("Pesanan selesai! Dana diamankan di Saldo Tertahan (24 Jam).", "success");
         } else {
             showToast("Pesanan selesai! Terima kasih.", "success");
         }
+        
         tambahExp(50);
         cekStatusPesanan('selesai'); 
         loadOrderTracker(currentUser.id); 
