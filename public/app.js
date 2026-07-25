@@ -9297,7 +9297,7 @@ async function loadAdminDashboard(isRefresh = false) {
                     </div>
                     <div class="flex gap-2 mt-2">
                         <button onclick="tolakPenarikan('${req.id}', '${req.user_id}', ${req.nominal})" class="flex-1 bg-transparent border border-red-500/50 hover:bg-red-500/10 text-red-500 py-3 rounded-xl font-bold active:scale-95 transition-all text-xs">Tolak</button>
-                        <button onclick="setujuiPenarikan('${req.id}', '${escapeHTML(req.profiles?.nickname || 'Player').replace(/&#39;/g, "\\'")}')" class="flex-1 bg-brand-success hover:bg-[#20bd5a] text-brand-dark py-3 rounded-xl font-extrabold active:scale-95 transition-all text-xs uppercase tracking-wider shadow-[0_4px_15px_rgba(37,211,102,0.3)]"><i class="fas fa-check-double mr-1"></i> Selesai Transfer</button>
+                        <button onclick="setujuiPenarikan('${req.id}', '${escapeHTML(req.profiles?.nickname || 'Player').replace(/&#39;/g, "\\'")}', '${req.user_id}', ${req.nominal})" class="flex-1 bg-brand-success...
                     </div>
                 </div>`;
             }).join('');
@@ -9364,55 +9364,26 @@ function salinTeksAdmin(teks, btnElement, colorType) {
 
 let isAdminProcessing = false;
 
-async function setujuiPenarikan(wdId, nickname) {
+async function setujuiPenarikan(wdId, nickname, userId, nominal) {
     if (isAdminProcessing) return showToast("Sistem sedang memproses...", "info");
     isAdminProcessing = true; 
+    
     try {
         const konfirmasi = await customConfirm(`Anda YAKIN sudah mentransfer uang ini ke rekening @${nickname}?`);
         if (!konfirmasi) return;
+        
         showToast("Memproses...", "info");
         const card = document.getElementById(`wd-${wdId}`);
         if (card) card.style.pointerEvents = 'none';
-        const { data, error } = await supabaseClient
-            .from('withdrawals')
-            .update({ status: 'SELESAI' })
-            .eq('id', wdId)
-            .eq('status', 'PENDING')
-            .select();
-        if (error) throw error;
-        if (!data || data.length === 0) throw new Error("Transaksi ini sudah diproses.");
-        const wdData = data[0];
-        await supabaseClient.from('messages').insert({
-            sender_id: currentUser.id,
-            receiver_id: wdData.user_id,
-            message: `[SISTEM] Tukar Saldo ke E-Wallet berhasil diproses!
-Potong Saldo: Rp ${Number(wdData.nominal).toLocaleString('id-ID')}
-Biaya Admin: Rp 500
-*Dana Masuk ke Bank: Rp ${(Number(wdData.nominal) - 500).toLocaleString('id-ID')}*
-Silakan cek mutasi rekening Anda.`
+
+        const { error } = await supabaseClient.rpc('setujui_penarikan_admin', {
+            p_wd_id: wdId,
+            p_user_id: userId,
+            p_nominal: nominal
         });
-        const { data: pendingTx } = await supabaseClient
-            .from('wallet_transactions')
-            .select('id')
-            .eq('user_id', wdData.user_id)
-            .eq('amount', wdData.nominal)
-            .ilike('description', '%PENDING%')
-            .order('created_at', { ascending: false })
-            .limit(1);
-        if (pendingTx && pendingTx.length > 0) {
-            const { error: updateErr } = await supabaseClient
-                .from('wallet_transactions')
-                .update({ 
-                    description: `✅ BERHASIL: Dana Cair Rp ${(Number(wdData.nominal) - 500).toLocaleString('id-ID')} (Potong Admin 500)` 
-                })
-                .eq('id', pendingTx[0].id);
-            if (updateErr) {
-                console.error("Terblokir RLS Supabase:", updateErr);
-                showToast("Database menolak! Cek izin RLS Supabase Anda.", "error");
-            }
-        } else {
-            console.log("Mutasi PENDING tidak ditemukan, mungkin diblokir oleh RLS SELECT.");
-        }
+
+        if (error) throw error;
+
         if (card) {
             card.style.opacity = '0';
             setTimeout(() => {
@@ -9432,24 +9403,24 @@ Silakan cek mutasi rekening Anda.`
 async function tolakPenarikan(wdId, userId, nominal) {
     if (isAdminProcessing) return showToast("Sistem sedang memproses...", "info");
     isAdminProcessing = true; 
+    
     try {
         const alasan = await customPrompt("Masukkan alasan penolakan (misal: Rekening tidak valid):", "Nomor Rekening tidak valid");
         if (!alasan) return; 
+        
         showToast("Memproses pembatalan & refund...", "info");
         const card = document.getElementById(`wd-${wdId}`);
         if (card) card.style.pointerEvents = 'none';
-        const { error } = await supabaseClient.rpc('refund_penarikan_aman', {
+
+        const { error } = await supabaseClient.rpc('tolak_penarikan_admin', {
             p_wd_id: wdId,
             p_user_id: userId,
             p_nominal: nominal,
             p_alasan: alasan
         });
+
         if (error) throw error;
-        await supabaseClient.from('messages').insert({
-            sender_id: currentUser.id,
-            receiver_id: userId,
-            message: `[SISTEM] Tukar Saldo ke E-Wallet sebesar Rp ${Number(nominal).toLocaleString('id-ID')} DITOLAK oleh Admin.\n\nAlasan: ${alasan}\n\nDana telah dikembalikan ke Saldo Aktif Anda.`
-        });
+
         if (card) {
             card.style.opacity = '0';
             setTimeout(() => {
