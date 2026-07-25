@@ -10899,6 +10899,14 @@ function renderGridPPOB() {
 }
 
 function pemicuBeliPPOB(skuCode, namaProduk, harga) {
+    const now = new Date();
+    const hourStr = now.toLocaleTimeString('en-US', { timeZone: 'Asia/Jakarta', hour12: false, hour: 'numeric' });
+    const hourWIB = parseInt(hourStr, 10);
+    
+    if (hourWIB === 23 || hourWIB === 0) {
+        return customAlert("⛔ <b>Transaksi Ditutup Sementara</b><br><br>Saat ini sedang jam <i>cut-off</i> (23:00 - 01:00 WIB) untuk maintenance sistem & mutasi bank pusat.<br><br>Silakan lakukan transaksi PPOB kembali setelah pukul 01:00 WIB.", true);
+    }
+
     const targetEl = document.getElementById('ppob-target-number');
     const targetNo = targetEl.value.trim();
     if (!targetNo) {
