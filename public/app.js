@@ -10679,11 +10679,11 @@ async function loadBrandPPOB() {
             const activeTextClass = isActive ? "text-brand-info" : "text-gray-400";
             return `
             <div onclick="pilihBrandPPOB('${amanBrand}')" class="flex flex-col items-center gap-2 cursor-pointer group active:scale-95 shrink-0 w-[4.5rem]">
-                <div class="w-14 h-14 rounded-[1.2rem] flex items-center justify-center transition-all border ${activeBoxClass} p-2.5 overflow-hidden relative">
-                    <img src="${logoUrl}" alt="${brand}" 
-                         class="w-full h-full object-contain drop-shadow-md ${isActive ? 'scale-110' : 'group-hover:scale-110'} transition-transform" 
-                         onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(brand)}&background=1A1133&color=00F0FF&bold=true'">
-                </div>
+                <div class="w-14 h-14 rounded-[1.2rem] flex items-center justify-center transition-all border ${activeBoxClass} overflow-hidden relative p-0">
+    <img src="${logoUrl}" alt="${brand}" 
+         class="w-full h-full object-cover drop-shadow-md ${isActive ? 'scale-110' : 'group-hover:scale-110'} transition-transform" 
+         onerror="...">
+</div>
                 <span class="text-[8px] font-extrabold tracking-wide uppercase text-center w-full truncate px-0.5 ${activeTextClass} transition-colors">
                     ${brand}
                 </span>
@@ -10772,12 +10772,12 @@ function pilihBrandPPOB(brand) {
             const iconBox = card.querySelector('div.rounded-\\[1\\.2rem\\]');
             const imgEl = iconBox.querySelector('img');
             if (brandNameSpan.innerText.trim().toUpperCase() === brand.toUpperCase()) {
-                iconBox.className = "w-14 h-14 rounded-[1.2rem] flex items-center justify-center transition-all border bg-brand-info/20 border-brand-info shadow-[0_0_15px_rgba(70,179,255,0.4)] p-2.5 overflow-hidden relative";
+                iconBox.className = "w-14 h-14 rounded-[1.2rem] flex items-center justify-center transition-all border bg-brand-info/20 border-brand-info shadow-[0_0_15px_rgba(70,179,255,0.4)] overflow-hidden relative";
                 brandNameSpan.className = "text-[8px] font-extrabold tracking-wide uppercase text-center w-full truncate px-0.5 text-brand-info transition-colors";
                 imgEl.classList.add('scale-110');
                 imgEl.classList.remove('group-hover:scale-110');
             } else {
-                iconBox.className = "w-14 h-14 rounded-[1.2rem] flex items-center justify-center transition-all border bg-white/5 border-white/10 hover:border-white/30 p-2.5 overflow-hidden relative";
+                iconBox.className = "w-14 h-14 rounded-[1.2rem] flex items-center justify-center transition-all border bg-white/5 border-white/10 hover:border-white/30 overflow-hidden relative";
                 brandNameSpan.className = "text-[8px] font-extrabold tracking-wide uppercase text-center w-full truncate px-0.5 text-gray-400 transition-colors";
                 imgEl.classList.remove('scale-110');
                 imgEl.classList.add('group-hover:scale-110');
