@@ -31,7 +31,7 @@
 
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script defer src="/app.js?v=353"></script>
+<script defer src="/app.js?v=354"></script>
 <style>
 
 @font-face {
@@ -1042,6 +1042,31 @@ Sistem Jual Beli Otomatis, Database Ripper, dan Rekber <strong>NIKKY</strong>. D
     </div>
 
     <div id="admin-tab-dashboard" class="flex-1 overflow-y-auto hide-scroll relative z-10 block pb-10">
+<div class="bg-black/30 p-4 rounded-2xl border border-white/5 mb-5 shadow-inner">
+    <h4 class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3 border-b border-white/10 pb-2"><i class="fas fa-sliders-h text-brand-info"></i> Pusat Kendali Penarikan</h4>
+    
+    <div class="flex justify-between items-center mb-4">
+        <div>
+            <div class="text-xs font-bold text-white mb-0.5">Penarikan Otomatis</div>
+            <div class="text-[9px] text-gray-500">Mencairkan instan via Digiflazz</div>
+        </div>
+        <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" id="toggle-wd-auto" class="sr-only peer" onchange="toggleFeatureSetting('wd_auto', this.checked)">
+            <div class="w-10 h-5 bg-white/10 rounded-full peer peer-checked:bg-brand-success after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-[120%]"></div>
+        </label>
+    </div>
+
+    <div class="flex justify-between items-center">
+        <div>
+            <div class="text-xs font-bold text-white mb-0.5">Penarikan Manual</div>
+            <div class="text-[9px] text-gray-500">Masuk antrean untuk ditransfer Admin</div>
+        </div>
+        <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" id="toggle-wd-manual" class="sr-only peer" onchange="toggleFeatureSetting('wd_manual', this.checked)">
+            <div class="w-10 h-5 bg-white/10 rounded-full peer peer-checked:bg-brand-success after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-[120%]"></div>
+        </label>
+    </div>
+</div>
         <div class="grid grid-cols-2 gap-3 mb-5">
             <div class="bg-gradient-to-br from-[#1A1133] to-black border border-brand-accent/20 p-4 rounded-2xl shadow-lg relative overflow-hidden group flex flex-col justify-between">
                 <div class="absolute -right-2 -bottom-2 opacity-10 group-hover:scale-110 transition-transform"><i class="fas fa-wallet text-5xl text-brand-accent"></i></div>
