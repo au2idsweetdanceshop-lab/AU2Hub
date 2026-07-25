@@ -8065,7 +8065,7 @@ async function lanjutkanBayarLangganan() {
         biayaGateway = Math.floor(hargaAwal * 0.01);
     }
     const hargaFinal = hargaAwal + biayaGateway;
-    checkoutXoftwarePay(namaPaket, hargaFinal, "Aktivasi VIP Seller AU2Hub", null, null);
+    checkoutXoftwarePay(namaPaket, hargaFinal, "Aktivasi Mitra AU2Hub AU2Hub", null, null);
 }
 
 function tutupModalJualBarang(dariTombolBackHP = false) {
@@ -8146,8 +8146,8 @@ async function loadTokoSaya() {
     let expiredAt = userProfile?.seller_expired_at ? new Date(userProfile.seller_expired_at) : new Date(0);
     const now = new Date();
     if (!isVip || expiredAt < now) {
-        loggedOut.querySelector('h3').innerText = "Akses Khusus VIP Seller";
-        loggedOut.querySelector('p').innerText = "Tingkatkan akunmu menjadi VIP Seller untuk mengelola toko, menambah etalase, dan menerima pesanan.";
+        loggedOut.querySelector('h3').innerText = "Akses Khusus Mitra AU2Hub";
+        loggedOut.querySelector('p').innerText = "Tingkatkan akunmu menjadi Mitra AU2Hub untuk mengelola toko, menambah etalase, dan menerima pesanan.";
         loggedOut.querySelector('button').innerText = "BERLANGGANAN SEKARANG";
         loggedOut.querySelector('button').onclick = bukaModalLangganan;
         loggedOut.classList.remove('hidden');
@@ -9261,7 +9261,7 @@ async function setujuiPenarikan(wdId, nickname) {
         await supabaseClient.from('messages').insert({
             sender_id: currentUser.id,
             receiver_id: wdData.user_id,
-            message: `[SISTEM] Penarikan saldo berhasil diproses!
+            message: `[SISTEM] Tukar Saldo ke E-Wallet berhasil diproses!
 Potong Saldo: Rp ${Number(wdData.nominal).toLocaleString('id-ID')}
 Biaya Admin: Rp 500
 *Dana Masuk ke Bank: Rp ${(Number(wdData.nominal) - 500).toLocaleString('id-ID')}*
@@ -9324,7 +9324,7 @@ async function tolakPenarikan(wdId, userId, nominal) {
         await supabaseClient.from('messages').insert({
             sender_id: currentUser.id,
             receiver_id: userId,
-            message: `[SISTEM] Penarikan saldo sebesar Rp ${Number(nominal).toLocaleString('id-ID')} DITOLAK oleh Admin.\n\nAlasan: ${alasan}\n\nDana telah dikembalikan ke Saldo Aktif Anda.`
+            message: `[SISTEM] Tukar Saldo ke E-Wallet sebesar Rp ${Number(nominal).toLocaleString('id-ID')} DITOLAK oleh Admin.\n\nAlasan: ${alasan}\n\nDana telah dikembalikan ke Saldo Aktif Anda.`
         });
         if (card) {
             card.style.opacity = '0';
