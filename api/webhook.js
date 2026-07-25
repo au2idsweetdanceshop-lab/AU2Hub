@@ -10,9 +10,11 @@ export default async function handler(req, res) {
     if (req.method !== 'POST') return res.status(405).send('Method Not Allowed');
 
     try {
-
         const isDigiflazz = req.headers['x-hub-signature'] || (req.body && req.body.data && req.body.data.ref_id);
 
+        // ==========================================
+        // 1. WEBHOOK DIGIFLAZZ (PPOB & PENARIKAN)
+        // ==========================================
         if (isDigiflazz) {
             console.log("🔔 [WEBHOOK] Menerima notifikasi dari Digiflazz (PPOB)");
             const payload = req.body;
@@ -22,24 +24,86 @@ export default async function handler(req, res) {
                 return res.status(400).json({ success: false, message: 'Payload Digiflazz tidak valid' });
             }
 
-            const { error } = await supabase
+            // 1A. Ambil data order PPOB dari Supabase terlebih dahulu
+            const { data: existingOrder, error: checkErr } = await supabase
+                .from('riwayat_ppob')
+                .select('status, user_id, sku_code, customer_no, price')
+                .eq('ref_id', dataPPOB.ref_id)
+                .single();
+
+            if (checkErr || !existingOrder) {
+                console.error("🚨 Order tidak ditemukan di DB.");
+                return res.status(404).json({ success: false, message: 'Order tidak ditemukan' });
+            }
+
+            // Jika status sudah sama, hentikan proses (Mencegah webhook ganda/spam)
+            if (existingOrder.status === dataPPOB.status) {
+                return res.status(200).json({ success: true, message: 'Status sudah sesuai, diabaikan.' });
+            }
+
+            // 1B. Update status di Supabase
+            const { error: updateErr } = await supabase
                 .from('riwayat_ppob')
                 .update({
                     status: dataPPOB.status,
                     sn: dataPPOB.sn || dataPPOB.message || 'Transaksi dibatalkan server'
                 })
-                .eq('ref_id', dataPPOB.ref_id)
-                .neq('status', dataPPOB.status);
+                .eq('ref_id', dataPPOB.ref_id);
 
-            if (error) {
-                console.error("🚨 [WEBHOOK DIGIFLAZZ] Gagal update Supabase:", error);
+            if (updateErr) {
+                console.error("🚨 [WEBHOOK DIGIFLAZZ] Gagal update Supabase:", updateErr);
                 return res.status(500).json({ success: false, message: 'Gagal update database' });
+            }
+
+            // 1C. LOGIKA AUTO-REFUND OTOMATIS (Jika Gagal)
+            if (dataPPOB.status === 'Gagal') {
+                console.log(`⚠️ Transaksi ${dataPPOB.ref_id} Gagal! Memproses Auto-Refund...`);
+                
+                // Tambah saldo kembali (Refund)
+                await supabase.rpc('tambah_saldo', { 
+                    p_user_id: existingOrder.user_id, 
+                    p_jumlah: existingOrder.price 
+                });
+                
+                // Catat refund di riwayat dompet
+                const isWD = dataPPOB.ref_id.startsWith('WD_');
+                const descText = isWD ? `Refund Tukar Saldo Gagal: ${existingOrder.sku_code}` : `Refund PPOB Gagal: ${existingOrder.sku_code}`;
+                
+                await supabase.from('wallet_transactions').insert({
+                    user_id: existingOrder.user_id,
+                    amount: existingOrder.price,
+                    type: 'INCOME',
+                    description: descText
+                });
+                
+                // Kirim notifikasi sistem ke user
+                await supabase.from('messages').insert({
+                    sender_id: existingOrder.user_id, 
+                    receiver_id: existingOrder.user_id,
+                    message: `[SISTEM] Yah, transaksi *${existingOrder.sku_code}* tujuan *${existingOrder.customer_no}* GAGAL dari pusat.\n\nAlasan: ${dataPPOB.message || 'Gangguan Layanan'}\nDana sebesar Rp ${existingOrder.price.toLocaleString('id-ID')} telah dikembalikan ke saldo kamu secara otomatis!`
+                });
+            }
+
+            // 1D. NOTIFIKASI JIKA SUKSES
+            if (dataPPOB.status === 'Sukses') {
+                const isWD = dataPPOB.ref_id.startsWith('WD_');
+                const tipeTeks = isWD ? 'Tukar Saldo E-Wallet' : 'Pesanan PPOB';
+                
+                await supabase.from('messages').insert({
+                    sender_id: existingOrder.user_id, 
+                    receiver_id: existingOrder.user_id,
+                    message: `[SISTEM] Hore! ${tipeTeks} *${existingOrder.sku_code}* tujuan *${existingOrder.customer_no}* SUKSES!\n\nSN/Catatan: ${dataPPOB.sn || 'Telah masuk'}`
+                });
             }
 
             console.log(`✅ [WEBHOOK DIGIFLAZZ] Status PPOB ${dataPPOB.ref_id} diupdate ke: ${dataPPOB.status}`);
             return res.status(200).json({ success: true, message: 'Digiflazz diproses' });
         }
 
+
+        // ==========================================
+        // 2. WEBHOOK XOFTWARE (DEPOSIT & MITRA AU2HUB)
+        // ==========================================
         const signatureHeader = req.headers['x-signature'];
         const timestampHeader = req.headers['x-timestamp'];
 
@@ -115,7 +179,8 @@ export default async function handler(req, res) {
             const userId = orderData.user_id;
             let nextStatus = 'SUCCESS';
             
-            if (productName.startsWith('[DEPOSIT]') || productName.includes('[VIP]')) {
+            // Penyesuaian agar mendeteksi nama produk lama [VIP] dan yang baru [Mitra AU2Hub]
+            if (productName.startsWith('[DEPOSIT]') || productName.includes('[VIP]') || productName.includes('Mitra AU2Hub')) {
                 nextStatus = 'selesai';
             }
             
@@ -163,11 +228,12 @@ export default async function handler(req, res) {
                 });
                 console.log(`✅ Top Up Berhasil untuk Order ${orderId}`);
             }
-            else if (productName.includes('[VIP]') && targetTable === 'orders') {
+            else if ((productName.includes('[VIP]') || productName.includes('Mitra')) && targetTable === 'orders') {
                 const { data: profile } = await supabase.from('profiles').select('seller_expired_at').eq('id', userId).single();
                 let waktuSekarang = new Date();
                 let waktuExpired = profile?.seller_expired_at ? new Date(profile.seller_expired_at) : new Date();
                 if (waktuExpired < waktuSekarang) waktuExpired = waktuSekarang;
+                
                 const matchBulan = productName.match(/(\d+)\s+Bulan/i);
                 const matchHari = productName.match(/(\d+)\s+Hari/i);
                 
@@ -185,7 +251,7 @@ export default async function handler(req, res) {
                     is_seller: true, 
                     seller_expired_at: waktuExpired.toISOString() 
                 }).eq('id', userId);
-                console.log(`👑 Perpanjangan VIP Berhasil untuk User ${userId}`);
+                console.log(`👑 Perpanjangan Mitra AU2Hub Berhasil untuk User ${userId}`);
             }
             return res.status(200).json({ success: true, message: 'Callback processed successfully' });
         }
