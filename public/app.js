@@ -8681,41 +8681,52 @@ async function lanjutWDOtomatis() {
 }
 
 async function lanjutWDManual() {
-    document.getElementById('modal-alert').classList.replace('flex', 'hidden'); // Tutup modal pilihan
+    document.getElementById('modal-alert').classList.replace('flex', 'hidden');
     const saldoMurni = userProfile.balance || 0;
     const dompetProv = userProfile.wallet_provider;
     const dompetNum = userProfile.wallet_number;
 
-    tutupModalSaldoDompet();
-    const inputNominal = await customPrompt(`Tarik Dana Manual ke ${dompetProv}\n\nSaldo Aktif: Rp ${saldoMurni.toLocaleString('id-ID')}\nMinimal Tarik: Rp 10.000\n\nMasukkan nominal yang ingin ditarik:`, "10000");
+    tutupModalSaldoDompet(true); 
 
-    if (!inputNominal) return;
-    const nominalTarik = parseInt(inputNominal.replace(/[^0-9]/g, ''));
+    setTimeout(async () => {
+        const inputNominal = await customPrompt(`Tarik Dana Manual ke ${dompetProv}\n\nSaldo Aktif: Rp ${saldoMurni.toLocaleString('id-ID')}\nMinimal Tarik: Rp 10.000\n\nMasukkan nominal yang ingin ditarik:`, "10000");
 
-    if (isNaN(nominalTarik) || nominalTarik < 10000) return showToast("Minimal penarikan adalah Rp 10.000", "error");
-    if (nominalTarik > saldoMurni) return showToast(`Saldo Anda tidak mencukupi! (Maks: Rp ${saldoMurni.toLocaleString('id-ID')})`, "error");
+        if (!inputNominal) return;
+        const nominalTarik = parseInt(inputNominal.replace(/[^0-9]/g, ''));
 
-    const konfirmasi = await customConfirm(`Konfirmasi Penarikan Manual:\n\nNominal: Rp ${nominalTarik.toLocaleString('id-ID')}\nTujuan: ${dompetProv} (${dompetNum})\n\nDana akan dikirim manual oleh Admin (Estimasi 1-24 Jam). Lanjutkan?`);
-    if (!konfirmasi) return;
+        if (isNaN(nominalTarik) || nominalTarik < 10000) return showToast("Minimal penarikan adalah Rp 10.000", "error");
+        if (nominalTarik > saldoMurni) return showToast(`Saldo Anda tidak mencukupi! (Maks: Rp ${saldoMurni.toLocaleString('id-ID')})`, "error");
 
-    showToast("Mengirim pengajuan ke Admin...", "info");
-    try {
-        const { error } = await supabaseClient.rpc('ajukan_penarikan_manual', {
-            p_user_id: currentUser.id,
-            p_nominal: nominalTarik,
-            p_rekening: `${dompetProv} - ${dompetNum}`
-        });
+        const konfirmasi = await customConfirm(`Konfirmasi Penarikan Manual:\n\nNominal: Rp ${nominalTarik.toLocaleString('id-ID')}\nTujuan: ${dompetProv} (${dompetNum})\n\nDana akan dipotong dan masuk ke antrean Admin. Lanjutkan?`);
+        if (!konfirmasi) return;
 
-        if (error) throw error;
-        showToast("Berhasil! Penarikan Anda masuk ke antrean Admin.", "success");
-        
-        fetchSaldoDanMutasi();
-        updateUiSaldoSeller();
-        updateSaldoGlobal();
-        fetchProfile();
-    } catch (e) {
-        showToast(e.message || "Gagal mengajukan penarikan.", "error");
-    }
+        showToast("Mengirim pengajuan ke Admin...", "info");
+        try {
+            const { error } = await supabaseClient.rpc('ajukan_penarikan_manual', {
+                p_user_id: currentUser.id,
+                p_nominal: nominalTarik,
+                p_rekening: `${dompetProv} - ${dompetNum}`
+            });
+
+            if (error) throw error;
+            showToast("Berhasil! Mengalihkan ke WhatsApp Admin...", "success");
+            
+            fetchSaldoDanMutasi();
+            updateUiSaldoSeller();
+            updateSaldoGlobal();
+            fetchProfile();
+
+            const adminWA = "6281252550320";
+            const textWA = encodeURIComponent(`Halo Admin, saya telah mengajukan Penarikan Dana Manual di AU2Hub.\n\nUsername: @${userProfile.nickname}\nNominal: Rp ${nominalTarik.toLocaleString('id-ID')}\nTujuan: ${dompetProv} - ${dompetNum}\n\nSaldo saya sudah terpotong otomatis di sistem dan masuk ke Pusat Kendali Admin. Mohon segera diproses ya. Terima kasih!`);
+            
+            setTimeout(() => {
+                window.open(`https://wa.me/${adminWA}?text=${textWA}`, '_blank');
+            }, 1500);
+
+        } catch (e) {
+            showToast(e.message || "Gagal mengajukan penarikan.", "error");
+        }
+    }, 350);
 }
 
 async function loadFeatureToggles() {
