@@ -1467,6 +1467,7 @@ function switchTab(tabId, event = null, isPush = true) {
         if (typeof loadAdminDashboard === 'function') loadAdminDashboard();
         if (typeof loadRiwayatKeuanganGlobal === 'function') loadRiwayatKeuanganGlobal();
         if (typeof loadRiwayatLabaPPOB === 'function') loadRiwayatLabaPPOB();
+        loadFeatureToggles();
     }
 }
 
@@ -8600,9 +8601,8 @@ let isWithdrawing = false;
 
 async function prosesTarikSaldo() {
     if (!currentUser || !userProfile) return showToast("Sistem belum siap, mohon tunggu sebentar.", "error");
-    if (isWithdrawing) {
-        return showToast("Mohon tunggu, sistem sedang memproses antrean Anda...", "info");
-    }
+    if (isWithdrawing) return showToast("Mohon tunggu, sistem sedang memproses antrean Anda...", "info");
+
     const dompetProv = userProfile.wallet_provider;
     const dompetNum = userProfile.wallet_number;
     if (!dompetProv || !dompetNum) {
@@ -8611,7 +8611,52 @@ async function prosesTarikSaldo() {
         setTimeout(() => openEditProfileModal(), 500);
         return;
     }
+
     const saldoMurni = userProfile.balance || 0;
+    if (saldoMurni < 10000) {
+        return customAlert(`Saldo Anda (Rp ${saldoMurni.toLocaleString('id-ID')}) belum mencapai batas minimal penarikan (Rp 10.000).`);
+    }
+
+    showToast("Mengecek layanan pusat...", "info");
+    let isAutoOn = false;
+    let isManualOn = false;
+    try {
+        const { data } = await supabaseClient.from('system_features').select('*');
+        if (data) {
+            isAutoOn = data.find(f => f.key === 'wd_auto')?.is_active ?? false;
+            isManualOn = data.find(f => f.key === 'wd_manual')?.is_active ?? false;
+        }
+    } catch (e) {
+        isAutoOn = true;
+    }
+
+    if (!isAutoOn && !isManualOn) {
+        return customAlert("⛔ <b>Layanan Ditutup</b><br><br>Mohon maaf, semua metode penarikan dana saat ini sedang dinonaktifkan sementara oleh Admin untuk keperluan maintenance bank.", true);
+    }
+
+    if (isAutoOn && isManualOn) {
+        tutupModalSaldoDompet();
+        const htmlPilihan = `
+            <div class="text-left cursor-default">
+                <p class="text-[11px] text-gray-300 mb-4">Pilih metode pencairan dana ke <b>${dompetProv} (${dompetNum})</b>:</p>
+                <button onclick="lanjutWDOtomatis()" class="w-full bg-brand-success hover:bg-[#20bd5a] text-brand-dark py-3.5 rounded-xl font-extrabold mb-3 active:scale-95 transition-all text-[11px] uppercase tracking-wider shadow-[0_4px_15px_rgba(37,211,102,0.3)]"><i class="fas fa-bolt mr-2 text-sm"></i> Penarikan Instan (Auto)</button>
+                <button onclick="lanjutWDManual()" class="w-full bg-brand-info hover:bg-[#32a2f2] text-brand-dark py-3.5 rounded-xl font-extrabold active:scale-95 transition-all text-[11px] uppercase tracking-wider shadow-[0_4px_15px_rgba(70,179,255,0.3)]"><i class="fas fa-user-clock mr-2 text-sm"></i> Penarikan Manual (Admin)</button>
+            </div>
+        `;
+        return customAlert(htmlPilihan, true);
+    } else if (isAutoOn) {
+        lanjutWDOtomatis();
+    } else {
+        lanjutWDManual();
+    }
+}
+
+async function lanjutWDOtomatis() {
+    document.getElementById('modal-alert').classList.replace('flex', 'hidden'); // Tutup modal pilihan
+    const dompetProv = userProfile.wallet_provider;
+    const dompetNum = userProfile.wallet_number;
+    const saldoMurni = userProfile.balance || 0;
+    
     isWithdrawing = true;
     showToast("Mencari daftar nominal yang tersedia...", "info");
     try {
@@ -8622,15 +8667,81 @@ async function prosesTarikSaldo() {
             .ilike('category', '%E-Money%')
             .ilike('brand', `%${dompetProv}%`)
             .order('price', { ascending: true });
+        
         if (error) throw error;
         if (!products || products.length === 0) {
-            throw new Error(`Mohon maaf, layanan penarikan ${dompetProv} sedang gangguan dari pusat.`);
+            throw new Error(`Layanan instan ${dompetProv} sedang gangguan dari pusat. Mohon tunggu atau gunakan penarikan manual (jika aktif).`);
         }
         bukaModalTarikOtomatis(saldoMurni, dompetProv, dompetNum, products);
     } catch (e) {
         showToast(e.message || "Gagal memuat produk penarikan.", "error");
     } finally {
         isWithdrawing = false;
+    }
+}
+
+async function lanjutWDManual() {
+    document.getElementById('modal-alert').classList.replace('flex', 'hidden'); // Tutup modal pilihan
+    const saldoMurni = userProfile.balance || 0;
+    const dompetProv = userProfile.wallet_provider;
+    const dompetNum = userProfile.wallet_number;
+
+    tutupModalSaldoDompet();
+    const inputNominal = await customPrompt(`Tarik Dana Manual ke ${dompetProv}\n\nSaldo Aktif: Rp ${saldoMurni.toLocaleString('id-ID')}\nMinimal Tarik: Rp 10.000\n\nMasukkan nominal yang ingin ditarik:`, "10000");
+
+    if (!inputNominal) return;
+    const nominalTarik = parseInt(inputNominal.replace(/[^0-9]/g, ''));
+
+    if (isNaN(nominalTarik) || nominalTarik < 10000) return showToast("Minimal penarikan adalah Rp 10.000", "error");
+    if (nominalTarik > saldoMurni) return showToast(`Saldo Anda tidak mencukupi! (Maks: Rp ${saldoMurni.toLocaleString('id-ID')})`, "error");
+
+    const konfirmasi = await customConfirm(`Konfirmasi Penarikan Manual:\n\nNominal: Rp ${nominalTarik.toLocaleString('id-ID')}\nTujuan: ${dompetProv} (${dompetNum})\n\nDana akan dikirim manual oleh Admin (Estimasi 1-24 Jam). Lanjutkan?`);
+    if (!konfirmasi) return;
+
+    showToast("Mengirim pengajuan ke Admin...", "info");
+    try {
+        const { error } = await supabaseClient.rpc('ajukan_penarikan_manual', {
+            p_user_id: currentUser.id,
+            p_nominal: nominalTarik,
+            p_rekening: `${dompetProv} - ${dompetNum}`
+        });
+
+        if (error) throw error;
+        showToast("Berhasil! Penarikan Anda masuk ke antrean Admin.", "success");
+        
+        fetchSaldoDanMutasi();
+        updateUiSaldoSeller();
+        updateSaldoGlobal();
+        fetchProfile();
+    } catch (e) {
+        showToast(e.message || "Gagal mengajukan penarikan.", "error");
+    }
+}
+
+async function loadFeatureToggles() {
+    const { data } = await supabaseClient.from('system_features').select('*');
+    if (data) {
+        const autoConfig = data.find(f => f.key === 'wd_auto');
+        const manualConfig = data.find(f => f.key === 'wd_manual');
+        const autoToggle = document.getElementById('toggle-wd-auto');
+        const manualToggle = document.getElementById('toggle-wd-manual');
+        if (autoToggle && autoConfig) autoToggle.checked = autoConfig.is_active;
+        if (manualToggle && manualConfig) manualToggle.checked = manualConfig.is_active;
+    }
+}
+
+async function toggleFeatureSetting(key, isActive) {
+    showToast("Menyimpan setelan...", "info");
+    const { error } = await supabaseClient
+        .from('system_features')
+        .update({ is_active: isActive, updated_at: new Date().toISOString() })
+        .eq('key', key);
+    
+    if (error) {
+        showToast("Gagal menyimpan setelan!", "error");
+        loadFeatureToggles(); // Revert switch UI jika gagal
+    } else {
+        showToast("Pengaturan berhasil disimpan!", "success");
     }
 }
 
