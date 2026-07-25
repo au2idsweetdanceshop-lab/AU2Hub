@@ -8681,7 +8681,7 @@ async function lanjutWDOtomatis() {
 }
 
 async function lanjutWDManual() {
-    document.getElementById('modal-alert').classList.replace('flex', 'hidden');
+    document.getElementById('modal-alert').classList.replace('flex', 'hidden'); 
     const saldoMurni = userProfile.balance || 0;
     const dompetProv = userProfile.wallet_provider;
     const dompetNum = userProfile.wallet_number;
@@ -8716,8 +8716,10 @@ async function lanjutWDManual() {
             updateSaldoGlobal();
             fetchProfile();
 
-            const adminWA = "6281252550320";
-            const textWA = encodeURIComponent(`Halo Admin, saya telah mengajukan Penarikan Dana Manual di AU2Hub.\n\nUsername: @${userProfile.nickname}\nNominal: Rp ${nominalTarik.toLocaleString('id-ID')}\nTujuan: ${dompetProv} - ${dompetNum}\n\nSaldo saya sudah terpotong otomatis di sistem dan masuk ke Pusat Kendali Admin. Mohon segera diproses ya. Terima kasih!`);
+            const adminWA = "6281252550320"; 
+            const nominalBersih = nominalTarik - 500;
+            
+            const textWA = encodeURIComponent(`Halo Admin, saya telah mengajukan Penarikan Dana Manual di AU2Hub.\n\nUsername: @${userProfile.nickname}\nTujuan: ${dompetProv} - ${dompetNum}\n\nPotong Saldo: Rp ${nominalTarik.toLocaleString('id-ID')}\nBiaya Admin: Rp 500\n*Transfer Bersih: Rp ${nominalBersih.toLocaleString('id-ID')}*\n\nSaldo saya sudah terpotong otomatis di sistem dan masuk ke Pusat Kendali Admin. Mohon segera diproses ya. Terima kasih!`);
             
             setTimeout(() => {
                 window.open(`https://wa.me/${adminWA}?text=${textWA}`, '_blank');
@@ -8726,7 +8728,7 @@ async function lanjutWDManual() {
         } catch (e) {
             showToast(e.message || "Gagal mengajukan penarikan.", "error");
         }
-    }, 350);
+    }, 350); 
 }
 
 async function loadFeatureToggles() {
