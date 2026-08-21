@@ -31,7 +31,7 @@
 
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script defer src="/app.js?v=364"></script>
+<script defer src="/app.js?v=365"></script>
 <style>
 
 @font-face {
@@ -495,6 +495,9 @@ Sistem Jual Beli Otomatis, Database Ripper, dan Rekber <strong>NIKKY</strong>. D
 </button>
 <button onclick="switchTab('info', event)" class="flex justify-center items-center w-full bg-brand-card hover:bg-white/5 border border-white/10 font-bold py-3.5 px-6 rounded-2xl active:scale-95 transition-all text-sm">
 <i class="fas fa-bullhorn text-brand-info mr-3"></i> Info & FAQ Terbaru
+</button>
+<button onclick="switchTab('toko', event)" class="flex justify-center items-center w-full bg-gradient-to-r from-[#EE4D2D] to-[#FF5722] text-white font-bold py-3.5 px-6 rounded-2xl shadow-[0_0_15px_rgba(238,77,45,0.3)] active:scale-95 transition-all text-sm mt-1 border border-[#EE4D2D]/50 relative overflow-hidden">
+    <i class="fas fa-store text-yellow-200 mr-3"></i> Kelola Toko Saya (Seller)
 </button>
 <button onclick="switchTab('layanan', event)" class="flex justify-center items-center w-full bg-gradient-to-r from-yellow-500 to-orange-500 text-white font-bold py-3.5 px-6 rounded-2xl shadow-[0_0_15px_rgba(245,158,11,0.3)] active:scale-95 transition-all text-sm">
     <i class="fas fa-bolt text-yellow-200 mr-3"></i> Top Up & Tagihan (PPOB)
@@ -2797,6 +2800,13 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
         </div>
     </div>
 </div>
+
+<!-- Tombol Chat Melayang -->
+<button aria-label="Buka Obrolan" onclick="toggleWidget()" class="fixed bottom-[85px] right-5 w-[52px] h-[52px] bg-gradient-to-tr from-brand-info to-blue-600 text-white rounded-full flex items-center justify-center shadow-[0_8px_25px_rgba(70,179,255,0.5)] z-[90] active:scale-90 transition-transform border border-white/20">
+    <i class="fas fa-comment-dots text-2xl"></i>
+    <!-- Badge Notifikasi Merah -->
+    <span id="global-chat-badge" class="hidden absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-black w-5 h-5 flex items-center justify-center rounded-full border-2 border-[#0F0920] pointer-events-none">0</span>
+</button>
 
 </body>
 </html>
