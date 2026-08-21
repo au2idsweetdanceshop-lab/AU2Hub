@@ -10703,6 +10703,8 @@ function pilihKategoriPPOB(kategori) {
     kategoriPPOBAktif = kategori;
     brandPPOBAktif = 'Semua'; 
     typePPOBAktif = 'Semua';
+
+    // 1. Tampilkan Halaman Katalog
     const mainView = document.getElementById('ppob-main-view');
     const catalogView = document.getElementById('ppob-catalog-view');
     if (mainView && catalogView) {
@@ -10710,21 +10712,32 @@ function pilihKategoriPPOB(kategori) {
         catalogView.classList.remove('hidden');
         catalogView.classList.add('flex');
     }
-    const titleEl = document.getElementById('katalog-title');
-const iconContainer = document.getElementById('katalog-icon-container');
-if (iconContainer) {
-    const namaFile = kategori.toLowerCase().trim().replace(/\s+/g, '-');
-    const imageUrl = `https://nos.wjv-1.neo.id/au2hub/icons/${namaFile}.png`;
-    // Timpa isi container dengan tag <img>
-    iconContainer.innerHTML = `<img src="${imageUrl}" class="w-6 h-6 object-contain" onerror="this.src='https://img.icons8.com/color/96/box.png'">`;
-}
+
+    // 2. MENGUBAH JUDUL (TEKS) DAN IKON HEADER
+    const titleEl = document.getElementById('katalog-title'); // Ini ID elemen teksnya
+    if (titleEl) {
+        titleEl.innerText = kategori; // Mengubah teks "Pulsa" menjadi nama kategori yang diklik
+    }
+
+    const iconContainer = document.getElementById('katalog-icon-container');
+    if (iconContainer) {
+        const namaFile = kategori.toLowerCase().trim().replace(/\s+/g, '-');
+        const imageUrl = `https://nos.wjv-1.neo.id/au2hub/icons/${namaFile}.png`;
+        iconContainer.innerHTML = `<img src="${imageUrl}" class="w-full h-full object-cover" onerror="this.src='https://img.icons8.com/color/96/box.png'">`;
+    }
+
+    // 3. Update URL (Opsional untuk tombol back HP)
     history.pushState({ popup: 'katalog_ppob' }, null, '#katalogppob');
+    
+    // 4. Reset Input & Muat Data
     const inputTarget = document.getElementById('ppob-target-number');
     if (inputTarget) inputTarget.value = '';
+    
     ppobOffset = 0;
     currentPpobData = [];
     const loadMoreBtn = document.getElementById('ppob-load-more-container');
     if (loadMoreBtn) loadMoreBtn.classList.add('hidden');
+    
     const productGrid = document.getElementById('ppob-product-grid');
     if (productGrid) {
         productGrid.className = 'flex flex-col gap-2.5 relative z-10';
@@ -10734,11 +10747,14 @@ if (iconContainer) {
                 <span class="text-[10px] font-bold uppercase tracking-widest text-gray-400">Menyiapkan Data...</span>
             </div>`;
     }
+
+    // Eksekusi pemuatan data
     loadBrandPPOB().then(() => {
         loadTypePPOB().then(() => loadProdukPPOB(false));
     });
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
+
 
 function tutupKatalogPPOB(dariTombolBack = false) {
     if (!dariTombolBack && window.location.hash === '#katalogppob') {
