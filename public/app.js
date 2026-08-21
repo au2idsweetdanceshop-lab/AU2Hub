@@ -10682,14 +10682,15 @@ function renderKategoriPPOB() {
     if (!container) return;
     
     container.innerHTML = kategoriPPOBList.map(kat => {
-        // Generate link gambar berdasarkan nama ID kategori (Spasi diubah jadi strip "-")
+        // Generate link gambar berdasarkan nama ID kategori
         const namaFile = kat.id.toLowerCase().trim().replace(/\s+/g, '-');
         const imageUrl = `https://nos.wjv-1.neo.id/au2hub/icons/${namaFile}.png`;
 
+        // PERUBAHAN: Menghapus p-2 (padding) dan menggunakan object-cover agar gambar penuh menyentuh tepi border
         return `
         <div onclick="pilihKategoriPPOB('${kat.id}')" class="flex flex-col items-center gap-2 cursor-pointer text-center group active:scale-95 transition-all">
-            <div class="w-[3.25rem] h-[3.25rem] sm:w-14 sm:h-14 rounded-[1.2rem] flex items-center justify-center transition-all bg-white/5 border border-white/10 shadow-md group-hover:bg-brand-info/20 group-hover:border-brand-info/50 overflow-hidden p-2">
-                <img src="${imageUrl}" alt="${kat.id}" class="w-full h-full object-contain drop-shadow-sm group-hover:scale-110 transition-transform" onerror="this.src='https://img.icons8.com/color/96/box.png'">
+            <div class="w-[3.25rem] h-[3.25rem] sm:w-14 sm:h-14 rounded-[1.2rem] flex items-center justify-center transition-all bg-white/5 border border-white/10 shadow-md group-hover:border-brand-info/50 overflow-hidden p-0 relative">
+                <img src="${imageUrl}" alt="${kat.id}" class="w-full h-full object-cover drop-shadow-sm group-hover:scale-110 transition-transform" onerror="this.src='https://img.icons8.com/color/96/box.png'">
             </div>
             <span class="text-[9px] sm:text-[10px] font-extrabold tracking-wide break-words w-full uppercase leading-snug px-0.5 text-gray-400 group-hover:text-white transition-colors">
                 ${kat.id}
@@ -10697,7 +10698,6 @@ function renderKategoriPPOB() {
         </div>`;
     }).join('');
 }
-
 
 function pilihKategoriPPOB(kategori) {
     kategoriPPOBAktif = kategori;
