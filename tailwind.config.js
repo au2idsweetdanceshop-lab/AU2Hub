@@ -1,9 +1,10 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
+  darkMode: 'class', // <--- TAMBAHKAN BARIS INI
   content: [
     "./index.html",
     "./*.js",
-    "./public/**/*.js" // <--- Ini kunci utamanya agar desain di app.js ikut terbaca
+    "./public/**/*.js"
   ],
   theme: {
     extend: {
