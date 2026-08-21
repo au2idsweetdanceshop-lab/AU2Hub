@@ -10680,11 +10680,16 @@ function getBrandLogoURL(brandName) {
 function renderKategoriPPOB() {
     const container = document.getElementById('ppob-category-container');
     if (!container) return;
+    
     container.innerHTML = kategoriPPOBList.map(kat => {
+        // Generate link gambar berdasarkan nama ID kategori (Spasi diubah jadi strip "-")
+        const namaFile = kat.id.toLowerCase().trim().replace(/\s+/g, '-');
+        const imageUrl = `https://nos.wjv-1.neo.id/au2hub/icons/${namaFile}.png`;
+
         return `
         <div onclick="pilihKategoriPPOB('${kat.id}')" class="flex flex-col items-center gap-2 cursor-pointer text-center group active:scale-95 transition-all">
-            <div class="w-[3.25rem] h-[3.25rem] sm:w-14 sm:h-14 rounded-[1.2rem] flex items-center justify-center transition-all bg-white/5 border border-white/10 shadow-md group-hover:bg-brand-info/20 group-hover:border-brand-info/50 text-brand-info/90 group-hover:text-brand-info">
-                <i class="fas ${kat.icon} text-xl drop-shadow-sm group-hover:scale-110 transition-transform"></i>
+            <div class="w-[3.25rem] h-[3.25rem] sm:w-14 sm:h-14 rounded-[1.2rem] flex items-center justify-center transition-all bg-white/5 border border-white/10 shadow-md group-hover:bg-brand-info/20 group-hover:border-brand-info/50 overflow-hidden p-2">
+                <img src="${imageUrl}" alt="${kat.id}" class="w-full h-full object-contain drop-shadow-sm group-hover:scale-110 transition-transform" onerror="this.src='https://img.icons8.com/color/96/box.png'">
             </div>
             <span class="text-[9px] sm:text-[10px] font-extrabold tracking-wide break-words w-full uppercase leading-snug px-0.5 text-gray-400 group-hover:text-white transition-colors">
                 ${kat.id}
@@ -10692,6 +10697,7 @@ function renderKategoriPPOB() {
         </div>`;
     }).join('');
 }
+
 
 function pilihKategoriPPOB(kategori) {
     kategoriPPOBAktif = kategori;
@@ -10705,9 +10711,13 @@ function pilihKategoriPPOB(kategori) {
         catalogView.classList.add('flex');
     }
     const titleEl = document.getElementById('katalog-title');
-    const iconEl = document.getElementById('katalog-icon');
-    if (titleEl) titleEl.innerText = kategori;
-    if (iconEl) iconEl.className = `fas ${getKategoriIcon(kategori)} text-lg`;
+const iconContainer = document.getElementById('katalog-icon-container');
+if (iconContainer) {
+    const namaFile = kategori.toLowerCase().trim().replace(/\s+/g, '-');
+    const imageUrl = `https://nos.wjv-1.neo.id/au2hub/icons/${namaFile}.png`;
+    // Timpa isi container dengan tag <img>
+    iconContainer.innerHTML = `<img src="${imageUrl}" class="w-6 h-6 object-contain" onerror="this.src='https://img.icons8.com/color/96/box.png'">`;
+}
     history.pushState({ popup: 'katalog_ppob' }, null, '#katalogppob');
     const inputTarget = document.getElementById('ppob-target-number');
     if (inputTarget) inputTarget.value = '';
