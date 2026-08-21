@@ -31,7 +31,7 @@
 
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script defer src="/app.js?v=366"></script>
+<script defer src="/app.js?v=367"></script>
 <style>
 
 @font-face {
@@ -468,7 +468,7 @@ html {
 <header class="fixed top-0 left-0 w-full z-40 glass border-b border-white/5 py-3 px-5 shadow-md">
     <div class="max-w-md mx-auto flex justify-between items-center">
         <!-- Logo Kiri -->
-        <h1 class="font-extrabold text-xl tracking-tight cursor-pointer" onclick="switchTab('home', event); history.pushState(null, null, '#home');">
+        <h1 class="font-extrabold text-xl tracking-tight cursor-pointer" onclick="switchTab('home', event); history.replaceState(null, null, '#home');">
             <span class="text-brand-info">AU2</span><span class="text-brand-accent">Hub</span>
         </h1>
         
@@ -2043,35 +2043,34 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
 <!-- BOTTOM NAVIGATION BAR -->
 <nav class="fixed bottom-0 left-0 w-full h-[65px] bg-[#0F0920]/95 backdrop-blur-xl z-[100] border-t border-white/10 flex flex-row items-center justify-around px-2 pb-[env(safe-area-inset-bottom)] shadow-[0_-10px_30px_rgba(0,0,0,0.5)] transition-transform duration-300">
     
-    <a href="#home" onclick="switchTab('home', event); history.pushState(null, null, '#home');" class="nav-item flex flex-col items-center justify-center w-16 h-full text-gray-500 hover:text-white transition-colors relative group">
+    <a href="#home" onclick="switchTab('home', event); history.replaceState(null, null, '#home');" class="nav-item flex flex-col items-center justify-center w-16 h-full text-gray-500 hover:text-white transition-colors relative group">
         <i class="fas fa-home text-[22px] mb-1 pointer-events-none group-[.active]:text-brand-info group-[.active]:-translate-y-1 transition-all"></i>
         <span class="text-[9px] font-bold pointer-events-none group-[.active]:text-white">Beranda</span>
     </a>
 
-    <a href="#pasar" onclick="switchTab('pasar', event); history.pushState(null, null, '#pasar');" class="nav-item flex flex-col items-center justify-center w-16 h-full text-gray-500 hover:text-white transition-colors relative group">
+    <a href="#pasar" onclick="switchTab('pasar', event); history.replaceState(null, null, '#pasar');" class="nav-item flex flex-col items-center justify-center w-16 h-full text-gray-500 hover:text-white transition-colors relative group">
         <i class="fas fa-store text-[22px] mb-1 pointer-events-none group-[.active]:text-[#EE4D2D] group-[.active]:-translate-y-1 transition-all"></i>
         <span class="text-[9px] font-bold pointer-events-none group-[.active]:text-white">Pasar</span>
     </a>
 
-    <a href="#sosial" onclick="switchTab('sosial', event); history.pushState(null, null, '#sosial');" class="nav-item flex flex-col items-center justify-center w-16 h-full text-gray-500 relative group -mt-5">
+    <a href="#sosial" onclick="switchTab('sosial', event); history.replaceState(null, null, '#sosial');" class="nav-item flex flex-col items-center justify-center w-16 h-full text-gray-500 relative group -mt-5">
         <div class="w-12 h-12 rounded-full bg-gradient-to-tr from-brand-accent to-brand-purple flex items-center justify-center shadow-[0_4px_15px_rgba(255,0,122,0.4)] border-[3px] border-[#0F0920] group-hover:scale-105 transition-transform">
             <i class="fas fa-play text-white text-lg ml-0.5 pointer-events-none"></i>
         </div>
         <span class="text-[9px] font-bold text-gray-400 mt-1 pointer-events-none group-[.active]:text-brand-accent">Feed</span>
     </a>
 
-    <a href="#pesanan" onclick="switchTab('pesanan', event); history.pushState(null, null, '#pesanan');" class="nav-item flex flex-col items-center justify-center w-16 h-full text-gray-500 hover:text-white transition-colors relative group">
+    <a href="#pesanan" onclick="switchTab('pesanan', event); history.replaceState(null, null, '#pesanan');" class="nav-item flex flex-col items-center justify-center w-16 h-full text-gray-500 hover:text-white transition-colors relative group">
         <i class="fas fa-receipt text-[22px] mb-1 pointer-events-none group-[.active]:text-yellow-400 group-[.active]:-translate-y-1 transition-all"></i>
         <span class="text-[9px] font-bold pointer-events-none group-[.active]:text-white">Pesanan</span>
     </a>
 
-    <a href="#profile" onclick="switchTab('profile', event); history.pushState(null, null, '#profile');" class="nav-item flex flex-col items-center justify-center w-16 h-full text-gray-500 hover:text-white transition-colors relative group">
+    <a href="#profile" onclick="switchTab('profile', event); history.replaceState(null, null, '#profile');" class="nav-item flex flex-col items-center justify-center w-16 h-full text-gray-500 hover:text-white transition-colors relative group">
         <i class="fas fa-user-circle text-[22px] mb-1 pointer-events-none group-[.active]:text-brand-info group-[.active]:-translate-y-1 transition-all"></i>
         <span class="text-[9px] font-bold pointer-events-none group-[.active]:text-white">Saya</span>
     </a>
 
 </nav>
-
 
 
 <div id="modal-riwayat-pesanan" class="fixed inset-0 z-[300] hidden items-end sm:items-center justify-center bg-black/90 backdrop-blur-md px-0 sm:px-6 transition-all duration-300">
@@ -2814,13 +2813,6 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
         </div>
     </div>
 </div>
-
-<!-- Tombol Chat Melayang -->
-right-5 w-[52px] h-[52px] bg-gradient-to-tr from-brand-info to-blue-600 text-white rounded-full flex items-center justify-center shadow-[0_8px_25px_rgba(70,179,255,0.5)] z-[90] active:scale-90 transition-transform border border-white/20">
-    <i class="fas fa-comment-dots text-2xl"></i>
-    <!-- Badge Notifikasi Merah -->
-    <span id="global-chat-badge" class="hidden absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-black w-5 h-5 flex items-center justify-center rounded-full border-2 border-[#0F0920] pointer-events-none">0</span>
-</button>
 
 </body>
 </html>
