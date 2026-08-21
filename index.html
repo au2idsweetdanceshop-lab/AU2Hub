@@ -31,7 +31,7 @@
 
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script defer src="/app.js?v=361"></script>
+<script defer src="/app.js?v=362"></script>
 <style>
 
 @font-face {
@@ -455,6 +455,33 @@ nav::-webkit-scrollbar { display: none; }
     .animate-float-music {
         animation: floatMusic 2.5s linear infinite;
     }
+
+/* --- CHEAT CODE UNTUK MATA ORANG TUA --- */
+
+/* 1. Paksa semua teks abu-abu jadi jauh lebih putih/terang (Setara gray-200) */
+.text-gray-400, 
+.text-gray-500 {
+    color: #E2E8F0 !important;
+}
+
+/* 2. Beri bayangan tipis pada teks putih agar kontrasnya naik dan tajam */
+.text-white {
+    text-shadow: 0px 1px 3px rgba(0,0,0,0.9) !important;
+}
+
+/* 3. Perbesar sedikit (5%) seluruh ukuran teks di website secara otomatis */
+html {
+    font-size: 105% !important; 
+}
+
+/* 4. Cerahkan sedikit background kotak/modal yang terlalu gelap */
+.bg-black\/40 {
+    background-color: rgba(0, 0, 0, 0.25) !important;
+}
+.bg-black\/30 {
+    background-color: rgba(0, 0, 0, 0.15) !important;
+}
+/* -------------------------------------- */
 
 </style> </head>
 <body class="pl-[60px]">
