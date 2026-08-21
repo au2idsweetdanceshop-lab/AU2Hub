@@ -31,7 +31,7 @@
 
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script defer src="/app.js?v=363"></script>
+<script defer src="/app.js?v=364"></script>
 <style>
 
 @font-face {
@@ -376,48 +376,6 @@ input[type="checkbox"].peer:checked + div::after {
   }
 }
 
-.nav-item {
-    position: relative;
-    border-radius: 50%; /* Awalnya bulat sempurna */
-    background-color: rgba(255, 255, 255, 0.03);
-    /* Transisi diperhalus agar efek memanjangnya seperti karet (bouncy) */
-    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-
-.nav-item:hover {
-    border-radius: 1rem; /* Jadi kotak melengkung saat disentuh */
-    background-color: rgba(255, 255, 255, 0.1);
-}
-
-.nav-item.active {
-    background-color: rgba(255, 255, 255, 0.1);
-    color: #FF007A !important;
-    border-radius: 1.5rem; 
-}
-
-
-.nav-item.active[href="#toko"],
-.nav-item.active[href="#pasar"] {
-    color: #EE4D2D !important;
-}
-
-
-.nav-item.active:not([href="#home"]) {
-    height: 64px !important; 
-}
-
-
-.nav-item.active[href="#home"] img {
-    transform: scale(1.15);
-    transition: transform 0.3s ease;
-}
-
-.nav-item.active i {
-    animation: none;
-    transform: scale(1.2); 
-}
-
-
 body.video-focused nav {
     transform: translateX(-100%);
     opacity: 0 !important;
@@ -484,7 +442,7 @@ html {
 /* -------------------------------------- */
 
 </style> </head>
-<body class="pl-[60px]">
+<body class="pb-[80px] bg-[#0F0920] text-[#E2E8F0] antialiased">
 
 <div id="custom-splash" class="fixed inset-0 z-[9999999] bg-[#0F0920] flex flex-col items-center justify-center transition-all duration-500 ease-out">
     <div class="relative flex flex-col items-center">
@@ -502,7 +460,7 @@ html {
 
 <div id="toast-container" class="fixed top-6 left-0 w-full px-4 z-[999999] flex flex-col items-center gap-3 pointer-events-auto"></div>
 
-<header class="fixed top-0 right-0 w-[calc(100%-60px)] z-40 glass border-b border-white/5 py-4 px-6 shadow-md">
+<header class="fixed top-0 left-0 w-full z-40 glass border-b border-white/5 py-4 px-6 shadow-md">
 <div class="max-w-md mx-auto flex justify-between items-center">
 <h1 class="font-extrabold text-xl tracking-tight cursor-pointer" onclick="switchTab('home')">
 <span class="text-brand-info">AU2</span><span class="text-brand-accent">Hub</span>
@@ -2061,57 +2019,43 @@ onfocus="pauseStoryForReply()" onblur="resumeStoryAfterReply()" onkeydown="handl
     </div>
 </div>
 
-<nav class="fixed top-0 left-0 h-full w-[60px] glass z-50 border-r border-white/5 flex flex-col items-center py-4 gap-2 overflow-y-auto hide-scroll shadow-[10px_0_30px_rgba(0,0,0,0.5)] transition-transform duration-300">
+<!-- BOTTOM NAVIGATION BAR -->
+<nav class="fixed bottom-0 left-0 w-full h-[65px] bg-[#0F0920]/95 backdrop-blur-xl z-[100] border-t border-white/10 flex flex-row items-center justify-around px-2 pb-[env(safe-area-inset-bottom)] shadow-[0_-10px_30px_rgba(0,0,0,0.5)] transition-transform duration-300">
     
-    <a href="#home" aria-label="Halaman Beranda" onclick="switchTab('home', event)" class="nav-item flex items-center justify-center w-[44px] h-[44px] text-gray-500 mb-2">
-        <img src="/app-icon-19v2.png" alt="Ikon Home" width="28" height="28" onerror="this.src='https://ui-avatars.com/api/?name=AU&background=FF007A&color=fff'" class="w-7 h-7 rounded-full pointer-events-none">
+    <!-- 1. Home -->
+    <a href="#home" aria-label="Beranda" onclick="switchTab('home', event)" class="nav-item flex flex-col items-center justify-center w-16 h-full text-gray-500 hover:text-white transition-colors relative group">
+        <i class="fas fa-home text-[22px] mb-1 pointer-events-none group-[.active]:text-brand-info group-[.active]:-translate-y-1 transition-all"></i>
+        <span class="text-[9px] font-bold pointer-events-none group-[.active]:text-white">Beranda</span>
     </a>
 
-    <div class="w-6 h-[2px] bg-white/10 rounded-full mb-2"></div>
-    
-    <a href="#info" aria-label="Pusat Informasi" onclick="switchTab('info', event)" class="nav-item flex items-center justify-center w-[44px] h-[44px] text-gray-500" title="Info">
-        <i class="fas fa-bullhorn text-lg pointer-events-none" aria-hidden="true"></i>
-    </a>
-    
-    <a href="#sosial" aria-label="Feed Komunitas" onclick="switchTab('sosial', event)" class="nav-item flex items-center justify-center w-[44px] h-[44px] text-gray-500" title="Sosial">
-        <i class="fas fa-camera-retro text-lg pointer-events-none" aria-hidden="true"></i>
-    </a>
-    
-    <a href="#rekber" aria-label="Admin Rekber" onclick="switchTab('rekber', event)" class="nav-item flex items-center justify-center w-[44px] h-[44px] text-gray-500" title="Admin">
-        <i class="fas fa-shield-alt text-lg pointer-events-none" aria-hidden="true"></i>
-    </a>
-    
-    <a href="#ripper" aria-label="Database Ripper" onclick="switchTab('ripper', event)" class="nav-item flex items-center justify-center w-[44px] h-[44px] text-gray-500" title="Ripper">
-        <i class="fas fa-user-ninja text-lg pointer-events-none" aria-hidden="true"></i>
+    <!-- 2. Pasar Player -->
+    <a href="#pasar" aria-label="Pasar" onclick="switchTab('pasar', event)" class="nav-item flex flex-col items-center justify-center w-16 h-full text-gray-500 hover:text-white transition-colors relative group">
+        <i class="fas fa-store text-[22px] mb-1 pointer-events-none group-[.active]:text-[#EE4D2D] group-[.active]:-translate-y-1 transition-all"></i>
+        <span class="text-[9px] font-bold pointer-events-none group-[.active]:text-white">Pasar</span>
     </a>
 
-    <div class="w-6 h-[2px] bg-white/10 rounded-full mt-2 mb-2"></div>
-    
-    <a href="#profile" aria-label="Profil Saya" onclick="switchTab('profile', event)" class="nav-item flex items-center justify-center w-[44px] h-[44px] text-gray-500 mt-auto" title="Profil">
-        <i class="fas fa-user-circle text-lg pointer-events-none" aria-hidden="true"></i>
-    </a>
-    
-    <a href="#toko" aria-label="Toko Saya" onclick="switchTab('toko', event)" class="nav-item flex items-center justify-center w-[44px] h-[44px] text-gray-500" title="Toko Saya">
-        <i class="fas fa-store-alt text-lg pointer-events-none" aria-hidden="true"></i>
-    </a>
-    
-    <a href="#pesanan" aria-label="Pesanan Saya" onclick="switchTab('pesanan', event)" class="nav-item flex items-center justify-center w-[44px] h-[44px] text-gray-500" title="Pesanan">
-        <i class="fas fa-receipt text-lg pointer-events-none" aria-hidden="true"></i>
+    <!-- 3. TOmbol Tengah (Feed Komunitas / Sosial) -->
+    <a href="#sosial" aria-label="Sosial" onclick="switchTab('sosial', event)" class="nav-item flex flex-col items-center justify-center w-16 h-full text-gray-500 relative group -mt-5">
+        <div class="w-12 h-12 rounded-full bg-gradient-to-tr from-brand-accent to-brand-purple flex items-center justify-center shadow-[0_4px_15px_rgba(255,0,122,0.4)] border-[3px] border-[#0F0920] group-hover:scale-105 transition-transform">
+            <i class="fas fa-play text-white text-lg ml-0.5 pointer-events-none"></i>
+        </div>
+        <span class="text-[9px] font-bold text-gray-400 mt-1 pointer-events-none group-[.active]:text-brand-accent">Feed</span>
     </a>
 
-    <a href="#pasar" aria-label="Pasar Player" onclick="switchTab('pasar', event)" class="nav-item flex items-center justify-center w-[44px] h-[44px] text-gray-500" title="Pasar Player">
-        <i class="fas fa-store text-lg pointer-events-none" aria-hidden="true"></i>
+    <!-- 4. Pesanan -->
+    <a href="#pesanan" aria-label="Pesanan" onclick="switchTab('pesanan', event)" class="nav-item flex flex-col items-center justify-center w-16 h-full text-gray-500 hover:text-white transition-colors relative group">
+        <i class="fas fa-receipt text-[22px] mb-1 pointer-events-none group-[.active]:text-yellow-400 group-[.active]:-translate-y-1 transition-all"></i>
+        <span class="text-[9px] font-bold pointer-events-none group-[.active]:text-white">Pesanan</span>
     </a>
 
-  <a href="#layanan" aria-label="Layanan PPOB" onclick="switchTab('layanan', event)" class="nav-item flex items-center justify-center w-[44px] h-[44px] text-gray-500" title="Layanan PPOB">
-        <i class="fas fa-bolt text-lg pointer-events-none" aria-hidden="true"></i>
+    <!-- 5. Profil -->
+    <a href="#profile" aria-label="Profil" onclick="switchTab('profile', event)" class="nav-item flex flex-col items-center justify-center w-16 h-full text-gray-500 hover:text-white transition-colors relative group">
+        <i class="fas fa-user-circle text-[22px] mb-1 pointer-events-none group-[.active]:text-brand-info group-[.active]:-translate-y-1 transition-all"></i>
+        <span class="text-[9px] font-bold pointer-events-none group-[.active]:text-white">Saya</span>
     </a>
 
-    <button aria-label="Buka Obrolan" onclick="toggleWidget()" class="nav-item flex items-center justify-center w-[44px] h-[44px] text-gray-500 relative cursor-pointer" title="Chat">
-        <i class="fas fa-comment-dots text-lg pointer-events-none" aria-hidden="true"></i>
-        <span id="global-chat-badge" class="hidden absolute top-0 right-0 bg-red-500 text-white text-[8px] font-bold w-4 h-4 flex items-center justify-center rounded-full border border-brand-dark pointer-events-none">0</span>
-    </button>
 </nav>
+
 
 <div id="modal-riwayat-pesanan" class="fixed inset-0 z-[300] hidden items-end sm:items-center justify-center bg-black/90 backdrop-blur-md px-0 sm:px-6 transition-all duration-300">
     <div class="bg-brand-card w-full max-w-md sm:rounded-3xl rounded-t-[2.5rem] border border-white/10 shadow-2xl relative modal-anim flex flex-col h-[80vh] sm:h-auto sm:max-h-[80vh] overflow-hidden">
