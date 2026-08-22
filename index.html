@@ -31,7 +31,7 @@
 
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script defer src="/app.js?v=368"></script>
+<script defer src="/app.js?v=369"></script>
 <style>
 
 @font-face {
@@ -513,11 +513,11 @@ Sistem Jual Beli Otomatis, Database Ripper, dan Rekber <strong>NIKKY</strong>. D
     <div class="flex flex-col gap-3">
         <!-- PPOB -->
         <button onclick="switchTab('layanan', event)" class="w-full flex items-center p-4 bg-black/40 border border-white/10 rounded-[1.5rem] active:scale-95 transition-all text-left group overflow-hidden relative shadow-md hover:border-yellow-400/50 hover:bg-white/5">
-            <div class="absolute right-0 top-0 opacity-[0.03] group-hover:scale-110 transition-transform duration-500">
-                <i class="fas fa-bolt text-8xl text-yellow-400 -mt-2 -mr-2"></i>
+            <div class="absolute -right-2 -top-2 opacity-[0.05] group-hover:scale-110 transition-transform duration-500 pointer-events-none">
+                <img src="https://nos.wjv-1.neo.id/au2hub/icons/top-up-tagihan.png" class="w-24 h-24 object-contain">
             </div>
-            <div class="w-12 h-12 rounded-2xl bg-yellow-400/20 text-yellow-400 flex items-center justify-center mr-4 border border-yellow-400/30 shadow-[0_0_15px_rgba(250,204,21,0.2)] shrink-0">
-                <i class="fas fa-bolt text-xl"></i>
+            <div class="w-12 h-12 rounded-2xl bg-yellow-400/10 flex items-center justify-center mr-4 border border-yellow-400/30 shadow-[0_0_15px_rgba(250,204,21,0.2)] shrink-0 overflow-hidden p-2 z-10">
+                <img src="https://nos.wjv-1.neo.id/au2hub/icons/top-up-tagihan.png" alt="Top Up" class="w-full h-full object-contain drop-shadow-md group-hover:scale-110 transition-transform">
             </div>
             <div class="flex-1 z-10">
                 <h3 class="font-extrabold text-white text-sm tracking-tight mb-0.5">Top Up & Tagihan</h3>
@@ -530,11 +530,11 @@ Sistem Jual Beli Otomatis, Database Ripper, dan Rekber <strong>NIKKY</strong>. D
 
         <!-- TOKO -->
         <button onclick="switchTab('toko', event)" class="w-full flex items-center p-4 bg-black/40 border border-white/10 rounded-[1.5rem] active:scale-95 transition-all text-left group overflow-hidden relative shadow-md hover:border-[#EE4D2D]/50 hover:bg-white/5">
-            <div class="absolute right-0 top-0 opacity-[0.03] group-hover:scale-110 transition-transform duration-500">
-                <i class="fas fa-store text-8xl text-[#EE4D2D] -mt-2 -mr-2"></i>
+            <div class="absolute -right-2 -top-2 opacity-[0.05] group-hover:scale-110 transition-transform duration-500 pointer-events-none">
+                <img src="https://nos.wjv-1.neo.id/au2hub/icons/kelola-toko.png" class="w-24 h-24 object-contain">
             </div>
-            <div class="w-12 h-12 rounded-2xl bg-[#EE4D2D]/20 text-[#EE4D2D] flex items-center justify-center mr-4 border border-[#EE4D2D]/30 shadow-[0_0_15px_rgba(238,77,45,0.2)] shrink-0">
-                <i class="fas fa-store text-xl"></i>
+            <div class="w-12 h-12 rounded-2xl bg-[#EE4D2D]/10 flex items-center justify-center mr-4 border border-[#EE4D2D]/30 shadow-[0_0_15px_rgba(238,77,45,0.2)] shrink-0 overflow-hidden p-2 z-10">
+                <img src="https://nos.wjv-1.neo.id/au2hub/icons/kelola-toko.png" alt="Toko" class="w-full h-full object-contain drop-shadow-md group-hover:scale-110 transition-transform">
             </div>
             <div class="flex-1 z-10">
                 <h3 class="font-extrabold text-white text-sm tracking-tight mb-0.5">Kelola Toko (Seller)</h3>
@@ -550,62 +550,81 @@ Sistem Jual Beli Otomatis, Database Ripper, dan Rekber <strong>NIKKY</strong>. D
     <div class="grid grid-cols-2 gap-3">
         
         <!-- Feed Komunitas -->
-        <button onclick="switchTab('sosial', event)" class="flex flex-col items-start p-4 bg-black/30 border border-white/10 rounded-[1.5rem] active:scale-95 transition-all text-left group hover:border-[#25D366]/50 hover:bg-white/5 shadow-sm">
-            <div class="w-10 h-10 rounded-[1rem] bg-[#25D366]/20 text-[#25D366] flex items-center justify-center mb-3 border border-[#25D366]/30 shadow-[0_0_10px_rgba(37,211,102,0.2)] group-hover:scale-110 transition-transform">
-                <i class="fas fa-play text-lg"></i>
+        <button onclick="switchTab('sosial', event)" class="flex flex-col items-start p-4 bg-black/30 border border-white/10 rounded-[1.5rem] active:scale-95 transition-all text-left group hover:border-[#25D366]/50 hover:bg-white/5 shadow-sm relative overflow-hidden">
+            <div class="absolute -right-3 -bottom-3 opacity-[0.05] group-hover:scale-110 transition-transform duration-500 pointer-events-none">
+                <img src="https://nos.wjv-1.neo.id/au2hub/icons/feed-sosial.png" class="w-16 h-16 object-contain">
             </div>
-            <h3 class="font-extrabold text-white text-xs mb-1">Feed Sosial</h3>
-            <p class="text-[9px] text-gray-400 leading-snug">Video & grup chat komunitas</p>
+            <div class="w-10 h-10 rounded-[1rem] bg-[#25D366]/10 flex items-center justify-center mb-3 border border-[#25D366]/30 shadow-[0_0_10px_rgba(37,211,102,0.2)] overflow-hidden p-1.5 z-10">
+                <img src="https://nos.wjv-1.neo.id/au2hub/icons/feed-sosial.png" alt="Sosial" class="w-full h-full object-contain drop-shadow-md group-hover:scale-110 transition-transform">
+            </div>
+            <h3 class="font-extrabold text-white text-xs mb-1 z-10">Feed Sosial</h3>
+            <p class="text-[9px] text-gray-400 leading-snug z-10">Video & grup chat komunitas</p>
         </button>
 
         <!-- Admin Rekber -->
-        <button onclick="switchTab('rekber', event)" class="flex flex-col items-start p-4 bg-black/30 border border-white/10 rounded-[1.5rem] active:scale-95 transition-all text-left group hover:border-brand-info/50 hover:bg-white/5 shadow-sm">
-            <div class="w-10 h-10 rounded-[1rem] bg-brand-info/20 text-brand-info flex items-center justify-center mb-3 border border-brand-info/30 shadow-[0_0_10px_rgba(70,179,255,0.2)] group-hover:scale-110 transition-transform">
-                <i class="fas fa-shield-check text-lg"></i>
+        <button onclick="switchTab('rekber', event)" class="flex flex-col items-start p-4 bg-black/30 border border-white/10 rounded-[1.5rem] active:scale-95 transition-all text-left group hover:border-brand-info/50 hover:bg-white/5 shadow-sm relative overflow-hidden">
+            <div class="absolute -right-3 -bottom-3 opacity-[0.05] group-hover:scale-110 transition-transform duration-500 pointer-events-none">
+                <img src="https://nos.wjv-1.neo.id/au2hub/icons/admin-rekber.png" class="w-16 h-16 object-contain">
             </div>
-            <h3 class="font-extrabold text-white text-xs mb-1">Admin Rekber</h3>
-            <p class="text-[9px] text-gray-400 leading-snug">Transaksi diawasi 100% aman</p>
+            <div class="w-10 h-10 rounded-[1rem] bg-brand-info/10 flex items-center justify-center mb-3 border border-brand-info/30 shadow-[0_0_10px_rgba(70,179,255,0.2)] overflow-hidden p-1.5 z-10">
+                <img src="https://nos.wjv-1.neo.id/au2hub/icons/admin-rekber.png" alt="Rekber" class="w-full h-full object-contain drop-shadow-md group-hover:scale-110 transition-transform">
+            </div>
+            <h3 class="font-extrabold text-white text-xs mb-1 z-10">Admin Rekber</h3>
+            <p class="text-[9px] text-gray-400 leading-snug z-10">Transaksi diawasi 100% aman</p>
         </button>
 
         <!-- Database Ripper -->
-        <button onclick="switchTab('ripper', event)" class="flex flex-col items-start p-4 bg-black/30 border border-white/10 rounded-[1.5rem] active:scale-95 transition-all text-left group hover:border-red-500/50 hover:bg-white/5 shadow-sm">
-            <div class="w-10 h-10 rounded-[1rem] bg-red-500/20 text-red-500 flex items-center justify-center mb-3 border border-red-500/30 shadow-[0_0_10px_rgba(239,68,68,0.2)] group-hover:scale-110 transition-transform">
-                <i class="fas fa-user-ninja text-lg"></i>
+        <button onclick="switchTab('ripper', event)" class="flex flex-col items-start p-4 bg-black/30 border border-white/10 rounded-[1.5rem] active:scale-95 transition-all text-left group hover:border-red-500/50 hover:bg-white/5 shadow-sm relative overflow-hidden">
+            <div class="absolute -right-3 -bottom-3 opacity-[0.05] group-hover:scale-110 transition-transform duration-500 pointer-events-none">
+                <img src="https://nos.wjv-1.neo.id/au2hub/icons/cek-ripper.png" class="w-16 h-16 object-contain">
             </div>
-            <h3 class="font-extrabold text-white text-xs mb-1">Cek Ripper</h3>
-            <p class="text-[9px] text-gray-400 leading-snug">Database blacklist penipu</p>
+            <div class="w-10 h-10 rounded-[1rem] bg-red-500/10 flex items-center justify-center mb-3 border border-red-500/30 shadow-[0_0_10px_rgba(239,68,68,0.2)] overflow-hidden p-1.5 z-10">
+                <img src="https://nos.wjv-1.neo.id/au2hub/icons/cek-ripper.png" alt="Ripper" class="w-full h-full object-contain drop-shadow-md group-hover:scale-110 transition-transform">
+            </div>
+            <h3 class="font-extrabold text-white text-xs mb-1 z-10">Cek Ripper</h3>
+            <p class="text-[9px] text-gray-400 leading-snug z-10">Database blacklist penipu</p>
         </button>
 
         <!-- Netflix -->
         <button onclick="bukaModalNetflix()" class="flex flex-col items-start p-4 bg-black/30 border border-white/10 rounded-[1.5rem] active:scale-95 transition-all text-left group hover:border-red-600/50 hover:bg-white/5 shadow-sm relative overflow-hidden">
             <div class="absolute -right-4 -top-4 w-12 h-12 bg-red-600/10 blur-xl rounded-full"></div>
-            <div class="w-10 h-10 rounded-[1rem] bg-red-600/20 text-red-500 flex items-center justify-center mb-3 border border-red-600/30 shadow-[0_0_10px_rgba(220,38,38,0.2)] group-hover:scale-110 transition-transform relative z-10">
-                <i class="fas fa-ticket-alt text-lg"></i>
+            <div class="absolute -right-3 -bottom-3 opacity-[0.05] group-hover:scale-110 transition-transform duration-500 pointer-events-none">
+                <img src="https://nos.wjv-1.neo.id/au2hub/icons/klaim-netflix.png" class="w-16 h-16 object-contain">
+            </div>
+            <div class="w-10 h-10 rounded-[1rem] bg-red-600/10 flex items-center justify-center mb-3 border border-red-600/30 shadow-[0_0_10px_rgba(220,38,38,0.2)] overflow-hidden p-1.5 z-10">
+                <img src="https://nos.wjv-1.neo.id/au2hub/icons/klaim-netflix.png" alt="Netflix" class="w-full h-full object-contain drop-shadow-md group-hover:scale-110 transition-transform">
             </div>
             <h3 class="font-extrabold text-white text-xs mb-1 relative z-10">Klaim Netflix</h3>
             <p class="text-[9px] text-gray-400 leading-snug relative z-10">Tukar kode OTP otomatis</p>
         </button>
 
         <!-- Info & FAQ -->
-        <button onclick="switchTab('info', event)" class="flex flex-col items-start p-4 bg-black/30 border border-white/10 rounded-[1.5rem] active:scale-95 transition-all text-left group hover:border-brand-purple/50 hover:bg-white/5 shadow-sm">
-            <div class="w-10 h-10 rounded-[1rem] bg-brand-purple/20 text-brand-purple flex items-center justify-center mb-3 border border-brand-purple/30 shadow-[0_0_10px_rgba(162,119,255,0.2)] group-hover:scale-110 transition-transform">
-                <i class="fas fa-bullhorn text-lg"></i>
+        <button onclick="switchTab('info', event)" class="flex flex-col items-start p-4 bg-black/30 border border-white/10 rounded-[1.5rem] active:scale-95 transition-all text-left group hover:border-brand-purple/50 hover:bg-white/5 shadow-sm relative overflow-hidden">
+            <div class="absolute -right-3 -bottom-3 opacity-[0.05] group-hover:scale-110 transition-transform duration-500 pointer-events-none">
+                <img src="https://nos.wjv-1.neo.id/au2hub/icons/pusat-info.png" class="w-16 h-16 object-contain">
             </div>
-            <h3 class="font-extrabold text-white text-xs mb-1">Pusat Info</h3>
-            <p class="text-[9px] text-gray-400 leading-snug">Update, event & panduan</p>
+            <div class="w-10 h-10 rounded-[1rem] bg-brand-purple/10 flex items-center justify-center mb-3 border border-brand-purple/30 shadow-[0_0_10px_rgba(162,119,255,0.2)] overflow-hidden p-1.5 z-10">
+                <img src="https://nos.wjv-1.neo.id/au2hub/icons/pusat-info.png" alt="Info" class="w-full h-full object-contain drop-shadow-md group-hover:scale-110 transition-transform">
+            </div>
+            <h3 class="font-extrabold text-white text-xs mb-1 z-10">Pusat Info</h3>
+            <p class="text-[9px] text-gray-400 leading-snug z-10">Update, event & panduan</p>
         </button>
 
         <!-- Legalitas PT -->
-        <button onclick="bukaModalLegalitas()" class="flex flex-col items-start p-4 bg-black/30 border border-white/10 rounded-[1.5rem] active:scale-95 transition-all text-left group hover:border-blue-500/50 hover:bg-white/5 shadow-sm">
-            <div class="w-10 h-10 rounded-[1rem] bg-blue-500/20 text-blue-400 flex items-center justify-center mb-3 border border-blue-500/30 shadow-[0_0_10px_rgba(59,130,246,0.2)] group-hover:scale-110 transition-transform">
-                <i class="fas fa-file-signature text-lg"></i>
+        <button onclick="bukaModalLegalitas()" class="flex flex-col items-start p-4 bg-black/30 border border-white/10 rounded-[1.5rem] active:scale-95 transition-all text-left group hover:border-blue-500/50 hover:bg-white/5 shadow-sm relative overflow-hidden">
+            <div class="absolute -right-3 -bottom-3 opacity-[0.05] group-hover:scale-110 transition-transform duration-500 pointer-events-none">
+                <img src="https://nos.wjv-1.neo.id/au2hub/icons/legalitas-pt.png" class="w-16 h-16 object-contain">
             </div>
-            <h3 class="font-extrabold text-white text-xs mb-1">Legalitas PT</h3>
-            <p class="text-[9px] text-gray-400 leading-snug">Cek izin resmi perusahaan</p>
+            <div class="w-10 h-10 rounded-[1rem] bg-blue-500/10 flex items-center justify-center mb-3 border border-blue-500/30 shadow-[0_0_10px_rgba(59,130,246,0.2)] overflow-hidden p-1.5 z-10">
+                <img src="https://nos.wjv-1.neo.id/au2hub/icons/legalitas-pt.png" alt="Legalitas" class="w-full h-full object-contain drop-shadow-md group-hover:scale-110 transition-transform">
+            </div>
+            <h3 class="font-extrabold text-white text-xs mb-1 z-10">Legalitas PT</h3>
+            <p class="text-[9px] text-gray-400 leading-snug z-10">Cek izin resmi perusahaan</p>
         </button>
 
     </div>
 </div>
+
 
 </section>
 
