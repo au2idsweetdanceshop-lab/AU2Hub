@@ -13,11 +13,9 @@ const ALLOWED_MIME_TYPES = [
 
 export default async function handler(req, res) {
     try {
-        // Kode ini sekarang bisa membaca nama variabel DENGAN atau TANPA NEXT_PUBLIC_
         const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL; 
         const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY; 
         
-        // Deteksi spesifik mana yang kosong!
         if (!supabaseUrl || !supabaseAnonKey) {
             return res.status(500).json({ 
                 success: false, 
@@ -53,7 +51,8 @@ export default async function handler(req, res) {
                 accessKeyId: accessKey,
                 secretAccessKey: secretKey,
             },
-            forcePathStyle: false, 
+            // KEMBALIKAN KE TRUE UNTUK BIZNET GIO
+            forcePathStyle: true, 
         });
 
         if (req.method === 'GET') {
@@ -76,7 +75,8 @@ export default async function handler(req, res) {
                 return res.status(200).json({
                     success: true,
                     uploadUrl: uploadUrl,
-                    finalVideoUrl: `https://${bucketName}.nos.wjv-1.neo.id/${serverGeneratedPath}`
+                    // KEMBALIKAN KE FORMAT URL PATH STYLE
+                    finalVideoUrl: `https://nos.wjv-1.neo.id/${bucketName}/${serverGeneratedPath}`
                 });
             } catch (s3SignError) {
                 return res.status(500).json({ success: false, error: 'Gagal membuat S3 Signed URL: ' + s3SignError.message });
