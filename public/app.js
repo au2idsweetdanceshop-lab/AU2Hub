@@ -7662,38 +7662,47 @@ async function prosesPostingJualan() {
     const stockList = document.getElementById('jualan-stock').value.trim();
     const snkInput = document.getElementById('jualan-snk') ? document.getElementById('jualan-snk').value.trim() : null;
     const btn = document.getElementById('btn-submit-jualan');
+    
     if (!nama || !harga || isNaN(harga) || !deskripsi) return showToast("Mohon lengkapi formulir!", "error");
     if (harga < 1000) return showToast("Harga minimal adalah Rp 1.000", "error");
     if (fileJualanArray.length === 0) return showToast("Wajib menyertakan minimal 1 foto produk!", "error");
     if ((kategori === 'Akun' || kategori === 'Item' || kategori === 'APK Premium') && !stockList) {
         return showToast("Wajib mengisi List Stok untuk kategori ini!", "error");
     }
+    
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memproses Upload...';
     btn.disabled = true;
+    
     try {
         let uploadedUrls = [];
         showToast(`Mengunggah ${fileJualanArray.length} foto ke satelit...`, "info");
+        
         const uploadPromises = fileJualanArray.map(async (file, index) => {
-const pathLengkap = `${currentUser.id}/pasar/foto_${index}_${Date.now()}`;
-const { data: { session } } = await supabaseClient.auth.getSession();
-const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent(pathLengkap)}&filetype=${encodeURIComponent(file.type)}`, {
-    headers: { 'Authorization': `Bearer ${session?.access_token}` }
-});
+            const pathLengkap = `${currentUser.id}/pasar/foto_${index}_${Date.now()}`;
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent(pathLengkap)}&filetype=${encodeURIComponent(file.type)}`, {
+                headers: { 'Authorization': `Bearer ${session?.access_token}` }
+            });
             const dataUrl = await resUrl.json();
+            
             const uploadRes = await fetch(dataUrl.uploadUrl, {
-    method: 'PUT',
-    body: file,
-    headers: { 'Content-Type': file.type, 'x-amz-acl': 'public-read' }
-});
+                method: 'PUT',
+                body: file,
+                headers: { 'Content-Type': file.type, 'x-amz-acl': 'public-read' }
+            });
 
-// Tambahkan blok pengecekan ini:
-if (!uploadRes.ok) {
-    throw new Error(`Upload Ditolak Biznet GIO: Status ${uploadRes.status}`);
-}
+            // Pengecekan penolakan Biznet GIO
+            if (!uploadRes.ok) {
+                throw new Error(`Upload Ditolak Biznet GIO: Status ${uploadRes.status}`);
+            }
+
+            return dataUrl.finalVideoUrl; 
+        }); // <-- Ini kurung penutup .map yang hilang di kode Anda
 
         uploadedUrls = await Promise.all(uploadPromises);
         const finalImageUrl = uploadedUrls.join(',');
         const isFeePembeli = document.getElementById('jualan-fee-bearer').value === 'pembeli';
+        
         const { error } = await supabaseClient.from('player_products').insert({
             user_id: currentUser.id, 
             title: nama, 
@@ -7705,7 +7714,9 @@ if (!uploadRes.ok) {
             snk: (kategori === 'Akun' || kategori === 'Item' || kategori === 'APK Premium') ? snkInput : null,
             fee_ditanggung_pembeli: isFeePembeli
         });
+        
         if (error) throw error;
+        
         showToast("Dagangan berhasil diposting!", "success");
         tutupModalJualBarang();
         document.getElementById('jualan-nama').value = '';
@@ -7727,6 +7738,7 @@ if (!uploadRes.ok) {
         btn.disabled = false;
     }
 }
+
 
 async function shareProdukPasar(btn) {
     const currentUrl = window.location.href;
