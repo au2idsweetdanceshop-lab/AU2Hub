@@ -1335,11 +1335,17 @@ const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent(pathLe
     headers: { 'Authorization': `Bearer ${token}` }
 });
 const dataUrl = await resUrl.json();
-        await fetch(dataUrl.uploadUrl, {
-            method: 'PUT',
-            body: finalFile,
-            headers: { 'Content-Type': finalFile.type, 'x-amz-acl': 'public-read' }
-        });
+        const uploadRes = await fetch(dataUrl.uploadUrl, {
+    method: 'PUT',
+    body: file,
+    headers: { 'Content-Type': file.type, 'x-amz-acl': 'public-read' }
+});
+
+// Tambahkan blok pengecekan ini:
+if (!uploadRes.ok) {
+    throw new Error(`Upload Ditolak Biznet GIO: Status ${uploadRes.status}`);
+}
+
         const currentNick = userProfile?.nickname || "Player";
         const newAvatarUrl = dataUrl.finalVideoUrl; 
         const { error: dbErr } = await supabaseClient
@@ -4462,11 +4468,16 @@ const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent(pathLe
     headers: { 'Authorization': `Bearer ${session?.access_token}` }
 });
         const dataUrl = await resUrl.json();
-        await fetch(dataUrl.uploadUrl, {
-            method: 'PUT',
-            body: file,
-            headers: { 'Content-Type': file.type, 'x-amz-acl': 'public-read' }
-        });
+        const uploadRes = await fetch(dataUrl.uploadUrl, {
+    method: 'PUT',
+    body: file,
+    headers: { 'Content-Type': file.type, 'x-amz-acl': 'public-read' }
+});
+
+// Tambahkan blok pengecekan ini:
+if (!uploadRes.ok) {
+    throw new Error(`Upload Ditolak Biznet GIO: Status ${uploadRes.status}`);
+}
         const spreadsheetPayload = {
             ID_Video: 'vid_' + Date.now(),
             URL_Video: dataUrl.finalVideoUrl,
@@ -4608,7 +4619,17 @@ const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent(pathLe
     headers: { 'Authorization': `Bearer ${session?.access_token}` }
 });
         const dataUrl = await resUrl.json();
-        await fetch(dataUrl.uploadUrl, { method: 'PUT', body: file, headers: { 'Content-Type': file.type, 'x-amz-acl': 'public-read' } });
+        const uploadRes = await fetch(dataUrl.uploadUrl, {
+    method: 'PUT',
+    body: file,
+    headers: { 'Content-Type': file.type, 'x-amz-acl': 'public-read' }
+});
+
+// Tambahkan blok pengecekan ini:
+if (!uploadRes.ok) {
+    throw new Error(`Upload Ditolak Biznet GIO: Status ${uploadRes.status}`);
+}
+
         const fileUrl = dataUrl.finalVideoUrl;
         if (context === 'chat') {
             let msgText = file.type.startsWith('video/') ? `[VIDEO]${fileUrl}` : `[IMG]${fileUrl}`;
@@ -4860,11 +4881,17 @@ const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent('group
     headers: { 'Authorization': `Bearer ${session?.access_token}` }
 });
 const dataUrl = await resUrl.json();
-await fetch(dataUrl.uploadUrl, {
-method: 'PUT',
-body: file,
-headers: { 'Content-Type': file.type, 'x-amz-acl': 'public-read' }
+const uploadRes = await fetch(dataUrl.uploadUrl, {
+    method: 'PUT',
+    body: file,
+    headers: { 'Content-Type': file.type, 'x-amz-acl': 'public-read' }
 });
+
+// Tambahkan blok pengecekan ini:
+if (!uploadRes.ok) {
+    throw new Error(`Upload Ditolak Biznet GIO: Status ${uploadRes.status}`);
+}
+
 finalAvatarUrl = dataUrl.finalVideoUrl;
 }
 const { data: groupData, error: groupErr } = await supabaseClient
@@ -5279,11 +5306,17 @@ reader.onloadend = async () => {
 try {
 const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent('voice_'+Date.now()+'.webm')}&filetype=${encodeURIComponent('audio/webm')}`);
 const dataUrl = await resUrl.json();
-await fetch(dataUrl.uploadUrl, {
-method: 'PUT',
-body: blob,
-headers: { 'Content-Type': 'audio/webm', 'x-amz-acl': 'public-read' }
+const uploadRes = await fetch(dataUrl.uploadUrl, {
+    method: 'PUT',
+    body: file,
+    headers: { 'Content-Type': file.type, 'x-amz-acl': 'public-read' }
 });
+
+// Tambahkan blok pengecekan ini:
+if (!uploadRes.ok) {
+    throw new Error(`Upload Ditolak Biznet GIO: Status ${uploadRes.status}`);
+}
+
 let msgText = `[AUDIO]${dataUrl.finalVideoUrl}`;
 if (currentReplyId) {
 const safeName = currentReplyName.replace(/\|\|/g, "").replace(/\]/g, "");
@@ -6349,11 +6382,17 @@ const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent(pathLe
     headers: { 'Authorization': `Bearer ${session?.access_token}` }
 });
 const dataUrl = await resUrl.json();
-await fetch(dataUrl.uploadUrl, {
-method: 'PUT',
-body: file,
-headers: { 'Content-Type': file.type, 'x-amz-acl': 'public-read' }
+const uploadRes = await fetch(dataUrl.uploadUrl, {
+    method: 'PUT',
+    body: file,
+    headers: { 'Content-Type': file.type, 'x-amz-acl': 'public-read' }
 });
+
+// Tambahkan blok pengecekan ini:
+if (!uploadRes.ok) {
+    throw new Error(`Upload Ditolak Biznet GIO: Status ${uploadRes.status}`);
+}
+
 const { error } = await supabaseClient
 .from('groups')
 .update({ avatar_url: dataUrl.finalVideoUrl })
@@ -7641,9 +7680,17 @@ const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent(pathLe
     headers: { 'Authorization': `Bearer ${session?.access_token}` }
 });
             const dataUrl = await resUrl.json();
-            await fetch(dataUrl.uploadUrl, { method: 'PUT', body: file, headers: { 'Content-Type': file.type, 'x-amz-acl': 'public-read' } });
-            return dataUrl.finalVideoUrl;
-        });
+            const uploadRes = await fetch(dataUrl.uploadUrl, {
+    method: 'PUT',
+    body: file,
+    headers: { 'Content-Type': file.type, 'x-amz-acl': 'public-read' }
+});
+
+// Tambahkan blok pengecekan ini:
+if (!uploadRes.ok) {
+    throw new Error(`Upload Ditolak Biznet GIO: Status ${uploadRes.status}`);
+}
+
         uploadedUrls = await Promise.all(uploadPromises);
         const finalImageUrl = uploadedUrls.join(',');
         const isFeePembeli = document.getElementById('jualan-fee-bearer').value === 'pembeli';
@@ -9117,7 +9164,17 @@ const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent('pasar
     headers: { 'Authorization': `Bearer ${session?.access_token}` }
 });
                 const dataUrl = await resUrl.json();
-                await fetch(dataUrl.uploadUrl, { method: 'PUT', body: file, headers: { 'Content-Type': file.type, 'x-amz-acl': 'public-read' } });
+                const uploadRes = await fetch(dataUrl.uploadUrl, {
+    method: 'PUT',
+    body: file,
+    headers: { 'Content-Type': file.type, 'x-amz-acl': 'public-read' }
+});
+
+// Tambahkan blok pengecekan ini:
+if (!uploadRes.ok) {
+    throw new Error(`Upload Ditolak Biznet GIO: Status ${uploadRes.status}`);
+}
+
                 return dataUrl.finalVideoUrl;
             });
             uploadedUrls = await Promise.all(uploadPromises);
