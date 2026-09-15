@@ -13,22 +13,18 @@ const ALLOWED_MIME_TYPES = [
 
 export default async function handler(req, res) {
     try {
+        // Kode ini sekarang bisa membaca nama variabel DENGAN atau TANPA NEXT_PUBLIC_
         const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL; 
-        const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY; 
+        const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY; 
         
+        // Deteksi spesifik mana yang kosong!
         if (!supabaseUrl || !supabaseAnonKey) {
-            return res.status(500).json({ success: false, error: 'SUPABASE_URL atau SUPABASE_ANON_KEY belum diset di Environment Variables Vercel!' });
+            return res.status(500).json({ 
+                success: false, 
+                error: `ENV Kosong! URL: ${supabaseUrl ? 'ADA' : 'HILANG'}, KEY: ${supabaseAnonKey ? 'ADA' : 'HILANG'}` 
+            });
         }
         const supabase = createClient(supabaseUrl, supabaseAnonKey);
-
-        const origin = req.headers.origin || req.headers.referer;
-        const isWebhook = (req.body && req.body.action === 'webhook') || (req.url && req.url.includes('webhook'));
-
-        if (!isWebhook && origin) {
-            if (!origin.includes('au2idsweetdance.com') && !origin.includes('localhost')) {
-                return res.status(403).json({ success: false, message: 'Akses Ditolak: Domain Tidak Sah!' });
-            }
-        }
 
         const authHeader = req.headers.authorization;
         if (!authHeader) {
@@ -42,7 +38,6 @@ export default async function handler(req, res) {
             return res.status(401).json({ success: false, error: 'Unauthorized Supabase: ' + (authError?.message || 'Token tidak valid') });
         }
 
-        // `.trim()` memastikan tidak ada spasi kosong yang tidak sengaja tertempel dari Vercel
         const bucketName = process.env.BIZNET_BUCKET_NAME?.trim();
         const accessKey = process.env.BIZNET_ACCESS_KEY?.trim();
         const secretKey = process.env.BIZNET_SECRET_KEY?.trim();
@@ -58,7 +53,6 @@ export default async function handler(req, res) {
                 accessKeyId: accessKey,
                 secretAccessKey: secretKey,
             },
-            // KUNCI PENYELESAIAN 404 BIZNET: Gunakan false agar rute menjadi format subdomain (Virtual Hosted-Style)
             forcePathStyle: false, 
         });
 
@@ -82,7 +76,6 @@ export default async function handler(req, res) {
                 return res.status(200).json({
                     success: true,
                     uploadUrl: uploadUrl,
-                    // Penyesuaian final URL mengikuti Virtual Hosted-Style Biznet
                     finalVideoUrl: `https://${bucketName}.nos.wjv-1.neo.id/${serverGeneratedPath}`
                 });
             } catch (s3SignError) {
@@ -94,7 +87,6 @@ export default async function handler(req, res) {
 
     } catch (error) {
         console.error("API Upload Fatal Error:", error);
-        // Mengembalikan pesan error asli agar muncul langsung di toast aplikasi Anda
         return res.status(500).json({ 
             success: false, 
             error: 'Server Crash: ' + error.message 
