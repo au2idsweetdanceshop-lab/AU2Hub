@@ -17,38 +17,28 @@ export default async function handler(req, res) {
         const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY; 
         
         if (!supabaseUrl || !supabaseAnonKey) {
-            return res.status(500).json({ success: false, error: 'Kunci Supabase belum diatur di Vercel Env!' });
+            return res.status(500).json({ success: false, error: 'SUPABASE_URL atau SUPABASE_ANON_KEY belum diset di Environment Variables Vercel!' });
         }
         const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-        const origin = req.headers.origin || req.headers.referer;
-        const isWebhook = (req.body && req.body.action === 'webhook') || (req.url && req.url.includes('webhook'));
-
-        if (!isWebhook && origin) {
-            if (!origin.includes('au2idsweetdance.com') && !origin.includes('localhost')) {
-                return res.status(403).json({ success: false, message: 'Akses Ditolak: Domain Tidak Sah!' });
-            }
-        }
-
         const authHeader = req.headers.authorization;
         if (!authHeader) {
-            return res.status(401).json({ success: false, error: 'Unauthorized: Header Authorization hilang!' });
+            return res.status(401).json({ success: false, error: 'Unauthorized: Header Authorization tidak ditemukan!' });
         }
 
         const token = authHeader.replace('Bearer ', '');
         const { data: { user }, error: authError } = await supabase.auth.getUser(token);
 
         if (authError || !user) {
-            return res.status(401).json({ success: false, error: 'Unauthorized: Token Supabase tidak valid atau kadaluarsa.' });
+            return res.status(401).json({ success: false, error: 'Unauthorized Supabase: ' + (authError?.message || 'Token tidak valid') });
         }
 
-        // Penambahan .trim() agar kebal dari ketidaksengajaan spasi saat copas di Vercel
         const bucketName = process.env.BIZNET_BUCKET_NAME?.trim();
         const accessKey = process.env.BIZNET_ACCESS_KEY?.trim();
         const secretKey = process.env.BIZNET_SECRET_KEY?.trim();
 
         if (!bucketName || !accessKey || !secretKey) {
-            return res.status(500).json({ success: false, error: 'Kredensial S3 Biznet (Bucket/Access/Secret) hilang atau kosong di Vercel Env!' });
+            return res.status(500).json({ success: false, error: 'ENV S3 Biznet (BIZNET_BUCKET_NAME / ACCESS_KEY / SECRET_KEY) kosong di Vercel!' });
         }
 
         const client = new S3Client({
@@ -61,31 +51,6 @@ export default async function handler(req, res) {
             forcePathStyle: true, 
         });
 
-        if (req.method === 'POST') {
-            const { fileBase64, filetype } = req.body;
-            if (!fileBase64 || !filetype) return res.status(400).json({ success: false, error: 'Data file tidak lengkap' });
-            if (!ALLOWED_MIME_TYPES.includes(filetype)) return res.status(400).json({ success: false, error: 'Format file berbahaya/tidak diizinkan!' });
-            
-            const base64Data = fileBase64.replace(/^data:\w+\/\w+;base64,/, "");
-            const buffer = Buffer.from(base64Data, 'base64');
-            const ext = filetype.split('/')[1] || 'bin';
-            const safeFilename = Math.random().toString(36).substring(2, 15);
-            const uniqueFileName = `media/${user.id}/${Date.now()}_${safeFilename}.${ext}`;
-            
-            const command = new PutObjectCommand({
-                Bucket: bucketName,
-                Key: uniqueFileName,
-                Body: buffer,
-                ContentType: filetype
-            });
-            await client.send(command);
-            
-            return res.status(200).json({
-                success: true,
-                url: `https://nos.wjv-1.neo.id/${bucketName}/${uniqueFileName}`
-            });
-        }
-
         if (req.method === 'GET') {
             const { filetype, filename } = req.query;
             if (!filetype) return res.status(400).json({ success: false, error: 'Parameter filetype wajib disertakan' });
@@ -93,7 +58,6 @@ export default async function handler(req, res) {
             
             const ext = filetype.split('/')[1] || 'bin';
             const safeFilename = Math.random().toString(36).substring(2, 15);
-            
             const serverGeneratedPath = filename ? filename : `uploads/${user.id}/${Date.now()}_${safeFilename}.${ext}`;
             
             const command = new PutObjectCommand({
@@ -109,19 +73,19 @@ export default async function handler(req, res) {
                     uploadUrl: uploadUrl,
                     finalVideoUrl: `https://nos.wjv-1.neo.id/${bucketName}/${serverGeneratedPath}`
                 });
-            } catch (s3Error) {
-                throw new Error("Gagal generate Signed URL Biznet: " + s3Error.message);
+            } catch (s3SignError) {
+                return res.status(500).json({ success: false, error: 'Gagal membuat S3 Signed URL: ' + s3SignError.message });
             }
         }
 
-        res.setHeader('Allow', ['GET', 'POST']);
         return res.status(405).json({ success: false, error: `Method ${req.method} tidak diizinkan` });
 
     } catch (error) {
-        console.error("API Upload Error:", error);
+        console.error("API Upload Fatal Error:", error);
+        // Mengembalikan pesan error asli agar muncul langsung di toast aplikasi Anda
         return res.status(500).json({ 
             success: false, 
-            error: 'Sistem API Error: ' + (error.message || 'Terjadi kesalahan') 
+            error: 'Server Crash: ' + error.message 
         });
     }
 }
