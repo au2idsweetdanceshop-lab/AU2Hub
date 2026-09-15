@@ -4456,6 +4456,7 @@ async function prosesUploadVideo() {
     viewedUserId = currentUser.id;
     checkSession();
     showToast("Mengunggah video di latar belakang...", "info");
+    
     try {
         const configRes = await fetch('/api/get-config');
         const config = await configRes.json();
@@ -4464,20 +4465,39 @@ async function prosesUploadVideo() {
         const namaFileUnik = `${Date.now()}_${file.name.replace(/\s+/g, '_')}`;
         const pathLengkap = `${namaFolder}/${namaFileUnik}`;
         const { data: { session } } = await supabaseClient.auth.getSession();
-const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent(pathLengkap)}&filetype=${encodeURIComponent(file.type)}`, {
-    headers: { 'Authorization': `Bearer ${session?.access_token}` }
-});
-        const dataUrl = await resUrl.json();
-        const uploadRes = await fetch(dataUrl.uploadUrl, {
-    method: 'PUT',
-    body: file,
-    headers: { 'Content-Type': file.type }
-});
+        
+        // 1. Minta URL ke Vercel
+        const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent(pathLengkap)}&filetype=${encodeURIComponent(file.type)}`, {
+            headers: { 'Authorization': `Bearer ${session?.access_token}` }
+        });
+        
+        let dataUrl;
+        try {
+            dataUrl = await resUrl.json();
+        } catch(e) {
+            throw new Error(`API Vercel Crash/Mati (Status ${resUrl.status})`);
+        }
 
-// Tambahkan blok pengecekan ini:
-if (!uploadRes.ok) {
-    throw new Error(`Upload Ditolak Biznet GIO: Status ${uploadRes.status}`);
-}
+        // 2. CEK JIKA VERCEL ERROR (Ini yang akan menangkap penyebab asli 500)
+        if (!resUrl.ok || !dataUrl.success) {
+            throw new Error(`API Vercel: ${dataUrl.error || 'Server Error ' + resUrl.status}`);
+        }
+
+        if (!dataUrl.uploadUrl) {
+            throw new Error("API Vercel tidak memberikan link upload!");
+        }
+
+        // 3. Eksekusi ke Biznet GIO
+        const uploadRes = await fetch(dataUrl.uploadUrl, {
+            method: 'PUT',
+            body: file,
+            headers: { 'Content-Type': file.type }
+        });
+
+        if (!uploadRes.ok) {
+            throw new Error(`Ditolak Biznet GIO: Status ${uploadRes.status}`);
+        }
+
         const spreadsheetPayload = {
             ID_Video: 'vid_' + Date.now(),
             URL_Video: dataUrl.finalVideoUrl,
@@ -4491,12 +4511,14 @@ if (!uploadRes.ok) {
             allow_comments: allowComments
         };
         newUploads.push(spreadsheetPayload);
+        
         await fetch(config.gasUrl, {
             method: 'POST',
             mode: 'no-cors',
             headers: { 'Content-Type': 'text/plain' },
             body: JSON.stringify(spreadsheetPayload)
         });
+        
         showToast("Video berhasil diposting!", "success");
         tambahExp(50);
         allVideosData = [];
@@ -4504,12 +4526,14 @@ if (!uploadRes.ok) {
             renderProfileVideos(currentUser.id);
         }
     } catch (err) {
+        // Tampilkan pesan error yang sesungguhnya ke layar
         showToast("Upload gagal: " + err.message, "error");
     } finally {
         btn.disabled = false;
         isUploading = false;
     }
 }
+
 
 let mediaPreviewFile = null;
 let mediaPreviewContext = '';
