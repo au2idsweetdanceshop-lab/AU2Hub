@@ -21,6 +21,15 @@ export default async function handler(req, res) {
         }
         const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
+        const origin = req.headers.origin || req.headers.referer;
+        const isWebhook = (req.body && req.body.action === 'webhook') || (req.url && req.url.includes('webhook'));
+
+        if (!isWebhook && origin) {
+            if (!origin.includes('au2idsweetdance.com') && !origin.includes('localhost')) {
+                return res.status(403).json({ success: false, message: 'Akses Ditolak: Domain Tidak Sah!' });
+            }
+        }
+
         const authHeader = req.headers.authorization;
         if (!authHeader) {
             return res.status(401).json({ success: false, error: 'Unauthorized: Header Authorization tidak ditemukan!' });
@@ -33,6 +42,7 @@ export default async function handler(req, res) {
             return res.status(401).json({ success: false, error: 'Unauthorized Supabase: ' + (authError?.message || 'Token tidak valid') });
         }
 
+        // `.trim()` memastikan tidak ada spasi kosong yang tidak sengaja tertempel dari Vercel
         const bucketName = process.env.BIZNET_BUCKET_NAME?.trim();
         const accessKey = process.env.BIZNET_ACCESS_KEY?.trim();
         const secretKey = process.env.BIZNET_SECRET_KEY?.trim();
@@ -48,7 +58,8 @@ export default async function handler(req, res) {
                 accessKeyId: accessKey,
                 secretAccessKey: secretKey,
             },
-            forcePathStyle: true, 
+            // KUNCI PENYELESAIAN 404 BIZNET: Gunakan false agar rute menjadi format subdomain (Virtual Hosted-Style)
+            forcePathStyle: false, 
         });
 
         if (req.method === 'GET') {
@@ -71,7 +82,8 @@ export default async function handler(req, res) {
                 return res.status(200).json({
                     success: true,
                     uploadUrl: uploadUrl,
-                    finalVideoUrl: `https://nos.wjv-1.neo.id/${bucketName}/${serverGeneratedPath}`
+                    // Penyesuaian final URL mengikuti Virtual Hosted-Style Biznet
+                    finalVideoUrl: `https://${bucketName}.nos.wjv-1.neo.id/${serverGeneratedPath}`
                 });
             } catch (s3SignError) {
                 return res.status(500).json({ success: false, error: 'Gagal membuat S3 Signed URL: ' + s3SignError.message });
