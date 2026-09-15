@@ -51,6 +51,7 @@ export default async function handler(req, res) {
             return res.status(500).json({ success: false, error: 'Kredensial S3 Biznet hilang dari env server!' });
         }
 
+        // PERBAIKAN: forcePathStyle diubah menjadi false
         const client = new S3Client({
             region: "idn", 
             endpoint: "https://nos.wjv-1.neo.id", 
@@ -58,7 +59,7 @@ export default async function handler(req, res) {
                 accessKeyId: accessKey,
                 secretAccessKey: secretKey,
             },
-            forcePathStyle: true,
+            forcePathStyle: false, 
         });
 
         if (req.method === 'POST') {
@@ -84,6 +85,8 @@ export default async function handler(req, res) {
                 ACL: 'public-read'
             });
             await client.send(command);
+            
+            // Return URL dalam format Virtual Hosted-Style
             return res.status(200).json({
                 success: true,
                 url: `https://${bucketName}.nos.wjv-1.neo.id/${uniqueFileName}`
@@ -111,6 +114,7 @@ export default async function handler(req, res) {
             });
             const uploadUrl = await getSignedUrl(client, command, { expiresIn: 900 });
             
+            // Return URL dalam format Virtual Hosted-Style
             return res.status(200).json({
                 success: true,
                 uploadUrl: uploadUrl,
