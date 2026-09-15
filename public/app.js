@@ -4471,7 +4471,7 @@ const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent(pathLe
         const uploadRes = await fetch(dataUrl.uploadUrl, {
     method: 'PUT',
     body: file,
-    headers: { 'Content-Type': file.type, 'x-amz-acl': 'public-read' }
+    headers: { 'Content-Type': file.type }
 });
 
 // Tambahkan blok pengecekan ini:
