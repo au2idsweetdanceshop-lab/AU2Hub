@@ -1336,10 +1336,11 @@ const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent(pathLe
 });
 const dataUrl = await resUrl.json();
         const uploadRes = await fetch(dataUrl.uploadUrl, {
-    method: 'PUT',
-    body: file,
-    headers: { 'Content-Type': file.type, }
-});
+            method: 'PUT',
+            body: file,
+            headers: { 'Content-Type': file.type },
+            cache: 'no-store'
+        });
 
 // Tambahkan blok pengecekan ini:
 if (!uploadRes.ok) {
@@ -4640,10 +4641,11 @@ const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent(pathLe
 });
         const dataUrl = await resUrl.json();
         const uploadRes = await fetch(dataUrl.uploadUrl, {
-    method: 'PUT',
-    body: file,
-    headers: { 'Content-Type': file.type, }
-});
+            method: 'PUT',
+            body: file,
+            headers: { 'Content-Type': file.type },
+            cache: 'no-store'
+        });
 
 // Tambahkan blok pengecekan ini:
 if (!uploadRes.ok) {
@@ -4902,10 +4904,11 @@ const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent('group
 });
 const dataUrl = await resUrl.json();
 const uploadRes = await fetch(dataUrl.uploadUrl, {
-    method: 'PUT',
-    body: file,
-    headers: { 'Content-Type': file.type, }
-});
+            method: 'PUT',
+            body: file,
+            headers: { 'Content-Type': file.type },
+            cache: 'no-store'
+        });
 
 // Tambahkan blok pengecekan ini:
 if (!uploadRes.ok) {
@@ -5327,10 +5330,11 @@ try {
 const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent('voice_'+Date.now()+'.webm')}&filetype=${encodeURIComponent('audio/webm')}`);
 const dataUrl = await resUrl.json();
 const uploadRes = await fetch(dataUrl.uploadUrl, {
-    method: 'PUT',
-    body: file,
-    headers: { 'Content-Type': file.type, }
-});
+            method: 'PUT',
+            body: file,
+            headers: { 'Content-Type': file.type },
+            cache: 'no-store'
+        });
 
 // Tambahkan blok pengecekan ini:
 if (!uploadRes.ok) {
@@ -6403,10 +6407,11 @@ const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent(pathLe
 });
 const dataUrl = await resUrl.json();
 const uploadRes = await fetch(dataUrl.uploadUrl, {
-    method: 'PUT',
-    body: file,
-    headers: { 'Content-Type': file.type, }
-});
+            method: 'PUT',
+            body: file,
+            headers: { 'Content-Type': file.type },
+            cache: 'no-store'
+        });
 
 // Tambahkan blok pengecekan ini:
 if (!uploadRes.ok) {
@@ -7706,10 +7711,11 @@ async function prosesPostingJualan() {
             const dataUrl = await resUrl.json();
             
             const uploadRes = await fetch(dataUrl.uploadUrl, {
-                method: 'PUT',
-                body: file,
-                headers: { 'Content-Type': file.type, }
-            });
+            method: 'PUT',
+            body: file,
+            headers: { 'Content-Type': file.type },
+            cache: 'no-store'
+        });
 
             // Pengecekan penolakan Biznet GIO
             if (!uploadRes.ok) {
@@ -9197,10 +9203,11 @@ const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent('pasar
 });
                 const dataUrl = await resUrl.json();
                 const uploadRes = await fetch(dataUrl.uploadUrl, {
-    method: 'PUT',
-    body: file,
-    headers: { 'Content-Type': file.type, }
-});
+            method: 'PUT',
+            body: file,
+            headers: { 'Content-Type': file.type },
+            cache: 'no-store'
+        });
 
 // Tambahkan blok pengecekan ini:
 if (!uploadRes.ok) {
