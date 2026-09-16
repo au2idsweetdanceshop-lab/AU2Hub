@@ -27,7 +27,7 @@ export default async function handler(req, res) {
 
         if (!bucketName || !accessKey || !secretKey) return res.status(500).json({ success: false, error: 'ENV S3 Biznet kosong!' });
 
-        // 🔥 WAJIB "idn" AGAR SIGNATURE COCOK DENGAN SERVER BIZNET
+        // 🔥 REGION WAJIB "idn" & forcePathStyle WAJIB true
         const client = new S3Client({
             region: "idn", 
             endpoint: "https://nos.wjv-1.neo.id", 
@@ -41,7 +41,7 @@ export default async function handler(req, res) {
             const safeFilename = Math.random().toString(36).substring(2, 15);
             const serverGeneratedPath = filename ? filename : `uploads/${user.id}/${Date.now()}_${safeFilename}.${ext}`;
             
-            // 🔥 WAJIB TANPA ACL AGAR TIDAK DITOLAK (403) OLEH BIZNET
+            // 🔥 WAJIB TANPA ACL, cukup Bucket, Key, dan ContentType
             const command = new PutObjectCommand({
                 Bucket: bucketName,
                 Key: serverGeneratedPath,
