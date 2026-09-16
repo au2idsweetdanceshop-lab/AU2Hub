@@ -18,7 +18,7 @@ export default async function handler(req, res) {
                 CORSRules: [{
                     AllowedHeaders: ["*"],
                     AllowedMethods: ["PUT", "POST", "GET", "DELETE", "HEAD"],
-                    AllowedOrigins: ["https://au2idsweetdance.com", "http://localhost:3000", "*"], // 🔥 Domain spesifik dimasukkan
+                    AllowedOrigins: ["*"], // 🔥 Domain spesifik dimasukkan
                     ExposeHeaders: ["ETag"],
                     MaxAgeSeconds: 3000,
                 }]
