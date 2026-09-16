@@ -3,7 +3,7 @@ import { S3Client, PutBucketCorsCommand } from "@aws-sdk/client-s3";
 export default async function handler(req, res) {
     try {
         const client = new S3Client({
-            region: "us-east-1", // 🔥 WAJIB disamakan dengan upload-url.js
+            region: "idn", // 🔥 UBAH KEMBALI KE "idn" AGAR SINKRON DENGAN UPLOAD-URL
             endpoint: "https://nos.wjv-1.neo.id",
             credentials: { 
                 accessKeyId: process.env.BIZNET_ACCESS_KEY?.trim(), 
@@ -16,10 +16,8 @@ export default async function handler(req, res) {
             Bucket: process.env.BIZNET_BUCKET_NAME?.trim(),
             CORSConfiguration: {
                 CORSRules: [{
-                    // 🔥 Buka semua izin Header (Penting untuk Content-Type)
                     AllowedHeaders: ["*"],
                     AllowedMethods: ["PUT", "POST", "GET", "DELETE", "HEAD"],
-                    // 🔥 JANGAN DIGABUNG. Gunakan HANYA "*" agar PWA/WebView Android bisa masuk
                     AllowedOrigins: ["*"], 
                     ExposeHeaders: ["ETag"],
                     MaxAgeSeconds: 3000,
