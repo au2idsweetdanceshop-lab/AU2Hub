@@ -4482,14 +4482,14 @@ async function prosesUploadVideo() {
             uploadRes = await fetch(dataUrl.uploadUrl, {
                 method: 'PUT',
                 body: file,
-                // 🔥 BARIS HEADERS DIHAPUS TOTAL DI SINI 🔥
+                // 🔥 KEMBALIKAN HEADERS INI, TAPI TANPA x-amz-acl 🔥
+                headers: { 
+                    'Content-Type': file.type 
+                },
                 cache: 'no-store'
             });
         } catch (netErr) {
             throw new Error("Koneksi diblokir Biznet.");
-        }
-        if (!uploadRes.ok) {
-            throw new Error(`Ditolak Biznet GIO: Status ${uploadRes.status}`);
         }
         // ------------------------------------------------
 
