@@ -6,11 +6,6 @@ export const config = {
   api: { bodyParser: { sizeLimit: '10mb' } }
 };
 
-const ALLOWED_MIME_TYPES = [
-    'image/jpeg', 'image/png', 'image/webp', 'image/gif',
-    'video/mp4', 'video/webm', 'video/quicktime'
-];
-
 export default async function handler(req, res) {
     try {
         const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL; 
@@ -32,9 +27,9 @@ export default async function handler(req, res) {
 
         if (!bucketName || !accessKey || !secretKey) return res.status(500).json({ success: false, error: 'ENV S3 Biznet kosong!' });
 
-        // 🔥 REGION TETAP us-east-1 agar kompatibel dengan Signature V4 Biznet
+        // 🔥 WAJIB "idn" AGAR SIGNATURE COCOK DENGAN SERVER BIZNET
         const client = new S3Client({
-            region: "us-east-1", 
+            region: "idn", 
             endpoint: "https://nos.wjv-1.neo.id", 
             credentials: { accessKeyId: accessKey, secretAccessKey: secretKey },
             forcePathStyle: true, 
@@ -46,7 +41,7 @@ export default async function handler(req, res) {
             const safeFilename = Math.random().toString(36).substring(2, 15);
             const serverGeneratedPath = filename ? filename : `uploads/${user.id}/${Date.now()}_${safeFilename}.${ext}`;
             
-            // 🔥 ACL DIHAPUS DI SINI AGAR TIDAK BENTROK DENGAN FRONTEND
+            // 🔥 WAJIB TANPA ACL AGAR TIDAK DITOLAK (403) OLEH BIZNET
             const command = new PutObjectCommand({
                 Bucket: bucketName,
                 Key: serverGeneratedPath,
