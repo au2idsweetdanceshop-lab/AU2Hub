@@ -1,4 +1,4 @@
-import { S3Client, PutObjectCommand, PutBucketCorsCommand } from "@aws-sdk/client-s3";
+import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { createClient } from '@supabase/supabase-js';
 
@@ -44,30 +44,9 @@ export default async function handler(req, res) {
                 accessKeyId: accessKey,
                 secretAccessKey: secretKey,
             },
-            forcePathStyle: false, // Kita gunakan standar Virtual Hosted
+            // ✅ HARUS TRUE AGAR DITERIMA BIZNET
+            forcePathStyle: true, 
         });
-
-        // 🟢 MANTRA AUTO-CORS BIZNET GIO 🟢
-        // Kode ini akan otomatis meretas pintu izin Biznet agar browser HP Anda tidak diblokir!
-        try {
-            const corsCommand = new PutBucketCorsCommand({
-                Bucket: bucketName,
-                CORSConfiguration: {
-                    CORSRules: [
-                        {
-                            AllowedHeaders: ["*"],
-                            AllowedMethods: ["PUT", "POST", "GET", "DELETE", "HEAD"],
-                            AllowedOrigins: ["*"], // Mengizinkan semua website termasuk web Anda
-                            ExposeHeaders: ["ETag"],
-                            MaxAgeSeconds: 3000,
-                        }
-                    ]
-                }
-            });
-            await client.send(corsCommand);
-        } catch (corsErr) {
-            console.log("CORS Auto-Bypass check:", corsErr.message);
-        }
 
         if (req.method === 'GET') {
             const { filetype, filename } = req.query;
@@ -89,7 +68,8 @@ export default async function handler(req, res) {
                 return res.status(200).json({
                     success: true,
                     uploadUrl: uploadUrl,
-                    finalVideoUrl: `https://${bucketName}.nos.wjv-1.neo.id/${serverGeneratedPath}`
+                    // ✅ FORMAT LINK WAJIB PATH-STYLE
+                    finalVideoUrl: `https://nos.wjv-1.neo.id/${bucketName}/${serverGeneratedPath}`
                 });
             } catch (s3SignError) {
                 return res.status(500).json({ success: false, error: 'Gagal membuat S3 Signed URL: ' + s3SignError.message });
