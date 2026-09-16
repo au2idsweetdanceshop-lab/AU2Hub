@@ -1,6 +1,16 @@
 import { S3Client, PutBucketCorsCommand } from "@aws-sdk/client-s3";
 
 export default async function handler(req, res) {
+    // 🔥 TAMBAHKAN INI AGAR VERCEL IKUT MENGIZINKAN HEADER CORS KE BROWSER HP ANDA
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
+    res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization');
+
+    if (req.method === 'OPTIONS') {
+        res.status(200).end();
+        return;
+    }
+
     try {
         const client = new S3Client({
             region: "idn", 
@@ -16,15 +26,9 @@ export default async function handler(req, res) {
             Bucket: process.env.BIZNET_BUCKET_NAME?.trim(),
             CORSConfiguration: {
                 CORSRules: [{
-                    // 🔥 Kita sebutkan headernya satu per satu, jangan pakai "*"
-                    AllowedHeaders: ["Content-Type", "Authorization", "X-Amz-Date", "X-Amz-Security-Token", "X-Amz-User-Agent", "X-Amz-Content-Sha256"],
+                    AllowedHeaders: ["*"],
                     AllowedMethods: ["PUT", "POST", "GET", "DELETE", "HEAD"],
-                    // 🔥 Kita tembak domain spesifik, hilangkan "*"
-                    AllowedOrigins: [
-                        "https://au2idsweetdance.com", 
-                        "https://www.au2idsweetdance.com", 
-                        "http://localhost:3000"
-                    ], 
+                    AllowedOrigins: ["*"],
                     ExposeHeaders: ["ETag"],
                     MaxAgeSeconds: 3000,
                 }]
@@ -32,12 +36,8 @@ export default async function handler(req, res) {
         });
 
         await client.send(command);
-        res.setHeader('Content-Type', 'text/html; charset=utf-8');
-        return res.status(200).send(`
-            <h1 style="color: green;">✅ BIZNET CORS FINAL BERHASIL!</h1>
-            <p>Aturan Origin spesifik telah ditanam ke bucket Biznet.</p>
-        `);
+        return res.status(200).send(`<h1>✅ BIZNET CORS FORCED SUCCESS!</h1>`);
     } catch (error) {
-        return res.status(500).send(`<h1 style="color: red;">❌ GAGAL: ${error.message}</h1>`);
+        return res.status(500).send(`<h1>❌ GAGAL: ${error.message}</h1>`);
     }
 }
