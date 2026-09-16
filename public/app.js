@@ -4509,7 +4509,13 @@ async function prosesUploadVideo() {
                 cache: 'no-store'
             });
         } catch (netErr) {
-            throw new Error("Gagal terhubung ke Biznet GIO (Periksa izin CORS atau koneksi).");
+            // 🔥 Kita bongkar URL tujuannya di sini agar terlihat jika formatnya rusak
+            const urlBongkar = dataUrl.uploadUrl ? dataUrl.uploadUrl.split('?')[0] : 'URL Kosong';
+            throw new Error(`CORS diblokir Biznet saat menuju: ${urlBongkar}`);
+        }
+
+        if (!uploadRes.ok) {
+            throw new Error(`Biznet GIO menolak upload (Status: ${uploadRes.status})`);
         }
 
         // 3. Validasi status respons dari Biznet GIO
