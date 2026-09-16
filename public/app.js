@@ -1338,7 +1338,7 @@ const dataUrl = await resUrl.json();
         const uploadRes = await fetch(dataUrl.uploadUrl, {
     method: 'PUT',
     body: file,
-    headers: { 'Content-Type': file.type, 'x-amz-acl': 'public-read' }
+    headers: { 'Content-Type': file.type, }
 });
 
 // Tambahkan blok pengecekan ini:
@@ -4466,37 +4466,34 @@ async function prosesUploadVideo() {
         const pathLengkap = `${namaFolder}/${namaFileUnik}`;
         const { data: { session } } = await supabaseClient.auth.getSession();
         
-        // 1. Minta URL ke Vercel
         const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent(pathLengkap)}&filetype=${encodeURIComponent(file.type)}`, {
             headers: { 'Authorization': `Bearer ${session?.access_token}` }
         });
+        const dataUrl = await resUrl.json();
         
-        let dataUrl;
-        try {
-            dataUrl = await resUrl.json();
-        } catch(e) {
-            throw new Error(`API Vercel Crash/Mati (Status ${resUrl.status})`);
-        }
-
-        // 2. CEK JIKA VERCEL ERROR (Ini yang akan menangkap penyebab asli 500)
         if (!resUrl.ok || !dataUrl.success) {
-            throw new Error(`API Vercel: ${dataUrl.error || 'Server Error ' + resUrl.status}`);
+            throw new Error(`API Vercel Error: ${dataUrl.error || resUrl.status}`);
         }
 
-        if (!dataUrl.uploadUrl) {
-            throw new Error("API Vercel tidak memberikan link upload!");
+        // --- MANTRA PENGHANCUR CACHE & X-RAY DEBUGGER ---
+        let uploadRes;
+        try {
+            uploadRes = await fetch(dataUrl.uploadUrl, {
+                method: 'PUT',
+                body: file,
+                headers: { 'Content-Type': file.type },
+                cache: 'no-store' // Wajib! Memaksa browser melupakan error CORS lama
+            });
+        } catch (netErr) {
+            // Jika masih gagal, ini akan memunculkan popup berisi rahasia aslinya!
+            alert(`🚨 INFO PENTING BIZNET 🚨\n\nURL: ${dataUrl.uploadUrl.substring(0, 50)}...\n\nJika URL di atas TIDAK diawali dengan "https://nos.wjv-1", buka Vercel dan pastikan forcePathStyle bernilai TRUE!`);
+            throw new Error("Koneksi diblokir browser (CORS/DNS).");
         }
-
-        // 3. Eksekusi ke Biznet GIO
-        const uploadRes = await fetch(dataUrl.uploadUrl, {
-            method: 'PUT',
-            body: file,
-            headers: { 'Content-Type': file.type }
-        });
 
         if (!uploadRes.ok) {
             throw new Error(`Ditolak Biznet GIO: Status ${uploadRes.status}`);
         }
+        // ------------------------------------------------
 
         const spreadsheetPayload = {
             ID_Video: 'vid_' + Date.now(),
@@ -4526,10 +4523,9 @@ async function prosesUploadVideo() {
             renderProfileVideos(currentUser.id);
         }
     } catch (err) {
-        // Tampilkan pesan error yang sesungguhnya ke layar
         showToast("Upload gagal: " + err.message, "error");
     } finally {
-        btn.disabled = false;
+        if(btn) btn.disabled = false;
         isUploading = false;
     }
 }
@@ -4646,7 +4642,7 @@ const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent(pathLe
         const uploadRes = await fetch(dataUrl.uploadUrl, {
     method: 'PUT',
     body: file,
-    headers: { 'Content-Type': file.type, 'x-amz-acl': 'public-read' }
+    headers: { 'Content-Type': file.type, }
 });
 
 // Tambahkan blok pengecekan ini:
@@ -4908,7 +4904,7 @@ const dataUrl = await resUrl.json();
 const uploadRes = await fetch(dataUrl.uploadUrl, {
     method: 'PUT',
     body: file,
-    headers: { 'Content-Type': file.type, 'x-amz-acl': 'public-read' }
+    headers: { 'Content-Type': file.type, }
 });
 
 // Tambahkan blok pengecekan ini:
@@ -5333,7 +5329,7 @@ const dataUrl = await resUrl.json();
 const uploadRes = await fetch(dataUrl.uploadUrl, {
     method: 'PUT',
     body: file,
-    headers: { 'Content-Type': file.type, 'x-amz-acl': 'public-read' }
+    headers: { 'Content-Type': file.type, }
 });
 
 // Tambahkan blok pengecekan ini:
@@ -6409,7 +6405,7 @@ const dataUrl = await resUrl.json();
 const uploadRes = await fetch(dataUrl.uploadUrl, {
     method: 'PUT',
     body: file,
-    headers: { 'Content-Type': file.type, 'x-amz-acl': 'public-read' }
+    headers: { 'Content-Type': file.type, }
 });
 
 // Tambahkan blok pengecekan ini:
@@ -7712,7 +7708,7 @@ async function prosesPostingJualan() {
             const uploadRes = await fetch(dataUrl.uploadUrl, {
                 method: 'PUT',
                 body: file,
-                headers: { 'Content-Type': file.type, 'x-amz-acl': 'public-read' }
+                headers: { 'Content-Type': file.type, }
             });
 
             // Pengecekan penolakan Biznet GIO
@@ -9203,7 +9199,7 @@ const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent('pasar
                 const uploadRes = await fetch(dataUrl.uploadUrl, {
     method: 'PUT',
     body: file,
-    headers: { 'Content-Type': file.type, 'x-amz-acl': 'public-read' }
+    headers: { 'Content-Type': file.type, }
 });
 
 // Tambahkan blok pengecekan ini:
