@@ -1314,11 +1314,13 @@ async function handleAvatarUpload(event) {
     const file = event.target.files[0]; 
     if (!file) return;
     const icon = document.querySelector('label[for="avatar-input"] i'); 
-    icon.className = 'fas fa-spinner fa-spin';
+    if (icon) icon.className = 'fas fa-spinner fa-spin';
+
     try {
         showToast("Memproses foto profil...", "info");
         const compressedBlob = await compressImage(file);
         const finalFile = new File([compressedBlob], "avatar.jpg", { type: "image/jpeg" });
+
         const oldAvatarUrl = userProfile?.avatar_url || "";
         if (oldAvatarUrl && !oldAvatarUrl.includes('ui-avatars.com')) {
             await fetch('/api/delete-s3?type=file', {
@@ -1328,24 +1330,31 @@ async function handleAvatarUpload(event) {
             }).catch(e => console.log("Abaikan jika file lama sudah tidak ada:", e));
         }
 
-const pathLengkap = `${currentUser.id}/avatar/ava_${Date.now()}`;
-const { data: { session } } = await supabaseClient.auth.getSession();
-const token = session?.access_token;
-const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent(pathLengkap)}&filetype=${encodeURIComponent(finalFile.type)}`, {
-    headers: { 'Authorization': `Bearer ${token}` }
-});
-const dataUrl = await resUrl.json();
+        const pathLengkap = `${currentUser.id}/avatar/ava_${Date.now()}`;
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        const token = session?.access_token;
+        if (!token) throw new Error("Sesi login Anda tidak valid atau telah berakhir.");
+
+        const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent(pathLengkap)}&filetype=${encodeURIComponent(finalFile.type)}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const dataUrl = await resUrl.json();
+
+        if (!resUrl.ok || !dataUrl.success) {
+            throw new Error(dataUrl.error || `Gagal generate URL: Status ${resUrl.status}`);
+        }
+
+        // Upload ke Biznet GIO menggunakan finalFile & Content-Type yang cocok
         const uploadRes = await fetch(dataUrl.uploadUrl, {
             method: 'PUT',
-            body: file,
-            headers: { 'Content-Type': file.type },
+            body: finalFile,
+            headers: { 'Content-Type': finalFile.type },
             cache: 'no-store'
         });
 
-// Tambahkan blok pengecekan ini:
-if (!uploadRes.ok) {
-    throw new Error(`Upload Ditolak Biznet GIO: Status ${uploadRes.status}`);
-}
+        if (!uploadRes.ok) {
+            throw new Error(`Upload Ditolak Biznet GIO: Status ${uploadRes.status}`);
+        }
 
         const currentNick = userProfile?.nickname || "Player";
         const newAvatarUrl = dataUrl.finalVideoUrl; 
@@ -1353,6 +1362,7 @@ if (!uploadRes.ok) {
             .from('profiles')
             .upsert({ id: currentUser.id, nickname: currentNick, avatar_url: newAvatarUrl });
         if (dbErr) throw new Error(dbErr.message);
+
         const elImg = document.getElementById('profile-img'); 
         if (elImg) elImg.src = newAvatarUrl;
         await fetchProfile();
@@ -1361,7 +1371,7 @@ if (!uploadRes.ok) {
     } catch (e) {
         showToast("Gagal upload: " + e.message, "error");
     } finally {
-        icon.className = 'fas fa-camera text-xs';
+        if (icon) icon.className = 'fas fa-camera text-xs';
     }
 }
 
@@ -4444,13 +4454,15 @@ async function prosesUploadVideo() {
     if (!currentUser) return openAuthModal();
     const fileInput = document.getElementById('input-video-file');
     const captionInput = document.getElementById('input-video-caption');
-    const file = fileInput.files[0];
+    const file = fileInput?.files?.[0];
     const allowCommentsToggle = document.getElementById('upload-allow-comments');
     const allowComments = allowCommentsToggle ? allowCommentsToggle.checked : true;
-    const teksCaption = captionInput.value || ""; 
+    const teksCaption = captionInput?.value || ""; 
+    
     if (!file) return showToast("Pilih video dulu!", "error");
+
     const btn = document.querySelector('button[onclick="prosesUploadVideo()"]');
-    btn.disabled = true; 
+    if (btn) btn.disabled = true; 
     isUploading = true;
     closeUploadModal();
     switchTab('profile');
@@ -4461,42 +4473,56 @@ async function prosesUploadVideo() {
     try {
         const configRes = await fetch('/api/get-config');
         const config = await configRes.json();
-        if (!config.gasUrl) throw new Error("Link GAS tidak ditemukan di config");
+        if (!config.gasUrl) throw new Error("Link GAS tidak ditemukan di konfigurasi.");
+
+        // Pastikan MIME Type tidak kosong
+        const mimeType = file.type || 'video/mp4';
+        const ext = file.name.split('.').pop() || 'mp4';
         const namaFolder = `${currentUser.id}/feed_video`;
-        const namaFileUnik = `${Date.now()}_${file.name.replace(/\s+/g, '_')}`;
+        const namaFileUnik = `${Date.now()}_${Math.random().toString(36).substring(2, 8)}.${ext}`;
         const pathLengkap = `${namaFolder}/${namaFileUnik}`;
+
+        // Ambil token sesi Supabase
         const { data: { session } } = await supabaseClient.auth.getSession();
-        
-        const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent(pathLengkap)}&filetype=${encodeURIComponent(file.type)}`, {
-            headers: { 'Authorization': `Bearer ${session?.access_token}` }
+        const token = session?.access_token;
+        if (!token) throw new Error("Sesi login telah berakhir. Silakan login ulang.");
+
+        // 1. Minta presigned URL ke backend Vercel
+        const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent(pathLengkap)}&filetype=${encodeURIComponent(mimeType)}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
         });
         const dataUrl = await resUrl.json();
         
         if (!resUrl.ok || !dataUrl.success) {
-            throw new Error(`API Vercel Error: ${dataUrl.error || resUrl.status}`);
+            throw new Error(dataUrl.error || `Gagal membuat tiket upload: Status ${resUrl.status}`);
         }
 
-        // --- MANTRA PENGHANCUR CACHE & X-RAY DEBUGGER ---
+        // 2. Upload file fisik langsung ke Biznet GIO
         let uploadRes;
         try {
             uploadRes = await fetch(dataUrl.uploadUrl, {
                 method: 'PUT',
                 body: file,
-                // 🔥 KEMBALIKAN HEADERS INI, TAPI TANPA x-amz-acl 🔥
                 headers: { 
-                    'Content-Type': file.type 
+                    'Content-Type': mimeType 
                 },
                 cache: 'no-store'
             });
         } catch (netErr) {
-            throw new Error("Koneksi diblokir Biznet.");
+            throw new Error("Gagal terhubung ke Biznet GIO (Periksa izin CORS atau koneksi).");
         }
-        // ------------------------------------------------
 
+        // 3. Validasi status respons dari Biznet GIO
+        if (!uploadRes.ok) {
+            throw new Error(`Biznet GIO menolak upload (Status: ${uploadRes.status})`);
+        }
+
+        // 4. Kirim metadata ke Google Sheets
+        const videoIdUnik = 'vid_' + Date.now();
         const spreadsheetPayload = {
-            ID_Video: 'vid_' + Date.now(),
+            ID_Video: videoIdUnik,
             URL_Video: dataUrl.finalVideoUrl,
-            id: 'vid_' + Date.now(),
+            id: videoIdUnik,
             video_url: dataUrl.finalVideoUrl,
             caption: teksCaption,
             nickname: userProfile?.nickname || "Player",
@@ -4517,13 +4543,14 @@ async function prosesUploadVideo() {
         showToast("Video berhasil diposting!", "success");
         tambahExp(50);
         allVideosData = [];
-        if (document.getElementById('profile').classList.contains('active')) {
+        if (document.getElementById('profile')?.classList.contains('active')) {
             renderProfileVideos(currentUser.id);
         }
     } catch (err) {
+        console.error("Detail Error Upload Video:", err);
         showToast("Upload gagal: " + err.message, "error");
     } finally {
-        if(btn) btn.disabled = false;
+        if (btn) btn.disabled = false;
         isUploading = false;
     }
 }
@@ -4618,67 +4645,100 @@ async function prosesKirimMedia() {
     if (!mediaPreviewFile) return;
     const file = mediaPreviewFile;
     const context = mediaPreviewContext;
-    const caption = document.getElementById('preview-media-caption').value.trim();
+    const caption = document.getElementById('preview-media-caption')?.value.trim() || '';
     const btnSend = document.getElementById('btn-send-media');
     const isGroup = !!activeGroupId;
     const targetId = isGroup ? activeGroupId : activeChatUserId;
     const currentReplyId = replyingToMsgId;
     const currentReplyName = replyingToMsgName;
     const currentReplyText = replyingToMsgText;
-    btnSend.disabled = true;
+
+    if (btnSend) btnSend.disabled = true;
     cancelChatReply();
     tutupPreviewMedia();
     showToast("Mengirim media...", "info");
+
     try {
+        // 1. Tentukan MIME type dan ekstensi yang aman
+        const isVideo = file.type.startsWith('video/') || file.name.match(/\.(mp4|webm|mov)$/i);
+        const mimeType = file.type || (isVideo ? 'video/mp4' : 'image/jpeg');
+        const ext = file.name.split('.').pop() || (isVideo ? 'mp4' : 'jpg');
+
         const namaFolder = context === 'chat' ? `${currentUser.id}/chat_media` : `${currentUser.id}/story_media`;
-        const pathLengkap = `${namaFolder}/media_${Date.now()}`;
+        const pathLengkap = `${namaFolder}/media_${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${ext}`;
+
+        // 2. Ambil token otentikasi Supabase
         const { data: { session } } = await supabaseClient.auth.getSession();
-const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent(pathLengkap)}&filetype=${encodeURIComponent(file.type)}`, {
-    headers: { 'Authorization': `Bearer ${session?.access_token}` }
-});
-        const dataUrl = await resUrl.json();
-        const uploadRes = await fetch(dataUrl.uploadUrl, {
-            method: 'PUT',
-            body: file,
-            headers: { 'Content-Type': file.type },
-            cache: 'no-store'
+        const token = session?.access_token;
+        if (!token) throw new Error("Sesi login Anda tidak valid atau telah berakhir.");
+
+        // 3. Minta presigned URL ke backend Vercel
+        const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent(pathLengkap)}&filetype=${encodeURIComponent(mimeType)}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
         });
+        const dataUrl = await resUrl.json();
 
-// Tambahkan blok pengecekan ini:
-if (!uploadRes.ok) {
-    throw new Error(`Upload Ditolak Biznet GIO: Status ${uploadRes.status}`);
-}
+        if (!resUrl.ok || !dataUrl.success) {
+            throw new Error(dataUrl.error || `Gagal tiket URL: Status ${resUrl.status}`);
+        }
 
+        // 4. Upload file fisik langsung ke Biznet GIO
+        let uploadRes;
+        try {
+            uploadRes = await fetch(dataUrl.uploadUrl, {
+                method: 'PUT',
+                body: file,
+                headers: { 'Content-Type': mimeType },
+                cache: 'no-store'
+            });
+        } catch (netErr) {
+            throw new Error("Gagal terhubung ke Biznet GIO (Periksa izin CORS atau koneksi).");
+        }
+
+        if (!uploadRes.ok) {
+            throw new Error(`Upload Ditolak Biznet GIO: Status ${uploadRes.status}`);
+        }
+
+        // 5. Simpan ke Database Supabase sesuai konteks (Chat atau Story)
         const fileUrl = dataUrl.finalVideoUrl;
         if (context === 'chat') {
-            let msgText = file.type.startsWith('video/') ? `[VIDEO]${fileUrl}` : `[IMG]${fileUrl}`;
+            let msgText = isVideo ? `[VIDEO]${fileUrl}` : `[IMG]${fileUrl}`;
             if (caption) msgText += `||CAP||${caption}`;
             if (currentReplyId) {
                 const safeName = currentReplyName.replace(/\|\|/g, "").replace(/\]/g, "");
                 const safeText = currentReplyText.replace(/\|\|/g, "").replace(/\]/g, "");
                 msgText = `[REPLY:${currentReplyId}||${safeName}||${safeText}]\n${msgText}`;
             }
+
             const insertData = { sender_id: currentUser.id, message: msgText };
-            if (isGroup) insertData.group_id = targetId; else insertData.receiver_id = targetId;
-            await supabaseClient.from('messages').insert(insertData);
+            if (isGroup) insertData.group_id = targetId; 
+            else insertData.receiver_id = targetId;
+
+            const { error: chatErr } = await supabaseClient.from('messages').insert(insertData);
+            if (chatErr) throw chatErr;
         } else if (context === 'story') {
-            const { error } = await supabaseClient.from('stories').insert({
+            const { error: storyErr } = await supabaseClient.from('stories').insert({
                 user_id: currentUser.id,
                 media_url: fileUrl,
-                media_type: file.type.startsWith('video/') ? 'video' : 'image',
+                media_type: isVideo ? 'video' : 'image',
                 caption: caption
             });
-            if (error) throw error;
+            if (storyErr) throw storyErr;
+
             showToast("Status berhasil diperbarui!", "success");
             tambahExp(20); 
-            if (!document.getElementById('floating-widget').classList.contains('opacity-0')) {
+
+            const widget = document.getElementById('floating-widget');
+            if (widget && !widget.classList.contains('opacity-0')) {
                 loadStories(); 
             }
         }
     } catch (err) {
+        console.error("Detail Error Kirim Media:", err);
         showToast("Gagal mengirim file: " + err.message, "error");
     } finally {
-        btnSend.disabled = false;
+        if (btnSend) btnSend.disabled = false;
+        mediaPreviewFile = null;
     }
 }
 
@@ -4881,61 +4941,107 @@ reader.readAsDataURL(input.files[0]);
 }
 
 async function prosesCreateGroup() {
-if (!currentUser) return showToast("Silakan login dulu!", "error");
-const nameInput = document.getElementById('create-group-name').value.trim();
-const descInput = document.getElementById('create-group-desc').value.trim();
-const fileInput = document.getElementById('create-group-avatar');
-const btn = document.getElementById('btn-submit-group');
-if (!nameInput) return showToast("Nama grup wajib diisi!", "error");
-btn.disabled = true;
-const originalText = btn.innerHTML;
-btn.innerHTML = '<img src="https://nos.wjv-1.neo.id/au2hub/Picsart_26-05-30_04-29-46-305.webp" class="w-4 h-4 inline-block splash-logo-anim mr-2"> Membuat...';
-try {
-let finalAvatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(nameInput)}&background=1A1133&color=fff`;
-if (fileInput.files && fileInput.files[0]) {
-const file = fileInput.files[0];
-showToast("Mengunggah foto grup...", "info");
-const { data: { session } } = await supabaseClient.auth.getSession();
-const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent('group_'+Date.now())}&filetype=${encodeURIComponent(file.type)}`, {
-    headers: { 'Authorization': `Bearer ${session?.access_token}` }
-});
-const dataUrl = await resUrl.json();
-const uploadRes = await fetch(dataUrl.uploadUrl, {
-            method: 'PUT',
-            body: file,
-            headers: { 'Content-Type': file.type },
-            cache: 'no-store'
-        });
+    if (!currentUser) return showToast("Silakan login dulu!", "error");
+    const nameInput = document.getElementById('create-group-name')?.value.trim();
+    const descInput = document.getElementById('create-group-desc')?.value.trim() || '';
+    const fileInput = document.getElementById('create-group-avatar');
+    const btn = document.getElementById('btn-submit-group');
+    
+    if (!nameInput) return showToast("Nama grup wajib diisi!", "error");
+    
+    btn.disabled = true;
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<img src="https://nos.wjv-1.neo.id/au2hub/Picsart_26-05-30_04-29-46-305.webp" class="w-4 h-4 inline-block splash-logo-anim mr-2"> Membuat...';
 
-// Tambahkan blok pengecekan ini:
-if (!uploadRes.ok) {
-    throw new Error(`Upload Ditolak Biznet GIO: Status ${uploadRes.status}`);
-}
+    try {
+        let finalAvatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(nameInput)}&background=1A1133&color=fff`;
 
-finalAvatarUrl = dataUrl.finalVideoUrl;
-}
-const { data: groupData, error: groupErr } = await supabaseClient
-.from('groups')
-.insert({ name: nameInput, description: descInput, avatar_url: finalAvatarUrl, created_by: currentUser.id })
-.select().single();
-if (groupErr) throw groupErr;
-const { error: memberErr } = await supabaseClient
-.from('group_members')
-.insert({ group_id: groupData.id, user_id: currentUser.id, role: 'admin' });
-if (memberErr) throw memberErr;
-showToast("Grup berhasil dibuat!", "success");
-closeCreateGroupModal();
-document.getElementById('create-group-name').value = '';
-document.getElementById('create-group-desc').value = '';
-fileInput.value = '';
-document.getElementById('create-group-preview').src = 'https://ui-avatars.com/api/?name=Grup&background=1A1133&color=fff';
-loadChatList();
-} catch (err) {
-showToast("Gagal buat grup: " + err.message, "error");
-} finally {
-btn.disabled = false;
-btn.innerHTML = originalText;
-}
+        // Jika user memilih file avatar untuk grup
+        if (fileInput?.files && fileInput.files[0]) {
+            const file = fileInput.files[0];
+            showToast("Mengunggah foto grup...", "info");
+
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            const token = session?.access_token;
+            if (!token) throw new Error("Sesi login Anda tidak valid atau telah berakhir.");
+
+            const mimeType = file.type || 'image/jpeg';
+            const ext = file.name.split('.').pop() || 'jpg';
+            const pathLengkap = `groups/group_${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${ext}`;
+
+            // 1. Minta presigned URL ke backend Vercel
+            const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent(pathLengkap)}&filetype=${encodeURIComponent(mimeType)}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const dataUrl = await resUrl.json();
+
+            if (!resUrl.ok || !dataUrl.success) {
+                throw new Error(dataUrl.error || `Gagal tiket URL: Status ${resUrl.status}`);
+            }
+
+            // 2. Upload fisik ke Biznet GIO
+            let uploadRes;
+            try {
+                uploadRes = await fetch(dataUrl.uploadUrl, {
+                    method: 'PUT',
+                    body: file,
+                    headers: { 'Content-Type': mimeType },
+                    cache: 'no-store'
+                });
+            } catch (netErr) {
+                throw new Error("Gagal terhubung ke Biznet GIO (Periksa koneksi atau CORS).");
+            }
+
+            if (!uploadRes.ok) {
+                throw new Error(`Upload Ditolak Biznet GIO: Status ${uploadRes.status}`);
+            }
+
+            finalAvatarUrl = dataUrl.finalVideoUrl;
+        }
+
+        // 3. Simpan data grup ke database Supabase
+        const { data: groupData, error: groupErr } = await supabaseClient
+            .from('groups')
+            .insert({ 
+                name: nameInput, 
+                description: descInput, 
+                avatar_url: finalAvatarUrl, 
+                created_by: currentUser.id 
+            })
+            .select()
+            .single();
+
+        if (groupErr) throw groupErr;
+
+        // 4. Masukkan pembuat grup sebagai admin
+        const { error: memberErr } = await supabaseClient
+            .from('group_members')
+            .insert({ 
+                group_id: groupData.id, 
+                user_id: currentUser.id, 
+                role: 'admin' 
+            });
+
+        if (memberErr) throw memberErr;
+
+        showToast("Grup berhasil dibuat!", "success");
+        closeCreateGroupModal();
+        
+        // Reset form
+        document.getElementById('create-group-name').value = '';
+        document.getElementById('create-group-desc').value = '';
+        if (fileInput) fileInput.value = '';
+        const elPreview = document.getElementById('create-group-preview');
+        if (elPreview) elPreview.src = 'https://ui-avatars.com/api/?name=Grup&background=1A1133&color=fff';
+        
+        loadChatList();
+    } catch (err) {
+        console.error("Detail Error Create Group:", err);
+        showToast("Gagal buat grup: " + err.message, "error");
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+    }
 }
 
 function closeGroupInfoModal(dariTombolBack = false) {
@@ -5301,62 +5407,92 @@ btnSend.onclick = startRecordingVoice;
 }
 
 async function uploadAndSendVoice(blob) {
-if (!activeChatUserId && !activeGroupId) return;
-const isGroup = !!activeGroupId;
-const targetId = isGroup ? activeGroupId : activeChatUserId;
-if (isGroup) {
-const { data: checkMember } = await supabaseClient.from('group_members').select('user_id').eq('group_id', targetId).eq('user_id', currentUser.id).single();
-if (!checkMember) {
-await customAlert("Anda tidak dapat mengirim Voice Note karena telah dikeluarkan dari grup ini.");
-closeChatRoom(); return;
-}
-}
-const currentReplyId = replyingToMsgId;
-const currentReplyName = replyingToMsgName;
-const currentReplyText = replyingToMsgText;
-cancelChatReply();
-const tempId = 'temp-vn-' + Date.now();
-const tempMsg = { id: tempId, sender_id: currentUser.id, message: "🎙️ Mengirim pesan suara...", created_at: new Date().toISOString() };
-appendMessageBubble(tempMsg);
-scrollToBottomChat();
-try {
-const reader = new FileReader();
-reader.readAsDataURL(blob);
-reader.onloadend = async () => {
-try {
-const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent('voice_'+Date.now()+'.webm')}&filetype=${encodeURIComponent('audio/webm')}`);
-const dataUrl = await resUrl.json();
-const uploadRes = await fetch(dataUrl.uploadUrl, {
+    if (!activeChatUserId && !activeGroupId) return;
+    const isGroup = !!activeGroupId;
+    const targetId = isGroup ? activeGroupId : activeChatUserId;
+
+    if (isGroup) {
+        const { data: checkMember } = await supabaseClient
+            .from('group_members')
+            .select('user_id')
+            .eq('group_id', targetId)
+            .eq('user_id', currentUser.id)
+            .single();
+        if (!checkMember) {
+            await customAlert("Anda tidak dapat mengirim Voice Note karena telah dikeluarkan dari grup ini.");
+            closeChatRoom(); 
+            return;
+        }
+    }
+
+    const currentReplyId = replyingToMsgId;
+    const currentReplyName = replyingToMsgName;
+    const currentReplyText = replyingToMsgText;
+    cancelChatReply();
+
+    const tempId = 'temp-vn-' + Date.now();
+    const tempMsg = { 
+        id: tempId, 
+        sender_id: currentUser.id, 
+        message: "🎙️ Mengirim pesan suara...", 
+        created_at: new Date().toISOString() 
+    };
+    appendMessageBubble(tempMsg);
+    scrollToBottomChat();
+
+    try {
+        // 1. Ambil session token Supabase (Wajib agar tidak 401 Unauthorized)
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        const token = session?.access_token;
+        if (!token) throw new Error("Sesi login tidak valid atau telah berakhir.");
+
+        const pathLengkap = `${currentUser.id}/voice/vn_${Date.now()}.webm`;
+        const mimeType = blob.type || 'audio/webm';
+
+        // 2. Minta presigned URL ke backend
+        const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent(pathLengkap)}&filetype=${encodeURIComponent(mimeType)}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const dataUrl = await resUrl.json();
+
+        if (!resUrl.ok || !dataUrl.success) {
+            throw new Error(dataUrl.error || `Gagal tiket URL: ${resUrl.status}`);
+        }
+
+        // 3. Upload langsung blob ke Biznet GIO
+        const uploadRes = await fetch(dataUrl.uploadUrl, {
             method: 'PUT',
-            body: file,
-            headers: { 'Content-Type': file.type },
+            body: blob,
+            headers: { 'Content-Type': mimeType },
             cache: 'no-store'
         });
 
-// Tambahkan blok pengecekan ini:
-if (!uploadRes.ok) {
-    throw new Error(`Upload Ditolak Biznet GIO: Status ${uploadRes.status}`);
-}
+        if (!uploadRes.ok) {
+            throw new Error(`Upload Ditolak Biznet GIO: Status ${uploadRes.status}`);
+        }
 
-let msgText = `[AUDIO]${dataUrl.finalVideoUrl}`;
-if (currentReplyId) {
-const safeName = currentReplyName.replace(/\|\|/g, "").replace(/\]/g, "");
-const safeText = currentReplyText.replace(/\|\|/g, "").replace(/\]/g, "");
-msgText = `[REPLY:${currentReplyId}||${safeName}||${safeText}]\n${msgText}`;
-}
-const insertData = { sender_id: currentUser.id, message: msgText };
-if (isGroup) insertData.group_id = targetId; else insertData.receiver_id = targetId;
-const { error: dbErr } = await supabaseClient.from('messages').insert(insertData);
-if (dbErr) throw new Error("Gagal simpan DB");
-const oldBubble = document.getElementById(`msg-chat-${tempId}`);
-if (oldBubble) oldBubble.remove();
-} catch(err) {
-const oldBubble = document.getElementById(`msg-chat-${tempId}`);
-if (oldBubble) oldBubble.remove();
-showToast("Error VN: " + err.message, "error");
-}
-};
-} catch (err) { showToast("Error Sistem: " + err.message, "error"); }
+        // 4. Format pesan dan simpan ke Supabase Database
+        let msgText = `[AUDIO]${dataUrl.finalVideoUrl}`;
+        if (currentReplyId) {
+            const safeName = currentReplyName.replace(/\|\|/g, "").replace(/\]/g, "");
+            const safeText = currentReplyText.replace(/\|\|/g, "").replace(/\]/g, "");
+            msgText = `[REPLY:${currentReplyId}||${safeName}||${safeText}]\n${msgText}`;
+        }
+
+        const insertData = { sender_id: currentUser.id, message: msgText };
+        if (isGroup) insertData.group_id = targetId; 
+        else insertData.receiver_id = targetId;
+
+        const { error: dbErr } = await supabaseClient.from('messages').insert(insertData);
+        if (dbErr) throw new Error("Gagal simpan ke database");
+
+        const oldBubble = document.getElementById(`msg-chat-${tempId}`);
+        if (oldBubble) oldBubble.remove();
+    } catch (err) {
+        const oldBubble = document.getElementById(`msg-chat-${tempId}`);
+        if (oldBubble) oldBubble.remove();
+        showToast("Error VN: " + err.message, "error");
+    }
 }
 
 let timerLastSeen = 0;
@@ -6393,39 +6529,68 @@ async function cekStatusPesanan(kategori) {
 }
 
 async function handleGroupAvatarUpload(event) {
-const file = event.target.files[0];
-if (!file || !activeGroupId) return;
-showToast("Mengupdate foto profil grup...", "info");
-try {
-const pathLengkap = `groups/${activeGroupId}/avatar_${Date.now()}`;
-const { data: { session } } = await supabaseClient.auth.getSession();
-const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent(pathLengkap)}&filetype=${encodeURIComponent(file.type)}`, {
-    headers: { 'Authorization': `Bearer ${session?.access_token}` }
-});
-const dataUrl = await resUrl.json();
-const uploadRes = await fetch(dataUrl.uploadUrl, {
-            method: 'PUT',
-            body: file,
-            headers: { 'Content-Type': file.type },
-            cache: 'no-store'
+    const file = event.target.files?.[0];
+    if (!file || !activeGroupId) return;
+    
+    showToast("Mengupdate foto profil grup...", "info");
+
+    try {
+        // 1. Ambil session token Supabase
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        const token = session?.access_token;
+        if (!token) throw new Error("Sesi login Anda tidak valid atau telah berakhir.");
+
+        // 2. Siapkan MIME type dan ekstensi yang valid
+        const mimeType = file.type || 'image/jpeg';
+        const ext = file.name.split('.').pop() || 'jpg';
+        const pathLengkap = `groups/${activeGroupId}/avatar_${Date.now()}.${ext}`;
+
+        // 3. Minta presigned URL ke backend Vercel
+        const resUrl = await fetch(`/api/upload-url?filename=${encodeURIComponent(pathLengkap)}&filetype=${encodeURIComponent(mimeType)}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
         });
+        const dataUrl = await resUrl.json();
 
-// Tambahkan blok pengecekan ini:
-if (!uploadRes.ok) {
-    throw new Error(`Upload Ditolak Biznet GIO: Status ${uploadRes.status}`);
-}
+        if (!resUrl.ok || !dataUrl.success) {
+            throw new Error(dataUrl.error || `Gagal tiket URL: Status ${resUrl.status}`);
+        }
 
-const { error } = await supabaseClient
-.from('groups')
-.update({ avatar_url: dataUrl.finalVideoUrl })
-.eq('id', activeGroupId);
-if (error) throw error;
-document.getElementById('info-group-avatar').src = dataUrl.finalVideoUrl;
-showToast("Foto profil grup berhasil diperbarui!", "success");
-loadChatList();
-} catch(err) {
-showToast("Gagal memperbarui foto grup.", "error");
-}
+        // 4. Upload file langsung ke Biznet GIO
+        let uploadRes;
+        try {
+            uploadRes = await fetch(dataUrl.uploadUrl, {
+                method: 'PUT',
+                body: file,
+                headers: { 'Content-Type': mimeType },
+                cache: 'no-store'
+            });
+        } catch (netErr) {
+            throw new Error("Gagal terhubung ke Biznet GIO (Periksa izin CORS atau koneksi).");
+        }
+
+        if (!uploadRes.ok) {
+            throw new Error(`Upload Ditolak Biznet GIO: Status ${uploadRes.status}`);
+        }
+
+        // 5. Update avatar URL grup di Supabase Database
+        const { error } = await supabaseClient
+            .from('groups')
+            .update({ avatar_url: dataUrl.finalVideoUrl })
+            .eq('id', activeGroupId);
+
+        if (error) throw error;
+
+        const imgAvatar = document.getElementById('info-group-avatar');
+        if (imgAvatar) imgAvatar.src = dataUrl.finalVideoUrl;
+
+        showToast("Foto profil grup berhasil diperbarui!", "success");
+        loadChatList();
+    } catch (err) {
+        console.error("Detail Error Edit Avatar Grup:", err);
+        showToast("Gagal memperbarui foto grup: " + err.message, "error");
+    } finally {
+        event.target.value = '';
+    }
 }
 
         function getBadgeByVideoCount(count) {
