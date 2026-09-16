@@ -2,17 +2,26 @@ import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { createClient } from '@supabase/supabase-js';
 
+export const config = {
+  api: { bodyParser: { sizeLimit: '10mb' } }
+};
+
+const ALLOWED_MIME_TYPES = [
+    'image/jpeg', 'image/png', 'image/webp', 'image/gif',
+    'video/mp4', 'video/webm', 'video/quicktime'
+];
+
 export default async function handler(req, res) {
     try {
         const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL; 
         const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY; 
         
-        if (!supabaseUrl || !supabaseAnonKey) return res.status(500).json({ success: false, error: `ENV Supabase Kosong!` });
+        if (!supabaseUrl || !supabaseAnonKey) return res.status(500).json({ success: false, error: `ENV Kosong!` });
         const supabase = createClient(supabaseUrl, supabaseAnonKey);
-        
+
         const authHeader = req.headers.authorization;
         if (!authHeader) return res.status(401).json({ success: false, error: 'Unauthorized' });
-        
+
         const token = authHeader.replace('Bearer ', '');
         const { data: { user }, error: authError } = await supabase.auth.getUser(token);
         if (authError || !user) return res.status(401).json({ success: false, error: 'Unauthorized Supabase' });
@@ -27,7 +36,7 @@ export default async function handler(req, res) {
             region: "idn", 
             endpoint: "https://nos.wjv-1.neo.id", 
             credentials: { accessKeyId: accessKey, secretAccessKey: secretKey },
-            forcePathStyle: true, 
+            forcePathStyle: true, // Wajib true
         });
 
         if (req.method === 'GET') {
@@ -36,10 +45,11 @@ export default async function handler(req, res) {
             const safeFilename = Math.random().toString(36).substring(2, 15);
             const serverGeneratedPath = filename ? filename : `uploads/${user.id}/${Date.now()}_${safeFilename}.${ext}`;
             
-            // 🔥 ContentType KITA HAPUS DARI TANDA TANGAN 🔥
+            // 🔥 KITA KEMBALIKAN CONTENT TYPE AGAR TIKETNYA COCOK 🔥
             const command = new PutObjectCommand({
                 Bucket: bucketName,
-                Key: serverGeneratedPath
+                Key: serverGeneratedPath,
+                ContentType: filetype
             });
             
             try {
