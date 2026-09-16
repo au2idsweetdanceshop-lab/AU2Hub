@@ -4482,15 +4482,12 @@ async function prosesUploadVideo() {
             uploadRes = await fetch(dataUrl.uploadUrl, {
                 method: 'PUT',
                 body: file,
-                headers: { 'Content-Type': file.type },
-                cache: 'no-store' // Wajib! Memaksa browser melupakan error CORS lama
+                // 🔥 BARIS HEADERS DIHAPUS TOTAL DI SINI 🔥
+                cache: 'no-store'
             });
         } catch (netErr) {
-            // Jika masih gagal, ini akan memunculkan popup berisi rahasia aslinya!
-            alert(`🚨 INFO PENTING BIZNET 🚨\n\nURL: ${dataUrl.uploadUrl.substring(0, 50)}...\n\nJika URL di atas TIDAK diawali dengan "https://nos.wjv-1", buka Vercel dan pastikan forcePathStyle bernilai TRUE!`);
-            throw new Error("Koneksi diblokir browser (CORS/DNS).");
+            throw new Error("Koneksi diblokir Biznet.");
         }
-
         if (!uploadRes.ok) {
             throw new Error(`Ditolak Biznet GIO: Status ${uploadRes.status}`);
         }
