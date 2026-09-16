@@ -4508,11 +4508,23 @@ async function prosesUploadVideo() {
                 },
                 cache: 'no-store'
             });
-        } catch (netErr) {
-            // 🔥 Kita bongkar URL tujuannya di sini agar terlihat jika formatnya rusak
-            const urlBongkar = dataUrl.uploadUrl ? dataUrl.uploadUrl.split('?')[0] : 'URL Kosong';
-            throw new Error(`CORS diblokir Biznet saat menuju: ${urlBongkar}`);
+        } catch (err) {
+        console.error("Detail Error Upload:", err);
+        
+        // 🔥 TAMBAHKAN INI: Jika error dari response Biznet, ambil teks aslinya
+        let pesanErrorAsli = err.message;
+        if (err.response) {
+            try {
+                const errorBody = await err.response.text();
+                pesanErrorAsli += ` - Detail: ${errorBody}`;
+            } catch(e) {}
         }
+
+        showToast("Upload gagal: " + pesanErrorAsli, "error");
+    } finally {
+        if (btn) btn.disabled = false;
+        isUploading = false;
+    }
 
         if (!uploadRes.ok) {
             throw new Error(`Biznet GIO menolak upload (Status: ${uploadRes.status})`);
