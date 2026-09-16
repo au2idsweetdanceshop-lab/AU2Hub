@@ -32,12 +32,12 @@ export default async function handler(req, res) {
 
         if (!bucketName || !accessKey || !secretKey) return res.status(500).json({ success: false, error: 'ENV S3 Biznet kosong!' });
 
-        // 🔥 PERUBAHAN PENTING 1: Region diubah ke us-east-1
+        // 🔥 REGION TETAP us-east-1 agar kompatibel dengan Signature V4 Biznet
         const client = new S3Client({
             region: "us-east-1", 
             endpoint: "https://nos.wjv-1.neo.id", 
             credentials: { accessKeyId: accessKey, secretAccessKey: secretKey },
-            forcePathStyle: true, // Wajib true untuk S3-compatible
+            forcePathStyle: true, 
         });
 
         if (req.method === 'GET') {
@@ -46,12 +46,11 @@ export default async function handler(req, res) {
             const safeFilename = Math.random().toString(36).substring(2, 15);
             const serverGeneratedPath = filename ? filename : `uploads/${user.id}/${Date.now()}_${safeFilename}.${ext}`;
             
-            // 🔥 PERUBAHAN PENTING 2: Tambahkan ACL: "public-read"
+            // 🔥 ACL DIHAPUS DI SINI AGAR TIDAK BENTROK DENGAN FRONTEND
             const command = new PutObjectCommand({
                 Bucket: bucketName,
                 Key: serverGeneratedPath,
-                ContentType: filetype,
-                ACL: "public-read" 
+                ContentType: filetype
             });
             
             try {
