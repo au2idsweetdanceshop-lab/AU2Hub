@@ -2433,19 +2433,18 @@ async function deleteVideo(vidId) {
 
 
 function downloadVideoSaya(urlVideo, vidId) {
+    // Pastikan URL valid
     let finalUrl = urlVideo;
     if (!finalUrl.startsWith('http')) finalUrl = 'https://' + finalUrl;
     
-    // Trik mutakhir: Gunakan Math.random() agar URL selalu 100% unik setiap diklik
-    // Ini memaksa PWA Service Worker menyerah dan mengambil file asli dari Biznet
-    finalUrl = finalUrl + (finalUrl.includes('?') ? '&' : '?') + 'rnd=' + Math.random().toString(36).substring(2) + Date.now();
+    // Trik menembus cache Service Worker
+    finalUrl = finalUrl + (finalUrl.includes('?') ? '&' : '?') + 'nocache=' + Date.now(); 
     
     const toastId = 'toast-dl-' + vidId;
     const container = document.getElementById('toast-container');
     
     if (document.getElementById(toastId)) return;
 
-    // 1. Buat UI Progress Bar
     const toast = document.createElement('div');
     toast.id = toastId;
     toast.className = `flex flex-col px-5 py-3.5 rounded-2xl border shadow-2xl text-xs font-bold text-white toast-anim w-[90%] max-w-sm glass bg-[#1A1133] border-brand-info/50`;
@@ -2460,11 +2459,9 @@ function downloadVideoSaya(urlVideo, vidId) {
     `;
     container.appendChild(toast);
     
-    // 2. Gunakan XHR Klasik (Paling stabil untuk browser HP)
     const xhr = new XMLHttpRequest();
     xhr.open('GET', finalUrl, true);
-    xhr.responseType = 'blob'; 
-    // CATATAN PENTING: Kita tidak menambahkan header khusus agar tidak memicu pemblokiran CORS Preflight
+    xhr.responseType = 'blob';
     
     xhr.onprogress = function(event) {
         if (event.lengthComputable) {
@@ -2475,22 +2472,22 @@ function downloadVideoSaya(urlVideo, vidId) {
     };
     
     xhr.onload = function() {
-        const blob = this.response;
-        
-        // PENCEGAH BUG PWA: Cek apakah tipe file yang masuk malah HTML (website)
-        if (blob && blob.type.includes('text/html')) {
+        // 🔥 PENCEGAH BUG PWA: Cek apakah yang masuk ini video atau malah website HTML
+        const contentType = this.getResponseHeader('Content-Type');
+        if (contentType && contentType.includes('text/html')) {
+            console.warn("Terdeteksi unduhan HTML dari PWA. Memaksa fallback native browser...");
             toast.remove();
-            showToast("Sistem PWA memblokir unduhan. Silakan muat ulang (refresh) halaman.", "error");
+            fallbackBukaTabBaru(urlVideo);
             return;
         }
 
         if (this.status >= 200 && this.status < 300) {
+            const blob = this.response;
             const blobUrl = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.style.display = 'none';
             a.href = blobUrl;
             a.download = `AU2Hub_Video_${vidId}.mp4`;
-            
             document.body.appendChild(a);
             a.click();
             
@@ -2499,27 +2496,37 @@ function downloadVideoSaya(urlVideo, vidId) {
                 window.URL.revokeObjectURL(blobUrl);
             }, 1000);
             
-            // Animasi Sukses
             document.getElementById(`progress-text-${vidId}`).innerText = "Selesai!";
             document.getElementById(`progress-text-${vidId}`).classList.replace('text-brand-info', 'text-brand-success');
             document.getElementById(`progress-text-${vidId}`).classList.replace('bg-brand-info/20', 'bg-brand-success/20');
             document.getElementById(`progress-bar-${vidId}`).classList.replace('from-brand-info', 'from-brand-success');
             document.getElementById(`progress-bar-${vidId}`).classList.replace('to-[#00F0FF]', 'to-[#20bd5a]');
             setTimeout(() => toast.remove(), 2500);
-            
             showToast("Video berhasil disimpan ke Galeri!", "success");
         } else {
             toast.remove();
-            showToast("Gagal mengunduh (Error " + this.status + ").", "error");
+            fallbackBukaTabBaru(urlVideo);
         }
     };
     
     xhr.onerror = function() {
         toast.remove();
-        showToast("Koneksi terputus atau ditolak oleh server.", "error");
+        fallbackBukaTabBaru(urlVideo);
     };
 
     xhr.send();
+
+    // Fungsi kecil untuk fallback jika Service Worker error
+    function fallbackBukaTabBaru(url) {
+        showToast("Membuka video di sistem bawaan HP...", "info");
+        const a = document.createElement('a');
+        a.href = url;
+        a.target = '_blank';
+        a.download = `AU2Hub_Video_${vidId}.mp4`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    }
 }
 
 function fallbackDownloadVideo(urlVideo) {
