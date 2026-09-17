@@ -2384,41 +2384,64 @@ function handleFloatVideoClick(event, videoElement, vidId) {
 
 async function deleteVideo(vidId) {
     const hapus = await customPrompt("Ketik 'HAPUS' jika ingin menghapus video ini secara PERMANEN:");
-    if(hapus === 'HAPUS') {
+    
+    if (hapus === 'HAPUS') {
         try {
+            showToast("Sedang menghapus video...", "info");
             const videoTarget = allVideosData.find(v => v.id === vidId);
-            const configRes = await fetch('/api/get-config');
-            const config = await configRes.json();
-            if (config.gasUrl) {
-                await fetch(config.gasUrl, {
-                    method: 'POST',
-                    mode: 'no-cors',
-                    headers: { 'Content-Type': 'text/plain' },
-                    body: JSON.stringify({ action: 'DELETE', id: vidId })
-                });
-            }
+
+            // 🔥 1. HAPUS FILE FISIK DI BIZNET S3 TERLEBIH DAHULU
             if (videoTarget && videoTarget.video_url) {
-                await fetch('/api/delete-s3?type=file', {
+                const s3Res = await fetch('/api/delete-s3?type=file', {
                     method: 'DELETE',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ fileUrl: videoTarget.video_url })
-                }).catch(e => console.log("Ignore S3 error:", e));
+                });
+                
+                if (!s3Res.ok) {
+                    console.warn("Peringatan: File fisik gagal dihapus di Biznet, tapi data akan tetap dihapus.");
+                }
             }
+
+            // 🔥 2. HAPUS DATA RECORD DI SUPABASE (Tabel 'stories')
+            const { error: supabaseError } = await supabase
+                .from('stories') // Pastikan nama tabel ini sesuai dengan database Anda
+                .delete()
+                .eq('id', vidId);
+
+            if (supabaseError) {
+                throw new Error(supabaseError.message);
+            }
+
+            // 🔥 3. BERSIHKAN TAMPILAN (FRONTEND)
             allVideosData = allVideosData.filter(v => v.id !== vidId);
-            newUploads = newUploads.filter(v => v.id !== vidId);
+            if (typeof newUploads !== 'undefined') {
+                newUploads = newUploads.filter(v => v.id !== vidId);
+            }
+            
             closeFloatingVideo();
-            renderProfileVideos();
+            if (typeof renderProfileVideos === "function") renderProfileVideos();
+            
             showToast("Video berhasil dihapus permanen!", "success");
+
         } catch (err) {
-            showToast("Gagal menghapus ke server: " + err.message, "error");
+            console.error("Detail Error Hapus:", err);
+            showToast("Gagal menghapus: " + err.message, "error");
         }
     }
 }
 
+
 function downloadVideoSaya(urlVideo, vidId) {
-    const finalUrl = urlVideo; 
+    // 🔥 Trik Cache-Buster: Tambahkan query unik agar browser tidak memakai memori CORS lama
+    const finalUrl = urlVideo + (urlVideo.includes('?') ? '&' : '?') + 'nocache=' + Date.now(); 
+    
     const toastId = 'toast-dl-' + vidId;
     const container = document.getElementById('toast-container');
+    
+    // Jangan tumpuk toast jika sudah ada
+    if (document.getElementById(toastId)) return;
+
     const toast = document.createElement('div');
     toast.id = toastId;
     toast.className = `flex flex-col px-5 py-3.5 rounded-2xl border shadow-2xl text-xs font-bold text-white toast-anim w-[90%] max-w-sm glass bg-[#1A1133] border-brand-info/50`;
@@ -2432,9 +2455,11 @@ function downloadVideoSaya(urlVideo, vidId) {
         </div>
     `;
     container.appendChild(toast);
+    
     const xhr = new XMLHttpRequest();
     xhr.open('GET', finalUrl, true);
     xhr.responseType = 'blob';
+    
     xhr.onprogress = function(event) {
         if (event.lengthComputable) {
             const percentComplete = Math.floor((event.loaded / event.total) * 100);
@@ -2442,8 +2467,10 @@ function downloadVideoSaya(urlVideo, vidId) {
             document.getElementById(`progress-text-${vidId}`).innerText = percentComplete + '%';
         }
     };
+    
     xhr.onload = function() {
-        if (this.status === 200) {
+        // 🔥 PERBAIKAN: Izinkan status 200 hingga 299 (Termasuk 206 Partial Content)
+        if (this.status >= 200 && this.status < 300) {
             const blob = this.response;
             const blobUrl = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -2452,10 +2479,12 @@ function downloadVideoSaya(urlVideo, vidId) {
             a.download = `AU2Hub_Video_${vidId}.mp4`;
             document.body.appendChild(a);
             a.click();
+            
             setTimeout(() => {
                 document.body.removeChild(a);
                 window.URL.revokeObjectURL(blobUrl);
             }, 1000);
+            
             document.getElementById(`progress-text-${vidId}`).innerText = "Selesai!";
             document.getElementById(`progress-text-${vidId}`).classList.replace('text-brand-info', 'text-brand-success');
             document.getElementById(`progress-text-${vidId}`).classList.replace('bg-brand-info/20', 'bg-brand-success/20');
@@ -2464,17 +2493,21 @@ function downloadVideoSaya(urlVideo, vidId) {
             setTimeout(() => toast.remove(), 2500);
             showToast("Video berhasil disimpan ke Galeri!", "success");
         } else {
+            console.warn("Download XHR gagal dengan status:", this.status);
             toast.remove();
-            fallbackDownloadVideo(finalUrl);
+            if(typeof fallbackDownloadVideo === "function") fallbackDownloadVideo(finalUrl);
         }
     };
+    
     xhr.onerror = function() {
+        console.error("XHR Network Error saat download");
         toast.remove();
-        fallbackDownloadVideo(finalUrl);
+        if(typeof fallbackDownloadVideo === "function") fallbackDownloadVideo(finalUrl);
     };
 
     xhr.send();
 }
+
 function fallbackDownloadVideo(urlVideo) {
     showToast("Membuka tab baru untuk download...", "info");
     setTimeout(() => {
