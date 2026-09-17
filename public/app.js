@@ -2432,12 +2432,11 @@ async function deleteVideo(vidId) {
 }
 
 
-function downloadVideoSaya(urlVideo, vidId) {
-    // Pastikan URL valid
+async function downloadVideoSaya(urlVideo, vidId) {
     let finalUrl = urlVideo;
     if (!finalUrl.startsWith('http')) finalUrl = 'https://' + finalUrl;
     
-    // Trik menembus cache Service Worker
+    // Trik ekstra agar URL selalu terbaca "baru" oleh sistem
     finalUrl = finalUrl + (finalUrl.includes('?') ? '&' : '?') + 'nocache=' + Date.now(); 
     
     const toastId = 'toast-dl-' + vidId;
@@ -2445,6 +2444,7 @@ function downloadVideoSaya(urlVideo, vidId) {
     
     if (document.getElementById(toastId)) return;
 
+    // 1. Buat UI Progress Bar
     const toast = document.createElement('div');
     toast.id = toastId;
     toast.className = `flex flex-col px-5 py-3.5 rounded-2xl border shadow-2xl text-xs font-bold text-white toast-anim w-[90%] max-w-sm glass bg-[#1A1133] border-brand-info/50`;
@@ -2459,75 +2459,77 @@ function downloadVideoSaya(urlVideo, vidId) {
     `;
     container.appendChild(toast);
     
-    const xhr = new XMLHttpRequest();
-    xhr.open('GET', finalUrl, true);
-    xhr.responseType = 'blob';
-    
-    xhr.onprogress = function(event) {
-        if (event.lengthComputable) {
-            const percentComplete = Math.floor((event.loaded / event.total) * 100);
-            document.getElementById(`progress-bar-${vidId}`).style.width = percentComplete + '%';
-            document.getElementById(`progress-text-${vidId}`).innerText = percentComplete + '%';
-        }
-    };
-    
-    xhr.onload = function() {
-        // 🔥 PENCEGAH BUG PWA: Cek apakah yang masuk ini video atau malah website HTML
-        const contentType = this.getResponseHeader('Content-Type');
+    try {
+        // 🔥 BYPASS SERVICE WORKER & CACHE SECARA TOTAL
+        const response = await fetch(finalUrl, {
+            method: 'GET',
+            mode: 'cors',
+            cache: 'no-store' 
+        });
+
+        if (!response.ok) throw new Error(`Status HTTP: ${response.status}`);
+
+        const contentType = response.headers.get('content-type');
         if (contentType && contentType.includes('text/html')) {
-            console.warn("Terdeteksi unduhan HTML dari PWA. Memaksa fallback native browser...");
-            toast.remove();
-            fallbackBukaTabBaru(urlVideo);
-            return;
+            throw new Error('Terdeteksi halaman HTML PWA, bukan video.');
         }
 
-        if (this.status >= 200 && this.status < 300) {
-            const blob = this.response;
-            const blobUrl = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.style.display = 'none';
-            a.href = blobUrl;
-            a.download = `AU2Hub_Video_${vidId}.mp4`;
-            document.body.appendChild(a);
-            a.click();
+        // 2. Proses Streaming Download untuk menggerakkan Progress Bar
+        const reader = response.body.getReader();
+        const contentLength = response.headers.get('content-length');
+        const total = contentLength ? parseInt(contentLength, 10) : 0;
+        let loaded = 0;
+        const chunks = [];
+
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
             
-            setTimeout(() => {
-                document.body.removeChild(a);
-                window.URL.revokeObjectURL(blobUrl);
-            }, 1000);
-            
-            document.getElementById(`progress-text-${vidId}`).innerText = "Selesai!";
-            document.getElementById(`progress-text-${vidId}`).classList.replace('text-brand-info', 'text-brand-success');
-            document.getElementById(`progress-text-${vidId}`).classList.replace('bg-brand-info/20', 'bg-brand-success/20');
-            document.getElementById(`progress-bar-${vidId}`).classList.replace('from-brand-info', 'from-brand-success');
-            document.getElementById(`progress-bar-${vidId}`).classList.replace('to-[#00F0FF]', 'to-[#20bd5a]');
-            setTimeout(() => toast.remove(), 2500);
-            showToast("Video berhasil disimpan ke Galeri!", "success");
-        } else {
-            toast.remove();
-            fallbackBukaTabBaru(urlVideo);
+            chunks.push(value);
+            loaded += value.length;
+
+            if (total) {
+                const percentComplete = Math.floor((loaded / total) * 100);
+                document.getElementById(`progress-bar-${vidId}`).style.width = percentComplete + '%';
+                document.getElementById(`progress-text-${vidId}`).innerText = percentComplete + '%';
+            }
         }
-    };
-    
-    xhr.onerror = function() {
-        toast.remove();
-        fallbackBukaTabBaru(urlVideo);
-    };
 
-    xhr.send();
-
-    // Fungsi kecil untuk fallback jika Service Worker error
-    function fallbackBukaTabBaru(url) {
-        showToast("Membuka video di sistem bawaan HP...", "info");
+        // 3. Satukan data dan paksa unduh ke memori internal HP
+        const blob = new Blob(chunks, { type: contentType || 'video/mp4' });
+        const blobUrl = window.URL.createObjectURL(blob);
+        
         const a = document.createElement('a');
-        a.href = url;
-        a.target = '_blank';
+        a.style.display = 'none';
+        a.href = blobUrl;
         a.download = `AU2Hub_Video_${vidId}.mp4`;
         document.body.appendChild(a);
         a.click();
-        document.body.removeChild(a);
+        
+        // 4. Bersihkan sampah cache lokal
+        setTimeout(() => {
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(blobUrl);
+        }, 1000);
+        
+        // 5. Animasi Sukses
+        document.getElementById(`progress-text-${vidId}`).innerText = "Selesai!";
+        document.getElementById(`progress-text-${vidId}`).classList.replace('text-brand-info', 'text-brand-success');
+        document.getElementById(`progress-text-${vidId}`).classList.replace('bg-brand-info/20', 'bg-brand-success/20');
+        document.getElementById(`progress-bar-${vidId}`).classList.replace('from-brand-info', 'from-brand-success');
+        document.getElementById(`progress-bar-${vidId}`).classList.replace('to-[#00F0FF]', 'to-[#20bd5a]');
+        
+        setTimeout(() => toast.remove(), 2500);
+        showToast("Video berhasil disimpan ke Galeri!", "success");
+
+    } catch (err) {
+        console.error("Detail Error Download:", err);
+        toast.remove();
+        // Fallback buka tab baru dihilangkan agar browser tidak "kabur" ke link Biznet
+        showToast("Gagal mengunduh video. Pastikan jaringan stabil.", "error");
     }
 }
+
 
 
 function fallbackDownloadVideo(urlVideo) {
