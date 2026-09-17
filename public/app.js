@@ -2433,13 +2433,16 @@ async function deleteVideo(vidId) {
 
 
 function downloadVideoSaya(urlVideo, vidId) {
-    // 🔥 Trik Cache-Buster: Tambahkan query unik agar browser tidak memakai memori CORS lama
-    const finalUrl = urlVideo + (urlVideo.includes('?') ? '&' : '?') + 'nocache=' + Date.now(); 
+    // Pastikan URL valid
+    let finalUrl = urlVideo;
+    if (!finalUrl.startsWith('http')) finalUrl = 'https://' + finalUrl;
+    
+    // Trik menembus cache Service Worker
+    finalUrl = finalUrl + (finalUrl.includes('?') ? '&' : '?') + 'nocache=' + Date.now(); 
     
     const toastId = 'toast-dl-' + vidId;
     const container = document.getElementById('toast-container');
     
-    // Jangan tumpuk toast jika sudah ada
     if (document.getElementById(toastId)) return;
 
     const toast = document.createElement('div');
@@ -2469,7 +2472,15 @@ function downloadVideoSaya(urlVideo, vidId) {
     };
     
     xhr.onload = function() {
-        // 🔥 PERBAIKAN: Izinkan status 200 hingga 299 (Termasuk 206 Partial Content)
+        // 🔥 PENCEGAH BUG PWA: Cek apakah yang masuk ini video atau malah website HTML
+        const contentType = this.getResponseHeader('Content-Type');
+        if (contentType && contentType.includes('text/html')) {
+            console.warn("Terdeteksi unduhan HTML dari PWA. Memaksa fallback native browser...");
+            toast.remove();
+            fallbackBukaTabBaru(urlVideo);
+            return;
+        }
+
         if (this.status >= 200 && this.status < 300) {
             const blob = this.response;
             const blobUrl = window.URL.createObjectURL(blob);
@@ -2493,20 +2504,31 @@ function downloadVideoSaya(urlVideo, vidId) {
             setTimeout(() => toast.remove(), 2500);
             showToast("Video berhasil disimpan ke Galeri!", "success");
         } else {
-            console.warn("Download XHR gagal dengan status:", this.status);
             toast.remove();
-            if(typeof fallbackDownloadVideo === "function") fallbackDownloadVideo(finalUrl);
+            fallbackBukaTabBaru(urlVideo);
         }
     };
     
     xhr.onerror = function() {
-        console.error("XHR Network Error saat download");
         toast.remove();
-        if(typeof fallbackDownloadVideo === "function") fallbackDownloadVideo(finalUrl);
+        fallbackBukaTabBaru(urlVideo);
     };
 
     xhr.send();
+
+    // Fungsi kecil untuk fallback jika Service Worker error
+    function fallbackBukaTabBaru(url) {
+        showToast("Membuka video di sistem bawaan HP...", "info");
+        const a = document.createElement('a');
+        a.href = url;
+        a.target = '_blank';
+        a.download = `AU2Hub_Video_${vidId}.mp4`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    }
 }
+
 
 function fallbackDownloadVideo(urlVideo) {
     showToast("Membuka tab baru untuk download...", "info");
