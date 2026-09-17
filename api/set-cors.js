@@ -1,7 +1,7 @@
-import { S3Client, PutBucketCorsCommand } from "@aws-sdk/client-s3";
+import { S3Client, PutBucketCorsCommand, PutBucketPolicyCommand } from "@aws-sdk/client-s3";
 
 export default async function handler(req, res) {
-    // 🔥 TAMBAHKAN INI AGAR VERCEL IKUT MENGIZINKAN HEADER CORS KE BROWSER HP ANDA
+    // Header CORS untuk Vercel
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
     res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization');
@@ -12,6 +12,7 @@ export default async function handler(req, res) {
     }
 
     try {
+        const bucketName = process.env.BIZNET_BUCKET_NAME?.trim();
         const client = new S3Client({
             region: "idn", 
             endpoint: "https://nos.wjv-1.neo.id",
@@ -22,8 +23,9 @@ export default async function handler(req, res) {
             forcePathStyle: true,
         });
 
-        const command = new PutBucketCorsCommand({
-            Bucket: process.env.BIZNET_BUCKET_NAME?.trim(),
+        // 🔥 1. EKSEKUSI ATURAN CORS
+        const corsCommand = new PutBucketCorsCommand({
+            Bucket: bucketName,
             CORSConfiguration: {
                 CORSRules: [{
                     AllowedHeaders: ["*"],
@@ -34,10 +36,32 @@ export default async function handler(req, res) {
                 }]
             },
         });
+        await client.send(corsCommand);
 
-        await client.send(command);
-        return res.status(200).send(`<h1>✅ BIZNET CORS FORCED SUCCESS!</h1>`);
+        // 🔥 2. EKSEKUSI ATURAN POLICY (PUBLIC READ)
+        const policy = {
+            Version: "2012-10-17",
+            Statement: [{
+                Sid: "PublicReadGetObject",
+                Effect: "Allow",
+                Principal: "*",
+                Action: "s3:GetObject",
+                Resource: `arn:aws:s3:::${bucketName}/*`
+            }]
+        };
+        const policyCommand = new PutBucketPolicyCommand({
+            Bucket: bucketName,
+            Policy: JSON.stringify(policy)
+        });
+        await client.send(policyCommand);
+
+        res.setHeader('Content-Type', 'text/html; charset=utf-8');
+        return res.status(200).send(`
+            <h1 style="color: green;">✅ BIZNET FULL CONFIG SUCCESS!</h1>
+            <p>Aturan CORS dan Bucket Policy (Public Read) berhasil diterapkan sekaligus ke server Biznet.</p>
+        `);
     } catch (error) {
-        return res.status(500).send(`<h1>❌ GAGAL: ${error.message}</h1>`);
+        res.setHeader('Content-Type', 'text/html; charset=utf-8');
+        return res.status(500).send(`<h1 style="color: red;">❌ GAGAL: ${error.message}</h1>`);
     }
 }
