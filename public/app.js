@@ -686,7 +686,7 @@ function cariBerdasarkanTagar(tagar) {
     grid.innerHTML = reversedVideos.map((vid, index) => {
         return `
         <div class="aspect-[9/16] bg-black relative rounded-sm overflow-hidden group cursor-pointer border border-white/5" onclick="playHashtagVideo('${tagar}', ${index})">
-            <video crossorigin="anonymous" class="w-full h-full object-cover" preload="metadata">
+            <video class="w-full h-full object-cover" preload="metadata">
                 <source src="${vid.video_url}" type="video/mp4">
             </video>
             <div class="absolute bottom-1.5 left-1.5 flex items-center gap-1.5 text-white text-[10px] font-bold z-10 bg-black/50 px-2 py-1 rounded backdrop-blur-sm border border-white/10">
@@ -1276,7 +1276,7 @@ const userVideos = allVideosData.filter(v => String(v.user_id) === uidToRender);
     grid.innerHTML = reversedVideos.map((vid, index) => {
         return `
         <div class="aspect-[9/16] bg-black relative rounded-md overflow-hidden border border-white/10 group cursor-pointer" onclick="openProfileFeed('${vid.user_id}', ${index})">
-            <video crossorigin="anonymous" class="w-full h-full object-cover" preload="metadata">
+            <video class="w-full h-full object-cover" preload="metadata">
                 <source src="${vid.video_url}" type="video/mp4">
             </video>
             <div class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
@@ -2204,7 +2204,7 @@ function renderProfileVideoBatch(customAmount = 3) {
     <div class="snap-start w-full h-full flex-shrink-0 relative flex items-center justify-center bg-black/95 px-0 sm:px-4 py-0 sm:py-6">
     <div class="w-full max-w-sm aspect-[9/16] relative bg-brand-dark mx-auto h-full sm:h-auto sm:rounded-3xl overflow-hidden shadow-2xl">
     <div class="absolute inset-0 flex items-center justify-center z-0"><img src="https://nos.wjv-1.neo.id/au2hub/Picsart_26-05-30_04-29-46-305.webp" class="w-10 h-10 opacity-40 splash-logo-anim drop-shadow-[0_0_15px_rgba(255,0,122,0.3)]"></div>
-    <video crossorigin="anonymous" class="absolute inset-0 m-auto w-full h-full object-cover float-video-player transition-opacity duration-500 opacity-0 z-10"
+    <video class="absolute inset-0 m-auto w-full h-full object-cover float-video-player transition-opacity duration-500 opacity-0 z-10"
     onloadeddata="this.classList.remove('opacity-0')" loop ${isGlobalMuted ? 'muted' : ''} playsinline preload="metadata"
     ontimeupdate="updateVideoProgress(this)"
     onclick="handleFloatVideoClick(event, this, '${vid.id}')"
@@ -2433,8 +2433,12 @@ async function deleteVideo(vidId) {
 
 
 function downloadVideoSaya(urlVideo, vidId) {
-    // Pastikan URL valid dan HTTPS
-    const finalUrl = urlVideo.replace(/^http:\/\//i, 'https://');
+    // Pastikan URL valid
+    let finalUrl = urlVideo;
+    if (!finalUrl.startsWith('http')) finalUrl = 'https://' + finalUrl;
+    
+    // Trik menembus cache Service Worker
+    finalUrl = finalUrl + (finalUrl.includes('?') ? '&' : '?') + 'nocache=' + Date.now(); 
     
     const toastId = 'toast-dl-' + vidId;
     const container = document.getElementById('toast-container');
@@ -2468,17 +2472,16 @@ function downloadVideoSaya(urlVideo, vidId) {
     };
     
     xhr.onload = function() {
-        // Cek apakah PWA mencegat dan malah mengirim file HTML (website)
+        // 🔥 PENCEGAH BUG PWA: Cek apakah yang masuk ini video atau malah website HTML
         const contentType = this.getResponseHeader('Content-Type');
         if (contentType && contentType.includes('text/html')) {
             console.warn("Terdeteksi unduhan HTML dari PWA. Memaksa fallback native browser...");
             toast.remove();
-            fallbackBukaTabBaru(finalUrl);
+            fallbackBukaTabBaru(urlVideo);
             return;
         }
 
-        // KUNCI: Terima 200 (Baru), 206 (Sebagian), atau 304 (Cache Instan)
-        if (this.status === 200 || this.status === 206 || this.status === 304) {
+        if (this.status >= 200 && this.status < 300) {
             const blob = this.response;
             const blobUrl = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -2502,17 +2505,18 @@ function downloadVideoSaya(urlVideo, vidId) {
             showToast("Video berhasil disimpan ke Galeri!", "success");
         } else {
             toast.remove();
-            fallbackBukaTabBaru(finalUrl);
+            fallbackBukaTabBaru(urlVideo);
         }
     };
     
     xhr.onerror = function() {
         toast.remove();
-        fallbackBukaTabBaru(finalUrl);
+        fallbackBukaTabBaru(urlVideo);
     };
 
     xhr.send();
 
+    // Fungsi kecil untuk fallback jika Service Worker error
     function fallbackBukaTabBaru(url) {
         showToast("Membuka video di sistem bawaan HP...", "info");
         const a = document.createElement('a');
@@ -2524,7 +2528,6 @@ function downloadVideoSaya(urlVideo, vidId) {
         document.body.removeChild(a);
     }
 }
-
 
 function fallbackDownloadVideo(urlVideo) {
     showToast("Membuka tab baru untuk download...", "info");
@@ -3359,7 +3362,7 @@ function renderVideoBatch() {
         <div class="video-inner-wrap w-full h-full relative bg-brand-dark ${!isGlobalMuted ? 'floating-focus' : ''}">
         ${tutorialHtml}
         <div class="absolute inset-0 flex items-center justify-center z-0"><img src="https://nos.wjv-1.neo.id/au2hub/Picsart_26-05-30_04-29-46-305.webp" class="w-10 h-10 opacity-40 splash-logo-anim drop-shadow-[0_0_15px_rgba(255,0,122,0.3)]"></div>
-        <video crossorigin="anonymous" class="absolute inset-0 m-auto w-full h-full object-cover video-player transition-opacity duration-500 opacity-0 z-10"
+        <video class="absolute inset-0 m-auto w-full h-full object-cover video-player transition-opacity duration-500 opacity-0 z-10"
         onloadeddata="this.classList.remove('opacity-0')" loop ${isGlobalMuted ? 'muted' : ''} playsinline preload="metadata"
         ontimeupdate="updateVideoProgress(this)"
         onclick="handleVideoClick(event, this, '${vid.id}')" onerror="handleVideoError(this)"
@@ -5806,7 +5809,7 @@ function appendMessageBubble(msg) {
             urlPart = parts[0]; cap = parts[1];
         }
         let amanUrl = escapeHTML(urlPart.trim());
-        contentHtml = `<video crossorigin="anonymous" src="${amanUrl}" class="max-w-[200px] rounded-lg mt-1 shadow-sm" controls playsinline></video>`;
+        contentHtml = `<video src="${amanUrl}" class="max-w-[200px] rounded-lg mt-1 shadow-sm" controls playsinline></video>`;
         if (cap) contentHtml += `<div class="mt-1.5 text-white/95 text-[11.5px]">${formatCaption(cap)}</div>`;
     } else if (rawMessage.startsWith('[AUDIO]')) {
         let urlPart = rawMessage.replace('[AUDIO]', '');
