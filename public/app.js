@@ -4747,7 +4747,7 @@ async function prosesKirimMedia() {
             throw new Error(dataUrl.error || `Gagal tiket URL: Status ${resUrl.status}`);
         }
 
-        // 4. Upload file fisik langsung ke Biznet GIO
+         // 4. Upload file fisik langsung ke Biznet GIO
         let uploadRes;
         try {
             uploadRes = await fetch(dataUrl.uploadUrl, {
