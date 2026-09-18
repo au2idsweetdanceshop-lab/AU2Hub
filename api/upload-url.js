@@ -7,6 +7,9 @@ export const config = {
 };
 
 export default async function handler(req, res) {
+    // Pastikan hanya menerima GET
+    if (req.method !== 'GET') return res.status(405).json({ success: false, error: 'Method Not Allowed' });
+
     try {
         const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL; 
         const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY; 
@@ -27,7 +30,6 @@ export default async function handler(req, res) {
 
         if (!bucketName || !accessKey || !secretKey) return res.status(500).json({ success: false, error: 'ENV S3 Biznet kosong!' });
 
-        // 🔥 REGION WAJIB "idn" & forcePathStyle WAJIB true
         const client = new S3Client({
             region: "idn", 
             endpoint: "https://nos.wjv-1.neo.id", 
@@ -35,31 +37,42 @@ export default async function handler(req, res) {
             forcePathStyle: true, 
         });
 
-        if (req.method === 'GET') {
-            const { filetype, filename } = req.query;
-            const ext = filetype ? filetype.split('/')[1] : 'bin';
-            const safeFilename = Math.random().toString(36).substring(2, 15);
-            const serverGeneratedPath = filename ? filename : `uploads/${user.id}/${Date.now()}_${safeFilename}.${ext}`;
-            
-            // 🔥 WAJIB TANPA ACL, cukup Bucket, Key, dan ContentType
-            const command = new PutObjectCommand({
-                Bucket: bucketName,
-                Key: serverGeneratedPath,
-                ContentType: filetype
-            });
-            
-            try {
-                const uploadUrl = await getSignedUrl(client, command, { expiresIn: 900 });
-                return res.status(200).json({
-                    success: true,
-                    uploadUrl: uploadUrl,
-                    finalVideoUrl: `https://nos.wjv-1.neo.id/${bucketName}/${serverGeneratedPath}`
-                });
-            } catch (s3SignError) {
-                return res.status(500).json({ success: false, error: 'Gagal S3: ' + s3SignError.message });
-            }
+        const { filetype, filename } = req.query;
+        if (!filetype || !filename) return res.status(400).json({ success: false, error: 'Parameter filetype dan filename wajib diisi!' });
+
+        // 🔥 PERTAHANAN 1: Filter MimeType (Hanya Boleh Media)
+        const allowedTypes = ['image/', 'video/', 'audio/'];
+        const isAllowedType = allowedTypes.some(type => filetype.startsWith(type));
+        if (!isAllowedType) {
+            return res.status(403).json({ success: false, error: 'Tipe file tidak diizinkan! Hanya boleh foto, video, atau audio.' });
         }
-        return res.status(405).json({ success: false });
+
+        // 🔥 PERTAHANAN 2: Cegah Manipulasi Path & Impersonasi
+        let safePath = filename;
+        
+        // A. Wajib di dalam foldernya sendiri (Berdasarkan Token Supabase)
+        if (!safePath.startsWith(`${user.id}/`) && !safePath.startsWith(`groups/`)) {
+            return res.status(403).json({ success: false, error: 'Akses Ditolak: Anda hanya boleh mengupload ke folder Anda sendiri.' });
+        }
+        
+        // B. Cegah Path Traversal (Hacker memaksa mundur folder pakai ../)
+        if (safePath.includes('..')) {
+            return res.status(403).json({ success: false, error: 'Path Traversal Terdeteksi!' });
+        }
+        
+        const command = new PutObjectCommand({
+            Bucket: bucketName,
+            Key: safePath,
+            ContentType: filetype
+        });
+        
+        const uploadUrl = await getSignedUrl(client, command, { expiresIn: 900 });
+        return res.status(200).json({
+            success: true,
+            uploadUrl: uploadUrl,
+            finalVideoUrl: `https://nos.wjv-1.neo.id/${bucketName}/${safePath}`
+        });
+
     } catch (error) {
         return res.status(500).json({ success: false, error: error.message });
     }
