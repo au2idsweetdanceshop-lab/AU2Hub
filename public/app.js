@@ -2383,53 +2383,68 @@ function handleFloatVideoClick(event, videoElement, vidId) {
 }
 
 async function deleteVideo(vidId) {
-    const hapus = await customPrompt("Ketik 'HAPUS' jika ingin menghapus video ini secara PERMANEN:");
-    
-    if (hapus === 'HAPUS') {
-        try {
-            showToast("Sedang menghapus video...", "info");
-            const videoTarget = allVideosData.find(v => v.id === vidId);
-
-            // 🔥 1. HAPUS FILE FISIK DI BIZNET S3 TERLEBIH DAHULU
-            if (videoTarget && videoTarget.video_url) {
-                const s3Res = await fetch('/api/delete-s3?type=file', {
-                    method: 'DELETE',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ fileUrl: videoTarget.video_url })
-                });
-                
-                if (!s3Res.ok) {
-                    console.warn("Peringatan: File fisik gagal dihapus di Biznet, tapi data akan tetap dihapus.");
-                }
-            }
-
-            // 🔥 2. HAPUS DATA RECORD DI SUPABASE (Tabel 'stories')
-            const { error: supabaseError } = await supabase
-                .from('stories') // Pastikan nama tabel ini sesuai dengan database Anda
-                .delete()
-                .eq('id', vidId);
-
-            if (supabaseError) {
-                throw new Error(supabaseError.message);
-            }
-
-            // 🔥 3. BERSIHKAN TAMPILAN (FRONTEND)
-            allVideosData = allVideosData.filter(v => v.id !== vidId);
-            if (typeof newUploads !== 'undefined') {
-                newUploads = newUploads.filter(v => v.id !== vidId);
-            }
-            
-            closeFloatingVideo();
-            if (typeof renderProfileVideos === "function") renderProfileVideos();
-            
-            showToast("Video berhasil dihapus permanen!", "success");
-
-        } catch (err) {
-            console.error("Detail Error Hapus:", err);
-            showToast("Gagal menghapus: " + err.message, "error");
+    // 1. Tutup paksa menu opsi kreator terlebih dahulu agar tidak menghalangi prompt
+    const modalKreator = document.getElementById('modal-kreator-option');
+    if (modalKreator && !modalKreator.classList.contains('hidden')) {
+        if (typeof tutupMenuKreator === 'function') {
+            tutupMenuKreator();
+        } else {
+            modalKreator.classList.add('hidden');
         }
     }
+
+    // 2. Beri jeda 300ms agar menu opsi benar-benar turun ke bawah sebelum prompt muncul
+    setTimeout(async () => {
+        const hapus = await customPrompt("Ketik 'HAPUS' jika ingin menghapus video ini secara PERMANEN:");
+        
+        if (hapus === 'HAPUS') {
+            try {
+                showToast("Sedang menghapus video...", "info");
+                const videoTarget = allVideosData.find(v => v.id === vidId);
+
+                // 🔥 1. HAPUS FILE FISIK DI BIZNET S3 TERLEBIH DAHULU
+                if (videoTarget && videoTarget.video_url) {
+                    const s3Res = await fetch('/api/delete-s3?type=file', {
+                        method: 'DELETE',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ fileUrl: videoTarget.video_url })
+                    });
+                    
+                    if (!s3Res.ok) {
+                        console.warn("Peringatan: File fisik gagal dihapus di Biznet, tapi data akan tetap dihapus.");
+                    }
+                }
+
+                // 🔥 2. HAPUS DATA RECORD DI SUPABASE (Tabel 'stories')
+                // Perbaikan: Pastikan menggunakan supabaseClient agar tidak error (Sesuai deklarasi di app.js)
+                const { error: supabaseError } = await supabaseClient
+                    .from('stories') 
+                    .delete()
+                    .eq('id', vidId);
+
+                if (supabaseError) {
+                    throw new Error(supabaseError.message);
+                }
+
+                // 🔥 3. BERSIHKAN TAMPILAN (FRONTEND)
+                allVideosData = allVideosData.filter(v => v.id !== vidId);
+                if (typeof newUploads !== 'undefined') {
+                    newUploads = newUploads.filter(v => v.id !== vidId);
+                }
+                
+                closeFloatingVideo();
+                if (typeof renderProfileVideos === "function") renderProfileVideos();
+                
+                showToast("Video berhasil dihapus permanen!", "success");
+
+            } catch (err) {
+                console.error("Detail Error Hapus:", err);
+                showToast("Gagal menghapus: " + err.message, "error");
+            }
+        }
+    }, 300); // <-- Jeda waktu 300 milidetik
 }
+
 
 
 function downloadVideoSaya(urlVideo, vidId) {
